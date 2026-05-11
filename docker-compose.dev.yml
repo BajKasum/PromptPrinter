@@ -13,11 +13,11 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     env_file:
-      - .env.docker
+      - .env.local
     environment:
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
-      - WATCHPACK_POLLING=true  # needed for hot reload on Windows/WSL bind mounts
+      - WATCHPACK_POLLING=true # needed for hot reload on Windows/WSL bind mounts
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - .:/app
