@@ -1,0 +1,39 @@
+import { Navbar } from "@/components/marketing/navbar";
+import { Footer } from "@/components/marketing/footer";
+import { PricingGrid } from "@/components/marketing/pricing-preview";
+import { FAQ } from "@/components/marketing/faq";
+import { FadeIn } from "@/components/motion/fade-in";
+
+export const metadata = {
+  title: "Pricing",
+  description: "Free, Pro, and Team plans. No credit card to start.",
+};
+
+export default function PricingPage() {
+  return (
+    <main>
+      <Navbar />
+      <section className="container-x pt-32 md:pt-40 pb-12 text-center">
+        <FadeIn>
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 mb-6">
+            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-cyan-300">
+              Pricing
+            </span>
+          </div>
+          <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-white max-w-3xl mx-auto">
+            Simple, <span className="gradient-text">honest pricing.</span>
+          </h1>
+          <p className="mt-6 text-[17px] text-white/55 max-w-2xl mx-auto">
+            Start free. Upgrade when you need more generations or your team needs to share
+            workspaces.
+          </p>
+        </FadeIn>
+      </section>
+      <section className="container-x pb-24">
+        <PricingGrid />
+      </section>
+      <FAQ />
+      <Footer />
+    </main>
+  );
+}
