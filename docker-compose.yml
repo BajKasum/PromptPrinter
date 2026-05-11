@@ -1,0 +1,34 @@
+# Production stack — `docker compose up -d`
+#
+# Reads runtime env from .env.docker (copy from .env.docker.example).
+# NEXT_PUBLIC_* values are baked at build time; pass them as build args
+# below if you want them to differ from the defaults inside the image.
+
+services:
+  web:
+    image: promptprinter:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time (inlined into the client bundle).
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    container_name: promptprinter
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.docker
+    healthcheck:
+      # No external curl in alpine — use node's http to ping the root.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

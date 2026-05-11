@@ -1,0 +1,31 @@
+# Development stack — `docker compose -f docker-compose.dev.yml up`
+#
+# Mounts the source tree so changes hot-reload via `next dev`.
+# node_modules and .next are kept inside named volumes so host
+# Windows/macOS filesystems don't slow the container build.
+
+services:
+  web:
+    image: node:22-alpine
+    container_name: promptprinter-dev
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.docker
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true  # needed for hot reload on Windows/WSL bind mounts
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - next_cache:/app/.next
+    tty: true
+    stdin_open: true
+
+volumes:
+  node_modules:
+  next_cache:
