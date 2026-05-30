@@ -1,8 +1,9 @@
 # Production stack — `docker compose up -d`
 #
-# Reads runtime env from .env.docker (copy from .env.docker.example).
-# NEXT_PUBLIC_* values are baked at build time; pass them as build args
-# below if you want them to differ from the defaults inside the image.
+# Liest alle Env-Vars (Build + Runtime) aus `.env`.
+# - Build-Args werden via ${VAR}-Interpolation aus `.env` gezogen (Compose-Default)
+# - Runtime-Vars im Container kommen aus dem gleichen `.env` via env_file
+# Ein einziges File, ein einziger Befehl: `docker compose up -d`
 
 services:
   web:
@@ -14,13 +15,13 @@ services:
         # Build-time (inlined into the client bundle).
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3001}
     container_name: promptprinter
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "${HOST_PORT:-3001}:3000"
     env_file:
-      - .env.docker
+      - .env
     healthcheck:
       # No external curl in alpine — use node's http to ping the root.
       test:

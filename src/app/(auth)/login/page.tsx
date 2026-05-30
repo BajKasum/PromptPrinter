@@ -1,17 +1,17 @@
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 
-export const metadata = { title: "Sign in" };
+export const metadata = { title: "Einloggen" };
 
 export default function LoginPage() {
   return (
     <div>
       <div className="mb-7">
         <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-white">
-          Welcome back
+          Willkommen zurück
         </h1>
         <p className="mt-1 text-[14px] text-white/55">
-          Sign in to your PromptPrinter workspace.
+          Melde dich in deinem PromptPrinter-Workspace an.
         </p>
       </div>
       <Suspense fallback={null}>
