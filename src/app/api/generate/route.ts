@@ -73,46 +73,44 @@ export async function POST(req: Request) {
     deployment: deploymentTemplate(input),
   };
 
-  // 5. Without an API key, return the templates themselves so the UI flow works in dev
+  // 5. Produce the outputs.
+  //    - With an API key: call Claude for each artifact.
+  //    - Without a key: fall back to the unfilled templates so the flow still works.
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({
-      projectId: "demo",
-      outputs: prompts, // the prompts themselves, useful as placeholders
-      mode: "stub",
-      message:
-        "No ANTHROPIC_API_KEY set — returning the unfilled prompt templates. Add the key to .env.local to enable real generation.",
-    });
-  }
-
-  // 6. Call Claude in parallel for each artifact
-  const client = new Anthropic({ apiKey });
+  const mode: "generated" | "stub" = apiKey ? "generated" : "stub";
   const outputs: Record<string, string> = {};
 
-  const calls = Object.entries(prompts).map(async ([key, prompt]) => {
-    try {
-      const res = await client.messages.create({
-        model: MODEL,
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      });
-      outputs[key] = res.content
-        .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-        .map((b) => b.text)
-        .join("\n");
-    } catch (err) {
-      outputs[key] = `_Generation failed: ${err instanceof Error ? err.message : "unknown"}_`;
-    }
-  });
-  await Promise.all(calls);
+  if (apiKey) {
+    const client = new Anthropic({ apiKey });
+    const calls = Object.entries(prompts).map(async ([key, prompt]) => {
+      try {
+        const res = await client.messages.create({
+          model: MODEL,
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+        });
+        outputs[key] = res.content
+          .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
+          .map((b) => b.text)
+          .join("\n");
+      } catch (err) {
+        outputs[key] = `_Generation failed: ${err instanceof Error ? err.message : "unknown"}_`;
+      }
+    });
+    await Promise.all(calls);
+  } else {
+    Object.assign(outputs, prompts);
+  }
 
-  // 7. Persist (best-effort) — skipped if Supabase isn't configured
+  // 6. Persist for logged-in users — in BOTH modes, so the project shows up
+  //    in the dashboard regardless of whether real generation ran.
   let projectId: string | null = null;
-  try {
-    const supabase = await createClient();
-    if (userId) {
-      const { data: project } = await supabase
+  let persistError: string | null = null;
+  if (userId) {
+    try {
+      const supabase = await createClient();
+      const { data: project, error: projectErr } = await supabase
         .from("projects")
         .insert({
           user_id: userId,
@@ -120,23 +118,40 @@ export async function POST(req: Request) {
           audience: input.audience,
           idea: input.idea,
           tools: input.tools,
+          status: "ready",
         })
         .select("id")
         .single();
+
+      if (projectErr) throw projectErr;
       projectId = project?.id ?? null;
+
       if (projectId) {
-        await supabase.from("generations").insert({
+        const { error: genErr } = await supabase.from("generations").insert({
           project_id: projectId,
           user_id: userId,
           outputs,
+          model: mode === "generated" ? MODEL : null,
         });
+        if (genErr) throw genErr;
       }
+    } catch (err) {
+      // Surface persistence failures instead of silently dropping them — a
+      // missing profile row or RLS issue would otherwise look like success.
+      persistError = err instanceof Error ? err.message : "persist failed";
+      projectId = null;
     }
-  } catch {
-    // ignore — return the data even if persistence fails
   }
 
-  return NextResponse.json({ projectId: projectId ?? "demo", outputs, mode: "generated" });
+  return NextResponse.json({
+    projectId: projectId ?? "demo",
+    outputs,
+    mode,
+    ...(persistError ? { persistError } : {}),
+    ...(mode === "stub"
+      ? { message: "Kein ANTHROPIC_API_KEY gesetzt — es wurden die Prompt-Vorlagen gespeichert. Trag den Key in .env ein für echte Generierung." }
+      : {}),
+  });
 }
 
 function problem(status: number, detail: string, extra: Record<string, unknown> = {}) {
