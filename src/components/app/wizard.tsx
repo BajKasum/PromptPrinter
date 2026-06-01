@@ -86,10 +86,21 @@ export function Wizard() {
         body: JSON.stringify(parsed.data),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Generation failed");
-      router.push(`/projects/${json.projectId ?? "demo"}`);
+      if (!res.ok) throw new Error(json.detail ?? json.error ?? "Generierung fehlgeschlagen");
+
+      const projectId: string | undefined = json.projectId;
+      if (!projectId || projectId === "demo") {
+        throw new Error(
+          json.persistError
+            ? `Projekt konnte nicht gespeichert werden: ${json.persistError}`
+            : "Projekt konnte nicht gespeichert werden. Bist du eingeloggt?"
+        );
+      }
+
+      router.push(`/projects/${projectId}`);
+      router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : "Unbekannter Fehler");
       setSubmitting(false);
     }
   }
