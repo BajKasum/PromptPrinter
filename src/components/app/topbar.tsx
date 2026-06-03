@@ -18,6 +18,7 @@ export function Topbar({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
@@ -66,13 +67,52 @@ export function Topbar({
         </span>
       </button>
       <div className="ml-auto flex items-center gap-2">
-        <button className="h-9 w-9 rounded-lg border border-white/10 bg-white/[0.02] flex items-center justify-center text-white/65 hover:text-white hover:bg-white/[0.05] transition-colors">
-          <Bell className="h-4 w-4" strokeWidth={1.8} />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => {
+              setNotifOpen((v) => !v);
+              setOpen(false);
+            }}
+            aria-label="Benachrichtigungen"
+            aria-expanded={notifOpen}
+            className="h-9 w-9 rounded-lg border border-white/10 bg-white/[0.02] flex items-center justify-center text-white/65 hover:text-white hover:bg-white/[0.05] transition-colors"
+          >
+            <Bell className="h-4 w-4" strokeWidth={1.8} />
+          </button>
+
+          {notifOpen && (
+            <>
+              <button
+                aria-label="Benachrichtigungen schliessen"
+                className="fixed inset-0 z-40 cursor-default"
+                onClick={() => setNotifOpen(false)}
+              />
+              <div className="absolute right-0 mt-2 w-72 z-50 rounded-xl border border-white/10 bg-[#111113] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.7)] overflow-hidden">
+                <div className="px-4 py-3 border-b border-white/[0.06] text-[13px] font-medium text-white">
+                  Benachrichtigungen
+                </div>
+                <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                  <div className="h-10 w-10 rounded-full border border-white/[0.08] bg-white/[0.02] flex items-center justify-center">
+                    <Bell className="h-4 w-4 text-white/40" strokeWidth={1.8} />
+                  </div>
+                  <p className="text-[13px] text-white/55">Keine neuen Benachrichtigungen</p>
+                  <p className="text-[12px] text-white/35">
+                    Updates zu deinen Generierungen erscheinen hier.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="relative">
           <button
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+              setOpen((v) => !v);
+              setNotifOpen(false);
+            }}
+            aria-label="Kontomenü"
+            aria-expanded={open}
             className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg border border-white/10 bg-white/[0.02] text-[13px] text-white/85 hover:bg-white/[0.05] transition-colors"
           >
             <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-semibold text-white">
