@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, FolderKanban, Library, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/toast";
 
 export type LibraryItem = {
   id: string;
@@ -37,6 +38,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   const [favorites, setFavorites] = useState<Set<string>>(
     () => new Set(items.filter((i) => i.isFavorite).map((i) => i.id))
   );
+  const { toast } = useToast();
 
   async function toggleFavorite(id: string) {
     const next = !favorites.has(id);
@@ -59,6 +61,11 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
         if (next) s.delete(id);
         else s.add(id);
         return s;
+      });
+      toast({
+        title: "Favorit konnte nicht gespeichert werden",
+        description: "Bitte versuche es erneut.",
+        variant: "error",
       });
     }
   }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
+import { ToastProvider } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/server";
 
 // Auth-gated shell. The middleware already guards these routes; fetching the
@@ -19,16 +20,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .maybeSingle();
 
   return (
-    <div className="min-h-screen">
-      <Sidebar />
-      <div className="md:ml-[240px] px-6 md:px-10 pt-0 pb-16">
-        <Topbar
-          email={user.email ?? ""}
-          plan={profile?.plan ?? "free"}
-          displayName={profile?.display_name ?? null}
-        />
-        <div className="pt-6 md:pt-8">{children}</div>
+    <ToastProvider>
+      <div className="min-h-screen">
+        <Sidebar />
+        <div className="md:ml-[240px] px-6 md:px-10 pt-0 pb-16">
+          <Topbar
+            email={user.email ?? ""}
+            plan={profile?.plan ?? "free"}
+            displayName={profile?.display_name ?? null}
+          />
+          <div className="pt-6 md:pt-8">{children}</div>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }
