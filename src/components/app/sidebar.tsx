@@ -27,6 +27,12 @@ const secondary = [
   { label: "Abrechnung", href: "/billing", Icon: CreditCard },
 ];
 
+// Not yet built — shown as disabled "Bald" entries rather than dead links.
+const comingSoon = [
+  { label: "Dokumentation", Icon: BookOpen },
+  { label: "Hilfe", Icon: HelpCircle },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
   return (
@@ -93,21 +99,21 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="px-3 py-4 border-t border-white/[0.06]">
-        <Link
-          href="#"
-          className="flex items-center gap-3 h-9 px-3 rounded-md text-[12.5px] text-white/55 hover:text-white hover:bg-white/[0.04] transition-colors"
-        >
-          <BookOpen className="h-3.5 w-3.5" strokeWidth={1.8} />
-          Dokumentation
-        </Link>
-        <Link
-          href="#"
-          className="flex items-center gap-3 h-9 px-3 rounded-md text-[12.5px] text-white/55 hover:text-white hover:bg-white/[0.04] transition-colors"
-        >
-          <HelpCircle className="h-3.5 w-3.5" strokeWidth={1.8} />
-          Hilfe
-        </Link>
+      <div className="px-3 py-4 border-t border-white/[0.06] space-y-0.5">
+        {comingSoon.map(({ label, Icon }) => (
+          <div
+            key={label}
+            className="flex items-center justify-between h-9 px-3 rounded-md text-[12.5px] text-white/40 cursor-default select-none"
+          >
+            <span className="flex items-center gap-3">
+              <Icon className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {label}
+            </span>
+            <span className="text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-white/45">
+              Bald
+            </span>
+          </div>
+        ))}
       </div>
     </aside>
   );
