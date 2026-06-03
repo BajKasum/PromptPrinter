@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FolderKanban, Plus, Sparkles, CreditCard } from "lucide-react";
+import { FolderKanban, Plus, Sparkles, CreditCard, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { ProjectCard, type ProjectRow } from "@/components/app/project-card";
@@ -11,7 +11,8 @@ export const metadata = { title: "Dashboard" };
 // Always reflect the latest DB state — never serve a cached snapshot.
 export const dynamic = "force-dynamic";
 
-type ProjectQueryRow = Omit<ProjectRow, "generationCount"> & {
+type ProjectQueryRow = Omit<ProjectRow, "generationCount" | "isFavorite"> & {
+  is_favorite?: boolean | null;
   generations: { count: number }[] | null;
 };
 
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
   const [{ data: rawProjects }, { data: profile }] = await Promise.all([
     supabase
       .from("projects")
-      .select("id, name, audience, tools, status, updated_at, generations(count)")
+      .select("id, name, audience, tools, status, updated_at, is_favorite, generations(count)")
       .order("updated_at", { ascending: false }),
     supabase.from("profiles").select("plan").eq("id", user.id).single(),
   ]);
@@ -38,8 +39,10 @@ export default async function DashboardPage() {
     status: p.status,
     updated_at: p.updated_at,
     generationCount: p.generations?.[0]?.count ?? 0,
+    isFavorite: p.is_favorite ?? false,
   }));
 
+  const favorites = projects.filter((p) => p.isFavorite).slice(0, 3);
   const projectsTotal = projects.length;
   const generationsTotal = projects.reduce((acc, p) => acc + (p.generationCount ?? 0), 0);
   const plan = profile?.plan ?? "free";
@@ -91,6 +94,30 @@ export default async function DashboardPage() {
           </StaggerItem>
         ))}
       </StaggerChildren>
+
+      {favorites.length > 0 && (
+        <section className="mb-10">
+          <FadeIn>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-white">
+                <Star className="h-4 w-4 fill-amber-300 text-amber-300" strokeWidth={1.8} />
+                Favoriten
+              </h2>
+              <Link
+                href="/library"
+                className="text-[13px] text-white/55 hover:text-white transition-colors"
+              >
+                In der Bibliothek →
+              </Link>
+            </div>
+          </FadeIn>
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {favorites.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </StaggerChildren>
+        </section>
+      )}
 
       <FadeIn>
         <div className="flex items-center justify-between mb-4">

@@ -18,6 +18,7 @@ export type ProjectRow = {
   status: string;
   updated_at: string;
   generationCount?: number;
+  isFavorite?: boolean;
 };
 
 // Derive a short, de-duplicated tech stack from the chosen tools.
