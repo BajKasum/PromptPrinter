@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDate(iso: string | Date, opts?: Intl.DateTimeFormatOptions) {
   const d = typeof iso === "string" ? new Date(iso) : iso;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("de-CH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -18,10 +18,13 @@ export function formatDate(iso: string | Date, opts?: Intl.DateTimeFormatOptions
 export function relativeTime(iso: string | Date) {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return "gerade eben";
+  if (diff < 3600) return `vor ${Math.floor(diff / 60)} Min.`;
+  if (diff < 86400) return `vor ${Math.floor(diff / 3600)} Std.`;
+  if (diff < 604800) {
+    const days = Math.floor(diff / 86400);
+    return `vor ${days} ${days === 1 ? "Tag" : "Tagen"}`;
+  }
   return formatDate(d);
 }
 

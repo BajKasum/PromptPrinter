@@ -21,17 +21,17 @@ export type ProjectOutputs = {
 };
 
 const TABS: { id: keyof ProjectOutputs; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "brief", label: "Product Brief" },
+  { id: "overview", label: "Übersicht" },
+  { id: "brief", label: "Produkt-Brief" },
   { id: "prd", label: "PRD" },
-  { id: "master", label: "Master Prompt" },
-  { id: "frontend", label: "Frontend Prompt" },
-  { id: "backend", label: "Backend Prompt" },
-  { id: "schema", label: "Database Schema" },
-  { id: "security", label: "Security Checklist" },
-  { id: "marketing", label: "Marketing Copy" },
-  { id: "seo", label: "SEO Plan" },
-  { id: "deployment", label: "Deployment Guide" },
+  { id: "master", label: "Master-Prompt" },
+  { id: "frontend", label: "Frontend-Prompt" },
+  { id: "backend", label: "Backend-Prompt" },
+  { id: "schema", label: "Datenbank-Schema" },
+  { id: "security", label: "Sicherheits-Checkliste" },
+  { id: "marketing", label: "Marketing-Texte" },
+  { id: "seo", label: "SEO-Plan" },
+  { id: "deployment", label: "Deployment-Anleitung" },
 ];
 
 export function ProjectTabs({
@@ -86,7 +86,7 @@ export function ProjectTabs({
         </div>
         <Button variant="ghost" className="w-full mt-3" onClick={exportAll}>
           <Download className="h-4 w-4" />
-          Export all (Markdown)
+          Alle exportieren (Markdown)
         </Button>
       </nav>
 
@@ -104,7 +104,7 @@ export function ProjectTabs({
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" onClick={copy}>
               {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? "Copied" : "Copy"}
+              {copied ? "Kopiert" : "Kopieren"}
             </Button>
             <Button size="sm" variant="ghost" onClick={exportMd}>
               <Download className="h-3.5 w-3.5" />

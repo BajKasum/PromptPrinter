@@ -8,28 +8,28 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    q: "What does PromptPrinter actually output?",
-    a: "Every project produces a complete build packet: product brief, PRD, master prompt, frontend prompt, backend prompt, database schema, security checklist, marketing copy, SEO plan, and deployment guide. You can copy each individually or export the lot as Markdown or PDF.",
+    q: "Was gibt PromptPrinter eigentlich aus?",
+    a: "Jedes Projekt erzeugt ein komplettes Build-Packet: Produkt-Brief, PRD, Master-Prompt, Frontend-Prompt, Backend-Prompt, Datenbank-Schema, Sicherheits-Checkliste, Marketing-Texte, SEO-Plan und Deployment-Anleitung. Du kannst jedes einzeln kopieren oder alles als Markdown oder PDF exportieren.",
   },
   {
-    q: "How is this different from just asking Claude for a PRD?",
-    a: "PromptPrinter chains structured prompts behind the scenes, validates each output, and tailors the result to your chosen tools (Lovable vs v0 produces different frontend prompts). It also saves every artifact to a workspace you can revisit.",
+    q: "Worin unterscheidet sich das davon, Claude einfach nach einem PRD zu fragen?",
+    a: "PromptPrinter verkettet im Hintergrund strukturierte Prompts, validiert jede Ausgabe und schneidet das Ergebnis auf deine gewählten Tools zu (Lovable vs. v0 erzeugt unterschiedliche Frontend-Prompts). Ausserdem speichert es jedes Artefakt in einem Workspace, den du wieder aufrufen kannst.",
   },
   {
-    q: "Which AI models power the generation?",
-    a: "We use Claude (4.7 family) for long-context reasoning and GPT-4o for code-heavy outputs. Your choice of master-prompt target only changes the formatting of the final artifact — the engine routes to the best model per task.",
+    q: "Welche KI-Modelle treiben die Generierung an?",
+    a: "Wir nutzen Claude (4.7-Familie) für Long-Context-Reasoning und GPT-4o für code-lastige Ausgaben. Deine Wahl des Master-Prompt-Ziels ändert nur die Formatierung des finalen Artefakts — die Engine leitet jede Aufgabe an das beste Modell weiter.",
   },
   {
-    q: "Do you store my prompts and outputs?",
-    a: "Yes — your projects live in your workspace so you can revisit, re-export, or fork them. Everything is row-level-secured to your account. Delete a project and it's gone for good.",
+    q: "Speichert ihr meine Prompts und Ausgaben?",
+    a: "Ja — deine Projekte liegen in deinem Workspace, damit du sie wieder aufrufen, neu exportieren oder forken kannst. Alles ist per Row-Level-Security an dein Konto gebunden. Löschst du ein Projekt, ist es endgültig weg.",
   },
   {
-    q: "Can I bring my own API keys?",
-    a: "On Pro and Team plans, yes. Add your Anthropic or OpenAI key in Settings and we'll use it for your generations, billing you only for the platform layer.",
+    q: "Kann ich eigene API-Keys verwenden?",
+    a: "In den Plänen Pro und Team ja. Hinterlege deinen Anthropic- oder OpenAI-Key in den Einstellungen, und wir nutzen ihn für deine Generierungen — abgerechnet wird dann nur die Plattform-Ebene.",
   },
   {
-    q: "Is there a free tier?",
-    a: "Yes — 3 projects and 20 generations per month, with full access to every output type. No credit card.",
+    q: "Gibt es eine kostenlose Stufe?",
+    a: "Ja — 3 Projekte und 20 Generierungen pro Monat, mit vollem Zugriff auf jeden Ausgabetyp. Keine Kreditkarte.",
   },
 ];
 
@@ -42,7 +42,7 @@ export function FAQ() {
             FAQ
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
-            Questions, answered.
+            Fragen, beantwortet.
           </h2>
         </div>
       </FadeIn>

@@ -38,15 +38,15 @@ function buildOverview(p: ProjectRecord): string {
 ${p.idea}
 
 ## Stack
-- **Master Prompt** — ${t.master ?? "—"}
+- **Master-Prompt** — ${t.master ?? "—"}
 - **Frontend** — ${t.frontend ?? "—"}
 - **Backend** — ${t.backend ?? "—"}
-- **Database** — ${t.database ?? "—"}
+- **Datenbank** — ${t.database ?? "—"}
 
 ## Nächste Schritte
-- **Master Prompt** — in deinen KI-Assistenten einfügen, um das Scaffolding zu starten
-- **Database Schema** — zuerst im Supabase SQL-Editor ausführen
-- **Frontend Prompt** — in Lovable oder v0 einfügen
+- **Master-Prompt** — in deinen KI-Assistenten einfügen, um das Scaffolding zu starten
+- **Datenbank-Schema** — zuerst im Supabase SQL-Editor ausführen
+- **Frontend-Prompt** — in Lovable oder v0 einfügen
 `;
 }
 

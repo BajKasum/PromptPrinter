@@ -5,8 +5,8 @@ import { FAQ } from "@/components/marketing/faq";
 import { FadeIn } from "@/components/motion/fade-in";
 
 export const metadata = {
-  title: "Pricing",
-  description: "Free, Pro, and Team plans. No credit card to start.",
+  title: "Preise",
+  description: "Free-, Pro- und Team-Pläne. Keine Kreditkarte zum Start.",
 };
 
 export default function PricingPage() {
@@ -17,15 +17,15 @@ export default function PricingPage() {
         <FadeIn>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 mb-6">
             <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-cyan-300">
-              Pricing
+              Preise
             </span>
           </div>
           <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-white max-w-3xl mx-auto">
-            Simple, <span className="gradient-text">honest pricing.</span>
+            Einfache, <span className="gradient-text">ehrliche Preise.</span>
           </h1>
           <p className="mt-6 text-[17px] text-white/55 max-w-2xl mx-auto">
-            Start free. Upgrade when you need more generations or your team needs to share
-            workspaces.
+            Starte kostenlos. Upgrade, wenn du mehr Generierungen brauchst oder dein Team
+            Workspaces teilen muss.
           </p>
         </FadeIn>
       </section>

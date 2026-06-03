@@ -2,19 +2,19 @@ import { FadeIn } from "@/components/motion/fade-in";
 
 const groups = [
   {
-    title: "AI Assistants",
+    title: "KI-Assistenten",
     items: ["Claude", "ChatGPT", "Gemini", "Mistral"],
   },
   {
-    title: "Frontend Builders",
+    title: "Frontend-Builder",
     items: ["Lovable", "Stitch", "Figma", "v0"],
   },
   {
-    title: "Backend Agents",
+    title: "Backend-Agenten",
     items: ["Claude Code", "Cursor", "Windsurf", "Aider"],
   },
   {
-    title: "Databases",
+    title: "Datenbanken",
     items: ["Supabase", "PostgreSQL", "MySQL", "Neon"],
   },
 ];
@@ -25,10 +25,10 @@ export function Integrations() {
       <FadeIn>
         <div className="max-w-2xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-cyan-300/80 mb-4">
-            Integrations
+            Integrationen
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
-            Tuned for the tools you already use.
+            Abgestimmt auf die Tools, die du bereits nutzt.
           </h2>
         </div>
       </FadeIn>

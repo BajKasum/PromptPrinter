@@ -3,39 +3,39 @@ import { Logo } from "@/components/brand/logo";
 
 const sections = [
   {
-    title: "Product",
+    title: "Produkt",
     links: [
-      { label: "Features", href: "/features" },
-      { label: "Pricing", href: "/pricing" },
+      { label: "Funktionen", href: "/features" },
+      { label: "Preise", href: "/pricing" },
       { label: "Changelog", href: "#" },
       { label: "Roadmap", href: "#" },
     ],
   },
   {
-    title: "Resources",
+    title: "Ressourcen",
     links: [
-      { label: "Documentation", href: "#" },
-      { label: "API reference", href: "#" },
-      { label: "Examples", href: "#" },
-      { label: "Templates", href: "#" },
+      { label: "Dokumentation", href: "#" },
+      { label: "API-Referenz", href: "#" },
+      { label: "Beispiele", href: "#" },
+      { label: "Vorlagen", href: "#" },
     ],
   },
   {
-    title: "Company",
+    title: "Unternehmen",
     links: [
-      { label: "About", href: "#" },
+      { label: "Über uns", href: "#" },
       { label: "Blog", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Contact", href: "#" },
+      { label: "Karriere", href: "#" },
+      { label: "Kontakt", href: "#" },
     ],
   },
   {
-    title: "Legal",
+    title: "Rechtliches",
     links: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
-      { label: "Security", href: "#" },
-      { label: "DPA", href: "#" },
+      { label: "Datenschutz", href: "#" },
+      { label: "AGB", href: "#" },
+      { label: "Sicherheit", href: "#" },
+      { label: "AVV", href: "#" },
     ],
   },
 ];
@@ -48,8 +48,8 @@ export function Footer() {
           <div className="col-span-2">
             <Logo />
             <p className="mt-4 max-w-xs text-sm text-white/55 leading-relaxed">
-              From rough idea to build-ready blueprint. Precision-engineered prompts for the
-              modern AI stack.
+              Von der rohen Idee zum build-fertigen Blueprint. Präzisionsgefertigte Prompts für
+              den modernen KI-Stack.
             </p>
           </div>
           {sections.map((s) => (
@@ -71,7 +71,7 @@ export function Footer() {
         </div>
         <div className="mt-16 pt-8 border-t border-white/[0.06] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <p className="text-xs text-white/45">
-            © {new Date().getFullYear()} PromptPrinter. Precision engineered.
+            © {new Date().getFullYear()} PromptPrinter. Präzisionsgefertigt.
           </p>
           <div className="flex items-center gap-4 text-xs text-white/45">
             <span className="font-mono">v2.0 Beta</span>
@@ -81,7 +81,7 @@ export function Footer() {
                 <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-75 animate-ping" />
                 <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-400" />
               </span>
-              All systems operational
+              Alle Systeme betriebsbereit
             </span>
           </div>
         </div>

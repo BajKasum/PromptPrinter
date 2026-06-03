@@ -3,62 +3,62 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 
-export const metadata = { title: "Settings" };
+export const metadata = { title: "Einstellungen" };
 
 export default function SettingsPage() {
   return (
     <div className="max-w-[800px]">
       <FadeIn>
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
-          Settings
+          Einstellungen
         </h1>
         <p className="mt-1 text-[14px] text-white/55 mb-10">
-          Workspace, profile, and integration configuration.
+          Workspace-, Profil- und Integrations-Konfiguration.
         </p>
       </FadeIn>
 
       <div className="space-y-6">
-        <Section title="Profile" description="How you appear in your workspace.">
-          <Field label="Display name" id="display-name" placeholder="Your name" />
-          <Field label="Email" id="email" type="email" placeholder="you@example.com" disabled />
+        <Section title="Profil" description="Wie du in deinem Workspace erscheinst.">
+          <Field label="Anzeigename" id="display-name" placeholder="Dein Name" />
+          <Field label="Email" id="email" type="email" placeholder="du@example.com" disabled />
           <div className="pt-2">
-            <Button>Save changes</Button>
+            <Button>Änderungen speichern</Button>
           </div>
         </Section>
 
         <Section
-          title="API keys"
-          description="Bring your own keys (Pro+). When set, generations bill to your provider account."
+          title="API-Keys"
+          description="Eigene Keys nutzen (ab Pro). Wenn gesetzt, werden Generierungen über dein Provider-Konto abgerechnet."
         >
           <Field
-            label="Anthropic API key"
+            label="Anthropic API-Key"
             id="anthropic"
             type="password"
             placeholder="sk-ant-…"
           />
-          <Field label="OpenAI API key" id="openai" type="password" placeholder="sk-…" />
+          <Field label="OpenAI API-Key" id="openai" type="password" placeholder="sk-…" />
           <div className="pt-2">
-            <Button>Save keys</Button>
+            <Button>Keys speichern</Button>
           </div>
         </Section>
 
-        <Section title="Defaults" description="Pre-fill these when starting a new project.">
-          <Field label="Default master target" id="default-master" placeholder="Claude" />
-          <Field label="Default frontend target" id="default-frontend" placeholder="Lovable" />
-          <Field label="Default backend target" id="default-backend" placeholder="Claude Code" />
-          <Field label="Default database" id="default-db" placeholder="Supabase" />
+        <Section title="Standardwerte" description="Beim Start eines neuen Projekts vorausfüllen.">
+          <Field label="Standard Master-Ziel" id="default-master" placeholder="Claude" />
+          <Field label="Standard Frontend-Ziel" id="default-frontend" placeholder="Lovable" />
+          <Field label="Standard Backend-Ziel" id="default-backend" placeholder="Claude Code" />
+          <Field label="Standard-Datenbank" id="default-db" placeholder="Supabase" />
           <div className="pt-2">
-            <Button>Save defaults</Button>
+            <Button>Standardwerte speichern</Button>
           </div>
         </Section>
 
-        <Section title="Danger zone" description="Irreversible actions.">
+        <Section title="Gefahrenzone" description="Unwiderrufliche Aktionen.">
           <div className="rounded-lg border border-red-500/25 bg-red-500/[0.04] p-4 flex items-center justify-between">
             <div>
-              <div className="text-[14px] font-medium text-white">Delete account</div>
-              <div className="text-[12.5px] text-white/55">Removes all projects and generations.</div>
+              <div className="text-[14px] font-medium text-white">Konto löschen</div>
+              <div className="text-[12.5px] text-white/55">Entfernt alle Projekte und Generierungen.</div>
             </div>
-            <Button variant="destructive">Delete</Button>
+            <Button variant="destructive">Löschen</Button>
           </div>
         </Section>
       </div>

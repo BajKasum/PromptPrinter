@@ -12,21 +12,21 @@ export function FinalCTA() {
           <div className="pointer-events-none absolute -inset-x-20 -top-32 h-64 bg-gradient-accent opacity-20 blur-3xl" />
           <div className="relative">
             <h2 className="text-balance text-[40px] md:text-[60px] leading-[1.05] tracking-[-0.04em] font-semibold text-white max-w-3xl mx-auto">
-              The idea is the hard part.{" "}
-              <span className="gradient-text">We&apos;ll handle the rest.</span>
+              Die Idee ist der schwere Teil.{" "}
+              <span className="gradient-text">Den Rest übernehmen wir.</span>
             </h2>
             <p className="mt-6 text-[17px] text-white/65 max-w-xl mx-auto">
-              Start free. Print your first build packet in under two minutes.
+              Starte kostenlos. Drucke dein erstes Build-Packet in unter zwei Minuten.
             </p>
             <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg" variant="primary">
                 <Link href="/signup">
-                  Start Printing
+                  Jetzt starten
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="ghost">
-                <Link href="/pricing">View pricing</Link>
+                <Link href="/pricing">Preise ansehen</Link>
               </Button>
             </div>
           </div>

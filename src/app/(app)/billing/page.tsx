@@ -4,7 +4,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { PLANS } from "@/components/marketing/pricing-preview";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Billing" };
+export const metadata = { title: "Abrechnung" };
 
 export default function BillingPage() {
   // Real impl: read subscription from Supabase profiles table
@@ -15,10 +15,10 @@ export default function BillingPage() {
     <div className="max-w-[1100px]">
       <FadeIn>
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
-          Billing
+          Abrechnung
         </h1>
         <p className="mt-1 text-[14px] text-white/55 mb-8">
-          Manage your subscription and usage.
+          Verwalte dein Abo und deine Nutzung.
         </p>
       </FadeIn>
 
@@ -27,31 +27,31 @@ export default function BillingPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-white/45 mb-1.5">
-                Current plan
+                Aktueller Plan
               </div>
               <div className="flex items-baseline gap-3">
                 <span className="text-[24px] font-semibold text-white">{currentPlan}</span>
                 {renewsOn && (
-                  <span className="text-[13px] text-white/55">Renews {renewsOn}</span>
+                  <span className="text-[13px] text-white/55">Verlängert {renewsOn}</span>
                 )}
               </div>
             </div>
             <Button variant="ghost">
-              Manage in Stripe
+              In Stripe verwalten
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </div>
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t border-white/[0.06]">
-            <Stat label="Projects" value="3 / 3" />
-            <Stat label="Generations" value="18 / 20" />
-            <Stat label="API access" value="—" />
-            <Stat label="Seats" value="1 / 1" />
+            <Stat label="Projekte" value="3 / 3" />
+            <Stat label="Generierungen" value="18 / 20" />
+            <Stat label="API-Zugang" value="—" />
+            <Stat label="Plätze" value="1 / 1" />
           </div>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <h2 className="text-[18px] font-semibold text-white mb-4">Change plan</h2>
+        <h2 className="text-[18px] font-semibold text-white mb-4">Plan wechseln</h2>
       </FadeIn>
 
       <div className="grid md:grid-cols-3 gap-3">
@@ -67,7 +67,7 @@ export default function BillingPage() {
                 <h3 className="text-[16px] font-semibold text-white">{p.name}</h3>
                 {p.name === currentPlan && (
                   <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-emerald-300 border border-emerald-500/30 bg-emerald-500/[0.06] px-2 py-0.5 rounded-full">
-                    Active
+                    Aktiv
                   </span>
                 )}
               </div>
@@ -90,7 +90,7 @@ export default function BillingPage() {
                 className="w-full"
                 disabled={p.name === currentPlan}
               >
-                {p.name === currentPlan ? "Current" : `Switch to ${p.name}`}
+                {p.name === currentPlan ? "Aktuell" : `Zu ${p.name} wechseln`}
               </Button>
             </div>
           </FadeIn>

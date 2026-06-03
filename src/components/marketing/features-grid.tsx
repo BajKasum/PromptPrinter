@@ -14,48 +14,48 @@ import {
 const features = [
   {
     Icon: FileText,
-    title: "Product Brief",
-    body: "A crisp 1-page positioning doc — audience, problem, vision, KPIs.",
+    title: "Produkt-Brief",
+    body: "Ein knackiges 1-seitiges Positionierungs-Dokument — Zielgruppe, Problem, Vision, KPIs.",
   },
   {
     Icon: Layers,
     title: "PRD",
-    body: "Full Product Requirements Document with scope, stories, and acceptance criteria.",
+    body: "Vollständiges Product Requirements Document mit Scope, Storys und Akzeptanzkriterien.",
   },
   {
     Icon: Sparkles,
-    title: "Master Prompt",
-    body: "Optimized for Claude, ChatGPT, or Gemini — long-context, role-primed, system-ready.",
+    title: "Master-Prompt",
+    body: "Optimiert für Claude, ChatGPT oder Gemini — Long-Context, rollenvorbereitet, system-ready.",
   },
   {
     Icon: Code2,
-    title: "Frontend Prompt",
-    body: "Tuned for Lovable, Stitch, Figma, or v0 — design tokens, screens, components.",
+    title: "Frontend-Prompt",
+    body: "Abgestimmt auf Lovable, Stitch, Figma oder v0 — Design-Tokens, Screens, Komponenten.",
   },
   {
     Icon: Code2,
-    title: "Backend Prompt",
-    body: "Targeted at Claude Code, Cursor, or Windsurf — APIs, models, tests included.",
+    title: "Backend-Prompt",
+    body: "Zugeschnitten auf Claude Code, Cursor oder Windsurf — APIs, Modelle, Tests inklusive.",
   },
   {
     Icon: Database,
-    title: "Database Schema",
-    body: "Production-ready SQL with indexes, foreign keys, and migration order.",
+    title: "Datenbank-Schema",
+    body: "Produktionsreifes SQL mit Indizes, Foreign Keys und Migrations-Reihenfolge.",
   },
   {
     Icon: ShieldCheck,
-    title: "Security Checklist",
-    body: "OWASP-aligned threat model, RLS policies, secret-handling rules.",
+    title: "Sicherheits-Checkliste",
+    body: "OWASP-orientiertes Bedrohungsmodell, RLS-Policies, Regeln zum Umgang mit Secrets.",
   },
   {
     Icon: Megaphone,
-    title: "Marketing Copy",
-    body: "Hero, features, FAQ, and email copy that actually converts.",
+    title: "Marketing-Texte",
+    body: "Hero-, Funktions-, FAQ- und E-Mail-Texte, die wirklich konvertieren.",
   },
   {
     Icon: Search,
-    title: "SEO Plan",
-    body: "Keywords, intent map, page architecture, and a 30-day content sprint.",
+    title: "SEO-Plan",
+    body: "Keywords, Intent-Map, Seitenarchitektur und ein 30-Tage-Content-Sprint.",
   },
 ];
 
@@ -65,14 +65,14 @@ export function FeaturesGrid() {
       <FadeIn>
         <div className="max-w-2xl mb-14">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-blue-300/80 mb-4">
-            Features
+            Funktionen
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
-            One idea in. A full build packet out.
+            Eine Idee rein. Ein komplettes Build-Packet raus.
           </h2>
           <p className="mt-4 text-[17px] text-white/55 max-w-xl">
-            Every artifact you need to go from concept to first commit, structured for the
-            tools you actually use.
+            Jedes Artefakt, das du brauchst, um vom Konzept zum ersten Commit zu kommen —
+            strukturiert für die Tools, die du wirklich nutzt.
           </p>
         </div>
       </FadeIn>
@@ -104,15 +104,15 @@ export function FeaturesGrid() {
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 mb-3">
                 <Rocket className="h-3 w-3 text-violet-300" />
                 <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-white/70">
-                  Also included
+                  Ebenfalls enthalten
                 </span>
               </div>
               <h3 className="text-[22px] font-semibold tracking-tight text-white">
-                Deployment Guide
+                Deployment-Anleitung
               </h3>
               <p className="mt-1.5 text-[14.5px] text-white/55 max-w-xl">
-                Step-by-step instructions for shipping to Vercel, Fly.io, Railway, or your own
-                infra — env vars, build commands, and runbooks included.
+                Schritt-für-Schritt-Anleitung fürs Deployment auf Vercel, Fly.io, Railway oder
+                deine eigene Infrastruktur — Env-Variablen, Build-Befehle und Runbooks inklusive.
               </p>
             </div>
           </div>

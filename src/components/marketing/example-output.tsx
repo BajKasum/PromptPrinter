@@ -7,75 +7,75 @@ import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "prd", label: "PRD" },
-  { id: "master", label: "Master Prompt" },
-  { id: "frontend", label: "Frontend Prompt" },
+  { id: "master", label: "Master-Prompt" },
+  { id: "frontend", label: "Frontend-Prompt" },
   { id: "schema", label: "Schema" },
 ];
 
 const content: Record<string, string> = {
-  prd: `# Streak Coach — Product Requirements
+  prd: `# Streak Coach — Produktanforderungen
 
 ## Vision
-A delightful habit tracker that uses AI to suggest personalized micro-rewards
-based on a user's streak progress and behavior patterns.
+Ein durchdachter Habit-Tracker, der mit KI personalisierte Mikro-Belohnungen
+basierend auf dem Streak-Fortschritt und den Verhaltensmustern vorschlägt.
 
-## Target Audience
-- Self-improvement enthusiasts (25-40)
-- Knowledge workers building daily routines
-- Existing Notion / Todoist users seeking gamification
+## Zielgruppe
+- Selbstoptimierungs-Enthusiasten (25–40)
+- Wissensarbeiter, die tägliche Routinen aufbauen
+- Bestehende Notion-/Todoist-Nutzer, die Gamification suchen
 
-## Success Metrics
-- D7 retention ≥ 35%
-- Avg active habits per user ≥ 3
-- Free→Pro conversion ≥ 4%
+## Erfolgskennzahlen
+- D7-Retention ≥ 35 %
+- Ø aktive Habits pro Nutzer ≥ 3
+- Free→Pro-Conversion ≥ 4 %
 
-## In-Scope
-- Habit CRUD with daily check-in
-- AI-generated reward suggestions (Claude)
-- Streak visualization with progressive UI
-- Stripe-backed subscription gating
+## Im Scope
+- Habit-CRUD mit täglichem Check-in
+- KI-generierte Belohnungsvorschläge (Claude)
+- Streak-Visualisierung mit progressiver UI
+- Stripe-gestütztes Abo-Gating
 
 ## Out-of-Scope (v1)
-- Social features
-- Apple Health / Google Fit integration
-- Native mobile apps`,
-  master: `You are an expert full-stack product engineer building "Streak Coach" — an
-AI-powered habit tracker. Your job is to deliver complete, production-ready
-implementations one feature at a time.
+- Social-Features
+- Apple-Health-/Google-Fit-Integration
+- Native Mobile-Apps`,
+  master: `Du bist ein erfahrener Full-Stack-Produkt-Engineer und baust «Streak Coach» — einen
+KI-gestützten Habit-Tracker. Deine Aufgabe: vollständige, produktionsreife
+Implementierungen liefern, ein Feature nach dem anderen.
 
 ## Stack
 - Next.js 15 (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui
 - Supabase (Auth + Postgres + RLS)
-- Stripe subscriptions
-- Anthropic Claude for reward suggestions
+- Stripe-Abos
+- Anthropic Claude für Belohnungsvorschläge
 
-## Principles
-1. Mobile-first, dark mode by default.
-2. Server components by default; client only when needed.
-3. Zod-validate every API boundary.
-4. RLS policies on every table touching user data.
+## Prinzipien
+1. Mobile-first, standardmässig Dark Mode.
+2. Standardmässig Server Components; Client nur wenn nötig.
+3. Jede API-Grenze mit Zod validieren.
+4. RLS-Policies auf jeder Tabelle mit Nutzerdaten.
 
-## Voice
-Be terse. Show, don't tell. Ship code that runs.`,
-  frontend: `Design a mobile-first dashboard for "Streak Coach" using Tailwind + shadcn/ui.
+## Tonalität
+Sei knapp. Zeigen statt erzählen. Liefere Code, der läuft.`,
+  frontend: `Entwirf ein mobile-first Dashboard für «Streak Coach» mit Tailwind + shadcn/ui.
 
 ## Screens
-1. Today — list of active habits with check-in tap targets
-2. Habit detail — calendar heatmap + AI reward feed
-3. Onboarding — 3-step wizard
+1. Heute — Liste aktiver Habits mit Check-in-Tap-Targets
+2. Habit-Detail — Kalender-Heatmap + KI-Belohnungs-Feed
+3. Onboarding — 3-Schritt-Wizard
 
-## Design tokens
-- Background: #0A0A0A
+## Design-Tokens
+- Hintergrund: #0A0A0A
 - Surface: rgba(255,255,255,0.04)
-- Accent gradient: violet → cyan → blue
-- Radius: 16-20px
-- Type: Inter (UI), Geist Mono (data)
+- Akzent-Verlauf: Violett → Cyan → Blau
+- Radius: 16–20px
+- Schrift: Inter (UI), Geist Mono (Daten)
 
 ## Motion
-- Use Framer Motion for streak counter increments.
-- Stagger habits on load with 60ms intervals.`,
-  schema: `-- users handled by Supabase auth.users
+- Framer Motion für die Inkremente des Streak-Zählers nutzen.
+- Habits beim Laden mit 60ms-Intervallen staffeln.`,
+  schema: `-- Nutzer werden von Supabase auth.users verwaltet
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
@@ -106,14 +106,14 @@ export function ExampleOutput() {
       <FadeIn>
         <div className="max-w-2xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
-            Example output
+            Beispiel-Ausgabe
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
-            Real artifacts, not lorem ipsum.
+            Echte Artefakte, kein Lorem Ipsum.
           </h2>
           <p className="mt-4 text-[17px] text-white/55">
-            Here&apos;s a slice of what a single idea produces — every tab is generated, structured,
-            and ready to paste into your assistant.
+            Hier ein Ausschnitt dessen, was eine einzige Idee produziert — jeder Tab ist generiert,
+            strukturiert und bereit zum Einfügen in deinen Assistenten.
           </p>
         </div>
       </FadeIn>
@@ -145,7 +145,7 @@ export function ExampleOutput() {
             <div className="grid md:grid-cols-[200px_1fr]">
               <aside className="border-r border-white/[0.06] p-5 hidden md:block">
                 <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/40 mb-3">
-                  Outputs
+                  Ausgaben
                 </div>
                 <ul className="space-y-1.5 text-[13px]">
                   {tabs.map((t) => (

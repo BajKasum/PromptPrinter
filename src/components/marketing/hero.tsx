@@ -37,8 +37,8 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-balance text-[44px] md:text-[68px] leading-[1.05] tracking-[-0.04em] font-semibold text-white max-w-4xl"
         >
-          Turn rough ideas into{" "}
-          <span className="gradient-text">build-ready prompts.</span>
+          Aus rohen Ideen werden{" "}
+          <span className="gradient-text">build-fertige Prompts.</span>
         </motion.h1>
 
         <motion.p
@@ -47,8 +47,8 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-6 max-w-2xl text-balance text-[17px] leading-[1.6] text-white/60"
         >
-          Generate product briefs, PRDs, technical blueprints, and optimized prompts
-          tailored for Claude, ChatGPT, Lovable, Cursor, Stitch, and more.
+          Generiere Produkt-Briefs, PRDs, technische Blueprints und optimierte Prompts —
+          zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.
         </motion.p>
 
         <motion.div
@@ -59,12 +59,12 @@ export function Hero() {
         >
           <Button asChild size="lg" variant="primary">
             <Link href="/signup">
-              Start Printing
+              Jetzt starten
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
           <Button asChild size="lg" variant="ghost">
-            <Link href="#example">See Example</Link>
+            <Link href="#example">Beispiel ansehen</Link>
           </Button>
         </motion.div>
 
@@ -74,7 +74,7 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="mt-6 text-xs font-mono uppercase tracking-[0.08em] text-white/35"
         >
-          Free tier · No credit card · Cancel anytime
+          Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
         </motion.p>
 
         {/* Hero artifact: simulated output */}
@@ -113,10 +113,10 @@ function HeroArtifact() {
           <div className="border-r border-white/[0.06] p-5 space-y-3 text-left">
             <div>
               <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/40 mb-1">
-                Idea
+                Idee
               </div>
               <div className="text-[13px] text-white/85">
-                A habit tracker that uses AI to suggest micro-rewards based on streak progress
+                Ein Habit-Tracker, der mit KI Mikro-Belohnungen basierend auf dem Streak-Fortschritt vorschlägt
               </div>
             </div>
             <div className="pt-2 border-t border-white/[0.05]">
@@ -136,20 +136,20 @@ function HeroArtifact() {
             </div>
           </div>
           <div className="p-5 text-left font-mono text-[12.5px] leading-[1.65] text-white/70 overflow-hidden">
-            <Line className="text-violet-300/90">{`# Master Prompt — Streak Coach`}</Line>
-            <Line>{`You are an expert product engineer building a `}<em className="text-cyan-300 not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
+            <Line className="text-violet-300/90">{`# Master-Prompt — Streak Coach`}</Line>
+            <Line>{`Du bist ein erfahrener Produkt-Engineer und baust ein `}<em className="text-cyan-300 not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
             <Line>{``}</Line>
-            <Line className="text-white/45">{`## Product context`}</Line>
-            <Line>{`- A habit tracker rewarding consistency`}</Line>
-            <Line>{`- Personalized micro-rewards via Claude`}</Line>
-            <Line>{`- Daily check-ins with progressive streak UI`}</Line>
+            <Line className="text-white/45">{`## Produkt-Kontext`}</Line>
+            <Line>{`- Ein Habit-Tracker, der Konsistenz belohnt`}</Line>
+            <Line>{`- Personalisierte Mikro-Belohnungen über Claude`}</Line>
+            <Line>{`- Tägliche Check-ins mit progressiver Streak-UI`}</Line>
             <Line>{``}</Line>
-            <Line className="text-white/45">{`## Constraints`}</Line>
-            <Line>{`- Mobile-first, dark by default`}</Line>
-            <Line>{`- Supabase auth + RLS for user data`}</Line>
-            <Line>{`- Stripe subscriptions ($0 / $9 / $19)`}</Line>
+            <Line className="text-white/45">{`## Vorgaben`}</Line>
+            <Line>{`- Mobile-first, standardmässig dunkel`}</Line>
+            <Line>{`- Supabase-Auth + RLS für Nutzerdaten`}</Line>
+            <Line>{`- Stripe-Abos ($0 / $9 / $19)`}</Line>
             <Line>{``}</Line>
-            <Line className="text-white/45">{`## Output`}</Line>
+            <Line className="text-white/45">{`## Ausgabe`}</Line>
             <Line className="text-violet-300/90">{`Plan → Schema → API → UI → Tests`}<span className="ml-1 inline-block h-3 w-1.5 bg-violet-300/80 align-middle animate-pulse" /></Line>
           </div>
         </div>

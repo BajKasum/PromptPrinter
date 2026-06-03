@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { label: "Features", href: "/features" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Funktionen", href: "/features" },
+  { label: "Preise", href: "/pricing" },
   { label: "Docs", href: "#" },
   { label: "Changelog", href: "#" },
 ];
@@ -58,10 +58,10 @@ export function Navbar() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-            <Link href="/login">Sign in</Link>
+            <Link href="/login">Einloggen</Link>
           </Button>
           <Button asChild size="sm" variant="primary">
-            <Link href="/signup">Start Printing</Link>
+            <Link href="/signup">Jetzt starten</Link>
           </Button>
         </div>
       </nav>

@@ -5,26 +5,26 @@ const steps = [
   {
     n: "01",
     Icon: Pencil,
-    title: "Enter idea",
-    body: "Paste rough notes, a one-liner, or a sketchy user story. We meet you wherever you start.",
+    title: "Idee eingeben",
+    body: "Füge grobe Notizen, einen Einzeiler oder eine skizzenhafte User Story ein. Wir holen dich da ab, wo du startest.",
   },
   {
     n: "02",
     Icon: Wrench,
-    title: "Choose tools",
-    body: "Pick your AI assistant, frontend builder, backend agent, and database target.",
+    title: "Tools wählen",
+    body: "Wähle deinen KI-Assistenten, Frontend-Builder, Backend-Agenten und die Ziel-Datenbank.",
   },
   {
     n: "03",
     Icon: Cpu,
-    title: "Generate",
-    body: "Engine structures a PRD, master prompt, frontend & backend prompts, schema, and ops docs.",
+    title: "Generieren",
+    body: "Die Engine strukturiert ein PRD, Master-Prompt, Frontend- & Backend-Prompts, Schema und Ops-Dokumente.",
   },
   {
     n: "04",
     Icon: Rocket,
-    title: "Build",
-    body: "Copy each prompt into your assistant of choice and start shipping. Or export everything.",
+    title: "Bauen",
+    body: "Kopiere jeden Prompt in den Assistenten deiner Wahl und leg los. Oder exportiere alles.",
   },
 ];
 
@@ -34,14 +34,14 @@ export function HowItWorks() {
       <FadeIn>
         <div className="max-w-2xl mb-14">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-cyan-300/80 mb-4">
-            How it works
+            So funktioniert es
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
-            From idea to blueprint in four steps.
+            Von der Idee zum Blueprint in vier Schritten.
           </h2>
           <p className="mt-4 text-[17px] text-white/55 max-w-xl">
-            No more re-typing context in every chat. PromptPrinter assembles a complete,
-            tool-specific build packet.
+            Schluss mit dem ständigen Neueintippen von Kontext in jedem Chat. PromptPrinter
+            stellt ein komplettes, tool-spezifisches Build-Packet zusammen.
           </p>
         </div>
       </FadeIn>

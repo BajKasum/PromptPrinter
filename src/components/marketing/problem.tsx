@@ -2,16 +2,16 @@ import { FadeIn } from "@/components/motion/fade-in";
 
 const items = [
   {
-    title: "Blank-page paralysis",
-    body: "You have the idea but staring at a blinking cursor in Claude or Cursor stalls you for hours.",
+    title: "Lähmung vor dem leeren Blatt",
+    body: "Du hast die Idee, aber der blinkende Cursor in Claude oder Cursor blockiert dich stundenlang.",
   },
   {
-    title: "Inconsistent context",
-    body: "Every new chat repeats the same context. Half the time the model still misunderstands the stack.",
+    title: "Inkonsistenter Kontext",
+    body: "Jeder neue Chat wiederholt denselben Kontext. Und die Hälfte der Zeit versteht das Modell den Stack trotzdem falsch.",
   },
   {
-    title: "Brief / spec drift",
-    body: "PRD lives in Notion, prompts live in chats, schema lives in your head — nothing stays in sync.",
+    title: "Brief-/Spec-Drift",
+    body: "Das PRD liegt in Notion, Prompts in Chats, das Schema in deinem Kopf — nichts bleibt synchron.",
   },
 ];
 
@@ -21,10 +21,10 @@ export function Problem() {
       <FadeIn>
         <div className="max-w-2xl">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
-            The problem
+            Das Problem
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
-            Great ideas die in the gap between thought and prompt.
+            Gute Ideen sterben in der Lücke zwischen Gedanke und Prompt.
           </h2>
         </div>
       </FadeIn>

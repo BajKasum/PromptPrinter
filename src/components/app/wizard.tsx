@@ -18,9 +18,9 @@ const TOOL_OPTIONS = {
 };
 
 const schema = z.object({
-  name: z.string().min(2, "Add a project name."),
-  idea: z.string().min(20, "Give us at least a sentence to work with."),
-  audience: z.string().min(2, "Who is this for?"),
+  name: z.string().min(2, "Gib einen Projektnamen ein."),
+  idea: z.string().min(20, "Gib uns mindestens einen Satz, mit dem wir arbeiten können."),
+  audience: z.string().min(2, "Für wen ist das?"),
   tools: z.object({
     master: z.enum(TOOL_OPTIONS.master),
     frontend: z.enum(TOOL_OPTIONS.frontend),
@@ -31,7 +31,7 @@ const schema = z.object({
 
 type FormState = z.infer<typeof schema>;
 
-const STEPS = ["Name", "Idea", "Audience", "Tools", "Generate"] as const;
+const STEPS = ["Name", "Idee", "Zielgruppe", "Tools", "Generieren"] as const;
 
 export function Wizard() {
   const router = useRouter();
@@ -51,9 +51,9 @@ export function Wizard() {
   });
 
   const validateStep = () => {
-    if (step === 0 && state.name.trim().length < 2) return "Add a project name.";
-    if (step === 1 && state.idea.trim().length < 20) return "Give us at least a sentence.";
-    if (step === 2 && state.audience.trim().length < 2) return "Who is this for?";
+    if (step === 0 && state.name.trim().length < 2) return "Gib einen Projektnamen ein.";
+    if (step === 1 && state.idea.trim().length < 20) return "Gib uns mindestens einen Satz.";
+    if (step === 2 && state.audience.trim().length < 2) return "Für wen ist das?";
     return null;
   };
 
@@ -74,7 +74,7 @@ export function Wizard() {
   async function handleGenerate() {
     const parsed = schema.safeParse(state);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Form invalid");
+      setError(parsed.error.issues[0]?.message ?? "Formular ungültig");
       return;
     }
     setSubmitting(true);
@@ -122,7 +122,7 @@ export function Wizard() {
         </div>
         <div className="mt-3 flex items-center justify-between text-[11px] font-mono uppercase tracking-[0.08em]">
           <span className="text-white/55">
-            Step {step + 1} of {STEPS.length}
+            Schritt {step + 1} von {STEPS.length}
           </span>
           <span className="text-violet-300">{STEPS[step]}</span>
         </div>
@@ -139,65 +139,65 @@ export function Wizard() {
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             >
               {step === 0 && (
-                <StepWrap title="Name your project" sub="Give your build a working title — you can rename it later.">
-                  <Label htmlFor="name">Project identifier</Label>
+                <StepWrap title="Benenne dein Projekt" sub="Gib deinem Build einen Arbeitstitel — du kannst ihn später ändern.">
+                  <Label htmlFor="name">Projekt-Bezeichnung</Label>
                   <Input
                     id="name"
                     autoFocus
-                    placeholder="e.g., Streak Coach"
+                    placeholder="z. B. Streak Coach"
                     value={state.name}
                     onChange={(e) => setState({ ...state, name: e.target.value })}
                   />
                 </StepWrap>
               )}
               {step === 1 && (
-                <StepWrap title="Describe the raw idea" sub="Notes, fragments, user stories — whatever you've got. We'll structure it.">
-                  <Label htmlFor="idea">The raw idea</Label>
+                <StepWrap title="Beschreibe die rohe Idee" sub="Notizen, Fragmente, User Storys — was auch immer du hast. Wir strukturieren es.">
+                  <Label htmlFor="idea">Die rohe Idee</Label>
                   <Textarea
                     id="idea"
                     autoFocus
                     rows={6}
-                    placeholder="A habit tracker that uses AI to suggest micro-rewards based on the user's streak progress…"
+                    placeholder="Ein Habit-Tracker, der mit KI Mikro-Belohnungen basierend auf dem Streak-Fortschritt vorschlägt…"
                     value={state.idea}
                     onChange={(e) => setState({ ...state, idea: e.target.value })}
                   />
                 </StepWrap>
               )}
               {step === 2 && (
-                <StepWrap title="Who is this for?" sub="A specific audience produces sharper artifacts than 'everyone'.">
-                  <Label htmlFor="audience">Target audience</Label>
+                <StepWrap title="Für wen ist das?" sub="Eine konkrete Zielgruppe erzeugt schärfere Artefakte als «alle».">
+                  <Label htmlFor="audience">Zielgruppe</Label>
                   <Input
                     id="audience"
                     autoFocus
-                    placeholder="e.g., Knowledge workers 25–40 building daily routines"
+                    placeholder="z. B. Wissensarbeiter 25–40, die tägliche Routinen aufbauen"
                     value={state.audience}
                     onChange={(e) => setState({ ...state, audience: e.target.value })}
                   />
                 </StepWrap>
               )}
               {step === 3 && (
-                <StepWrap title="Pick your tools" sub="We tune each output to the stack and assistants you actually use.">
+                <StepWrap title="Wähle deine Tools" sub="Wir stimmen jede Ausgabe auf den Stack und die Assistenten ab, die du wirklich nutzt.">
                   <div className="space-y-5">
                     <ToolGroup
-                      label="Master prompt"
+                      label="Master-Prompt"
                       options={TOOL_OPTIONS.master}
                       value={state.tools.master}
                       onChange={(v) => setState({ ...state, tools: { ...state.tools, master: v } })}
                     />
                     <ToolGroup
-                      label="Frontend prompt"
+                      label="Frontend-Prompt"
                       options={TOOL_OPTIONS.frontend}
                       value={state.tools.frontend}
                       onChange={(v) => setState({ ...state, tools: { ...state.tools, frontend: v } })}
                     />
                     <ToolGroup
-                      label="Backend prompt"
+                      label="Backend-Prompt"
                       options={TOOL_OPTIONS.backend}
                       value={state.tools.backend}
                       onChange={(v) => setState({ ...state, tools: { ...state.tools, backend: v } })}
                     />
                     <ToolGroup
-                      label="Database"
+                      label="Datenbank"
                       options={TOOL_OPTIONS.database}
                       value={state.tools.database}
                       onChange={(v) => setState({ ...state, tools: { ...state.tools, database: v } })}
@@ -206,14 +206,14 @@ export function Wizard() {
                 </StepWrap>
               )}
               {step === 4 && (
-                <StepWrap title="Ready to generate" sub="We'll create a complete build packet — PRD, prompts, schema, and ops docs.">
+                <StepWrap title="Bereit zum Generieren" sub="Wir erstellen ein komplettes Build-Packet — PRD, Prompts, Schema und Ops-Dokumente.">
                   <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] space-y-2">
                     <Row k="Name" v={state.name} />
-                    <Row k="Audience" v={state.audience} />
+                    <Row k="Zielgruppe" v={state.audience} />
                     <Row k="Master" v={state.tools.master} />
                     <Row k="Frontend" v={state.tools.frontend} />
                     <Row k="Backend" v={state.tools.backend} />
-                    <Row k="Database" v={state.tools.database} />
+                    <Row k="Datenbank" v={state.tools.database} />
                   </div>
                 </StepWrap>
               )}
@@ -234,11 +234,11 @@ export function Wizard() {
               className={cn(step === 0 && "invisible")}
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              Zurück
             </Button>
             {step < STEPS.length - 1 ? (
               <Button onClick={next} disabled={submitting}>
-                Next
+                Weiter
                 <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
@@ -246,12 +246,12 @@ export function Wizard() {
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Printing…
+                    Drucke…
                   </>
                 ) : (
                   <>
                     <Check className="h-4 w-4" />
-                    Generate
+                    Generieren
                   </>
                 )}
               </Button>

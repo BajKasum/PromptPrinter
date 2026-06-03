@@ -17,25 +17,25 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://promptprinter.app"),
   title: {
-    default: "PromptPrinter — Turn rough ideas into build-ready prompts",
+    default: "PromptPrinter — Aus rohen Ideen build-fertige Prompts",
     template: "%s · PromptPrinter",
   },
   description:
-    "Generate product briefs, PRDs, technical blueprints, and optimized prompts tailored for Claude, ChatGPT, Lovable, Cursor, Stitch, and more.",
+    "Generiere Produkt-Briefs, PRDs, technische Blueprints und optimierte Prompts — zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.",
   keywords: [
-    "AI prompts",
-    "PRD generator",
+    "KI-Prompts",
+    "PRD-Generator",
     "Claude",
     "ChatGPT",
     "Cursor",
     "Lovable",
     "v0",
     "Stitch",
-    "product requirements",
+    "Produktanforderungen",
   ],
   openGraph: {
     title: "PromptPrinter",
-    description: "Turn rough ideas into build-ready prompts.",
+    description: "Aus rohen Ideen build-fertige Prompts.",
     url: "https://promptprinter.app",
     siteName: "PromptPrinter",
     type: "website",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "PromptPrinter",
-    description: "Turn rough ideas into build-ready prompts.",
+    description: "Aus rohen Ideen build-fertige Prompts.",
   },
 };
 
@@ -57,7 +57,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${geistMono.variable} dark`}>
+    <html lang="de" className={`${inter.variable} ${geistMono.variable} dark`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

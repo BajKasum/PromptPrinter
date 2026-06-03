@@ -17,14 +17,14 @@ import { cn } from "@/lib/utils";
 
 const primary = [
   { label: "Dashboard", href: "/dashboard", Icon: LayoutDashboard },
-  { label: "Projects", href: "/projects", Icon: FolderOpen },
-  { label: "Library", href: "/library", Icon: Library },
-  { label: "Generations", href: "/generations", Icon: Sparkles },
+  { label: "Projekte", href: "/projects", Icon: FolderOpen },
+  { label: "Bibliothek", href: "/library", Icon: Library },
+  { label: "Generierungen", href: "/generations", Icon: Sparkles },
 ];
 
 const secondary = [
-  { label: "Settings", href: "/settings", Icon: Settings },
-  { label: "Billing", href: "/billing", Icon: CreditCard },
+  { label: "Einstellungen", href: "/settings", Icon: Settings },
+  { label: "Abrechnung", href: "/billing", Icon: CreditCard },
 ];
 
 export function Sidebar() {
@@ -43,7 +43,7 @@ export function Sidebar() {
           className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-[linear-gradient(135deg,#7C3AED_0%,#3B82F6_100%)] text-[13px] font-medium text-white shadow-[0_1px_0_rgba(255,255,255,0.16)_inset,0_6px_18px_-8px_rgba(124,58,237,0.45)] hover:brightness-110 hover:-translate-y-px transition-all duration-200"
         >
           <Sparkles className="h-3.5 w-3.5" />
-          New project
+          Neues Projekt
         </Link>
 
         <nav className="space-y-0.5">
@@ -97,14 +97,14 @@ export function Sidebar() {
           className="flex items-center gap-3 h-9 px-3 rounded-md text-[12.5px] text-white/55 hover:text-white hover:bg-white/[0.04] transition-colors"
         >
           <BookOpen className="h-3.5 w-3.5" strokeWidth={1.8} />
-          Documentation
+          Dokumentation
         </Link>
         <Link
           href="#"
           className="flex items-center gap-3 h-9 px-3 rounded-md text-[12.5px] text-white/55 hover:text-white hover:bg-white/[0.04] transition-colors"
         >
           <HelpCircle className="h-3.5 w-3.5" strokeWidth={1.8} />
-          Support
+          Hilfe
         </Link>
       </div>
     </aside>
