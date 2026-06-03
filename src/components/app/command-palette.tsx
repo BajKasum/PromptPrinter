@@ -158,7 +158,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             <div className="max-h-[340px] overflow-y-auto p-1.5">
               {results.length === 0 ? (
                 <div className="px-3 py-8 text-center text-[13px] text-white/45">
-                  Keine Treffer für „{query}"
+                  Keine Treffer für „{query}“
                 </div>
               ) : (
                 results.map((c, i) => {
