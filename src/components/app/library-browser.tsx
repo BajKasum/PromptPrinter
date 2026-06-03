@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, FolderKanban, Library } from "lucide-react";
+import { Search, FolderKanban, Library, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 export type LibraryItem = {
   id: string;
@@ -13,12 +14,12 @@ export type LibraryItem = {
   artifactCount: number;
   categories: string[]; // artifact category keys present in this project
   toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "Lovable"]
+  isFavorite: boolean;
 };
 
-// Favoriten (⭐) is intentionally deferred — there is no favorites column yet,
-// so we ship the archive without it rather than fake a non-persistent star.
 const FILTERS = [
   { key: "all", label: "Alle" },
+  { key: "favorites", label: "Favoriten ⭐" },
   { key: "recent", label: "Kürzlich verwendet" },
   { key: "frontend", label: "Frontend" },
   { key: "backend", label: "Backend" },
@@ -33,12 +34,42 @@ const RECENT_MS = 7 * 24 * 60 * 60 * 1000;
 export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [favorites, setFavorites] = useState<Set<string>>(
+    () => new Set(items.filter((i) => i.isFavorite).map((i) => i.id))
+  );
+
+  async function toggleFavorite(id: string) {
+    const next = !favorites.has(id);
+    // Optimistic flip — buttons must feel instant.
+    setFavorites((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(id);
+      else s.delete(id);
+      return s;
+    });
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("projects")
+      .update({ is_favorite: next })
+      .eq("id", id);
+    if (error) {
+      // Revert on failure so the UI never lies about persisted state.
+      setFavorites((prev) => {
+        const s = new Set(prev);
+        if (next) s.delete(id);
+        else s.add(id);
+        return s;
+      });
+    }
+  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const now = Date.now();
     return items.filter((it) => {
-      if (filter === "recent") {
+      if (filter === "favorites") {
+        if (!favorites.has(it.id)) return false;
+      } else if (filter === "recent") {
         if (now - new Date(it.updatedAt).getTime() > RECENT_MS) return false;
       } else if (filter !== "all") {
         if (!it.categories.includes(filter)) return false;
@@ -49,7 +80,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
       }
       return true;
     });
-  }, [items, query, filter]);
+  }, [items, query, filter, favorites]);
 
   return (
     <div>
@@ -91,26 +122,57 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
           </div>
           <p className="text-[15px] text-white/80">Keine Treffer</p>
           <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
-            Keine Artefakte passen zu dieser Auswahl. Passe Suche oder Filter an.
+            {filter === "favorites"
+              ? "Du hast noch keine Favoriten markiert. Tippe auf den Stern einer Karte."
+              : "Keine Artefakte passen zu dieser Auswahl. Passe Suche oder Filter an."}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {visible.map((it) => (
-            <Link key={it.id} href={`/projects/${it.id}`} className="block group">
-              <div className="card-surface h-full p-5 flex flex-col group-hover:border-white/15 transition-colors">
+          {visible.map((it) => {
+            const fav = favorites.has(it.id);
+            return (
+              <div
+                key={it.id}
+                className="card-surface relative h-full p-5 flex flex-col hover:border-white/15 transition-colors"
+              >
+                {/* Full-card click target; the star sits above it via z-10. */}
+                <Link
+                  href={`/projects/${it.id}`}
+                  aria-label={`${it.name} öffnen`}
+                  className="absolute inset-0 rounded-xl"
+                />
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-9 w-9 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
                     <FolderKanban className="h-4 w-4 text-white/85" strokeWidth={1.8} />
                   </div>
-                  <span className="shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-violet-500/30 bg-violet-500/[0.08] text-violet-200">
-                    {it.artifactCount} {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void toggleFavorite(it.id);
+                    }}
+                    aria-pressed={fav}
+                    aria-label={fav ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+                    className="relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-white/40 hover:text-amber-300 hover:bg-white/[0.05] transition-colors active:scale-90"
+                  >
+                    <Star
+                      className={cn(
+                        "h-4 w-4 transition-colors",
+                        fav && "fill-amber-300 text-amber-300"
+                      )}
+                      strokeWidth={1.8}
+                    />
+                  </button>
                 </div>
                 <h3 className="text-[16px] font-semibold tracking-tight text-white mb-1">
                   {it.name}
                 </h3>
-                <p className="text-[12.5px] text-white/45">Erstellt: {it.createdLabel}</p>
+                <p className="text-[12.5px] text-white/45">
+                  Erstellt: {it.createdLabel} · {it.artifactCount}{" "}
+                  {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
+                </p>
                 {it.toolList.length > 0 && (
                   <div className="mt-auto flex flex-wrap gap-1.5 pt-4">
                     {it.toolList.map((t) => (
@@ -124,8 +186,8 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                   </div>
                 )}
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -19,6 +19,7 @@ type ProjectQueryRow = {
   tools: ProjectTools | null;
   created_at: string;
   updated_at: string;
+  is_favorite: boolean;
 };
 
 type GenQueryRow = {
@@ -62,7 +63,7 @@ export default async function LibraryPage() {
   const [{ data: rawProjects }, { data: rawGens }] = await Promise.all([
     supabase
       .from("projects")
-      .select("id, name, tools, created_at, updated_at")
+      .select("id, name, tools, created_at, updated_at, is_favorite")
       .order("updated_at", { ascending: false }),
     supabase
       .from("generations")
@@ -94,6 +95,7 @@ export default async function LibraryPage() {
       artifactCount: count,
       categories,
       toolList: toolListOf(p.tools),
+      isFavorite: p.is_favorite,
     };
   });
 
