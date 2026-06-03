@@ -7,33 +7,23 @@ import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { ToolGroup } from "@/components/app/tool-group";
+import { TOOL_OPTIONS, DEFAULT_TOOLS, toolsSchema, type ProjectTools } from "@/lib/tools";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
-
-const TOOL_OPTIONS = {
-  master: ["Claude", "ChatGPT", "Gemini"] as const,
-  frontend: ["Lovable", "Stitch", "Figma", "v0"] as const,
-  backend: ["Claude Code", "Cursor", "Windsurf"] as const,
-  database: ["PostgreSQL", "MySQL", "Supabase"] as const,
-};
 
 const schema = z.object({
   name: z.string().min(2, "Gib einen Projektnamen ein."),
   idea: z.string().min(20, "Gib uns mindestens einen Satz, mit dem wir arbeiten können."),
   audience: z.string().min(2, "Für wen ist das?"),
-  tools: z.object({
-    master: z.enum(TOOL_OPTIONS.master),
-    frontend: z.enum(TOOL_OPTIONS.frontend),
-    backend: z.enum(TOOL_OPTIONS.backend),
-    database: z.enum(TOOL_OPTIONS.database),
-  }),
+  tools: toolsSchema,
 });
 
 type FormState = z.infer<typeof schema>;
 
 const STEPS = ["Name", "Idee", "Zielgruppe", "Tools", "Generieren"] as const;
 
-export function Wizard() {
+export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: ProjectTools }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -42,12 +32,7 @@ export function Wizard() {
     name: "",
     idea: "",
     audience: "",
-    tools: {
-      master: "Claude",
-      frontend: "Lovable",
-      backend: "Claude Code",
-      database: "Supabase",
-    },
+    tools: initialTools,
   });
 
   const validateStep = () => {
@@ -277,44 +262,6 @@ function StepWrap({
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-white">{title}</h2>
       <p className="mt-1 text-[14px] text-white/55 mb-6">{sub}</p>
       <div>{children}</div>
-    </div>
-  );
-}
-
-function ToolGroup<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div>
-      <Label className="mb-2 block">{label}</Label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-        {options.map((opt) => {
-          const active = opt === value;
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => onChange(opt)}
-              className={cn(
-                "h-10 px-3 rounded-lg text-[13px] font-medium transition-all border",
-                active
-                  ? "border-violet-500/55 bg-violet-500/10 text-white"
-                  : "border-white/[0.08] bg-white/[0.02] text-white/70 hover:text-white hover:bg-white/[0.05]"
-              )}
-            >
-              {opt}
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }

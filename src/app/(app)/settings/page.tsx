@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { ProfileForm } from "@/components/app/profile-form";
+import { DefaultsForm } from "@/components/app/defaults-form";
+import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Einstellungen" };
@@ -20,12 +22,13 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, settings")
     .eq("id", user.id)
     .maybeSingle();
 
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
+  const toolDefaults = parseToolDefaults(profile?.settings);
 
   return (
     <div className="max-w-[800px]">
@@ -64,25 +67,8 @@ export default async function SettingsPage() {
         <Section
           title="Standardwerte"
           description="Beim Start eines neuen Projekts vorausfüllen."
-          badge="Bald"
         >
-          <Field label="Standard Master-Ziel" id="default-master" placeholder="Claude" disabled />
-          <Field
-            label="Standard Frontend-Ziel"
-            id="default-frontend"
-            placeholder="Lovable"
-            disabled
-          />
-          <Field
-            label="Standard Backend-Ziel"
-            id="default-backend"
-            placeholder="Claude Code"
-            disabled
-          />
-          <Field label="Standard-Datenbank" id="default-db" placeholder="Supabase" disabled />
-          <div className="pt-2">
-            <Button disabled>Standardwerte speichern</Button>
-          </div>
+          <DefaultsForm userId={user.id} initialTools={toolDefaults} />
         </Section>
 
         <Section title="Gefahrenzone" description="Unwiderrufliche Aktionen." badge="Bald">

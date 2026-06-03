@@ -1,8 +1,25 @@
+import { redirect } from "next/navigation";
 import { Wizard } from "@/components/app/wizard";
+import { createClient } from "@/lib/supabase/server";
+import { parseToolDefaults } from "@/lib/tools";
 
 export const metadata = { title: "Neues Projekt" };
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("settings")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const initialTools = parseToolDefaults(profile?.settings);
+
   return (
     <div className="flex flex-col items-center pt-8 md:pt-12 relative">
       <div className="text-center mb-10">
@@ -18,7 +35,7 @@ export default function NewProjectPage() {
           Fünf kurze Fragen. Den Rest übernehmen wir.
         </p>
       </div>
-      <Wizard />
+      <Wizard initialTools={initialTools} />
     </div>
   );
 }
