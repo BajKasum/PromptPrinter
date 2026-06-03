@@ -21,6 +21,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ToastProvider>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-violet-500/40 focus:bg-[#111113] focus:px-4 focus:py-2 focus:text-[13px] focus:text-white"
+      >
+        Zum Inhalt springen
+      </a>
       <div className="min-h-screen">
         <Sidebar />
         <div className="md:ml-[240px] px-6 md:px-10 pt-0 pb-16">
@@ -29,7 +35,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             plan={profile?.plan ?? "free"}
             displayName={profile?.display_name ?? null}
           />
-          <div className="pt-6 md:pt-8">{children}</div>
+          <main id="main-content" tabIndex={-1} className="pt-6 md:pt-8 focus:outline-none">
+            {children}
+          </main>
         </div>
       </div>
     </ToastProvider>

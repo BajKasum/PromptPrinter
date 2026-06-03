@@ -46,13 +46,14 @@ export function Sidebar() {
           Neues Projekt
         </Link>
 
-        <nav className="space-y-0.5">
+        <nav aria-label="Hauptbereiche" className="space-y-0.5">
           {primary.map(({ label, href, Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 h-9 px-3 rounded-md text-[13.5px] transition-colors",
                   active
@@ -69,13 +70,14 @@ export function Sidebar() {
 
         <div className="my-5 h-px bg-white/[0.06]" />
 
-        <nav className="space-y-0.5">
+        <nav aria-label="Konto" className="space-y-0.5">
           {secondary.map(({ label, href, Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 h-9 px-3 rounded-md text-[13.5px] transition-colors",
                   active
