@@ -40,7 +40,7 @@ export function Sidebar() {
       <div className="px-3 py-4 flex-1 overflow-y-auto">
         <Link
           href="/new"
-          className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-[linear-gradient(135deg,#7C3AED_0%,#3B82F6_100%)] text-[13px] font-medium text-white shadow-[0_1px_0_rgba(255,255,255,0.16)_inset,0_6px_18px_-8px_rgba(124,58,237,0.45)] hover:brightness-110 hover:-translate-y-px transition-all duration-200"
+          className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-[#7C3AED] text-[13px] font-medium text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-[#8B5CF6] active:scale-[0.97] transition-all duration-200"
         >
           <Sparkles className="h-3.5 w-3.5" />
           Neues Projekt

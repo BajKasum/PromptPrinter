@@ -59,19 +59,10 @@ const config: Config = {
         "gutter": "24px",
       },
       backgroundImage: {
-        "gradient-accent":
-          "linear-gradient(135deg, #7C3AED 0%, #06B6D4 50%, #3B82F6 100%)",
-        "gradient-accent-soft":
-          "linear-gradient(135deg, rgba(124,58,237,0.16) 0%, rgba(6,182,212,0.16) 50%, rgba(59,130,246,0.16) 100%)",
-        "gradient-radial":
-          "radial-gradient(circle at center, var(--tw-gradient-stops))",
         "grid-pattern":
           "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
       },
       boxShadow: {
-        "glow-violet": "0 0 32px rgba(124,58,237,0.35)",
-        "glow-cyan": "0 0 32px rgba(6,182,212,0.30)",
-        "glow-blue": "0 0 32px rgba(59,130,246,0.30)",
         "elevated":
           "0 1px 0 rgba(255,255,255,0.06) inset, 0 16px 48px -16px rgba(0,0,0,0.6)",
         "card":
@@ -81,8 +72,6 @@ const config: Config = {
         "fade-in": "fadeIn 0.6s ease-out forwards",
         "fade-up": "fadeUp 0.7s ease-out forwards",
         "shimmer": "shimmer 2s linear infinite",
-        "gradient-pan": "gradientPan 8s ease-in-out infinite",
-        "pulse-glow": "pulseGlow 3s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
@@ -93,14 +82,6 @@ const config: Config = {
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
-        },
-        gradientPan: {
-          "0%, 100%": { backgroundPosition: "0% 50%" },
-          "50%": { backgroundPosition: "100% 50%" },
-        },
-        pulseGlow: {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "0.7" },
         },
       },
       transitionTimingFunction: {

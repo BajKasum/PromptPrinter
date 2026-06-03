@@ -64,7 +64,7 @@ export function FeaturesGrid() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-14">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-blue-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
             Funktionen
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
@@ -84,7 +84,7 @@ export function FeaturesGrid() {
         {features.map(({ Icon, title, body }) => (
           <StaggerItem key={title}>
             <div className="card-surface h-full group">
-              <div className="h-10 w-10 rounded-lg bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-5 group-hover:bg-gradient-accent-soft transition-colors duration-300">
+              <div className="h-10 w-10 rounded-lg bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-5 group-hover:bg-white/[0.06] transition-colors duration-300">
                 <Icon className="h-4.5 w-4.5 text-white/85" strokeWidth={1.8} />
               </div>
               <h3 className="text-[16px] font-semibold tracking-tight text-white mb-1.5">
@@ -98,7 +98,6 @@ export function FeaturesGrid() {
 
       <FadeIn delay={0.2}>
         <div className="mt-6 card-surface p-8 md:p-10 relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-cyan-500/10" />
           <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 mb-3">

@@ -8,11 +8,9 @@ import { Button } from "@/components/ui/button";
 export function Hero() {
   return (
     <section className="relative overflow-hidden pt-32 md:pt-40 pb-24 md:pb-32">
-      {/* Ambient gradient orbs */}
+      {/* Ambient glow — single restrained brand hue */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 h-[480px] w-[820px] rounded-full bg-violet-500/20 blur-[120px] opacity-60" />
-        <div className="absolute top-40 right-[10%] h-[320px] w-[320px] rounded-full bg-cyan-500/20 blur-[120px] opacity-50" />
-        <div className="absolute top-60 left-[10%] h-[320px] w-[320px] rounded-full bg-blue-500/20 blur-[120px] opacity-50" />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 h-[420px] w-[760px] rounded-full bg-violet-500/10 blur-[120px]" />
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
 
@@ -137,7 +135,7 @@ function HeroArtifact() {
           </div>
           <div className="p-5 text-left font-mono text-[12.5px] leading-[1.65] text-white/70 overflow-hidden">
             <Line className="text-violet-300/90">{`# Master-Prompt — Streak Coach`}</Line>
-            <Line>{`Du bist ein erfahrener Produkt-Engineer und baust ein `}<em className="text-cyan-300 not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
+            <Line>{`Du bist ein erfahrener Produkt-Engineer und baust ein `}<em className="text-violet-300 not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
             <Line>{``}</Line>
             <Line className="text-white/45">{`## Produkt-Kontext`}</Line>
             <Line>{`- Ein Habit-Tracker, der Konsistenz belohnt`}</Line>

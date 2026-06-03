@@ -59,7 +59,7 @@ export default async function ProjectsPage() {
 
       {projects.length === 0 ? (
         <div className="card-surface p-12 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-accent-soft border border-white/[0.08]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
             <FolderKanban className="h-5 w-5 text-white/85" strokeWidth={1.8} />
           </div>
           <p className="text-[15px] text-white/80">Noch keine Projekte</p>

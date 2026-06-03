@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "text-white bg-[linear-gradient(135deg,#7C3AED_0%,#3B82F6_100%)] shadow-[0_1px_0_rgba(255,255,255,0.16)_inset,0_8px_24px_-8px_rgba(124,58,237,0.45)] hover:brightness-110 hover:-translate-y-px",
+          "bg-[#7C3AED] text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-[#8B5CF6] active:scale-[0.97]",
         ghost:
           "border border-white/10 bg-white/[0.02] text-white/90 hover:bg-white/[0.06] hover:border-white/20",
         outline:

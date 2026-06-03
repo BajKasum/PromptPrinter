@@ -16,7 +16,7 @@ export default function PricingPage() {
       <section className="container-x pt-32 md:pt-40 pb-12 text-center">
         <FadeIn>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 mb-6">
-            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-cyan-300">
+            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300">
               Preise
             </span>
           </div>

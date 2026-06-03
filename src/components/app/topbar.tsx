@@ -58,7 +58,7 @@ export function Topbar({
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg border border-white/10 bg-white/[0.02] text-[13px] text-white/85 hover:bg-white/[0.05] transition-colors"
           >
-            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-violet-400 to-blue-400 flex items-center justify-center text-[11px] font-semibold text-white">
+            <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-semibold text-white">
               {initial}
             </div>
             <span className="hidden sm:inline max-w-[120px] truncate">{label}</span>

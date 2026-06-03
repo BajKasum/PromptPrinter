@@ -115,7 +115,7 @@ export function Wizard() {
               key={i}
               className={cn(
                 "h-1 flex-1 rounded-full transition-colors duration-300",
-                i <= step ? "bg-gradient-to-r from-violet-500 to-blue-500" : "bg-white/[0.06]"
+                i <= step ? "bg-violet-500" : "bg-white/[0.06]"
               )}
             />
           ))}
@@ -306,7 +306,7 @@ function ToolGroup<T extends string>({
               className={cn(
                 "h-10 px-3 rounded-lg text-[13px] font-medium transition-all border",
                 active
-                  ? "border-violet-500/55 bg-violet-500/10 text-white shadow-glow-violet"
+                  ? "border-violet-500/55 bg-violet-500/10 text-white"
                   : "border-white/[0.08] bg-white/[0.02] text-white/70 hover:text-white hover:bg-white/[0.05]"
               )}
             >

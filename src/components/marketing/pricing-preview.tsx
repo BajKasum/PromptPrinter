@@ -59,7 +59,7 @@ export function PricingPreview() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-blue-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
             Preise
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
@@ -87,7 +87,7 @@ export function PricingGrid() {
           >
             {p.highlight && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-white shadow-glow-violet">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-white">
                   Am beliebtesten
                 </div>
               </div>

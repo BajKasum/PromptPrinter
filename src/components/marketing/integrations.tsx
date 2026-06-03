@@ -24,7 +24,7 @@ export function Integrations() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-cyan-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
             Integrationen
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">

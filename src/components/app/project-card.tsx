@@ -38,7 +38,7 @@ export function ProjectCard({ project }: { project: ProjectRow }) {
       <Link href={`/projects/${project.id}`} className="block group">
         <div className="card-surface h-full p-5 group-hover:border-white/15 transition-colors">
           <div className="flex items-start justify-between mb-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-accent-soft border border-white/[0.08] flex items-center justify-center">
+            <div className="h-9 w-9 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
               <FolderKanban className="h-4 w-4 text-white/85" strokeWidth={1.8} />
             </div>
             <span
