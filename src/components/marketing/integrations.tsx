@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 
 const groups = [
@@ -47,7 +48,8 @@ export function Integrations() {
                     className="flex items-center justify-between text-[14px] text-white/80 py-1.5 border-b border-white/[0.04] last:border-0"
                   >
                     <span>{it}</span>
-                    <span className="font-mono text-[10px] text-emerald-400/80">●</span>
+                    <Check className="h-3.5 w-3.5 shrink-0 text-white/30" strokeWidth={2} aria-hidden />
+                    <span className="sr-only">unterstützt</span>
                   </li>
                 ))}
               </ul>
