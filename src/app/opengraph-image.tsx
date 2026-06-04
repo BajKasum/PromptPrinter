@@ -1,5 +1,13 @@
 import { ImageResponse } from "next/og";
 
+// Render on the Edge runtime. The Node build of @vercel/og locates its bundled
+// font/wasm via path.join(import.meta.url, …); on Windows path.join mangles the
+// file:// URL into an invalid one, so `next build` throws "Invalid URL" while
+// prerendering this route. The Edge runtime loads those assets a different way
+// and builds cleanly on every platform (this is also Next's documented runtime
+// for metadata image routes).
+export const runtime = "edge";
+
 // Branded 1200×630 social card. Next auto-injects this into the OpenGraph and
 // Twitter tags defined in the root layout, so shares finally show a preview.
 export const alt = "PromptPrinter — Aus rohen Ideen build-fertige Prompts";
