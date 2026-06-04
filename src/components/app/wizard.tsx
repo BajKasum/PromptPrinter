@@ -39,6 +39,11 @@ export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: Projec
     if (step === 0 && state.name.trim().length < 2) return "Gib einen Projektnamen ein.";
     if (step === 1 && state.idea.trim().length < 20) return "Gib uns mindestens einen Satz.";
     if (step === 2 && state.audience.trim().length < 2) return "Für wen ist das?";
+    if (step === 3) {
+      const t = state.tools;
+      if (!t.master.trim() || !t.frontend.trim() || !t.backend.trim() || !t.database.trim())
+        return "Bitte gib für jedes Tool einen Namen ein.";
+    }
     return null;
   };
 
