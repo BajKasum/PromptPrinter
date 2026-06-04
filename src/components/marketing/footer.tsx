@@ -32,10 +32,9 @@ const sections = [
   {
     title: "Rechtliches",
     links: [
-      { label: "Datenschutz", href: "#" },
-      { label: "AGB", href: "#" },
-      { label: "Sicherheit", href: "#" },
-      { label: "AVV", href: "#" },
+      { label: "Impressum", href: "/impressum" },
+      { label: "Datenschutz", href: "/datenschutz" },
+      { label: "AGB", href: "/agb" },
     ],
   },
 ];
