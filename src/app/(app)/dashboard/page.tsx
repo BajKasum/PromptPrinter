@@ -28,7 +28,7 @@ export default async function DashboardPage() {
       .from("projects")
       .select("id, name, audience, tools, status, updated_at, is_favorite, generations(count)")
       .order("updated_at", { ascending: false }),
-    supabase.from("profiles").select("plan").eq("id", user.id).single(),
+    supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
   ]);
 
   const projects: ProjectRow[] = ((rawProjects as ProjectQueryRow[] | null) ?? []).map((p) => ({
