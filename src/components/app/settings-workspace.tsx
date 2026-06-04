@@ -9,6 +9,7 @@ import {
   Building2,
   Gauge,
   KeyRound,
+  Lock,
   Sparkles,
   LayoutTemplate,
   TerminalSquare,
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { ToolPickerGroup } from "@/components/app/tool-picker";
 import { DeleteAccount } from "@/components/app/delete-account";
+import { ChangePassword } from "@/components/app/change-password";
 import { ToolLogo } from "@/components/brand/tool-logos";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
@@ -301,6 +303,16 @@ export function SettingsWorkspace({
               onChange={(v) => setTools({ ...tools, database: v })}
             />
           </div>
+        </SettingsCard>
+
+        {/* Security */}
+        <SettingsCard
+          Icon={Lock}
+          accent="#6366F1"
+          title="Sicherheit"
+          description="Ändere dein Passwort."
+        >
+          <ChangePassword email={email} />
         </SettingsCard>
 
         {/* Danger zone */}
