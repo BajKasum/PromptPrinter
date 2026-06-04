@@ -21,9 +21,11 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-// Gemini 3 Flash — Pro-level quality at Flash speed/price. Overridable so the
-// model can be bumped without a code change once newer versions ship.
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
+// Gemini 3.5 Flash — the GA/stable successor to the gemini-3-flash-preview
+// line; Pro-level quality at Flash speed/price. A launch-bound product should
+// default to GA, not a preview model. Overridable via GEMINI_MODEL so it can be
+// bumped without a code change once newer versions ship.
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
 
 // Gemini 3 models spend part of their output budget on internal "thinking",
 // so a tight cap can starve the visible answer. 8k leaves room for both the
