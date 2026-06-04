@@ -1,15 +1,59 @@
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Check, ExternalLink } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PLANS } from "@/components/marketing/pricing-preview";
+import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Abrechnung" };
 
-export default function BillingPage() {
-  // Real impl: read subscription from Supabase profiles table
-  const currentPlan = "Free";
+// Always reflect the latest plan + usage, never a cached snapshot.
+export const dynamic = "force-dynamic";
+
+type PlanKey = "free" | "pro" | "team";
+
+// Mirrors the advertised allowances in pricing-preview.tsx. Not yet enforced
+// server-side — shown here so usage reads honestly against the plan you're on.
+const PLAN_LIMITS: Record<PlanKey, { projects: number; generations: number }> = {
+  free: { projects: 3, generations: 20 },
+  pro: { projects: Infinity, generations: 500 },
+  team: { projects: Infinity, generations: 500 },
+};
+
+export default async function BillingPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Start of the current month (UTC) — generations are a per-month allowance.
+  const now = new Date();
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  ).toISOString();
+
+  const [{ data: profile }, { count: projectsCount }, { count: monthlyGenerations }] =
+    await Promise.all([
+      supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
+      supabase.from("projects").select("id", { count: "exact", head: true }),
+      supabase
+        .from("generations")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart),
+    ]);
+
+  const rawPlan = (profile?.plan as string | undefined) ?? "free";
+  const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
+  const currentPlan = planKey.charAt(0).toUpperCase() + planKey.slice(1);
+  const limits = PLAN_LIMITS[planKey];
+  const projectsUsed = projectsCount ?? 0;
+  const generationsUsed = monthlyGenerations ?? 0;
   const renewsOn = null;
+
+  const fmtUsage = (used: number, limit: number) =>
+    limit === Infinity ? String(used) : `${used} / ${limit}`;
 
   return (
     <div className="max-w-[1100px]">
@@ -36,22 +80,35 @@ export default function BillingPage() {
                 )}
               </div>
             </div>
-            <Button variant="ghost">
-              In Stripe verwalten
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <span className="text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-white/45">
+                Bald
+              </span>
+              <Button variant="ghost" disabled>
+                In Stripe verwalten
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t border-white/[0.06]">
-            <Stat label="Projekte" value="3 / 3" />
-            <Stat label="Generierungen" value="18 / 20" />
+            <Stat label="Projekte" value={fmtUsage(projectsUsed, limits.projects)} />
+            <Stat
+              label="Generierungen (Monat)"
+              value={fmtUsage(generationsUsed, limits.generations)}
+            />
             <Stat label="API-Zugang" value="—" />
-            <Stat label="Plätze" value="1 / 1" />
+            <Stat label="Plätze" value="1" />
           </div>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <h2 className="text-[18px] font-semibold text-white mb-4">Plan wechseln</h2>
+        <div className="mb-4 flex items-center gap-2.5">
+          <h2 className="text-[18px] font-semibold text-white">Plan wechseln</h2>
+          <span className="text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-white/45">
+            Bald
+          </span>
+        </div>
       </FadeIn>
 
       <div className="grid md:grid-cols-3 gap-3">
@@ -88,7 +145,7 @@ export default function BillingPage() {
               <Button
                 variant={p.name === currentPlan ? "ghost" : p.highlight ? "primary" : "ghost"}
                 className="w-full"
-                disabled={p.name === currentPlan}
+                disabled
               >
                 {p.name === currentPlan ? "Aktuell" : `Zu ${p.name} wechseln`}
               </Button>
