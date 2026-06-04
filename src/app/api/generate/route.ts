@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { generateRequestSchema } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +21,14 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MODEL = "claude-opus-4-7";
+// Gemini 3 Flash — Pro-level quality at Flash speed/price. Overridable so the
+// model can be bumped without a code change once newer versions ship.
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
+
+// Gemini 3 models spend part of their output budget on internal "thinking",
+// so a tight cap can starve the visible answer. 8k leaves room for both the
+// reasoning and a full-length artifact.
+const MAX_OUTPUT_TOKENS = 8192;
 
 export async function POST(req: Request) {
   // 1. Parse + validate body
@@ -74,26 +81,29 @@ export async function POST(req: Request) {
   };
 
   // 5. Produce the outputs.
-  //    - With an API key: call Claude for each artifact.
+  //    - With an API key: call Gemini for each artifact.
   //    - Without a key: fall back to the unfilled templates so the flow still works.
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   const mode: "generated" | "stub" = apiKey ? "generated" : "stub";
   const outputs: Record<string, string> = {};
 
   if (apiKey) {
-    const client = new Anthropic({ apiKey });
+    const ai = new GoogleGenAI({ apiKey });
     const calls = Object.entries(prompts).map(async ([key, prompt]) => {
       try {
-        const res = await client.messages.create({
+        const res = await ai.models.generateContent({
           model: MODEL,
-          max_tokens: 2048,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: prompt }],
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+          },
         });
-        outputs[key] = res.content
-          .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-          .map((b) => b.text)
-          .join("\n");
+        // `text` is undefined when the response was blocked or fully consumed
+        // by thinking — fall back to the unfilled template so every artifact
+        // still has usable content rather than an empty box.
+        const text = res.text?.trim();
+        outputs[key] = text && text.length > 0 ? text : prompt;
       } catch (err) {
         outputs[key] = `_Generation failed: ${err instanceof Error ? err.message : "unknown"}_`;
       }
@@ -149,7 +159,7 @@ export async function POST(req: Request) {
     mode,
     ...(persistError ? { persistError } : {}),
     ...(mode === "stub"
-      ? { message: "Kein ANTHROPIC_API_KEY gesetzt — es wurden die Prompt-Vorlagen gespeichert. Trag den Key in .env ein für echte Generierung." }
+      ? { message: "Kein GEMINI_API_KEY gesetzt — es wurden die Prompt-Vorlagen gespeichert. Trag den Key in .env ein für echte Generierung." }
       : {}),
   });
 }
