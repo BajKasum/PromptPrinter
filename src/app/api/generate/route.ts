@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
   // 3. Rate limit (anonymous: 5/hr, authed: 30/hr)
   const limit = userId ? 30 : 5;
-  const rl = rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
+  const rl = await rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
   if (!rl.allowed) {
     return problem(429, "Rate limit exceeded. Try again later.", {
       retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
