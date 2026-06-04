@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { ProfileForm } from "@/components/app/profile-form";
 import { DefaultsForm } from "@/components/app/defaults-form";
+import { DeleteAccount } from "@/components/app/delete-account";
 import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,18 +72,8 @@ export default async function SettingsPage() {
           <DefaultsForm userId={user.id} initialTools={toolDefaults} />
         </Section>
 
-        <Section title="Gefahrenzone" description="Unwiderrufliche Aktionen." badge="Bald">
-          <div className="rounded-lg border border-red-500/25 bg-red-500/[0.04] p-4 flex items-center justify-between">
-            <div>
-              <div className="text-[14px] font-medium text-white">Konto löschen</div>
-              <div className="text-[12.5px] text-white/55">
-                Entfernt alle Projekte und Generierungen.
-              </div>
-            </div>
-            <Button variant="destructive" disabled>
-              Löschen
-            </Button>
-          </div>
+        <Section title="Gefahrenzone" description="Unwiderrufliche Aktionen.">
+          <DeleteAccount email={email} />
         </Section>
       </div>
     </div>
