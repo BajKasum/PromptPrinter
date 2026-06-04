@@ -12,11 +12,11 @@ export const LEGAL = {
   postalCity: "[PLZ ORT]",
   country: "Schweiz",
   /** Kontakt-E-Mail für Nutzer- und Datenschutzanfragen. */
-  email: "[KONTAKT-EMAIL]",
+  email: "kasumbajrami7@gmail.com",
   /** Optional: Handelsregister-/UID-Nummer. Leer lassen ⇒ Zeile entfällt. */
   companyId: "",
   /** Region, in der Supabase die Daten speichert, z. B. "EU (Frankfurt)". */
-  dataRegion: "[SUPABASE-REGION, z. B. EU (Frankfurt)]",
+  dataRegion: "EU (Irland)",
   /** Anbieter, der die App hostet, z. B. "Vercel Inc., USA". */
   appHost: "[HOSTING-ANBIETER, z. B. Vercel Inc., USA]",
   /** Gerichtsstand für die AGB, z. B. "Zürich". */
