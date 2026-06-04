@@ -1,11 +1,6 @@
 import { redirect } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
-import { ProfileForm } from "@/components/app/profile-form";
-import { DefaultsForm } from "@/components/app/defaults-form";
-import { DeleteAccount } from "@/components/app/delete-account";
+import { SettingsWorkspace } from "@/components/app/settings-workspace";
 import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,6 +9,16 @@ export const metadata = { title: "Einstellungen" };
 // Always reflect the latest stored profile, never a cached snapshot.
 export const dynamic = "force-dynamic";
 
+type PlanKey = "free" | "pro" | "team";
+
+// Marketed allowances per plan — mirrors the pricing page so the usage meters
+// match what the user was sold.
+const PLAN_LIMITS: Record<PlanKey, { projects: number; generations: number }> = {
+  free: { projects: 3, generations: 20 },
+  pro: { projects: Infinity, generations: 500 },
+  team: { projects: Infinity, generations: 500 },
+};
+
 export default async function SettingsPage() {
   const supabase = await createClient();
   const {
@@ -21,103 +26,59 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, settings")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Count generations within the current calendar month (UTC) only.
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+  const [{ data: profile }, { count: projectCount }, { count: genCount }] = await Promise.all([
+    supabase.from("profiles").select("display_name, settings, plan").eq("id", user.id).maybeSingle(),
+    // RLS scopes both counts to the signed-in owner.
+    supabase.from("projects").select("id", { count: "exact", head: true }),
+    supabase
+      .from("generations")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+  ]);
 
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
   const toolDefaults = parseToolDefaults(profile?.settings);
+  const plan = (profile?.plan ?? "free") as PlanKey;
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+
+  // Only forward a genuine settings object so the client can safely merge it.
+  const rawSettings = profile?.settings;
+  const baseSettings =
+    rawSettings && typeof rawSettings === "object" && !Array.isArray(rawSettings)
+      ? (rawSettings as Record<string, unknown>)
+      : null;
 
   return (
-    <div className="max-w-[800px]">
+    <div className="max-w-[1080px]">
       <FadeIn>
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
           Einstellungen
         </h1>
-        <p className="mt-1 text-[14px] text-white/55 mb-10">
-          Workspace-, Profil- und Integrations-Konfiguration.
+        <p className="mt-1.5 text-[14px] text-white/55 mb-8">
+          Profil, Workspace und Standardwerte — alles an einem Ort.
         </p>
       </FadeIn>
 
-      <div className="space-y-6">
-        <Section title="Profil" description="Wie du in deinem Workspace erscheinst.">
-          <ProfileForm userId={user.id} email={email} initialDisplayName={displayName} />
-        </Section>
-
-        <Section
-          title="API-Keys"
-          description="Eigene Keys nutzen (ab Pro). Wenn gesetzt, werden Generierungen über dein Provider-Konto abgerechnet."
-          badge="Bald"
-        >
-          <Field
-            label="Anthropic API-Key"
-            id="anthropic"
-            type="password"
-            placeholder="sk-ant-…"
-            disabled
-          />
-          <Field label="OpenAI API-Key" id="openai" type="password" placeholder="sk-…" disabled />
-          <div className="pt-2">
-            <Button disabled>Keys speichern</Button>
-          </div>
-        </Section>
-
-        <Section
-          title="Standardwerte"
-          description="Beim Start eines neuen Projekts vorausfüllen."
-        >
-          <DefaultsForm userId={user.id} initialTools={toolDefaults} />
-        </Section>
-
-        <Section title="Gefahrenzone" description="Unwiderrufliche Aktionen.">
-          <DeleteAccount email={email} />
-        </Section>
-      </div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  description,
-  badge,
-  children,
-}: {
-  title: string;
-  description: string;
-  badge?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="card-surface">
-      <div className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-[16px] font-semibold tracking-tight text-white">{title}</h2>
-          <p className="text-[13px] text-white/55 mt-1">{description}</p>
-        </div>
-        {badge && (
-          <span className="shrink-0 text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-white/45">
-            {badge}
-          </span>
-        )}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  id,
-  ...props
-}: { label: string; id: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} {...props} />
+      <SettingsWorkspace
+        userId={user.id}
+        email={email}
+        initialDisplayName={displayName}
+        initialTools={toolDefaults}
+        baseSettings={baseSettings}
+        plan={plan}
+        usage={{
+          projects: projectCount ?? 0,
+          projectLimit: limits.projects,
+          generations: genCount ?? 0,
+          generationLimit: limits.generations,
+        }}
+        memberSince={user.created_at ?? null}
+      />
     </div>
   );
 }
