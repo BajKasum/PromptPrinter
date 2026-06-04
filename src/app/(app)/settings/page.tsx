@@ -3,21 +3,12 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { SettingsWorkspace } from "@/components/app/settings-workspace";
 import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
+import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
 
 export const metadata = { title: "Einstellungen" };
 
 // Always reflect the latest stored profile, never a cached snapshot.
 export const dynamic = "force-dynamic";
-
-type PlanKey = "free" | "pro" | "team";
-
-// Marketed allowances per plan — mirrors the pricing page so the usage meters
-// match what the user was sold.
-const PLAN_LIMITS: Record<PlanKey, { projects: number; generations: number }> = {
-  free: { projects: 3, generations: 20 },
-  pro: { projects: Infinity, generations: 500 },
-  team: { projects: Infinity, generations: 500 },
-};
 
 export default async function SettingsPage() {
   const supabase = await createClient();

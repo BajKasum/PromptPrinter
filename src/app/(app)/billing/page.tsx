@@ -5,21 +5,12 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { PLANS } from "@/components/marketing/pricing-preview";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
+import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
 
 export const metadata = { title: "Abrechnung" };
 
 // Always reflect the latest plan + usage, never a cached snapshot.
 export const dynamic = "force-dynamic";
-
-type PlanKey = "free" | "pro" | "team";
-
-// Mirrors the advertised allowances in pricing-preview.tsx. Not yet enforced
-// server-side — shown here so usage reads honestly against the plan you're on.
-const PLAN_LIMITS: Record<PlanKey, { projects: number; generations: number }> = {
-  free: { projects: 3, generations: 20 },
-  pro: { projects: Infinity, generations: 500 },
-  team: { projects: Infinity, generations: 500 },
-};
 
 export default async function BillingPage() {
   const supabase = await createClient();
