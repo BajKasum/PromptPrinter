@@ -1,16 +1,16 @@
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
-export function ToolGroup<T extends string>({
+export function ToolGroup({
   label,
   options,
   value,
   onChange,
 }: {
   label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
+  options: readonly string[];
+  value: string;
+  onChange: (v: string) => void;
 }) {
   return (
     <div>

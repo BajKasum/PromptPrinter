@@ -77,13 +77,21 @@ export function SettingsWorkspace({
   const nameTrimmed = displayName.trim();
   const nameDirty = nameTrimmed !== baseName.trim();
   const nameValid = nameTrimmed.length > 0;
+  // Compare trimmed against the (already-trimmed) baseline so trailing spaces in
+  // a custom entry don't register as a phantom change.
   const toolsDirty =
-    tools.master !== baseTools.master ||
-    tools.frontend !== baseTools.frontend ||
-    tools.backend !== baseTools.backend ||
-    tools.database !== baseTools.database;
+    tools.master.trim() !== baseTools.master ||
+    tools.frontend.trim() !== baseTools.frontend ||
+    tools.backend.trim() !== baseTools.backend ||
+    tools.database.trim() !== baseTools.database;
+  // A custom tool the user left blank can't be saved.
+  const toolsValid =
+    tools.master.trim().length > 0 &&
+    tools.frontend.trim().length > 0 &&
+    tools.backend.trim().length > 0 &&
+    tools.database.trim().length > 0;
   const dirty = nameDirty || toolsDirty;
-  const canSave = dirty && !saving && !(nameDirty && !nameValid);
+  const canSave = dirty && !saving && !(nameDirty && !nameValid) && toolsValid;
 
   function cancel() {
     setDisplayName(baseName);
@@ -94,9 +102,17 @@ export function SettingsWorkspace({
     if (!canSave) return;
     setSaving(true);
 
+    // Persist trimmed tool names so stray whitespace never reaches storage.
+    const cleanTools: ProjectTools = {
+      master: tools.master.trim(),
+      frontend: tools.frontend.trim(),
+      backend: tools.backend.trim(),
+      database: tools.database.trim(),
+    };
+
     const patch: Record<string, unknown> = {};
     if (nameDirty && nameValid) patch.display_name = nameTrimmed;
-    if (toolsDirty) patch.settings = { ...(baseSettings ?? {}), defaultTools: tools };
+    if (toolsDirty) patch.settings = { ...(baseSettings ?? {}), defaultTools: cleanTools };
 
     const supabase = createClient();
     const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
@@ -111,10 +127,12 @@ export function SettingsWorkspace({
       return;
     }
 
-    // Advance the baseline to the just-saved values so the bar slides away.
+    // Advance the baseline to the just-saved (trimmed) values so the bar slides
+    // away and the visible fields reflect exactly what was stored.
     setDisplayName(nameTrimmed);
     setBaseName(nameTrimmed);
-    setBaseTools(tools);
+    setTools(cleanTools);
+    setBaseTools(cleanTools);
     toast({ title: "Einstellungen gespeichert", variant: "success" });
     router.refresh();
   }

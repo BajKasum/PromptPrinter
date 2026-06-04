@@ -8,10 +8,11 @@ export interface GenerationInput {
   idea: string;
   audience: string;
   tools: {
-    master: MasterTarget;
-    frontend: FrontendTarget;
-    backend: BackendTarget;
-    database: DatabaseTarget;
+    // A preset target (see the aliases above) or a user-supplied custom name.
+    master: string;
+    frontend: string;
+    backend: string;
+    database: string;
   };
 }
 

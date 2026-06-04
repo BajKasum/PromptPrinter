@@ -5,7 +5,7 @@ import { z } from "zod";
 // so the option lists and types can never drift apart.
 export const TOOL_OPTIONS = {
   master: ["Claude", "ChatGPT", "Gemini"],
-  frontend: ["Lovable", "Stitch", "Figma", "v0"],
+  frontend: ["Lovable", "Stitch", "Figma"],
   backend: ["Claude Code", "Cursor", "Windsurf"],
   database: ["PostgreSQL", "MySQL", "Supabase"],
 } as const;
@@ -15,11 +15,13 @@ export type FrontendTool = (typeof TOOL_OPTIONS.frontend)[number];
 export type BackendTool = (typeof TOOL_OPTIONS.backend)[number];
 export type DatabaseTool = (typeof TOOL_OPTIONS.database)[number];
 
+// Each field is either one of the preset options above or a user-supplied
+// custom tool name (Deepseek, NoSQL, …) — so the stored type is just a string.
 export type ProjectTools = {
-  master: MasterTool;
-  frontend: FrontendTool;
-  backend: BackendTool;
-  database: DatabaseTool;
+  master: string;
+  frontend: string;
+  backend: string;
+  database: string;
 };
 
 export const DEFAULT_TOOLS: ProjectTools = {
@@ -29,21 +31,28 @@ export const DEFAULT_TOOLS: ProjectTools = {
   database: "Supabase",
 };
 
-// Strict: rejects anything off-list. Used for the generate request and wizard submit.
+// A single tool choice: a preset name or the user's own entry. Free text, but
+// trimmed and length-bounded so a blank or oversized value can't reach a prompt
+// or a stored row.
+const toolChoice = z.string().trim().min(1, "Tool darf nicht leer sein.").max(40);
+
+// Strict: every field must be a non-empty tool name (custom names allowed; only
+// blanks are rejected). Used for the generate request and the wizard submit.
 export const toolsSchema = z.object({
-  master: z.enum(TOOL_OPTIONS.master),
-  frontend: z.enum(TOOL_OPTIONS.frontend),
-  backend: z.enum(TOOL_OPTIONS.backend),
-  database: z.enum(TOOL_OPTIONS.database),
+  master: toolChoice,
+  frontend: toolChoice,
+  backend: toolChoice,
+  database: toolChoice,
 });
 
-// Lenient: any invalid/missing field falls back to its default instead of throwing,
-// so a malformed settings blob can never break the pages that read it.
+// Lenient: any blank/missing/oversized field falls back to its default instead
+// of throwing, so a malformed settings blob can never break the pages that read
+// it. A stored custom name (e.g. "Deepseek") passes through untouched.
 const storedDefaultsSchema = z.object({
-  master: z.enum(TOOL_OPTIONS.master).catch(DEFAULT_TOOLS.master),
-  frontend: z.enum(TOOL_OPTIONS.frontend).catch(DEFAULT_TOOLS.frontend),
-  backend: z.enum(TOOL_OPTIONS.backend).catch(DEFAULT_TOOLS.backend),
-  database: z.enum(TOOL_OPTIONS.database).catch(DEFAULT_TOOLS.database),
+  master: toolChoice.catch(DEFAULT_TOOLS.master),
+  frontend: toolChoice.catch(DEFAULT_TOOLS.frontend),
+  backend: toolChoice.catch(DEFAULT_TOOLS.backend),
+  database: toolChoice.catch(DEFAULT_TOOLS.database),
 });
 
 // Reads the per-user project defaults out of the profiles.settings jsonb blob.
