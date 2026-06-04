@@ -17,7 +17,6 @@ export const TOOL_VISUAL: Record<string, ToolVisual> = {
   Lovable: { color: "#FF7AA2", blurb: "Full-Stack aus Prompt" },
   Stitch: { color: "#00BFA6", blurb: "UI aus Text" },
   Figma: { color: "#A259FF", blurb: "Design-Handoff" },
-  v0: { color: "#E5E7EB", blurb: "React-UI von Vercel" },
   // backend
   "Claude Code": { color: "#D97757", blurb: "Agentisches Coding" },
   Cursor: { color: "#A1A1AA", blurb: "KI-Code-Editor" },
@@ -126,14 +125,6 @@ export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
           <path d="M4 4a4 4 0 0 1 4-4h4v8H8a4 4 0 0 1-4-4z" fill="#F24E1E" />
           <path d="M12 0h4a4 4 0 0 1 0 8h-4V0z" fill="#FF7262" />
           <path d="M20 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" fill="#1ABCFE" />
-        </svg>
-      );
-
-    case "v0":
-      // Vercel triangle.
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 21.5 20H2.5L12 3.5z" fill="#fff" />
         </svg>
       );
 

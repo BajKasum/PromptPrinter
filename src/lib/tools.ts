@@ -10,11 +10,6 @@ export const TOOL_OPTIONS = {
   database: ["PostgreSQL", "MySQL", "Supabase"],
 } as const;
 
-export type MasterTool = (typeof TOOL_OPTIONS.master)[number];
-export type FrontendTool = (typeof TOOL_OPTIONS.frontend)[number];
-export type BackendTool = (typeof TOOL_OPTIONS.backend)[number];
-export type DatabaseTool = (typeof TOOL_OPTIONS.database)[number];
-
 // Each field is either one of the preset options above or a user-supplied
 // custom tool name (Deepseek, NoSQL, …) — so the stored type is just a string.
 export type ProjectTools = {
