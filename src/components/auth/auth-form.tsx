@@ -184,6 +184,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             required
           />
+          {mode === "signin" && (
+            <div className="text-right">
+              <Link
+                href="/reset-password"
+                className="text-[12.5px] text-white/50 hover:text-white/80 transition-colors"
+              >
+                Passwort vergessen?
+              </Link>
+            </div>
+          )}
         </div>
 
         {error && (
