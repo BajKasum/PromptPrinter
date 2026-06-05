@@ -45,6 +45,12 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.12);
   }
+
+  /* Hide Edge's native password reveal/clear icons — we provide our own toggle. */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }
 
 @layer components {

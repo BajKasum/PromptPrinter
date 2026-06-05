@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -83,9 +83,8 @@ export function ChangePassword({ email }: { email: string }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="current-password">Aktuelles Passwort</Label>
-          <Input
+          <PasswordInput
             id="current-password"
-            type="password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
             placeholder="••••••••"
@@ -94,9 +93,8 @@ export function ChangePassword({ email }: { email: string }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="new-password">Neues Passwort</Label>
-          <Input
+          <PasswordInput
             id="new-password"
-            type="password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
             placeholder="Mindestens 8 Zeichen"
@@ -105,9 +103,8 @@ export function ChangePassword({ email }: { email: string }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="confirm-password">Bestätigen</Label>
-          <Input
+          <PasswordInput
             id="confirm-password"
-            type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Neues Passwort wiederholen"

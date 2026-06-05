@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -64,9 +64,8 @@ export function UpdatePassword() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="new-password">Neues Passwort</Label>
-        <Input
+        <PasswordInput
           id="new-password"
-          type="password"
           value={next}
           onChange={(e) => setNext(e.target.value)}
           placeholder="Mindestens 8 Zeichen"
@@ -76,9 +75,8 @@ export function UpdatePassword() {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="confirm-password">Bestätigen</Label>
-        <Input
+        <PasswordInput
           id="confirm-password"
-          type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           placeholder="Neues Passwort wiederholen"
