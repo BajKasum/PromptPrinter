@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search, Bell, ChevronDown, Settings, CreditCard, LogOut, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/app/command-palette";
+import { MobileNav } from "@/components/app/mobile-nav";
 
 export function Topbar({
   email,
@@ -54,7 +55,8 @@ export function Topbar({
   }
 
   return (
-    <header className="sticky top-0 z-30 -mx-6 md:-mx-10 px-6 md:px-10 py-3 flex items-center gap-4 border-b border-white/[0.06] backdrop-blur-xl bg-[#0A0A0A]/70">
+    <header className="sticky top-0 z-30 -mx-6 md:-mx-10 px-6 md:px-10 py-3 flex items-center gap-3 sm:gap-4 border-b border-white/[0.06] backdrop-blur-xl bg-[#0A0A0A]/70">
+      <MobileNav />
       <button
         type="button"
         onClick={() => setCmdOpen(true)}

@@ -2,36 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  FolderOpen,
-  Sparkles,
-  Library,
-  Settings,
-  CreditCard,
-  HelpCircle,
-  BookOpen,
-} from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { primaryNav, secondaryNav, comingSoonNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-
-const primary = [
-  { label: "Dashboard", href: "/dashboard", Icon: LayoutDashboard },
-  { label: "Projekte", href: "/projects", Icon: FolderOpen },
-  { label: "Bibliothek", href: "/library", Icon: Library },
-  { label: "Generierungen", href: "/generations", Icon: Sparkles },
-];
-
-const secondary = [
-  { label: "Einstellungen", href: "/settings", Icon: Settings },
-  { label: "Abrechnung", href: "/billing", Icon: CreditCard },
-];
-
-// Not yet built — shown as disabled "Bald" entries rather than dead links.
-const comingSoon = [
-  { label: "Dokumentation", Icon: BookOpen },
-  { label: "Hilfe", Icon: HelpCircle },
-];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -53,7 +27,7 @@ export function Sidebar() {
         </Link>
 
         <nav aria-label="Hauptbereiche" className="space-y-0.5">
-          {primary.map(({ label, href, Icon }) => {
+          {primaryNav.map(({ label, href, Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
@@ -77,7 +51,7 @@ export function Sidebar() {
         <div className="my-5 h-px bg-white/[0.06]" />
 
         <nav aria-label="Konto" className="space-y-0.5">
-          {secondary.map(({ label, href, Icon }) => {
+          {secondaryNav.map(({ label, href, Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
@@ -100,7 +74,7 @@ export function Sidebar() {
       </div>
 
       <div className="px-3 py-4 border-t border-white/[0.06] space-y-0.5">
-        {comingSoon.map(({ label, Icon }) => (
+        {comingSoonNav.map(({ label, Icon }) => (
           <div
             key={label}
             className="flex items-center justify-between h-9 px-3 rounded-md text-[12.5px] text-white/40 cursor-default select-none"
