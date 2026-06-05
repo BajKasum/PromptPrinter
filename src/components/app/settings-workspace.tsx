@@ -26,6 +26,7 @@ import { useToast } from "@/components/ui/toast";
 import { ToolPickerGroup } from "@/components/app/tool-picker";
 import { DeleteAccount } from "@/components/app/delete-account";
 import { ChangePassword } from "@/components/app/change-password";
+import { AvatarUpload } from "@/components/app/avatar-upload";
 import { ToolLogo } from "@/components/brand/tool-logos";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
@@ -50,6 +51,7 @@ export function SettingsWorkspace({
   userId,
   email,
   initialDisplayName,
+  initialAvatarUrl,
   initialTools,
   baseSettings,
   plan,
@@ -59,6 +61,7 @@ export function SettingsWorkspace({
   userId: string;
   email: string;
   initialDisplayName: string;
+  initialAvatarUrl: string | null;
   initialTools: ProjectTools;
   baseSettings: Record<string, unknown> | null;
   plan: PlanKey;
@@ -160,6 +163,15 @@ export function SettingsWorkspace({
             description="Wie du in deinem Workspace erscheinst."
           >
             <div className="space-y-4">
+              <Field label="Profilbild">
+                <AvatarUpload
+                  userId={userId}
+                  displayName={displayName}
+                  email={email}
+                  initialUrl={initialAvatarUrl}
+                />
+              </Field>
+
               <Field label="Anzeigename">
                 <Input
                   value={displayName}

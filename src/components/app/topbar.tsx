@@ -11,19 +11,23 @@ export function Topbar({
   email,
   plan,
   displayName,
+  avatarUrl,
 }: {
   email: string;
   plan: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
 
   const label = displayName || email.split("@")[0] || "Konto";
   const initial = (label[0] ?? "?").toUpperCase();
+  const showAvatar = Boolean(avatarUrl) && !avatarBroken;
 
   // Global ⌘K / Ctrl+K opens the command palette from anywhere in the app.
   useEffect(() => {
@@ -115,9 +119,19 @@ export function Topbar({
             aria-expanded={open}
             className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg border border-white/10 bg-white/[0.02] text-[13px] text-white/85 hover:bg-white/[0.05] transition-colors"
           >
-            <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-semibold text-white">
-              {initial}
-            </div>
+            {showAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl as string}
+                alt=""
+                className="h-6 w-6 rounded-full object-cover"
+                onError={() => setAvatarBroken(true)}
+              />
+            ) : (
+              <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center text-[11px] font-semibold text-white">
+                {initial}
+              </div>
+            )}
             <span className="hidden sm:inline max-w-[120px] truncate">{label}</span>
             <ChevronDown className="h-3.5 w-3.5 text-white/55" />
           </button>
@@ -132,8 +146,25 @@ export function Topbar({
               />
               <div className="absolute right-0 mt-2 w-64 z-50 rounded-xl border border-white/10 bg-[#111113] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.7)] overflow-hidden">
                 <div className="px-4 py-3 border-b border-white/[0.06]">
-                  <div className="text-[13px] text-white font-medium truncate">{label}</div>
-                  <div className="text-[12px] text-white/50 truncate">{email}</div>
+                  <div className="flex items-center gap-2.5">
+                    {showAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarUrl as string}
+                        alt=""
+                        className="h-8 w-8 shrink-0 rounded-full object-cover"
+                        onError={() => setAvatarBroken(true)}
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500 text-[13px] font-semibold text-white">
+                        {initial}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] text-white font-medium truncate">{label}</div>
+                      <div className="text-[12px] text-white/50 truncate">{email}</div>
+                    </div>
+                  </div>
                   <span className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-violet-500/30 bg-violet-500/[0.08] text-violet-200">
                     {plan} Plan
                   </span>

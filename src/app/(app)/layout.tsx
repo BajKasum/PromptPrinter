@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan, display_name")
+    .select("plan, display_name, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -34,6 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             email={user.email ?? ""}
             plan={profile?.plan ?? "free"}
             displayName={profile?.display_name ?? null}
+            avatarUrl={profile?.avatar_url ?? null}
           />
           <main id="main-content" tabIndex={-1} className="pt-6 md:pt-8 focus:outline-none">
             {children}

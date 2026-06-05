@@ -22,7 +22,11 @@ export default async function SettingsPage() {
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 
   const [{ data: profile }, { count: projectCount }, { count: genCount }] = await Promise.all([
-    supabase.from("profiles").select("display_name, settings, plan").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name, settings, plan, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle(),
     // RLS scopes both counts to the signed-in owner.
     supabase.from("projects").select("id", { count: "exact", head: true }),
     supabase
@@ -59,6 +63,7 @@ export default async function SettingsPage() {
         userId={user.id}
         email={email}
         initialDisplayName={displayName}
+        initialAvatarUrl={profile?.avatar_url ?? null}
         initialTools={toolDefaults}
         baseSettings={baseSettings}
         plan={plan}
