@@ -37,7 +37,7 @@ export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: Projec
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<FormState>({
-    type: "software",
+    type: "general",
     name: "",
     idea: "",
     audience: "",
