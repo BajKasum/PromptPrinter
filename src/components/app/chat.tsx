@@ -5,6 +5,8 @@ import { Send, Loader2, Copy, Check, Download, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { downloadFile } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -13,13 +15,6 @@ const STARTERS = [
   "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
   "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
 ];
-
-// Pull the first fenced block out of an assistant reply — that's the actual
-// paste-ready prompt. Falls back to the whole message when there's no block.
-function extractPrompt(content: string): string {
-  const m = content.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
-  return (m?.[1] ?? content).trim();
-}
 
 export function Chat({ mode, target }: { mode: "general" | "software"; target?: string }) {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -146,14 +141,6 @@ function UserBubble({ content }: { content: string }) {
 }
 
 function AssistantBubble({ content, index }: { content: string; index: number }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copyPrompt() {
-    await navigator.clipboard.writeText(extractPrompt(content));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
   function exportMd() {
     downloadFile(`prompt-${index + 1}.md`, content, "text/markdown");
   }
@@ -161,24 +148,122 @@ function AssistantBubble({ content, index }: { content: string; index: number })
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] w-full">
-        <div className="rounded-2xl rounded-bl-sm border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13.5px] leading-relaxed text-white/85 whitespace-pre-wrap">
-          {content}
+        <div className="rounded-2xl rounded-bl-sm border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13.5px] leading-relaxed text-white/85">
+          <MarkdownMessage content={content} />
         </div>
         <div className="mt-1.5 flex items-center gap-1.5">
-          <Button size="sm" variant="ghost" onClick={copyPrompt}>
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-            {copied ? "Kopiert" : "Prompt kopieren"}
-          </Button>
           <Button size="sm" variant="ghost" onClick={exportMd}>
             <Download className="h-3.5 w-3.5" />
             .md
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Render an assistant reply as real Markdown — headings, lists, bold, tables —
+// instead of raw text. Any fenced block becomes a CodeBlock with its own copy
+// button, which is where the paste-ready prompt lives.
+function MarkdownMessage({ content }: { content: string }) {
+  return (
+    <div className="space-y-2.5">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+          h1: ({ children }) => (
+            <h2 className="mt-1 text-[16px] font-semibold text-white">{children}</h2>
+          ),
+          h2: ({ children }) => (
+            <h3 className="mt-1 text-[15px] font-semibold text-white">{children}</h3>
+          ),
+          h3: ({ children }) => (
+            <h4 className="mt-1 text-[14px] font-semibold text-white">{children}</h4>
+          ),
+          ul: ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal space-y-1 pl-5">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="text-violet-300 underline underline-offset-2 hover:text-violet-200"
+            >
+              {children}
+            </a>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-white/15 pl-3 text-white/65">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <hr className="border-white/10" />,
+          table: ({ children }) => (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-[12.5px]">{children}</table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="border border-white/10 px-2 py-1 text-left font-semibold">{children}</th>
+          ),
+          td: ({ children }) => <td className="border border-white/10 px-2 py-1">{children}</td>,
+          pre: ({ children }) => <>{children}</>,
+          code: ({ className, children }) => {
+            const text = String(children ?? "");
+            const isBlock = (className?.includes("language-") ?? false) || text.includes("\n");
+            if (isBlock) {
+              return <CodeBlock text={text.replace(/\n$/, "")} />;
+            }
+            return (
+              <code className="rounded bg-violet-500/15 px-1.5 py-0.5 font-mono text-[12.5px] text-violet-200">
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+// The paste-ready prompt, in a bordered box with its own copy button.
+function CodeBlock({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div className="my-2 overflow-hidden rounded-lg border border-white/[0.08] bg-black/30">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-1.5">
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-white/40">
+          Prompt
+        </span>
+        <button
+          type="button"
+          onClick={copy}
+          className="inline-flex items-center gap-1 text-[12px] text-white/55 transition-colors hover:text-white"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-emerald-400" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+          {copied ? "Kopiert" : "Kopieren"}
+        </button>
+      </div>
+      <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-white/85">
+        {text}
+      </pre>
     </div>
   );
 }
