@@ -1,4 +1,4 @@
-export { SYSTEM_PROMPT, GENERAL_SYSTEM_PROMPT } from "./system";
+export { SYSTEM_PROMPT, GENERAL_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from "./system";
 export { briefTemplate } from "./brief-template";
 export { prdTemplate } from "./prd-template";
 export { masterPromptTemplate } from "./master-prompt";

@@ -25,3 +25,20 @@ export const generateRequestSchema = z.discriminatedUnion("type", [
 ]);
 
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
+
+// Chat pack: a multi-turn conversation. `mode` mirrors the generation type so
+// the engine can tailor its system prompt; `messages` is the running transcript
+// the client replays on every turn (the route itself stays stateless).
+export const chatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().trim().min(1, "Leere Nachricht.").max(8000),
+});
+
+export const chatRequestSchema = z.object({
+  mode: z.enum(["general", "software"]),
+  target: z.string().trim().min(1).max(40).optional(),
+  messages: z.array(chatMessageSchema).min(1).max(50),
+});
+
+export type ChatRequest = z.infer<typeof chatRequestSchema>;
+export type ChatMessage = z.infer<typeof chatMessageSchema>;

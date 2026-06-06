@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FolderKanban, Plus, Sparkles, CreditCard, Star } from "lucide-react";
+import { FolderKanban, Plus, Sparkles, CreditCard, Star, MessageSquare, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { ProjectCard, type ProjectRow } from "@/components/app/project-card";
@@ -70,12 +70,20 @@ export default async function DashboardPage() {
                 : `${projectsTotal} ${projectsTotal === 1 ? "Projekt" : "Projekte"} in deinem Workspace.`}
             </p>
           </div>
-          <Button asChild>
-            <Link href="/new">
-              <Plus className="h-4 w-4" />
-              Neues Projekt
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild>
+              <Link href="/chat?mode=general">
+                <MessageSquare className="h-4 w-4" />
+                Prompt Chat
+              </Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/new">
+                <Code2 className="h-4 w-4" />
+                Prompt Code
+              </Link>
+            </Button>
+          </div>
         </div>
       </FadeIn>
 
