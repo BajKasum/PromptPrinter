@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Sparkles, GitBranch, Clock, MessageSquare } from "lucide-react";
 import { ProjectTabs, type ProjectTab } from "@/components/app/project-tabs";
 import { Chat } from "@/components/app/chat";
+import { DeleteProjectButton } from "@/components/app/delete-project";
 import type { ProjectTools } from "@/components/app/project-card";
 import { GENERAL_VARIANTS } from "@/prompts";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -190,13 +191,16 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
     <div className="max-w-[1200px]">
       <FadeIn>
         <div className="mb-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-white transition-colors mb-4"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Zurück zum Dashboard
-          </Link>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Zurück zum Dashboard
+            </Link>
+            <DeleteProjectButton projectId={project.id} projectName={project.name} />
+          </div>
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300 mb-2">
