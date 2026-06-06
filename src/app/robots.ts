@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         "/library",
         "/settings",
         "/billing",
-        "/new",
+        "/chat",
       ],
     },
     sitemap: "https://promptprinter.app/sitemap.xml",

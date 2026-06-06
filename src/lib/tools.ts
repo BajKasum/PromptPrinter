@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 // Single source of truth for the four build-target choices a project carries.
-// Imported by the wizard, the request schema, and the Standardwerte settings form
-// so the option lists and types can never drift apart.
+// Imported by the request schema and the Standardwerte settings form so the
+// option lists and types can never drift apart.
 export const TOOL_OPTIONS = {
   master: ["Claude", "ChatGPT", "Gemini"],
   frontend: ["Lovable", "Stitch", "Figma"],
@@ -32,7 +32,7 @@ export const DEFAULT_TOOLS: ProjectTools = {
 const toolChoice = z.string().trim().min(1, "Tool darf nicht leer sein.").max(40);
 
 // Strict: every field must be a non-empty tool name (custom names allowed; only
-// blanks are rejected). Used for the generate request and the wizard submit.
+// blanks are rejected). Used to validate the generate request.
 export const toolsSchema = z.object({
   master: toolChoice,
   frontend: toolChoice,

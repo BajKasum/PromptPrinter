@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, FolderKanban } from "lucide-react";
+import { Code2, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StaggerChildren } from "@/components/motion/fade-in";
 import { ProjectCard, type ProjectRow } from "@/components/app/project-card";
@@ -50,9 +50,9 @@ export default async function ProjectsPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/new">
-            <Plus className="h-4 w-4" />
-            Neues Projekt
+          <Link href="/chat?mode=software">
+            <Code2 className="h-4 w-4" />
+            Prompt Code
           </Link>
         </Button>
       </div>
@@ -64,12 +64,13 @@ export default async function ProjectsPage() {
           </div>
           <p className="text-[15px] text-white/80">Noch keine Projekte</p>
           <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
-            Erstelle dein erstes Projekt, um ein komplettes Prompt-Packet zu generieren.
+            Deine Build-Packets erscheinen hier. Starte einen Prompt Code Chat, um an
+            deinen Software-Prompts zu arbeiten.
           </p>
           <Button asChild className="mt-5">
-            <Link href="/new">
-              <Plus className="h-4 w-4" />
-              Erstes Projekt erstellen
+            <Link href="/chat?mode=software">
+              <Code2 className="h-4 w-4" />
+              Prompt Code starten
             </Link>
           </Button>
         </div>

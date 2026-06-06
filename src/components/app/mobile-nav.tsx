@@ -82,12 +82,12 @@ export function MobileNav() {
 
               <div className="px-3 py-4 flex-1 overflow-y-auto">
                 <Link
-                  href="/new"
+                  href="/chat"
                   onClick={() => setOpen(false)}
                   className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-[#7C3AED] text-[13px] font-medium text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-[#8B5CF6] active:scale-[0.97] transition-all duration-200"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  Neues Projekt
+                  Neuer Chat
                 </Link>
 
                 <nav aria-label="Hauptbereiche" className="space-y-0.5">

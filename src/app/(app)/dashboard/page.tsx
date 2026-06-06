@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FolderKanban, Plus, Sparkles, CreditCard, Star, MessageSquare, Code2 } from "lucide-react";
+import { FolderKanban, Sparkles, CreditCard, Star, MessageSquare, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { ProjectCard, type ProjectRow } from "@/components/app/project-card";
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
               </Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/new">
+              <Link href="/chat?mode=software">
                 <Code2 className="h-4 w-4" />
                 Prompt Code
               </Link>
@@ -190,17 +190,17 @@ export default async function DashboardPage() {
         <FadeIn>
           <div className="card-surface p-12 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
-              <FolderKanban className="h-5 w-5 text-white/85" strokeWidth={1.8} />
+              <MessageSquare className="h-5 w-5 text-white/85" strokeWidth={1.8} />
             </div>
             <p className="text-[15px] text-white/80">Noch keine Projekte</p>
             <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
-              Beantworte fünf kurze Fragen und PromptPrinter erstellt ein komplettes,
-              build-fertiges Prompt-Packet — gespeichert in deinem Supabase-Workspace.
+              Starte einen Chat, beschreib dein Ziel und PromptPrinter baut dir den
+              passenden Prompt — Schritt für Schritt mit dir verfeinert.
             </p>
             <Button asChild className="mt-5">
-              <Link href="/new">
-                <Plus className="h-4 w-4" />
-                Erstes Projekt erstellen
+              <Link href="/chat">
+                <MessageSquare className="h-4 w-4" />
+                Prompt Chat starten
               </Link>
             </Button>
           </div>

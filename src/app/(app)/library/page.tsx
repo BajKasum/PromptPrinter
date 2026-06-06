@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Library, Plus } from "lucide-react";
+import { Library, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { LibraryBrowser, type LibraryItem } from "@/components/app/library-browser";
@@ -124,13 +124,13 @@ export default async function LibraryPage() {
             </div>
             <p className="text-[15px] text-white/80">Deine Bibliothek ist leer</p>
             <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
-              Erstelle ein Projekt, um Artefakte wie PRD, Master-Prompt und Datenbank-Schema
-              zu archivieren.
+              Hier landen die Artefakte aus deinen Build-Packets — PRD, Master-Prompt und
+              Datenbank-Schema. Starte einen Prompt Code Chat, um loszulegen.
             </p>
             <Button asChild className="mt-5">
-              <Link href="/new">
-                <Plus className="h-4 w-4" />
-                Erstes Projekt erstellen
+              <Link href="/chat?mode=software">
+                <Code2 className="h-4 w-4" />
+                Prompt Code starten
               </Link>
             </Button>
           </div>

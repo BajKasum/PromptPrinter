@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Sparkles, ArrowRight, Layers, Clock, Plus } from "lucide-react";
+import { Sparkles, ArrowRight, Layers, Clock, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { createClient } from "@/lib/supabase/server";
@@ -72,9 +72,9 @@ export default async function GenerationsPage() {
             </p>
           </div>
           <Button asChild>
-            <Link href="/new">
-              <Plus className="h-4 w-4" />
-              Neue Generierung
+            <Link href="/chat?mode=software">
+              <Code2 className="h-4 w-4" />
+              Prompt Code
             </Link>
           </Button>
         </div>
@@ -88,13 +88,13 @@ export default async function GenerationsPage() {
             </div>
             <p className="text-[15px] text-white/80">Noch keine Generierungen</p>
             <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
-              Sobald du ein Projekt erstellst, erscheint hier jede KI-Ausführung mit den
-              erzeugten Artefakten.
+              Hier werden deine früheren Packet-Generierungen mit den erzeugten
+              Artefakten protokolliert.
             </p>
             <Button asChild className="mt-5">
-              <Link href="/new">
-                <Plus className="h-4 w-4" />
-                Erste Generierung starten
+              <Link href="/chat?mode=software">
+                <Code2 className="h-4 w-4" />
+                Prompt Code starten
               </Link>
             </Button>
           </div>

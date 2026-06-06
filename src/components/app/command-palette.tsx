@@ -10,7 +10,8 @@ import {
   FolderKanban,
   Library,
   Sparkles,
-  Plus,
+  MessageSquare,
+  Code2,
   Settings,
   CreditCard,
   CornerDownLeft,
@@ -78,7 +79,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: "generations", label: "Generierungen", group: "Seiten", Icon: Sparkles, perform: () => go("/generations") },
       { id: "settings", label: "Einstellungen", group: "Seiten", Icon: Settings, perform: () => go("/settings") },
       { id: "billing", label: "Abrechnung", group: "Seiten", Icon: CreditCard, perform: () => go("/billing") },
-      { id: "new", label: "Neues Projekt erstellen", group: "Aktionen", Icon: Plus, perform: () => go("/new") },
+      { id: "chat-general", label: "Prompt Chat starten", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chat?mode=general") },
+      { id: "chat-software", label: "Prompt Code starten", group: "Aktionen", Icon: Code2, perform: () => go("/chat?mode=software") },
     ],
     [go]
   );
