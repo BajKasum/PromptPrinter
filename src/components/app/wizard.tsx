@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Loader2, Check, Boxes, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Check, MessageSquare, Code2 } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,12 @@ import { cn } from "@/lib/utils";
 
 type PromptType = "software" | "general";
 
-// Each pack defines its own step sequence. Step 0 ("Typ") is shared; the rest
-// are rendered by label so the two flows can diverge without index juggling.
+// Each pack defines its own step sequence. The pack itself is chosen by the
+// mode toggle at the top (not a step), so each flow starts straight at its
+// first field and is rendered by label to diverge without index juggling.
 const STEP_DEFS: Record<PromptType, readonly string[]> = {
-  software: ["Typ", "Name", "Idee", "Zielgruppe", "Tools", "Generieren"],
-  general: ["Typ", "Titel", "Ziel", "Ziel-KI", "Generieren"],
+  software: ["Name", "Idee", "Zielgruppe", "Tools", "Generieren"],
+  general: ["Titel", "Ziel", "Ziel-KI", "Generieren"],
 };
 
 type FormState = {
@@ -48,6 +49,15 @@ export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: Projec
   const current = steps[step];
   const isLast = step === steps.length - 1;
   const set = (patch: Partial<FormState>) => setState((s) => ({ ...s, ...patch }));
+
+  // Switching packs swaps the whole step sequence, so jump back to the first
+  // field and clear any stale validation error.
+  const selectType = (type: PromptType) => {
+    if (type === state.type) return;
+    setState((s) => ({ ...s, type }));
+    setStep(0);
+    setError(null);
+  };
 
   const validateStep = (): string | null => {
     switch (current) {
@@ -136,6 +146,33 @@ export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: Projec
 
   return (
     <div className="w-full max-w-[640px]">
+      {/* Mode switch — pick the pack like the top bar in the reference UI. */}
+      <div className="mb-7">
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
+            <ModeButton
+              active={state.type === "general"}
+              icon={<MessageSquare className="h-4 w-4" />}
+              label="Prompt Chat"
+              disabled={submitting}
+              onClick={() => selectType("general")}
+            />
+            <ModeButton
+              active={state.type === "software"}
+              icon={<Code2 className="h-4 w-4" />}
+              label="Prompt Code"
+              disabled={submitting}
+              onClick={() => selectType("software")}
+            />
+          </div>
+        </div>
+        <p className="mt-3 text-center text-[12.5px] text-white/45">
+          {state.type === "general"
+            ? "Fertiger Prompt + Varianten für Alltag, Schule oder Arbeit."
+            : "Komplettes Build-Packet für ein Software-Projekt."}
+        </p>
+      </div>
+
       {/* Progress */}
       <div className="mb-10">
         <div className="flex items-center gap-1">
@@ -167,30 +204,6 @@ export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: Projec
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             >
-              {current === "Typ" && (
-                <StepWrap
-                  title="Was willst du printen?"
-                  sub="Wähle die Art von Prompt — pro Projekt kannst du eine andere nehmen."
-                >
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <TypeCard
-                      active={state.type === "software"}
-                      icon={<Boxes className="h-5 w-5" />}
-                      title="Software-Projekt"
-                      desc="Komplettes Build-Packet: PRD, Master-/Frontend-/Backend-Prompt, Schema, Deployment."
-                      onClick={() => set({ type: "software" })}
-                    />
-                    <TypeCard
-                      active={state.type === "general"}
-                      icon={<Wand2 className="h-5 w-5" />}
-                      title="Allgemein"
-                      desc="Ein fertiger Prompt + Varianten für irgendein Ziel — Lernen, Schreiben, Planen."
-                      onClick={() => set({ type: "general" })}
-                    />
-                  </div>
-                </StepWrap>
-              )}
-
               {(current === "Name" || current === "Titel") && (
                 <StepWrap
                   title={state.type === "general" ? "Benenne deinen Prompt" : "Benenne dein Projekt"}
@@ -380,40 +393,32 @@ export function Wizard({ initialTools = DEFAULT_TOOLS }: { initialTools?: Projec
   );
 }
 
-function TypeCard({
+function ModeButton({
   active,
   icon,
-  title,
-  desc,
+  label,
+  disabled,
   onClick,
 }: {
   active: boolean;
   icon: React.ReactNode;
-  title: string;
-  desc: string;
+  label: string;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "text-left rounded-xl border p-4 transition-colors",
-        active
-          ? "border-violet-500/60 bg-violet-500/[0.08]"
-          : "border-white/[0.08] bg-white/[0.02] hover:border-white/20"
+        "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium transition-colors",
+        active ? "bg-white/[0.08] text-white shadow-sm" : "text-white/55 hover:text-white",
+        disabled && "cursor-not-allowed opacity-60"
       )}
     >
-      <div
-        className={cn(
-          "inline-flex h-9 w-9 items-center justify-center rounded-lg mb-3",
-          active ? "bg-violet-500/20 text-violet-200" : "bg-white/[0.06] text-white/80"
-        )}
-      >
-        {icon}
-      </div>
-      <div className="text-[14px] font-semibold text-white">{title}</div>
-      <p className="mt-1 text-[12.5px] leading-snug text-white/55">{desc}</p>
+      {icon}
+      {label}
     </button>
   );
 }
