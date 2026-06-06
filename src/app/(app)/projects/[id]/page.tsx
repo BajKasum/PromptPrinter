@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Sparkles, GitBranch, Clock } from "lucide-react";
-import { ProjectTabs, type ProjectOutputs } from "@/components/app/project-tabs";
+import { ProjectTabs, type ProjectTab } from "@/components/app/project-tabs";
 import type { ProjectTools } from "@/components/app/project-card";
+import { GENERAL_VARIANTS } from "@/prompts";
 import { FadeIn } from "@/components/motion/fade-in";
 import { createClient } from "@/lib/supabase/server";
 import { relativeTime } from "@/lib/utils";
@@ -18,13 +19,35 @@ type ProjectRecord = {
   name: string;
   audience: string;
   idea: string;
-  tools: ProjectTools | null;
+  // Software projects carry the four build tools; general projects carry { target }.
+  tools: (ProjectTools & { target?: string }) | null;
+  type: string;
   status: string;
   updated_at: string;
 };
 
 const PLACEHOLDER =
   "_Noch keine Daten für diesen Abschnitt. Erstelle das Projekt neu, um ihn zu füllen._";
+
+const SOFTWARE_TABS: ProjectTab[] = [
+  { id: "overview", label: "Übersicht" },
+  { id: "brief", label: "Produkt-Brief" },
+  { id: "prd", label: "PRD" },
+  { id: "master", label: "Master-Prompt" },
+  { id: "frontend", label: "Frontend-Prompt" },
+  { id: "backend", label: "Backend-Prompt" },
+  { id: "schema", label: "Datenbank-Schema" },
+  { id: "security", label: "Sicherheits-Checkliste" },
+  { id: "marketing", label: "Marketing-Texte" },
+  { id: "seo", label: "SEO-Plan" },
+  { id: "deployment", label: "Deployment-Anleitung" },
+];
+
+const GENERAL_TABS: ProjectTab[] = [
+  { id: "overview", label: "Übersicht" },
+  { id: "prompt", label: "Haupt-Prompt" },
+  ...GENERAL_VARIANTS.map((v) => ({ id: v.key, label: v.label })),
+];
 
 function buildOverview(p: ProjectRecord): string {
   const t = p.tools ?? {};
@@ -50,7 +73,30 @@ ${p.idea}
 `;
 }
 
-function toOutputs(p: ProjectRecord, stored: Record<string, string>): ProjectOutputs {
+function buildGeneralOverview(p: ProjectRecord): string {
+  const target = p.tools?.target ?? "deine KI";
+  return `# ${p.name} — Übersicht
+
+**Typ** Allgemeiner Prompt  •  **Ziel-KI** ${target}  •  **Aktualisiert** ${relativeTime(
+    p.updated_at
+  )}
+
+## Ziel
+${p.idea}
+
+## Enthalten
+- **Haupt-Prompt** — die ausgewogene, fertige Version
+- **Varianten** — knapp & direkt, ausführlich & geführt, rollenbasiert
+
+## So nutzt du es
+Kopiere den Haupt-Prompt und füge ihn in ${target} ein. Greif zu einer Variante, wenn du einen anderen Ton oder mehr Führung brauchst.
+`;
+}
+
+function toSoftwareOutputs(
+  p: ProjectRecord,
+  stored: Record<string, string>
+): Record<string, string> {
   const pick = (key: string) => stored[key]?.trim() || PLACEHOLDER;
   return {
     overview: stored.overview?.trim() || buildOverview(p),
@@ -67,6 +113,20 @@ function toOutputs(p: ProjectRecord, stored: Record<string, string>): ProjectOut
   };
 }
 
+function toGeneralOutputs(
+  p: ProjectRecord,
+  stored: Record<string, string>
+): Record<string, string> {
+  const pick = (key: string) => stored[key]?.trim() || PLACEHOLDER;
+  return {
+    overview: stored.overview?.trim() || buildGeneralOverview(p),
+    prompt: pick("prompt"),
+    variant_a: pick("variant_a"),
+    variant_b: pick("variant_b"),
+    variant_c: pick("variant_c"),
+  };
+}
+
 export default async function ProjectDetailPage({ params }: { params: Params }) {
   const { id } = await params;
 
@@ -79,7 +139,7 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
   // RLS scopes this to the owner; a malformed id or foreign project → no row.
   const { data: project, error } = await supabase
     .from("projects")
-    .select("id, name, audience, idea, tools, status, updated_at")
+    .select("id, name, audience, idea, tools, type, status, updated_at")
     .eq("id", id)
     .maybeSingle<ProjectRecord>();
 
@@ -93,7 +153,12 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
     .limit(1)
     .maybeSingle<{ outputs: Record<string, string> | null }>();
 
-  const outputs = toOutputs(project, generation?.outputs ?? {});
+  const stored = generation?.outputs ?? {};
+  const isGeneral = project.type === "general";
+  const tabs = isGeneral ? GENERAL_TABS : SOFTWARE_TABS;
+  const outputs = isGeneral
+    ? toGeneralOutputs(project, stored)
+    : toSoftwareOutputs(project, stored);
 
   return (
     <div className="max-w-[1200px]">
@@ -110,7 +175,7 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
             <div>
               <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300 mb-2">
                 <Sparkles className="h-3 w-3" />
-                Build-Packet
+                {isGeneral ? "Prompt-Packet" : "Build-Packet"}
               </div>
               <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
                 {project.name}
@@ -129,7 +194,7 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
           </div>
         </div>
       </FadeIn>
-      <ProjectTabs projectName={project.name} outputs={outputs} />
+      <ProjectTabs projectName={project.name} tabs={tabs} outputs={outputs} />
     </div>
   );
 }

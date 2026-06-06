@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
 import {
   SYSTEM_PROMPT,
+  GENERAL_SYSTEM_PROMPT,
   briefTemplate,
   prdTemplate,
   masterPromptTemplate,
@@ -16,7 +17,9 @@ import {
   marketingTemplate,
   seoTemplate,
   deploymentTemplate,
-  type GenerationInput,
+  generalPromptTemplate,
+  generalVariantTemplate,
+  GENERAL_VARIANTS,
 } from "@/prompts";
 
 export const runtime = "nodejs";
@@ -42,13 +45,18 @@ export async function POST(req: Request) {
     return problem(400, "Invalid JSON body");
   }
 
+  // Back-compat: older clients posted no `type` (software was the only pack).
+  if (body && typeof body === "object" && !("type" in body)) {
+    (body as Record<string, unknown>).type = "software";
+  }
+
   const parsed = generateRequestSchema.safeParse(body);
   if (!parsed.success) {
     return problem(400, "Invalid request", {
       issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
     });
   }
-  const input: GenerationInput = parsed.data;
+  const input = parsed.data;
 
   // 2. Identify user (optional — anonymous is allowed but rate-limited harder).
   //    The client is hoisted so the plan-limit check and the persistence step
@@ -114,19 +122,32 @@ export async function POST(req: Request) {
     }
   }
 
-  // 4. Build prompt set
-  const prompts = {
-    brief: briefTemplate(input),
-    prd: prdTemplate(input),
-    master: masterPromptTemplate(input),
-    frontend: frontendPromptTemplate(input),
-    backend: backendPromptTemplate(input),
-    schema: schemaTemplate(input),
-    security: securityTemplate(input),
-    marketing: marketingTemplate(input),
-    seo: seoTemplate(input),
-    deployment: deploymentTemplate(input),
-  };
+  // 4. Build the prompt set + system instruction for the chosen pack.
+  let prompts: Record<string, string>;
+  let systemInstruction: string;
+  if (input.type === "general") {
+    prompts = {
+      prompt: generalPromptTemplate(input),
+      ...Object.fromEntries(
+        GENERAL_VARIANTS.map((v) => [v.key, generalVariantTemplate(input, v.angle)])
+      ),
+    };
+    systemInstruction = GENERAL_SYSTEM_PROMPT;
+  } else {
+    prompts = {
+      brief: briefTemplate(input),
+      prd: prdTemplate(input),
+      master: masterPromptTemplate(input),
+      frontend: frontendPromptTemplate(input),
+      backend: backendPromptTemplate(input),
+      schema: schemaTemplate(input),
+      security: securityTemplate(input),
+      marketing: marketingTemplate(input),
+      seo: seoTemplate(input),
+      deployment: deploymentTemplate(input),
+    };
+    systemInstruction = SYSTEM_PROMPT;
+  }
 
   // 5. Produce the outputs.
   //    - With an API key: call Gemini for each artifact.
@@ -143,7 +164,7 @@ export async function POST(req: Request) {
           model: MODEL,
           contents: prompt,
           config: {
-            systemInstruction: SYSTEM_PROMPT,
+            systemInstruction,
             maxOutputTokens: MAX_OUTPUT_TOKENS,
           },
         });
@@ -167,16 +188,45 @@ export async function POST(req: Request) {
   let persistError: string | null = null;
   if (userId && supabase) {
     try {
+      // One explicit row type for both packs. Without it, the two branches
+      // produce a union with differing `tools` shapes, which Supabase's
+      // insert typing (RejectExcessProperties) rejects. `tools` is a jsonb
+      // column, so Record<string, string> covers both the four build tools
+      // and the general pack's { target }.
+      const projectRow: {
+        user_id: string;
+        name: string;
+        audience: string;
+        idea: string;
+        tools: Record<string, string>;
+        type: string;
+        status: string;
+      } =
+        input.type === "general"
+          ? {
+              user_id: userId,
+              name: input.name,
+              // The general pack has no audience; store the target assistant so
+              // the dashboard card still has a meaningful subtitle.
+              audience: input.target,
+              idea: input.idea,
+              tools: { target: input.target },
+              type: "general",
+              status: "ready",
+            }
+          : {
+              user_id: userId,
+              name: input.name,
+              audience: input.audience,
+              idea: input.idea,
+              tools: input.tools,
+              type: "software",
+              status: "ready",
+            };
+
       const { data: project, error: projectErr } = await supabase
         .from("projects")
-        .insert({
-          user_id: userId,
-          name: input.name,
-          audience: input.audience,
-          idea: input.idea,
-          tools: input.tools,
-          status: "ready",
-        })
+        .insert(projectRow)
         .select("id")
         .single();
 

@@ -6,44 +6,24 @@ import { Copy, Check, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, downloadFile } from "@/lib/utils";
 
-export type ProjectOutputs = {
-  overview: string;
-  brief: string;
-  prd: string;
-  master: string;
-  frontend: string;
-  backend: string;
-  schema: string;
-  security: string;
-  marketing: string;
-  seo: string;
-  deployment: string;
-};
-
-const TABS: { id: keyof ProjectOutputs; label: string }[] = [
-  { id: "overview", label: "Übersicht" },
-  { id: "brief", label: "Produkt-Brief" },
-  { id: "prd", label: "PRD" },
-  { id: "master", label: "Master-Prompt" },
-  { id: "frontend", label: "Frontend-Prompt" },
-  { id: "backend", label: "Backend-Prompt" },
-  { id: "schema", label: "Datenbank-Schema" },
-  { id: "security", label: "Sicherheits-Checkliste" },
-  { id: "marketing", label: "Marketing-Texte" },
-  { id: "seo", label: "SEO-Plan" },
-  { id: "deployment", label: "Deployment-Anleitung" },
-];
+// A tab is just an output key + its display label. The caller (the project page)
+// supplies the right set for the project's pack — software gets the 10-artifact
+// list, the general pack gets prompt + variants — so this component stays
+// agnostic to what's being shown.
+export type ProjectTab = { id: string; label: string };
 
 export function ProjectTabs({
   projectName,
+  tabs,
   outputs,
 }: {
   projectName: string;
-  outputs: ProjectOutputs;
+  tabs: ProjectTab[];
+  outputs: Record<string, string>;
 }) {
-  const [active, setActive] = useState<keyof ProjectOutputs>("overview");
+  const [active, setActive] = useState<string>(tabs[0]?.id ?? "");
   const [copied, setCopied] = useState(false);
-  const text = outputs[active];
+  const text = outputs[active] ?? "";
 
   async function copy() {
     await navigator.clipboard.writeText(text);
@@ -57,7 +37,7 @@ export function ProjectTabs({
   }
 
   function exportAll() {
-    const bundle = TABS.map((t) => `\n\n# ${t.label}\n\n${outputs[t.id]}`).join("");
+    const bundle = tabs.map((t) => `\n\n# ${t.label}\n\n${outputs[t.id] ?? ""}`).join("");
     const filename = `${projectName.toLowerCase().replace(/\s+/g, "-")}.bundle.md`;
     downloadFile(filename, bundle.trim(), "text/markdown");
   }
@@ -67,7 +47,7 @@ export function ProjectTabs({
       <nav className="lg:sticky lg:top-20 self-start">
         <div className="card-surface p-2">
           <ul className="space-y-0.5">
-            {TABS.map((t) => (
+            {tabs.map((t) => (
               <li key={t.id}>
                 <button
                   onClick={() => setActive(t.id)}
@@ -95,7 +75,7 @@ export function ProjectTabs({
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-white/55" />
             <span className="text-[13px] text-white/75">
-              {TABS.find((t) => t.id === active)?.label}
+              {tabs.find((t) => t.id === active)?.label}
             </span>
             <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/35">
               .md
