@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { chatRequestSchema, type ChatRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { CHAT_SYSTEM_PROMPT } from "@/prompts";
+import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -57,11 +57,20 @@ export async function POST(req: Request) {
     });
   }
 
-  // 4. Build the system instruction. Both modes share the conversational prompt
-  //    engineer; the chosen target assistant is appended as a styling hint.
-  const systemInstruction = input.target
-    ? `${CHAT_SYSTEM_PROMPT}\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`
-    : CHAT_SYSTEM_PROMPT;
+  // 4. Build the system instruction.
+  //    - general mode  → the everyday prompt engineer (+ optional target hint)
+  //    - software mode → the code-refinement assistant
+  //    When the chat refines a project (Code mode), append a compact context
+  //    block so the assistant knows the build packet it's working on.
+  let systemInstruction =
+    input.mode === "software" ? CODE_CHAT_SYSTEM_PROMPT : CHAT_SYSTEM_PROMPT;
+  if (input.mode !== "software" && input.target) {
+    systemInstruction += `\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`;
+  }
+  if (input.projectId && userId && supabase) {
+    const ctx = await buildProjectContext(supabase, userId, input.projectId);
+    if (ctx) systemInstruction += `\n\n${ctx}`;
+  }
 
   // 5. Produce the reply. Without a key we return a useful stub so the whole
   //    flow stays testable; with one we replay the transcript to Gemini
@@ -152,6 +161,7 @@ async function persistTurn(
         mode: input.mode,
         target: input.target ?? null,
         title,
+        project_id: input.projectId ?? null,
       })
       .select("id")
       .single();
@@ -194,6 +204,56 @@ function deriveTitle(text: string): string {
   const clean = text.trim().replace(/\s+/g, " ");
   if (!clean) return "Neuer Chat";
   return clean.length > 60 ? `${clean.slice(0, 57)}…` : clean;
+}
+
+// Compact context about the project a Code-mode chat is refining: its idea, the
+// chosen stack, and the current master prompt (truncated). Appended to the
+// system instruction so the assistant can refine the actual packet. Returns null
+// when the project isn't found or isn't owned by the caller (RLS-scoped read).
+async function buildProjectContext(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  projectId: string
+): Promise<string | null> {
+  const { data: project } = await supabase
+    .from("projects")
+    .select("name, idea, tools")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (!project) return null;
+
+  const tools = (project.tools ?? {}) as Record<string, string>;
+  const stack = [
+    tools.master && `master prompt target: ${tools.master}`,
+    tools.frontend && `frontend: ${tools.frontend}`,
+    tools.backend && `backend: ${tools.backend}`,
+    tools.database && `database: ${tools.database}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const { data: generation } = await supabase
+    .from("generations")
+    .select("outputs")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const outputs = (generation?.outputs ?? {}) as Record<string, string>;
+  const master = typeof outputs.master === "string" ? outputs.master : "";
+  const masterBlock = master
+    ? `\n\nCurrent Master-Prompt artifact (for reference):\n${truncate(master, 2400)}`
+    : "";
+
+  return `--- PROJECT CONTEXT (the user is refining this build packet) ---
+Name: ${project.name}
+Idea: ${truncate(String(project.idea ?? ""), 1200)}${stack ? `\nStack: ${stack}` : ""}${masterBlock}
+--- END PROJECT CONTEXT ---`;
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? `${s.slice(0, max)}…` : s;
 }
 
 // A placeholder answer that mirrors the real shape (a fenced, paste-ready

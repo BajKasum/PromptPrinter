@@ -41,6 +41,9 @@ export const chatRequestSchema = z.object({
   // every following turn so the route appends to the same row instead of
   // creating a new chat each time. Absent on the very first turn.
   conversationId: z.string().uuid().optional(),
+  // Present when the chat refines a specific project's build packet (Code mode).
+  // The route loads that project's context and links the conversation to it.
+  projectId: z.string().uuid().optional(),
   messages: z.array(chatMessageSchema).min(1).max(50),
 });
 

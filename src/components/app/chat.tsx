@@ -10,23 +10,60 @@ import remarkGfm from "remark-gfm";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const STARTERS = [
-  "Hilf mir, einen Prompt zu schreiben, um Französisch-Vokabeln zu üben.",
-  "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
-  "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
-];
+// The chat serves three contexts; each gets its own empty-state copy + starters.
+//  - general : everyday prompts (school, writing, planning)
+//  - software: software-build prompts, standalone
+//  - refine  : refining the build packet of a specific project
+type Variant = "general" | "software" | "refine";
+
+const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string[] }> = {
+  general: {
+    heading: "Wofür brauchst du einen Prompt?",
+    sub: "Beschreib dein Ziel — ich bau dir einen fertigen Prompt und verfeinere ihn mit dir.",
+    starters: [
+      "Hilf mir, einen Prompt zu schreiben, um Französisch-Vokabeln zu üben.",
+      "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
+      "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
+    ],
+  },
+  software: {
+    heading: "Wofür brauchst du einen Software-Prompt?",
+    sub: "Beschreib, was du bauen willst — ich liefere dir einen build-fertigen Prompt zum Verfeinern.",
+    starters: [
+      "Schreib mir einen Prompt für ein React-Komponenten-Gerüst mit Tailwind.",
+      "Ich brauche einen Prompt, der eine REST-API in Node.js entwirft.",
+      "Erstelle einen Prompt, der ein Datenbank-Schema für eine Todo-App plant.",
+    ],
+  },
+  refine: {
+    heading: "Verfeinere dein Packet",
+    sub: "Sag mir, was ich an deinen Prompts ändern soll — du bekommst die aktualisierte, fertige Version zurück.",
+    starters: [
+      "Mach den Master-Prompt kürzer und prägnanter.",
+      "Ergänze den Frontend-Prompt um einen Dark-Mode.",
+      "Erkläre das Datenbank-Schema mit mehr Kommentaren.",
+    ],
+  },
+};
 
 export function Chat({
   mode,
   target,
+  projectId,
   initialMessages,
   initialConversationId,
 }: {
   mode: "general" | "software";
   target?: string;
+  projectId?: string;
   initialMessages?: Msg[];
   initialConversationId?: string;
 }) {
+  // Refining a project's packet is its own context; otherwise the mode picks the
+  // copy. The variant only drives the empty-state heading/sub/starters.
+  const variant: Variant = projectId ? "refine" : mode;
+  const { heading, sub, starters } = VARIANTS[variant];
+
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
   const [conversationId, setConversationId] = useState<string | undefined>(
     initialConversationId
@@ -52,7 +89,7 @@ export function Chat({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode, target, conversationId, messages: next }),
+        body: JSON.stringify({ mode, target, conversationId, projectId, messages: next }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail ?? "Chat fehlgeschlagen");
@@ -71,7 +108,13 @@ export function Chat({
     <div className="flex flex-col h-[calc(100vh-240px)] min-h-[440px]">
       <div className="flex-1 overflow-y-auto card-surface p-5 md:p-6">
         {messages.length === 0 ? (
-          <EmptyState onPick={(t) => send(t)} disabled={loading} />
+          <EmptyState
+            heading={heading}
+            sub={sub}
+            starters={starters}
+            onPick={(t) => send(t)}
+            disabled={loading}
+          />
         ) : (
           <div className="space-y-5">
             {messages.map((m, i) =>
@@ -119,18 +162,28 @@ export function Chat({
   );
 }
 
-function EmptyState({ onPick, disabled }: { onPick: (t: string) => void; disabled: boolean }) {
+function EmptyState({
+  heading,
+  sub,
+  starters,
+  onPick,
+  disabled,
+}: {
+  heading: string;
+  sub: string;
+  starters: string[];
+  onPick: (t: string) => void;
+  disabled: boolean;
+}) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-10">
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
         <Sparkles className="h-5 w-5 text-violet-300" strokeWidth={1.8} />
       </div>
-      <h2 className="text-[18px] font-semibold text-white">Wofür brauchst du einen Prompt?</h2>
-      <p className="mt-1 text-[13px] text-white/55 max-w-sm">
-        Beschreib dein Ziel — ich bau dir einen fertigen Prompt und verfeinere ihn mit dir.
-      </p>
+      <h2 className="text-[18px] font-semibold text-white">{heading}</h2>
+      <p className="mt-1 text-[13px] text-white/55 max-w-sm">{sub}</p>
       <div className="mt-5 w-full max-w-md space-y-2">
-        {STARTERS.map((s) => (
+        {starters.map((s) => (
           <button
             key={s}
             type="button"

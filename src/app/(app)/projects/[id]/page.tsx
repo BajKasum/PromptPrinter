@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Sparkles, GitBranch, Clock } from "lucide-react";
+import { ArrowLeft, Sparkles, GitBranch, Clock, MessageSquare } from "lucide-react";
 import { ProjectTabs, type ProjectTab } from "@/components/app/project-tabs";
+import { Chat } from "@/components/app/chat";
 import type { ProjectTools } from "@/components/app/project-card";
 import { GENERAL_VARIANTS } from "@/prompts";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Projekt" };
 
 type Params = Promise<{ id: string }>;
+
+type DbMessage = { role: "user" | "assistant"; content: string };
 
 type ProjectRecord = {
   id: string;
@@ -160,6 +163,29 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
     ? toGeneralOutputs(project, stored)
     : toSoftwareOutputs(project, stored);
 
+  // Phase 3: every project carries a refine-chat. Load the most recently active
+  // one (if any) so reopening the project resumes the same conversation. RLS
+  // scopes the read to the owner; project_id ties it to this packet.
+  const { data: refineConvo } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("project_id", id)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  let refineMessages: DbMessage[] | undefined;
+  let refineConversationId: string | undefined;
+  if (refineConvo) {
+    refineConversationId = refineConvo.id;
+    const { data: rows } = await supabase
+      .from("messages")
+      .select("role, content")
+      .eq("conversation_id", refineConvo.id)
+      .order("created_at", { ascending: true });
+    refineMessages = (rows as DbMessage[] | null) ?? [];
+  }
+
   return (
     <div className="max-w-[1200px]">
       <FadeIn>
@@ -195,6 +221,28 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
         </div>
       </FadeIn>
       <ProjectTabs projectName={project.name} tabs={tabs} outputs={outputs} />
+
+      <FadeIn>
+        <div className="mt-10 border-t border-white/[0.06] pt-8">
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300 mb-2">
+            <MessageSquare className="h-3 w-3" />
+            Im Chat verfeinern
+          </div>
+          <h2 className="text-[20px] md:text-[24px] leading-[1.1] tracking-[-0.02em] font-semibold text-white mb-1">
+            Pass dein Packet an
+          </h2>
+          <p className="text-[13px] text-white/55 mb-5 max-w-xl">
+            Sag der KI, was du an deinen Prompts ändern willst — sie kennt dein
+            Packet und gibt dir die aktualisierte Version zurück.
+          </p>
+          <Chat
+            mode={isGeneral ? "general" : "software"}
+            projectId={project.id}
+            initialMessages={refineMessages}
+            initialConversationId={refineConversationId}
+          />
+        </div>
+      </FadeIn>
     </div>
   );
 }
