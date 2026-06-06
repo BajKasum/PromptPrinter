@@ -37,6 +37,10 @@ export const chatMessageSchema = z.object({
 export const chatRequestSchema = z.object({
   mode: z.enum(["general", "software"]),
   target: z.string().trim().min(1).max(40).optional(),
+  // Set once the conversation has been persisted; the client echoes it back on
+  // every following turn so the route appends to the same row instead of
+  // creating a new chat each time. Absent on the very first turn.
+  conversationId: z.string().uuid().optional(),
   messages: z.array(chatMessageSchema).min(1).max(50),
 });
 

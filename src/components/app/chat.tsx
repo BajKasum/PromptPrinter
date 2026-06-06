@@ -16,8 +16,21 @@ const STARTERS = [
   "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
 ];
 
-export function Chat({ mode, target }: { mode: "general" | "software"; target?: string }) {
-  const [messages, setMessages] = useState<Msg[]>([]);
+export function Chat({
+  mode,
+  target,
+  initialMessages,
+  initialConversationId,
+}: {
+  mode: "general" | "software";
+  target?: string;
+  initialMessages?: Msg[];
+  initialConversationId?: string;
+}) {
+  const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
+  const [conversationId, setConversationId] = useState<string | undefined>(
+    initialConversationId
+  );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +52,14 @@ export function Chat({ mode, target }: { mode: "general" | "software"; target?: 
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode, target, messages: next }),
+        body: JSON.stringify({ mode, target, conversationId, messages: next }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail ?? "Chat fehlgeschlagen");
       setMessages((m) => [...m, { role: "assistant", content: json.reply as string }]);
+      // The route returns the conversation id on the first persisted turn; hold
+      // onto it so every following turn appends to the same stored chat.
+      if (json.conversationId) setConversationId(json.conversationId as string);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unbekannter Fehler");
     } finally {
@@ -97,7 +113,7 @@ export function Chat({ mode, target }: { mode: "general" | "software"; target?: 
         </Button>
       </div>
       <p className="mt-2 text-[11px] text-white/35">
-        Enter sendet · Shift+Enter neue Zeile · dieser Chat wird noch nicht gespeichert.
+        Enter sendet · Shift+Enter neue Zeile · dieser Chat wird automatisch gespeichert.
       </p>
     </div>
   );

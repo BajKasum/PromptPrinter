@@ -4,6 +4,7 @@ import { FolderKanban, Plus, Sparkles, CreditCard, Star, MessageSquare, Code2 } 
 import { Button } from "@/components/ui/button";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { ProjectCard, type ProjectRow } from "@/components/app/project-card";
+import { ChatCard, type ConversationRow } from "@/components/app/chat-card";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Dashboard" };
@@ -16,6 +17,10 @@ type ProjectQueryRow = Omit<ProjectRow, "generationCount" | "isFavorite"> & {
   generations: { count: number }[] | null;
 };
 
+type ChatQueryRow = Omit<ConversationRow, "messageCount"> & {
+  messages: { count: number }[] | null;
+};
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -23,12 +28,17 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: rawProjects }, { data: profile }] = await Promise.all([
+  const [{ data: rawProjects }, { data: profile }, { data: rawChats }] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, audience, tools, status, updated_at, is_favorite, generations(count)")
       .order("updated_at", { ascending: false }),
     supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("conversations")
+      .select("id, title, mode, target, updated_at, messages(count)")
+      .order("updated_at", { ascending: false })
+      .limit(6),
   ]);
 
   const projects: ProjectRow[] = ((rawProjects as ProjectQueryRow[] | null) ?? []).map((p) => ({
@@ -40,6 +50,15 @@ export default async function DashboardPage() {
     updated_at: p.updated_at,
     generationCount: p.generations?.[0]?.count ?? 0,
     isFavorite: p.is_favorite ?? false,
+  }));
+
+  const chats: ConversationRow[] = ((rawChats as ChatQueryRow[] | null) ?? []).map((c) => ({
+    id: c.id,
+    title: c.title,
+    mode: c.mode,
+    target: c.target,
+    updated_at: c.updated_at,
+    messageCount: c.messages?.[0]?.count ?? 0,
   }));
 
   const favorites = projects.filter((p) => p.isFavorite).slice(0, 3);
@@ -102,6 +121,30 @@ export default async function DashboardPage() {
           </StaggerItem>
         ))}
       </StaggerChildren>
+
+      {chats.length > 0 && (
+        <section className="mb-10">
+          <FadeIn>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-white">
+                <MessageSquare className="h-4 w-4 text-violet-300" strokeWidth={1.8} />
+                Letzte Chats
+              </h2>
+              <Link
+                href="/chats"
+                className="text-[13px] text-white/55 hover:text-white transition-colors"
+              >
+                Alle ansehen →
+              </Link>
+            </div>
+          </FadeIn>
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {chats.map((c) => (
+              <ChatCard key={c.id} conversation={c} />
+            ))}
+          </StaggerChildren>
+        </section>
+      )}
 
       {favorites.length > 0 && (
         <section className="mb-10">

@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  MessageSquare,
   FolderOpen,
   Sparkles,
   Library,
@@ -17,6 +18,7 @@ export type ComingSoonItem = { label: string; Icon: LucideIcon };
 // and the mobile drawer so the two never drift apart.
 export const primaryNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", Icon: LayoutDashboard },
+  { label: "Chats", href: "/chats", Icon: MessageSquare },
   { label: "Projekte", href: "/projects", Icon: FolderOpen },
   { label: "Bibliothek", href: "/library", Icon: Library },
   { label: "Generierungen", href: "/generations", Icon: Sparkles },

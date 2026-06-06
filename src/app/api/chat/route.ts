@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { chatRequestSchema } from "@/lib/schemas";
+import { chatRequestSchema, type ChatRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { CHAT_SYSTEM_PROMPT } from "@/prompts";
@@ -63,36 +63,137 @@ export async function POST(req: Request) {
     ? `${CHAT_SYSTEM_PROMPT}\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`
     : CHAT_SYSTEM_PROMPT;
 
-  // 5. Without a key, return a useful stub so the whole flow is testable.
+  // 5. Produce the reply. Without a key we return a useful stub so the whole
+  //    flow stays testable; with one we replay the transcript to Gemini
+  //    (assistant → "model", user → "user").
   const apiKey = process.env.GEMINI_API_KEY;
+  let reply: string;
+  let mode: "stub" | "generated";
   if (!apiKey) {
     const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
-    return NextResponse.json({ reply: stubReply(lastUser?.content ?? ""), mode: "stub" });
+    reply = stubReply(lastUser?.content ?? "");
+    mode = "stub";
+  } else {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const contents = input.messages.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+      const res = await ai.models.generateContent({
+        model: MODEL,
+        contents,
+        config: { systemInstruction, maxOutputTokens: MAX_OUTPUT_TOKENS },
+      });
+      const text = res.text?.trim();
+      if (!text) {
+        return problem(502, "Leere Antwort vom Modell — versuch es nochmal.");
+      }
+      reply = text;
+      mode = "generated";
+    } catch (err) {
+      return problem(
+        502,
+        `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`
+      );
+    }
   }
 
-  // 6. Replay the transcript to Gemini. assistant → "model", user → "user".
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const contents = input.messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-    const res = await ai.models.generateContent({
-      model: MODEL,
-      contents,
-      config: { systemInstruction, maxOutputTokens: MAX_OUTPUT_TOKENS },
-    });
-    const text = res.text?.trim();
-    if (!text) {
-      return problem(502, "Leere Antwort vom Modell — versuch es nochmal.");
+  // 6. Persist the turn for signed-in users (in both modes), so the chat shows
+  //    up in the dashboard and can be reopened/continued. Persistence failures
+  //    are surfaced but never block the reply the user is waiting on.
+  let conversationId: string | null = input.conversationId ?? null;
+  let persistError: string | null = null;
+  if (userId && supabase) {
+    try {
+      conversationId = await persistTurn(supabase, userId, input, reply);
+    } catch (err) {
+      persistError = err instanceof Error ? err.message : "persist failed";
+      conversationId = null;
     }
-    return NextResponse.json({ reply: text, mode: "generated" });
-  } catch (err) {
-    return problem(
-      502,
-      `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`
-    );
   }
+
+  return NextResponse.json({
+    reply,
+    mode,
+    ...(conversationId ? { conversationId } : {}),
+    ...(persistError ? { persistError } : {}),
+  });
+}
+
+// Append one chat turn (the new user message + the assistant reply) to its
+// conversation, creating the conversation on the first turn. Returns the
+// conversation id so the client can echo it back on the next turn.
+async function persistTurn(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  input: ChatRequest,
+  reply: string
+): Promise<string> {
+  let conversationId = input.conversationId ?? null;
+
+  // Confirm the caller still owns the passed conversation (RLS scopes the
+  // select to the owner); if it's gone or not theirs, start a fresh one.
+  if (conversationId) {
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (!existing) conversationId = null;
+  }
+
+  if (!conversationId) {
+    const title = deriveTitle(input.messages[0]?.content ?? "");
+    const { data: created, error } = await supabase
+      .from("conversations")
+      .insert({
+        user_id: userId,
+        mode: input.mode,
+        target: input.target ?? null,
+        title,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    const id = created?.id as string | undefined;
+    if (!id) throw new Error("conversation insert returned no id");
+    conversationId = id;
+  } else {
+    // Continued chat — bump updated_at so it sorts to the top of the list.
+    await supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+  }
+
+  // The client appends the user message before posting, so the last entry is
+  // always the new user turn. Store it alongside the assistant reply.
+  const newUser = input.messages[input.messages.length - 1];
+  const { error: msgErr } = await supabase.from("messages").insert([
+    {
+      conversation_id: conversationId,
+      user_id: userId,
+      role: newUser.role,
+      content: newUser.content,
+    },
+    {
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "assistant",
+      content: reply,
+    },
+  ]);
+  if (msgErr) throw msgErr;
+
+  return conversationId;
+}
+
+// A short, single-line title derived from the opening message.
+function deriveTitle(text: string): string {
+  const clean = text.trim().replace(/\s+/g, " ");
+  if (!clean) return "Neuer Chat";
+  return clean.length > 60 ? `${clean.slice(0, 57)}…` : clean;
 }
 
 // A placeholder answer that mirrors the real shape (a fenced, paste-ready

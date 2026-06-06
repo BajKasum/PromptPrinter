@@ -9,10 +9,12 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Chat" };
 
-type SearchParams = Promise<{ mode?: string; target?: string }>;
+type SearchParams = Promise<{ mode?: string; target?: string; id?: string }>;
+
+type DbMessage = { role: "user" | "assistant"; content: string };
 
 export default async function ChatPage({ searchParams }: { searchParams: SearchParams }) {
-  const { mode: rawMode, target } = await searchParams;
+  const { mode: rawMode, target: rawTarget, id } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -20,7 +22,34 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const mode: "general" | "software" = rawMode === "software" ? "software" : "general";
+  // A fresh chat takes its mode/target from the query string. Continuing a saved
+  // chat (?id=...) instead loads its stored mode/target + full transcript. RLS
+  // scopes both reads to the owner, so an unknown or foreign id simply yields
+  // nothing and we fall back to a fresh chat.
+  let mode: "general" | "software" = rawMode === "software" ? "software" : "general";
+  let target = rawTarget;
+  let initialMessages: DbMessage[] | undefined;
+  let conversationId: string | undefined;
+
+  if (id) {
+    const { data: convo } = await supabase
+      .from("conversations")
+      .select("id, mode, target")
+      .eq("id", id)
+      .maybeSingle();
+    if (convo) {
+      conversationId = convo.id as string;
+      mode = convo.mode === "software" ? "software" : "general";
+      target = (convo.target as string | null) ?? undefined;
+      const { data: rows } = await supabase
+        .from("messages")
+        .select("role, content")
+        .eq("conversation_id", id)
+        .order("created_at", { ascending: true });
+      initialMessages = (rows as DbMessage[] | null) ?? [];
+    }
+  }
+
   const isCode = mode === "software";
 
   return (
@@ -43,7 +72,12 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
           </h1>
         </div>
       </FadeIn>
-      <Chat mode={mode} target={target} />
+      <Chat
+        mode={mode}
+        target={target}
+        initialMessages={initialMessages}
+        initialConversationId={conversationId}
+      />
     </div>
   );
 }
