@@ -42,8 +42,8 @@ type Usage = {
 };
 
 const PLAN_BADGE: Record<PlanKey, string> = {
-  free: "border-white/15 bg-white/[0.06] text-white/70",
-  pro: "border-violet-400/40 bg-violet-500/15 text-violet-200",
+  free: "border-border bg-surface text-foreground/70",
+  pro: "border-accent/40 bg-accent-subtle text-accent-text",
   team: "border-cyan-400/40 bg-cyan-500/15 text-cyan-200",
 };
 
@@ -190,10 +190,10 @@ export function SettingsWorkspace({
               </Field>
 
               <Field label="Email">
-                <div className="flex h-11 items-center rounded-lg border border-white/10 bg-white/[0.015] px-3.5 text-sm text-white/55">
+                <div className="flex h-11 items-center rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground/55">
                   {email}
                 </div>
-                <p className="text-[12px] text-white/40">
+                <p className="text-[12px] text-foreground/40">
                   Mit deinem Login verknüpft — hier nicht änderbar.
                 </p>
               </Field>
@@ -216,7 +216,7 @@ export function SettingsWorkspace({
               </span>
             }
           >
-            <div className="divide-y divide-white/[0.06]">
+            <div className="divide-y divide-border">
               <InfoRow label="Rolle" value="Eigentümer" />
               <InfoRow label="Mitglied seit" value={memberSinceLabel} />
               <InfoRow label="Account-ID" value={userId.slice(0, 8)} mono />
@@ -348,13 +348,13 @@ export function SettingsWorkspace({
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
             className="pointer-events-none fixed inset-x-0 bottom-5 z-50 px-6 md:pl-[280px] md:pr-10"
           >
-            <div className="pointer-events-auto flex max-w-[1080px] items-center justify-between gap-4 rounded-2xl border border-white/12 glass-strong px-4 py-3 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.85)]">
+            <div className="pointer-events-auto flex max-w-[1080px] items-center justify-between gap-4 rounded-2xl border border-border glass-strong px-4 py-3 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.85)]">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-70" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
                 </span>
-                <span className="text-[13.5px] font-medium text-white">
+                <span className="text-[13.5px] font-medium text-foreground">
                   Ungespeicherte Änderungen
                 </span>
               </div>
@@ -408,12 +408,12 @@ function SettingsCard({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.045] to-white/[0.01] p-6 md:p-7",
+        "relative overflow-hidden rounded-2xl border border-border bg-surface-raised p-6 md:p-7",
         className
       )}
     >
       {/* top hairline highlight */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
       {/* soft accent glow in the corner */}
       <div
         className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full opacity-[0.10] blur-3xl"
@@ -431,11 +431,11 @@ function SettingsCard({
           <Icon className="h-[18px] w-[18px]" style={{ color: accent }} strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[16px] font-semibold tracking-tight text-white">{title}</h2>
-          <p className="mt-0.5 text-[13px] text-white/55">{description}</p>
+          <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
+          <p className="mt-0.5 text-[13px] text-foreground/55">{description}</p>
         </div>
         {badge ? (
-          <span className="shrink-0 rounded-full border border-white/[0.10] bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-white/45">
+          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-foreground/45">
             {badge}
           </span>
         ) : (
@@ -451,7 +451,7 @@ function SettingsCard({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <span className="block text-[13px] font-medium text-white/70">{label}</span>
+      <span className="block text-[13px] font-medium text-foreground/70">{label}</span>
       {children}
     </div>
   );
@@ -460,8 +460,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2.5">
-      <span className="text-[13px] text-white/50">{label}</span>
-      <span className={cn("text-[13px] text-white/85", mono && "font-mono text-white/70")}>
+      <span className="text-[13px] text-foreground/50">{label}</span>
+      <span className={cn("text-[13px] text-foreground/85", mono && "font-mono text-foreground/70")}>
         {value}
       </span>
     </div>
@@ -476,26 +476,26 @@ function UsageMeter({ label, used, limit }: { label: string; used: number; limit
       ? "from-red-500 to-red-400"
       : !unlimited && pct >= 80
         ? "from-amber-500 to-amber-400"
-        : "from-violet-500 to-violet-400";
+        : "from-accent to-accent-text";
 
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between">
-        <span className="text-[13px] font-medium text-white/80">{label}</span>
-        <span className="text-[13px] tabular-nums text-white/55">
+        <span className="text-[13px] font-medium text-foreground/80">{label}</span>
+        <span className="text-[13px] tabular-nums text-foreground/55">
           {unlimited ? (
             <>
-              {used} <span className="text-white/35">· Unbegrenzt</span>
+              {used} <span className="text-foreground/35">· Unbegrenzt</span>
             </>
           ) : (
             <>
-              <span className="text-white/85">{used}</span>
-              <span className="text-white/35"> / {limit}</span>
+              <span className="text-foreground/85">{used}</span>
+              <span className="text-foreground/35"> / {limit}</span>
             </>
           )}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="h-2 overflow-hidden rounded-full bg-surface">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
@@ -509,15 +509,15 @@ function UsageMeter({ label, used, limit }: { label: string; used: number; limit
 
 function ProviderRow({ logo, name, sub }: { logo: string; name: string; sub: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.015] px-3 py-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03]">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface">
         <ToolLogo name={logo} size={16} />
       </span>
       <div className="min-w-0 flex-1 leading-tight">
-        <div className="truncate text-[13px] font-medium text-white">{name}</div>
-        <div className="truncate text-[11px] text-white/40">{sub}</div>
+        <div className="truncate text-[13px] font-medium text-foreground">{name}</div>
+        <div className="truncate text-[11px] text-foreground/40">{sub}</div>
       </div>
-      <span className="shrink-0 rounded-full border border-white/[0.10] bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-white/45">
+      <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-foreground/45">
         Bald
       </span>
     </div>

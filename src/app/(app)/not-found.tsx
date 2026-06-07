@@ -9,16 +9,16 @@ export default function AppNotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
-          <Compass className="h-5 w-5 text-violet-300" strokeWidth={1.8} />
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface">
+          <Compass className="h-5 w-5 text-accent-text" strokeWidth={1.8} />
         </div>
-        <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-violet-300">
+        <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-accent-text">
           404
         </div>
-        <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-white">
+        <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
           Nicht gefunden
         </h1>
-        <p className="text-[13.5px] text-white/55">
+        <p className="text-[13.5px] text-foreground/55">
           Diese Seite oder dieses Projekt existiert nicht — oder gehört nicht zu
           deinem Konto.
         </p>

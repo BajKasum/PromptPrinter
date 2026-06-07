@@ -42,7 +42,7 @@ export function MobileNav() {
         onClick={() => setOpen(true)}
         aria-label="Menü öffnen"
         aria-expanded={open}
-        className="md:hidden h-9 w-9 shrink-0 rounded-lg border border-white/10 bg-white/[0.02] flex items-center justify-center text-white/65 hover:text-white hover:bg-white/[0.05] transition-colors"
+        className="md:hidden h-9 w-9 shrink-0 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
       >
         <Menu className="h-4 w-4" strokeWidth={1.8} />
       </button>
@@ -64,9 +64,9 @@ export function MobileNav() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 38 }}
-              className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[82vw] flex flex-col border-r border-white/[0.08] glass-strong"
+              className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[82vw] flex flex-col border-r border-border bg-surface-raised"
             >
-              <div className="flex items-center justify-between px-5 py-5 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between px-5 py-5 border-b border-border">
                 <Link href="/dashboard" className="inline-flex" onClick={() => setOpen(false)}>
                   <Logo />
                 </Link>
@@ -74,7 +74,7 @@ export function MobileNav() {
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Menü schliessen"
-                  className="h-8 w-8 rounded-lg border border-white/10 bg-white/[0.02] flex items-center justify-center text-white/65 hover:text-white hover:bg-white/[0.05] transition-colors"
+                  className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
                 >
                   <X className="h-4 w-4" strokeWidth={1.8} />
                 </button>
@@ -84,7 +84,7 @@ export function MobileNav() {
                 <Link
                   href="/chat"
                   onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-[#7C3AED] text-[13px] font-medium text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-[#8B5CF6] active:scale-[0.97] transition-all duration-200"
+                  className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   Neuer Chat
@@ -102,8 +102,8 @@ export function MobileNav() {
                         className={cn(
                           "flex items-center gap-3 h-10 px-3 rounded-md text-[14px] transition-colors",
                           active
-                            ? "bg-white/[0.06] text-white"
-                            : "text-white/65 hover:text-white hover:bg-white/[0.04]"
+                            ? "bg-accent-subtle text-accent-text font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                         )}
                       >
                         <Icon className="h-4 w-4" strokeWidth={1.8} />
@@ -113,7 +113,7 @@ export function MobileNav() {
                   })}
                 </nav>
 
-                <div className="my-5 h-px bg-white/[0.06]" />
+                <div className="my-5 h-px bg-border" />
 
                 <nav aria-label="Konto" className="space-y-0.5">
                   {secondaryNav.map(({ label, href, Icon }) => {
@@ -127,8 +127,8 @@ export function MobileNav() {
                         className={cn(
                           "flex items-center gap-3 h-10 px-3 rounded-md text-[14px] transition-colors",
                           active
-                            ? "bg-white/[0.06] text-white"
-                            : "text-white/65 hover:text-white hover:bg-white/[0.04]"
+                            ? "bg-accent-subtle text-accent-text font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                         )}
                       >
                         <Icon className="h-4 w-4" strokeWidth={1.8} />

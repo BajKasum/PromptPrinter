@@ -103,10 +103,10 @@ export default async function LibraryPage() {
     <div className="max-w-[1200px]">
       <FadeIn>
         <div className="mb-8">
-          <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
+          <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
             Bibliothek
           </h1>
-          <p className="mt-1 text-[14px] text-white/55">
+          <p className="mt-1 text-[14px] text-foreground/55">
             {items.length === 0
               ? "Dein Archiv aller erstellten Artefakte erscheint hier."
               : `Dein Archiv aus ${items.length} ${
@@ -119,11 +119,11 @@ export default async function LibraryPage() {
       {items.length === 0 ? (
         <FadeIn>
           <div className="card-surface p-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
-              <Library className="h-5 w-5 text-white/85" strokeWidth={1.8} />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
+              <Library className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-white/80">Deine Bibliothek ist leer</p>
-            <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
+            <p className="text-[15px] text-foreground/80">Deine Bibliothek ist leer</p>
+            <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
               Hier landen die Artefakte aus deinen Build-Packets — PRD, Master-Prompt und
               Datenbank-Schema. Starte einen Prompt Code Chat, um loszulegen.
             </p>

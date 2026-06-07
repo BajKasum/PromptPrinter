@@ -15,11 +15,11 @@ export default function GenerationsLoading() {
           <StatCardSkeleton key={i} />
         ))}
       </div>
-      <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02]">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 border-b border-white/[0.06] px-5 py-4 last:border-0"
+            className="flex items-center gap-4 border-b border-border px-5 py-4 last:border-0"
           >
             <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
             <div className="flex-1">

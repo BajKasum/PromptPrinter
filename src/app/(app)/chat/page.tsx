@@ -58,16 +58,16 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
         <div className="mb-6">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-1.5 text-[13px] text-foreground/55 hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Zurück zum Dashboard
           </Link>
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300 mb-2">
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-2">
             {isCode ? <Code2 className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
             {isCode ? "Prompt Code" : "Prompt Chat"}
           </div>
-          <h1 className="text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.02em] font-semibold text-white">
+          <h1 className="text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
             {isCode ? "Software-Prompt im Chat" : "Prompt-Chat"}
           </h1>
         </div>

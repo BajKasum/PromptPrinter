@@ -80,10 +80,10 @@ export default async function DashboardPage() {
       <FadeIn>
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
+            <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
               Willkommen zurück{firstName ? `, ${firstName}` : ""}.
             </h1>
-            <p className="mt-1 text-[14.5px] text-white/55">
+            <p className="mt-1 text-[14.5px] text-muted-foreground">
               {projectsTotal === 0
                 ? "Noch keine Projekte — erstelle dein erstes Build-Packet."
                 : `${projectsTotal} ${projectsTotal === 1 ? "Projekt" : "Projekte"} in deinem Workspace.`}
@@ -111,12 +111,12 @@ export default async function DashboardPage() {
           <StaggerItem key={label}>
             <div className="card-surface p-5">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-white/45">
+                <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
                   {label}
                 </span>
-                <Icon className="h-4 w-4 text-white/40" strokeWidth={1.8} />
+                <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
               </div>
-              <div className="text-[32px] font-semibold tracking-[-0.02em] text-white">{value}</div>
+              <div className="text-[32px] font-semibold tracking-[-0.02em] text-foreground">{value}</div>
             </div>
           </StaggerItem>
         ))}
@@ -126,13 +126,13 @@ export default async function DashboardPage() {
         <section className="mb-10">
           <FadeIn>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="flex items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-white">
-                <MessageSquare className="h-4 w-4 text-violet-300" strokeWidth={1.8} />
+              <h2 className="flex items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-foreground">
+                <MessageSquare className="h-4 w-4 text-accent-text" strokeWidth={1.8} />
                 Letzte Chats
               </h2>
               <Link
                 href="/chats"
-                className="text-[13px] text-white/55 hover:text-white transition-colors"
+                className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
               >
                 Alle ansehen →
               </Link>
@@ -150,13 +150,13 @@ export default async function DashboardPage() {
         <section className="mb-10">
           <FadeIn>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="flex items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-white">
-                <Star className="h-4 w-4 fill-amber-300 text-amber-300" strokeWidth={1.8} />
+              <h2 className="flex items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-foreground">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" strokeWidth={1.8} />
                 Favoriten
               </h2>
               <Link
                 href="/library"
-                className="text-[13px] text-white/55 hover:text-white transition-colors"
+                className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
               >
                 In der Bibliothek →
               </Link>
@@ -172,13 +172,13 @@ export default async function DashboardPage() {
 
       <FadeIn>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-white">
+          <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-foreground">
             Letzte Projekte
           </h2>
           {projectsTotal > 0 && (
             <Link
               href="/projects"
-              className="text-[13px] text-white/55 hover:text-white transition-colors"
+              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Alle ansehen →
             </Link>
@@ -189,11 +189,11 @@ export default async function DashboardPage() {
       {recent.length === 0 ? (
         <FadeIn>
           <div className="card-surface p-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
-              <MessageSquare className="h-5 w-5 text-white/85" strokeWidth={1.8} />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
+              <MessageSquare className="h-5 w-5 text-foreground" strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-white/80">Noch keine Projekte</p>
-            <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
+            <p className="text-[15px] text-foreground">Noch keine Projekte</p>
+            <p className="mt-1.5 text-[13px] text-muted-foreground max-w-sm mx-auto">
               Starte einen Chat, beschreib dein Ziel und PromptPrinter baut dir den
               passenden Prompt — Schritt für Schritt mit dir verfeinert.
             </p>

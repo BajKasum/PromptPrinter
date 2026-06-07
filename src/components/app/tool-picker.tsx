@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * A category of build-target choices rendered as selectable product cards:
- * brand logo, blurb, hover-lift, a violet selected-glow and a spring-in
+ * brand logo, blurb, hover-lift, a accent selected state and a spring-in
  * checkmark. The final card is always "Eigenes" — pick it to type a tool we
  * don't list (Deepseek, MongoDB, …) and the entry is stored verbatim.
  */
@@ -54,7 +54,7 @@ export function ToolPickerGroup({
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.015] p-4">
+    <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-2.5">
         <span
           className="flex h-8 w-8 items-center justify-center rounded-lg border"
@@ -63,8 +63,8 @@ export function ToolPickerGroup({
           <Icon className="h-4 w-4" style={{ color: accent }} strokeWidth={2} />
         </span>
         <div className="leading-tight">
-          <div className="text-[13.5px] font-semibold text-white">{label}</div>
-          <div className="text-[11px] text-white/45">{hint}</div>
+          <div className="text-[13.5px] font-semibold text-foreground">{label}</div>
+          <div className="text-[11px] text-foreground/45">{hint}</div>
         </div>
       </div>
 
@@ -85,20 +85,20 @@ export function ToolPickerGroup({
               className={cn(
                 "group relative flex flex-col items-start gap-2.5 overflow-hidden rounded-xl border p-3 text-left transition-colors duration-200",
                 active
-                  ? "border-violet-400/60 bg-gradient-to-b from-violet-500/[0.14] to-violet-500/[0.02] shadow-[0_0_0_1px_rgba(167,139,250,0.45),0_10px_30px_-12px_rgba(124,58,237,0.55)]"
-                  : "border-white/[0.08] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.045]"
+                  ? "border-accent bg-accent-subtle"
+                  : "border-border bg-surface hover:border-border hover:bg-surface-hover"
               )}
             >
               <span
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border transition-colors"
                 style={{ backgroundColor: `${color}1a` }}
               >
                 <ToolLogo name={opt} size={18} />
               </span>
 
               <span className="w-full min-w-0">
-                <span className="block truncate text-[13px] font-medium text-white">{opt}</span>
-                <span className="block truncate text-[11px] text-white/45">{blurb}</span>
+                <span className="block truncate text-[13px] font-medium text-foreground">{opt}</span>
+                <span className="block truncate text-[11px] text-foreground/45">{blurb}</span>
               </span>
 
               <AnimatePresence>{active && <SelectedTick />}</AnimatePresence>
@@ -118,17 +118,17 @@ export function ToolPickerGroup({
           className={cn(
             "group relative flex flex-col items-start gap-2.5 overflow-hidden rounded-xl border p-3 text-left transition-colors duration-200",
             isCustom
-              ? "border-violet-400/60 bg-gradient-to-b from-violet-500/[0.14] to-violet-500/[0.02] shadow-[0_0_0_1px_rgba(167,139,250,0.45),0_10px_30px_-12px_rgba(124,58,237,0.55)]"
-              : "border-dashed border-white/15 bg-white/[0.01] hover:border-white/30 hover:bg-white/[0.04]"
+              ? "border-accent bg-accent-subtle"
+              : "border-dashed border-border bg-surface hover:border-border hover:bg-surface-hover"
           )}
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] transition-colors">
-            <Pencil className="h-[18px] w-[18px] text-white/70" strokeWidth={2} />
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface transition-colors">
+            <Pencil className="h-[18px] w-[18px] text-foreground/70" strokeWidth={2} />
           </span>
 
           <span className="w-full min-w-0">
-            <span className="block truncate text-[13px] font-medium text-white">Eigenes</span>
-            <span className="block truncate text-[11px] text-white/45">Tool selbst angeben</span>
+            <span className="block truncate text-[13px] font-medium text-foreground">Eigenes</span>
+            <span className="block truncate text-[11px] text-foreground/45">Tool selbst angeben</span>
           </span>
 
           <AnimatePresence>{isCustom && <SelectedTick />}</AnimatePresence>
@@ -177,9 +177,9 @@ function SelectedTick() {
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
       transition={{ type: "spring", stiffness: 600, damping: 22 }}
-      className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-violet-500 shadow-[0_2px_8px_rgba(124,58,237,0.6)]"
+      className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent"
     >
-      <Check className="h-3 w-3 text-white" strokeWidth={3} />
+      <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
     </motion.span>
   );
 }

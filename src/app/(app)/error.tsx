@@ -30,15 +30,15 @@ export default function AppError({
         <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-red-300">
           Fehler
         </div>
-        <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-white">
+        <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
           Da ist etwas schiefgelaufen
         </h1>
-        <p className="text-[13.5px] text-white/55">
+        <p className="text-[13.5px] text-foreground/55">
           Dieser Bereich konnte nicht geladen werden. Versuch es erneut — wenn es
           weiter klemmt, lade die Seite neu.
         </p>
         {error.digest && (
-          <p className="mt-3 font-mono text-[11px] text-white/30">
+          <p className="mt-3 font-mono text-[11px] text-foreground/30">
             Fehler-ID: {error.digest}
           </p>
         )}

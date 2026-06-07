@@ -50,8 +50,8 @@ export function ToolGroup({
               className={cn(
                 "h-10 px-3 rounded-lg text-[13px] font-medium transition-all border",
                 active
-                  ? "border-violet-500/55 bg-violet-500/10 text-white"
-                  : "border-white/[0.08] bg-white/[0.02] text-white/70 hover:text-white hover:bg-white/[0.05]"
+                  ? "border-accent bg-accent-subtle text-accent-text"
+                  : "border-border bg-surface text-foreground/70 hover:text-foreground hover:bg-surface-hover"
               )}
             >
               {opt}
@@ -67,8 +67,8 @@ export function ToolGroup({
           className={cn(
             "h-10 px-3 rounded-lg text-[13px] font-medium transition-all border",
             isCustom
-              ? "border-violet-500/55 bg-violet-500/10 text-white"
-              : "border-dashed border-white/15 bg-white/[0.01] text-white/55 hover:text-white hover:bg-white/[0.04]"
+              ? "border-accent bg-accent-subtle text-accent-text"
+              : "border-dashed border-border bg-surface text-foreground/55 hover:text-foreground hover:bg-surface-hover"
           )}
         >
           Eigenes

@@ -14,7 +14,7 @@ export default function BillingLoading() {
           </div>
           <Skeleton className="h-10 w-40 rounded-lg" />
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-6 md:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border pt-6 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i}>
               <Skeleton className="mb-2 h-3 w-20" />

@@ -125,17 +125,17 @@ export function AvatarUpload({
           <img
             src={url}
             alt="Profilbild"
-            className="h-16 w-16 rounded-full border border-white/10 object-cover"
+            className="h-16 w-16 rounded-full border border-border object-cover"
             onError={() => setBroken(true)}
           />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-violet-500 to-violet-600 text-[22px] font-semibold text-white">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-accent text-[22px] font-semibold text-accent-foreground">
             {initial}
           </div>
         )}
         {busy && (
           <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55">
-            <Loader2 className="h-5 w-5 animate-spin text-white" />
+            <Loader2 className="h-5 w-5 animate-spin text-foreground" />
           </div>
         )}
       </div>
@@ -164,7 +164,7 @@ export function AvatarUpload({
               size="sm"
               onClick={() => void handleRemove()}
               disabled={busy}
-              className="text-white/60 hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/[0.06]"
+              className="text-foreground/60 hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/[0.06]"
             >
               <Trash2 className="h-4 w-4" />
               Entfernen
@@ -174,7 +174,7 @@ export function AvatarUpload({
         {error ? (
           <p className="mt-1.5 text-[12px] text-red-300/90">{error}</p>
         ) : (
-          <p className="mt-1.5 text-[12px] text-white/40">JPG, PNG, WebP oder GIF — höchstens 2 MB.</p>
+          <p className="mt-1.5 text-[12px] text-foreground/40">JPG, PNG, WebP oder GIF — höchstens 2 MB.</p>
         )}
       </div>
     </div>

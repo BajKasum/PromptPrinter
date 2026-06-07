@@ -62,10 +62,10 @@ export default async function GenerationsPage() {
       <FadeIn>
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
+            <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
               Generierungen
             </h1>
-            <p className="mt-1 text-[14px] text-white/55">
+            <p className="mt-1 text-[14px] text-foreground/55">
               {total === 0
                 ? "Jede KI-Ausführung wird hier protokolliert."
                 : `${total} ${total === 1 ? "Lauf" : "Läufe"} in deinem Workspace.`}
@@ -83,11 +83,11 @@ export default async function GenerationsPage() {
       {total === 0 ? (
         <FadeIn>
           <div className="card-surface p-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
-              <Sparkles className="h-5 w-5 text-white/85" strokeWidth={1.8} />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
+              <Sparkles className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-white/80">Noch keine Generierungen</p>
-            <p className="mt-1.5 text-[13px] text-white/45 max-w-sm mx-auto">
+            <p className="text-[15px] text-foreground/80">Noch keine Generierungen</p>
+            <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
               Hier werden deine früheren Packet-Generierungen mit den erzeugten
               Artefakten protokolliert.
             </p>
@@ -106,12 +106,12 @@ export default async function GenerationsPage() {
               <StaggerItem key={label}>
                 <div className="card-surface p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-white/45">
+                    <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/45">
                       {label}
                     </span>
-                    <Icon className="h-4 w-4 text-white/40" strokeWidth={1.8} />
+                    <Icon className="h-4 w-4 text-foreground/40" strokeWidth={1.8} />
                   </div>
-                  <div className="text-[32px] font-semibold tracking-[-0.02em] text-white">
+                  <div className="text-[32px] font-semibold tracking-[-0.02em] text-foreground">
                     {value}
                   </div>
                 </div>
@@ -120,42 +120,42 @@ export default async function GenerationsPage() {
           </StaggerChildren>
 
           <FadeIn>
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               {rows.map((r) => {
                 const name = projectNameOf(r.projects);
                 const artifacts = countArtifacts(r.outputs);
                 const tokens = (r.tokens_in ?? 0) + (r.tokens_out ?? 0);
                 const hasModel = Boolean(r.model);
                 const rowClass =
-                  "group flex items-center gap-4 px-5 py-4 border-b border-white/[0.06] last:border-0 transition-colors";
+                  "group flex items-center gap-4 px-5 py-4 border-b border-border last:border-0 transition-colors";
 
                 const content = (
                   <>
-                    <div className="h-9 w-9 shrink-0 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
-                      <Sparkles className="h-4 w-4 text-white/85" strokeWidth={1.8} />
+                    <div className="h-9 w-9 shrink-0 rounded-lg bg-surface border border-border flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-foreground/85" strokeWidth={1.8} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-medium text-white truncate">{name}</span>
+                        <span className="text-[14px] font-medium text-foreground truncate">{name}</span>
                         <span
                           className={`shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border ${
                             hasModel
-                              ? "border-violet-500/30 bg-violet-500/[0.08] text-violet-200"
-                              : "border-white/[0.08] bg-white/[0.04] text-white/45"
+                              ? "border-accent/30 bg-accent-subtle text-accent-text"
+                              : "border-border bg-surface text-foreground/45"
                           }`}
                         >
                           {hasModel ? "Claude" : "Vorlage"}
                         </span>
                       </div>
-                      <div className="mt-0.5 text-[12.5px] text-white/45">
+                      <div className="mt-0.5 text-[12.5px] text-foreground/45">
                         {artifacts} {artifacts === 1 ? "Artefakt" : "Artefakte"}
                         {tokens > 0 ? ` · ${tokens.toLocaleString("de-CH")} Tokens` : ""}
                       </div>
                     </div>
-                    <span className="shrink-0 text-[12.5px] text-white/55 hidden sm:block">
+                    <span className="shrink-0 text-[12.5px] text-foreground/55 hidden sm:block">
                       {relativeTime(r.created_at)}
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-white/25 group-hover:text-white/60 transition-colors" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-foreground/25 group-hover:text-foreground/60 transition-colors" />
                   </>
                 );
 
@@ -163,7 +163,7 @@ export default async function GenerationsPage() {
                   <Link
                     key={r.id}
                     href={`/projects/${r.project_id}`}
-                    className={`${rowClass} hover:bg-white/[0.025]`}
+                    className={`${rowClass} hover:bg-surface-hover`}
                   >
                     {content}
                   </Link>

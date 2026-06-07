@@ -68,8 +68,8 @@ export function DeleteAccount({ email }: { email: string }) {
     <>
       <div className="flex flex-col gap-3 rounded-lg border border-red-500/25 bg-red-500/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[14px] font-medium text-white">Konto löschen</div>
-          <div className="text-[12.5px] text-white/55">
+          <div className="text-[14px] font-medium text-foreground">Konto löschen</div>
+          <div className="text-[12.5px] text-foreground/55">
             Entfernt dein Konto und alle Projekte und Generierungen unwiderruflich.
           </div>
         </div>
@@ -103,17 +103,17 @@ export function DeleteAccount({ email }: { email: string }) {
                   exit={{ opacity: 0, scale: 0.98, y: 8 }}
                   transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full max-w-md overflow-hidden rounded-xl border border-white/10 bg-[#111113] shadow-[0_24px_70px_-20px_rgba(0,0,0,0.8)]"
+                  className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
                 >
-                  <div className="flex items-start gap-3 border-b border-white/[0.06] p-5">
+                  <div className="flex items-start gap-3 border-b border-border p-5">
                     <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/25 bg-red-500/[0.08]">
                       <AlertTriangle className="h-4 w-4 text-red-400" strokeWidth={1.8} />
                     </div>
                     <div>
-                      <h2 className="text-[15px] font-semibold text-white">
+                      <h2 className="text-[15px] font-semibold text-foreground">
                         Konto endgültig löschen?
                       </h2>
-                      <p className="mt-1 text-[13px] text-white/55">
+                      <p className="mt-1 text-[13px] text-foreground/55">
                         Diese Aktion ist unwiderruflich. Alle deine Projekte und Generierungen
                         werden dauerhaft entfernt.
                       </p>
@@ -121,9 +121,9 @@ export function DeleteAccount({ email }: { email: string }) {
                   </div>
 
                   <div className="space-y-3 p-5">
-                    <label htmlFor="confirm-email" className="block text-[13px] text-white/70">
+                    <label htmlFor="confirm-email" className="block text-[13px] text-foreground/70">
                       Tippe zur Bestätigung deine E-Mail{" "}
-                      <span className="font-mono text-white/90">{email}</span>
+                      <span className="font-mono text-foreground/90">{email}</span>
                     </label>
                     <input
                       id="confirm-email"
@@ -134,11 +134,11 @@ export function DeleteAccount({ email }: { email: string }) {
                       autoComplete="off"
                       spellCheck={false}
                       placeholder={email}
-                      className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.02] px-3.5 text-sm text-white placeholder:text-white/30 focus:border-red-500/55 focus:outline-none focus:ring-2 focus:ring-red-500/15"
+                      className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-red-500/55 focus:outline-none focus:ring-2 focus:ring-red-500/15"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 border-t border-white/[0.06] px-5 py-4">
+                  <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
                     <Button variant="ghost" onClick={close} disabled={deleting}>
                       Abbrechen
                     </Button>

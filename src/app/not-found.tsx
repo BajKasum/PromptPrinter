@@ -10,13 +10,13 @@ export default function NotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md text-center">
-        <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-violet-300">
+        <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-accent-text">
           404
         </div>
-        <h1 className="mb-3 text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
+        <h1 className="mb-3 text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
           Seite nicht gefunden
         </h1>
-        <p className="mb-7 text-[14px] text-white/55">
+        <p className="mb-7 text-[14px] text-foreground/55">
           Die Adresse führt ins Leere. Vielleicht wurde die Seite verschoben oder
           existiert nicht mehr.
         </p>

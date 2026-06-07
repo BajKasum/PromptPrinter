@@ -142,10 +142,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             exit={{ opacity: 0, scale: 0.98, y: -8 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="h-fit w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-[#111113] shadow-[0_24px_70px_-20px_rgba(0,0,0,0.8)]"
+            className="h-fit w-full max-w-xl overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
           >
-            <div className="flex items-center gap-3 border-b border-white/[0.06] px-4">
-              <Search className="h-4 w-4 shrink-0 text-white/40" />
+            <div className="flex items-center gap-3 border-b border-border px-4">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 ref={inputRef}
                 value={query}
@@ -153,13 +153,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 onKeyDown={onKeyDown}
                 placeholder="Projekte, Seiten, Aktionen…"
                 aria-label="Befehl oder Projekt suchen"
-                className="h-12 w-full bg-transparent text-[14px] text-white placeholder:text-white/40 focus:outline-none"
+                className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
 
             <div className="max-h-[340px] overflow-y-auto p-1.5">
               {results.length === 0 ? (
-                <div className="px-3 py-8 text-center text-[13px] text-white/45">
+                <div className="px-3 py-8 text-center text-[13px] text-muted-foreground">
                   Keine Treffer für „{query}“
                 </div>
               ) : (
@@ -169,7 +169,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   return (
                     <Fragment key={c.id}>
                       {showHeader && (
-                        <div className="px-3 pb-1 pt-3 text-[10px] font-mono uppercase tracking-[0.08em] text-white/35">
+                        <div className="px-3 pb-1 pt-3 text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
                           {c.group}
                         </div>
                       )}
@@ -179,12 +179,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                         onClick={() => c.perform()}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] transition-colors",
-                          active ? "bg-white/[0.06] text-white" : "text-white/70"
+                          active ? "bg-accent-subtle text-accent-text" : "text-muted-foreground hover:bg-surface-hover"
                         )}
                       >
-                        <c.Icon className="h-4 w-4 shrink-0 text-white/55" strokeWidth={1.8} />
+                        <c.Icon
+                          className={cn("h-4 w-4 shrink-0", active ? "text-accent-text" : "text-muted-foreground")}
+                          strokeWidth={1.8}
+                        />
                         <span className="flex-1 truncate">{c.label}</span>
-                        {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-white/40" />}
+                        {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-accent-text" />}
                       </button>
                     </Fragment>
                   );

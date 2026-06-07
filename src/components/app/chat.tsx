@@ -155,7 +155,7 @@ export function Chat({
           Senden
         </Button>
       </div>
-      <p className="mt-2 text-[11px] text-white/35">
+      <p className="mt-2 text-[11px] text-foreground/35">
         Enter sendet · Shift+Enter neue Zeile · dieser Chat wird automatisch gespeichert.
       </p>
     </div>
@@ -177,11 +177,11 @@ function EmptyState({
 }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-10">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.08]">
-        <Sparkles className="h-5 w-5 text-violet-300" strokeWidth={1.8} />
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
+        <Sparkles className="h-5 w-5 text-accent-text" strokeWidth={1.8} />
       </div>
-      <h2 className="text-[18px] font-semibold text-white">{heading}</h2>
-      <p className="mt-1 text-[13px] text-white/55 max-w-sm">{sub}</p>
+      <h2 className="text-[18px] font-semibold text-foreground">{heading}</h2>
+      <p className="mt-1 text-[13px] text-foreground/55 max-w-sm">{sub}</p>
       <div className="mt-5 w-full max-w-md space-y-2">
         {starters.map((s) => (
           <button
@@ -189,7 +189,7 @@ function EmptyState({
             type="button"
             disabled={disabled}
             onClick={() => onPick(s)}
-            className="w-full text-left rounded-lg border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] text-white/75 hover:border-white/20 hover:text-white transition-colors disabled:opacity-50"
+            className="w-full text-left rounded-lg border border-border bg-surface px-3.5 py-2.5 text-[13px] text-foreground/75 hover:border-border hover:text-foreground transition-colors disabled:opacity-50"
           >
             {s}
           </button>
@@ -202,7 +202,7 @@ function EmptyState({
 function UserBubble({ content }: { content: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-violet-500/15 border border-violet-500/25 px-4 py-2.5 text-[13.5px] leading-relaxed text-white/90 whitespace-pre-wrap">
+      <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-accent-subtle border border-accent/30 px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground whitespace-pre-wrap">
         {content}
       </div>
     </div>
@@ -217,7 +217,7 @@ function AssistantBubble({ content, index }: { content: string; index: number })
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] w-full">
-        <div className="rounded-2xl rounded-bl-sm border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13.5px] leading-relaxed text-white/85">
+        <div className="rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
           <MarkdownMessage content={content} />
         </div>
         <div className="mt-1.5 flex items-center gap-1.5">
@@ -242,44 +242,44 @@ function MarkdownMessage({ content }: { content: string }) {
         components={{
           p: ({ children }) => <p className="leading-relaxed">{children}</p>,
           h1: ({ children }) => (
-            <h2 className="mt-1 text-[16px] font-semibold text-white">{children}</h2>
+            <h2 className="mt-1 text-[16px] font-semibold text-foreground">{children}</h2>
           ),
           h2: ({ children }) => (
-            <h3 className="mt-1 text-[15px] font-semibold text-white">{children}</h3>
+            <h3 className="mt-1 text-[15px] font-semibold text-foreground">{children}</h3>
           ),
           h3: ({ children }) => (
-            <h4 className="mt-1 text-[14px] font-semibold text-white">{children}</h4>
+            <h4 className="mt-1 text-[14px] font-semibold text-foreground">{children}</h4>
           ),
           ul: ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal space-y-1 pl-5">{children}</ol>,
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
           em: ({ children }) => <em className="italic">{children}</em>,
           a: ({ href, children }) => (
             <a
               href={href}
               target="_blank"
               rel="noreferrer"
-              className="text-violet-300 underline underline-offset-2 hover:text-violet-200"
+              className="text-accent-text underline underline-offset-2 hover:text-accent-text"
             >
               {children}
             </a>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-white/15 pl-3 text-white/65">
+            <blockquote className="border-l-2 border-border pl-3 text-foreground/65">
               {children}
             </blockquote>
           ),
-          hr: () => <hr className="border-white/10" />,
+          hr: () => <hr className="border-border" />,
           table: ({ children }) => (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-[12.5px]">{children}</table>
             </div>
           ),
           th: ({ children }) => (
-            <th className="border border-white/10 px-2 py-1 text-left font-semibold">{children}</th>
+            <th className="border border-border px-2 py-1 text-left font-semibold">{children}</th>
           ),
-          td: ({ children }) => <td className="border border-white/10 px-2 py-1">{children}</td>,
+          td: ({ children }) => <td className="border border-border px-2 py-1">{children}</td>,
           pre: ({ children }) => <>{children}</>,
           code: ({ className, children }) => {
             const text = String(children ?? "");
@@ -288,7 +288,7 @@ function MarkdownMessage({ content }: { content: string }) {
               return <CodeBlock text={text.replace(/\n$/, "")} />;
             }
             return (
-              <code className="rounded bg-violet-500/15 px-1.5 py-0.5 font-mono text-[12.5px] text-violet-200">
+              <code className="rounded bg-accent-subtle px-1.5 py-0.5 font-mono text-[12.5px] text-accent-text">
                 {children}
               </code>
             );
@@ -312,25 +312,25 @@ function CodeBlock({ text }: { text: string }) {
   }
 
   return (
-    <div className="my-2 overflow-hidden rounded-lg border border-white/[0.08] bg-black/30">
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-1.5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-white/40">
+    <div className="my-2 overflow-hidden rounded-lg border border-border bg-black/30">
+      <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/40">
           Prompt
         </span>
         <button
           type="button"
           onClick={copy}
-          className="inline-flex items-center gap-1 text-[12px] text-white/55 transition-colors hover:text-white"
+          className="inline-flex items-center gap-1 text-[12px] text-foreground/55 transition-colors hover:text-foreground"
         >
           {copied ? (
-            <Check className="h-3.5 w-3.5 text-emerald-400" />
+            <Check className="h-3.5 w-3.5 text-success" />
           ) : (
             <Copy className="h-3.5 w-3.5" />
           )}
           {copied ? "Kopiert" : "Kopieren"}
         </button>
       </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-white/85">
+      <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
         {text}
       </pre>
     </div>
@@ -340,7 +340,7 @@ function CodeBlock({ text }: { text: string }) {
 function Typing() {
   return (
     <div className="flex justify-start">
-      <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-sm border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13px] text-white/55">
+      <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13px] text-foreground/55">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Schreibt…
       </div>

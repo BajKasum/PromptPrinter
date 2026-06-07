@@ -194,7 +194,7 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
           <div className="mb-4 flex items-center justify-between gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-[13px] text-foreground/55 hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Zurück zum Dashboard
@@ -203,15 +203,15 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
           </div>
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300 mb-2">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-2">
                 <Sparkles className="h-3 w-3" />
                 {isGeneral ? "Prompt-Packet" : "Build-Packet"}
               </div>
-              <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-white">
+              <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
                 {project.name}
               </h1>
             </div>
-            <div className="flex items-center gap-4 text-[12px] text-white/55">
+            <div className="flex items-center gap-4 text-[12px] text-foreground/55">
               <span className="inline-flex items-center gap-1.5 font-mono">
                 <GitBranch className="h-3.5 w-3.5" />
                 {project.id.slice(0, 8)}
@@ -227,15 +227,15 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
       <ProjectTabs projectName={project.name} tabs={tabs} outputs={outputs} />
 
       <FadeIn>
-        <div className="mt-10 border-t border-white/[0.06] pt-8">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300 mb-2">
+        <div className="mt-10 border-t border-border pt-8">
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-2">
             <MessageSquare className="h-3 w-3" />
             Im Chat verfeinern
           </div>
-          <h2 className="text-[20px] md:text-[24px] leading-[1.1] tracking-[-0.02em] font-semibold text-white mb-1">
+          <h2 className="text-[20px] md:text-[24px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground mb-1">
             Pass dein Packet an
           </h2>
-          <p className="text-[13px] text-white/55 mb-5 max-w-xl">
+          <p className="text-[13px] text-foreground/55 mb-5 max-w-xl">
             Sag der KI, was du an deinen Prompts ändern willst — sie kennt dein
             Packet und gibt dir die aktualisierte Version zurück.
           </p>
