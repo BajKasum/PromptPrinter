@@ -1,33 +1,64 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Token-driven theme. Every color resolves to a CSS variable defined in
+ * globals.css (`:root` = light, `.dark` = dark), so light/dark flip from one
+ * place. Channels are stored HSL (`H S% L%`) so Tailwind's `<alpha-value>`
+ * opacity modifiers keep working (e.g. `bg-accent/10`, `ring-ring/40`).
+ *
+ * Color roles (Refined Dev-Brand):
+ *   - background / foreground / surface / border : monochrome chrome
+ *   - primary                                    : monochrome CTA (black↔white)
+ *   - accent                                      : baby blue — links, active
+ *     nav, focus, highlights, selection, brand moments
+ */
 const config: Config = {
   darkMode: "class",
   content: ["./src/**/*.{ts,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        background: "#0A0A0A",
-        foreground: "#FFFFFF",
-        muted: { DEFAULT: "rgba(255,255,255,0.04)", foreground: "#A1A1AA" },
-        border: "rgba(255,255,255,0.08)",
-        ring: "#7C3AED",
+        background: "hsl(var(--background) / <alpha-value>)",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
         surface: {
-          DEFAULT: "rgba(255,255,255,0.04)",
-          elevated: "rgba(255,255,255,0.06)",
-          hover: "rgba(255,255,255,0.08)",
+          DEFAULT: "hsl(var(--surface) / <alpha-value>)",
+          raised: "hsl(var(--surface-raised) / <alpha-value>)",
+          hover: "hsl(var(--surface-hover) / <alpha-value>)",
+        },
+        border: {
+          DEFAULT: "hsl(var(--border) / <alpha-value>)",
+          strong: "hsl(var(--border-strong) / <alpha-value>)",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--surface) / <alpha-value>)",
+          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+        },
+        primary: {
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
         },
         accent: {
-          violet: "#7C3AED",
-          cyan: "#06B6D4",
-          blue: "#3B82F6",
+          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+          text: "hsl(var(--accent-text) / <alpha-value>)",
+          subtle: "hsl(var(--accent-subtle) / <alpha-value>)",
         },
-        primary: { DEFAULT: "#7C3AED", foreground: "#FFFFFF" },
-        destructive: { DEFAULT: "#EF4444", foreground: "#FFFFFF" },
-        success: { DEFAULT: "#10B981", foreground: "#FFFFFF" },
-        warning: { DEFAULT: "#F59E0B", foreground: "#0A0A0A" },
+        ring: "hsl(var(--ring) / <alpha-value>)",
+        destructive: {
+          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
+          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success) / <alpha-value>)",
+          foreground: "hsl(var(--success-foreground) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning) / <alpha-value>)",
+          foreground: "hsl(var(--warning-foreground) / <alpha-value>)",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-geist-sans)", "Geist", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "Geist Mono", "ui-monospace", "monospace"],
       },
       fontSize: {
@@ -46,37 +77,35 @@ const config: Config = {
         "code": ["13.5px", { lineHeight: "1.6", fontWeight: "400" }],
       },
       borderRadius: {
-        sm: "8px",
-        DEFAULT: "12px",
-        md: "12px",
-        lg: "16px",
-        xl: "20px",
-        "2xl": "24px",
-        "3xl": "32px",
+        sm: "6px",
+        DEFAULT: "8px",
+        md: "8px",
+        lg: "10px",
+        xl: "12px",
+        "2xl": "16px",
+        "3xl": "20px",
       },
       spacing: {
-        "container": "1200px",
-        "gutter": "24px",
+        container: "1200px",
+        gutter: "24px",
       },
       backgroundImage: {
         "grid-pattern":
-          "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          "linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)",
       },
       boxShadow: {
-        "elevated":
-          "0 1px 0 rgba(255,255,255,0.06) inset, 0 16px 48px -16px rgba(0,0,0,0.6)",
-        "card":
-          "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.5)",
+        elevated: "0 1px 2px hsl(var(--shadow) / 0.06), 0 12px 32px -16px hsl(var(--shadow) / 0.24)",
+        card: "0 1px 2px hsl(var(--shadow) / 0.04), 0 4px 16px -12px hsl(var(--shadow) / 0.16)",
       },
       animation: {
-        "fade-in": "fadeIn 0.6s ease-out forwards",
-        "fade-up": "fadeUp 0.7s ease-out forwards",
-        "shimmer": "shimmer 2s linear infinite",
+        "fade-in": "fadeIn 0.5s ease-out forwards",
+        "fade-up": "fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
+        shimmer: "shimmer 2s linear infinite",
       },
       keyframes: {
         fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
         fadeUp: {
-          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "0%": { opacity: "0", transform: "translateY(12px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         shimmer: {

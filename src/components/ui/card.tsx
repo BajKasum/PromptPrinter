@@ -13,14 +13,14 @@ export const CardHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDiv
 );
 
 export const CardTitle = ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h3 className={cn("text-[17px] font-semibold tracking-tight text-white", className)} {...props} />
+  <h3 className={cn("text-[17px] font-semibold tracking-tight text-foreground", className)} {...props} />
 );
 
 export const CardDescription = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={cn("text-sm text-white/55", className)} {...props} />
+  <p className={cn("text-sm text-muted-foreground", className)} {...props} />
 );
 
 export const CardContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -28,5 +28,5 @@ export const CardContent = ({ className, ...props }: React.HTMLAttributes<HTMLDi
 );
 
 export const CardFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex items-center justify-between pt-4 mt-4 border-t border-white/[0.06]", className)} {...props} />
+  <div className={cn("flex items-center justify-between pt-4 mt-4 border-t border-border", className)} {...props} />
 );

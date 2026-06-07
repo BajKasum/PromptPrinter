@@ -2,32 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens. `:root` = light, `.dark` = dark. Channels are HSL (`H S% L%`)
+ * so Tailwind alpha modifiers work. Roles: monochrome chrome + a single baby
+ * blue accent. Change a value here and it flips everywhere.
+ */
 @layer base {
   :root {
+    color-scheme: light;
+
+    --background: 0 0% 100%;
+    --foreground: 216 22% 6%;
+
+    --surface: 210 24% 97%;
+    --surface-raised: 0 0% 100%;
+    --surface-hover: 213 20% 95%;
+
+    --border: 214 22% 91%;
+    --border-strong: 214 20% 84%;
+
+    --muted-foreground: 214 13% 40%;
+
+    --primary: 216 22% 6%;
+    --primary-foreground: 0 0% 100%;
+
+    /* baby blue */
+    --accent: 203 79% 72%;
+    --accent-foreground: 216 22% 6%;
+    --accent-text: 204 76% 35%;
+    --accent-subtle: 203 80% 94%;
+    --ring: 203 80% 55%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 71% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 33 92% 44%;
+    --warning-foreground: 0 0% 100%;
+
+    --shadow: 216 40% 12%;
+  }
+
+  .dark {
     color-scheme: dark;
+
+    --background: 220 20% 6%;
+    --foreground: 213 20% 92%;
+
+    --surface: 217 16% 9%;
+    --surface-raised: 218 17% 12%;
+    --surface-hover: 216 16% 15%;
+
+    --border: 214 14% 16%;
+    --border-strong: 215 13% 23%;
+
+    --muted-foreground: 215 14% 65%;
+
+    --primary: 213 24% 96%;
+    --primary-foreground: 216 22% 6%;
+
+    /* baby blue */
+    --accent: 204 80% 75%;
+    --accent-foreground: 216 22% 6%;
+    --accent-text: 204 80% 75%;
+    --accent-subtle: 204 48% 18%;
+    --ring: 204 80% 70%;
+
+    --destructive: 0 84% 63%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 64% 55%;
+    --success-foreground: 216 22% 6%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 216 22% 6%;
+
+    --shadow: 0 0% 0%;
   }
 
   html,
   body {
-    background: #0a0a0a;
-    color: #ffffff;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
-  body {
-    background-image: radial-gradient(
-      60% 50% at 50% 0%,
-      rgba(124, 58, 237, 0.06) 0%,
-      transparent 60%
-    );
-    background-attachment: fixed;
-  }
-
   ::selection {
-    background: rgba(124, 58, 237, 0.35);
-    color: #fff;
+    background: hsl(var(--accent) / 0.3);
+    color: hsl(var(--foreground));
   }
 
   /* Custom scrollbar */
@@ -39,11 +101,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.06);
+    background: hsl(var(--border-strong));
     border-radius: 8px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: hsl(var(--muted-foreground) / 0.6);
   }
 
   /* Hide Edge's native password reveal/clear icons — we provide our own toggle. */
@@ -58,36 +120,38 @@
     @apply mx-auto w-full max-w-[1200px] px-6 md:px-8;
   }
 
-  .glass {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-  }
-
-  .glass-strong {
-    background: rgba(20, 20, 22, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    backdrop-filter: blur(24px) saturate(140%);
-    -webkit-backdrop-filter: blur(24px) saturate(140%);
-  }
-
+  /* Card surface — flat, hairline border, very subtle elevation. */
   .card-surface {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    background: hsl(var(--surface-raised));
+    border: 1px solid hsl(var(--border));
+    border-radius: 12px;
+    box-shadow: 0 1px 2px hsl(var(--shadow) / 0.04);
     transition: background 200ms ease, border-color 200ms ease,
-      transform 200ms ease;
+      box-shadow 200ms ease;
   }
   .card-surface:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: hsl(var(--border-strong));
   }
 
+  /*
+   * Transitional shims — old decorative classes kept token-based so components
+   * not yet migrated (Phase B/C) degrade gracefully instead of breaking.
+   */
+  .glass {
+    background: hsl(var(--surface) / 0.8);
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+  .glass-strong {
+    background: hsl(var(--surface-raised) / 0.92);
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
   .gradient-text {
-    color: #c4b5fd;
+    color: hsl(var(--accent-text));
   }
-
   .gradient-border {
     position: relative;
     isolation: isolate;
@@ -98,7 +162,7 @@
     inset: 0;
     padding: 1px;
     border-radius: inherit;
-    background: rgba(255, 255, 255, 0.14);
+    background: hsl(var(--border-strong));
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
@@ -110,45 +174,34 @@
     pointer-events: none;
   }
 
-  .shimmer {
-    background: linear-gradient(
-      110deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.08) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2.4s linear infinite;
-  }
-
   .grid-bg {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px);
     background-size: 40px 40px;
     mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 75%);
     -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 75%);
   }
 
   .btn-ghost {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-5 text-body-sm font-medium text-white/90 transition-colors duration-200;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 text-body-sm font-medium text-foreground/90 transition-colors duration-200;
   }
   .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: hsl(var(--surface-hover));
+    border-color: hsl(var(--border-strong));
   }
 
   .input-base {
-    @apply h-11 w-full rounded-lg border border-white/10 bg-white/[0.02] px-3.5 text-body-sm text-white placeholder:text-white/40 transition-colors duration-200;
+    @apply h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-body-sm text-foreground placeholder:text-muted-foreground transition-colors duration-200;
   }
   .input-base:focus {
     outline: none;
-    border-color: rgba(124, 58, 237, 0.55);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18);
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-label-caps font-mono uppercase tracking-wider text-white/70;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-label-caps font-mono uppercase tracking-wider text-muted-foreground;
   }
 }
 

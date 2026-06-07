@@ -27,9 +27,9 @@ export function useToast(): ToastContextValue {
 }
 
 const VARIANTS: Record<ToastVariant, { Icon: typeof Info; accent: string }> = {
-  default: { Icon: Info, accent: "text-violet-300" },
-  success: { Icon: CheckCircle2, accent: "text-emerald-400" },
-  error: { Icon: AlertCircle, accent: "text-red-400" },
+  default: { Icon: Info, accent: "text-accent-text" },
+  success: { Icon: CheckCircle2, accent: "text-success" },
+  error: { Icon: AlertCircle, accent: "text-destructive" },
 };
 
 const AUTO_DISMISS_MS = 4000;
@@ -65,20 +65,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.98 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="pointer-events-auto flex items-start gap-3 rounded-xl border border-white/10 bg-[#141416]/95 px-4 py-3 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl"
+                className="pointer-events-auto flex items-start gap-3 rounded-xl border border-border bg-surface-raised/95 px-4 py-3 shadow-elevated backdrop-blur-xl"
               >
                 <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", accent)} strokeWidth={1.8} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13.5px] font-medium text-white">{t.title}</p>
+                  <p className="text-[13.5px] font-medium text-foreground">{t.title}</p>
                   {t.description && (
-                    <p className="mt-0.5 text-[12.5px] text-white/55">{t.description}</p>
+                    <p className="mt-0.5 text-[12.5px] text-muted-foreground">{t.description}</p>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => remove(t.id)}
                   aria-label="Benachrichtigung schliessen"
-                  className="shrink-0 text-white/40 transition-colors hover:text-white active:scale-90"
+                  className="shrink-0 text-muted-foreground transition-colors hover:text-foreground active:scale-90"
                 >
                   <X className="h-4 w-4" />
                 </button>
