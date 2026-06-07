@@ -70,8 +70,16 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
   ThemeProvider, ThemeToggle, UI-Primitives (button/card/input/label/toast/
   skeleton/password-input), Topbar. ✅
 - **Phase B — App-Shell:** sidebar, mobile-nav, command-palette, dashboard,
-  chat, projects, generations, library, settings, billing.
-- **Phase C — Marketing + Auth + Legal.**
+  chat, projects, generations, library, settings, billing, alle App-Komponenten,
+  Error-/Not-Found-Boundaries. ✅
+- **Phase C — Marketing + Auth + Legal:** navbar (+ Toggle), hero (Glow entfernt),
+  alle marketing/*, auth-form, login/signup/reset, legal-shell, pricing/features,
+  global-error + opengraph-image. ✅
+- **Polish:** Settings-Karten-Akzente auf Babyblau vereinheitlicht (Danger bleibt
+  rot), tool-logos Fallback, theme-aware Navbar-Backdrop. ✅
+
+> Ganzes `src` ist frei von alten Brand-Farben (per Grep verifiziert). Bewusste
+> Ausnahme: offizielle Tool-Logo-SVGs behalten ihre Markenfarben.
 
 > Alte Deko-Klassen (`.glass`, `.gradient-text`, …) sind in `globals.css` als
 > token-basierte Shims erhalten, damit noch nicht migrierte Komponenten in
