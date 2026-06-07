@@ -158,7 +158,7 @@ export function SettingsWorkspace({
         <div className="grid gap-4 md:grid-cols-2">
           <SettingsCard
             Icon={User}
-            accent="#8B5CF6"
+            accent="#8FCDF2"
             title="Profil"
             description="Wie du in deinem Workspace erscheinst."
           >
@@ -202,7 +202,7 @@ export function SettingsWorkspace({
 
           <SettingsCard
             Icon={Building2}
-            accent="#06B6D4"
+            accent="#8FCDF2"
             title="Workspace"
             description="Konto- und Plan-Übersicht."
             headerRight={
@@ -236,7 +236,7 @@ export function SettingsWorkspace({
           <SettingsCard
             className="md:col-span-3"
             Icon={Gauge}
-            accent="#10B981"
+            accent="#8FCDF2"
             title="Nutzung"
             description="Dein Verbrauch im aktuellen Abrechnungszeitraum."
           >
@@ -257,7 +257,7 @@ export function SettingsWorkspace({
           <SettingsCard
             className="md:col-span-2"
             Icon={KeyRound}
-            accent="#3B82F6"
+            accent="#8FCDF2"
             title="API-Provider"
             description="Eigene Keys nutzen (ab Pro)."
             badge="Bald"
@@ -273,7 +273,7 @@ export function SettingsWorkspace({
         {/* Default tools — the centerpiece */}
         <SettingsCard
           Icon={Sparkles}
-          accent="#A855F7"
+          accent="#8FCDF2"
           title="Standard-Tools"
           description="Diese Auswahl füllt jedes neue Projekt automatisch vor."
         >
@@ -282,7 +282,7 @@ export function SettingsWorkspace({
               label="KI-Assistent"
               hint="Master-Prompt-Ziel"
               Icon={Sparkles}
-              accent="#8B5CF6"
+              accent="#8FCDF2"
               options={TOOL_OPTIONS.master}
               value={tools.master}
               onChange={(v) => setTools({ ...tools, master: v })}
@@ -291,7 +291,7 @@ export function SettingsWorkspace({
               label="Frontend-Builder"
               hint="UI-Generierung"
               Icon={LayoutTemplate}
-              accent="#3B82F6"
+              accent="#8FCDF2"
               options={TOOL_OPTIONS.frontend}
               value={tools.frontend}
               onChange={(v) => setTools({ ...tools, frontend: v })}
@@ -300,7 +300,7 @@ export function SettingsWorkspace({
               label="Backend-Agent"
               hint="Code-Assistent"
               Icon={TerminalSquare}
-              accent="#10B981"
+              accent="#8FCDF2"
               options={TOOL_OPTIONS.backend}
               value={tools.backend}
               onChange={(v) => setTools({ ...tools, backend: v })}
@@ -309,7 +309,7 @@ export function SettingsWorkspace({
               label="Datenbank"
               hint="Daten-Layer"
               Icon={Database}
-              accent="#F59E0B"
+              accent="#8FCDF2"
               options={TOOL_OPTIONS.database}
               value={tools.database}
               onChange={(v) => setTools({ ...tools, database: v })}
@@ -320,7 +320,7 @@ export function SettingsWorkspace({
         {/* Security */}
         <SettingsCard
           Icon={Lock}
-          accent="#6366F1"
+          accent="#8FCDF2"
           title="Sicherheit"
           description="Ändere dein Passwort."
         >

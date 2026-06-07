@@ -28,7 +28,7 @@ export const TOOL_VISUAL: Record<string, ToolVisual> = {
 };
 
 export function toolVisual(name: string): ToolVisual {
-  return TOOL_VISUAL[name] ?? { color: "#A78BFA", blurb: "Build-Tool" };
+  return TOOL_VISUAL[name] ?? { color: "#8FCDF2", blurb: "Build-Tool" };
 }
 
 export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
@@ -221,7 +221,7 @@ export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
       return (
         <svg {...common}>
           <path
-            fill="#A78BFA"
+            fill="#8FCDF2"
             d="M12 2.5c.4 4.7 3.8 8.1 8.5 8.5-4.7.4-8.1 3.8-8.5 8.5-.4-4.7-3.8-8.1-8.5-8.5 4.7-.4 8.1-3.8 8.5-8.5z"
           />
         </svg>

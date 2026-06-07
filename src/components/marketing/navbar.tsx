@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -32,14 +33,9 @@ export function Navbar() {
     >
       <div
         className={cn(
-          "absolute inset-0 transition-opacity duration-300",
+          "absolute inset-0 transition-opacity duration-300 bg-background/70 backdrop-blur-xl backdrop-saturate-150",
           scrolled ? "opacity-100" : "opacity-0"
         )}
-        style={{
-          background: "rgba(10,10,10,0.7)",
-          backdropFilter: "blur(20px) saturate(140%)",
-          WebkitBackdropFilter: "blur(20px) saturate(140%)",
-        }}
       />
       <nav className="container-x relative flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
@@ -57,6 +53,7 @@ export function Navbar() {
           ))}
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
             <Link href="/login">Einloggen</Link>
           </Button>
