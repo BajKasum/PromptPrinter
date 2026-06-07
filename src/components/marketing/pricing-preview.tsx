@@ -59,10 +59,10 @@ export function PricingPreview() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
             Preise
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
+          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
             Zahl für Ergebnisse, nicht für Geschwätz.
           </h2>
         </div>
@@ -81,29 +81,29 @@ export function PricingGrid() {
             className={cn(
               "relative h-full rounded-2xl p-7 transition-all",
               p.highlight
-                ? "gradient-border bg-white/[0.04]"
+                ? "gradient-border bg-surface"
                 : "card-surface"
             )}
           >
             {p.highlight && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-white">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-accent-foreground">
                   Am beliebtesten
                 </div>
               </div>
             )}
             <div className="flex items-baseline justify-between">
-              <h3 className="text-[17px] font-semibold text-white">{p.name}</h3>
-              <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-white/45">
+              <h3 className="text-[17px] font-semibold text-foreground">{p.name}</h3>
+              <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/45">
                 {p.highlight ? "Empfohlen" : ""}
               </div>
             </div>
-            <p className="mt-1.5 text-[13.5px] text-white/55">{p.description}</p>
+            <p className="mt-1.5 text-[13.5px] text-foreground/55">{p.description}</p>
             <div className="mt-7 flex items-baseline gap-1.5">
-              <span className="text-[44px] font-semibold tracking-[-0.03em] text-white">
+              <span className="text-[44px] font-semibold tracking-[-0.03em] text-foreground">
                 {p.price}
               </span>
-              <span className="text-[13px] text-white/45">/ {p.cadence}</span>
+              <span className="text-[13px] text-foreground/45">/ {p.cadence}</span>
             </div>
             <Button
               asChild
@@ -114,8 +114,8 @@ export function PricingGrid() {
             </Button>
             <ul className="mt-7 space-y-2.5">
               {p.features.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[14px] text-white/75">
-                  <Check className="h-4 w-4 mt-0.5 text-violet-300/90 shrink-0" strokeWidth={2.2} />
+                <li key={f} className="flex items-start gap-2.5 text-[14px] text-foreground/75">
+                  <Check className="h-4 w-4 mt-0.5 text-accent-text shrink-0" strokeWidth={2.2} />
                   <span>{f}</span>
                 </li>
               ))}

@@ -20,10 +20,10 @@ export function Problem() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
             Das Problem
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
+          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
             Gute Ideen sterben in der Lücke zwischen Gedanke und Prompt.
           </h2>
         </div>
@@ -32,11 +32,11 @@ export function Problem() {
         {items.map((it, i) => (
           <FadeIn key={it.title} delay={i * 0.08}>
             <div className="card-surface h-full">
-              <div className="text-2xl font-mono text-white/25 mb-3">0{i + 1}</div>
-              <h3 className="text-[17px] font-semibold tracking-tight text-white mb-2">
+              <div className="text-2xl font-mono text-foreground/25 mb-3">0{i + 1}</div>
+              <h3 className="text-[17px] font-semibold tracking-tight text-foreground mb-2">
                 {it.title}
               </h3>
-              <p className="text-[14.5px] leading-[1.6] text-white/55">{it.body}</p>
+              <p className="text-[14.5px] leading-[1.6] text-foreground/55">{it.body}</p>
             </div>
           </FadeIn>
         ))}

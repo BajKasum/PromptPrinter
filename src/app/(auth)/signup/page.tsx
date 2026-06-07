@@ -7,10 +7,10 @@ export default function SignupPage() {
   return (
     <div>
       <div className="mb-7">
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-white">
+        <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-foreground">
           Loslegen
         </h1>
-        <p className="mt-1 text-[14px] text-white/55">
+        <p className="mt-1 text-[14px] text-foreground/55">
           Kostenlos, keine Kreditkarte. 3 Projekte zum Start.
         </p>
       </div>

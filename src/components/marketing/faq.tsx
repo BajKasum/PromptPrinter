@@ -38,17 +38,17 @@ export function FAQ() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
             FAQ
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
+          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
             Fragen, beantwortet.
           </h2>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <div className="max-w-3xl rounded-2xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.06]">
+        <div className="max-w-3xl rounded-2xl border border-border bg-surface divide-y divide-border">
           {faqs.map((f, i) => (
             <FAQItem key={i} q={f.q} a={f.a} />
           ))}
@@ -66,11 +66,11 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-start justify-between gap-6 px-6 py-5 text-left"
       >
-        <span className="text-[15.5px] font-medium text-white pr-4">{q}</span>
+        <span className="text-[15.5px] font-medium text-foreground pr-4">{q}</span>
         <Plus
           className={cn(
-            "h-5 w-5 text-white/45 shrink-0 mt-0.5 transition-transform duration-300",
-            open && "rotate-45 text-white"
+            "h-5 w-5 text-foreground/45 shrink-0 mt-0.5 transition-transform duration-300",
+            open && "rotate-45 text-foreground"
           )}
           strokeWidth={1.8}
         />
@@ -84,7 +84,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="px-6 pb-5 text-[14.5px] leading-[1.65] text-white/65">
+            <div className="px-6 pb-5 text-[14.5px] leading-[1.65] text-foreground/65">
               {a}
             </div>
           </motion.div>

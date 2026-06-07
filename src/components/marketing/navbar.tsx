@@ -27,7 +27,7 @@ export function Navbar() {
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "border-b border-white/[0.06]" : "border-b border-transparent"
+        scrolled ? "border-b border-border" : "border-b border-transparent"
       )}
     >
       <div
@@ -50,7 +50,7 @@ export function Navbar() {
             <Link
               key={item.label}
               href={item.href}
-              className="px-3 py-1.5 text-[13.5px] text-white/65 hover:text-white transition-colors rounded-md"
+              className="px-3 py-1.5 text-[13.5px] text-foreground/65 hover:text-foreground transition-colors rounded-md"
             >
               {item.label}
             </Link>

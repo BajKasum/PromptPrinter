@@ -66,11 +66,11 @@ Sei knapp. Zeigen statt erzählen. Liefere Code, der läuft.`,
 3. Onboarding — 3-Schritt-Wizard
 
 ## Design-Tokens
-- Hintergrund: #0A0A0A
-- Surface: rgba(255,255,255,0.04)
-- Akzent-Verlauf: Violett → Cyan → Blau
-- Radius: 16–20px
-- Schrift: Inter (UI), Geist Mono (Daten)
+- Hintergrund: #0C0E12
+- Surface: #14171C
+- Akzent: Babyblau (#8FCDF2)
+- Radius: 10–16px
+- Schrift: Geist Sans (UI), Geist Mono (Daten)
 
 ## Motion
 - Framer Motion für die Inkremente des Streak-Zählers nutzen.
@@ -105,13 +105,13 @@ export function ExampleOutput() {
     <section id="example" className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300/80 mb-4">
+          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
             Beispiel-Ausgabe
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-white">
+          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
             Echte Artefakte, kein Lorem Ipsum.
           </h2>
-          <p className="mt-4 text-[17px] text-white/55">
+          <p className="mt-4 text-[17px] text-foreground/55">
             Hier ein Ausschnitt dessen, was eine einzige Idee produziert — jeder Tab ist generiert,
             strukturiert und bereit zum Einfügen in deinen Assistenten.
           </p>
@@ -121,20 +121,20 @@ export function ExampleOutput() {
       <FadeIn delay={0.1}>
         <div className="gradient-border rounded-2xl">
           <div className="rounded-2xl glass-strong overflow-hidden">
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-white/[0.06] overflow-x-auto">
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto">
               {tabs.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setActive(t.id)}
                   className={cn(
                     "relative px-3 py-1.5 text-[12.5px] font-medium rounded-md transition-colors",
-                    active === t.id ? "text-white" : "text-white/55 hover:text-white"
+                    active === t.id ? "text-foreground" : "text-foreground/55 hover:text-foreground"
                   )}
                 >
                   {active === t.id && (
                     <motion.span
                       layoutId="tab-bg"
-                      className="absolute inset-0 rounded-md bg-white/[0.06] border border-white/[0.08]"
+                      className="absolute inset-0 rounded-md bg-surface border border-border"
                       transition={{ type: "spring", stiffness: 360, damping: 30 }}
                     />
                   )}
@@ -143,8 +143,8 @@ export function ExampleOutput() {
               ))}
             </div>
             <div className="grid md:grid-cols-[200px_1fr]">
-              <aside className="border-r border-white/[0.06] p-5 hidden md:block">
-                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/40 mb-3">
+              <aside className="border-r border-border p-5 hidden md:block">
+                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-3">
                   Ausgaben
                 </div>
                 <ul className="space-y-1.5 text-[13px]">
@@ -153,7 +153,7 @@ export function ExampleOutput() {
                       key={t.id}
                       className={cn(
                         "px-2 py-1 rounded-md transition-colors cursor-pointer",
-                        active === t.id ? "bg-white/[0.04] text-white" : "text-white/55 hover:text-white"
+                        active === t.id ? "bg-surface text-foreground" : "text-foreground/55 hover:text-foreground"
                       )}
                       onClick={() => setActive(t.id)}
                     >
@@ -169,7 +169,7 @@ export function ExampleOutput() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.2 }}
-                  className="p-6 text-[12.5px] leading-[1.7] font-mono text-white/75 whitespace-pre-wrap overflow-x-auto max-h-[420px] overflow-y-auto"
+                  className="p-6 text-[12.5px] leading-[1.7] font-mono text-foreground/75 whitespace-pre-wrap overflow-x-auto max-h-[420px] overflow-y-auto"
                 >
                   {text}
                 </motion.pre>

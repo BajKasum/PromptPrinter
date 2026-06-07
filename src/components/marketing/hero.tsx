@@ -8,10 +8,7 @@ import { Button } from "@/components/ui/button";
 export function Hero() {
   return (
     <section className="relative overflow-hidden pt-32 md:pt-40 pb-24 md:pb-32">
-      {/* Ambient glow — single restrained brand hue */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 h-[420px] w-[760px] rounded-full bg-violet-500/10 blur-[120px]" />
-      </div>
+      {/* Subtle grid backdrop — restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
 
       <div className="container-x relative flex flex-col items-center text-center">
@@ -21,9 +18,9 @@ export function Hero() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mb-7"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 backdrop-blur-md">
-            <Sparkles className="h-3 w-3 text-violet-300" />
-            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-white/70">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 backdrop-blur-md">
+            <Sparkles className="h-3 w-3 text-accent-text" />
+            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/70">
               v2.0 Beta · Live
             </span>
           </div>
@@ -33,7 +30,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-balance text-[44px] md:text-[68px] leading-[1.05] tracking-[-0.04em] font-semibold text-white max-w-4xl"
+          className="text-balance text-[44px] md:text-[68px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-4xl"
         >
           Aus rohen Ideen werden{" "}
           <span className="gradient-text">build-fertige Prompts.</span>
@@ -43,7 +40,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 max-w-2xl text-balance text-[17px] leading-[1.6] text-white/60"
+          className="mt-6 max-w-2xl text-balance text-[17px] leading-[1.6] text-foreground/60"
         >
           Generiere Produkt-Briefs, PRDs, technische Blueprints und optimierte Prompts —
           zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.
@@ -70,7 +67,7 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="mt-6 text-xs font-mono uppercase tracking-[0.08em] text-white/35"
+          className="mt-6 text-xs font-mono uppercase tracking-[0.08em] text-foreground/35"
         >
           Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
         </motion.p>
@@ -94,38 +91,38 @@ function HeroArtifact() {
     <div className="relative gradient-border rounded-2xl">
       <div className="relative rounded-2xl glass-strong p-1.5 shadow-elevated">
         {/* Window chrome */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+            <span className="h-2.5 w-2.5 rounded-full bg-surface" />
+            <span className="h-2.5 w-2.5 rounded-full bg-surface" />
+            <span className="h-2.5 w-2.5 rounded-full bg-surface" />
           </div>
-          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-white/40">
+          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/40">
             prompts/master.md
           </span>
-          <span className="font-mono text-[11px] text-white/35">2.4kb · 0.8s</span>
+          <span className="font-mono text-[11px] text-foreground/35">2.4kb · 0.8s</span>
         </div>
 
         {/* Body */}
         <div className="grid md:grid-cols-[1fr_2fr] gap-0">
-          <div className="border-r border-white/[0.06] p-5 space-y-3 text-left">
+          <div className="border-r border-border p-5 space-y-3 text-left">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/40 mb-1">
+              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-1">
                 Idee
               </div>
-              <div className="text-[13px] text-white/85">
+              <div className="text-[13px] text-foreground/85">
                 Ein Habit-Tracker, der mit KI Mikro-Belohnungen basierend auf dem Streak-Fortschritt vorschlägt
               </div>
             </div>
-            <div className="pt-2 border-t border-white/[0.05]">
-              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-white/40 mb-2">
+            <div className="pt-2 border-t border-border">
+              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
                 Stack
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {["Next.js 15", "Supabase", "Stripe", "Claude 4.7"].map((s) => (
                   <span
                     key={s}
-                    className="text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-white/70"
+                    className="text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-surface border border-border text-foreground/70"
                   >
                     {s}
                   </span>
@@ -133,22 +130,22 @@ function HeroArtifact() {
               </div>
             </div>
           </div>
-          <div className="p-5 text-left font-mono text-[12.5px] leading-[1.65] text-white/70 overflow-hidden">
-            <Line className="text-violet-300/90">{`# Master-Prompt — Streak Coach`}</Line>
-            <Line>{`Du bist ein erfahrener Produkt-Engineer und baust ein `}<em className="text-violet-300 not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
+          <div className="p-5 text-left font-mono text-[12.5px] leading-[1.65] text-foreground/70 overflow-hidden">
+            <Line className="text-accent-text">{`# Master-Prompt — Streak Coach`}</Line>
+            <Line>{`Du bist ein erfahrener Produkt-Engineer und baust ein `}<em className="text-accent-text not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
             <Line>{``}</Line>
-            <Line className="text-white/45">{`## Produkt-Kontext`}</Line>
+            <Line className="text-foreground/45">{`## Produkt-Kontext`}</Line>
             <Line>{`- Ein Habit-Tracker, der Konsistenz belohnt`}</Line>
             <Line>{`- Personalisierte Mikro-Belohnungen über Claude`}</Line>
             <Line>{`- Tägliche Check-ins mit progressiver Streak-UI`}</Line>
             <Line>{``}</Line>
-            <Line className="text-white/45">{`## Vorgaben`}</Line>
+            <Line className="text-foreground/45">{`## Vorgaben`}</Line>
             <Line>{`- Mobile-first, standardmässig dunkel`}</Line>
             <Line>{`- Supabase-Auth + RLS für Nutzerdaten`}</Line>
             <Line>{`- Stripe-Abos ($0 / $9 / $19)`}</Line>
             <Line>{``}</Line>
-            <Line className="text-white/45">{`## Ausgabe`}</Line>
-            <Line className="text-violet-300/90">{`Plan → Schema → API → UI → Tests`}<span className="ml-1 inline-block h-3 w-1.5 bg-violet-300/80 align-middle animate-pulse" /></Line>
+            <Line className="text-foreground/45">{`## Ausgabe`}</Line>
+            <Line className="text-accent-text">{`Plan → Schema → API → UI → Tests`}<span className="ml-1 inline-block h-3 w-1.5 bg-accent align-middle animate-pulse" /></Line>
           </div>
         </div>
       </div>

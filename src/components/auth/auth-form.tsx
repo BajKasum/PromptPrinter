@@ -122,16 +122,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
   if (signupSent) {
     return (
       <div className="w-full max-w-[400px] text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/[0.12] border border-emerald-500/30">
-          <MailCheck className="h-6 w-6 text-emerald-300" strokeWidth={1.8} />
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10 border border-success/30">
+          <MailCheck className="h-6 w-6 text-success" strokeWidth={1.8} />
         </div>
-        <h2 className="text-[18px] font-semibold text-white mb-2">Bestätigungs-Email gesendet</h2>
-        <p className="text-[13.5px] text-white/60 mb-6">
-          Wir haben einen Bestätigungs-Link an <span className="text-white">{email}</span> geschickt.
+        <h2 className="text-[18px] font-semibold text-foreground mb-2">Bestätigungs-Email gesendet</h2>
+        <p className="text-[13.5px] text-foreground/60 mb-6">
+          Wir haben einen Bestätigungs-Link an <span className="text-foreground">{email}</span> geschickt.
           Klick darauf, um dein Konto zu aktivieren und dich einzuloggen.
         </p>
         {info && (
-          <div className="mb-4 rounded-md border border-emerald-500/30 bg-emerald-500/[0.06] px-3 py-2 text-[13px] text-emerald-300">
+          <div className="mb-4 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[13px] text-success">
             {info}
           </div>
         )}
@@ -149,9 +149,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           Email erneut senden
         </Button>
-        <div className="mt-4 text-[13px] text-white/55">
+        <div className="mt-4 text-[13px] text-foreground/55">
           Schon bestätigt?{" "}
-          <Link href="/login" className="text-white hover:underline">
+          <Link href="/login" className="text-foreground hover:underline">
             Einloggen
           </Link>
         </div>
@@ -188,7 +188,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <div className="text-right">
               <Link
                 href="/reset-password"
-                className="text-[12.5px] text-white/50 hover:text-white/80 transition-colors"
+                className="text-[12.5px] text-foreground/50 hover:text-foreground/80 transition-colors"
               >
                 Passwort vergessen?
               </Link>
@@ -208,18 +208,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </Button>
       </form>
 
-      <div className="mt-6 text-center text-[13px] text-white/55">
+      <div className="mt-6 text-center text-[13px] text-foreground/55">
         {mode === "signin" ? (
           <>
             Noch kein Konto?{" "}
-            <Link href="/signup" className="text-white hover:underline">
+            <Link href="/signup" className="text-foreground hover:underline">
               Registrieren
             </Link>
           </>
         ) : (
           <>
             Schon ein Konto?{" "}
-            <Link href="/login" className="text-white hover:underline">
+            <Link href="/login" className="text-foreground hover:underline">
               Einloggen
             </Link>
           </>

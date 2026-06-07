@@ -54,16 +54,16 @@ export function RequestPasswordReset() {
   if (sent) {
     return (
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/[0.12]">
-          <MailCheck className="h-6 w-6 text-emerald-300" strokeWidth={1.8} />
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-success/30 bg-success/10">
+          <MailCheck className="h-6 w-6 text-success" strokeWidth={1.8} />
         </div>
-        <h2 className="mb-2 text-[18px] font-semibold text-white">Email unterwegs</h2>
-        <p className="mb-6 text-[13.5px] text-white/60">
-          Falls ein Konto mit <span className="text-white">{email}</span> existiert, haben wir einen
+        <h2 className="mb-2 text-[18px] font-semibold text-foreground">Email unterwegs</h2>
+        <p className="mb-6 text-[13.5px] text-foreground/60">
+          Falls ein Konto mit <span className="text-foreground">{email}</span> existiert, haben wir einen
           Link zum Zurücksetzen des Passworts gesendet. Prüfe auch deinen Spam-Ordner.
         </p>
-        <div className="text-[13px] text-white/55">
-          <Link href="/login" className="text-white hover:underline">
+        <div className="text-[13px] text-foreground/55">
+          <Link href="/login" className="text-foreground hover:underline">
             Zurück zum Login
           </Link>
         </div>
@@ -99,9 +99,9 @@ export function RequestPasswordReset() {
         </Button>
       </form>
 
-      <div className="mt-6 text-center text-[13px] text-white/55">
+      <div className="mt-6 text-center text-[13px] text-foreground/55">
         Doch erinnert?{" "}
-        <Link href="/login" className="text-white hover:underline">
+        <Link href="/login" className="text-foreground hover:underline">
           Einloggen
         </Link>
       </div>

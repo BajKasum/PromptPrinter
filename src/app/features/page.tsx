@@ -19,15 +19,15 @@ export default function FeaturesPage() {
       <Navbar />
       <section className="container-x pt-32 md:pt-40 pb-12 text-center">
         <FadeIn>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 mb-6">
-            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-violet-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 mb-6">
+            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
               Funktionen
             </span>
           </div>
-          <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-white max-w-3xl mx-auto">
+          <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-3xl mx-auto">
             Alles, was du brauchst, um <span className="gradient-text">von der Idee zum Commit zu kommen.</span>
           </h1>
-          <p className="mt-6 text-[17px] text-white/55 max-w-2xl mx-auto">
+          <p className="mt-6 text-[17px] text-foreground/55 max-w-2xl mx-auto">
             Jedes Projekt ist ein komplettes Build-Packet — generiert, strukturiert, exportierbar.
           </p>
         </FadeIn>

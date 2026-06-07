@@ -24,9 +24,9 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0A0A0A",
+          background: "#0C0E12",
           backgroundImage:
-            "radial-gradient(900px 480px at 75% 0%, rgba(124,58,237,0.22), transparent)",
+            "radial-gradient(900px 480px at 75% 0%, rgba(143,205,242,0.18), transparent)",
           padding: "80px",
           fontFamily: "sans-serif",
         }}
@@ -37,9 +37,9 @@ export default function OpengraphImage() {
               fontSize: 22,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#C4B5FD",
-              border: "1px solid rgba(124,58,237,0.4)",
-              background: "rgba(124,58,237,0.10)",
+              color: "#8FCDF2",
+              border: "1px solid rgba(143,205,242,0.4)",
+              background: "rgba(143,205,242,0.12)",
               borderRadius: 999,
               padding: "8px 18px",
             }}
@@ -58,8 +58,8 @@ export default function OpengraphImage() {
             letterSpacing: "-0.03em",
           }}
         >
-          <span style={{ color: "white" }}>Aus rohen Ideen&nbsp;</span>
-          <span style={{ color: "#A78BFA" }}>build-fertige Prompts.</span>
+          <span style={{ color: "#E8EBEF" }}>Aus rohen Ideen&nbsp;</span>
+          <span style={{ color: "#8FCDF2" }}>build-fertige Prompts.</span>
         </div>
 
         <div
