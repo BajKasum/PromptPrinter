@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { ArrowRight, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function Hero() {
   return (
@@ -72,23 +74,92 @@ export function Hero() {
           Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
         </motion.p>
 
-        {/* Hero artifact: simulated output */}
+        {/* Hero demo: a prompt streaming together, live */}
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="mt-20 w-full max-w-5xl"
         >
-          <HeroArtifact />
+          <HeroDemo />
         </motion.div>
       </div>
     </section>
   );
 }
 
-function HeroArtifact() {
+type Tone = "accent" | "muted" | "default";
+
+const STACK = ["Next.js 15", "Supabase", "Stripe", "Claude 4.7"];
+
+const PROMPT_LINES: { text: ReactNode; tone?: Tone }[] = [
+  { text: "# Master-Prompt — Streak Coach", tone: "accent" },
+  {
+    text: (
+      <>
+        Du bist ein erfahrener Produkt-Engineer und baust ein{" "}
+        <em className="not-italic text-accent-text">streak-coach</em> mobile-first SaaS.
+      </>
+    ),
+  },
+  { text: "" },
+  { text: "## Produkt-Kontext", tone: "muted" },
+  { text: "- Ein Habit-Tracker, der Konsistenz belohnt" },
+  { text: "- Personalisierte Mikro-Belohnungen über Claude" },
+  { text: "- Tägliche Check-ins mit progressiver Streak-UI" },
+  { text: "" },
+  { text: "## Vorgaben", tone: "muted" },
+  { text: "- Mobile-first, standardmässig dunkel" },
+  { text: "- Supabase-Auth + RLS für Nutzerdaten" },
+  { text: "- Stripe-Abos ($0 / $9 / $19)" },
+  { text: "" },
+  { text: "## Ausgabe", tone: "muted" },
+  { text: "Plan → Schema → API → UI → Tests", tone: "accent" },
+];
+
+const TONE: Record<Tone, string> = {
+  accent: "text-accent-text",
+  muted: "text-foreground/45",
+  default: "",
+};
+
+function HeroDemo() {
+  const reduce = useReducedMotion() ?? false;
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { margin: "-80px" });
+
+  const total = PROMPT_LINES.length;
+  const [revealed, setRevealed] = useState(reduce ? total : 0);
+  const [done, setDone] = useState(reduce);
+  const [cycle, setCycle] = useState(0);
+
+  // Stream the prompt line by line, hold, then loop. Pauses when off-screen
+  // and is skipped entirely when the user prefers reduced motion.
+  useEffect(() => {
+    if (reduce || !inView) return;
+    setRevealed(0);
+    setDone(false);
+    let line = 0;
+    let hold: ReturnType<typeof setTimeout>;
+    const stream = setInterval(() => {
+      line += 1;
+      setRevealed(line);
+      if (line >= total) {
+        clearInterval(stream);
+        setDone(true);
+        hold = setTimeout(() => setCycle((c) => c + 1), 2800);
+      }
+    }, 150);
+    return () => {
+      clearInterval(stream);
+      clearTimeout(hold);
+    };
+  }, [inView, reduce, cycle, total]);
+
+  const cursorAt = reduce || done ? total - 1 : Math.max(0, revealed - 1);
+
   return (
-    <div className="relative gradient-border rounded-2xl">
+    <div ref={ref} className="relative gradient-border rounded-2xl">
       <div className="relative rounded-2xl glass-strong p-1.5 shadow-elevated">
         {/* Window chrome */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border">
@@ -100,7 +171,19 @@ function HeroArtifact() {
           <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/40">
             prompts/master.md
           </span>
-          <span className="font-mono text-[11px] text-foreground/35">2.4kb · 0.8s</span>
+          <span className="font-mono text-[11px]">
+            {done ? (
+              <span className="inline-flex items-center gap-1.5 text-accent-text">
+                <Check className="h-3 w-3" strokeWidth={2.4} />
+                fertig · 2.4kb · 0.8s
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-foreground/45">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                generiert…
+              </span>
+            )}
+          </span>
         </div>
 
         {/* Body */}
@@ -111,18 +194,23 @@ function HeroArtifact() {
                 Idee
               </div>
               <div className="text-[13px] text-foreground/85">
-                Ein Habit-Tracker, der mit KI Mikro-Belohnungen basierend auf dem Streak-Fortschritt vorschlägt
+                Ein Habit-Tracker, der mit KI Mikro-Belohnungen basierend auf dem
+                Streak-Fortschritt vorschlägt
               </div>
             </div>
             <div className="pt-2 border-t border-border">
               <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
                 Stack
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {["Next.js 15", "Supabase", "Stripe", "Claude 4.7"].map((s) => (
+              <div key={cycle} className="flex flex-wrap gap-1.5">
+                {STACK.map((s, i) => (
                   <span
                     key={s}
-                    className="text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-surface border border-border text-foreground/70"
+                    className={cn(
+                      "text-[10.5px] font-mono px-2 py-0.5 rounded-md bg-surface border border-border text-foreground/70",
+                      !reduce && "animate-fade-up"
+                    )}
+                    style={!reduce ? { animationDelay: `${i * 90}ms` } : undefined}
                   >
                     {s}
                   </span>
@@ -130,29 +218,29 @@ function HeroArtifact() {
               </div>
             </div>
           </div>
+
           <div className="p-5 text-left font-mono text-[12.5px] leading-[1.65] text-foreground/70 overflow-hidden">
-            <Line className="text-accent-text">{`# Master-Prompt — Streak Coach`}</Line>
-            <Line>{`Du bist ein erfahrener Produkt-Engineer und baust ein `}<em className="text-accent-text not-italic">streak-coach</em>{` mobile-first SaaS.`}</Line>
-            <Line>{``}</Line>
-            <Line className="text-foreground/45">{`## Produkt-Kontext`}</Line>
-            <Line>{`- Ein Habit-Tracker, der Konsistenz belohnt`}</Line>
-            <Line>{`- Personalisierte Mikro-Belohnungen über Claude`}</Line>
-            <Line>{`- Tägliche Check-ins mit progressiver Streak-UI`}</Line>
-            <Line>{``}</Line>
-            <Line className="text-foreground/45">{`## Vorgaben`}</Line>
-            <Line>{`- Mobile-first, standardmässig dunkel`}</Line>
-            <Line>{`- Supabase-Auth + RLS für Nutzerdaten`}</Line>
-            <Line>{`- Stripe-Abos ($0 / $9 / $19)`}</Line>
-            <Line>{``}</Line>
-            <Line className="text-foreground/45">{`## Ausgabe`}</Line>
-            <Line className="text-accent-text">{`Plan → Schema → API → UI → Tests`}<span className="ml-1 inline-block h-3 w-1.5 bg-accent align-middle animate-pulse" /></Line>
+            {PROMPT_LINES.map((l, i) => {
+              const shown = reduce || i < revealed;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "whitespace-pre transition-all duration-300 ease-out",
+                    TONE[l.tone ?? "default"],
+                    shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+                  )}
+                >
+                  {l.text === "" ? " " : l.text}
+                  {i === cursorAt && shown && (
+                    <span className="ml-0.5 inline-block h-3 w-1.5 align-middle bg-accent animate-pulse" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function Line({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`whitespace-pre ${className}`}>{children}</div>;
 }
