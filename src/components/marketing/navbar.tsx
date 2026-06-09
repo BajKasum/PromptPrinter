@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
-// In-page anchors to real sections — no dead links, no thin extra pages.
+// In-page section links. Native <a> (not next/link) so the browser handles the
+// hash jump — next/link is for route changes and scrolls unreliably to a bare
+// hash in the App Router. Smooth scroll + the targets' scroll-mt do the rest.
 const nav = [
   { label: "Funktionen", href: "#funktionen" },
   { label: "Preise", href: "#preise" },
@@ -26,7 +28,7 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
         scrolled ? "border-b border-border" : "border-b border-transparent"
       )}
     >
@@ -37,20 +39,28 @@ export function Navbar() {
         )}
       />
       <nav className="container-x relative flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
-          <Logo />
-        </Link>
-        <div className="hidden md:flex items-center gap-1">
-          {nav.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="px-3 py-1.5 text-[13.5px] text-foreground/65 hover:text-foreground transition-colors rounded-md"
-            >
-              {item.label}
-            </Link>
-          ))}
+        {/* Left: logo + section links, grouped so nothing floats mid-bar */}
+        <div className="flex items-center gap-8">
+          <Link
+            href="/"
+            className="flex items-center transition-opacity hover:opacity-80"
+          >
+            <Logo />
+          </Link>
+          <div className="hidden md:flex items-center gap-1">
+            {nav.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className="rounded-md px-3 py-1.5 text-[13.5px] text-foreground/60 transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
         </div>
+
+        {/* Right: theme + auth */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
