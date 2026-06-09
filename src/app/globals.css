@@ -78,6 +78,12 @@
     --shadow: 0 0% 0%;
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   html,
   body {
     background: hsl(var(--background));

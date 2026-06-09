@@ -56,7 +56,7 @@ export const PLANS = [
 
 export function PricingPreview() {
   return (
-    <section className="container-x py-24 md:py-32">
+    <section id="preise" className="scroll-mt-24 container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-12">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">

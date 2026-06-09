@@ -102,7 +102,7 @@ export function ExampleOutput() {
   const text = content[active];
 
   return (
-    <section id="example" className="container-x py-24 md:py-32">
+    <section id="example" className="scroll-mt-24 container-x py-24 md:py-32">
       <FadeIn>
         <div className="max-w-2xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">

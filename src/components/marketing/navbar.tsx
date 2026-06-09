@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
+// In-page anchors to real sections — no dead links, no thin extra pages.
 const nav = [
-  { label: "Funktionen", href: "/features" },
-  { label: "Preise", href: "/pricing" },
-  { label: "Docs", href: "#" },
-  { label: "Changelog", href: "#" },
+  { label: "Funktionen", href: "#funktionen" },
+  { label: "Preise", href: "#preise" },
 ];
 
 export function Navbar() {
