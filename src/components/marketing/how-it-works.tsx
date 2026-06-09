@@ -1,30 +1,30 @@
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
-import { Pencil, Wrench, Cpu, Rocket } from "lucide-react";
+import { Pencil, MessageSquare, Layers, Download } from "lucide-react";
 
 const steps = [
   {
     n: "01",
     Icon: Pencil,
-    title: "Idee eingeben",
-    body: "Füge grobe Notizen, einen Einzeiler oder eine skizzenhafte User Story ein. Wir holen dich da ab, wo du startest.",
+    title: "Idee reinwerfen",
+    body: "Beschreib dein Ziel im Chat: ein Satz, grobe Notizen oder eine halbe User Story. Wir holen dich da ab, wo du startest.",
   },
   {
     n: "02",
-    Icon: Wrench,
-    title: "Tools wählen",
-    body: "Wähle deinen KI-Assistenten, Frontend-Builder, Backend-Agenten und die Ziel-Datenbank.",
+    Icon: MessageSquare,
+    title: "Gemeinsam schärfen",
+    body: "PromptPrinter fragt nach Zielgruppe, Tools und Stack und verfeinert den Prompt Schritt für Schritt mit dir.",
   },
   {
     n: "03",
-    Icon: Cpu,
-    title: "Generieren",
-    body: "Die Engine strukturiert ein PRD, Master-Prompt, Frontend- & Backend-Prompts, Schema und Ops-Dokumente.",
+    Icon: Layers,
+    title: "Packet bekommen",
+    body: "Du erhältst PRD, Master-Prompt, Frontend- und Backend-Prompts, Schema und Ops-Dokumente, aufeinander abgestimmt.",
   },
   {
     n: "04",
-    Icon: Rocket,
-    title: "Bauen",
-    body: "Kopiere jeden Prompt in den Assistenten deiner Wahl und leg los. Oder exportiere alles.",
+    Icon: Download,
+    title: "Kopieren oder exportieren",
+    body: "Jedes Artefakt per Klick ins gewählte Tool, oder lade das ganze Packet als Markdown-Bundle.",
   },
 ];
 
@@ -54,7 +54,7 @@ export function HowItWorks() {
                 {n}
               </div>
               <div className="h-10 w-10 rounded-lg bg-surface border border-border flex items-center justify-center mb-5">
-                <Icon className="h-4.5 w-4.5 text-foreground/85" strokeWidth={1.8} />
+                <Icon className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
               </div>
               <h3 className="text-[17px] font-semibold tracking-tight text-foreground mb-2">
                 {title}
