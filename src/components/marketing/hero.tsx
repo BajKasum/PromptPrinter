@@ -9,7 +9,11 @@ import { cn } from "@/lib/utils";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-32 md:pt-40 pb-24 md:pb-32">
+    <section
+      id="main-content"
+      tabIndex={-1}
+      className="relative overflow-hidden pt-32 md:pt-40 pb-24 md:pb-32 focus:outline-none"
+    >
       {/* Subtle grid backdrop — restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
 

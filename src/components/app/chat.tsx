@@ -116,7 +116,9 @@ export function Chat({
             disabled={loading}
           />
         ) : (
-          <div className="space-y-5">
+          // role="log" + aria-live: screen readers announce new replies as they
+          // arrive without moving focus out of the input.
+          <div role="log" aria-live="polite" className="space-y-5">
             {messages.map((m, i) =>
               m.role === "user" ? (
                 <UserBubble key={i} content={m.content} />
@@ -131,7 +133,10 @@ export function Chat({
       </div>
 
       {error && (
-        <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/[0.06] px-3 py-2 text-[13px] text-red-300">
+        <div
+          role="alert"
+          className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+        >
           {error}
         </div>
       )}
@@ -189,7 +194,7 @@ function EmptyState({
             type="button"
             disabled={disabled}
             onClick={() => onPick(s)}
-            className="w-full text-left rounded-lg border border-border bg-surface px-3.5 py-2.5 text-[13px] text-foreground/75 hover:border-border hover:text-foreground transition-colors disabled:opacity-50"
+            className="w-full text-left rounded-lg border border-border bg-surface px-3.5 py-2.5 text-[13px] text-foreground/75 hover:border-border-strong hover:bg-surface-hover hover:text-foreground active:scale-[0.99] transition-all disabled:opacity-50"
           >
             {s}
           </button>

@@ -32,6 +32,12 @@ export function Navbar() {
         scrolled ? "border-b border-border" : "border-b border-transparent"
       )}
     >
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-ring focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
+      >
+        Zum Inhalt springen
+      </a>
       <div
         className={cn(
           "absolute inset-0 transition-opacity duration-300 bg-background/70 backdrop-blur-xl backdrop-saturate-150",

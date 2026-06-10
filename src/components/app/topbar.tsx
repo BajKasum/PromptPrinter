@@ -26,10 +26,17 @@ export function Topbar({
   const [signingOut, setSigningOut] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
+  // Show the real modifier for the user's OS; default ⌘ until mounted (the
+  // swap happens in an effect, so SSR and first client render still match).
+  const [modKey, setModKey] = useState("⌘");
 
   const label = displayName || email.split("@")[0] || "Konto";
   const initial = (label[0] ?? "?").toUpperCase();
   const showAvatar = Boolean(avatarUrl) && !avatarBroken;
+
+  useEffect(() => {
+    if (!/Mac|iPhone|iPad/.test(navigator.platform)) setModKey("Strg");
+  }, []);
 
   // Global ⌘K / Ctrl+K opens the command palette from anywhere in the app.
   useEffect(() => {
@@ -42,6 +49,20 @@ export function Topbar({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Escape closes whichever dropdown is open — click-away alone traps
+  // keyboard users.
+  useEffect(() => {
+    if (!open && !notifOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setNotifOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, notifOpen]);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -69,7 +90,7 @@ export function Topbar({
           Projekte, Seiten, Aktionen…
         </span>
         <span className="ml-auto hidden md:inline-flex items-center gap-0.5 text-[10px] font-mono text-muted-foreground">
-          <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface">⌘</kbd>
+          <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface">{modKey}</kbd>
           <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface">K</kbd>
         </span>
       </button>
@@ -82,6 +103,7 @@ export function Topbar({
               setOpen(false);
             }}
             aria-label="Benachrichtigungen"
+            aria-haspopup="true"
             aria-expanded={notifOpen}
             className="h-9 w-9 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
           >
@@ -120,6 +142,7 @@ export function Topbar({
               setNotifOpen(false);
             }}
             aria-label="Kontomenü"
+            aria-haspopup="true"
             aria-expanded={open}
             className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg border border-border bg-surface text-[13px] text-foreground/85 hover:bg-surface-hover transition-colors"
           >

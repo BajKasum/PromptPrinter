@@ -53,13 +53,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">
+      {/* aria-live so screen readers announce toasts without stealing focus */}
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2"
+      >
         <AnimatePresence initial={false}>
           {toasts.map((t) => {
             const { Icon, accent } = VARIANTS[t.variant];
             return (
               <motion.div
                 key={t.id}
+                role="status"
                 layout
                 initial={{ opacity: 0, y: 12, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}

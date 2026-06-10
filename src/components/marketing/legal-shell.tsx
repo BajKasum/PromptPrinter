@@ -21,7 +21,13 @@ export function LegalShell({
   return (
     <main>
       <Navbar />
-      <section className="container-x pt-32 md:pt-40 pb-10 text-center">
+      {/* Skip-link target: the navbar lives inside <main> here, so the anchor
+          sits on the first content section instead. */}
+      <section
+        id="main-content"
+        tabIndex={-1}
+        className="container-x pt-32 md:pt-40 pb-10 text-center focus:outline-none"
+      >
         <FadeIn>
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 mb-6">
             <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
