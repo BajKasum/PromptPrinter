@@ -2,7 +2,7 @@ import { Skeleton, ProjectCardSkeleton } from "@/components/ui/skeleton";
 
 export default function LibraryLoading() {
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <div className="mb-8">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="mt-3 h-4 w-72 max-w-full" />

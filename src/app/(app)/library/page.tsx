@@ -100,7 +100,7 @@ export default async function LibraryPage() {
   });
 
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <FadeIn>
         <div className="mb-8">
           <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">

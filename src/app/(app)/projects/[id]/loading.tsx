@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProjectDetailLoading() {
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <div className="mb-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Skeleton className="h-4 w-44" />

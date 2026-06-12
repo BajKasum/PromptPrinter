@@ -188,7 +188,7 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
   }
 
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <FadeIn>
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between gap-3">

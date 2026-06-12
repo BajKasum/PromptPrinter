@@ -91,13 +91,19 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild>
-              <Link href="/chat?mode=general">
+              <Link
+                href="/chat?mode=general"
+                title="Für alltägliche Prompts — Texte, Recherche und Ideen für ChatGPT, Claude & Co."
+              >
                 <MessageSquare className="h-4 w-4" />
                 Prompt Chat
               </Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/chat?mode=software">
+              <Link
+                href="/chat?mode=software"
+                title="Für ganze Build-Pakete — PRD, Schema und Prompts für Lovable, Cursor & Co."
+              >
                 <Code2 className="h-4 w-4" />
                 Prompt Code
               </Link>
@@ -188,21 +194,42 @@ export default async function DashboardPage() {
 
       {recent.length === 0 ? (
         <FadeIn>
-          <div className="card-surface p-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
-              <MessageSquare className="h-5 w-5 text-foreground" strokeWidth={1.8} />
+          <div className="card-surface p-8 md:p-10">
+            <div className="text-center">
+              <p className="text-[15px] text-foreground">Wähle deinen Startpunkt</p>
+              <p className="mx-auto mt-1.5 mb-7 max-w-md text-[13px] text-muted-foreground">
+                Beschreib dein Ziel im Chat — PromptPrinter baut dir den passenden
+                Prompt, Schritt für Schritt mit dir verfeinert.
+              </p>
             </div>
-            <p className="text-[15px] text-foreground">Noch keine Projekte</p>
-            <p className="mt-1.5 text-[13px] text-muted-foreground max-w-sm mx-auto">
-              Starte einen Chat, beschreib dein Ziel und PromptPrinter baut dir den
-              passenden Prompt — Schritt für Schritt mit dir verfeinert.
-            </p>
-            <Button asChild className="mt-5">
-              <Link href="/chat">
-                <MessageSquare className="h-4 w-4" />
-                Prompt Chat starten
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <Link
+                href="/chat?mode=general"
+                className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-ring/50 hover:bg-surface-hover"
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-accent-text" strokeWidth={1.8} />
+                  <span className="text-[14px] font-medium text-foreground">Prompt Chat</span>
+                </div>
+                <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                  Für alltägliche Prompts — Texte, Recherche und Ideen für ChatGPT,
+                  Claude &amp; Co.
+                </p>
               </Link>
-            </Button>
+              <Link
+                href="/chat?mode=software"
+                className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-ring/50 hover:bg-surface-hover"
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <Code2 className="h-4 w-4 text-accent-text" strokeWidth={1.8} />
+                  <span className="text-[14px] font-medium text-foreground">Prompt Code</span>
+                </div>
+                <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                  Für ganze Build-Pakete — PRD, Schema und Prompts für Lovable,
+                  Cursor &amp; Co.
+                </p>
+              </Link>
+            </div>
           </div>
         </FadeIn>
       ) : (

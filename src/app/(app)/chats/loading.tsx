@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatsLoading() {
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Skeleton className="h-10 w-52 max-w-full" />

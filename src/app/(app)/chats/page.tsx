@@ -38,7 +38,7 @@ export default async function ChatsPage() {
   );
 
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
