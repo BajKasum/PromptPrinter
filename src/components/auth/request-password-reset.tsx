@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { siteUrl } from "@/lib/site-url";
 
 const emailSchema = z.string().email("Bitte eine gültige Email eingeben");
 
@@ -33,7 +34,7 @@ export function RequestPasswordReset() {
       // The recovery link returns through the shared callback, which exchanges
       // the code for a session and forwards to the password-update page.
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password/update`,
+        redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
       });
 
       // Surface only rate-limiting. Everything else resolves to the same neutral

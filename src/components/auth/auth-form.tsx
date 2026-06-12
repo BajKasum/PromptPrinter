@@ -9,6 +9,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { siteUrl } from "@/lib/site-url";
 import { Loader2, MailCheck } from "lucide-react";
 
 const schema = z.object({
@@ -72,7 +73,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          emailRedirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
         },
       });
 
@@ -107,7 +108,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         type: "signup",
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          emailRedirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
         },
       });
       if (error) setError(translateError(error.message));
