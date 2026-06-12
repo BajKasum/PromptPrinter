@@ -47,7 +47,7 @@ export default async function BillingPage() {
     limit === Infinity ? String(used) : `${used} / ${limit}`;
 
   return (
-    <div className="max-w-[1100px]">
+    <div>
       <FadeIn>
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
           Abrechnung

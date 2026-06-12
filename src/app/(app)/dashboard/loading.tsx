@@ -2,7 +2,7 @@ import { Skeleton, StatCardSkeleton, ProjectCardSkeleton } from "@/components/ui
 
 export default function DashboardLoading() {
   return (
-    <div className="max-w-[1100px]">
+    <div>
       <div className="mb-8">
         <Skeleton className="h-11 w-80 max-w-full" />
         <Skeleton className="mt-3 h-4 w-56" />

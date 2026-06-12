@@ -76,7 +76,7 @@ export default async function DashboardPage() {
   const firstName = (user.email ?? "").split("@")[0];
 
   return (
-    <div className="max-w-[1100px]">
+    <div>
       <FadeIn>
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>

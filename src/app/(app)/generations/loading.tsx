@@ -2,7 +2,7 @@ import { Skeleton, StatCardSkeleton } from "@/components/ui/skeleton";
 
 export default function GenerationsLoading() {
   return (
-    <div className="max-w-[1100px]">
+    <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Skeleton className="h-10 w-64" />

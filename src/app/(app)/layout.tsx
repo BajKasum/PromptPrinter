@@ -36,7 +36,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             displayName={profile?.display_name ?? null}
             avatarUrl={profile?.avatar_url ?? null}
           />
-          <main id="main-content" tabIndex={-1} className="pt-6 md:pt-8 focus:outline-none">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="mx-auto w-full max-w-[1200px] pt-6 md:pt-8 focus:outline-none"
+          >
             {children}
           </main>
         </div>
