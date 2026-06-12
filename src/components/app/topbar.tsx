@@ -83,6 +83,7 @@ export function Topbar({
         type="button"
         onClick={() => setCmdOpen(true)}
         aria-label="Befehls-Palette öffnen — Projekte, Seiten und Aktionen suchen"
+        data-tour="search"
         className="group relative flex-1 min-w-0 max-w-[420px] flex items-center h-9 pl-9 pr-2.5 rounded-lg border border-border bg-surface text-left text-[13px] text-muted-foreground hover:bg-surface-hover hover:border-border-strong focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
       >
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -94,7 +95,7 @@ export function Topbar({
           <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface">K</kbd>
         </span>
       </button>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2" data-tour="topbar-actions">
         <ThemeToggle />
         <div className="relative">
           <button

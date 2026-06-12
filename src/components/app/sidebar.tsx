@@ -20,13 +20,14 @@ export function Sidebar() {
       <div className="px-3 py-4 flex-1 overflow-y-auto">
         <Link
           href="/chat"
+          data-tour="new-chat"
           className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
         >
           <Sparkles className="h-3.5 w-3.5" />
           Neuer Chat
         </Link>
 
-        <nav aria-label="Hauptbereiche" className="space-y-0.5">
+        <nav aria-label="Hauptbereiche" data-tour="nav-main" className="space-y-0.5">
           {primaryNav.map(({ label, href, Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (

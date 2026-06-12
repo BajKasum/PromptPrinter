@@ -89,7 +89,7 @@ export default async function DashboardPage() {
                 : `${projectsTotal} ${projectsTotal === 1 ? "Projekt" : "Projekte"} in deinem Workspace.`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-tour="quick-actions">
             <Button asChild>
               <Link
                 href="/chat?mode=general"
@@ -112,21 +112,23 @@ export default async function DashboardPage() {
         </div>
       </FadeIn>
 
-      <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
-        {stats.map(({ label, value, Icon }) => (
-          <StaggerItem key={label}>
-            <div className="card-surface p-5">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
-                  {label}
-                </span>
-                <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+      <div data-tour="stats">
+        <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
+          {stats.map(({ label, value, Icon }) => (
+            <StaggerItem key={label}>
+              <div className="card-surface p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+                    {label}
+                  </span>
+                  <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                </div>
+                <div className="text-[32px] font-semibold tracking-[-0.02em] text-foreground">{value}</div>
               </div>
-              <div className="text-[32px] font-semibold tracking-[-0.02em] text-foreground">{value}</div>
-            </div>
-          </StaggerItem>
-        ))}
-      </StaggerChildren>
+            </StaggerItem>
+          ))}
+        </StaggerChildren>
+      </div>
 
       {chats.length > 0 && (
         <section className="mb-10">
@@ -202,7 +204,7 @@ export default async function DashboardPage() {
                 Prompt, Schritt für Schritt mit dir verfeinert.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2" data-tour="start-cards">
               <Link
                 href="/chat?mode=general"
                 className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-ring/50 hover:bg-surface-hover"

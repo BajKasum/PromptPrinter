@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { ToastProvider } from "@/components/ui/toast";
+import { Onboarding } from "@/components/onboarding/onboarding";
 import { createClient } from "@/lib/supabase/server";
 
 // Auth-gated shell. The middleware already guards these routes; fetching the
@@ -15,9 +16,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan, display_name, avatar_url")
+    .select("plan, display_name, avatar_url, settings")
     .eq("id", user.id)
     .maybeSingle();
+
+  // First-login tour: auto-start until profiles.settings.onboarding_done is set.
+  const rawSettings = profile?.settings;
+  const tourDone =
+    !!rawSettings &&
+    typeof rawSettings === "object" &&
+    !Array.isArray(rawSettings) &&
+    (rawSettings as Record<string, unknown>).onboarding_done === true;
 
   return (
     <ToastProvider>
@@ -45,6 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
+      <Onboarding userId={user.id} initialDone={tourDone} />
     </ToastProvider>
   );
 }
