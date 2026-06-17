@@ -97,10 +97,17 @@ export async function POST(req: Request) {
     const [{ data: profile }, { count: projectCount }, { count: genCount }] =
       await Promise.all([
         supabase.from("profiles").select("plan").eq("id", userId).maybeSingle(),
-        supabase.from("projects").select("id", { count: "exact", head: true }),
+        // Filter by owner explicitly even though RLS already scopes these to the
+        // caller — defense in depth. These counts gate resource creation, so a
+        // single mis-scoped policy must never let them read the global total.
+        supabase
+          .from("projects")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId),
         supabase
           .from("generations")
           .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
           .gte("created_at", monthStart),
       ]);
     const rawPlan = (profile?.plan as string | undefined) ?? "free";

@@ -27,11 +27,16 @@ export default async function SettingsPage() {
       .select("display_name, settings, plan, avatar_url")
       .eq("id", user.id)
       .maybeSingle(),
-    // RLS scopes both counts to the signed-in owner.
-    supabase.from("projects").select("id", { count: "exact", head: true }),
+    // RLS scopes both counts to the signed-in owner; the explicit owner filter
+    // below is defense in depth on top of it.
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
     supabase
       .from("generations")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
       .gte("created_at", monthStart),
   ]);
 

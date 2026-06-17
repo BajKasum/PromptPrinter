@@ -28,10 +28,15 @@ export default async function BillingPage() {
   const [{ data: profile }, { count: projectsCount }, { count: monthlyGenerations }] =
     await Promise.all([
       supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
-      supabase.from("projects").select("id", { count: "exact", head: true }),
+      // Owner filter is explicit on top of RLS (defense in depth).
+      supabase
+        .from("projects")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
       supabase
         .from("generations")
         .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
         .gte("created_at", monthStart),
     ]);
 
