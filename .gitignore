@@ -10,7 +10,6 @@ dist/
 .env*.local
 .env.docker
 !.env.example
-!.env.docker.example
 
 # IDE
 .vscode/
