@@ -47,7 +47,7 @@ testbar, ohne API-Quota zu verbrauchen.
 | `npm run lint` | ESLint (`next lint`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest (Unit-Tests) |
-| `node scripts/take-screenshots.mjs` | Screenshots aller Seiten (lokal, braucht Chrome) |
+| `node scripts/take-screenshots.mjs` | Screenshots aller Seiten in Light+Dark → `screenshots_Docs/` (braucht laufenden Dev-Server, Chrome und `SCREENSHOT_EMAIL`/`SCREENSHOT_PASSWORD` in `.env.local`) |
 
 ## Environment
 
