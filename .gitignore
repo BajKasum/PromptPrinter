@@ -35,3 +35,12 @@ next-env.d.ts
 
 # Stitch design references — local only, regenerate from MCP if needed
 .stitch-refs/
+
+# Local agent config — never commit (keeps explicit staging from leaking it)
+.claude/
+
+# Generated docs & screenshots — binaries, keep out of git history.
+# Regenerate screenshots via scripts/take-screenshots.mjs.
+screenshots/
+screenshots_Docs/
+*.docx

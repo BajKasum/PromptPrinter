@@ -1,0 +1,14 @@
+# Normalize line endings: store as LF in the repo, check out native on disk.
+# Stops the CRLF↔LF churn between Windows dev and the Linux CI runner.
+* text=auto eol=lf
+
+# Binaries — never normalize or diff.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.docx binary
+*.woff binary
+*.woff2 binary
