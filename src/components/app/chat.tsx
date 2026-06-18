@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Copy, Check, Download, Sparkles } from "lucide-react";
+import { Send, Loader2, Copy, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { Mascot } from "@/components/brand/mascot";
+import { DolphinLoader } from "@/components/brand/dolphin-loader";
 import { downloadFile } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -182,9 +184,7 @@ function EmptyState({
 }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-10">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
-        <Sparkles className="h-5 w-5 text-accent-text" strokeWidth={1.8} />
-      </div>
+      <Mascot size={84} priority className="mx-auto mb-4" />
       <h2 className="text-[18px] font-semibold text-foreground">{heading}</h2>
       <p className="mt-1 text-[13px] text-foreground/55 max-w-sm">{sub}</p>
       <div className="mt-5 w-full max-w-md space-y-2">
@@ -345,9 +345,8 @@ function CodeBlock({ text }: { text: string }) {
 function Typing() {
   return (
     <div className="flex justify-start">
-      <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13px] text-foreground/55">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Schreibt…
+      <div className="inline-flex items-center rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-2.5">
+        <DolphinLoader size={30} label="Schreibt…" />
       </div>
     </div>
   );
