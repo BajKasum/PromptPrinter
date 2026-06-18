@@ -1,79 +1,44 @@
-import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Mascot } from "./mascot";
 
 interface LogoProps {
   className?: string;
-  /** Wordmark height in px. Default 28 matches the previous monogram size. */
+  /** Dolphin height in px; the wordmark scales with it. Default 28. */
   size?: number;
-  /** Kept for backwards compatibility — the new wordmark is the logo itself. */
-  showWordmark?: boolean;
+  /** Render only the dolphin mark, without the "PromptPrinter" wordmark. */
+  iconOnly?: boolean;
 }
 
-// Source PNGs in /public — both are 4:0.75 (≈ 5.3) aspect.
-const ASPECT = 789 / 149;
-
 /**
- * Brand wordmark. Two PNGs (logo-dark.png for dark UI, logo-light.png for light
- * UI) are layered and CSS-toggled by theme — that way the right one is painted
- * on the first frame with zero JS-driven flicker.
+ * Brand lockup: the dolphin mascot + the "PromptPrinter" wordmark. The dolphin
+ * is the single source PNG (/mascot/dolphin.png via <Mascot>), so swapping that
+ * file reskins the logo everywhere. The wordmark is real text — crisp at any
+ * size and theme-aware — instead of being baked into the image.
  */
-export function Logo({ className, size = 28 }: LogoProps) {
-  const width = Math.round(size * ASPECT);
+export function Logo({ className, size = 28, iconOnly = false }: LogoProps) {
   return (
     <span
-      className={cn("relative inline-block shrink-0", className)}
-      style={{ width, height: size }}
+      className={cn("inline-flex shrink-0 items-center gap-2", className)}
       aria-label="PromptPrinter"
       role="img"
     >
-      <Image
-        src="/logo-light.png"
-        alt=""
-        width={width}
-        height={size}
-        priority
-        className="block h-full w-full object-contain dark:hidden"
-      />
-      <Image
-        src="/logo-dark.png"
-        alt=""
-        width={width}
-        height={size}
-        priority
-        className="hidden h-full w-full object-contain dark:block"
-      />
+      <Mascot size={size} priority />
+      {!iconOnly && (
+        <span
+          aria-hidden
+          className="font-semibold leading-none tracking-[-0.02em] text-foreground"
+          style={{ fontSize: Math.round(size * 0.66) }}
+        >
+          PromptPrinter
+        </span>
+      )}
     </span>
   );
 }
 
 /**
- * Compact mark for tight spots (favicons, avatars). Crops the wordmark to its
- * left ~25% to show only the arrow.
+ * Compact mark for tight spots (favicons, avatars) — just the dolphin.
  */
 export function LogoMark({ size = 28 }: { size?: number }) {
-  return (
-    <span
-      className="relative inline-block shrink-0 overflow-hidden"
-      style={{ width: size, height: size }}
-      aria-label="PromptPrinter"
-      role="img"
-    >
-      <Image
-        src="/logo-light.png"
-        alt=""
-        width={Math.round(size * ASPECT)}
-        height={size}
-        priority
-        className="block h-full w-auto max-w-none object-contain object-left dark:hidden"
-      />
-      <Image
-        src="/logo-dark.png"
-        alt=""
-        width={Math.round(size * ASPECT)}
-        height={size}
-        priority
-        className="hidden h-full w-auto max-w-none object-contain object-left dark:block"
-      />
-    </span>
-  );
+  return <Mascot size={size} priority alt="PromptPrinter" />;
 }
