@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { siteUrl } from "@/lib/site-url";
+import { SuccessCelebration } from "@/components/brand/success-celebration";
 import { Loader2, MailCheck } from "lucide-react";
 
 const schema = z.object({
@@ -38,9 +39,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // A failed auth callback (expired/used/invalid email link) redirects here with
+  // ?error=… — surface it so the link never just dumps the user back silently.
+  const [error, setError] = useState<string | null>(
+    search.get("error") === "auth_callback_failed"
+      ? "Der Bestätigungs- oder Reset-Link ist ungültig oder abgelaufen. Bitte fordere unten einen neuen an."
+      : null
+  );
   const [info, setInfo] = useState<string | null>(null);
   const [signupSent, setSignupSent] = useState(false);
+  // When set, a full-screen dolphin celebration plays, then navigates to `next`.
+  const [celebrateMsg, setCelebrateMsg] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,8 +72,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
           setError(translateError(error.message));
           return;
         }
-        router.push(next);
-        router.refresh();
+        // Session cookie is set — celebrate, then SuccessCelebration navigates.
+        setCelebrateMsg("Erfolgreich eingeloggt");
         return;
       }
 
@@ -89,8 +98,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
-      router.push(next);
-      router.refresh();
+      setCelebrateMsg("Konto erstellt");
     } catch (err) {
       setError(err instanceof Error ? translateError(err.message) : "Unbekannter Fehler");
     } finally {
@@ -162,6 +170,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="w-full max-w-[400px]">
+      {celebrateMsg && (
+        <SuccessCelebration
+          message={celebrateMsg}
+          onDone={() => {
+            router.push(next);
+            router.refresh();
+          }}
+        />
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
