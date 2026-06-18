@@ -1,4 +1,3 @@
-import { Pen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Mascot } from "./mascot";
 
@@ -27,26 +26,10 @@ export function Logo({ className, size = 28, iconOnly = false }: LogoProps) {
       {!iconOnly && (
         <span
           aria-hidden
-          className="whitespace-nowrap font-semibold leading-none tracking-[-0.02em] text-foreground"
+          className="font-semibold leading-none tracking-[-0.02em] text-foreground"
           style={{ fontSize: Math.round(size * 0.66) }}
         >
-          PromptPr
-          {/* The "i" of Printer goes dotless (ı) and the pen becomes its tittle. */}
-          <span className="relative inline-block">
-            ı
-            <Pen
-              aria-hidden
-              strokeWidth={2.2}
-              className="absolute left-1/2 text-accent-text"
-              style={{
-                width: "0.7em",
-                height: "0.7em",
-                top: "-0.34em",
-                transform: "translateX(-50%) rotate(-12deg)",
-              }}
-            />
-          </span>
-          nter
+          PromptPrinter
         </span>
       )}
     </span>
