@@ -13,18 +13,26 @@ interface MascotProps {
   alt?: string;
   /** Set on above-the-fold placements (e.g. an empty state) to skip lazy-load. */
   priority?: boolean;
+  /** Override the artwork (e.g. /mascot/dolphin-sad.png). Defaults to the main dolphin. */
+  src?: string;
 }
 
 /**
- * The PromptPrinter dolphin mascot. Single source of truth for the artwork:
- * everything points at /public/mascot/dolphin.png, so swapping that one file
- * updates every placement at once. Routed through next/image, so the heavy
- * source PNG is served resized/optimized per usage.
+ * The PromptPrinter dolphin mascot. Default artwork lives at
+ * /public/mascot/dolphin.png (swap that one file to reskin everywhere); pass
+ * `src` for a variant such as the sad/crying dolphin. Routed through next/image,
+ * so the heavy source PNG is served resized/optimized per usage.
  */
-export function Mascot({ size = 96, className, alt = "", priority = false }: MascotProps) {
+export function Mascot({
+  size = 96,
+  className,
+  alt = "",
+  priority = false,
+  src = "/mascot/dolphin.png",
+}: MascotProps) {
   return (
     <Image
-      src="/mascot/dolphin.png"
+      src={src}
       width={size}
       height={size}
       alt={alt}

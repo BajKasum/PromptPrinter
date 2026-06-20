@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { UpdatePasswordExperience } from "@/components/auth/update-password-experience";
+import { Mascot } from "@/components/brand/mascot";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Neues Passwort" };
@@ -21,9 +21,7 @@ export default async function UpdatePasswordPage() {
   if (!user) {
     return (
       <AuthExperienceShell>
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/[0.12]">
-          <AlertTriangle className="h-7 w-7 text-amber-300" strokeWidth={1.8} />
-        </div>
+        <Mascot src="/mascot/dolphin-sad.png" size={128} priority className="mx-auto" />
         <div className="space-y-1.5">
           <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
             Link ungültig oder abgelaufen
