@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import { UpdatePassword } from "@/components/auth/update-password";
-import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
+import { UpdatePasswordExperience } from "@/components/auth/update-password-experience";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Neues Passwort" };
@@ -20,36 +20,26 @@ export default async function UpdatePasswordPage() {
   // already used). Guide the user back to request a fresh link.
   if (!user) {
     return (
-      <AuthShell>
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/[0.12]">
-            <AlertTriangle className="h-6 w-6 text-amber-300" strokeWidth={1.8} />
-          </div>
-          <h1 className="mb-2 text-[18px] font-semibold text-foreground">Link ungültig oder abgelaufen</h1>
-          <p className="mb-6 text-[13.5px] text-foreground/60">
+      <AuthExperienceShell>
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/[0.12]">
+          <AlertTriangle className="h-7 w-7 text-amber-300" strokeWidth={1.8} />
+        </div>
+        <div className="space-y-1.5">
+          <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
+            Link ungültig oder abgelaufen
+          </h1>
+          <p className="text-[15px] font-light text-foreground/60">
             Dieser Link funktioniert nicht mehr. Fordere bitte einen neuen an.
           </p>
-          <div className="text-[13px] text-foreground/55">
-            <Link href="/reset-password" className="text-foreground hover:underline">
-              Neuen Link anfordern
-            </Link>
-          </div>
         </div>
-      </AuthShell>
+        <p className="text-[13px] text-foreground/55">
+          <Link href="/reset-password" className="text-foreground hover:underline">
+            Neuen Link anfordern
+          </Link>
+        </p>
+      </AuthExperienceShell>
     );
   }
 
-  return (
-    <AuthShell>
-      <div className="mb-7">
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-foreground">
-          Neues Passwort setzen
-        </h1>
-        <p className="mt-1 text-[14px] text-foreground/55">
-          Wähle ein neues Passwort für <span className="text-foreground">{user.email}</span>.
-        </p>
-      </div>
-      <UpdatePassword />
-    </AuthShell>
-  );
+  return <UpdatePasswordExperience email={user.email ?? ""} />;
 }
