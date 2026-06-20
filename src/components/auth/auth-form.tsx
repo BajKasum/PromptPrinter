@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { siteUrl } from "@/lib/site-url";
+import { translateAuthError } from "@/lib/auth-errors";
 import { SuccessCelebration } from "@/components/brand/success-celebration";
 import { Loader2, MailCheck } from "lucide-react";
 
@@ -19,17 +20,6 @@ const schema = z.object({
 });
 
 type Mode = "signin" | "signup";
-
-function translateError(message: string): string {
-  const m = message.toLowerCase();
-  if (m.includes("invalid login credentials")) return "Email oder Passwort falsch";
-  if (m.includes("email not confirmed")) return "Email wurde noch nicht bestätigt — bitte Posteingang prüfen";
-  if (m.includes("user already registered")) return "Diese Email ist bereits registriert — bitte einloggen";
-  if (m.includes("email address") && m.includes("invalid")) return "Diese Email-Adresse wird nicht akzeptiert";
-  if (m.includes("password should be")) return "Passwort zu schwach (mindestens 8 Zeichen)";
-  if (m.includes("rate limit")) return "Zu viele Versuche — bitte kurz warten";
-  return message;
-}
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
@@ -69,7 +59,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          setError(translateError(error.message));
+          setError(translateAuthError(error.message));
           return;
         }
         // Session cookie is set — celebrate, then SuccessCelebration navigates.
@@ -87,7 +77,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       });
 
       if (error) {
-        setError(translateError(error.message));
+        setError(translateAuthError(error.message));
         return;
       }
 
@@ -100,7 +90,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       setCelebrateMsg("Konto erstellt");
     } catch (err) {
-      setError(err instanceof Error ? translateError(err.message) : "Unbekannter Fehler");
+      setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
     } finally {
       setLoading(false);
     }
@@ -119,10 +109,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
           emailRedirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
         },
       });
-      if (error) setError(translateError(error.message));
+      if (error) setError(translateAuthError(error.message));
       else setInfo("Bestätigungs-Email wurde erneut gesendet.");
     } catch (err) {
-      setError(err instanceof Error ? translateError(err.message) : "Unbekannter Fehler");
+      setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
     } finally {
       setLoading(false);
     }

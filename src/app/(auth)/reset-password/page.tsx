@@ -1,10 +1,11 @@
 import { RequestPasswordReset } from "@/components/auth/request-password-reset";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 export const metadata = { title: "Passwort zurücksetzen" };
 
 export default function ResetPasswordPage() {
   return (
-    <div>
+    <AuthShell>
       <div className="mb-7">
         <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-foreground">
           Passwort vergessen?
@@ -14,6 +15,6 @@ export default function ResetPasswordPage() {
         </p>
       </div>
       <RequestPasswordReset />
-    </div>
+    </AuthShell>
   );
 }
