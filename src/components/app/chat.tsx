@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Loader2, Copy, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
-import { Mascot } from "@/components/brand/mascot";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { DolphinLoader } from "@/components/brand/dolphin-loader";
 import { downloadFile } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -184,7 +184,8 @@ function EmptyState({
 }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-10">
-      <Mascot size={84} priority className="mx-auto mb-4" />
+      {/* Finn greets you, curious to hear the idea you're about to describe. */}
+      <AnimatedMascot state="curious" size={84} priority className="mx-auto mb-4" />
       <h2 className="text-[18px] font-semibold text-foreground">{heading}</h2>
       <p className="mt-1 text-[13px] text-foreground/55 max-w-sm">{sub}</p>
       <div className="mt-5 w-full max-w-md space-y-2">

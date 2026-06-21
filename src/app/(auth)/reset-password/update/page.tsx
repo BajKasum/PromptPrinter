@@ -21,7 +21,7 @@ export default async function UpdatePasswordPage() {
   if (!user) {
     return (
       <AuthExperienceShell>
-        <Mascot src="/mascot/dolphin-sad.png" size={128} priority className="mx-auto" />
+        <Mascot state="sad" size={128} priority className="mx-auto" />
         <div className="space-y-1.5">
           <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
             Link ungültig oder abgelaufen

@@ -10,7 +10,7 @@ export default function AppNotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md text-center">
-        <Mascot src="/mascot/dolphin-sad.png" size={112} priority className="mx-auto mb-5" />
+        <Mascot state="sad" size={112} priority className="mx-auto mb-5" />
         <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-accent-text">
           404
         </div>

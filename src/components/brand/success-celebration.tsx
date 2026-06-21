@@ -102,7 +102,7 @@ export function SuccessCelebration({
           }
           transition={{ type: "spring", stiffness: 240, damping: 16 }}
         >
-          <Mascot src="/mascot/dolphin-happy.png" size={184} priority />
+          <Mascot state="celebrating" size={184} priority />
         </motion.div>
       </div>
 

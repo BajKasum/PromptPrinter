@@ -11,7 +11,7 @@ export default function NotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md text-center">
-        <Mascot src="/mascot/dolphin-sad.png" size={104} priority className="mx-auto mb-5" />
+        <Mascot state="sad" size={104} priority className="mx-auto mb-5" />
         <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-accent-text">
           404
         </div>

@@ -69,7 +69,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" strokeWidth={1.8} />
                 ) : (
                   <Mascot
-                    src={t.variant === "success" ? "/mascot/dolphin-happy.png" : "/mascot/dolphin-sad.png"}
+                    state={t.variant === "success" ? "celebrating" : "sad"}
                     size={28}
                     className="-mt-1 shrink-0"
                   />
