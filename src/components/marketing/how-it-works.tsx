@@ -1,5 +1,5 @@
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
-import { Pencil, MessageSquare, Layers, Download } from "lucide-react";
+import { Pencil, MessageSquare, PackageCheck } from "lucide-react";
 import { Mascot } from "@/components/brand/mascot";
 
 const steps = [
@@ -7,25 +7,20 @@ const steps = [
     n: "01",
     Icon: Pencil,
     title: "Idee reinwerfen",
-    body: "Beschreib dein Ziel im Chat: ein Satz, grobe Notizen oder eine halbe User Story. Wir holen dich da ab, wo du startest.",
+    body: "Beschreib in einem Satz, was du bauen willst — egal wie grob. Ein paar Notizen reichen. Wir holen dich da ab, wo du gerade stehst.",
   },
   {
     n: "02",
     Icon: MessageSquare,
-    title: "Gemeinsam schärfen",
-    body: "PromptPrinter fragt nach Zielgruppe, Tools und Stack und verfeinert den Prompt Schritt für Schritt mit dir.",
+    title: "Kurz gemeinsam schärfen",
+    body: "Der Delfin stellt ein paar einfache Fragen — und hilft dir auch, wenn du Zielgruppe oder Technik noch gar nicht festgelegt hast.",
+    chat: true,
   },
   {
     n: "03",
-    Icon: Layers,
-    title: "Packet bekommen",
-    body: "Du erhältst PRD, Master-Prompt, Frontend- und Backend-Prompts, Schema und Ops-Dokumente, aufeinander abgestimmt.",
-  },
-  {
-    n: "04",
-    Icon: Download,
-    title: "Kopieren oder exportieren",
-    body: "Jedes Artefakt per Klick ins gewählte Tool, oder lade das ganze Packet als Markdown-Bundle.",
+    Icon: PackageCheck,
+    title: "Alles bekommen, startklar",
+    body: "Du bekommst einen kompletten Bauplan plus die fertigen Anweisungen für jedes KI-Tool. Mit einem Klick kopiert — und du legst los.",
   },
 ];
 
@@ -39,27 +34,27 @@ export function HowItWorks() {
               So funktioniert es
             </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              Von der Idee zum Blueprint in vier Schritten.
+              In drei Schritten von der Idee zum Bauplan.
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-              Schluss mit dem ständigen Neueintippen von Kontext in jedem Chat. PromptPrinter
-              stellt ein komplettes, tool-spezifisches Build-Packet zusammen.
+              Kein Formular, kein Wizard, kein Fachjargon. Du redest ganz normal —
+              der Delfin kümmert sich um den Rest.
             </p>
           </div>
-          {/* Nachdenklicher Bau-Delfin — passt zum „so wird gebaut"-Thema. */}
+          {/* The dolphin guides you through the process. */}
           <Mascot
             src="/mascot/dolphin-think.png"
-            size={240}
-            priority
-            className="hidden shrink-0 md:block"
+            size={200}
+            className="mx-auto shrink-0 md:mx-0"
+            alt="Der Delfin führt dich durch die drei Schritte"
           />
         </div>
       </FadeIn>
 
-      <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {steps.map(({ n, Icon, title, body }) => (
+      <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {steps.map(({ n, Icon, title, body, chat }) => (
           <StaggerItem key={n}>
-            <div className="card-surface h-full relative group overflow-hidden">
+            <div className="card-surface h-full relative group overflow-hidden p-6 flex flex-col">
               <div className="absolute top-5 right-5 font-mono text-[11px] tracking-[0.08em] text-foreground/35">
                 {n}
               </div>
@@ -70,6 +65,19 @@ export function HowItWorks() {
                 {title}
               </h3>
               <p className="text-[14px] leading-[1.6] text-foreground/55">{body}</p>
+
+              {/* Step 2 shows the real conversational feel — same baby-blue
+                  user bubble as the app. */}
+              {chat && (
+                <div className="mt-5 space-y-2.5">
+                  <div className="max-w-[88%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-[12.5px] leading-relaxed text-foreground/70">
+                    Welche Datenbank nutzt du — und brauchst du von Anfang an Login?
+                  </div>
+                  <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-sm border border-accent/30 bg-accent-subtle px-3.5 py-2 text-[12.5px] leading-relaxed text-foreground">
+                    Supabase, und ja — E-Mail plus Google.
+                  </div>
+                </div>
+              )}
             </div>
           </StaggerItem>
         ))}
