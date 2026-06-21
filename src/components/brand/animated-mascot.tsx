@@ -1,6 +1,12 @@
 "use client";
 
-import { motion, useReducedMotion, type TargetAndTransition, type Transition } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type TargetAndTransition,
+  type Transition,
+} from "framer-motion";
 import { Mascot } from "./mascot";
 import { MASCOT_STATES, type MascotMotion, type MascotState } from "./mascot-states";
 
@@ -56,9 +62,10 @@ const PRESETS: Record<Exclude<MascotMotion, "none">, Preset> = {
 
 /**
  * Finn with his state's idle animation. Use on landing-page / hero placements
- * where the mascot should feel alive. Reduced-motion users get the static
- * <Mascot>. The animation is purely decorative (transform only), so it never
- * shifts layout.
+ * where the mascot should feel alive. When `state` changes the artwork
+ * crossfades, so a reactive Finn (e.g. the hero demo) morphs smoothly between
+ * poses. Reduced-motion users get an instant swap and no idle loop. The
+ * animation is transform/opacity only, so it never shifts layout.
  */
 export function AnimatedMascot({
   state,
@@ -70,14 +77,25 @@ export function AnimatedMascot({
 }: AnimatedMascotProps) {
   const reduce = useReducedMotion() ?? false;
   const preset = motionOverride ?? MASCOT_STATES[state].motion;
-  // Skip the loop entirely under reduced-motion or for the "none" preset.
+  // Skip the idle loop entirely under reduced-motion or for the "none" preset.
   const anim = !reduce && preset !== "none" ? PRESETS[preset] : undefined;
+  const swap = reduce ? 0 : 0.28;
 
-  // className lands on the wrapper so callers control layout (hidden md:block,
-  // mx-auto, shrink-0, …); the wrapper is block-level so margins center it.
+  // Outer wrapper carries the idle loop + caller layout (hidden md:block,
+  // mx-auto, shrink-0, …). Inner AnimatePresence crossfades on state change.
   return (
     <motion.div animate={anim?.animate} transition={anim?.transition} className={className}>
-      <Mascot state={state} size={size} alt={alt} priority={priority} />
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={state}
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.92 }}
+          transition={{ duration: swap, ease: "easeOut" }}
+        >
+          <Mascot state={state} size={size} alt={alt} priority={priority} />
+        </motion.div>
+      </AnimatePresence>
     </motion.div>
   );
 }

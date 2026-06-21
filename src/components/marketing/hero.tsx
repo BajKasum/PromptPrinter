@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   Check,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import type { MascotState } from "@/components/brand/mascot-states";
 import { cn } from "@/lib/utils";
 
 // The four stages of the journey — the spine of the whole page.
@@ -160,6 +161,14 @@ const OUTPUTS = [
 
 type Phase = "typing" | "generating" | "done";
 
+// Finn narrates the transformation — he reacts to the live demo phase, so the
+// mascot feels like he's actually doing the work in front of you.
+const NARRATION: Record<Phase, { state: MascotState; line: string }> = {
+  typing: { state: "curious", line: "Erzähl mir, was du bauen willst …" },
+  generating: { state: "building", line: "Alles klar — ich baue dein Paket …" },
+  done: { state: "delivering", line: "Fertig! Alles, um es zu bauen." },
+};
+
 function HeroDemo() {
   const reduce = useReducedMotion() ?? false;
   const ref = useRef<HTMLDivElement>(null);
@@ -238,6 +247,30 @@ function HeroDemo() {
 
         {/* Body */}
         <div className="p-5 md:p-7 text-left">
+          {/* Finn narrates his own demo — reacts to the live phase. */}
+          <div className="mb-5 flex items-center gap-3">
+            <AnimatedMascot
+              state={NARRATION[phase].state}
+              size={56}
+              className="shrink-0"
+              alt="Finn arbeitet an deiner Idee"
+            />
+            <div className="relative rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-[13px] leading-snug text-foreground/80">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={phase}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="block"
+                >
+                  {NARRATION[phase].line}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+          </div>
+
           {/* The idea input */}
           <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
             Deine Idee
