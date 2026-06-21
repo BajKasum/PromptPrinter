@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       .from("projects")
       .select("id, name, audience, tools, status, updated_at, is_favorite, generations(count)")
       .order("updated_at", { ascending: false }),
-    supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("plan, display_name").eq("id", user.id).maybeSingle(),
     supabase
       .from("conversations")
       .select("id, title, mode, target, updated_at, messages(count)")
@@ -73,7 +73,18 @@ export default async function DashboardPage() {
   ];
 
   const recent = projects.slice(0, 6);
-  const firstName = (user.email ?? "").split("@")[0];
+  // Greet by the chosen display name; otherwise derive a tidy first name from
+  // the email (drop separators/digits, capitalize) instead of showing the raw
+  // local-part like "kasumbajrami7".
+  const displayName = (profile?.display_name ?? "").trim();
+  const emailName = (user.email ?? "")
+    .split("@")[0]
+    .replace(/[._-]+/g, " ")
+    .replace(/\d+/g, "")
+    .trim()
+    .split(" ")[0];
+  const rawName = displayName || emailName;
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : "";
 
   return (
     <div>
