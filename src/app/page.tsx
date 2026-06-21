@@ -4,6 +4,7 @@ import { Problem } from "@/components/marketing/problem";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { ExampleOutput } from "@/components/marketing/example-output";
 import { FeaturesGrid } from "@/components/marketing/features-grid";
+import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { Integrations } from "@/components/marketing/integrations";
 import { PricingPreview } from "@/components/marketing/pricing-preview";
 import { FAQ } from "@/components/marketing/faq";
@@ -19,6 +20,7 @@ export default function HomePage() {
       <HowItWorks />
       <ExampleOutput />
       <FeaturesGrid />
+      <ProductShowcase />
       <Integrations />
       <PricingPreview />
       <FAQ />
