@@ -1,0 +1,87 @@
+"use client";
+
+import { motion, useReducedMotion, type TargetAndTransition, type Transition } from "framer-motion";
+import { Mascot } from "./mascot";
+import { MASCOT_STATES, type MascotMotion, type MascotState } from "./mascot-states";
+
+interface AnimatedMascotProps {
+  state: MascotState;
+  size?: number;
+  className?: string;
+  alt?: string;
+  priority?: boolean;
+  /** Override the state's default motion preset. */
+  motion?: MascotMotion;
+}
+
+type Preset = { animate: TargetAndTransition; transition: Transition };
+
+// Idle-motion presets. Each loops gently and is skipped entirely under
+// prefers-reduced-motion (the mascot then renders perfectly still). Durations
+// and easings follow DESIGN.md — calm, never hectic.
+const PRESETS: Record<Exclude<MascotMotion, "none">, Preset> = {
+  float: {
+    animate: { y: [0, -8, 0] },
+    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+  },
+  lean: {
+    animate: { rotate: [-2.5, 2.5, -2.5], y: [0, -3, 0] },
+    transition: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+  },
+  nod: {
+    animate: { rotate: [-3, 3, -3] },
+    transition: { duration: 1.8, repeat: Infinity, ease: "easeInOut" },
+  },
+  think: {
+    animate: { y: [0, -4, 0], rotate: [-1.5, 1.5, -1.5] },
+    transition: { duration: 3.2, repeat: Infinity, ease: "easeInOut" },
+  },
+  bob: {
+    animate: { y: [0, -6, 0], rotate: [-4, 4, -4] },
+    transition: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
+  },
+  cheer: {
+    animate: { y: [0, -10, 0], rotate: [-4, 4, -4], scale: [1, 1.04, 1] },
+    transition: { duration: 1.4, repeat: Infinity, ease: "easeInOut" },
+  },
+  peek: {
+    animate: { x: [0, 4, 0], rotate: [-2, 2, -2] },
+    transition: { duration: 3.4, repeat: Infinity, ease: "easeInOut" },
+  },
+  sigh: {
+    animate: { y: [0, 3, 0] },
+    transition: { duration: 4.4, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+/**
+ * Finn with his state's idle animation. Use on landing-page / hero placements
+ * where the mascot should feel alive. Reduced-motion users get the static
+ * <Mascot>. The animation is purely decorative (transform only), so it never
+ * shifts layout.
+ */
+export function AnimatedMascot({
+  state,
+  size = 96,
+  className,
+  alt = "",
+  priority = false,
+  motion: motionOverride,
+}: AnimatedMascotProps) {
+  const reduce = useReducedMotion() ?? false;
+  const preset = motionOverride ?? MASCOT_STATES[state].motion;
+
+  if (reduce || preset === "none") {
+    return (
+      <Mascot state={state} size={size} className={className} alt={alt} priority={priority} />
+    );
+  }
+
+  const { animate, transition } = PRESETS[preset];
+
+  return (
+    <motion.div animate={animate} transition={transition} className="inline-block">
+      <Mascot state={state} size={size} className={className} alt={alt} priority={priority} />
+    </motion.div>
+  );
+}
