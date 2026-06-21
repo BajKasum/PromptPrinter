@@ -3,13 +3,17 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FadeIn } from "@/components/motion/fade-in";
+import { Mascot } from "@/components/brand/mascot";
 import { cn } from "@/lib/utils";
 
+// Plain-language tab labels — the technical names (PRD, Master-Prompt, Schema)
+// only show up once the visitor is already convinced, never as the first thing
+// they read.
 const tabs = [
-  { id: "prd", label: "PRD" },
-  { id: "master", label: "Master-Prompt" },
-  { id: "frontend", label: "Frontend-Prompt" },
-  { id: "schema", label: "Schema" },
+  { id: "prd", label: "Produktplan" },
+  { id: "master", label: "KI-Anweisungen" },
+  { id: "frontend", label: "App-Design" },
+  { id: "schema", label: "Datenbank" },
 ];
 
 const content: Record<string, string> = {
@@ -104,17 +108,34 @@ export function ExampleOutput() {
   return (
     <section id="example" className="scroll-mt-24 container-x py-24 md:py-32">
       <FadeIn>
-        <div className="max-w-2xl mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Beispiel-Ausgabe
+        <div className="mb-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
+              Schau es dir an
+            </div>
+            <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+              Echtes Ergebnis, kein Lorem Ipsum.
+            </h2>
+            <p className="mt-4 text-[17px] text-foreground/55">
+              Wir haben diese eine Idee eingetippt:
+            </p>
+            <div className="mt-4 inline-flex max-w-full items-start gap-2.5 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3">
+              <span className="mt-0.5 font-mono text-[12px] text-accent-text">„</span>
+              <span className="text-[15px] leading-snug text-foreground">
+                Ein Habit-Tracker, der Streaks mit cleveren Mini-Belohnungen feiert.
+              </span>
+            </div>
+            <p className="mt-4 text-[15px] text-foreground/55">
+              Das hier kam zurück — fertig zum Kopieren in deine Tools. Klick dich durch.
+            </p>
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Echte Artefakte, kein Lorem Ipsum.
-          </h2>
-          <p className="mt-4 text-[17px] text-foreground/55">
-            Hier ein Ausschnitt dessen, was eine einzige Idee produziert — jeder Tab ist generiert,
-            strukturiert und bereit zum Einfügen in deinen Assistenten.
-          </p>
+          {/* Proud dolphin presents the finished build package. */}
+          <Mascot
+            src="/mascot/dolphin-happy.png"
+            size={150}
+            className="mx-auto shrink-0 md:mx-0"
+            alt="Der Delfin präsentiert stolz das fertige Bau-Paket"
+          />
         </div>
       </FadeIn>
 
