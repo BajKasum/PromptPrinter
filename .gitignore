@@ -43,3 +43,6 @@ next-env.d.ts
 screenshots/
 screenshots_Docs/
 *.docx
+
+# scratch dir for mascot asset generation
+.mascot-tmp/
