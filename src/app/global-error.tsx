@@ -28,6 +28,14 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: "28rem", textAlign: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- self-contained fallback, no next/image */}
+          <img
+            src="/mascot/dolphin-sad.png"
+            alt=""
+            width={120}
+            height={120}
+            style={{ display: "block", margin: "0 auto 1.25rem", width: "120px", height: "auto" }}
+          />
           <div
             style={{
               marginBottom: "0.75rem",

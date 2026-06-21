@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Info, X } from "lucide-react";
+import { Mascot } from "@/components/brand/mascot";
 
 type ToastVariant = "default" | "success" | "error";
 
@@ -25,12 +25,6 @@ export function useToast(): ToastContextValue {
   if (!ctx) throw new Error("useToast must be used within <ToastProvider>");
   return ctx;
 }
-
-const VARIANTS: Record<ToastVariant, { Icon: typeof Info; accent: string }> = {
-  default: { Icon: Info, accent: "text-accent-text" },
-  success: { Icon: CheckCircle2, accent: "text-success" },
-  error: { Icon: AlertCircle, accent: "text-destructive" },
-};
 
 const AUTO_DISMISS_MS = 4000;
 
@@ -60,7 +54,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       >
         <AnimatePresence initial={false}>
           {toasts.map((t) => {
-            const { Icon, accent } = VARIANTS[t.variant];
             return (
               <motion.div
                 key={t.id}
@@ -72,7 +65,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                 className="pointer-events-auto flex items-start gap-3 rounded-xl border border-border bg-surface-raised/95 px-4 py-3 shadow-elevated backdrop-blur-xl"
               >
-                <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", accent)} strokeWidth={1.8} />
+                {t.variant === "default" ? (
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" strokeWidth={1.8} />
+                ) : (
+                  <Mascot
+                    src={t.variant === "success" ? "/mascot/dolphin-happy.png" : "/mascot/dolphin-sad.png"}
+                    size={28}
+                    className="-mt-1 shrink-0"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[13.5px] font-medium text-foreground">{t.title}</p>
                   {t.description && (

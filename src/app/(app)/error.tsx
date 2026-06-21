@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { AlertTriangle, RotateCcw, LayoutDashboard } from "lucide-react";
+import { RotateCcw, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Mascot } from "@/components/brand/mascot";
 
 // Segment boundary for the authed shell. Catches render/data errors thrown by
 // any page below (app)/ — the sidebar, topbar and ToastProvider above stay
@@ -24,9 +25,7 @@ export default function AppError({
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-red-500/25 bg-red-500/[0.08]">
-          <AlertTriangle className="h-5 w-5 text-red-400" strokeWidth={1.8} />
-        </div>
+        <Mascot src="/mascot/dolphin-sad.png" size={112} priority className="mx-auto mb-5" />
         <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-red-300">
           Fehler
         </div>

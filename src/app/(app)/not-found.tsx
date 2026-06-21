@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Compass, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Mascot } from "@/components/brand/mascot";
 
 // Rendered by notFound() inside the authed shell — most often from the project
 // detail page when an id is malformed or the row belongs to another owner (RLS
@@ -9,9 +10,7 @@ export default function AppNotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface">
-          <Compass className="h-5 w-5 text-accent-text" strokeWidth={1.8} />
-        </div>
+        <Mascot src="/mascot/dolphin-sad.png" size={112} priority className="mx-auto mb-5" />
         <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-accent-text">
           404
         </div>

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Mascot } from "./mascot";
 
@@ -18,24 +17,28 @@ interface SuccessCelebrationProps {
   className?: string;
 }
 
-// A small sparkle burst around the dolphin. Fixed offsets so it reads as a pop.
-const SPARKLES = [
-  { x: -64, y: -52, d: 0.15, s: 7 },
-  { x: 60, y: -60, d: 0.22, s: 9 },
-  { x: 78, y: 8, d: 0.3, s: 6 },
-  { x: -78, y: 6, d: 0.26, s: 8 },
-  { x: -42, y: 64, d: 0.34, s: 6 },
-  { x: 48, y: 66, d: 0.18, s: 7 },
+// Confetti burst around the dolphin — token-colored pieces flung outward, then
+// drifting down. x/y are end offsets in px from the dolphin's center.
+const CONFETTI = [
+  { x: -130, y: -70, r: -50, d: 0.0, c: "bg-accent", w: 8, h: 8 },
+  { x: 125, y: -90, r: 40, d: 0.06, c: "bg-warning", w: 7, h: 11 },
+  { x: -90, y: -120, r: 20, d: 0.12, c: "bg-success", w: 9, h: 9 },
+  { x: 95, y: -120, r: -30, d: 0.04, c: "bg-destructive", w: 7, h: 7 },
+  { x: -150, y: 10, r: 60, d: 0.1, c: "bg-accent-text", w: 8, h: 10 },
+  { x: 150, y: 0, r: -45, d: 0.14, c: "bg-success", w: 8, h: 8 },
+  { x: -60, y: 130, r: 35, d: 0.18, c: "bg-warning", w: 9, h: 9 },
+  { x: 70, y: 125, r: -25, d: 0.08, c: "bg-accent", w: 7, h: 11 },
+  { x: 20, y: -140, r: 50, d: 0.16, c: "bg-accent", w: 7, h: 7 },
+  { x: -20, y: 150, r: -55, d: 0.22, c: "bg-destructive", w: 8, h: 8 },
+  { x: 135, y: 70, r: 30, d: 0.2, c: "bg-warning", w: 8, h: 10 },
+  { x: -135, y: 75, r: -35, d: 0.12, c: "bg-success", w: 7, h: 9 },
 ];
 
 /**
- * Full-screen celebratory overlay, built from the transparent mascot PNG +
- * Framer Motion — the dolphin pops in with a little jump, a success check badge
- * snaps on, and sparkles burst. Reusable for any "it worked" moment (login,
- * signup confirmed, checkout, …). Mount it conditionally; it calls onDone after
- * `durationMs` so the caller can navigate.
- *
- * Reduced-motion users get the static mascot + check, no movement, same timing.
+ * Full-screen celebratory overlay: the happy dolphin pops in amid a confetti
+ * burst over a blurred backdrop, then onDone fires after `durationMs`. Used for
+ * every "it worked" moment (login, signup, password updated, …). Reduced-motion
+ * users get the static dolphin (no confetti) with the same timing.
  */
 export function SuccessCelebration({
   message,
@@ -70,63 +73,57 @@ export function SuccessCelebration({
         className
       )}
     >
-      <div className="relative flex flex-col items-center">
-        <div className="relative">
-          {!reduceMotion &&
-            SPARKLES.map((sp, i) => (
-              <motion.span
-                key={i}
-                aria-hidden
-                className="absolute left-1/2 top-1/2 rounded-full bg-accent-text"
-                style={{ width: sp.s, height: sp.s }}
-                initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
-                animate={{ opacity: [0, 1, 0], x: sp.x, y: sp.y, scale: [0, 1, 0.5] }}
-                transition={{ duration: 0.9, delay: sp.d, ease: "easeOut" }}
-              />
-            ))}
+      <div className="relative">
+        {!reduceMotion &&
+          CONFETTI.map((p, i) => (
+            <motion.span
+              key={i}
+              aria-hidden
+              className={cn("absolute left-1/2 top-1/2 rounded-[1px]", p.c)}
+              style={{ width: p.w, height: p.h }}
+              initial={{ x: 0, y: 0, opacity: 0, scale: 0, rotate: 0 }}
+              animate={{
+                x: p.x,
+                y: [0, p.y - 20, p.y],
+                opacity: [0, 1, 1, 0],
+                scale: [0, 1, 1, 0.7],
+                rotate: p.r,
+              }}
+              transition={{ duration: 1.6, delay: p.d, ease: "easeOut" }}
+            />
+          ))}
 
-          <motion.div
-            initial={{ scale: 0.5, opacity: 0, y: 16 }}
-            animate={
-              reduceMotion
-                ? { scale: 1, opacity: 1, y: 0 }
-                : { scale: 1, opacity: 1, y: [16, -10, 0] }
-            }
-            transition={{ type: "spring", stiffness: 240, damping: 16 }}
-          >
-            <Mascot size={150} priority />
-          </motion.div>
-
-          {/* Success check badge, snaps in over the dolphin's lower-right. */}
-          <motion.span
-            className="absolute -bottom-1 -right-1 flex h-11 w-11 items-center justify-center rounded-full border border-success/30 bg-success/15 backdrop-blur-sm"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 320, damping: 14, delay: 0.32 }}
-          >
-            <Check className="h-6 w-6 text-success" strokeWidth={2.4} />
-          </motion.span>
-        </div>
-
-        <motion.p
-          className="mt-6 text-[19px] font-semibold tracking-[-0.01em] text-foreground"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18, duration: 0.3 }}
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0, y: 16 }}
+          animate={
+            reduceMotion
+              ? { scale: 1, opacity: 1, y: 0 }
+              : { scale: 1, opacity: 1, y: [16, -10, 0] }
+          }
+          transition={{ type: "spring", stiffness: 240, damping: 16 }}
         >
-          {message}
-        </motion.p>
-        {description && (
-          <motion.p
-            className="mt-1.5 text-[13.5px] text-foreground/60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.28, duration: 0.3 }}
-          >
-            {description}
-          </motion.p>
-        )}
+          <Mascot src="/mascot/dolphin-happy.png" size={184} priority />
+        </motion.div>
       </div>
+
+      <motion.p
+        className="mt-5 text-[19px] font-semibold tracking-[-0.01em] text-foreground"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.18, duration: 0.3 }}
+      >
+        {message}
+      </motion.p>
+      {description && (
+        <motion.p
+          className="mt-1.5 text-[13.5px] text-foreground/60"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.28, duration: 0.3 }}
+        >
+          {description}
+        </motion.p>
+      )}
     </motion.div>
   );
 }
