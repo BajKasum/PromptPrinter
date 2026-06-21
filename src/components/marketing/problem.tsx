@@ -1,17 +1,20 @@
 import { FadeIn } from "@/components/motion/fade-in";
+import { Mascot } from "@/components/brand/mascot";
 
+// Universal, pre-technical pains — the kind anyone with an idea recognises,
+// no PRD/Schema/Spec vocabulary required.
 const items = [
   {
-    title: "Lähmung vor dem leeren Blatt",
-    body: "Du hast die Idee, aber der blinkende Cursor in Claude oder Cursor blockiert dich stundenlang.",
+    title: "Die leere Seite",
+    body: "Du öffnest ChatGPT mit deiner Idee — und erstarrst. Was tippst du überhaupt ein, damit etwas Brauchbares rauskommt?",
   },
   {
-    title: "Inkonsistenter Kontext",
-    body: "Jeder neue Chat wiederholt denselben Kontext. Und die Hälfte der Zeit versteht das Modell den Stack trotzdem falsch.",
+    title: "Immer wieder von vorne",
+    body: "Jeder neue Chat fängt bei null an. Du erklärst deine App zum zehnten Mal, bevor irgendetwas Echtes passiert.",
   },
   {
-    title: "Brief-/Spec-Drift",
-    body: "Das PRD liegt in Notion, Prompts in Chats, das Schema in deinem Kopf — nichts bleibt synchron.",
+    title: "Der Plan bleibt im Kopf",
+    body: "Du weisst ungefähr, was du willst. Aber es landet nie geordnet auf dem Bildschirm — und die KI rät dann munter falsch.",
   },
 ];
 
@@ -19,13 +22,22 @@ export function Problem() {
   return (
     <section className="container-x py-24 md:py-32">
       <FadeIn>
-        <div className="max-w-2xl">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Das Problem
+        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
+              Kennst du das?
+            </div>
+            <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+              Eine Idee zu haben ist leicht. Anzufangen ist die Hölle.
+            </h2>
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Gute Ideen sterben in der Lücke zwischen Gedanke und Prompt.
-          </h2>
+          {/* Overwhelmed dolphin — mirrors exactly how the visitor feels here. */}
+          <Mascot
+            src="/mascot/dolphin-sad.png"
+            size={150}
+            className="hidden shrink-0 md:block"
+            alt="Der Delfin ist überfordert von der leeren Seite"
+          />
         </div>
       </FadeIn>
       <div className="grid md:grid-cols-3 gap-4 mt-12">
