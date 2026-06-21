@@ -45,14 +45,14 @@ export function ProductShowcase() {
       <FadeIn>
         <div className="max-w-2xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Dein Workspace
+            Dein Arbeitsplatz
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Nicht nur ein Output. Ein echter Arbeitsplatz.
+            Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
           </h2>
           <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-            Jedes Bau-Paket wird gespeichert, organisiert und durchsuchbar. Projekte,
-            Bibliothek und jede Generierung — alles an einem Ort.
+            Alles, was wir zusammen bauen, bleibt gespeichert, sortiert und
+            durchsuchbar — Projekte, Bibliothek und jeder Lauf an einem Ort.
           </p>
         </div>
       </FadeIn>

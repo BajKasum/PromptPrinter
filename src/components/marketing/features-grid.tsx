@@ -54,14 +54,14 @@ export function FeaturesGrid() {
         <div className="mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-              Was du bekommst
+              Das bekommst du von mir
             </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               Eine Idee rein. Alles zum Bauen raus.
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-              Kein Werkzeug-Wirrwarr, keine halben Sachen — sondern alles, was du
-              brauchst, um vom Gedanken zur ersten Zeile Code zu kommen.
+              Keine halben Sachen. Alles, was du brauchst, um von der Idee zur
+              ersten Zeile Code zu kommen — fertig vorbereitet.
             </p>
           </div>
           {/* Finn sorts the chaos into one tidy package. */}

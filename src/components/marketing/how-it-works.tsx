@@ -6,21 +6,21 @@ const steps = [
   {
     n: "01",
     Icon: Pencil,
-    title: "Idee reinwerfen",
-    body: "Beschreib in einem Satz, was du bauen willst — egal wie grob. Ein paar Notizen reichen. Wir holen dich da ab, wo du gerade stehst.",
+    title: "Erzähl mir deine Idee",
+    body: "Sag mir in einem Satz, was du bauen willst — egal wie grob. Ein paar Notizen reichen. Ich hol dich da ab, wo du gerade stehst.",
   },
   {
     n: "02",
     Icon: MessageSquare,
-    title: "Kurz gemeinsam schärfen",
-    body: "Der Delfin stellt ein paar einfache Fragen — und hilft dir auch, wenn du Zielgruppe oder Technik noch gar nicht festgelegt hast.",
+    title: "Wir klären es kurz",
+    body: "Ich stell dir ein paar einfache Fragen — und helf dir auch, wenn du Zielgruppe oder Technik noch gar nicht kennst.",
     chat: true,
   },
   {
     n: "03",
     Icon: PackageCheck,
-    title: "Alles bekommen, startklar",
-    body: "Du bekommst einen kompletten Bauplan plus die fertigen Anweisungen für jedes KI-Tool. Mit einem Klick kopiert — und du legst los.",
+    title: "Du bekommst alles, startklar",
+    body: "Du bekommst einen kompletten Plan plus die fertigen Anweisungen für jedes KI-Tool. Ein Klick, kopiert — und du legst los.",
   },
 ];
 
@@ -31,14 +31,14 @@ export function HowItWorks() {
         <div className="mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-              So funktioniert es
+              So gehen wir vor
             </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              In drei Schritten von der Idee zum Bauplan.
+              In drei Schritten von der Idee zum fertigen Plan.
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-              Kein Formular, kein Wizard, kein Fachjargon. Du redest ganz normal —
-              der Delfin kümmert sich um den Rest.
+              Kein Formular, kein Fachchinesisch. Du redest ganz normal — um den
+              Rest kümmere ich mich.
             </p>
           </div>
           {/* The dolphin guides you through the process. */}

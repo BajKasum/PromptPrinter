@@ -117,7 +117,7 @@ export function ExampleOutput() {
               Echtes Ergebnis, kein Lorem Ipsum.
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55">
-              Wir haben diese eine Idee eingetippt:
+              Jemand hat mir nur diesen einen Satz gesagt:
             </p>
             <div className="mt-4 inline-flex max-w-full items-start gap-2.5 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3">
               <span className="mt-0.5 font-mono text-[12px] text-accent-text">„</span>
@@ -126,7 +126,7 @@ export function ExampleOutput() {
               </span>
             </div>
             <p className="mt-4 text-[15px] text-foreground/55">
-              Das hier kam zurück — fertig zum Kopieren in deine Tools. Klick dich durch.
+              Das hab ich daraus gemacht — fertig zum Kopieren. Klick dich durch.
             </p>
           </div>
           {/* Proud dolphin hands over the finished build package. */}
