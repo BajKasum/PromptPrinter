@@ -2,9 +2,8 @@ import { Navbar } from "@/components/marketing/navbar";
 import { Hero } from "@/components/marketing/hero";
 import { Problem } from "@/components/marketing/problem";
 import { HowItWorks } from "@/components/marketing/how-it-works";
-import { Capabilities } from "@/components/marketing/capabilities";
-import { FeaturesGrid } from "@/components/marketing/features-grid";
 import { ExampleOutput } from "@/components/marketing/example-output";
+import { FeaturesGrid } from "@/components/marketing/features-grid";
 import { Integrations } from "@/components/marketing/integrations";
 import { PricingPreview } from "@/components/marketing/pricing-preview";
 import { FAQ } from "@/components/marketing/faq";
@@ -18,9 +17,8 @@ export default function HomePage() {
       <Hero />
       <Problem />
       <HowItWorks />
-      <Capabilities />
-      <FeaturesGrid />
       <ExampleOutput />
+      <FeaturesGrid />
       <Integrations />
       <PricingPreview />
       <FAQ />
