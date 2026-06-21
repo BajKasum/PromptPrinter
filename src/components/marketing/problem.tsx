@@ -1,5 +1,5 @@
 import { FadeIn } from "@/components/motion/fade-in";
-import { Mascot } from "@/components/brand/mascot";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 
 // Universal, pre-technical pains — the kind anyone with an idea recognises,
 // no PRD/Schema/Spec vocabulary required.
@@ -32,8 +32,8 @@ export function Problem() {
             </h2>
           </div>
           {/* Overwhelmed dolphin — mirrors exactly how the visitor feels here. */}
-          <Mascot
-            src="/mascot/dolphin-sad.png"
+          <AnimatedMascot
+            state="sad"
             size={150}
             className="hidden shrink-0 md:block"
             alt="Der Delfin ist überfordert von der leeren Seite"

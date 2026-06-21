@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
-import { Mascot } from "@/components/brand/mascot";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { ArrowRight } from "lucide-react";
 
 export function FinalCTA() {
@@ -12,8 +12,8 @@ export function FinalCTA() {
           <div className="pointer-events-none absolute inset-0 bg-accent/[0.06]" />
           <div className="relative flex flex-col items-center">
             {/* The dolphin celebrates the leap with you. */}
-            <Mascot
-              src="/mascot/dolphin-happy.png"
+            <AnimatedMascot
+              state="celebrating"
               size={132}
               className="mb-6"
               alt="Der Delfin feiert mit dir den Start"

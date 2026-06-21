@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,13 +59,22 @@ export function PricingPreview() {
   return (
     <section id="preise" className="scroll-mt-24 container-x py-24 md:py-32">
       <FadeIn>
-        <div className="max-w-2xl mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Preise
+        <div className="mb-12 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
+              Preise
+            </div>
+            <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+              Zahl für Ergebnisse, nicht für Geschwätz.
+            </h2>
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Zahl für Ergebnisse, nicht für Geschwätz.
-          </h2>
+          {/* Finn helps you pick — most builders start free. */}
+          <AnimatedMascot
+            state="helping"
+            size={140}
+            className="hidden shrink-0 md:block"
+            alt="Der Delfin hilft dir bei der Wahl des Plans"
+          />
         </div>
       </FadeIn>
       <PricingGrid />

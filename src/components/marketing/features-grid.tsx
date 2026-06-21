@@ -9,6 +9,7 @@ import {
   Rocket,
   Search,
 } from "lucide-react";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 
 // Benefit-first: each card leads with what it does *for you*, not the
 // document's industry name. The technical terms (PRD, Schema, RLS) live in the
@@ -50,17 +51,26 @@ export function FeaturesGrid() {
   return (
     <section id="funktionen" className="scroll-mt-24 container-x py-24 md:py-32">
       <FadeIn>
-        <div className="max-w-2xl mb-14">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Was du bekommst
+        <div className="mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
+              Was du bekommst
+            </div>
+            <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+              Eine Idee rein. Alles zum Bauen raus.
+            </h2>
+            <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
+              Kein Werkzeug-Wirrwarr, keine halben Sachen — sondern alles, was du
+              brauchst, um vom Gedanken zur ersten Zeile Code zu kommen.
+            </p>
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Eine Idee rein. Alles zum Bauen raus.
-          </h2>
-          <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-            Kein Werkzeug-Wirrwarr, keine halben Sachen — sondern alles, was du
-            brauchst, um vom Gedanken zur ersten Zeile Code zu kommen.
-          </p>
+          {/* Finn sorts the chaos into one tidy package. */}
+          <AnimatedMascot
+            state="organizing"
+            size={160}
+            className="hidden shrink-0 md:block"
+            alt="Der Delfin sortiert alles zu einem Paket"
+          />
         </div>
       </FadeIn>
 

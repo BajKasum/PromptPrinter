@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FadeIn } from "@/components/motion/fade-in";
-import { Mascot } from "@/components/brand/mascot";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { cn } from "@/lib/utils";
 
 // Plain-language tab labels — the technical names (PRD, Master-Prompt, Schema)
@@ -129,9 +129,9 @@ export function ExampleOutput() {
               Das hier kam zurück — fertig zum Kopieren in deine Tools. Klick dich durch.
             </p>
           </div>
-          {/* Proud dolphin presents the finished build package. */}
-          <Mascot
-            src="/mascot/dolphin-happy.png"
+          {/* Proud dolphin hands over the finished build package. */}
+          <AnimatedMascot
+            state="delivering"
             size={150}
             className="mx-auto shrink-0 md:mx-0"
             alt="Der Delfin präsentiert stolz das fertige Bau-Paket"

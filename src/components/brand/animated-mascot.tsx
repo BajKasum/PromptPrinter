@@ -70,18 +70,14 @@ export function AnimatedMascot({
 }: AnimatedMascotProps) {
   const reduce = useReducedMotion() ?? false;
   const preset = motionOverride ?? MASCOT_STATES[state].motion;
+  // Skip the loop entirely under reduced-motion or for the "none" preset.
+  const anim = !reduce && preset !== "none" ? PRESETS[preset] : undefined;
 
-  if (reduce || preset === "none") {
-    return (
-      <Mascot state={state} size={size} className={className} alt={alt} priority={priority} />
-    );
-  }
-
-  const { animate, transition } = PRESETS[preset];
-
+  // className lands on the wrapper so callers control layout (hidden md:block,
+  // mx-auto, shrink-0, …); the wrapper is block-level so margins center it.
   return (
-    <motion.div animate={animate} transition={transition} className="inline-block">
-      <Mascot state={state} size={size} className={className} alt={alt} priority={priority} />
+    <motion.div animate={anim?.animate} transition={anim?.transition} className={className}>
+      <Mascot state={state} size={size} alt={alt} priority={priority} />
     </motion.div>
   );
 }

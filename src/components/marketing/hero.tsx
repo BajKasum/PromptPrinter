@@ -14,7 +14,7 @@ import {
   CornerDownLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Mascot } from "@/components/brand/mascot";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { cn } from "@/lib/utils";
 
 // The four stages of the journey — the spine of the whole page.
@@ -38,7 +38,7 @@ export function Hero() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="mb-2"
         >
-          <FloatingDolphin />
+          <AnimatedMascot state="welcoming" size={132} priority />
         </motion.div>
 
         <motion.div
@@ -139,28 +139,6 @@ export function Hero() {
         </motion.div>
       </div>
     </section>
-  );
-}
-
-/** The mascot with a gentle idle float — the page's recurring character. */
-function FloatingDolphin() {
-  const reduce = useReducedMotion() ?? false;
-  return (
-    <motion.div
-      animate={reduce ? undefined : { y: [0, -8, 0] }}
-      transition={
-        reduce
-          ? undefined
-          : { duration: 4, repeat: Infinity, ease: "easeInOut" }
-      }
-    >
-      <Mascot
-        src="/mascot/dolphin-happy.png"
-        size={132}
-        priority
-        alt="Der PromptPrinter-Delfin winkt dir zu"
-      />
-    </motion.div>
   );
 }
 

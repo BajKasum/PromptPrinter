@@ -1,6 +1,6 @@
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { Pencil, MessageSquare, PackageCheck } from "lucide-react";
-import { Mascot } from "@/components/brand/mascot";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 
 const steps = [
   {
@@ -42,8 +42,8 @@ export function HowItWorks() {
             </p>
           </div>
           {/* The dolphin guides you through the process. */}
-          <Mascot
-            src="/mascot/dolphin-think.png"
+          <AnimatedMascot
+            state="building"
             size={200}
             className="mx-auto shrink-0 md:mx-0"
             alt="Der Delfin führt dich durch die drei Schritte"
