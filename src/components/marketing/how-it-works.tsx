@@ -1,5 +1,6 @@
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { Pencil, MessageSquare, Layers, Download } from "lucide-react";
+import { Mascot } from "@/components/brand/mascot";
 
 const steps = [
   {
@@ -32,17 +33,26 @@ export function HowItWorks() {
   return (
     <section className="container-x py-24 md:py-32 relative">
       <FadeIn>
-        <div className="max-w-2xl mb-14">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            So funktioniert es
+        <div className="mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
+              So funktioniert es
+            </div>
+            <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+              Von der Idee zum Blueprint in vier Schritten.
+            </h2>
+            <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
+              Schluss mit dem ständigen Neueintippen von Kontext in jedem Chat. PromptPrinter
+              stellt ein komplettes, tool-spezifisches Build-Packet zusammen.
+            </p>
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Von der Idee zum Blueprint in vier Schritten.
-          </h2>
-          <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-            Schluss mit dem ständigen Neueintippen von Kontext in jedem Chat. PromptPrinter
-            stellt ein komplettes, tool-spezifisches Build-Packet zusammen.
-          </p>
+          {/* Nachdenklicher Bau-Delfin — passt zum „so wird gebaut"-Thema. */}
+          <Mascot
+            src="/mascot/dolphin-think.png"
+            size={240}
+            priority
+            className="hidden shrink-0 md:block"
+          />
         </div>
       </FadeIn>
 
