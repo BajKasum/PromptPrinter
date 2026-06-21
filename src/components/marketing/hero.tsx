@@ -30,12 +30,12 @@ export function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
 
       <div className="container-x relative flex flex-col items-center text-center">
-        {/* The dolphin welcomes you in — main character, front and centre. */}
+        {/* Finn introduces himself — he's the guide, not a logo. */}
         <motion.div
           initial={{ opacity: 0, y: 12, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-2"
+          className="mb-3"
         >
           <AnimatedMascot state="welcoming" size={132} priority />
         </motion.div>
@@ -46,10 +46,10 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="mb-6"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 backdrop-blur-md">
             <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-            <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/70">
-              Dein Bau-Buddy · Live in der Beta
+            <span className="text-[13px] text-foreground/80">
+              Hi, ich bin <span className="font-semibold text-foreground">Finn</span> 👋
             </span>
           </div>
         </motion.div>
@@ -60,8 +60,8 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-balance text-[40px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-4xl"
         >
-          Beschreib deine Idee.{" "}
-          <span className="gradient-text">Bekomm alles, um sie zu bauen.</span>
+          Erzähl mir deine Idee.{" "}
+          <span className="gradient-text">Ich bau den Plan mit dir.</span>
         </motion.h1>
 
         <motion.p
@@ -70,9 +70,9 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="mt-6 max-w-2xl text-balance text-[17px] md:text-[18px] leading-[1.6] text-foreground/60"
         >
-          Sag PromptPrinter in einem Satz, was du bauen willst. Schau zu, wie aus
-          der Idee ein Plan, ein komplettes Bau-Paket und ein startklares Projekt
-          wird — alles an einem Ort.
+          Ich bin dein KI-Bau-Buddy. Ich frag kurz nach — und mach aus deiner Idee
+          einen klaren Plan plus fertige Anweisungen für Claude, Cursor, Lovable und
+          ChatGPT. Kopieren, einfügen, loslegen.
         </motion.p>
 
         <motion.div
@@ -83,12 +83,12 @@ export function Hero() {
         >
           <Button asChild size="lg" variant="primary">
             <Link href="/signup">
-              Idee kostenlos ausprobieren
+              Leg mit Finn los
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
           <Button asChild size="lg" variant="ghost">
-            <Link href="#example">Beispiel ansehen</Link>
+            <Link href="#example">Erst mal zuschauen</Link>
           </Button>
         </motion.div>
 
