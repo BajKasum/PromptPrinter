@@ -65,7 +65,7 @@ export function PricingPreview() {
               Preise
             </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              Zahl für Ergebnisse, nicht für Geschwätz.
+              Fang kostenlos an. Zahl erst, wenn du mehr brauchst.
             </h2>
           </div>
           {/* Finn helps you pick — most builders start free. */}

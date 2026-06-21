@@ -8,28 +8,28 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    q: "Was gibt PromptPrinter eigentlich aus?",
-    a: "Jedes Projekt erzeugt ein komplettes Build-Packet: Produkt-Brief, PRD, Master-Prompt, Frontend-Prompt, Backend-Prompt, Datenbank-Schema, Sicherheits-Checkliste, Marketing-Texte, SEO-Plan und Deployment-Anleitung. Du kannst jedes einzeln kopieren oder alles als Markdown oder PDF exportieren.",
+    q: "Muss ich programmieren können?",
+    a: "Nein. Du beschreibst deine Idee in ganz normaler Sprache — den technischen Teil übernehme ich. Was ich dir gebe, bringt dich auch ohne tiefes Vorwissen voran.",
   },
   {
-    q: "Worin unterscheidet sich das davon, Claude einfach nach einem PRD zu fragen?",
-    a: "PromptPrinter verkettet im Hintergrund strukturierte Prompts, validiert jede Ausgabe und schneidet das Ergebnis auf deine gewählten Tools zu (Lovable vs. v0 erzeugt unterschiedliche Frontend-Prompts). Ausserdem speichert es jedes Artefakt in einem Workspace, den du wieder aufrufen kannst.",
+    q: "Was bekomme ich am Ende?",
+    a: "Einen kompletten Plan für deine App — was du baust und in welcher Reihenfolge — plus die fertigen Anweisungen für jedes KI-Tool, die Struktur deiner Datenbank, eine Sicherheits-Checkliste und sogar Texte fürs Marketing. Du kopierst, was du brauchst, oder lädst alles auf einmal.",
   },
   {
-    q: "Welche KI-Modelle treiben die Generierung an?",
-    a: "Wir nutzen Claude (4.7-Familie) für Long-Context-Reasoning und GPT-4o für code-lastige Ausgaben. Deine Wahl des Master-Prompt-Ziels ändert nur die Formatierung des finalen Artefakts — die Engine leitet jede Aufgabe an das beste Modell weiter.",
+    q: "Was bringt mir das, statt Claude einfach selbst zu fragen?",
+    a: "Ich stelle dir erst die richtigen Fragen und schneide dann alles auf deine Tools zu — Lovable bekommt etwas anderes als Cursor. Und alles bleibt gespeichert, sodass du später weiterarbeitest, statt jeden Chat neu zu erklären.",
   },
   {
-    q: "Speichert ihr meine Prompts und Ausgaben?",
-    a: "Ja — deine Projekte liegen in deinem Workspace, damit du sie wieder aufrufen, neu exportieren oder forken kannst. Alles ist per Row-Level-Security an dein Konto gebunden. Löschst du ein Projekt, ist es endgültig weg.",
+    q: "Was, wenn ich die Technik noch gar nicht festgelegt habe?",
+    a: "Das ist der Normalfall. Sag mir einfach, was du vorhast — ich schlage dir einen passenden Stack vor. Ändern kannst du ihn jederzeit.",
   },
   {
-    q: "Kann ich eigene API-Keys verwenden?",
-    a: "In den Plänen Pro und Team ja. Hinterlege deinen Anthropic- oder OpenAI-Key in den Einstellungen, und wir nutzen ihn für deine Generierungen — abgerechnet wird dann nur die Plattform-Ebene.",
+    q: "Ist meine Idee bei dir sicher?",
+    a: "Ja. Deine Projekte gehören nur dir und sind fest an dein Konto gebunden — niemand sonst sieht sie. Löschst du ein Projekt, ist es endgültig weg.",
   },
   {
-    q: "Gibt es eine kostenlose Stufe?",
-    a: "Ja — 3 Projekte und 20 Generierungen pro Monat, mit vollem Zugriff auf jeden Ausgabetyp. Keine Kreditkarte.",
+    q: "Kann ich kostenlos starten?",
+    a: "Ja — kostenlos und ohne Kreditkarte. Du bekommst genug, um mehrere komplette Projekte auszuprobieren, bevor du dich entscheidest.",
   },
 ];
 
@@ -39,7 +39,7 @@ export function FAQ() {
       <FadeIn>
         <div className="max-w-2xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            FAQ
+            Noch Fragen?
           </div>
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
             Fragen, beantwortet.
