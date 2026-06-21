@@ -1,62 +1,50 @@
-import { Check } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 
-const groups = [
-  {
-    title: "KI-Assistenten",
-    items: ["Claude", "ChatGPT", "Gemini", "Mistral"],
-  },
-  {
-    title: "Frontend-Builder",
-    items: ["Lovable", "Stitch", "Figma", "v0"],
-  },
-  {
-    title: "Backend-Agenten",
-    items: ["Claude Code", "Cursor", "Windsurf", "Aider"],
-  },
-  {
-    title: "Datenbanken",
-    items: ["Supabase", "PostgreSQL", "MySQL", "Neon"],
-  },
+// One friendly line + a single row of the tools people actually recognize —
+// not a 16-item checklist. Finn "speaks their language".
+const TOOLS = [
+  "Claude",
+  "ChatGPT",
+  "Gemini",
+  "Cursor",
+  "Claude Code",
+  "Lovable",
+  "v0",
+  "Figma",
+  "Stitch",
+  "Supabase",
+  "Postgres",
+  "Vercel",
 ];
 
 export function Integrations() {
   return (
     <section className="container-x py-24 md:py-32">
       <FadeIn>
-        <div className="max-w-2xl mb-10">
+        <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-14 text-center">
           <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Integrationen
+            Deine Tools
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Abgestimmt auf die Tools, die du bereits nutzt.
+          <h2 className="text-balance text-[32px] md:text-[44px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+            Ich spreche die Sprache deiner Tools.
           </h2>
+          <p className="mx-auto mt-4 max-w-xl text-[16px] md:text-[17px] text-foreground/55">
+            Was ich dir gebe, ist genau so formatiert, wie dein Tool es erwartet.
+            Du fügst es ein — und es läuft.
+          </p>
+
+          <div className="mt-9 flex flex-wrap justify-center gap-2.5">
+            {TOOLS.map((t) => (
+              <span
+                key={t}
+                className="rounded-full border border-border bg-surface px-4 py-2 text-[13.5px] text-foreground/75"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
         </div>
       </FadeIn>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {groups.map((g, i) => (
-          <FadeIn key={g.title} delay={i * 0.06}>
-            <div className="card-surface h-full">
-              <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/45 mb-4">
-                {g.title}
-              </div>
-              <ul className="space-y-2">
-                {g.items.map((it) => (
-                  <li
-                    key={it}
-                    className="flex items-center justify-between text-[14px] text-foreground/80 py-1.5 border-b border-border last:border-0"
-                  >
-                    <span>{it}</span>
-                    <Check className="h-3.5 w-3.5 shrink-0 text-foreground/30" strokeWidth={2} aria-hidden />
-                    <span className="sr-only">unterstützt</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </FadeIn>
-        ))}
-      </div>
     </section>
   );
 }
