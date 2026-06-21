@@ -10,6 +10,10 @@ import { cn } from "@/lib/utils";
 
 type Uniforms = Record<string, { value: number[] | number[][] | number; type: string }>;
 
+// "additive" = bright dots that glow on a dark background; "normal" = standard
+// over-compositing so dark dots are visible on a light background.
+type BlendMode = "additive" | "normal";
+
 export const CanvasRevealEffect = ({
   animationSpeed = 10,
   opacities = [0.3, 0.3, 0.3, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8, 1],
@@ -18,6 +22,7 @@ export const CanvasRevealEffect = ({
   dotSize,
   showGradient = true,
   reverse = false,
+  blend = "additive",
 }: {
   animationSpeed?: number;
   opacities?: number[];
@@ -26,6 +31,7 @@ export const CanvasRevealEffect = ({
   dotSize?: number;
   showGradient?: boolean;
   reverse?: boolean;
+  blend?: BlendMode;
 }) => {
   return (
     <div className={cn("relative h-full w-full", containerClassName)}>
@@ -39,6 +45,7 @@ export const CanvasRevealEffect = ({
             animation_speed_factor_${animationSpeed.toFixed(1)}_;
           `}
           center={["x", "y"]}
+          blend={blend}
         />
       </div>
       {showGradient && (
@@ -55,6 +62,7 @@ interface DotMatrixProps {
   dotSize?: number;
   shader?: string;
   center?: ("x" | "y")[];
+  blend?: BlendMode;
 }
 
 const DotMatrix: React.FC<DotMatrixProps> = ({
@@ -64,6 +72,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
   dotSize = 2,
   shader = "",
   center = ["x", "y"],
+  blend = "additive",
 }) => {
   const uniforms = useMemo(() => {
     let colorsArray = [colors[0], colors[0], colors[0], colors[0], colors[0], colors[0]];
@@ -158,11 +167,20 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
             fragColor.rgb *= fragColor.a;
         }`}
       uniforms={uniforms}
+      blend={blend}
     />
   );
 };
 
-const ShaderMaterial = ({ source, uniforms }: { source: string; uniforms: Uniforms }) => {
+const ShaderMaterial = ({
+  source,
+  uniforms,
+  blend,
+}: {
+  source: string;
+  uniforms: Uniforms;
+  blend: BlendMode;
+}) => {
   const { size } = useThree();
   const ref = useRef<THREE.Mesh>(null);
 
@@ -216,10 +234,12 @@ const ShaderMaterial = ({ source, uniforms }: { source: string; uniforms: Unifor
       uniforms: preparedUniforms,
       glslVersion: THREE.GLSL3,
       blending: THREE.CustomBlending,
-      blendSrc: THREE.SrcAlphaFactor,
-      blendDst: THREE.OneFactor,
+      // Source is premultiplied (rgb *= a in the shader). Additive glows on dark;
+      // normal over-composites dark dots onto a light background.
+      blendSrc: blend === "additive" ? THREE.SrcAlphaFactor : THREE.OneFactor,
+      blendDst: blend === "additive" ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor,
     });
-  }, [size.width, size.height, source, uniforms]);
+  }, [size.width, size.height, source, uniforms, blend]);
 
   return (
     <mesh ref={ref}>
@@ -229,10 +249,14 @@ const ShaderMaterial = ({ source, uniforms }: { source: string; uniforms: Unifor
   );
 };
 
-const Shader: React.FC<{ source: string; uniforms: Uniforms }> = ({ source, uniforms }) => {
+const Shader: React.FC<{ source: string; uniforms: Uniforms; blend: BlendMode }> = ({
+  source,
+  uniforms,
+  blend,
+}) => {
   return (
     <Canvas className="absolute inset-0 h-full w-full">
-      <ShaderMaterial source={source} uniforms={uniforms} />
+      <ShaderMaterial source={source} uniforms={uniforms} blend={blend} />
     </Canvas>
   );
 };
