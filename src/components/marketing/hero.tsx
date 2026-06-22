@@ -29,57 +29,68 @@ export function Hero() {
       {/* Subtle grid backdrop — restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
 
-      <div className="container-x relative flex flex-col items-center text-center">
-        {/* Finn introduces himself — he's the guide, not a logo. */}
-        <motion.div
-          initial={{ opacity: 0, y: 12, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-3"
-        >
-          <AnimatedMascot state="welcoming" size={132} priority />
-        </motion.div>
+      <div className="container-x relative">
+        {/* Finn is here and talking to you — the first guide on the page, not a
+            logo in the corner. Asymmetric on purpose: he stands beside his words. */}
+        <div className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-12 md:text-left">
+          <motion.div
+            initial={{ opacity: 0, x: -16, scale: 0.92 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="shrink-0"
+          >
+            <AnimatedMascot state="welcoming" size={216} priority />
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-6"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-            <span className="text-[13px] text-foreground/80">
-              Hi, ich bin <span className="font-semibold text-foreground">Finn</span> 👋
-            </span>
-          </div>
-        </motion.div>
+          <div className="max-w-2xl">
+            {/* His opening line lives in a real speech bubble — Finn is speaking,
+                with a tail pointing back at him (up on mobile, left on desktop). */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              className="relative mb-6 inline-block rounded-2xl border border-border bg-surface px-5 py-3.5 text-left shadow-card"
+            >
+              <span
+                aria-hidden
+                className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-r border-t border-border bg-surface md:hidden"
+              />
+              <span
+                aria-hidden
+                className="absolute left-0 top-8 hidden h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-border bg-surface md:block"
+              />
+              <p className="text-[15px] md:text-[16px] leading-snug text-foreground/90">
+                Schön, dass du da bist. Ich bin{" "}
+                <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
+              </p>
+            </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="text-balance text-[40px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-4xl"
-        >
-          Erzähl mir deine Idee.{" "}
-          <span className="gradient-text">Ich bau den Plan mit dir.</span>
-        </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="text-balance text-[38px] md:text-[54px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground"
+            >
+              Erzähl mir deine Idee.{" "}
+              <span className="gradient-text">Ich bau den Plan mit dir.</span>
+            </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 max-w-2xl text-balance text-[17px] md:text-[18px] leading-[1.6] text-foreground/60"
-        >
-          Ich bin dein KI-Bau-Buddy. Ich frag kurz nach — und mach aus deiner Idee
-          einen klaren Plan plus fertige Anweisungen für Claude, Cursor, Lovable und
-          ChatGPT. Kopieren, einfügen, loslegen.
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-5 text-balance text-[17px] md:text-[18px] leading-[1.6] text-foreground/60"
+            >
+              Ich frag dich gleich ein paar Dinge — und mach aus deiner Idee einen
+              klaren Plan plus die fertigen Anweisungen für Claude, Cursor, Lovable
+              und ChatGPT. Kopieren, einfügen, loslegen.
+            </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-9 flex flex-col sm:flex-row items-center gap-3"
+          className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start"
         >
           <Button asChild size="lg" variant="primary">
             <Link href="/signup">
@@ -92,21 +103,23 @@ export function Hero() {
           </Button>
         </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.55 }}
-          className="mt-6 text-xs font-mono uppercase tracking-[0.08em] text-foreground/35"
-        >
-          Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.55 }}
+              className="mt-6 text-xs font-mono uppercase tracking-[0.08em] text-foreground/35"
+            >
+              Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
+            </motion.p>
+          </div>
+        </div>
 
         {/* Hero demo: one idea walking the whole journey, live. */}
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-16 w-full max-w-4xl"
+          className="mx-auto mt-16 w-full max-w-4xl"
         >
           <HeroDemo />
         </motion.div>
