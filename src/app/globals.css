@@ -46,12 +46,12 @@
   .dark {
     color-scheme: dark;
 
-    --background: 220 20% 6%;
+    --background: 208 20% 6%;
     --foreground: 213 20% 92%;
 
-    --surface: 217 16% 9%;
-    --surface-raised: 218 17% 12%;
-    --surface-hover: 216 16% 15%;
+    --surface: 208 16% 9%;
+    --surface-raised: 208 17% 12%;
+    --surface-hover: 208 16% 15%;
 
     --border: 214 14% 16%;
     --border-strong: 215 13% 23%;
@@ -68,6 +68,14 @@
     --accent-subtle: 204 48% 18%;
     --ring: 204 80% 70%;
 
+    /*
+     * Reserved — Finn's World warm counter-accent (coral). NOT chrome.
+     * Deploy only at genuine peak moments (later phase); never on buttons,
+     * links, text, badges, cards, or icons. Light-mode value follows with the
+     * light-mode calibration pass.
+     */
+    --accent-warm: 12 88% 70%;
+
     --destructive: 0 84% 63%;
     --destructive-foreground: 0 0% 100%;
     --success: 142 64% 55%;
@@ -75,7 +83,7 @@
     --warning: 43 96% 56%;
     --warning-foreground: 216 22% 6%;
 
-    --shadow: 0 0% 0%;
+    --shadow: 208 25% 3%;
   }
 
   @media (prefers-reduced-motion: no-preference) {
