@@ -1,7 +1,6 @@
 import { Navbar } from "@/components/marketing/navbar";
 import { Hero } from "@/components/marketing/hero";
 import { Problem } from "@/components/marketing/problem";
-import { HowItWorks } from "@/components/marketing/how-it-works";
 import { ExampleOutput } from "@/components/marketing/example-output";
 import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { Integrations } from "@/components/marketing/integrations";
@@ -16,7 +15,6 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       <Problem />
-      <HowItWorks />
       <ExampleOutput />
       <ProductShowcase />
       <Integrations />
