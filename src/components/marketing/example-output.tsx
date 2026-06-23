@@ -14,6 +14,8 @@ const tabs = [
   { id: "master", label: "KI-Anweisungen" },
   { id: "frontend", label: "App-Design" },
   { id: "schema", label: "Datenbank" },
+  { id: "security", label: "Sicherheit" },
+  { id: "marketing", label: "Marketing" },
 ];
 
 const content: Record<string, string> = {
@@ -99,6 +101,51 @@ create index habits_user_idx on public.habits(user_id);
 alter table public.habits enable row level security;
 create policy habits_owner on public.habits
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);`,
+  security: `# Streak Coach — Sicherheits-Checkliste
+
+## Authentifizierung
+✅ E-Mail-Bestätigung vor erstem Login aktiv
+✅ Passwort-Policy: min. 8 Zeichen, keine bekannten Leaks (HaveIBeenPwned)
+✅ Rate-Limiting auf /auth-Endpunkte (5 Versuche / Minute)
+
+## Datenzugriff
+✅ Row Level Security auf jeder Tabelle mit Nutzerdaten
+✅ Kein direkter Tabellenzugriff — nur über Supabase-Client mit RLS
+✅ API-Keys nie im Client-Bundle (kein NEXT_PUBLIC_ für Service-Keys)
+
+## Infrastruktur
+✅ HTTPS erzwungen, HSTS-Header gesetzt
+✅ Content-Security-Policy blockiert Inline-Scripts
+✅ Abhängigkeiten auf bekannte Schwachstellen geprüft (npm audit)
+
+## Zahlungsdaten
+✅ Kreditkarten werden nur bei Stripe gespeichert — nie in eigener DB
+✅ Webhook-Signaturen werden bei jedem Event verifiziert`,
+  marketing: `# Streak Coach — Marketing-Texte & Launch-Plan
+
+## Landingpage-Headline
+Deine Gewohnheiten verdienen einen Hype-Man.
+Streak Coach feiert jede Serie mit KI-generierten Mini-Belohnungen.
+
+## Subheadline
+Erstell deine Habits in Sekunden. Check täglich ein.
+Je länger deine Serie, desto kreativer die Belohnung.
+
+## FAQ-Entwurf (3 Fragen)
+- «Muss ich bezahlen?» → Nein, Free reicht für 5 Habits.
+- «Was passiert, wenn ich einen Tag verpasse?» → Streak pausiert, kein Reset.
+- «Woher kommen die Belohnungen?» → Claude schlägt sie vor, du wählst.
+
+## SEO-Grundlagen
+- Title-Tag: «Streak Coach — Habit-Tracker mit KI-Belohnungen»
+- Meta-Description: max. 155 Zeichen, Fokus-Keyword + Nutzen
+- H1 = Landingpage-Headline, nur 1× pro Seite
+
+## Deployment-Schritte
+1. Vercel-Projekt anlegen, GitHub-Repo verbinden
+2. Env-Variablen setzen (Supabase-URL, Anon-Key, Stripe-Keys)
+3. Preview-Deployment prüfen, dann Production-Branch mergen
+4. Custom-Domain verbinden, DNS + SSL bestätigen`,
 };
 
 export function ExampleOutput() {
