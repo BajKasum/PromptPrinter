@@ -106,6 +106,7 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 - Hero-Intro: `welcoming`
 - Hero-Demo-Narration: `curious → thinking → building → delivering` (je Stage)
 - Problem: `sad`
+- HowItWorks: `building`
 - ExampleOutput: `delivering`
 - Pricing: `helping`
 - FinalCTA: `celebrating`
@@ -125,22 +126,27 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 
 **Aktuelle Seiten-Reihenfolge** (`src/app/page.tsx`):
 ```
-Navbar → Hero → Problem → ExampleOutput → ProductShowcase →
+Navbar → Hero → Problem → HowItWorks → ExampleOutput → ProductShowcase →
 Integrations → PricingPreview → FAQ → FinalCTA → Footer
 ```
 
 **Entfernte Sektionen** (bewusst gelöscht, nicht wiederherstellen):
 - `FeaturesGrid` — wiederholte dieselben 4 Outputs wie ExampleOutput. Unique Content
   (Sicherheit, Marketing, Deployment) wurde als neue ExampleOutput-Tabs bewahrt.
-- `HowItWorks` — wiederholte denselben Prozess den der Hero-Demo bereits animiert zeigt.
 - `Capabilities` — früh entfernt (war Jargon-lastig)
+
+> **Update:** `HowItWorks` wurde auf Nutzerwunsch wieder eingebunden (nach `Problem`,
+> vor `ExampleOutput`) — schließt den Story-Flow (Schmerz → so gehen wir vor → echtes
+> Ergebnis). Flache `card-surface`-Karten + `building`-Finn heben es klar von der
+> glänzenden Hero-Demo ab; damit ist die ursprüngliche Redundanz aufgelöst.
 
 **Sektion-Dateien:**
 | Datei | Zustand | Finn |
 |---|---|---|
 | `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). | `welcoming` + Stage-States |
 | `problem.tsx` | Litany-Format: Headline + 3 bare Schmerzzeilen in gedämpftem Typ. Kein Grid. | `sad` (klein, desktop-only) |
-| `example-output.tsx` | 6 Tabs: Produktplan / KI-Anweisungen / App-Design / Datenbank / Sicherheit / Marketing | `delivering` |
+| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Nach Problem, vor ExampleOutput. | `building` |
+| `example-output.tsx` | 6 Tabs (a11y: tablist/tab/tabpanel, Keyboard-Nav): Produktplan / KI-Anweisungen / App-Design / Datenbank / Sicherheit / Marketing | `delivering` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen | Kein Finn |
 | `integrations.tsx` | Slim Strip: eine Zeile + 12 Tool-Pills | Kein Finn |
 | `pricing-preview.tsx` | 3 Tiers: Free/$0 · Pro/$19 · Team/$49 | `helping` |

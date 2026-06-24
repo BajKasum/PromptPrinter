@@ -77,7 +77,7 @@ export function Hero() {
               className="text-balance text-[32px] md:text-[54px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] font-semibold text-foreground"
             >
               Erzähl mir deine Idee.{" "}
-              <span className="gradient-text">Ich bau den Plan mit dir.</span>
+              <span className="text-accent-text">Ich bau den Plan mit dir.</span>
             </motion.h1>
 
             <motion.p
