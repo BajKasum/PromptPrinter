@@ -11,12 +11,12 @@
   :root {
     color-scheme: light;
 
-    --background: 0 0% 100%;
+    --background: 40 24% 99.5%;
     --foreground: 216 22% 6%;
 
-    --surface: 210 24% 97%;
+    --surface: 206 24% 97%;
     --surface-raised: 0 0% 100%;
-    --surface-hover: 213 20% 95%;
+    --surface-hover: 206 20% 95%;
 
     --border: 214 22% 91%;
     --border-strong: 214 20% 84%;
@@ -33,6 +33,10 @@
     --accent-subtle: 203 80% 94%;
     --ring: 203 80% 55%;
 
+    /* Reserved — Finn's World warm counter-accent (coral). NOT chrome; deploy
+       only at genuine peak moments (later phase). Mirrors the .dark value. */
+    --accent-warm: 14 84% 64%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --success: 142 71% 36%;
@@ -40,7 +44,7 @@
     --warning: 33 92% 44%;
     --warning-foreground: 0 0% 100%;
 
-    --shadow: 216 40% 12%;
+    --shadow: 210 44% 12%;
   }
 
   .dark {
