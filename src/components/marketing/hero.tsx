@@ -24,7 +24,7 @@ export function Hero() {
     <section
       id="main-content"
       tabIndex={-1}
-      className="relative overflow-hidden pt-28 md:pt-36 pb-24 md:pb-32 focus:outline-none"
+      className="relative overflow-hidden pt-24 md:pt-36 pb-20 md:pb-32 focus:outline-none"
     >
       {/* Subtle grid backdrop — restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
@@ -32,14 +32,19 @@ export function Hero() {
       <div className="container-x relative">
         {/* Finn is here and talking to you — the first guide on the page, not a
             logo in the corner. Asymmetric on purpose: he stands beside his words. */}
-        <div className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-12 md:text-left">
+        <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:gap-12 md:text-left">
           <motion.div
             initial={{ opacity: 0, x: -16, scale: 0.92 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="shrink-0"
           >
-            <AnimatedMascot state="welcoming" size={216} priority />
+            <AnimatedMascot
+              state="welcoming"
+              size={216}
+              priority
+              className="[&_img]:h-[156px] [&_img]:w-[156px] md:[&_img]:h-[216px] md:[&_img]:w-[216px]"
+            />
           </motion.div>
 
           <div className="max-w-2xl">
@@ -49,7 +54,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="relative mb-6 inline-block rounded-2xl border border-border bg-surface px-5 py-3.5 text-left shadow-card"
+              className="relative mb-5 inline-block rounded-2xl border border-border bg-surface px-5 py-3 md:py-3.5 text-left shadow-card"
             >
               <span
                 aria-hidden
@@ -69,7 +74,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-balance text-[38px] md:text-[54px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground"
+              className="text-balance text-[32px] md:text-[54px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] font-semibold text-foreground"
             >
               Erzähl mir deine Idee.{" "}
               <span className="gradient-text">Ich bau den Plan mit dir.</span>
@@ -79,7 +84,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-5 text-balance text-[17px] md:text-[18px] leading-[1.6] text-foreground/60"
+              className="mt-4 text-balance text-[16px] md:text-[18px] leading-[1.55] md:leading-[1.6] text-foreground/60"
             >
               Ich frag dich gleich ein paar Dinge — und mach aus deiner Idee einen
               klaren Plan plus die fertigen Anweisungen für Claude, Cursor, Lovable
@@ -90,7 +95,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start"
+          className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start"
         >
           <Button asChild size="lg" variant="primary">
             <Link href="/signup">
@@ -107,7 +112,7 @@ export function Hero() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.55 }}
-              className="mt-6 text-xs font-mono uppercase tracking-[0.08em] text-foreground/35"
+              className="mt-5 text-xs font-mono uppercase tracking-[0.08em] text-foreground/35"
             >
               Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
             </motion.p>

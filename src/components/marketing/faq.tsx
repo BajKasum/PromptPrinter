@@ -50,7 +50,7 @@ export function FAQ() {
       <FadeIn delay={0.1}>
         <div className="max-w-3xl rounded-2xl border border-border bg-surface divide-y divide-border">
           {faqs.map((f, i) => (
-            <FAQItem key={i} q={f.q} a={f.a} />
+            <FAQItem key={i} index={i} q={f.q} a={f.a} />
           ))}
         </div>
       </FadeIn>
@@ -58,13 +58,18 @@ export function FAQ() {
   );
 }
 
-function FAQItem({ q, a }: { q: string; a: string }) {
+function FAQItem({ index, q, a }: { index: number; q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const triggerId = `faq-trigger-${index}`;
+  const panelId = `faq-panel-${index}`;
   return (
     <div>
       <button
+        id={triggerId}
+        aria-expanded={open}
+        aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-start justify-between gap-6 px-6 py-5 text-left"
+        className="w-full flex items-start justify-between gap-6 px-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset rounded-2xl"
       >
         <span className="text-[15.5px] font-medium text-foreground pr-4">{q}</span>
         <Plus
@@ -78,6 +83,9 @@ function FAQItem({ q, a }: { q: string; a: string }) {
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
+            id={panelId}
+            role="region"
+            aria-labelledby={triggerId}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}

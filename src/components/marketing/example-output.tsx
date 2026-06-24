@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FadeIn } from "@/components/motion/fade-in";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
@@ -151,6 +151,23 @@ Je länger deine Serie, desto kreativer die Belohnung.
 export function ExampleOutput() {
   const [active, setActive] = useState("prd");
   const text = content[active];
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Roving-focus keyboard nav for the tablist (automatic activation): arrows
+  // wrap, Home/End jump to the ends. Moves both selection and focus.
+  function onTabKeyDown(e: ReactKeyboardEvent<HTMLButtonElement>, index: number) {
+    const targets: Record<string, number> = {
+      ArrowRight: (index + 1) % tabs.length,
+      ArrowLeft: (index - 1 + tabs.length) % tabs.length,
+      Home: 0,
+      End: tabs.length - 1,
+    };
+    const next = targets[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    setActive(tabs[next].id);
+    tabRefs.current[next]?.focus();
+  }
 
   return (
     <section id="example" className="scroll-mt-24 container-x py-24 md:py-32">
@@ -189,26 +206,50 @@ export function ExampleOutput() {
       <FadeIn delay={0.1}>
         <div className="gradient-border rounded-2xl">
           <div className="rounded-2xl glass-strong overflow-hidden">
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto">
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setActive(t.id)}
-                  className={cn(
-                    "relative px-3 py-1.5 text-[12.5px] font-medium rounded-md transition-colors",
-                    active === t.id ? "text-foreground" : "text-foreground/55 hover:text-foreground"
-                  )}
-                >
-                  {active === t.id && (
-                    <motion.span
-                      layoutId="tab-bg"
-                      className="absolute inset-0 rounded-md bg-surface border border-border"
-                      transition={{ type: "spring", stiffness: 360, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative">{t.label}</span>
-                </button>
-              ))}
+            <div className="relative border-b border-border">
+              <div
+                role="tablist"
+                aria-label="Beispiel-Ausgaben"
+                className="flex items-center gap-1 overflow-x-auto px-2 py-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {tabs.map((t, i) => {
+                  const selected = active === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      ref={(el) => {
+                        tabRefs.current[i] = el;
+                      }}
+                      id={`tab-${t.id}`}
+                      role="tab"
+                      type="button"
+                      aria-selected={selected}
+                      aria-controls={`panel-${t.id}`}
+                      tabIndex={selected ? 0 : -1}
+                      onClick={() => setActive(t.id)}
+                      onKeyDown={(e) => onTabKeyDown(e, i)}
+                      className={cn(
+                        "relative flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-md px-3.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:min-h-[34px]",
+                        selected ? "text-foreground" : "text-foreground/55 hover:text-foreground"
+                      )}
+                    >
+                      {selected && (
+                        <motion.span
+                          layoutId="tab-bg"
+                          className="absolute inset-0 rounded-md border border-border bg-surface"
+                          transition={{ type: "spring", stiffness: 360, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Subtle hint that more tabs are scrollable on narrow screens. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-raised to-transparent md:hidden"
+              />
             </div>
             <div className="grid md:grid-cols-[200px_1fr]">
               <aside className="border-r border-border p-5 hidden md:block">
@@ -217,15 +258,17 @@ export function ExampleOutput() {
                 </div>
                 <ul className="space-y-1.5 text-[13px]">
                   {tabs.map((t) => (
-                    <li
-                      key={t.id}
-                      className={cn(
-                        "px-2 py-1 rounded-md transition-colors cursor-pointer",
-                        active === t.id ? "bg-surface text-foreground" : "text-foreground/55 hover:text-foreground"
-                      )}
-                      onClick={() => setActive(t.id)}
-                    >
-                      {t.label}
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        onClick={() => setActive(t.id)}
+                        className={cn(
+                          "w-full rounded-md px-2 py-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                          active === t.id ? "bg-surface text-foreground" : "text-foreground/55 hover:text-foreground"
+                        )}
+                      >
+                        {t.label}
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -233,11 +276,15 @@ export function ExampleOutput() {
               <AnimatePresence mode="wait">
                 <motion.pre
                   key={active}
+                  id={`panel-${active}`}
+                  role="tabpanel"
+                  aria-labelledby={`tab-${active}`}
+                  tabIndex={0}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.2 }}
-                  className="p-6 text-[12.5px] leading-[1.7] font-mono text-foreground/75 whitespace-pre-wrap overflow-x-auto max-h-[420px] overflow-y-auto"
+                  className="max-h-[420px] overflow-x-auto overflow-y-auto whitespace-pre-wrap p-6 font-mono text-[12.5px] leading-[1.7] text-foreground/75 focus-visible:outline-none"
                 >
                   {text}
                 </motion.pre>

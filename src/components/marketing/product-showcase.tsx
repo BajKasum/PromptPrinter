@@ -58,19 +58,16 @@ export function ProductShowcase() {
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <div className="gradient-border rounded-2xl">
-          <div className="rounded-2xl glass-strong overflow-hidden">
-            {/* Window chrome */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-surface" />
-                <span className="h-2.5 w-2.5 rounded-full bg-surface" />
-                <span className="h-2.5 w-2.5 rounded-full bg-surface" />
-              </div>
-              <span className="hidden sm:inline font-mono text-[11px] text-foreground/40">
+        {/* Flatter, embedded "app" frame — deliberately not a third glossy
+            browser window, so it reads as your workspace, not another demo. */}
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface/40">
+          <div>
+            {/* Slim app header — icon + path, no browser chrome. */}
+            <div className="flex items-center gap-2 border-b border-border bg-surface/50 px-4 py-2.5">
+              <LayoutDashboard className="h-3.5 w-3.5 text-foreground/40" strokeWidth={1.8} />
+              <span className="font-mono text-[11px] text-foreground/45">
                 app.promptprinter.dev/{view}
               </span>
-              <span className="w-12" />
             </div>
 
             <div className="grid md:grid-cols-[200px_1fr]">
@@ -111,7 +108,7 @@ export function ProductShowcase() {
               </aside>
 
               {/* Content */}
-              <div className="p-5 md:p-6 min-h-[420px]">
+              <div className="p-5 md:p-6 min-h-[300px]">
                 {/* Mobile tab control (sidebar is desktop-only) */}
                 <div className="md:hidden mb-5 flex gap-1.5">
                   {TABS.map((t) => (

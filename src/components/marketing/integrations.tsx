@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 
 // One friendly line + a single row of the tools people actually recognize —
@@ -29,8 +30,8 @@ export function Integrations() {
             Ich spreche die Sprache deiner Tools.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[16px] md:text-[17px] text-foreground/55">
-            Was ich dir gebe, ist genau so formatiert, wie dein Tool es erwartet.
-            Du fügst es ein — und es läuft.
+            Was ich dir gebe, ist genau so formatiert, wie dein Tool es erwartet —
+            du kopierst es direkt rein, ohne vorher etwas umzuschreiben.
           </p>
 
           <div className="mt-9 flex flex-wrap justify-center gap-2.5">
@@ -43,6 +44,19 @@ export function Integrations() {
               </span>
             ))}
           </div>
+
+          {/* Trust before pricing — points to the real, verifiable outputs above,
+              not invented testimonials or metrics. */}
+          <p className="mx-auto mt-9 max-w-lg text-[13.5px] leading-[1.6] text-foreground/45">
+            Kein Mockup: Der Produktplan, die Datenbank und die Sicherheits-Checkliste
+            sind echte Ausgaben.{" "}
+            <Link
+              href="#example"
+              className="text-accent-text underline-offset-4 hover:underline"
+            >
+              Sieh sie dir oben an.
+            </Link>
+          </p>
         </div>
       </FadeIn>
     </section>
