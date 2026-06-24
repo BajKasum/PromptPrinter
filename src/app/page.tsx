@@ -1,3 +1,4 @@
+import { FinnAtmosphere } from "@/components/marketing/finn-atmosphere";
 import { Navbar } from "@/components/marketing/navbar";
 import { Hero } from "@/components/marketing/hero";
 import { Problem } from "@/components/marketing/problem";
@@ -12,6 +13,7 @@ import { Footer } from "@/components/marketing/footer";
 export default function HomePage() {
   return (
     <main className="relative">
+      <FinnAtmosphere />
       <Navbar />
       <Hero />
       <Problem />

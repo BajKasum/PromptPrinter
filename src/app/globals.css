@@ -201,6 +201,30 @@
     -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 75%);
   }
 
+  /*
+   * Finn's World — ambient depth layer (Phase 2). One fixed, non-interactive
+   * background behind the landing content: a single soft light from above + a
+   * gentle depth gradient (lighter top, deeper bottom). Static (no animation →
+   * reduced-motion-safe), token-based, theme-driven via `.dark`. Kept deliberately
+   * subtle — felt, not seen. See DESIGN.md → Finn's World.
+   */
+  .finn-atmosphere {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    /* Light: sunlit surface — faint cool light above, water tint settling below. */
+    background:
+      radial-gradient(80% 55% at 50% -10%, hsl(var(--accent) / 0.05), transparent 70%),
+      linear-gradient(180deg, transparent 55%, hsl(var(--accent) / 0.045) 100%);
+  }
+  .dark .finn-atmosphere {
+    /* Dark: open water at depth — one soft light above, gentle deepening below. */
+    background:
+      radial-gradient(80% 55% at 50% -10%, hsl(var(--accent) / 0.06), transparent 72%),
+      linear-gradient(180deg, hsl(var(--accent) / 0.02) 0%, transparent 26%, hsl(var(--shadow) / 0.22) 100%);
+  }
+
   .btn-ghost {
     @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 text-body-sm font-medium text-foreground/90 transition-colors duration-200;
   }
