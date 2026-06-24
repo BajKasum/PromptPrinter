@@ -10,7 +10,7 @@ export const PLANS = [
     name: "Free",
     price: "$0",
     cadence: "für immer",
-    description: "Für neugierige Builder, die ausprobieren.",
+    description: "Zum Ausprobieren. Genug für ein, zwei Ideen von Anfang bis Ende.",
     cta: "Kostenlos starten",
     href: "/signup",
     highlight: false,
@@ -25,7 +25,7 @@ export const PLANS = [
     name: "Pro",
     price: "$19",
     cadence: "Monat",
-    description: "Für Solo-Gründer, die schnell liefern.",
+    description: "Für alle, die regelmäßig bauen und nicht auf Generierungen achten wollen.",
     cta: "Pro starten",
     href: "/signup?plan=pro",
     highlight: true,
@@ -41,7 +41,7 @@ export const PLANS = [
     name: "Team",
     price: "$49",
     cadence: "Platz / Mt.",
-    description: "Für Teams mit geteilten Blueprints.",
+    description: "Für Teams, die zusammen an denselben Projekten arbeiten.",
     cta: "Team starten",
     href: "/signup?plan=team",
     highlight: false,
@@ -61,12 +61,13 @@ export function PricingPreview() {
       <FadeIn>
         <div className="mb-12 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-              Preise
-            </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               Fang kostenlos an. Zahl erst, wenn du mehr brauchst.
             </h2>
+            <p className="mt-4 max-w-xl text-[16px] md:text-[17px] text-foreground/55">
+              Kein Druck, keine Kreditkarte. Du wechselst erst, wenn du gemerkt
+              hast, dass du das hier regelmäßig nutzt.
+            </p>
           </div>
           {/* Finn helps you pick — most builders start free. */}
           <AnimatedMascot
@@ -98,17 +99,14 @@ export function PricingGrid() {
             {p.highlight && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-accent-foreground">
-                  Am beliebtesten
+                  Finns Empfehlung
                 </div>
               </div>
             )}
-            <div className="flex items-baseline justify-between">
-              <h3 className="text-[17px] font-semibold text-foreground">{p.name}</h3>
-              <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/45">
-                {p.highlight ? "Empfohlen" : ""}
-              </div>
-            </div>
-            <p className="mt-1.5 text-[13.5px] text-foreground/55">{p.description}</p>
+            <h3 className="text-[17px] font-semibold text-foreground">{p.name}</h3>
+            <p className="mt-1.5 text-[13.5px] leading-[1.5] text-foreground/55">
+              {p.description}
+            </p>
             <div className="mt-7 flex items-baseline gap-1.5">
               <span className="text-[44px] font-semibold tracking-[-0.03em] text-foreground">
                 {p.price}

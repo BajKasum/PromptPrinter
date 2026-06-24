@@ -23,15 +23,12 @@ export function Integrations() {
     <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-14 text-center">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Deine Tools
-          </div>
           <h2 className="text-balance text-[32px] md:text-[44px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
             Ich spreche die Sprache deiner Tools.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[16px] md:text-[17px] text-foreground/55">
-            Was ich dir gebe, ist genau so formatiert, wie dein Tool es erwartet —
-            du kopierst es direkt rein, ohne vorher etwas umzuschreiben.
+            Was ich dir gebe, ist genau so formatiert, wie dein Tool es erwartet.
+            Du kopierst es direkt rein, ohne vorher etwas umzuschreiben.
           </p>
 
           <div className="mt-9 flex flex-wrap justify-center gap-2.5">

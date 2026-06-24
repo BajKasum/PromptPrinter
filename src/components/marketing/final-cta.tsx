@@ -18,23 +18,20 @@ export function FinalCTA() {
               className="mb-6"
               alt="Der Delfin feiert mit dir den Start"
             />
-            <h2 className="text-balance text-[40px] md:text-[60px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-3xl mx-auto">
+            <h2 className="text-balance text-[32px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground max-w-3xl mx-auto">
               Die Idee ist der schwere Teil.{" "}
               <span className="text-accent-text">Den Rest mach ich mit dir.</span>
             </h2>
             <p className="mt-6 text-[17px] text-foreground/65 max-w-xl mx-auto">
-              Fang kostenlos an, ohne Kreditkarte. Sag mir, was du bauen willst —
-              den Rest gehen wir zusammen durch.
+              Fang kostenlos an, ohne Kreditkarte. Erzähl mir einfach, was du
+              bauen willst. Den Rest gehen wir zusammen durch.
             </p>
-            <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="mt-9 flex justify-center">
               <Button asChild size="lg" variant="primary">
                 <Link href="/signup">
                   Leg mit Finn los
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-              </Button>
-              <Button asChild size="lg" variant="ghost">
-                <Link href="/pricing">Preise ansehen</Link>
               </Button>
             </div>
           </div>
