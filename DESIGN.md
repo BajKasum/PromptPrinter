@@ -32,10 +32,10 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
 | `ring-ring` | Focus-Ring | babyblau | babyblau |
 | `bg-destructive` / `success` / `warning` | Status | — | — |
 
-> **Hinweis (Finn's World, Phase 1):** Die dunklen Neutrals oben wurden auf einen
-> einheitlichen ozeanischen Hue (`208`) rekalibriert (Hue-only, S/L unverändert).
-> Aktuelle Ist-Werte + die noch **geplante** Light-Kalibrierung stehen unten im
-> Abschnitt **Finn's World**.
+> **Hinweis (Finn's World, Phase 1):** Die Neutrals oben wurden in **beiden Themes**
+> auf einen ozeanischen Hue rekalibriert (Hue-only, S/L unverändert): Dark `208`,
+> Light `206` + Creme-Background. Aktuelle Ist-Werte stehen unten im Abschnitt
+> **Finn's World**.
 
 ### Akzent-Regeln (wichtig)
 
@@ -114,21 +114,21 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
 9. **Biolumineszenz-Akzent** — Akzent/Licht wie lebendes Licht: sparsam, aber präsent (Fokus-Ring leuchtet sanft, nie Neon).
 10. **Stimmung: ruhig – edel – intelligent – kreativ – vertrauenswürdig** — keine grellen oder albernen Elemente.
 
-### Palette (Finn's World) — Ist vs. geplant
+### Palette (Finn's World) — Ist-Zustand
 
-> ⚠️ Geshippt ist bislang **nur der Dark-Block (Phase 1)**. Alle Light-Werte sind
-> **Zielwerte**, der `:root`-Block ist noch unverändert. `--accent-warm` existiert
-> aktuell **nur in `.dark`** und wird **nirgends angewendet** (reserviert).
+> ✅ **Phase 1 in beiden Themes geshippt.** Die Werte unten sind live. `--accent-warm`
+> ist in `:root` **und** `.dark` definiert, wird aber **nirgends angewendet** (reserviert
+> für Höhepunkte, siehe Roadmap Phase 3).
 
-| Token | Light (`H S% L%`) | Dark (`H S% L%`) | Status / Rolle |
+| Token | Light (`H S% L%`) | Dark (`H S% L%`) | Rolle |
 |---|---|---|---|
-| `--background` | `40 24% 99.5%` | `208 20% 6%` | Dark ✅ live · Light geplant (Creme statt Weiß) |
-| `--surface` | `206 24% 97%` | `208 16% 9%` | Dark ✅ · Light geplant |
-| `--surface-raised` | `0 0% 100%` | `208 17% 12%` | Dark ✅ · Light unverändert |
-| `--surface-hover` | `206 20% 95%` | `208 16% 15%` | Dark ✅ · Light geplant |
-| `--shadow` | `210 44% 12%` (≈ `#11181F`, dunkles Blau, niedrige Alpha) | `208 25% 3%` | Dark ✅ · Light geplant |
-| `--accent` (Wasser) | `203 79% 72%` | `204 80% 75%` | unverändert ✅ |
-| `--accent-warm` (Koralle) | `14 84% 64%` | `12 88% 70%` | Dark ✅ definiert (nur `.dark`, ungenutzt) · Light geplant |
+| `--background` | `40 24% 99.5%` | `208 20% 6%` | Creme (Tag) / tiefes Navy (Nacht) |
+| `--surface` | `206 24% 97%` | `208 16% 9%` | Eingelassene Fläche (Input-BG) |
+| `--surface-raised` | `0 0% 100%` | `208 17% 12%` | Karten/Dropdown (Light: hellste Ebene) |
+| `--surface-hover` | `206 20% 95%` | `208 16% 15%` | Hover-Fläche |
+| `--shadow` | `210 44% 12%` (≈ `#11181F`, dunkles Blau, niedrige Alpha) | `208 25% 3%` | Schlagschatten (kühl getönt) |
+| `--accent` (Wasser) | `203 79% 72%` | `204 80% 75%` | Akzent = Wasserfarbe |
+| `--accent-warm` (Koralle) | `14 84% 64%` | `12 88% 70%` | ✅ definiert (beide Themes), **ungenutzt** — reserviert |
 
 ### Atmosphäre — erlaubt vs. verboten
 
@@ -150,9 +150,10 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
 
 ### Umsetzungs-Roadmap
 
-- **Phase 1 — Dark-Token-Kalibrierung ✅ abgeschlossen.** Dark-Neutrals auf Hue `208`
-  vereint (Hue-only), `--accent-warm` reserviert. „Felt, not seen": Body-BG nur
-  `rgb(12,14,18) → rgb(12,16,18)`. Light-Kalibrierung (Creme + Light-Koralle) steht aus.
+- **Phase 1 — Token-Kalibrierung (dark + light) ✅ abgeschlossen.** Neutrals auf
+  ozeanischen Hue vereint (Hue-only), Creme-Background im Light, `--accent-warm` in
+  beiden Themes reserviert. „Felt, not seen": Body-BG-Shift nur minimal
+  (Dark `rgb(12,14,18)→rgb(12,16,18)`, Light `rgb(255,255,255)→rgb(254,254,253)`).
 - **Phase 2 — Ambienter Tiefen-Effekt + Motion-Physik (offen).** Subtiler Hintergrund-Gradient,
   **eine** weiche Lichtquelle, gemeinsame Spring-Konstante, biolumineszenter Fokus-Ring.
   Risiko: Performance (GPU-freundlich: opacity/transform statt schwerer Box-Shadows) + Subtilität.
