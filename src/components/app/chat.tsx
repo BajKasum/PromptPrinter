@@ -21,7 +21,7 @@ type Variant = "general" | "software" | "refine";
 const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string[] }> = {
   general: {
     heading: "Wofür brauchst du einen Prompt?",
-    sub: "Beschreib dein Ziel — ich bau dir einen fertigen Prompt und verfeinere ihn mit dir.",
+    sub: "Beschreib dein Ziel. Ich bau dir einen fertigen Prompt und verfeinere ihn mit dir.",
     starters: [
       "Hilf mir, einen Prompt zu schreiben, um Französisch-Vokabeln zu üben.",
       "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
@@ -30,7 +30,7 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
   },
   software: {
     heading: "Wofür brauchst du einen Software-Prompt?",
-    sub: "Beschreib, was du bauen willst — ich liefere dir einen build-fertigen Prompt zum Verfeinern.",
+    sub: "Beschreib, was du bauen willst. Ich liefere dir einen build-fertigen Prompt zum Verfeinern.",
     starters: [
       "Schreib mir einen Prompt für ein React-Komponenten-Gerüst mit Tailwind.",
       "Ich brauche einen Prompt, der eine REST-API in Node.js entwirft.",
@@ -38,8 +38,8 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
     ],
   },
   refine: {
-    heading: "Verfeinere dein Packet",
-    sub: "Sag mir, was ich an deinen Prompts ändern soll — du bekommst die aktualisierte, fertige Version zurück.",
+    heading: "Verfeinere dein Paket",
+    sub: "Sag mir, was ich an deinen Prompts ändern soll. Du bekommst die aktualisierte, fertige Version zurück.",
     starters: [
       "Mach den Master-Prompt kürzer und prägnanter.",
       "Ergänze den Frontend-Prompt um einen Dark-Mode.",
@@ -65,6 +65,14 @@ export function Chat({
   // copy. The variant only drives the empty-state heading/sub/starters.
   const variant: Variant = projectId ? "refine" : mode;
   const { heading, sub, starters } = VARIANTS[variant];
+
+  // Placeholder mirrors the variant so the input itself reinforces what to type.
+  const placeholder =
+    variant === "software"
+      ? "Beschreibe, was du bauen willst…"
+      : variant === "refine"
+        ? "Sag mir, was ich ändern soll…"
+        : "Beschreibe, wofür du einen Prompt brauchst…";
 
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
   const [conversationId, setConversationId] = useState<string | undefined>(
@@ -147,7 +155,7 @@ export function Chat({
         <Textarea
           rows={2}
           value={input}
-          placeholder="Beschreibe, wofür du einen Prompt brauchst…"
+          placeholder={placeholder}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -189,6 +197,7 @@ function EmptyState({
       <h2 className="text-[18px] font-semibold text-foreground">{heading}</h2>
       <p className="mt-1 text-[13px] text-foreground/55 max-w-sm">{sub}</p>
       <div className="mt-5 w-full max-w-md space-y-2">
+        <p className="text-left text-[12px] text-foreground/45">Oder starte mit einem Beispiel:</p>
         {starters.map((s) => (
           <button
             key={s}

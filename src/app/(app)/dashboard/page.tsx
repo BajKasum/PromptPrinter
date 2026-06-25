@@ -106,7 +106,7 @@ export default async function DashboardPage() {
             <Button asChild>
               <Link
                 href="/chat?mode=general"
-                title="Für alltägliche Prompts — Texte, Recherche und Ideen für ChatGPT, Claude & Co."
+                title="Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT, Claude & Co."
               >
                 <MessageSquare className="h-4 w-4" />
                 Prompt Chat
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
             <Button asChild variant="ghost">
               <Link
                 href="/chat?mode=software"
-                title="Für ganze Build-Pakete — PRD, Schema und Prompts für Lovable, Cursor & Co."
+                title="Für ganze Build-Pakete: PRD, Schema und Prompts für Lovable, Cursor & Co."
               >
                 <Code2 className="h-4 w-4" />
                 Prompt Code

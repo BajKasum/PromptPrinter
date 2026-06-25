@@ -63,13 +63,19 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
             <ArrowLeft className="h-3.5 w-3.5" />
             Zurück zum Dashboard
           </Link>
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-2">
-            {isCode ? <Code2 className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+          <h1 className="flex items-center gap-2.5 text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
+            {isCode ? (
+              <Code2 className="h-6 w-6 shrink-0 text-accent-text" strokeWidth={1.8} />
+            ) : (
+              <MessageSquare className="h-6 w-6 shrink-0 text-accent-text" strokeWidth={1.8} />
+            )}
             {isCode ? "Prompt Code" : "Prompt Chat"}
-          </div>
-          <h1 className="text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
-            {isCode ? "Software-Prompt im Chat" : "Prompt-Chat"}
           </h1>
+          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-foreground/55">
+            {isCode
+              ? "Für ganze Build-Pakete: PRD, Schema und Prompts für Lovable, Cursor & Co."
+              : "Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT, Claude & Co."}
+          </p>
         </div>
       </FadeIn>
       <Chat
