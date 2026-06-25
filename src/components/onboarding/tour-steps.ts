@@ -18,7 +18,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
     title: "Willkommen bei PromptPrinter",
-    body: "Hier werden aus rohen Ideen build-fertige Prompts. Diese kurze Tour zeigt dir die wichtigsten Funktionen — sie dauert keine Minute.",
+    body: "Hier werden aus rohen Ideen build-fertige Prompts. Diese kurze Tour zeigt dir die wichtigsten Funktionen, sie dauert keine Minute.",
   },
   {
     id: "modes",
@@ -26,13 +26,13 @@ export const TOUR_STEPS: TourStep[] = [
     // projects fall back to the same two buttons in the dashboard header.
     selectors: ['[data-tour="start-cards"]', '[data-tour="quick-actions"]'],
     title: "Zwei Wege zum Prompt",
-    body: "Prompt Chat baut alltägliche Prompts für ChatGPT, Claude & Co. Prompt Code erstellt komplette Build-Pakete — PRD, Schema und Prompts für Lovable, Cursor & Co.",
+    body: "Prompt Chat baut alltägliche Prompts für ChatGPT, Claude & Co. Prompt Code erstellt komplette Build-Pakete: PRD, Schema und Prompts für Lovable, Cursor & Co.",
   },
   {
     id: "stats",
     selectors: ['[data-tour="stats"]'],
     title: "Dein Workspace auf einen Blick",
-    body: "Projekte, Generierungen und dein aktueller Plan. Die Limits hängen vom Plan ab — im Free-Plan sind es 3 Projekte und 20 Generierungen pro Monat.",
+    body: "Projekte, Generierungen und dein aktueller Plan. Im Free-Plan nutzt du deine eigenen API-Keys; mit Pro ist die API inklusive und die Limits sind höher.",
   },
   {
     id: "new-chat",
@@ -57,7 +57,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "search",
     selectors: ['[data-tour="search"]'],
     title: "Befehls-Palette",
-    body: "Mit Strg + K (⌘ K am Mac) springst du blitzschnell zu jeder Seite oder jedem Projekt — ganz ohne Maus.",
+    body: "Mit Strg + K (⌘ K am Mac) springst du blitzschnell zu jeder Seite oder jedem Projekt, ganz ohne Maus.",
   },
   {
     id: "account",

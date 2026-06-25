@@ -8,6 +8,7 @@ import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/auth-errors";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { SuccessCelebration } from "@/components/brand/success-celebration";
 
 const schema = z.object({
@@ -75,6 +76,9 @@ export function SignInExperience() {
         )
       }
     >
+      <div className="flex justify-center">
+        <AnimatedMascot state="welcoming" size={88} alt="Finn freut sich, dich wiederzusehen" />
+      </div>
       <div className="space-y-1.5">
         <h1 className="text-[2.25rem] font-bold leading-[1.1] tracking-tight text-foreground">
           Willkommen zurück

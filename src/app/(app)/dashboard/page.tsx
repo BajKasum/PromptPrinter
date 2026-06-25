@@ -92,11 +92,13 @@ export default async function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-              Willkommen zurück{firstName ? `, ${firstName}` : ""}.
+              {projectsTotal === 0
+                ? `Schön, dass du da bist${firstName ? `, ${firstName}` : ""}.`
+                : `Willkommen zurück${firstName ? `, ${firstName}` : ""}.`}
             </h1>
             <p className="mt-1 text-[14.5px] text-muted-foreground">
               {projectsTotal === 0
-                ? "Noch keine Projekte — erstelle dein erstes Build-Packet."
+                ? "Lass uns dein erstes Build-Paket bauen."
                 : `${projectsTotal} ${projectsTotal === 1 ? "Projekt" : "Projekte"} in deinem Workspace.`}
             </p>
           </div>
@@ -209,10 +211,10 @@ export default async function DashboardPage() {
         <FadeIn>
           <div className="card-surface p-8 md:p-10">
             <div className="text-center">
-              <p className="text-[15px] text-foreground">Wähle deinen Startpunkt</p>
+              <p className="text-[15px] text-foreground">Wo willst du loslegen?</p>
               <p className="mx-auto mt-1.5 mb-7 max-w-md text-[13px] text-muted-foreground">
-                Beschreib dein Ziel im Chat — PromptPrinter baut dir den passenden
-                Prompt, Schritt für Schritt mit dir verfeinert.
+                Erzähl mir einfach dein Ziel im Chat. Den Rest bauen wir Schritt
+                für Schritt zusammen.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2" data-tour="start-cards">
@@ -225,7 +227,7 @@ export default async function DashboardPage() {
                   <span className="text-[14px] font-medium text-foreground">Prompt Chat</span>
                 </div>
                 <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                  Für alltägliche Prompts — Texte, Recherche und Ideen für ChatGPT,
+                  Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT,
                   Claude &amp; Co.
                 </p>
               </Link>
@@ -238,7 +240,7 @@ export default async function DashboardPage() {
                   <span className="text-[14px] font-medium text-foreground">Prompt Code</span>
                 </div>
                 <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                  Für ganze Build-Pakete — PRD, Schema und Prompts für Lovable,
+                  Für ganze Build-Pakete: PRD, Schema und Prompts für Lovable,
                   Cursor &amp; Co.
                 </p>
               </Link>
