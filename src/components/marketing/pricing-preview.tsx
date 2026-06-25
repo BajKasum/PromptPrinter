@@ -85,15 +85,15 @@ export function PricingPreview() {
 
 export function PricingGrid() {
   return (
-    <div className="grid md:grid-cols-3 gap-4">
+    <div className="grid gap-4 md:grid-cols-3 md:items-center">
       {PLANS.map((p, i) => (
         <FadeIn key={p.name} delay={i * 0.08}>
           <div
             className={cn(
-              "relative h-full rounded-2xl p-7 transition-all",
+              "relative rounded-2xl transition-all",
               p.highlight
-                ? "gradient-border bg-surface"
-                : "card-surface"
+                ? "border border-border-strong bg-surface p-8 shadow-elevated md:p-9"
+                : "card-surface p-6 md:p-7"
             )}
           >
             {p.highlight && (
