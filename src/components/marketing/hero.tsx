@@ -86,7 +86,7 @@ export function Hero() {
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="mt-4 text-balance text-[16px] md:text-[18px] leading-[1.55] md:leading-[1.6] text-foreground/60"
             >
-              Ich frag dich gleich ein paar Dinge — und mach aus deiner Idee einen
+              Ich frag dich gleich ein paar Dinge und mach aus deiner Idee einen
               klaren Plan plus die fertigen Anweisungen für Claude, Cursor, Lovable
               und ChatGPT. Kopieren, einfügen, loslegen.
             </motion.p>
@@ -193,7 +193,7 @@ const NARRATION: Record<StageKey, { state: MascotState; line: string }> = {
   idea: { state: "curious", line: "Erzähl mir, was du bauen willst …" },
   plan: { state: "thinking", line: "Ich plane Zielgruppe, Funktionen und Stack …" },
   build: { state: "building", line: "Ich baue dein komplettes Bau-Paket …" },
-  launch: { state: "delivering", line: "Fertig — bereit zum Launch!" },
+  launch: { state: "delivering", line: "Fertig, bereit zum Launch!" },
 };
 
 // ── Demo component ─────────────────────────────────────────────────────────

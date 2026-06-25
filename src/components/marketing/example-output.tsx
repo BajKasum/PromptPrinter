@@ -174,9 +174,6 @@ export function ExampleOutput() {
       <FadeIn>
         <div className="mb-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-              Schau es dir an
-            </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               Echtes Ergebnis, kein Lorem Ipsum.
             </h2>
@@ -190,7 +187,7 @@ export function ExampleOutput() {
               </span>
             </div>
             <p className="mt-4 text-[15px] text-foreground/55">
-              Das hab ich daraus gemacht — fertig zum Kopieren. Klick dich durch.
+              Das hab ich daraus gemacht, fertig zum Kopieren. Klick dich durch.
             </p>
           </div>
           {/* Proud dolphin hands over the finished build package. */}

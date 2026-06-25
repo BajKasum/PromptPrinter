@@ -52,7 +52,7 @@ export function ProductShowcase() {
             </h2>
             <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
               Alles, was wir zusammen bauen, bleibt gespeichert, sortiert und
-              durchsuchbar — Projekte, Bibliothek und jeder Lauf an einem Ort.
+              durchsuchbar: Projekte, Bibliothek und jeder Lauf an einem Ort.
             </p>
           </div>
         </div>
