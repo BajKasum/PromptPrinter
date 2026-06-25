@@ -107,7 +107,7 @@ export default async function BillingPage() {
         </div>
       </FadeIn>
 
-      <div className="grid md:grid-cols-3 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
         {PLANS.map((p, i) => (
           <FadeIn key={p.name} delay={0.1 + i * 0.05}>
             <div

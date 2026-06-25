@@ -8,49 +8,33 @@ import { cn } from "@/lib/utils";
 export const PLANS = [
   {
     name: "Free",
-    price: "$0",
+    price: "0 €",
     cadence: "für immer",
-    description: "Zum Ausprobieren. Genug für ein, zwei Ideen von Anfang bis Ende.",
+    description: "Zum Lernen und Bauen mit deinen eigenen API-Keys.",
     cta: "Kostenlos starten",
     href: "/signup",
     highlight: false,
     features: [
-      "3 Projekte",
-      "20 Generierungen / Monat",
+      "Eigene API-Keys (Claude, ChatGPT, Gemini)",
       "Alle Ausgabetypen",
+      "Projekte & Bibliothek",
       "Markdown-Export",
     ],
   },
   {
     name: "Pro",
-    price: "$19",
+    price: "7 €",
     cadence: "Monat",
-    description: "Für alle, die regelmäßig bauen und nicht auf Generierungen achten wollen.",
+    description: "Wenn du keine eigenen Keys einrichten willst oder mehr Spielraum brauchst.",
     cta: "Pro starten",
     href: "/signup?plan=pro",
     highlight: true,
     features: [
-      "Unbegrenzte Projekte",
-      "500 Generierungen / Monat",
+      "Alles aus Free",
+      "Meine API inklusive, kein eigener Key nötig",
+      "Höhere Limits, auch mit eigenem Key",
       "PDF- & Markdown-Export",
-      "Claude 4.7 + GPT-4o",
       "Priorisierte Warteschlange",
-    ],
-  },
-  {
-    name: "Team",
-    price: "$49",
-    cadence: "Platz / Mt.",
-    description: "Für Teams, die zusammen an denselben Projekten arbeiten.",
-    cta: "Team starten",
-    href: "/signup?plan=team",
-    highlight: false,
-    features: [
-      "Alles aus Pro",
-      "Geteilter Workspace",
-      "SSO + Audit-Log",
-      "API-Zugang",
-      "Eigene Vorlagen",
     ],
   },
 ];
@@ -85,14 +69,14 @@ export function PricingPreview() {
 
 export function PricingGrid() {
   return (
-    <div className="grid gap-4 md:grid-cols-3 md:items-center">
+    <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
       {PLANS.map((p, i) => (
         <FadeIn key={p.name} delay={i * 0.08}>
           <div
             className={cn(
-              "relative rounded-2xl transition-all",
+              "relative h-full rounded-2xl transition-all",
               p.highlight
-                ? "border border-border-strong bg-surface p-8 shadow-elevated md:p-9"
+                ? "border border-border-strong bg-surface p-8 shadow-elevated"
                 : "card-surface p-6 md:p-7"
             )}
           >

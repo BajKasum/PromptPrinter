@@ -6,7 +6,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 
 export const metadata = {
   title: "Preise",
-  description: "Free-, Pro- und Team-Pläne. Keine Kreditkarte zum Start.",
+  description: "Free- und Pro-Plan. Mit eigenen API-Keys kostenlos starten.",
 };
 
 export default function PricingPage() {
@@ -25,11 +25,11 @@ export default function PricingPage() {
             </span>
           </div>
           <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-3xl mx-auto">
-            Einfache, <span className="gradient-text">ehrliche Preise.</span>
+            Einfache, <span className="text-accent-text">ehrliche Preise.</span>
           </h1>
           <p className="mt-6 text-[17px] text-foreground/55 max-w-2xl mx-auto">
-            Starte kostenlos. Upgrade, wenn du mehr Generierungen brauchst oder dein Team
-            Workspaces teilen muss.
+            Starte kostenlos mit deinen eigenen API-Keys. Wechsel zu Pro, wenn du
+            keine eigenen Keys einrichten willst oder höhere Limits brauchst.
           </p>
         </FadeIn>
       </section>
