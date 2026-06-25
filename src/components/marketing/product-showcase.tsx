@@ -41,26 +41,27 @@ export function ProductShowcase() {
   const [view, setView] = useState<ViewKey>("projects");
 
   return (
-    <section id="produkt" className="scroll-mt-24 container-x py-24 md:py-32">
+    <section id="produkt" className="scroll-mt-24 container-x pt-12 md:pt-16 pb-24 md:pb-32">
       <FadeIn>
-        <div className="max-w-2xl mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-            Dein Arbeitsplatz
+        {/* Lighter header — this is the embedded "serving" follow-up to the
+            prominent ExampleOutput proof, not a second co-equal demo section. */}
+        <div className="mx-auto mb-7 max-w-4xl">
+          <div className="max-w-xl">
+            <h2 className="text-balance text-[26px] md:text-[32px] leading-[1.15] tracking-[-0.03em] font-semibold text-foreground">
+              Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
+            </h2>
+            <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
+              Alles, was wir zusammen bauen, bleibt gespeichert, sortiert und
+              durchsuchbar — Projekte, Bibliothek und jeder Lauf an einem Ort.
+            </p>
           </div>
-          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-            Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
-          </h2>
-          <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-            Alles, was wir zusammen bauen, bleibt gespeichert, sortiert und
-            durchsuchbar — Projekte, Bibliothek und jeder Lauf an einem Ort.
-          </p>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.1}>
         {/* Flatter, embedded "app" frame — deliberately not a third glossy
             browser window, so it reads as your workspace, not another demo. */}
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface/40">
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-border bg-surface/40">
           <div>
             {/* Slim app header — icon + path, no browser chrome. */}
             <div className="flex items-center gap-2 border-b border-border bg-surface/50 px-4 py-2.5">
@@ -108,7 +109,7 @@ export function ProductShowcase() {
               </aside>
 
               {/* Content */}
-              <div className="p-5 md:p-6 min-h-[300px]">
+              <div className="p-5 md:p-6 min-h-[260px]">
                 {/* Mobile tab control (sidebar is desktop-only) */}
                 <div className="md:hidden mb-5 flex gap-1.5">
                   {TABS.map((t) => (
