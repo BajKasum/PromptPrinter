@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { primaryNav, secondaryNav, comingSoonNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ export function Sidebar() {
           data-tour="new-chat"
           className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <Plus className="h-4 w-4" strokeWidth={2} />
           Neuer Chat
         </Link>
 

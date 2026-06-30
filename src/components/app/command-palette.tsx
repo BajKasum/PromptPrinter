@@ -6,19 +6,15 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Search,
-  LayoutDashboard,
   FolderKanban,
-  Library,
-  Sparkles,
   MessageSquare,
   Code2,
-  Settings,
-  CreditCard,
   CornerDownLeft,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { primaryNav, secondaryNav } from "@/lib/nav";
 
 type Cmd = { id: string; label: string; group: string; Icon: LucideIcon; perform: () => void };
 
@@ -71,19 +67,22 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     };
   }, [open, loaded]);
 
-  const navCommands = useMemo<Cmd[]>(
-    () => [
-      { id: "dashboard", label: "Dashboard", group: "Seiten", Icon: LayoutDashboard, perform: () => go("/dashboard") },
-      { id: "projects", label: "Projekte", group: "Seiten", Icon: FolderKanban, perform: () => go("/projects") },
-      { id: "library", label: "Bibliothek", group: "Seiten", Icon: Library, perform: () => go("/library") },
-      { id: "generations", label: "Generierungen", group: "Seiten", Icon: Sparkles, perform: () => go("/generations") },
-      { id: "settings", label: "Einstellungen", group: "Seiten", Icon: Settings, perform: () => go("/settings") },
-      { id: "billing", label: "Abrechnung", group: "Seiten", Icon: CreditCard, perform: () => go("/billing") },
+  // Derive the page commands from the same nav source the sidebar + mobile drawer
+  // use, so the palette can never drift out of sync (labels, icons, presence).
+  const navCommands = useMemo<Cmd[]>(() => {
+    const pages: Cmd[] = [...primaryNav, ...secondaryNav].map((n) => ({
+      id: n.href,
+      label: n.label,
+      group: "Seiten",
+      Icon: n.Icon,
+      perform: () => go(n.href),
+    }));
+    const actions: Cmd[] = [
       { id: "chat-general", label: "Prompt Chat starten", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chat?mode=general") },
       { id: "chat-software", label: "Prompt Code starten", group: "Aktionen", Icon: Code2, perform: () => go("/chat?mode=software") },
-    ],
-    [go]
-  );
+    ];
+    return [...pages, ...actions];
+  }, [go]);
 
   const results = useMemo<Cmd[]>(() => {
     const projectCommands: Cmd[] = projects.map((p) => ({
@@ -136,7 +135,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Befehls-Palette"
+            aria-label="Suche"
             initial={{ opacity: 0, scale: 0.98, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -8 }}
@@ -152,7 +151,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder="Projekte, Seiten, Aktionen…"
-                aria-label="Befehl oder Projekt suchen"
+                aria-label="Suchen"
                 className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
@@ -193,6 +192,24 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   );
                 })
               )}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↑</kbd>
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↓</kbd>
+                  navigieren
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↵</kbd>
+                  öffnen
+                </span>
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">esc</kbd>
+                schliessen
+              </span>
             </div>
           </motion.div>
         </motion.div>

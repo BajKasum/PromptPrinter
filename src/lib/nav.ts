@@ -1,7 +1,7 @@
 import {
   LayoutDashboard,
   MessageSquare,
-  FolderOpen,
+  FolderKanban,
   Sparkles,
   Library,
   Settings,
@@ -19,7 +19,7 @@ export type ComingSoonItem = { label: string; Icon: LucideIcon };
 export const primaryNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", Icon: LayoutDashboard },
   { label: "Chats", href: "/chats", Icon: MessageSquare },
-  { label: "Projekte", href: "/projects", Icon: FolderOpen },
+  { label: "Projekte", href: "/projects", Icon: FolderKanban },
   { label: "Bibliothek", href: "/library", Icon: Library },
   { label: "Generierungen", href: "/generations", Icon: Sparkles },
 ];
