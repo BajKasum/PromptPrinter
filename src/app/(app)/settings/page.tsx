@@ -60,7 +60,7 @@ export default async function SettingsPage() {
           Einstellungen
         </h1>
         <p className="mt-1.5 text-[14px] text-foreground/55 mb-8">
-          Profil, Workspace und Standardwerte — alles an einem Ort.
+          Profil, Workspace und Standardwerte an einem Ort.
         </p>
       </FadeIn>
 

@@ -195,7 +195,7 @@ export function SettingsWorkspace({
                   {email}
                 </div>
                 <p className="text-[12px] text-foreground/40">
-                  Mit deinem Login verknüpft — hier nicht änderbar.
+                  Mit deinem Login verknüpft, hier nicht änderbar.
                 </p>
               </Field>
             </div>
@@ -220,11 +220,10 @@ export function SettingsWorkspace({
             <div className="divide-y divide-border">
               <InfoRow label="Rolle" value="Eigentümer" />
               <InfoRow label="Mitglied seit" value={memberSinceLabel} />
-              <InfoRow label="Account-ID" value={userId.slice(0, 8)} mono />
             </div>
             <Link
               href="/billing"
-              className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-cyan-300 transition-colors hover:text-cyan-200"
+              className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent-text transition-colors hover:text-accent-text/80"
             >
               Plan verwalten
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -259,15 +258,19 @@ export function SettingsWorkspace({
             className="md:col-span-2"
             Icon={KeyRound}
             accent="#8FCDF2"
-            title="API-Provider"
-            description="Eigene Keys nutzen (ab Pro)."
-            badge="Bald"
+            title="Eigene API-Keys"
+            description="Bald kannst du hier deine eigenen Keys hinterlegen."
+            badge="Bald verfügbar"
           >
             <div className="space-y-2">
               <ProviderRow logo="Claude" name="Anthropic" sub="Claude" />
               <ProviderRow logo="ChatGPT" name="OpenAI" sub="GPT" />
               <ProviderRow logo="Gemini" name="Google" sub="Gemini" />
             </div>
+            <p className="mt-3 text-[12px] text-foreground/45">
+              Nutze dein eigenes Kontingent bei Anthropic, OpenAI oder Google, statt auf
+              unsere Limits angewiesen zu sein.
+            </p>
           </SettingsCard>
         </div>
 
@@ -338,7 +341,7 @@ export function SettingsWorkspace({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[13px] text-foreground/55">
               Die Tour führt dich Schritt für Schritt durch Dashboard, Chat-Modi und
-              Navigation — genau wie beim ersten Login.
+              Navigation, genau wie beim ersten Login.
             </p>
             <Button
               variant="ghost"
@@ -541,9 +544,6 @@ function ProviderRow({ logo, name, sub }: { logo: string; name: string; sub: str
         <div className="truncate text-[13px] font-medium text-foreground">{name}</div>
         <div className="truncate text-[11px] text-foreground/40">{sub}</div>
       </div>
-      <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-foreground/45">
-        Bald
-      </span>
     </div>
   );
 }

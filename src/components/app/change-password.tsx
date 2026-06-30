@@ -80,6 +80,10 @@ export function ChangePassword({ email }: { email: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <p className="text-[12.5px] text-foreground/45">
+        Zur Sicherheit bestätigst du zuerst dein aktuelles Passwort, bevor du ein neues
+        setzt.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="current-password">Aktuelles Passwort</Label>

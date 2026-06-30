@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Check, ExternalLink } from "lucide-react";
+import { Check } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PLANS } from "@/components/marketing/pricing-preview";
 import { createClient } from "@/lib/supabase/server";
@@ -46,7 +46,11 @@ export default async function BillingPage() {
   const limits = PLAN_LIMITS[planKey];
   const projectsUsed = projectsCount ?? 0;
   const generationsUsed = monthlyGenerations ?? 0;
-  const renewsOn = null;
+  const isFree = planKey === "free";
+  const planDescription = isFree
+    ? "Du nutzt PromptPrinter kostenlos mit deinen eigenen API-Keys."
+    : "Voller Zugang mit inkludierter API und höheren Limits.";
+  const apiAccessLabel = isFree ? "Eigener Key" : "Inklusive";
 
   const fmtUsage = (used: number, limit: number) =>
     limit === Infinity ? String(used) : `${used} / ${limit}`;
@@ -64,46 +68,31 @@ export default async function BillingPage() {
 
       <FadeIn>
         <div className="card-surface mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/45 mb-1.5">
-                Aktueller Plan
-              </div>
-              <div className="flex items-baseline gap-3">
-                <span className="text-[24px] font-semibold text-foreground">{currentPlan}</span>
-                {renewsOn && (
-                  <span className="text-[13px] text-foreground/55">Verlängert {renewsOn}</span>
-                )}
-              </div>
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/45 mb-1.5">
+              Aktueller Plan
             </div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border border-border bg-surface text-foreground/45">
-                Bald
-              </span>
-              <Button variant="ghost" disabled>
-                In Stripe verwalten
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <span className="text-[24px] font-semibold text-foreground">{currentPlan}</span>
+            <p className="mt-1.5 text-[13px] text-foreground/55 max-w-md">{planDescription}</p>
           </div>
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t border-border">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 border-t border-border">
             <Stat label="Projekte" value={fmtUsage(projectsUsed, limits.projects)} />
             <Stat
               label="Generierungen (Monat)"
               value={fmtUsage(generationsUsed, limits.generations)}
             />
-            <Stat label="API-Zugang" value="—" />
-            <Stat label="Plätze" value="1" />
+            <Stat label="API-Zugang" value={apiAccessLabel} />
           </div>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <div className="mb-4 flex items-center gap-2.5">
+        <div className="mb-4">
           <h2 className="text-[18px] font-semibold text-foreground">Plan wechseln</h2>
-          <span className="text-[9px] font-mono uppercase tracking-[0.08em] px-1.5 py-0.5 rounded-full border border-border bg-surface text-foreground/45">
-            Bald
-          </span>
+          <p className="mt-1 text-[13px] text-foreground/55 max-w-xl">
+            Bald kannst du deinen Plan direkt hier wechseln. Bis dahin nutzt du den
+            Free-Plan mit deinen eigenen API-Keys.
+          </p>
         </div>
       </FadeIn>
 
@@ -138,12 +127,8 @@ export default async function BillingPage() {
                   </li>
                 ))}
               </ul>
-              <Button
-                variant={p.name === currentPlan ? "ghost" : p.highlight ? "primary" : "ghost"}
-                className="w-full"
-                disabled
-              >
-                {p.name === currentPlan ? "Aktuell" : `Zu ${p.name} wechseln`}
+              <Button variant="ghost" className="w-full" disabled>
+                {p.name === currentPlan ? "Aktueller Plan" : "Bald verfügbar"}
               </Button>
             </div>
           </FadeIn>
