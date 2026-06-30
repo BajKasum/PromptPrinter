@@ -10,7 +10,7 @@ import { cn, downloadFile } from "@/lib/utils";
 // supplies the right set for the project's pack — software gets the 10-artifact
 // list, the general pack gets prompt + variants — so this component stays
 // agnostic to what's being shown.
-export type ProjectTab = { id: string; label: string };
+export type ProjectTab = { id: string; label: string; group?: string };
 
 export function ProjectTabs({
   projectName,
@@ -47,21 +47,29 @@ export function ProjectTabs({
       <nav className="lg:sticky lg:top-20 self-start">
         <div className="card-surface p-2">
           <ul className="space-y-0.5">
-            {tabs.map((t) => (
-              <li key={t.id}>
-                <button
-                  onClick={() => setActive(t.id)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 rounded-md text-[13px] transition-colors",
-                    active === t.id
-                      ? "bg-accent-subtle text-accent-text font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+            {tabs.map((t, i) => {
+              const showGroup = t.group && t.group !== tabs[i - 1]?.group;
+              return (
+                <li key={t.id}>
+                  {showGroup && (
+                    <div className="px-3 pt-3 pb-1 text-[10px] font-mono uppercase tracking-[0.08em] text-foreground/35">
+                      {t.group}
+                    </div>
                   )}
-                >
-                  {t.label}
-                </button>
-              </li>
-            ))}
+                  <button
+                    onClick={() => setActive(t.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-[13px] transition-colors",
+                      active === t.id
+                        ? "bg-accent-subtle text-accent-text font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
         <Button variant="ghost" className="w-full mt-3" onClick={exportAll}>
@@ -71,24 +79,21 @@ export function ProjectTabs({
       </nav>
 
       <div className="card-surface p-0 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[13px] text-foreground">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="text-[13px] font-medium text-foreground truncate">
               {tabs.find((t) => t.id === active)?.label}
             </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-              .md
-            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={copy}>
-              {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button size="sm" onClick={copy}>
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "Kopiert" : "Kopieren"}
             </Button>
             <Button size="sm" variant="ghost" onClick={exportMd}>
               <Download className="h-3.5 w-3.5" />
-              .md
+              Export
             </Button>
           </div>
         </div>
