@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Sparkles, ArrowRight, Layers, Clock, Code2 } from "lucide-react";
+import { Sparkles, ArrowRight, Layers, Clock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { createClient } from "@/lib/supabase/server";
@@ -67,14 +67,14 @@ export default async function GenerationsPage() {
             </h1>
             <p className="mt-1 text-[14px] text-foreground/55">
               {total === 0
-                ? "Jede KI-Ausführung wird hier protokolliert."
-                : `${total} ${total === 1 ? "Lauf" : "Läufe"} in deinem Workspace.`}
+                ? "Jeder abgeschlossene Chat-Lauf erscheint hier mit seinen Artefakten."
+                : `${total} ${total === 1 ? "Lauf" : "Läufe"} — dein Ausführungsverlauf.`}
             </p>
           </div>
           <Button asChild>
             <Link href="/chat?mode=software">
-              <Code2 className="h-4 w-4" />
-              Prompt Code
+              <MessageSquare className="h-4 w-4" />
+              Chat starten
             </Link>
           </Button>
         </div>
@@ -86,15 +86,15 @@ export default async function GenerationsPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
               <Sparkles className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-foreground/80">Noch keine Generierungen</p>
+            <p className="text-[15px] text-foreground/80">Noch keine Läufe</p>
             <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-              Hier werden deine früheren Packet-Generierungen mit den erzeugten
-              Artefakten protokolliert.
+              Jeder Chat-Lauf, der Artefakte erzeugt, wird hier mit Zeitstempel,
+              Artefaktzahl und Token-Verbrauch festgehalten.
             </p>
             <Button asChild className="mt-5">
               <Link href="/chat?mode=software">
-                <Code2 className="h-4 w-4" />
-                Prompt Code starten
+                <MessageSquare className="h-4 w-4" />
+                Chat starten
               </Link>
             </Button>
           </div>
@@ -144,7 +144,7 @@ export default async function GenerationsPage() {
                               : "border-border bg-surface text-foreground/45"
                           }`}
                         >
-                          {hasModel ? "Claude" : "Vorlage"}
+                          {hasModel ? "KI" : "Vorschau"}
                         </span>
                       </div>
                       <div className="mt-0.5 text-[12.5px] text-foreground/45">

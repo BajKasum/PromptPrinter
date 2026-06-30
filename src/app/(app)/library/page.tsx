@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Library, Code2 } from "lucide-react";
+import { Library, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { LibraryBrowser, type LibraryItem } from "@/components/app/library-browser";
@@ -108,10 +108,10 @@ export default async function LibraryPage() {
           </h1>
           <p className="mt-1 text-[14px] text-foreground/55">
             {items.length === 0
-              ? "Dein Archiv aller erstellten Artefakte erscheint hier."
-              : `Dein Archiv aus ${items.length} ${
+              ? "Hier landen die Artefakte aus deinen Projekten, sobald du einen Chat abschließt."
+              : `Alle Artefakte aus ${items.length} ${
                   items.length === 1 ? "Projekt" : "Projekten"
-                } und allen erzeugten Artefakten.`}
+                }. Durchsuchen und wiederverwenden.`}
           </p>
         </div>
       </FadeIn>
@@ -122,15 +122,15 @@ export default async function LibraryPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
               <Library className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
             </div>
-            <p className="text-[15px] text-foreground/80">Deine Bibliothek ist leer</p>
+            <p className="text-[15px] text-foreground/80">Noch keine Artefakte</p>
             <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-              Hier landen die Artefakte aus deinen Build-Packets — PRD, Master-Prompt und
-              Datenbank-Schema. Starte einen Prompt Code Chat, um loszulegen.
+              Sobald ein Projekt Artefakte erzeugt hat, findest du sie hier — zum Nachlesen,
+              Kopieren und Wiederverwenden.
             </p>
             <Button asChild className="mt-5">
               <Link href="/chat?mode=software">
-                <Code2 className="h-4 w-4" />
-                Prompt Code starten
+                <MessageSquare className="h-4 w-4" />
+                Chat starten
               </Link>
             </Button>
           </div>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, FolderKanban, Library, Star } from "lucide-react";
+import { Search, BookOpen, Library, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
@@ -20,7 +20,7 @@ export type LibraryItem = {
 
 const FILTERS = [
   { key: "all", label: "Alle" },
-  { key: "favorites", label: "Favoriten ⭐" },
+  { key: "favorites", label: "Favoriten" },
   { key: "recent", label: "Kürzlich verwendet" },
   { key: "frontend", label: "Frontend" },
   { key: "backend", label: "Backend" },
@@ -141,7 +141,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
             return (
               <div
                 key={it.id}
-                className="card-surface relative h-full p-5 flex flex-col hover:border-border transition-colors"
+                className="card-surface relative h-full p-5 flex flex-col hover:border-border-strong transition-colors"
               >
                 {/* Full-card click target; the star sits above it via z-10. */}
                 <Link
@@ -151,7 +151,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                 />
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-9 w-9 rounded-lg bg-surface border border-border flex items-center justify-center">
-                    <FolderKanban className="h-4 w-4 text-foreground/85" strokeWidth={1.8} />
+                    <BookOpen className="h-4 w-4 text-foreground/60" strokeWidth={1.6} />
                   </div>
                   <button
                     type="button"
@@ -173,25 +173,50 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                     />
                   </button>
                 </div>
-                <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-1">
+
+                <h3 className="text-[15px] font-semibold tracking-tight text-foreground mb-2">
                   {it.name}
                 </h3>
-                <p className="text-[12.5px] text-foreground/45">
-                  Erstellt: {it.createdLabel} · {it.artifactCount}{" "}
-                  {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
-                </p>
-                {it.toolList.length > 0 && (
-                  <div className="mt-auto flex flex-wrap gap-1.5 pt-4">
-                    {it.toolList.map((t) => (
+
+                {/* Artifact count — primary info in the library context */}
+                <div className="flex items-baseline gap-1.5 mb-2">
+                  <span className="text-[22px] font-semibold tracking-tight text-foreground leading-none">
+                    {it.artifactCount}
+                  </span>
+                  <span className="text-[12px] text-foreground/45">
+                    {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
+                  </span>
+                </div>
+
+                {/* Category pills */}
+                {it.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {it.categories.map((c) => (
                       <span
-                        key={t}
-                        className="text-[10.5px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-foreground/65"
+                        key={c}
+                        className="text-[10.5px] px-2 py-0.5 rounded-full border border-accent/25 bg-accent-subtle text-accent-text"
                       >
-                        {t}
+                        {c}
                       </span>
                     ))}
                   </div>
                 )}
+
+                <div className="mt-auto flex items-end justify-between pt-3 border-t border-border">
+                  <span className="text-[11.5px] text-foreground/35">{it.createdLabel}</span>
+                  {it.toolList.length > 0 && (
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {it.toolList.map((t) => (
+                        <span
+                          key={t}
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-foreground/50"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

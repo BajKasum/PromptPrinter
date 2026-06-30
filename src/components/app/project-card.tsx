@@ -33,6 +33,7 @@ function stackOf(tools: ProjectTools | null): string[] {
 export function ProjectCard({ project }: { project: ProjectRow }) {
   const stack = stackOf(project.tools);
   const isReady = project.status === "ready";
+  const statusLabel = isReady ? "Fertig" : "In Arbeit";
 
   return (
     <StaggerItem>
@@ -49,7 +50,7 @@ export function ProjectCard({ project }: { project: ProjectRow }) {
                   : "border-warning/30 bg-warning/10 text-warning"
               }`}
             >
-              {project.status}
+              {statusLabel}
             </span>
           </div>
           <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-1">
