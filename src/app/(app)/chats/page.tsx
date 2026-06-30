@@ -46,8 +46,8 @@ export default async function ChatsPage() {
           </h1>
           <p className="mt-1 text-[14px] text-foreground/55">
             {conversations.length === 0
-              ? "Hier erscheinen deine Prompt-Chats, sobald du einen startest."
-              : `${conversations.length} ${conversations.length === 1 ? "Chat" : "Chats"} — jederzeit wieder öffnen und weiterführen.`}
+              ? "Hier erscheinen deine Chats, sobald du einen startest."
+              : `${conversations.length} ${conversations.length === 1 ? "Chat" : "Chats"}, jederzeit wieder öffnen und weiterführen.`}
           </p>
         </div>
         <Button asChild>
@@ -65,8 +65,8 @@ export default async function ChatsPage() {
           </div>
           <p className="text-[15px] text-foreground/80">Noch keine Chats</p>
           <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-            Starte einen Prompt-Chat, beschreibe dein Ziel und verfeinere den Prompt im
-            Gespräch — jeder Chat wird gespeichert und lässt sich fortsetzen.
+            Starte einen Chat, beschreibe dein Ziel und verfeinere den Prompt im Gespräch.
+            Jeder Chat wird gespeichert und lässt sich jederzeit fortsetzen.
           </p>
           <Button asChild className="mt-5">
             <Link href="/chat?mode=general">

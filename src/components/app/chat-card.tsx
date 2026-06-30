@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquare, Code2, Clock } from "lucide-react";
+import { MessageSquare, Code2, Clock, ArrowRight } from "lucide-react";
 import { StaggerItem } from "@/components/motion/fade-in";
 import { relativeTime } from "@/lib/utils";
 
@@ -36,17 +36,19 @@ export function ChatCard({ conversation }: { conversation: ConversationRow }) {
             {conversation.target
               ? `Für ${conversation.target}`
               : isCode
-                ? "Software-Prompt"
-                : "Allgemeiner Prompt"}
+                ? "Software-Projekt"
+                : "Alltags-Prompt"}
           </p>
-          <div className="flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
-            <span className="inline-flex items-center gap-1.5">
-              <MessageSquare className="h-3 w-3" />
-              {count} Nachricht{count === 1 ? "" : "en"}
+          <div className="flex items-center justify-between gap-2 text-[11.5px] pt-3 border-t border-border">
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-3 w-3 shrink-0" />
+              <span className="truncate">
+                {relativeTime(conversation.updated_at)} · {count} Nachricht{count === 1 ? "" : "en"}
+              </span>
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3 w-3" />
-              {relativeTime(conversation.updated_at)}
+            <span className="inline-flex shrink-0 items-center gap-1 font-medium text-foreground/45 transition-colors group-hover:text-accent-text">
+              Weiterführen
+              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </span>
           </div>
         </div>

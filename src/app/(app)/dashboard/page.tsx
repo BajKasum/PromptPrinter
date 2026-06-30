@@ -98,8 +98,8 @@ export default async function DashboardPage() {
             </h1>
             <p className="mt-1 text-[14.5px] text-muted-foreground">
               {projectsTotal === 0
-                ? "Lass uns dein erstes Build-Paket bauen."
-                : `${projectsTotal} ${projectsTotal === 1 ? "Projekt" : "Projekte"} in deinem Workspace.`}
+                ? "Lass uns dein erstes Projekt starten."
+                : "Mach weiter, wo du aufgehört hast, oder starte etwas Neues."}
             </p>
           </div>
           <div className="flex items-center gap-2" data-tour="quick-actions">
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
             <Button asChild variant="ghost">
               <Link
                 href="/chat?mode=software"
-                title="Für ganze Build-Pakete: PRD, Schema und Prompts für Lovable, Cursor & Co."
+                title="Für ganze App-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
               >
                 <Code2 className="h-4 w-4" />
                 Prompt Code
@@ -129,14 +129,14 @@ export default async function DashboardPage() {
         <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
           {stats.map(({ label, value, Icon }) => (
             <StaggerItem key={label}>
-              <div className="card-surface p-5">
-                <div className="flex items-center justify-between mb-4">
+              <div className="card-surface p-4">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
                     {label}
                   </span>
                   <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
                 </div>
-                <div className="text-[32px] font-semibold tracking-[-0.02em] text-foreground">{value}</div>
+                <div className="text-[22px] font-semibold tracking-[-0.02em] text-foreground">{value}</div>
               </div>
             </StaggerItem>
           ))}
@@ -240,7 +240,7 @@ export default async function DashboardPage() {
                   <span className="text-[14px] font-medium text-foreground">Prompt Code</span>
                 </div>
                 <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                  Für ganze Build-Pakete: PRD, Schema und Prompts für Lovable,
+                  Für ganze App-Projekte: Plan, Datenbank und Prompts für Lovable,
                   Cursor &amp; Co.
                 </p>
               </Link>
