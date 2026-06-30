@@ -73,7 +73,7 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
           </h1>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-foreground/55">
             {isCode
-              ? "Für ganze Build-Pakete: PRD, Schema und Prompts für Lovable, Cursor & Co."
+              ? "Für ganze App-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
               : "Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT, Claude & Co."}
           </p>
         </div>

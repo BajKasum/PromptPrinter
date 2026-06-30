@@ -30,7 +30,7 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
   },
   software: {
     heading: "Wofür brauchst du einen Software-Prompt?",
-    sub: "Beschreib, was du bauen willst. Ich liefere dir einen build-fertigen Prompt zum Verfeinern.",
+    sub: "Beschreib, was du bauen willst. Ich liefere dir einen fertigen Prompt zum Verfeinern.",
     starters: [
       "Schreib mir einen Prompt für ein React-Komponenten-Gerüst mit Tailwind.",
       "Ich brauche einen Prompt, der eine REST-API in Node.js entwirft.",
@@ -38,7 +38,7 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
     ],
   },
   refine: {
-    heading: "Verfeinere dein Paket",
+    heading: "Pass deine Prompts an",
     sub: "Sag mir, was ich an deinen Prompts ändern soll. Du bekommst die aktualisierte, fertige Version zurück.",
     starters: [
       "Mach den Master-Prompt kürzer und prägnanter.",
@@ -225,6 +225,14 @@ function UserBubble({ content }: { content: string }) {
 }
 
 function AssistantBubble({ content, index }: { content: string; index: number }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyAll() {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
   function exportMd() {
     downloadFile(`prompt-${index + 1}.md`, content, "text/markdown");
   }
@@ -235,10 +243,20 @@ function AssistantBubble({ content, index }: { content: string; index: number })
         <div className="rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
           <MarkdownMessage content={content} />
         </div>
-        <div className="mt-1.5 flex items-center gap-1.5">
+        {/* Message-level actions: copying the whole reply is the primary move and
+            must exist even when the reply has no fenced prompt block. */}
+        <div className="mt-1.5 flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={copyAll}>
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-success" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+            {copied ? "Kopiert" : "Antwort kopieren"}
+          </Button>
           <Button size="sm" variant="ghost" onClick={exportMd}>
             <Download className="h-3.5 w-3.5" />
-            .md
+            Export
           </Button>
         </div>
       </div>
@@ -342,7 +360,7 @@ function CodeBlock({ text }: { text: string }) {
           ) : (
             <Copy className="h-3.5 w-3.5" />
           )}
-          {copied ? "Kopiert" : "Kopieren"}
+          {copied ? "Kopiert" : "Prompt kopieren"}
         </button>
       </div>
       <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
