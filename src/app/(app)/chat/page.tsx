@@ -69,11 +69,11 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
             ) : (
               <MessageSquare className="h-6 w-6 shrink-0 text-accent-text" strokeWidth={1.8} />
             )}
-            {isCode ? "Prompt Code" : "Prompt Chat"}
+            {isCode ? "Software-Projekt" : "Alltags-Prompt"}
           </h1>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-foreground/55">
             {isCode
-              ? "Für ganze App-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
+              ? "Für ganze Software-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
               : "Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT, Claude & Co."}
           </p>
         </div>

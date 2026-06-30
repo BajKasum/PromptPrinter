@@ -78,8 +78,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       perform: () => go(n.href),
     }));
     const actions: Cmd[] = [
-      { id: "chat-general", label: "Prompt Chat starten", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chat?mode=general") },
-      { id: "chat-software", label: "Prompt Code starten", group: "Aktionen", Icon: Code2, perform: () => go("/chat?mode=software") },
+      { id: "chat-general", label: "Alltags-Prompt starten", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chat?mode=general") },
+      { id: "chat-software", label: "Software-Projekt starten", group: "Aktionen", Icon: Code2, perform: () => go("/chat?mode=software") },
     ];
     return [...pages, ...actions];
   }, [go]);

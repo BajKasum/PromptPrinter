@@ -109,16 +109,16 @@ export default async function DashboardPage() {
                 title="Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT, Claude & Co."
               >
                 <MessageSquare className="h-4 w-4" />
-                Prompt Chat
+                Alltags-Prompt
               </Link>
             </Button>
             <Button asChild variant="ghost">
               <Link
                 href="/chat?mode=software"
-                title="Für ganze App-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
+                title="Für ganze Software-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
               >
                 <Code2 className="h-4 w-4" />
-                Prompt Code
+                Software-Projekt
               </Link>
             </Button>
           </div>
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
               >
                 <div className="mb-2 flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-accent-text" strokeWidth={1.8} />
-                  <span className="text-[14px] font-medium text-foreground">Prompt Chat</span>
+                  <span className="text-[14px] font-medium text-foreground">Alltags-Prompt</span>
                 </div>
                 <p className="text-[12.5px] leading-relaxed text-muted-foreground">
                   Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT,
@@ -237,10 +237,10 @@ export default async function DashboardPage() {
               >
                 <div className="mb-2 flex items-center gap-2">
                   <Code2 className="h-4 w-4 text-accent-text" strokeWidth={1.8} />
-                  <span className="text-[14px] font-medium text-foreground">Prompt Code</span>
+                  <span className="text-[14px] font-medium text-foreground">Software-Projekt</span>
                 </div>
                 <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                  Für ganze App-Projekte: Plan, Datenbank und Prompts für Lovable,
+                  Für ganze Software-Projekte: Plan, Datenbank und Prompts für Lovable,
                   Cursor &amp; Co.
                 </p>
               </Link>

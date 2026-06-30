@@ -25,8 +25,8 @@ export const TOUR_STEPS: TourStep[] = [
     // New accounts see the big choice cards in the empty state; accounts with
     // projects fall back to the same two buttons in the dashboard header.
     selectors: ['[data-tour="start-cards"]', '[data-tour="quick-actions"]'],
-    title: "Zwei Wege zum Prompt",
-    body: "Prompt Chat baut alltägliche Prompts für ChatGPT, Claude & Co. Prompt Code erstellt komplette Build-Pakete: PRD, Schema und Prompts für Lovable, Cursor & Co.",
+    title: "Zwei Wege zum Start",
+    body: "Alltags-Prompt schreibt fertige Prompts für ChatGPT, Claude & Co. Software-Projekt liefert alles für eine ganze App: Plan, Datenbank und Prompts für Lovable, Cursor & Co.",
   },
   {
     id: "stats",
@@ -44,7 +44,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "nav",
     selectors: ['[data-tour="nav-main"]'],
     title: "Alles Gespeicherte",
-    body: "Projekte sammelt deine Build-Pakete, Chats deine Unterhaltungen. In der Bibliothek durchsuchst du alle Artefakte, Generierungen zeigt die Historie deiner Läufe.",
+    body: "Projekte sammelt, woran du baust, Chats deine Unterhaltungen. In der Bibliothek durchsuchst du alle Artefakte, Generierungen zeigt die Historie deiner Läufe.",
   },
   {
     id: "mobile-menu",
@@ -56,7 +56,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "search",
     selectors: ['[data-tour="search"]'],
-    title: "Befehls-Palette",
+    title: "Suche",
     body: "Mit Strg + K (⌘ K am Mac) springst du blitzschnell zu jeder Seite oder jedem Projekt, ganz ohne Maus.",
   },
   {
