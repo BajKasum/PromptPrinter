@@ -1,6 +1,7 @@
 // Canonical catalog of the artifacts that /api/generate produces and stores in
 // `generations.outputs` (jsonb). Single source of truth for labels + categories,
-// shared by the project detail tabs, the Generierungen log and the Bibliothek.
+// shared by the project detail tabs, its "Verlauf" run history, and the
+// Projekte search/filter grid (formerly the standalone Bibliothek page).
 
 export type ArtifactCategory =
   | "doc"

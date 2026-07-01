@@ -43,15 +43,15 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "nav",
     selectors: ['[data-tour="nav-main"]'],
-    title: "Alles Gespeicherte",
-    body: "Projekte sammelt deine fertigen Pakete, Chats deine Unterhaltungen. In der Bibliothek durchsuchst du alle Artefakte, Generierungen zeigt jeden Paket-Bau.",
+    title: "Alles an einem Ort",
+    body: "Start bringt dich zurück zu deiner Arbeit, Chats sammelt deine Unterhaltungen, Projekte zeigt jedes fertige Paket mit allen Artefakten und seinem Bau-Verlauf.",
   },
   {
     id: "mobile-menu",
     // Only visible below md — desktop drops this step automatically.
     selectors: ['[data-tour="mobile-menu"]'],
     title: "Deine Navigation",
-    body: "Hinter diesem Menü findest du alles: neuen Chat starten, Projekte, Bibliothek, Generierungen und Einstellungen.",
+    body: "Hinter diesem Menü findest du alles: neuen Chat starten, Chats, Projekte und Einstellungen.",
   },
   {
     id: "search",

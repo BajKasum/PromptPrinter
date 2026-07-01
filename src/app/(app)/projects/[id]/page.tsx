@@ -9,6 +9,7 @@ import { GENERAL_VARIANTS } from "@/prompts";
 import { FadeIn } from "@/components/motion/fade-in";
 import { createClient } from "@/lib/supabase/server";
 import { relativeTime } from "@/lib/utils";
+import { countArtifacts } from "@/lib/artifacts";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,15 @@ type ProjectRecord = {
   type: string;
   status: string;
   updated_at: string;
+};
+
+type GenerationHistoryRow = {
+  id: string;
+  model: string | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  created_at: string;
+  outputs: Record<string, unknown> | null;
 };
 
 const PLACEHOLDER =
@@ -150,15 +160,17 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
 
   if (error || !project) notFound();
 
-  const { data: generation } = await supabase
+  // Every build run for this project, newest first — the packet's outputs come
+  // from the latest row; the rest render as the compact "Verlauf" section below
+  // (this is where the old standalone Generierungen page's per-run info moved).
+  const { data: generationsRaw } = await supabase
     .from("generations")
-    .select("outputs")
+    .select("id, model, tokens_in, tokens_out, created_at, outputs")
     .eq("project_id", id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<{ outputs: Record<string, string> | null }>();
+    .order("created_at", { ascending: false });
 
-  const stored = generation?.outputs ?? {};
+  const generationHistory = (generationsRaw as GenerationHistoryRow[] | null) ?? [];
+  const stored = (generationHistory[0]?.outputs as Record<string, string> | undefined) ?? {};
   const isGeneral = project.type === "general";
   const tabs = isGeneral ? GENERAL_TABS : SOFTWARE_TABS;
   const outputs = isGeneral
@@ -252,6 +264,47 @@ export default async function ProjectDetailPage({ params }: { params: Params }) 
           />
         </div>
       </FadeIn>
+
+      {generationHistory.length > 0 && (
+        <FadeIn>
+          <div className="mt-8 border-t border-border pt-6">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/45 mb-3">
+              <Sparkles className="h-3 w-3" />
+              Verlauf
+            </div>
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
+              {generationHistory.map((g) => {
+                const artifacts = countArtifacts(g.outputs);
+                const tokens = (g.tokens_in ?? 0) + (g.tokens_out ?? 0);
+                const hasModel = Boolean(g.model);
+                return (
+                  <div
+                    key={g.id}
+                    className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0"
+                  >
+                    <span
+                      className={`shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border ${
+                        hasModel
+                          ? "border-accent/30 bg-accent-subtle text-accent-text"
+                          : "border-border bg-surface text-foreground/45"
+                      }`}
+                    >
+                      {hasModel ? "KI" : "Vorschau"}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground/70">
+                      {artifacts} {artifacts === 1 ? "Artefakt" : "Artefakte"}
+                      {tokens > 0 ? ` · ${tokens.toLocaleString("de-CH")} Tokens` : ""}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-foreground/45">
+                      {relativeTime(g.created_at)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </FadeIn>
+      )}
     </div>
   );
 }

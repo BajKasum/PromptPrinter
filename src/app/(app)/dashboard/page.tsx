@@ -17,7 +17,7 @@ import { ChatCard, type ConversationRow } from "@/components/app/chat-card";
 import { relativeTime } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Start" };
 
 // Always reflect the latest DB state — never serve a cached snapshot.
 export const dynamic = "force-dynamic";
@@ -330,10 +330,10 @@ export default async function DashboardPage() {
                 Angeheftet
               </h2>
               <Link
-                href="/library"
+                href="/projects"
                 className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
               >
-                In der Bibliothek →
+                Alle ansehen →
               </Link>
             </div>
           </FadeIn>

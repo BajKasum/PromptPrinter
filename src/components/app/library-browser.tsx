@@ -3,15 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, BookOpen, Library, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, relativeTime } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 
 export type LibraryItem = {
   id: string;
   name: string;
-  createdLabel: string; // pre-formatted "03.06.2026"
-  updatedAt: string; // ISO — used for the "Kürzlich verwendet" filter
+  updatedAt: string; // ISO — drives the "Kürzlich verwendet" filter + the footer's relative time
   artifactCount: number;
   categories: string[]; // artifact category keys present in this project
   toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "Lovable"]
@@ -203,7 +202,9 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                 )}
 
                 <div className="mt-auto flex items-end justify-between pt-3 border-t border-border">
-                  <span className="text-[11.5px] text-foreground/35">{it.createdLabel}</span>
+                  <span className="text-[11.5px] text-foreground/35">
+                    Aktualisiert {relativeTime(it.updatedAt)}
+                  </span>
                   {it.toolList.length > 0 && (
                     <div className="flex flex-wrap gap-1 justify-end">
                       {it.toolList.map((t) => (
