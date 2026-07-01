@@ -225,6 +225,24 @@
       linear-gradient(180deg, hsl(var(--accent) / 0.02) 0%, transparent 26%, hsl(var(--shadow) / 0.22) 100%);
   }
 
+  /*
+   * Dashboard "continue" panel — Finn's World light, scoped to the logged-in
+   * dashboard (the app shell itself stays flat). One soft light from above over
+   * the raised-card surface, so the primary "pick up where you left off" panel
+   * reads as sunlit water, not a flat box. Token-based, theme-driven, static →
+   * reduced-motion-safe. Felt, not seen. See DESIGN.md → Finn's World.
+   */
+  .dash-continue {
+    background:
+      radial-gradient(120% 92% at 50% -28%, hsl(var(--accent) / 0.09), transparent 60%),
+      hsl(var(--surface-raised));
+  }
+  .dark .dash-continue {
+    background:
+      radial-gradient(120% 92% at 50% -28%, hsl(var(--accent) / 0.11), transparent 58%),
+      hsl(var(--surface-raised));
+  }
+
   .btn-ghost {
     @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 text-body-sm font-medium text-foreground/90 transition-colors duration-200;
   }
