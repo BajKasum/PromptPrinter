@@ -2,6 +2,12 @@
 // `generations.outputs` (jsonb). Single source of truth for labels + categories,
 // shared by the project detail tabs, its "Verlauf" run history, and the
 // Projekte search/filter grid (formerly the standalone Bibliothek page).
+//
+// Covers BOTH packs — the ten software-project keys and the four general
+// (Prompt-Projekt) keys — so a saved everyday prompt counts and categorizes
+// correctly everywhere this catalog is used, not just software packets.
+
+import { GENERAL_VARIANTS } from "@/prompts";
 
 export type ArtifactCategory =
   | "doc"
@@ -29,6 +35,11 @@ export const ARTIFACT_META: readonly ArtifactMeta[] = [
   { key: "marketing", label: "Marketing-Texte", category: "marketing" },
   { key: "seo", label: "SEO-Plan", category: "marketing" },
   { key: "deployment", label: "Deployment-Anleitung", category: "doc" },
+  // General pack — same source list as the project detail's variant tabs.
+  { key: "prompt", label: "Haupt-Prompt", category: "prompt" },
+  ...GENERAL_VARIANTS.map(
+    (v): ArtifactMeta => ({ key: v.key, label: `Variante: ${v.label}`, category: "prompt" })
+  ),
 ];
 
 export const ARTIFACT_KEYS: string[] = ARTIFACT_META.map((a) => a.key);

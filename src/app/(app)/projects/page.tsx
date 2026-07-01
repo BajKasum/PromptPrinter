@@ -114,7 +114,7 @@ export default async function ProjectsPage() {
         title="Deine Projekte"
         subtitle={
           items.length === 0
-            ? "Jedes Projekt beginnt als Software-Chat: Idee beschreiben, ich bau das Paket."
+            ? "Jedes Projekt beginnt als Chat: ein Software-Chat wird zum kompletten Paket, ein guter Prompt lässt sich aufheben."
             : "Was wir zusammen gebaut haben, mit allen Artefakten. Durchsuchen, filtern, weiterbauen."
         }
         action={items.length > 0 ? startAction : undefined}
@@ -126,15 +126,24 @@ export default async function ProjectsPage() {
             <AnimatedMascot state="building" size={92} priority className="mx-auto mb-4" />
             <p className="text-[15px] font-semibold text-foreground">Noch kein Projekt gebaut</p>
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-              Beschreib deine Idee im Software-Chat. Sobald genug da ist, bau ich daraus dein
-              Paket, und es landet hier, mit Plan, Prompts, Datenbank und mehr.
+              Beschreib deine Idee im Chat. Ein Software-Chat wird zum kompletten Paket mit
+              Plan, Prompts und Datenbank; ein guter Alltags-Prompt lässt sich direkt
+              aufheben. Beides landet hier.
             </p>
-            <Button asChild>
-              <Link href="/chat?mode=software">
-                <MessageSquare className="h-4 w-4" />
-                Neues Projekt starten
+            <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
+              <Button asChild>
+                <Link href="/chat?mode=software">
+                  <MessageSquare className="h-4 w-4" />
+                  Neues Projekt starten
+                </Link>
+              </Button>
+              <Link
+                href="/chat?mode=general"
+                className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                oder einen Prompt speichern →
               </Link>
-            </Button>
+            </div>
           </div>
         </FadeIn>
       ) : (

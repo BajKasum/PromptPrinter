@@ -64,7 +64,7 @@ export default async function ChatsPage() {
         title="Deine Chats"
         subtitle={
           hasChats
-            ? "Lebendige Gespräche, jederzeit weiterführen. Aus einem Software-Chat wird auf Wunsch ein ganzes Paket."
+            ? "Lebendige Gespräche, jederzeit weiterführen. Ein guter Prompt oder ein Software-Chat wird auf Wunsch zu einem gespeicherten Ergebnis."
             : "Hier laufen deine Gespräche weiter, sobald du eins startest."
         }
         action={hasChats ? newChatAction : undefined}
@@ -77,7 +77,8 @@ export default async function ChatsPage() {
             <p className="text-[15px] font-semibold text-foreground">Noch kein Gespräch</p>
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
               Erzähl mir dein Ziel, wir verfeinern den Prompt zusammen. Jeder Chat lässt sich
-              jederzeit fortsetzen, und aus einem Software-Chat kann ein ganzes Paket entstehen.
+              jederzeit fortsetzen, und ein gutes Ergebnis kannst du dir aufheben —
+              als eigenes Projekt.
             </p>
             <Button asChild>
               <Link href="/chat?mode=general">

@@ -75,7 +75,7 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
             className="inline-flex items-center gap-1.5 text-[13px] text-foreground/55 hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Zurück zum Dashboard
+            Zurück zum Start
           </Link>
           <h1 className="flex items-center gap-2.5 text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
             {isCode ? (

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/input";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { DolphinLoader } from "@/components/brand/dolphin-loader";
 import { PacketBridge } from "@/components/app/packet-bridge";
+import { PromptSave } from "@/components/app/prompt-save";
 import { DEFAULT_TOOLS, type ProjectTools } from "@/lib/tools";
 import { cn, downloadFile } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -24,7 +25,7 @@ type Variant = "general" | "software" | "refine";
 const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string[] }> = {
   general: {
     heading: "Wofür brauchst du einen Prompt?",
-    sub: "Beschreib dein Ziel. Ich bau dir einen fertigen Prompt und verfeinere ihn mit dir.",
+    sub: "Beschreib dein Ziel. Ich bau dir einen fertigen Prompt und verfeinere ihn mit dir. Gut genug? Dann heben wir ihn zusammen auf.",
     starters: [
       "Hilf mir, einen Prompt zu schreiben, um Französisch-Vokabeln zu üben.",
       "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
@@ -90,15 +91,20 @@ export function Chat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // While the packet handoff card is open, the transcript condenses to a context
-  // strip and the composer hides — the card is the one thing on stage.
-  const [bridgeOpen, setBridgeOpen] = useState(false);
+  // While the packet/save handoff card is open, the transcript condenses to a
+  // context strip and the composer hides — the card is the one thing on stage.
+  const [handoffOpen, setHandoffOpen] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   // The bridge appears once the user has described anything in a standalone
-  // software chat; a conversation that already has its packet links to it instead.
+  // software chat — nothing exists yet to show, building IS the deliverable.
+  // A general chat already hands over a finished prompt inline, so saving only
+  // makes sense once there's a reply worth keeping. Either way, a conversation
+  // that already produced its project links to it instead of offering again.
   const hasUserMessage = messages.some((m) => m.role === "user");
+  const hasAssistantReply = messages.some((m) => m.role === "assistant");
   const showBridge = variant === "software" && !linkedProjectId && hasUserMessage;
+  const showSave = variant === "general" && !linkedProjectId && hasAssistantReply;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,13 +141,13 @@ export function Chat({
     <div
       className={cn(
         "flex flex-col",
-        !bridgeOpen && "h-[calc(100vh-240px)] min-h-[440px]"
+        !handoffOpen && "h-[calc(100vh-240px)] min-h-[440px]"
       )}
     >
       <div
         className={cn(
           "flex-1 overflow-y-auto card-surface p-5 md:p-6",
-          bridgeOpen && "max-h-[200px] flex-none"
+          handoffOpen && "max-h-[200px] flex-none"
         )}
       >
         {messages.length === 0 ? (
@@ -174,14 +180,25 @@ export function Chat({
           userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
           defaultTools={defaultTools ?? DEFAULT_TOOLS}
           conversationId={conversationId}
-          onOpenChange={setBridgeOpen}
+          onOpenChange={setHandoffOpen}
         />
       )}
 
-      {variant === "software" && linkedProjectId && (
+      {showSave && (
+        <PromptSave
+          userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
+          initialTarget={target}
+          conversationId={conversationId}
+          onOpenChange={setHandoffOpen}
+        />
+      )}
+
+      {(variant === "software" || variant === "general") && linkedProjectId && (
         <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
           <p className="text-[13px] text-foreground/75">
-            Dein Paket zu diesem Chat ist fertig.
+            {variant === "software"
+              ? "Dein Paket zu diesem Chat ist fertig."
+              : "Dieser Prompt ist gespeichert."}
           </p>
           <Button asChild size="sm" variant="ghost" className="shrink-0">
             <Link href={`/projects/${linkedProjectId}`}>
@@ -201,7 +218,7 @@ export function Chat({
         </div>
       )}
 
-      {!bridgeOpen && (
+      {!handoffOpen && (
         <>
           <div className="mt-3 flex items-end gap-2">
             <Textarea
