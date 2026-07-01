@@ -108,7 +108,7 @@ export default async function LibraryPage() {
           </h1>
           <p className="mt-1 text-[14px] text-foreground/55">
             {items.length === 0
-              ? "Hier landen die Artefakte aus deinen Projekten, sobald du einen Chat abschließt."
+              ? "Hier landen die Artefakte aus deinen Projekten, sobald Finn ein Paket gebaut hat."
               : `Alle Artefakte aus ${items.length} ${
                   items.length === 1 ? "Projekt" : "Projekten"
                 }. Durchsuchen und wiederverwenden.`}
@@ -124,13 +124,13 @@ export default async function LibraryPage() {
             </div>
             <p className="text-[15px] text-foreground/80">Noch keine Artefakte</p>
             <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-              Sobald ein Projekt Artefakte erzeugt hat, findest du sie hier: zum Nachlesen,
-              Kopieren und Wiederverwenden.
+              Sobald Finn dir ein Paket gebaut hat, findest du hier alle seine Artefakte:
+              zum Nachlesen, Kopieren und Wiederverwenden.
             </p>
             <Button asChild className="mt-5">
               <Link href="/chat?mode=software">
                 <MessageSquare className="h-4 w-4" />
-                Chat starten
+                Neues Projekt starten
               </Link>
             </Button>
           </div>

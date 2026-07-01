@@ -45,14 +45,14 @@ export default async function ProjectsPage() {
           </h1>
           <p className="mt-1 text-[14px] text-foreground/55">
             {projects.length === 0
-              ? "Starte einen Chat und dein erstes Projekt wird hier angelegt."
+              ? "Jedes Projekt beginnt als Software-Chat: Idee beschreiben, Finn baut das Paket."
               : `${projects.length} ${projects.length === 1 ? "Projekt" : "Projekte"}, klick auf eines, um weiterzubauen.`}
           </p>
         </div>
         <Button asChild>
           <Link href="/chat?mode=software">
             <MessageSquare className="h-4 w-4" />
-            Chat starten
+            Neues Projekt starten
           </Link>
         </Button>
       </div>
@@ -64,12 +64,13 @@ export default async function ProjectsPage() {
           </div>
           <p className="text-[15px] text-foreground/80">Noch keine Projekte</p>
           <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-            Beschreib deine Idee im Chat, dein erstes Projekt wird dabei automatisch angelegt.
+            Beschreib deine Idee im Software-Chat. Sobald genug da ist, baut Finn daraus
+            dein Paket, und es landet hier als Projekt.
           </p>
           <Button asChild className="mt-5">
             <Link href="/chat?mode=software">
               <MessageSquare className="h-4 w-4" />
-              Chat starten
+              Neues Projekt starten
             </Link>
           </Button>
         </div>

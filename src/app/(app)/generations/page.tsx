@@ -67,14 +67,14 @@ export default async function GenerationsPage() {
             </h1>
             <p className="mt-1 text-[14px] text-foreground/55">
               {total === 0
-                ? "Jeder abgeschlossene Chat-Lauf erscheint hier mit seinen Artefakten."
-                : `${total} ${total === 1 ? "Lauf" : "Läufe"}, dein Ausführungsverlauf.`}
+                ? "Jedes Mal, wenn Finn ein Paket baut, erscheint der Lauf hier."
+                : `${total} ${total === 1 ? "Lauf" : "Läufe"}, dein Verlauf gebauter Pakete.`}
             </p>
           </div>
           <Button asChild>
             <Link href="/chat?mode=software">
               <MessageSquare className="h-4 w-4" />
-              Chat starten
+              Neues Projekt starten
             </Link>
           </Button>
         </div>
@@ -88,13 +88,13 @@ export default async function GenerationsPage() {
             </div>
             <p className="text-[15px] text-foreground/80">Noch keine Läufe</p>
             <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-              Jeder Chat-Lauf, der Artefakte erzeugt, wird hier mit Zeitstempel,
-              Artefaktzahl und Token-Verbrauch festgehalten.
+              Jeder Paket-Bau wird hier festgehalten: mit Zeitstempel, Artefaktzahl
+              und Token-Verbrauch.
             </p>
             <Button asChild className="mt-5">
               <Link href="/chat?mode=software">
                 <MessageSquare className="h-4 w-4" />
-                Chat starten
+                Neues Projekt starten
               </Link>
             </Button>
           </div>

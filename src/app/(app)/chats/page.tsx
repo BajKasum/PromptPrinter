@@ -10,7 +10,8 @@ export const metadata = { title: "Chats" };
 
 export const dynamic = "force-dynamic";
 
-type ConversationQueryRow = Omit<ConversationRow, "messageCount"> & {
+type ConversationQueryRow = Omit<ConversationRow, "messageCount" | "projectId"> & {
+  project_id?: string | null;
   messages: { count: number }[] | null;
 };
 
@@ -23,7 +24,7 @@ export default async function ChatsPage() {
 
   const { data: raw } = await supabase
     .from("conversations")
-    .select("id, title, mode, target, updated_at, messages(count)")
+    .select("id, title, mode, target, project_id, updated_at, messages(count)")
     .order("updated_at", { ascending: false });
 
   const conversations: ConversationRow[] = ((raw as ConversationQueryRow[] | null) ?? []).map(
@@ -34,6 +35,7 @@ export default async function ChatsPage() {
       target: c.target,
       updated_at: c.updated_at,
       messageCount: c.messages?.[0]?.count ?? 0,
+      projectId: c.project_id ?? null,
     })
   );
 
@@ -66,7 +68,8 @@ export default async function ChatsPage() {
           <p className="text-[15px] text-foreground/80">Noch keine Chats</p>
           <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
             Starte einen Chat, beschreibe dein Ziel und verfeinere den Prompt im Gespräch.
-            Jeder Chat wird gespeichert und lässt sich jederzeit fortsetzen.
+            Jeder Chat lässt sich jederzeit fortsetzen, und aus einem Software-Chat kann
+            ein ganzes Projekt-Paket entstehen.
           </p>
           <Button asChild className="mt-5">
             <Link href="/chat?mode=general">

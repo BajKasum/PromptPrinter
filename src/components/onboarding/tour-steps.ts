@@ -26,7 +26,7 @@ export const TOUR_STEPS: TourStep[] = [
     // projects fall back to the same two buttons in the dashboard header.
     selectors: ['[data-tour="start-cards"]', '[data-tour="quick-actions"]'],
     title: "Zwei Wege zum Start",
-    body: "Alltags-Prompt schreibt fertige Prompts für ChatGPT, Claude & Co. Software-Projekt liefert alles für eine ganze App: Plan, Datenbank und Prompts für Lovable, Cursor & Co.",
+    body: "Alltags-Prompt schreibt fertige Prompts für ChatGPT, Claude & Co. Im Software-Projekt beschreibst du deine Idee, und Finn baut daraus ein komplettes Paket: Plan, Datenbank und Prompts, gespeichert als Projekt.",
   },
   {
     id: "stats",
@@ -44,7 +44,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "nav",
     selectors: ['[data-tour="nav-main"]'],
     title: "Alles Gespeicherte",
-    body: "Projekte sammelt, woran du baust, Chats deine Unterhaltungen. In der Bibliothek durchsuchst du alle Artefakte, Generierungen zeigt die Historie deiner Läufe.",
+    body: "Projekte sammelt deine fertigen Pakete, Chats deine Unterhaltungen. In der Bibliothek durchsuchst du alle Artefakte, Generierungen zeigt jeden Paket-Bau.",
   },
   {
     id: "mobile-menu",

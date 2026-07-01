@@ -27,7 +27,8 @@ type ProjectQueryRow = Omit<ProjectRow, "generationCount" | "isFavorite"> & {
   generations: { count: number }[] | null;
 };
 
-type ChatQueryRow = Omit<ConversationRow, "messageCount"> & {
+type ChatQueryRow = Omit<ConversationRow, "messageCount" | "projectId"> & {
+  project_id?: string | null;
   messages: { count: number }[] | null;
 };
 
@@ -58,7 +59,7 @@ export default async function DashboardPage() {
     supabase.from("profiles").select("plan, display_name").eq("id", user.id).maybeSingle(),
     supabase
       .from("conversations")
-      .select("id, title, mode, target, updated_at, messages(count)")
+      .select("id, title, mode, target, project_id, updated_at, messages(count)")
       .order("updated_at", { ascending: false })
       .limit(6),
   ]);
@@ -81,6 +82,7 @@ export default async function DashboardPage() {
     target: c.target,
     updated_at: c.updated_at,
     messageCount: c.messages?.[0]?.count ?? 0,
+    projectId: c.project_id ?? null,
   }));
 
   const favorites = projects.filter((p) => p.isFavorite).slice(0, 4);
@@ -112,7 +114,11 @@ export default async function DashboardPage() {
         : latestChat.mode === "software"
           ? "Software-Projekt"
           : "Alltags-Prompt",
-      badge: latestChat.mode === "software" ? "Software" : "Alltag",
+      badge: latestChat.projectId
+        ? "Paket fertig"
+        : latestChat.mode === "software"
+          ? "Software"
+          : "Alltag",
       href: `/chat?id=${latestChat.id}`,
       updated_at: latestChat.updated_at,
     };
@@ -284,7 +290,8 @@ export default async function DashboardPage() {
                     <span className="text-[14px] font-medium text-foreground">Software-Projekt</span>
                   </div>
                   <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                    Für ganze Software-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor &amp; Co.
+                    Beschreib deine Idee, ich bau dir dein komplettes Paket: Plan, Prompts
+                    und Datenbank für Lovable, Cursor &amp; Co.
                   </p>
                 </Link>
               </div>
