@@ -26,7 +26,7 @@ export function ChatCard({ conversation }: { conversation: ConversationRow }) {
               <Icon className="h-4 w-4 text-foreground" strokeWidth={1.8} />
             </div>
             <span className="text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-accent/30 bg-accent-subtle text-accent-text">
-              {isCode ? "Code" : "Chat"}
+              {isCode ? "Software" : "Alltag"}
             </span>
           </div>
           <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-1 line-clamp-2">

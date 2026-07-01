@@ -29,7 +29,7 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
     ],
   },
   software: {
-    heading: "Wofür brauchst du einen Software-Prompt?",
+    heading: "Was willst du bauen?",
     sub: "Beschreib, was du bauen willst. Ich liefere dir einen fertigen Prompt zum Verfeinern.",
     starters: [
       "Schreib mir einen Prompt für ein React-Komponenten-Gerüst mit Tailwind.",

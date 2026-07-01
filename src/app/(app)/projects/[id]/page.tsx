@@ -82,7 +82,7 @@ function buildGeneralOverview(p: ProjectRecord): string {
   const target = p.tools?.target ?? "deine KI";
   return `# ${p.name} — Übersicht
 
-**Typ** Allgemeiner Prompt  •  **Ziel-KI** ${target}  •  **Aktualisiert** ${relativeTime(
+**Typ** Prompt-Projekt  •  **Ziel-KI** ${target}  •  **Aktualisiert** ${relativeTime(
     p.updated_at
   )}
 

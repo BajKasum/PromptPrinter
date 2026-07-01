@@ -260,7 +260,7 @@ export function SettingsWorkspace({
             accent="#8FCDF2"
             title="Eigene API-Keys"
             description="Bald kannst du hier deine eigenen Keys hinterlegen."
-            badge="Bald verfügbar"
+            badge="Bald"
           >
             <div className="space-y-2">
               <ProviderRow logo="Claude" name="Anthropic" sub="Claude" />
