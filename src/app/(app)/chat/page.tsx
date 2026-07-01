@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, MessageSquare, Code2 } from "lucide-react";
 import { Chat } from "@/components/app/chat";
 import { FadeIn } from "@/components/motion/fade-in";
+import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,15 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // The packet bridge prefills its tool choices from the user's saved defaults
+  // (settings page: "füllt jedes neue Projekt automatisch vor").
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("settings")
+    .eq("id", user.id)
+    .maybeSingle();
+  const defaultTools = parseToolDefaults(profile?.settings);
+
   // A fresh chat takes its mode/target from the query string. Continuing a saved
   // chat (?id=...) instead loads its stored mode/target + full transcript. RLS
   // scopes both reads to the owner, so an unknown or foreign id simply yields
@@ -30,17 +40,21 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
   let target = rawTarget;
   let initialMessages: DbMessage[] | undefined;
   let conversationId: string | undefined;
+  let linkedProjectId: string | undefined;
 
   if (id) {
     const { data: convo } = await supabase
       .from("conversations")
-      .select("id, mode, target")
+      .select("id, mode, target, project_id")
       .eq("id", id)
       .maybeSingle();
     if (convo) {
       conversationId = convo.id as string;
       mode = convo.mode === "software" ? "software" : "general";
       target = (convo.target as string | null) ?? undefined;
+      // A conversation that already produced its packet links to the project
+      // instead of offering to build a second one.
+      linkedProjectId = (convo.project_id as string | null) ?? undefined;
       const { data: rows } = await supabase
         .from("messages")
         .select("role, content")
@@ -83,6 +97,8 @@ export default async function ChatPage({ searchParams }: { searchParams: SearchP
         target={target}
         initialMessages={initialMessages}
         initialConversationId={conversationId}
+        defaultTools={defaultTools}
+        linkedProjectId={linkedProjectId}
       />
     </div>
   );

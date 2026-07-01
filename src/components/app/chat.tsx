@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Copy, Check, Download } from "lucide-react";
+import Link from "next/link";
+import { Send, Loader2, Copy, Check, Download, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { DolphinLoader } from "@/components/brand/dolphin-loader";
-import { downloadFile } from "@/lib/utils";
+import { PacketBridge } from "@/components/app/packet-bridge";
+import { DEFAULT_TOOLS, type ProjectTools } from "@/lib/tools";
+import { cn, downloadFile } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -30,7 +33,7 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
   },
   software: {
     heading: "Was willst du bauen?",
-    sub: "Beschreib, was du bauen willst. Ich liefere dir einen fertigen Prompt zum Verfeinern.",
+    sub: "Beschreib deine Idee. Wenn ich genug weiß, bau ich dir dein komplettes Paket: Plan, Prompts, Datenbank und mehr.",
     starters: [
       "Schreib mir einen Prompt für ein React-Komponenten-Gerüst mit Tailwind.",
       "Ich brauche einen Prompt, der eine REST-API in Node.js entwirft.",
@@ -54,12 +57,18 @@ export function Chat({
   projectId,
   initialMessages,
   initialConversationId,
+  defaultTools,
+  linkedProjectId,
 }: {
   mode: "general" | "software";
   target?: string;
   projectId?: string;
   initialMessages?: Msg[];
   initialConversationId?: string;
+  /** Per-user tool defaults for the packet bridge (software mode). */
+  defaultTools?: ProjectTools;
+  /** Set when this conversation already produced a project — no second packet. */
+  linkedProjectId?: string;
 }) {
   // Refining a project's packet is its own context; otherwise the mode picks the
   // copy. The variant only drives the empty-state heading/sub/starters.
@@ -81,7 +90,15 @@ export function Chat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // While the packet handoff card is open, the transcript condenses to a context
+  // strip and the composer hides — the card is the one thing on stage.
+  const [bridgeOpen, setBridgeOpen] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  // The bridge appears once the user has described anything in a standalone
+  // software chat; a conversation that already has its packet links to it instead.
+  const hasUserMessage = messages.some((m) => m.role === "user");
+  const showBridge = variant === "software" && !linkedProjectId && hasUserMessage;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -115,8 +132,18 @@ export function Chat({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-240px)] min-h-[440px]">
-      <div className="flex-1 overflow-y-auto card-surface p-5 md:p-6">
+    <div
+      className={cn(
+        "flex flex-col",
+        !bridgeOpen && "h-[calc(100vh-240px)] min-h-[440px]"
+      )}
+    >
+      <div
+        className={cn(
+          "flex-1 overflow-y-auto card-surface p-5 md:p-6",
+          bridgeOpen && "max-h-[200px] flex-none"
+        )}
+      >
         {messages.length === 0 ? (
           <EmptyState
             heading={heading}
@@ -142,6 +169,29 @@ export function Chat({
         )}
       </div>
 
+      {showBridge && (
+        <PacketBridge
+          userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
+          defaultTools={defaultTools ?? DEFAULT_TOOLS}
+          conversationId={conversationId}
+          onOpenChange={setBridgeOpen}
+        />
+      )}
+
+      {variant === "software" && linkedProjectId && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+          <p className="text-[13px] text-foreground/75">
+            Dein Paket zu diesem Chat ist fertig.
+          </p>
+          <Button asChild size="sm" variant="ghost" className="shrink-0">
+            <Link href={`/projects/${linkedProjectId}`}>
+              Zum Projekt
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+      )}
+
       {error && (
         <div
           role="alert"
@@ -151,28 +201,32 @@ export function Chat({
         </div>
       )}
 
-      <div className="mt-3 flex items-end gap-2">
-        <Textarea
-          rows={2}
-          value={input}
-          placeholder={placeholder}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          className="resize-none"
-        />
-        <Button onClick={() => send()} disabled={loading || !input.trim()}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Senden
-        </Button>
-      </div>
-      <p className="mt-2 text-[11px] text-foreground/35">
-        Enter sendet · Shift+Enter neue Zeile · dieser Chat wird automatisch gespeichert.
-      </p>
+      {!bridgeOpen && (
+        <>
+          <div className="mt-3 flex items-end gap-2">
+            <Textarea
+              rows={2}
+              value={input}
+              placeholder={placeholder}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              className="resize-none"
+            />
+            <Button onClick={() => send()} disabled={loading || !input.trim()}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Senden
+            </Button>
+          </div>
+          <p className="mt-2 text-[11px] text-foreground/35">
+            Enter sendet · Shift+Enter neue Zeile · dieser Chat wird automatisch gespeichert.
+          </p>
+        </>
+      )}
     </div>
   );
 }
