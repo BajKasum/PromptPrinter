@@ -5,36 +5,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   MessageSquare,
-  FolderOpen,
-  Library,
-  Sparkles,
+  Code2,
   FolderKanban,
+  Sparkles,
+  Plus,
   Clock,
   Star,
   Search,
-  Layers,
   ArrowRight,
 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
-type ViewKey = "projects" | "library" | "generations";
+type ViewKey = "chats" | "projects";
 
 const TABS: { key: ViewKey; label: string }[] = [
+  { key: "chats", label: "Chats" },
   { key: "projects", label: "Projekte" },
-  { key: "library", label: "Bibliothek" },
-  { key: "generations", label: "Generierungen" },
 ];
 
-// Mini sidebar — mirrors the real app nav so the preview reads as the genuine
-// workspace. The three showcased screens light up with the active tab.
-const NAV: { label: string; Icon: typeof FolderOpen; view?: ViewKey }[] = [
-  { label: "Dashboard", Icon: LayoutDashboard },
-  { label: "Chats", Icon: MessageSquare },
-  { label: "Projekte", Icon: FolderOpen, view: "projects" },
-  { label: "Bibliothek", Icon: Library, view: "library" },
-  { label: "Generierungen", Icon: Sparkles, view: "generations" },
+// Mini sidebar — mirrors the real app nav (src/lib/nav.ts: Start, Chats,
+// Projekte) so the preview reads as the genuine workspace, not an invented
+// structure. Start has no browsable list of its own here (it's a personal
+// resume point, not an archive), so it stays a quiet "you are here" entry
+// while Chats and Projekte — the app's two real destinations besides Start —
+// light up with the active tab.
+const NAV: { label: string; Icon: typeof FolderKanban; view?: ViewKey }[] = [
+  { label: "Start", Icon: LayoutDashboard },
+  { label: "Chats", Icon: MessageSquare, view: "chats" },
+  { label: "Projekte", Icon: FolderKanban, view: "projects" },
 ];
 
 export function ProductShowcase() {
@@ -51,8 +51,9 @@ export function ProductShowcase() {
               Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
             </h2>
             <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
-              Alles, was wir zusammen bauen, bleibt gespeichert, sortiert und
-              durchsuchbar: Projekte, Bibliothek und jeder Lauf an einem Ort.
+              Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Sagt
+              ein Software-Chat genug, wird daraus ein fertiges Paket — gesammelt
+              in deinen Projekten, durchsuchbar und griffbereit.
             </p>
           </div>
         </div>
@@ -78,7 +79,7 @@ export function ProductShowcase() {
                   <Logo />
                 </div>
                 <div className="mb-3 flex h-9 items-center justify-center gap-2 rounded-lg bg-accent text-[12.5px] font-medium text-accent-foreground">
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" strokeWidth={2} />
                   Neuer Chat
                 </div>
                 <nav className="space-y-0.5">
@@ -136,9 +137,8 @@ export function ProductShowcase() {
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.22, ease: "easeOut" }}
                   >
+                    {view === "chats" && <ChatsView />}
                     {view === "projects" && <ProjectsView />}
-                    {view === "library" && <LibraryView />}
-                    {view === "generations" && <GenerationsView />}
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -151,33 +151,10 @@ export function ProductShowcase() {
 }
 
 // ── Sample data (realistic, plain-language) ─────────────────────────────────
-
-const PROJECTS = [
-  {
-    name: "Streak Coach",
-    audience: "Selbstoptimierer, 25–40",
-    stack: ["Next.js", "Supabase", "Stripe"],
-    status: "ready" as const,
-    gens: 6,
-    when: "vor 2 Std.",
-  },
-  {
-    name: "Hundesitter-Markt",
-    audience: "Hundebesitzer mit kurzfristigem Bedarf",
-    stack: ["Next.js", "Postgres"],
-    status: "ready" as const,
-    gens: 4,
-    when: "vor 1 Tag",
-  },
-  {
-    name: "Artlokal",
-    audience: "Lokale Künstler und Sammler",
-    stack: ["Lovable", "Supabase"],
-    status: "draft" as const,
-    gens: 1,
-    when: "vor 3 Tagen",
-  },
-];
+// The same three ideas travel through Hero's demo, ExampleOutput and this
+// showcase: "KI-Habit-Tracker mit Streaks" becomes the project "Streak Coach",
+// "Airbnb für Hundesitter" becomes "Hundesitter-Markt", "Marktplatz für lokale
+// Künstler" becomes "Artlokal" — one consistent story, not disconnected mockups.
 
 function ViewHeader({ title, sub }: { title: string; sub: string }) {
   return (
@@ -188,70 +165,122 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-function ProjectsView() {
+// ── Chats — mirrors ChatCard: mode badge, "Paket fertig" once the bridge has
+// run, message count + freshness. Deliberately shows all three real states: a
+// finished packet, a plain everyday chat, and a software chat still in
+// progress — the bridge isn't automatic, it's a moment you choose. ──────────
+
+const CHATS = [
+  {
+    title: "KI-Habit-Tracker mit Streaks",
+    mode: "software" as const,
+    hasPacket: true,
+    when: "vor 2 Std.",
+    messages: 8,
+  },
+  {
+    title: "Bewerbungsschreiben für UX-Rolle",
+    mode: "general" as const,
+    target: "ChatGPT",
+    when: "vor 5 Std.",
+    messages: 4,
+  },
+  {
+    title: "Rezept-App für Resteverwertung",
+    mode: "software" as const,
+    hasPacket: false,
+    when: "vor 1 Std.",
+    messages: 3,
+  },
+];
+
+function ChatsView() {
   return (
     <div>
-      <ViewHeader title="Alle Projekte" sub="3 Projekte in deinem Workspace." />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {PROJECTS.map((p) => (
-          <div key={p.name} className="card-surface p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div className="h-9 w-9 rounded-lg bg-surface border border-border flex items-center justify-center">
-                <FolderKanban className="h-4 w-4 text-foreground" strokeWidth={1.8} />
+      <ViewHeader title="Deine Chats" sub="Lebendige Gespräche, jederzeit weiterführen." />
+      <div className="space-y-2.5">
+        {CHATS.map((c) => {
+          const isCode = c.mode === "software";
+          const Icon = isCode ? Code2 : MessageSquare;
+          const desc = c.target ? `Für ${c.target}` : isCode ? "Software-Projekt" : "Alltags-Prompt";
+          return (
+            <div
+              key={c.title}
+              className="card-surface flex items-center gap-3 p-4 transition-colors"
+            >
+              <div className="h-9 w-9 shrink-0 rounded-lg bg-surface border border-border flex items-center justify-center">
+                <Icon className="h-4 w-4 text-foreground" strokeWidth={1.8} />
               </div>
-              <span
-                className={cn(
-                  "text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border",
-                  p.status === "ready"
-                    ? "border-success/30 bg-success/10 text-success"
-                    : "border-warning/30 bg-warning/10 text-warning"
-                )}
-              >
-                {p.status}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-medium text-foreground truncate">
+                    {c.title}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border",
+                      c.hasPacket
+                        ? "border-success/30 bg-success/10 text-success"
+                        : "border-accent/30 bg-accent-subtle text-accent-text"
+                    )}
+                  >
+                    {c.hasPacket ? "Paket fertig" : isCode ? "Software" : "Alltag"}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-foreground/45">
+                  <Clock className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    {desc} · {c.when} · {c.messages} Nachrichten
+                  </span>
+                </div>
+              </div>
+              <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-foreground/40 sm:flex">
+                Weiterführen
+                <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </div>
-            <h4 className="text-[16px] font-semibold tracking-tight text-foreground mb-1">
-              {p.name}
-            </h4>
-            <p className="text-[13px] text-muted-foreground mb-4 line-clamp-1">{p.audience}</p>
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {p.stack.map((s) => (
-                <span
-                  key={s}
-                  className="text-[10.5px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-muted-foreground"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-            <div className="flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
-              <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="h-3 w-3" />
-                {p.gens} Generierung{p.gens === 1 ? "" : "en"}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-3 w-3" />
-                {p.when}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
 
-const LIB_FILTERS = ["Alle", "Favoriten ⭐", "Frontend", "Backend", "Marketing"];
-const LIB_ITEMS = [
-  { name: "Streak Coach", created: "12.06.2026", artifacts: 9, tools: ["Claude", "Supabase"], fav: true },
-  { name: "Hundesitter-Markt", created: "11.06.2026", artifacts: 7, tools: ["Cursor", "Postgres"], fav: false },
-  { name: "Artlokal", created: "09.06.2026", artifacts: 5, tools: ["Lovable"], fav: false },
+// ── Projekte — mirrors the real Projekte page exactly: search + filter chips
+// over favorites/categories, cards led by name with category pills, artifact
+// count and freshness as footer metadata (not a headline number). This is
+// what used to be a separate "Bibliothek" — now it's just Projekte. ────────
+
+const PROJECT_FILTERS = ["Alle", "Favoriten", "Kürzlich verwendet", "Frontend", "Backend", "Marketing", "Datenbank"];
+
+const PROJECTS = [
+  {
+    name: "Streak Coach",
+    categories: ["doc", "prompt", "frontend", "backend", "database"],
+    artifacts: 9,
+    fav: true,
+    when: "vor 2 Std.",
+  },
+  {
+    name: "Hundesitter-Markt",
+    categories: ["doc", "prompt", "frontend", "backend"],
+    artifacts: 7,
+    fav: false,
+    when: "vor 1 Tag",
+  },
+  {
+    name: "Artlokal",
+    categories: ["doc", "prompt", "marketing"],
+    artifacts: 5,
+    fav: false,
+    when: "vor 3 Tagen",
+  },
 ];
 
-function LibraryView() {
+function ProjectsView() {
   return (
     <div>
-      <ViewHeader title="Bibliothek" sub="Dein Archiv aus 3 Projekten und allen Artefakten." />
+      <ViewHeader title="Deine Projekte" sub="3 Projekte mit allen Artefakten." />
       <div className="relative max-w-xs mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/40" />
         <div className="h-9 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13px] text-foreground/40 flex items-center">
@@ -259,7 +288,7 @@ function LibraryView() {
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-5">
-        {LIB_FILTERS.map((f, i) => (
+        {PROJECT_FILTERS.map((f, i) => (
           <span
             key={f}
             className={cn(
@@ -274,105 +303,40 @@ function LibraryView() {
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {LIB_ITEMS.map((it) => (
-          <div key={it.name} className="card-surface p-5 flex flex-col">
+        {PROJECTS.map((p) => (
+          <div key={p.name} className="card-surface p-5 flex flex-col">
             <div className="flex items-start justify-between mb-3">
               <div className="h-9 w-9 rounded-lg bg-surface border border-border flex items-center justify-center">
-                <FolderKanban className="h-4 w-4 text-foreground/85" strokeWidth={1.8} />
+                <FolderKanban className="h-4 w-4 text-foreground" strokeWidth={1.8} />
               </div>
               <Star
-                className={cn(
-                  "h-4 w-4",
-                  it.fav ? "fill-amber-300 text-amber-300" : "text-foreground/30"
-                )}
+                className={cn("h-4 w-4", p.fav ? "fill-amber-300 text-amber-300" : "text-foreground/30")}
                 strokeWidth={1.8}
               />
             </div>
-            <h4 className="text-[15px] font-semibold tracking-tight text-foreground mb-1">
-              {it.name}
+            <h4 className="text-[16px] font-semibold tracking-tight text-foreground mb-2">
+              {p.name}
             </h4>
-            <p className="text-[12px] text-foreground/45">
-              Erstellt: {it.created} · {it.artifacts} Artefakte
-            </p>
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {it.tools.map((t) => (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {p.categories.map((c) => (
                 <span
-                  key={t}
-                  className="text-[10.5px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-foreground/65"
+                  key={c}
+                  className="text-[10.5px] px-2 py-0.5 rounded-full border border-accent/25 bg-accent-subtle text-accent-text"
                 >
-                  {t}
+                  {c}
                 </span>
               ))}
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const GEN_STATS = [
-  { label: "Läufe gesamt", value: "11", Icon: Sparkles },
-  { label: "Artefakte erzeugt", value: "84", Icon: Layers },
-  { label: "Letzter Lauf", value: "vor 2 Std.", Icon: Clock },
-];
-const GEN_ROWS = [
-  { name: "Streak Coach", model: true, artifacts: 9, tokens: "12.480", when: "vor 2 Std." },
-  { name: "Hundesitter-Markt", model: true, artifacts: 7, tokens: "9.320", when: "vor 1 Tag" },
-  { name: "Artlokal", model: false, artifacts: 5, tokens: "", when: "vor 3 Tagen" },
-  { name: "Streak Coach", model: true, artifacts: 6, tokens: "7.100", when: "vor 4 Tagen" },
-];
-
-function GenerationsView() {
-  return (
-    <div>
-      <ViewHeader title="Generierungen" sub="11 Läufe in deinem Workspace." />
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {GEN_STATS.map(({ label, value, Icon }) => (
-          <div key={label} className="card-surface p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-foreground/45">
-                {label}
+            <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3" />
+                {p.artifacts} Artefakte
               </span>
-              <Icon className="h-3.5 w-3.5 text-foreground/40" strokeWidth={1.8} />
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3 w-3" />
+                {p.when}
+              </span>
             </div>
-            <div className="text-[22px] md:text-[26px] font-semibold tracking-[-0.02em] text-foreground">
-              {value}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
-        {GEN_ROWS.map((r, i) => (
-          <div
-            key={i}
-            className="group flex items-center gap-4 px-4 py-3.5 border-b border-border last:border-0"
-          >
-            <div className="h-9 w-9 shrink-0 rounded-lg bg-surface border border-border flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-foreground/85" strokeWidth={1.8} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] font-medium text-foreground truncate">{r.name}</span>
-                <span
-                  className={cn(
-                    "shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border",
-                    r.model
-                      ? "border-accent/30 bg-accent-subtle text-accent-text"
-                      : "border-border bg-surface text-foreground/45"
-                  )}
-                >
-                  {r.model ? "Claude" : "Vorlage"}
-                </span>
-              </div>
-              <div className="mt-0.5 text-[12.5px] text-foreground/45">
-                {r.artifacts} Artefakte{r.tokens ? ` · ${r.tokens} Tokens` : ""}
-              </div>
-            </div>
-            <span className="shrink-0 text-[12.5px] text-foreground/55 hidden sm:block">
-              {r.when}
-            </span>
-            <ArrowRight className="h-4 w-4 shrink-0 text-foreground/25" />
           </div>
         ))}
       </div>
