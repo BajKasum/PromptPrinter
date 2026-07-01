@@ -17,7 +17,7 @@ export const PLANS = [
     features: [
       "Eigene API-Keys (Claude, ChatGPT, Gemini)",
       "Alle Ausgabetypen",
-      "Projekte & Bibliothek",
+      "Chats & Projekte",
       "Markdown-Export",
     ],
   },
