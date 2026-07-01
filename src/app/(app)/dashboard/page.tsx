@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   FolderKanban,
-  Sparkles,
   CreditCard,
   Star,
   MessageSquare,
@@ -87,13 +86,15 @@ export default async function DashboardPage() {
 
   const favorites = projects.filter((p) => p.isFavorite).slice(0, 4);
   const projectsTotal = projects.length;
-  const generationsTotal = projects.reduce((acc, p) => acc + (p.generationCount ?? 0), 0);
   const plan = profile?.plan ?? "free";
   const hasHistory = chats.length > 0 || projectsTotal > 0;
 
+  // A quiet context line, not a KPI cockpit — just the project count a user
+  // orients by, plus the plan. "Generierungen" is gone: it's no longer a place
+  // in the app (chats is capped at 6 here, so it can't show an honest total),
+  // so neither has any business as a headline number.
   const stats = [
     { label: "Projekte", value: String(projectsTotal), Icon: FolderKanban },
-    { label: "Generierungen", value: String(generationsTotal), Icon: Sparkles },
     { label: "Plan", value: plan.charAt(0).toUpperCase() + plan.slice(1), Icon: CreditCard },
   ];
 

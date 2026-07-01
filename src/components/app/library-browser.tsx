@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, BookOpen, Library, Star } from "lucide-react";
+import { Search, FolderKanban, Sparkles, Clock, Library, Star } from "lucide-react";
 import { cn, relativeTime } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
@@ -150,7 +150,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                 />
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-9 w-9 rounded-lg bg-surface border border-border flex items-center justify-center">
-                    <BookOpen className="h-4 w-4 text-foreground/60" strokeWidth={1.6} />
+                    <FolderKanban className="h-4 w-4 text-foreground" strokeWidth={1.8} />
                   </div>
                   <button
                     type="button"
@@ -173,23 +173,14 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                   </button>
                 </div>
 
-                <h3 className="text-[15px] font-semibold tracking-tight text-foreground mb-2">
+                {/* Name leads — this is a workspace you enter, not a record. */}
+                <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-2 line-clamp-1">
                   {it.name}
                 </h3>
 
-                {/* Artifact count — primary info in the library context */}
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-[22px] font-semibold tracking-tight text-foreground leading-none">
-                    {it.artifactCount}
-                  </span>
-                  <span className="text-[12px] text-foreground/45">
-                    {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
-                  </span>
-                </div>
-
-                {/* Category pills */}
+                {/* What's inside — category pills as the project's content areas. */}
                 {it.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="flex flex-wrap gap-1.5 mb-4">
                     {it.categories.map((c) => (
                       <span
                         key={c}
@@ -201,22 +192,17 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                   </div>
                 )}
 
-                <div className="mt-auto flex items-end justify-between pt-3 border-t border-border">
-                  <span className="text-[11.5px] text-foreground/35">
-                    Aktualisiert {relativeTime(it.updatedAt)}
+                {/* Artifact count + freshness — supporting metadata in the footer,
+                    not the headline (mirrors ProjectCard on Start). */}
+                <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3" />
+                    {it.artifactCount} {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
                   </span>
-                  {it.toolList.length > 0 && (
-                    <div className="flex flex-wrap gap-1 justify-end">
-                      {it.toolList.map((t) => (
-                        <span
-                          key={t}
-                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-foreground/50"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    {relativeTime(it.updatedAt)}
+                  </span>
                 </div>
               </div>
             );

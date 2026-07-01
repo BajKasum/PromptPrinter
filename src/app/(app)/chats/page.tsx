@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Code2, ArrowRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StaggerChildren } from "@/components/motion/fade-in";
+import { FadeIn, StaggerChildren } from "@/components/motion/fade-in";
+import { AppHeader } from "@/components/app/app-header";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { ChatCard, type ConversationRow } from "@/components/app/chat-card";
+import { relativeTime } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Chats" };
@@ -39,52 +42,120 @@ export default async function ChatsPage() {
     })
   );
 
+  const hasChats = conversations.length > 0;
+  // The newest conversation is the live one — it gets a prominent "pick this
+  // back up" row (the shared resume surface), so Chats reads as ongoing work,
+  // not a flat archive. The rest fall into the grid below.
+  const [featured, ...rest] = conversations;
+
+  const newChatAction = (
+    <Button asChild>
+      <Link href="/chat?mode=general">
+        <MessageSquare className="h-4 w-4" />
+        Neuer Chat
+      </Link>
+    </Button>
+  );
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-            Deine Chats
-          </h1>
-          <p className="mt-1 text-[14px] text-foreground/55">
-            {conversations.length === 0
-              ? "Hier erscheinen deine Chats, sobald du einen startest."
-              : `${conversations.length} ${conversations.length === 1 ? "Chat" : "Chats"}, jederzeit wieder öffnen und weiterführen.`}
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/chat?mode=general">
-            <MessageSquare className="h-4 w-4" />
-            Neuer Chat
-          </Link>
-        </Button>
-      </div>
+      <AppHeader
+        mascot="listening"
+        title="Deine Chats"
+        subtitle={
+          hasChats
+            ? "Lebendige Gespräche, jederzeit weiterführen. Aus einem Software-Chat wird auf Wunsch ein ganzes Paket."
+            : "Hier laufen deine Gespräche weiter, sobald du eins startest."
+        }
+        action={hasChats ? newChatAction : undefined}
+      />
 
-      {conversations.length === 0 ? (
-        <div className="card-surface p-12 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
-            <MessageSquare className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
+      {!hasChats ? (
+        <FadeIn>
+          <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-8 md:p-10 text-center shadow-card">
+            <AnimatedMascot state="curious" size={92} priority className="mx-auto mb-4" />
+            <p className="text-[15px] font-semibold text-foreground">Noch kein Gespräch</p>
+            <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
+              Erzähl mir dein Ziel, wir verfeinern den Prompt zusammen. Jeder Chat lässt sich
+              jederzeit fortsetzen, und aus einem Software-Chat kann ein ganzes Paket entstehen.
+            </p>
+            <Button asChild>
+              <Link href="/chat?mode=general">
+                <MessageSquare className="h-4 w-4" />
+                Ersten Chat starten
+              </Link>
+            </Button>
           </div>
-          <p className="text-[15px] text-foreground/80">Noch keine Chats</p>
-          <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-            Starte einen Chat, beschreibe dein Ziel und verfeinere den Prompt im Gespräch.
-            Jeder Chat lässt sich jederzeit fortsetzen, und aus einem Software-Chat kann
-            ein ganzes Projekt-Paket entstehen.
-          </p>
-          <Button asChild className="mt-5">
-            <Link href="/chat?mode=general">
-              <MessageSquare className="h-4 w-4" />
-              Ersten Chat starten
-            </Link>
-          </Button>
-        </div>
+        </FadeIn>
       ) : (
-        <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {conversations.map((c) => (
-            <ChatCard key={c.id} conversation={c} />
-          ))}
-        </StaggerChildren>
+        <>
+          <FadeIn>
+            <FeaturedChat conversation={featured} />
+          </FadeIn>
+
+          {rest.length > 0 && (
+            <section className="mt-10">
+              <FadeIn>
+                <h2 className="mb-4 text-[15px] font-semibold tracking-[-0.01em] text-muted-foreground">
+                  Weitere Gespräche
+                </h2>
+              </FadeIn>
+              <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {rest.map((c) => (
+                  <ChatCard key={c.id} conversation={c} />
+                ))}
+              </StaggerChildren>
+            </section>
+          )}
+        </>
       )}
     </div>
+  );
+}
+
+// The live conversation, framed as an invitation to jump back in rather than a
+// record to audit. Sits on the same sunlit resume surface as Start's hero.
+function FeaturedChat({ conversation }: { conversation: ConversationRow }) {
+  const isCode = conversation.mode === "software";
+  const hasPacket = Boolean(conversation.projectId);
+  const Icon = isCode ? Code2 : MessageSquare;
+  const count = conversation.messageCount ?? 0;
+  const desc = conversation.target
+    ? `Für ${conversation.target}`
+    : isCode
+      ? "Software-Projekt"
+      : "Alltags-Prompt";
+
+  return (
+    <Link href={`/chat?id=${conversation.id}`} className="group block">
+      <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-5 md:p-6 shadow-card transition-colors group-hover:border-border-strong">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-surface sm:flex">
+              <Icon className="h-5 w-5 text-foreground" strokeWidth={1.8} />
+            </div>
+            <div className="min-w-0">
+              <p className="mb-1 text-[11.5px] font-mono uppercase tracking-[0.09em] text-accent-text">
+                {hasPacket ? "Zuletzt offen · Paket fertig" : "Zuletzt offen"}
+              </p>
+              <h3 className="line-clamp-1 text-[18px] md:text-[20px] font-semibold tracking-[-0.01em] text-foreground">
+                {conversation.title}
+              </h3>
+              <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span className="truncate">
+                  {desc} · zuletzt {relativeTime(conversation.updated_at)} · {count} Nachricht
+                  {count === 1 ? "" : "en"}
+                </span>
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 text-[13.5px] font-medium text-accent-text">
+            <span className="hidden sm:inline">Weiterführen</span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }

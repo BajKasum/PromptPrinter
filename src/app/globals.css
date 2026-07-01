@@ -243,6 +243,20 @@
       hsl(var(--surface-raised));
   }
 
+  /*
+   * App room headers (Chats, Projekte) — a soft light from the upper-left,
+   * behind Finn and the title, so each section sits in Finn's World light
+   * instead of on a flat canvas. Token-based, static, reduced-motion-safe.
+   * Start keeps its stronger .dash-continue hero; this is the quieter echo, so
+   * the three surfaces read as rooms in one world rather than one list template.
+   */
+  .app-header-glow {
+    background: radial-gradient(55% 135% at 8% -20%, hsl(var(--accent) / 0.06), transparent 62%);
+  }
+  .dark .app-header-glow {
+    background: radial-gradient(55% 135% at 8% -20%, hsl(var(--accent) / 0.08), transparent 60%);
+  }
+
   .btn-ghost {
     @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 text-body-sm font-medium text-foreground/90 transition-colors duration-200;
   }

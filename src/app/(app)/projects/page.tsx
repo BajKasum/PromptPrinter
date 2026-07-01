@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { MessageSquare, FolderKanban } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
+import { AppHeader } from "@/components/app/app-header";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { LibraryBrowser, type LibraryItem } from "@/components/app/library-browser";
 import { ARTIFACT_META } from "@/lib/artifacts";
 import { createClient } from "@/lib/supabase/server";
@@ -96,41 +98,38 @@ export default async function ProjectsPage() {
     };
   });
 
+  const startAction = (
+    <Button asChild>
+      <Link href="/chat?mode=software">
+        <MessageSquare className="h-4 w-4" />
+        Neues Projekt starten
+      </Link>
+    </Button>
+  );
+
   return (
     <div>
-      <FadeIn>
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-              Projekte
-            </h1>
-            <p className="mt-1 text-[14px] text-foreground/55">
-              {items.length === 0
-                ? "Jedes Projekt beginnt als Software-Chat: Idee beschreiben, Finn baut das Paket."
-                : `${items.length} ${items.length === 1 ? "Projekt" : "Projekte"} mit allen Artefakten. Durchsuchen, filtern, weiterbauen.`}
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/chat?mode=software">
-              <MessageSquare className="h-4 w-4" />
-              Neues Projekt starten
-            </Link>
-          </Button>
-        </div>
-      </FadeIn>
+      <AppHeader
+        mascot="delivering"
+        title="Deine Projekte"
+        subtitle={
+          items.length === 0
+            ? "Jedes Projekt beginnt als Software-Chat: Idee beschreiben, ich bau das Paket."
+            : "Was wir zusammen gebaut haben, mit allen Artefakten. Durchsuchen, filtern, weiterbauen."
+        }
+        action={items.length > 0 ? startAction : undefined}
+      />
 
       {items.length === 0 ? (
         <FadeIn>
-          <div className="card-surface p-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
-              <FolderKanban className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
-            </div>
-            <p className="text-[15px] text-foreground/80">Noch keine Projekte</p>
-            <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-              Beschreib deine Idee im Software-Chat. Sobald genug da ist, baut Finn daraus
-              dein Paket, und es landet hier als Projekt.
+          <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-8 md:p-10 text-center shadow-card">
+            <AnimatedMascot state="building" size={92} priority className="mx-auto mb-4" />
+            <p className="text-[15px] font-semibold text-foreground">Noch kein Projekt gebaut</p>
+            <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
+              Beschreib deine Idee im Software-Chat. Sobald genug da ist, bau ich daraus dein
+              Paket, und es landet hier, mit Plan, Prompts, Datenbank und mehr.
             </p>
-            <Button asChild className="mt-5">
+            <Button asChild>
               <Link href="/chat?mode=software">
                 <MessageSquare className="h-4 w-4" />
                 Neues Projekt starten

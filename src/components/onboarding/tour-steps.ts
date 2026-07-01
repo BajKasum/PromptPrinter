@@ -32,7 +32,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "stats",
     selectors: ['[data-tour="stats"]'],
     title: "Dein Workspace auf einen Blick",
-    body: "Projekte, Generierungen und dein aktueller Plan. Im Free-Plan nutzt du deine eigenen API-Keys; mit Pro ist die API inklusive und die Limits sind höher.",
+    body: "Deine Projekte und dein aktueller Plan. Im Free-Plan nutzt du deine eigenen API-Keys; mit Pro ist die API inklusive und die Limits sind höher.",
   },
   {
     id: "new-chat",
