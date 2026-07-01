@@ -46,7 +46,7 @@ export function AvatarUpload({
       return;
     }
     if (file.size > MAX_BYTES) {
-      setError("Das Bild ist zu gross — höchstens 2 MB.");
+      setError("Das Bild ist zu gross, höchstens 2 MB.");
       return;
     }
 
@@ -174,7 +174,7 @@ export function AvatarUpload({
         {error ? (
           <p className="mt-1.5 text-[12px] text-red-300/90">{error}</p>
         ) : (
-          <p className="mt-1.5 text-[12px] text-foreground/40">JPG, PNG, WebP oder GIF — höchstens 2 MB.</p>
+          <p className="mt-1.5 text-[12px] text-foreground/40">JPG, PNG, WebP oder GIF, höchstens 2 MB.</p>
         )}
       </div>
     </div>

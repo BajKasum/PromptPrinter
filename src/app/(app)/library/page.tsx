@@ -124,7 +124,7 @@ export default async function LibraryPage() {
             </div>
             <p className="text-[15px] text-foreground/80">Noch keine Artefakte</p>
             <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-              Sobald ein Projekt Artefakte erzeugt hat, findest du sie hier — zum Nachlesen,
+              Sobald ein Projekt Artefakte erzeugt hat, findest du sie hier: zum Nachlesen,
               Kopieren und Wiederverwenden.
             </p>
             <Button asChild className="mt-5">

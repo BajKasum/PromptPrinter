@@ -13,7 +13,7 @@ function translatePasswordError(message: string): string {
   if (m.includes("different from the old") || m.includes("should be different"))
     return "Das neue Passwort muss sich vom aktuellen unterscheiden.";
   if (m.includes("password should be")) return "Passwort zu schwach (mindestens 8 Zeichen).";
-  if (m.includes("rate limit")) return "Zu viele Versuche — bitte kurz warten.";
+  if (m.includes("rate limit")) return "Zu viele Versuche, bitte kurz warten.";
   if (m.includes("invalid login credentials")) return "Aktuelles Passwort ist falsch.";
   return message;
 }

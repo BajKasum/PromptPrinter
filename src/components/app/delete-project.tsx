@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,8 +21,17 @@ export function DeleteProjectButton({
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => setMounted(true), []);
+
+  // Focus the safe default (Cancel) the instant the dialog opens, so keyboard
+  // and screen-reader users land inside it instead of on the trigger behind it.
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => cancelRef.current?.focus(), 20);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   // Escape closes the dialog — but never while a delete is in flight.
   useEffect(() => {
@@ -114,7 +123,7 @@ export function DeleteProjectButton({
                   </div>
 
                   <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-                    <Button variant="ghost" onClick={close} disabled={deleting}>
+                    <Button ref={cancelRef} variant="ghost" onClick={close} disabled={deleting}>
                       Abbrechen
                     </Button>
                     <Button

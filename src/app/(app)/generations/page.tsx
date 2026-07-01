@@ -68,7 +68,7 @@ export default async function GenerationsPage() {
             <p className="mt-1 text-[14px] text-foreground/55">
               {total === 0
                 ? "Jeder abgeschlossene Chat-Lauf erscheint hier mit seinen Artefakten."
-                : `${total} ${total === 1 ? "Lauf" : "Läufe"} — dein Ausführungsverlauf.`}
+                : `${total} ${total === 1 ? "Lauf" : "Läufe"}, dein Ausführungsverlauf.`}
             </p>
           </div>
           <Button asChild>

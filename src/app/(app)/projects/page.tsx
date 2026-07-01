@@ -46,7 +46,7 @@ export default async function ProjectsPage() {
           <p className="mt-1 text-[14px] text-foreground/55">
             {projects.length === 0
               ? "Starte einen Chat und dein erstes Projekt wird hier angelegt."
-              : `${projects.length} ${projects.length === 1 ? "Projekt" : "Projekte"} — klick auf eines, um weiterzubauen.`}
+              : `${projects.length} ${projects.length === 1 ? "Projekt" : "Projekte"}, klick auf eines, um weiterzubauen.`}
           </p>
         </div>
         <Button asChild>
@@ -64,7 +64,7 @@ export default async function ProjectsPage() {
           </div>
           <p className="text-[15px] text-foreground/80">Noch keine Projekte</p>
           <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
-            Beschreib deine Idee im Chat — dein erstes Projekt wird dabei automatisch angelegt.
+            Beschreib deine Idee im Chat, dein erstes Projekt wird dabei automatisch angelegt.
           </p>
           <Button asChild className="mt-5">
             <Link href="/chat?mode=software">

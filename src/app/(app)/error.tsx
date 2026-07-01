@@ -33,7 +33,7 @@ export default function AppError({
           Da ist etwas schiefgelaufen
         </h1>
         <p className="text-[13.5px] text-foreground/55">
-          Dieser Bereich konnte nicht geladen werden. Versuch es erneut — wenn es
+          Dieser Bereich konnte nicht geladen werden. Versuch es erneut, wenn es
           weiter klemmt, lade die Seite neu.
         </p>
         {error.digest && (

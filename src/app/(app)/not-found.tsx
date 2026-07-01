@@ -18,7 +18,7 @@ export default function AppNotFound() {
           Nicht gefunden
         </h1>
         <p className="text-[13.5px] text-foreground/55">
-          Diese Seite oder dieses Projekt existiert nicht — oder gehört nicht zu
+          Diese Seite oder dieses Projekt existiert nicht, oder gehört nicht zu
           deinem Konto.
         </p>
         <div className="mt-6 flex items-center justify-center gap-2">
