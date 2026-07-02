@@ -44,12 +44,27 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
   refine: {
     heading: "Pass deine Prompts an",
     sub: "Sag mir, was ich an deinen Prompts ändern soll. Du bekommst die aktualisierte, fertige Version zurück.",
-    starters: [
-      "Mach den Master-Prompt kürzer und prägnanter.",
-      "Ergänze den Frontend-Prompt um einen Dark-Mode.",
-      "Erkläre das Datenbank-Schema mit mehr Kommentaren.",
-    ],
+    // Unused directly — refine's starters depend on the project's own mode
+    // (software vs. general), see REFINE_STARTERS below. Kept here only so
+    // every Variant has the same shape; VARIANTS[variant] below never reads it.
+    starters: [],
   },
+};
+
+// The refine variant collapses mode away (see `variant` below), but its
+// starter suggestions must still match what the project actually is — a
+// Prompt-Projekt has no Frontend-/Backend-/Datenbank-Anteil to reference.
+const REFINE_STARTERS: Record<"general" | "software", string[]> = {
+  software: [
+    "Mach den Master-Prompt kürzer und prägnanter.",
+    "Ergänze den Frontend-Prompt um einen Dark-Mode.",
+    "Erkläre das Datenbank-Schema mit mehr Kommentaren.",
+  ],
+  general: [
+    "Mach den Haupt-Prompt kürzer und direkter.",
+    "Passe den Ton an — freundlicher und weniger formell.",
+    "Ergänze ein konkretes Beispiel für die gewünschte Ausgabe.",
+  ],
 };
 
 export function Chat({
@@ -72,9 +87,12 @@ export function Chat({
   linkedProjectId?: string;
 }) {
   // Refining a project's packet is its own context; otherwise the mode picks the
-  // copy. The variant only drives the empty-state heading/sub/starters.
+  // copy. The variant drives the empty-state heading/sub; starters additionally
+  // need the underlying mode when refining, since "refine" alone doesn't say
+  // whether this project is a software packet or a saved general prompt.
   const variant: Variant = projectId ? "refine" : mode;
-  const { heading, sub, starters } = VARIANTS[variant];
+  const { heading, sub } = VARIANTS[variant];
+  const starters = variant === "refine" ? REFINE_STARTERS[mode] : VARIANTS[variant].starters;
 
   // Placeholder mirrors the variant so the input itself reinforces what to type.
   const placeholder =
