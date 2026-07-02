@@ -12,8 +12,8 @@ export type TourStep = {
 };
 
 // The first-login tour, in walk-through order. Every target is a real,
-// always-rendered piece of the dashboard chrome (sidebar, topbar, dashboard
-// sections) so the whole tour runs on one page — no mid-tour navigation.
+// always-rendered piece of the app chrome (sidebar, topbar) so the whole tour
+// runs on one page — it auto-starts on /chats, the login landing.
 export const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
@@ -21,30 +21,16 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Hier werden aus rohen Ideen build-fertige Prompts. Diese kurze Tour zeigt dir die wichtigsten Funktionen, sie dauert keine Minute.",
   },
   {
-    id: "modes",
-    // New accounts see the big choice cards in the empty state; accounts with
-    // projects fall back to the same two buttons in the dashboard header.
-    selectors: ['[data-tour="start-cards"]', '[data-tour="quick-actions"]'],
-    title: "Zwei Wege zum Start",
-    body: "Alltags-Prompt schreibt fertige Prompts für ChatGPT, Claude & Co. Im Software-Projekt beschreibst du deine Idee, und Finn baut daraus ein komplettes Paket: Plan, Datenbank und Prompts, gespeichert als Projekt.",
-  },
-  {
-    id: "stats",
-    selectors: ['[data-tour="stats"]'],
-    title: "Dein Workspace auf einen Blick",
-    body: "Deine Projekte und dein aktueller Plan. Im Free-Plan nutzt du deine eigenen API-Keys; mit Pro ist die API inklusive und die Limits sind höher.",
-  },
-  {
     id: "new-chat",
     selectors: ['[data-tour="new-chat"]'],
-    title: "Jederzeit neu starten",
-    body: "Über „Neuer Chat“ in der Seitenleiste beginnst du von jeder Seite aus eine frische Unterhaltung mit dem Prompt-Assistenten.",
+    title: "Alles beginnt mit einem Chat",
+    body: "Über „Neuer Chat“ startest du von jeder Seite aus eine frische Unterhaltung. Beschreib dein Ziel, Finn baut den Prompt mit dir — und ein gutes Ergebnis hebst du dir als Projekt auf.",
   },
   {
     id: "nav",
     selectors: ['[data-tour="nav-main"]'],
-    title: "Alles an einem Ort",
-    body: "Start bringt dich zurück zu deiner Arbeit, Chats sammelt deine Unterhaltungen, Projekte zeigt jedes fertige Paket mit allen Artefakten und seinem Bau-Verlauf.",
+    title: "Deine zwei Arbeitsorte",
+    body: "Chats sammelt deine Unterhaltungen — die letzten stehen direkt hier in der Seitenleiste. Projekte ist das Zuhause für alles, was du dir aufhebst, mit allen Artefakten und dem Verlauf.",
   },
   {
     id: "mobile-menu",

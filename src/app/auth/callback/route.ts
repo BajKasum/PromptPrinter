@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   // Only ever forward to an in-app path — never an attacker-supplied absolute URL.
   const rawNext = url.searchParams.get("next");
-  const next = rawNext && rawNext.startsWith("/") ? rawNext : "/dashboard";
+  const next = rawNext && rawNext.startsWith("/") ? rawNext : "/chats";
 
   const supabase = await createClient();
 

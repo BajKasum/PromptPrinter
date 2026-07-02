@@ -10,6 +10,12 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > mehreren Chats, Chat-Subrouten, einklappbare Sidebar). Die App-/Nav-Beschreibungen
 > weiter unten sind IST-Zustand und werden phasenweise nachgezogen. Bei
 > Widersprüchen gilt REDESIGN.md.
+>
+> **Stand: Phase 1 umgesetzt** — Nav ist zweigliedrig (Chats/Projekte),
+> `/dashboard` ist nur noch ein Redirect auf `/chats` (Login landet dort), die
+> Sidebar ist einklappbar (Cookie `pp-sidebar`, `Strg/⌘+B`) und trägt Recents
+> (letzte globale Chats + gepinnte/letzte Projekte). Als Nächstes: Phase 2
+> (Chat-Kanonisierung, `/chats/new` + `/chats/[id]`).
 
 ## Was ist PromptPrinter?
 

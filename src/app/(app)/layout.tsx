@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/app/sidebar";
+import { cookies } from "next/headers";
+import { Sidebar, type SidebarChat, type SidebarProject } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { ToastProvider } from "@/components/ui/toast";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { createClient } from "@/lib/supabase/server";
+
+type SidebarChatRow = { id: string; title: string };
+type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
 
 // Auth-gated shell. The middleware already guards these routes; fetching the
 // user here is both the defense-in-depth check and the source for the topbar.
@@ -14,11 +18,39 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan, display_name, avatar_url, settings")
-    .eq("id", user.id)
-    .maybeSingle();
+  // The sidebar's collapse state lives in a cookie so the server renders the
+  // correct width on first paint — no client-side snap after hydration.
+  const cookieStore = await cookies();
+  const sidebarCollapsed = cookieStore.get("pp-sidebar")?.value === "1";
+
+  // Recents for the sidebar: the latest global chats (project chats live in
+  // their workspace) and pinned-then-recent projects. RLS scopes both reads.
+  const [{ data: profile }, { data: rawChats }, { data: rawProjects }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("plan, display_name, avatar_url, settings")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("conversations")
+      .select("id, title")
+      .is("project_id", null)
+      .order("updated_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("projects")
+      .select("id, name, is_favorite")
+      .order("is_favorite", { ascending: false })
+      .order("updated_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const sidebarChats: SidebarChat[] = ((rawChats as SidebarChatRow[] | null) ?? []).map(
+    (c) => ({ id: c.id, title: c.title })
+  );
+  const sidebarProjects: SidebarProject[] = (
+    (rawProjects as SidebarProjectRow[] | null) ?? []
+  ).map((p) => ({ id: p.id, name: p.name, isFavorite: p.is_favorite ?? false }));
 
   // First-login tour: auto-start until profiles.settings.onboarding_done is set.
   const rawSettings = profile?.settings;
@@ -36,9 +68,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Zum Inhalt springen
       </a>
-      <div className="min-h-screen">
-        <Sidebar />
-        <div className="md:ml-[240px] px-6 md:px-10 pt-0 pb-16">
+      <div className="min-h-screen md:flex">
+        <Sidebar
+          initialCollapsed={sidebarCollapsed}
+          chats={sidebarChats}
+          projects={sidebarProjects}
+        />
+        <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
           <Topbar
             email={user.email ?? ""}
             plan={profile?.plan ?? "free"}

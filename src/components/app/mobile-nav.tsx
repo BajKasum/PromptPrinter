@@ -68,7 +68,7 @@ export function MobileNav() {
               className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[82vw] flex flex-col border-r border-border bg-surface-raised"
             >
               <div className="flex items-center justify-between px-5 py-5 border-b border-border">
-                <Link href="/dashboard" className="inline-flex" onClick={() => setOpen(false)}>
+                <Link href="/chats" className="inline-flex" onClick={() => setOpen(false)}>
                   <Logo />
                 </Link>
                 <button

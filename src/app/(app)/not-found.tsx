@@ -23,9 +23,9 @@ export default function AppNotFound() {
         </p>
         <div className="mt-6 flex items-center justify-center gap-2">
           <Button variant="primary" asChild>
-            <Link href="/dashboard">
+            <Link href="/chats">
               <ArrowLeft className="h-4 w-4" />
-              Zum Dashboard
+              Zu deinen Chats
             </Link>
           </Button>
           <Button variant="ghost" asChild>

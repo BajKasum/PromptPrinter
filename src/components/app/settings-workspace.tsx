@@ -340,13 +340,13 @@ export function SettingsWorkspace({
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[13px] text-foreground/55">
-              Die Tour führt dich Schritt für Schritt durch Dashboard, Chat-Modi und
+              Die Tour führt dich Schritt für Schritt durch Chats, Projekte und
               Navigation, genau wie beim ersten Login.
             </p>
             <Button
               variant="ghost"
               className="shrink-0"
-              onClick={() => router.push("/dashboard?tour=1")}
+              onClick={() => router.push("/chats?tour=1")}
             >
               <Compass className="h-4 w-4" />
               Tour erneut starten

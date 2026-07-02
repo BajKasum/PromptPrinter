@@ -30,7 +30,7 @@ export default function NotFound() {
             </Link>
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/chats">Zur App</Link>
           </Button>
         </div>
       </div>

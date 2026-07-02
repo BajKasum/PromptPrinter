@@ -257,6 +257,22 @@
     background: radial-gradient(55% 135% at 8% -20%, hsl(var(--accent) / 0.08), transparent 60%);
   }
 
+  /*
+   * Sidebar — Finn's light falls softly from above, so the rail reads as part
+   * of his world instead of a flat gray drawer. Same token-based, static,
+   * felt-not-seen treatment as .app-header-glow, just vertical.
+   */
+  .sidebar-glow {
+    background:
+      radial-gradient(120% 34% at 50% -12%, hsl(var(--accent) / 0.05), transparent 68%),
+      hsl(var(--surface));
+  }
+  .dark .sidebar-glow {
+    background:
+      radial-gradient(120% 34% at 50% -12%, hsl(var(--accent) / 0.07), transparent 66%),
+      hsl(var(--surface));
+  }
+
   .btn-ghost {
     @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 text-body-sm font-medium text-foreground/90 transition-colors duration-200;
   }

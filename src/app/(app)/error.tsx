@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { RotateCcw, LayoutDashboard } from "lucide-react";
+import { RotateCcw, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/brand/mascot";
 
@@ -47,9 +47,9 @@ export default function AppError({
             Erneut versuchen
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/dashboard">
-              <LayoutDashboard className="h-4 w-4" />
-              Zum Dashboard
+            <Link href="/chats">
+              <MessageSquare className="h-4 w-4" />
+              Zu deinen Chats
             </Link>
           </Button>
         </div>

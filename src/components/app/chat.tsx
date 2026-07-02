@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Send, Loader2, Copy, Check, Download, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -102,6 +103,7 @@ export function Chat({
         ? "Sag mir, was ich ändern soll…"
         : "Beschreibe, wofür du einen Prompt brauchst…";
 
+  const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
   const [conversationId, setConversationId] = useState<string | undefined>(
     initialConversationId
@@ -146,8 +148,13 @@ export function Chat({
       if (!res.ok) throw new Error(json.detail ?? "Chat fehlgeschlagen");
       setMessages((m) => [...m, { role: "assistant", content: json.reply as string }]);
       // The route returns the conversation id on the first persisted turn; hold
-      // onto it so every following turn appends to the same stored chat.
-      if (json.conversationId) setConversationId(json.conversationId as string);
+      // onto it so every following turn appends to the same stored chat. That
+      // first turn also refreshes the server components, so the sidebar recents
+      // show the new chat without a full reload.
+      if (json.conversationId) {
+        if (!conversationId) router.refresh();
+        setConversationId(json.conversationId as string);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unbekannter Fehler");
     } finally {
