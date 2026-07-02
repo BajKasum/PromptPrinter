@@ -11,11 +11,15 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > weiter unten sind IST-Zustand und werden phasenweise nachgezogen. Bei
 > Widersprüchen gilt REDESIGN.md.
 >
-> **Stand: Phase 1 umgesetzt** — Nav ist zweigliedrig (Chats/Projekte),
-> `/dashboard` ist nur noch ein Redirect auf `/chats` (Login landet dort), die
-> Sidebar ist einklappbar (Cookie `pp-sidebar`, `Strg/⌘+B`) und trägt Recents
-> (letzte globale Chats + gepinnte/letzte Projekte). Als Nächstes: Phase 2
-> (Chat-Kanonisierung, `/chats/new` + `/chats/[id]`).
+> **Stand: Phasen 1+2 umgesetzt** — Nav ist zweigliedrig (Chats/Projekte), die
+> Sidebar ist einklappbar (Cookie `pp-sidebar`, `Strg/⌘+B`) und trägt Recents.
+> Chats sind kanonisch: `/chats/new` (Login-Landing) + `/chats/[id]`; `/chat`
+> und `/dashboard` sind nur noch Redirects. Es gibt **eine** Chat-Erfahrung
+> ohne Modus-Wahl — Prompt speichern / Software-Paket bauen sind eine
+> Handoff-Leiste am Chat-Ende (`conversations.mode` existiert nur noch intern).
+> `/chats` listet nur globale Chats (Projekt-Chats → Workspace) mit
+> Umbenennen/Löschen. Als Nächstes: Phase 3 (Workspace v1, Migration 0011,
+> Projekt-Anlegen, Chat-Subrouten im Projekt).
 
 ## Was ist PromptPrinter?
 

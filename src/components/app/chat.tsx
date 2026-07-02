@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Send, Loader2, Copy, Check, Download, ArrowRight } from "lucide-react";
+import { Send, Loader2, Copy, Check, Download, Package, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
@@ -17,31 +16,26 @@ import remarkGfm from "remark-gfm";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-// The chat serves three contexts; each gets its own empty-state copy + starters.
-//  - general : everyday prompts (school, writing, planning)
-//  - software: software-build prompts, standalone
-//  - refine  : refining the build packet of a specific project
+// There is one chat (REDESIGN.md, Phase 2) — no mode choice at the start. The
+// `mode` prop survives as an internal value (legacy conversations carry it, and
+// the API picks its system prompt from it), but the empty state is identical
+// for both stored modes. Only refining a project's packet is its own context.
 type Variant = "general" | "software" | "refine";
 
+const UNIFIED_EMPTY = {
+  heading: "Woran arbeiten wir?",
+  sub: "Beschreib dein Ziel — ein Text, ein Lernplan, eine ganze Software-Idee. Ich bau dir den fertigen Prompt und verfeinere ihn mit dir.",
+  starters: [
+    "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
+    "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
+    "Ich hab eine App-Idee — bau mir das komplette Prompt-Paket dafür.",
+  ],
+};
+
 const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string[] }> = {
-  general: {
-    heading: "Wofür brauchst du einen Prompt?",
-    sub: "Beschreib dein Ziel. Ich bau dir einen fertigen Prompt und verfeinere ihn mit dir. Gut genug? Dann heben wir ihn zusammen auf.",
-    starters: [
-      "Hilf mir, einen Prompt zu schreiben, um Französisch-Vokabeln zu üben.",
-      "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
-      "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
-    ],
-  },
-  software: {
-    heading: "Was willst du bauen?",
-    sub: "Beschreib deine Idee. Wenn ich genug weiß, bau ich dir dein komplettes Paket: Plan, Prompts, Datenbank und mehr.",
-    starters: [
-      "Schreib mir einen Prompt für ein React-Komponenten-Gerüst mit Tailwind.",
-      "Ich brauche einen Prompt, der eine REST-API in Node.js entwirft.",
-      "Erstelle einen Prompt, der ein Datenbank-Schema für eine Todo-App plant.",
-    ],
-  },
+  general: UNIFIED_EMPTY,
+  // Legacy mode value on old conversations; the chat experience is one.
+  software: UNIFIED_EMPTY,
   refine: {
     heading: "Pass deine Prompts an",
     sub: "Sag mir, was ich an deinen Prompts ändern soll. Du bekommst die aktualisierte, fertige Version zurück.",
@@ -75,33 +69,28 @@ export function Chat({
   initialMessages,
   initialConversationId,
   defaultTools,
-  linkedProjectId,
 }: {
+  /** Internal system-prompt selector; legacy conversations may carry "software". */
   mode: "general" | "software";
   target?: string;
   projectId?: string;
   initialMessages?: Msg[];
   initialConversationId?: string;
-  /** Per-user tool defaults for the packet bridge (software mode). */
+  /** Per-user tool defaults for the packet handoff. */
   defaultTools?: ProjectTools;
-  /** Set when this conversation already produced a project — no second packet. */
-  linkedProjectId?: string;
 }) {
-  // Refining a project's packet is its own context; otherwise the mode picks the
-  // copy. The variant drives the empty-state heading/sub; starters additionally
-  // need the underlying mode when refining, since "refine" alone doesn't say
-  // whether this project is a software packet or a saved general prompt.
+  // Refining a project's packet is its own context; every standalone chat is
+  // the one unified chat. Starters still need the underlying mode when
+  // refining, since "refine" alone doesn't say whether this project is a
+  // software packet or a saved general prompt.
   const variant: Variant = projectId ? "refine" : mode;
   const { heading, sub } = VARIANTS[variant];
   const starters = variant === "refine" ? REFINE_STARTERS[mode] : VARIANTS[variant].starters;
 
-  // Placeholder mirrors the variant so the input itself reinforces what to type.
   const placeholder =
-    variant === "software"
-      ? "Beschreibe, was du bauen willst…"
-      : variant === "refine"
-        ? "Sag mir, was ich ändern soll…"
-        : "Beschreibe, wofür du einen Prompt brauchst…";
+    variant === "refine"
+      ? "Sag mir, was ich ändern soll…"
+      : "Beschreib, woran wir arbeiten…";
 
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
@@ -114,17 +103,21 @@ export function Chat({
   // While the packet/save handoff card is open, the transcript condenses to a
   // context strip and the composer hides — the card is the one thing on stage.
   const [handoffOpen, setHandoffOpen] = useState(false);
+  // Which handoff card is on stage. The strip below offers both: saving the
+  // prompt or building the full software packet — the outcome is a choice at
+  // the end of a chat, no longer a mode picked at the start.
+  const [handoff, setHandoff] = useState<"none" | "packet" | "save">("none");
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // The bridge appears once the user has described anything in a standalone
-  // software chat — nothing exists yet to show, building IS the deliverable.
-  // A general chat already hands over a finished prompt inline, so saving only
-  // makes sense once there's a reply worth keeping. Either way, a conversation
-  // that already produced its project links to it instead of offering again.
-  const hasUserMessage = messages.some((m) => m.role === "user");
+  // The handoff appears once there's a real exchange worth keeping. Refine
+  // chats belong to an existing project — nothing to hand off there.
   const hasAssistantReply = messages.some((m) => m.role === "assistant");
-  const showBridge = variant === "software" && !linkedProjectId && hasUserMessage;
-  const showSave = variant === "general" && !linkedProjectId && hasAssistantReply;
+  const canHandoff = variant !== "refine" && hasAssistantReply;
+
+  function closeHandoff() {
+    setHandoff("none");
+    setHandoffOpen(false);
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -149,11 +142,18 @@ export function Chat({
       setMessages((m) => [...m, { role: "assistant", content: json.reply as string }]);
       // The route returns the conversation id on the first persisted turn; hold
       // onto it so every following turn appends to the same stored chat. That
-      // first turn also refreshes the server components, so the sidebar recents
-      // show the new chat without a full reload.
+      // first turn moves a fresh standalone chat onto its canonical URL
+      // (/chats/new → /chats/[id]) and refreshes the server components so the
+      // sidebar recents pick the chat up. Refine chats stay on their project.
       if (json.conversationId) {
-        if (!conversationId) router.refresh();
-        setConversationId(json.conversationId as string);
+        const id = json.conversationId as string;
+        if (!conversationId) {
+          if (!projectId && !initialConversationId) {
+            router.replace(`/chats/${id}`, { scroll: false });
+          }
+          router.refresh();
+        }
+        setConversationId(id);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unbekannter Fehler");
@@ -200,38 +200,44 @@ export function Chat({
         )}
       </div>
 
-      {showBridge && (
+      {canHandoff && handoff === "none" && (
+        <div className="mt-3 flex flex-col gap-3 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-foreground/85">
+            Zufrieden? Dann heb dir das Ergebnis auf.
+          </p>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setHandoff("packet")}>
+              <Package className="h-4 w-4" />
+              Software-Paket bauen
+            </Button>
+            <Button size="sm" variant="accent" onClick={() => setHandoff("save")}>
+              <BookmarkPlus className="h-4 w-4" />
+              Prompt speichern
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {canHandoff && handoff === "packet" && (
         <PacketBridge
+          autoOpen
           userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
           defaultTools={defaultTools ?? DEFAULT_TOOLS}
           conversationId={conversationId}
           onOpenChange={setHandoffOpen}
+          onBack={closeHandoff}
         />
       )}
 
-      {showSave && (
+      {canHandoff && handoff === "save" && (
         <PromptSave
+          autoOpen
           userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
           initialTarget={target}
           conversationId={conversationId}
           onOpenChange={setHandoffOpen}
+          onBack={closeHandoff}
         />
-      )}
-
-      {(variant === "software" || variant === "general") && linkedProjectId && (
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
-          <p className="text-[13px] text-foreground/75">
-            {variant === "software"
-              ? "Dein Paket zu diesem Chat ist fertig."
-              : "Dieser Prompt ist gespeichert."}
-          </p>
-          <Button asChild size="sm" variant="ghost" className="shrink-0">
-            <Link href={`/projects/${linkedProjectId}`}>
-              Zum Projekt
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </div>
       )}
 
       {error && (

@@ -7,9 +7,9 @@ import { Tour } from "@/components/onboarding/tour";
 import { TOUR_STEPS } from "@/components/onboarding/tour-steps";
 
 /**
- * Mounts the first-login tour. Auto-starts once on /chats (the login landing)
- * when the profile hasn't completed it yet; `?tour=1` (the settings restart
- * button) forces a run regardless. Closing — finish, skip or Escape — persists
+ * Mounts the first-login tour. Auto-starts once on /chats/new (the login
+ * landing) when the profile hasn't completed it yet; `?tour=1` (the settings
+ * restart button) forces a run regardless. Closing — finish, skip or Escape — persists
  * `onboarding_done` into profiles.settings so it never auto-opens again.
  */
 export function Onboarding({ userId, initialDone }: { userId: string; initialDone: boolean }) {
@@ -35,7 +35,7 @@ function OnboardingInner({ userId, initialDone }: { userId: string; initialDone:
 
   useEffect(() => {
     if (open) return;
-    const auto = !initialDone && !ranRef.current && pathname === "/chats";
+    const auto = !initialDone && !ranRef.current && pathname === "/chats/new";
     if (forced || auto) {
       // Small delay so the dashboard has painted and targets are measurable.
       // The ref is only set when the timer actually fires — setting it earlier

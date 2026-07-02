@@ -83,7 +83,7 @@ export function MobileNav() {
 
               <div className="px-3 py-4 flex-1 overflow-y-auto">
                 <Link
-                  href="/chat"
+                  href="/chats/new"
                   onClick={() => setOpen(false)}
                   className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
                 >

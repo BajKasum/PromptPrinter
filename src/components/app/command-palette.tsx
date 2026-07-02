@@ -8,7 +8,6 @@ import {
   Search,
   FolderKanban,
   MessageSquare,
-  Code2,
   CornerDownLeft,
   type LucideIcon,
 } from "lucide-react";
@@ -77,9 +76,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       Icon: n.Icon,
       perform: () => go(n.href),
     }));
+    // One entry point, not two: there is only one chat (REDESIGN.md, Phase 2).
     const actions: Cmd[] = [
-      { id: "chat-general", label: "Alltags-Prompt starten", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chat?mode=general") },
-      { id: "chat-software", label: "Software-Projekt starten", group: "Aktionen", Icon: Code2, perform: () => go("/chat?mode=software") },
+      { id: "new-chat", label: "Neuer Chat", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chats/new") },
     ];
     return [...pages, ...actions];
   }, [go]);

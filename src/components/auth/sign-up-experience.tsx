@@ -25,7 +25,7 @@ const schema = z.object({
 export function SignUpExperience() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/chats";
+  const next = search.get("next") || "/chats/new";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

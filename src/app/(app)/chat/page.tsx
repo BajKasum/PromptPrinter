@@ -1,105 +1,16 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, MessageSquare, Code2 } from "lucide-react";
-import { Chat } from "@/components/app/chat";
-import { FadeIn } from "@/components/motion/fade-in";
-import { parseToolDefaults } from "@/lib/tools";
-import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
+type SearchParams = Promise<{ id?: string }>;
 
-export const metadata = { title: "Chat" };
-
-type SearchParams = Promise<{ mode?: string; target?: string; id?: string }>;
-
-type DbMessage = { role: "user" | "assistant"; content: string };
-
-export default async function ChatPage({ searchParams }: { searchParams: SearchParams }) {
-  const { mode: rawMode, target: rawTarget, id } = await searchParams;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  // The packet bridge prefills its tool choices from the user's saved defaults
-  // (settings page: "füllt jedes neue Projekt automatisch vor").
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("settings")
-    .eq("id", user.id)
-    .maybeSingle();
-  const defaultTools = parseToolDefaults(profile?.settings);
-
-  // A fresh chat takes its mode/target from the query string. Continuing a saved
-  // chat (?id=...) instead loads its stored mode/target + full transcript. RLS
-  // scopes both reads to the owner, so an unknown or foreign id simply yields
-  // nothing and we fall back to a fresh chat.
-  let mode: "general" | "software" = rawMode === "software" ? "software" : "general";
-  let target = rawTarget;
-  let initialMessages: DbMessage[] | undefined;
-  let conversationId: string | undefined;
-  let linkedProjectId: string | undefined;
-
-  if (id) {
-    const { data: convo } = await supabase
-      .from("conversations")
-      .select("id, mode, target, project_id")
-      .eq("id", id)
-      .maybeSingle();
-    if (convo) {
-      conversationId = convo.id as string;
-      mode = convo.mode === "software" ? "software" : "general";
-      target = (convo.target as string | null) ?? undefined;
-      // A conversation that already produced its packet links to the project
-      // instead of offering to build a second one.
-      linkedProjectId = (convo.project_id as string | null) ?? undefined;
-      const { data: rows } = await supabase
-        .from("messages")
-        .select("role, content")
-        .eq("conversation_id", id)
-        .order("created_at", { ascending: true });
-      initialMessages = (rows as DbMessage[] | null) ?? [];
-    }
-  }
-
-  const isCode = mode === "software";
-
-  return (
-    <div className="max-w-[900px] mx-auto">
-      <FadeIn>
-        <div className="mb-6">
-          <Link
-            href="/chats"
-            className="inline-flex items-center gap-1.5 text-[13px] text-foreground/55 hover:text-foreground transition-colors mb-4"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Zurück zu deinen Chats
-          </Link>
-          <h1 className="flex items-center gap-2.5 text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
-            {isCode ? (
-              <Code2 className="h-6 w-6 shrink-0 text-accent-text" strokeWidth={1.8} />
-            ) : (
-              <MessageSquare className="h-6 w-6 shrink-0 text-accent-text" strokeWidth={1.8} />
-            )}
-            {isCode ? "Software-Projekt" : "Alltags-Prompt"}
-          </h1>
-          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-foreground/55">
-            {isCode
-              ? "Für ganze Software-Projekte: Plan, Datenbank und Prompts für Lovable, Cursor & Co."
-              : "Für alltägliche Prompts: Texte, Recherche und Ideen für ChatGPT, Claude & Co."}
-          </p>
-        </div>
-      </FadeIn>
-      <Chat
-        mode={mode}
-        target={target}
-        initialMessages={initialMessages}
-        initialConversationId={conversationId}
-        defaultTools={defaultTools}
-        linkedProjectId={linkedProjectId}
-      />
-    </div>
-  );
+// Legacy route (REDESIGN.md, Phase 2): chats live at /chats/[id] now, a fresh
+// chat starts at /chats/new. Old bookmarks like /chat?id=X are rewritten to
+// the canonical URL; the ?mode=/?target= params are gone with the mode UI —
+// there is only one chat.
+export default async function LegacyChatRedirect({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { id } = await searchParams;
+  redirect(id ? `/chats/${id}` : "/chats/new");
 }

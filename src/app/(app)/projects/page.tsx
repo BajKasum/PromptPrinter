@@ -100,9 +100,9 @@ export default async function ProjectsPage() {
 
   const startAction = (
     <Button asChild>
-      <Link href="/chat?mode=software">
+      <Link href="/chats/new">
         <MessageSquare className="h-4 w-4" />
-        Neues Projekt starten
+        Im Chat starten
       </Link>
     </Button>
   );
@@ -114,7 +114,7 @@ export default async function ProjectsPage() {
         title="Deine Projekte"
         subtitle={
           items.length === 0
-            ? "Jedes Projekt beginnt als Chat: ein Software-Chat wird zum kompletten Paket, ein guter Prompt lässt sich aufheben."
+            ? "Jedes Projekt beginnt als Chat: beschreib dein Ziel, und heb dir das Ergebnis auf — als komplettes Paket oder als feinen Prompt."
             : "Was wir zusammen gebaut haben, mit allen Artefakten. Durchsuchen, filtern, weiterbauen."
         }
         action={items.length > 0 ? startAction : undefined}
@@ -126,24 +126,16 @@ export default async function ProjectsPage() {
             <AnimatedMascot state="building" size={92} priority className="mx-auto mb-4" />
             <p className="text-[15px] font-semibold text-foreground">Noch kein Projekt gebaut</p>
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-              Beschreib deine Idee im Chat. Ein Software-Chat wird zum kompletten Paket mit
-              Plan, Prompts und Datenbank; ein guter Alltags-Prompt lässt sich direkt
-              aufheben. Beides landet hier.
+              Beschreib deine Idee im Chat. Am Ende hebst du dir das Ergebnis auf —
+              als komplettes Software-Paket mit Plan, Prompts und Datenbank, oder
+              als feinen Prompt. Beides landet hier.
             </p>
-            <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
-              <Button asChild>
-                <Link href="/chat?mode=software">
-                  <MessageSquare className="h-4 w-4" />
-                  Neues Projekt starten
-                </Link>
-              </Button>
-              <Link
-                href="/chat?mode=general"
-                className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-              >
-                oder einen Prompt speichern →
+            <Button asChild>
+              <Link href="/chats/new">
+                <MessageSquare className="h-4 w-4" />
+                Im Chat starten
               </Link>
-            </div>
+            </Button>
           </div>
         </FadeIn>
       ) : (

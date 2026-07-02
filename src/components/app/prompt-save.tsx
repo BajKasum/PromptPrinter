@@ -16,7 +16,9 @@ import { TOOL_OPTIONS } from "@/lib/tools";
 // chat already hands over a finished prompt inline, so saving only makes
 // sense once there's a reply worth keeping (see Chat's `hasAssistantReply`
 // gate). Same three-stage choreography for a consistent feel: idle (slim
-// offer bar) → confirm (editable summary) → saving → redirect.
+// offer bar) → confirm (editable summary) → saving → redirect. Since Phase 2
+// the chat's handoff strip opens the confirm card directly (autoOpen);
+// "Zurück zum Chat" then unmounts it via onBack instead of falling to idle.
 //
 // Saving re-runs /api/generate (type: "general") from the goal, the same
 // pipeline the packet bridge uses — so the result is a polished main prompt
@@ -37,11 +39,23 @@ const TARGET_OPTIONS = TOOL_OPTIONS.master; // ["Claude", "ChatGPT", "Gemini"]
 const selectClass =
   "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors duration-200 focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50";
 
+// Prefill helpers — the first user turn names the prompt, the whole
+// conversation becomes the goal text.
+function deriveName(userMessages: string[]): string {
+  const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
+  return first.length > 60 ? `${first.slice(0, 57)}…` : first;
+}
+function deriveIdea(userMessages: string[]): string {
+  return userMessages.join("\n\n").trim().slice(0, LIMITS.ideaMax);
+}
+
 export function PromptSave({
   userMessages,
   initialTarget,
   conversationId,
   onOpenChange,
+  autoOpen = false,
+  onBack,
 }: {
   /** The user's own chat turns, oldest first — source for the prefills. */
   userMessages: string[];
@@ -51,19 +65,23 @@ export function PromptSave({
   conversationId?: string;
   /** Lets the chat hide its composer while the save card is open. */
   onOpenChange?: (open: boolean) => void;
+  /** Mount directly on the confirm card (the chat's handoff strip opened it). */
+  autoOpen?: boolean;
+  /** When set, "Zurück zum Chat" hands control back instead of showing idle. */
+  onBack?: () => void;
 }) {
   const router = useRouter();
-  const [stage, setStage] = useState<Stage>("idle");
+  const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState("");
-  const [idea, setIdea] = useState("");
+  const [name, setName] = useState(() => (autoOpen ? deriveName(userMessages) : ""));
+  const [idea, setIdea] = useState(() => (autoOpen ? deriveIdea(userMessages) : ""));
   const [target, setTarget] = useState(
     initialTarget && TARGET_OPTIONS.includes(initialTarget as (typeof TARGET_OPTIONS)[number])
       ? initialTarget
       : TARGET_OPTIONS[0]
   );
-  const prefilled = useRef(false);
+  const prefilled = useRef(autoOpen);
   const nameRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -79,9 +97,8 @@ export function PromptSave({
     // if they hop back into the chat and return.
     if (!prefilled.current) {
       prefilled.current = true;
-      const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
-      setName(first.length > 60 ? `${first.slice(0, 57)}…` : first);
-      setIdea(userMessages.join("\n\n").trim().slice(0, LIMITS.ideaMax));
+      setName(deriveName(userMessages));
+      setIdea(deriveIdea(userMessages));
     }
     setError(null);
     setStage("confirm");
@@ -245,7 +262,7 @@ export function PromptSave({
       </div>
 
       <div className="mt-5 flex flex-col-reverse items-stretch gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" size="sm" onClick={() => setStage("idle")}>
+        <Button variant="ghost" size="sm" onClick={() => (onBack ? onBack() : setStage("idle"))}>
           Zurück zum Chat
         </Button>
         <div className="flex items-center gap-3 sm:justify-end">

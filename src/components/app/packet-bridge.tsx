@@ -10,13 +10,15 @@ import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { createClient } from "@/lib/supabase/client";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 
-// The bridge from a software chat to a real build packet. The chat collects the
-// idea conversationally; this component is the visible handoff: Finn summarizes
+// The handoff from a chat to a real build packet. The chat collects the idea
+// conversationally; this component is the visible handoff: Finn summarizes
 // what he understood into an editable confirmation card, then calls
 // /api/generate (the packet pipeline) and moves the user into the new project.
 //
 // Stages: idle (slim offer bar) → confirm (editable summary) → building
 // (Finn builds, everything locked) → redirect. Errors return to confirm.
+// Since Phase 2 the chat's handoff strip opens this card directly (autoOpen);
+// "Zurück zum Chat" then unmounts it via onBack instead of falling to idle.
 
 type Stage = "idle" | "confirm" | "building";
 
@@ -42,11 +44,23 @@ const LIMITS = {
 const selectClass =
   "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors duration-200 focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50";
 
+// Prefill helpers — the first user turn names the project, the whole
+// conversation becomes the idea text.
+function deriveName(userMessages: string[]): string {
+  const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
+  return first.length > 60 ? `${first.slice(0, 57)}…` : first;
+}
+function deriveIdea(userMessages: string[]): string {
+  return userMessages.join("\n\n").trim().slice(0, LIMITS.ideaMax);
+}
+
 export function PacketBridge({
   userMessages,
   defaultTools,
   conversationId,
   onOpenChange,
+  autoOpen = false,
+  onBack,
 }: {
   /** The user's own chat turns, oldest first — source for the prefills. */
   userMessages: string[];
@@ -56,16 +70,20 @@ export function PacketBridge({
   conversationId?: string;
   /** Lets the chat hide its composer while the handoff card is open. */
   onOpenChange?: (open: boolean) => void;
+  /** Mount directly on the confirm card (the chat's handoff strip opened it). */
+  autoOpen?: boolean;
+  /** When set, "Zurück zum Chat" hands control back instead of showing idle. */
+  onBack?: () => void;
 }) {
   const router = useRouter();
-  const [stage, setStage] = useState<Stage>("idle");
+  const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => (autoOpen ? deriveName(userMessages) : ""));
   const [audience, setAudience] = useState("");
-  const [idea, setIdea] = useState("");
+  const [idea, setIdea] = useState(() => (autoOpen ? deriveIdea(userMessages) : ""));
   const [tools, setTools] = useState<ProjectTools>(defaultTools);
-  const prefilled = useRef(false);
+  const prefilled = useRef(autoOpen);
   const audienceRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -82,9 +100,8 @@ export function PacketBridge({
     // if they hop back into the chat and return.
     if (!prefilled.current) {
       prefilled.current = true;
-      const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
-      setName(first.length > 60 ? `${first.slice(0, 57)}…` : first);
-      setIdea(userMessages.join("\n\n").trim().slice(0, LIMITS.ideaMax));
+      setName(deriveName(userMessages));
+      setIdea(deriveIdea(userMessages));
     }
     setError(null);
     setStage("confirm");
@@ -276,7 +293,7 @@ export function PacketBridge({
       </div>
 
       <div className="mt-5 flex flex-col-reverse items-stretch gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" size="sm" onClick={() => setStage("idle")}>
+        <Button variant="ghost" size="sm" onClick={() => (onBack ? onBack() : setStage("idle"))}>
           Zurück zum Chat
         </Button>
         <div className="flex items-center gap-3 sm:justify-end">

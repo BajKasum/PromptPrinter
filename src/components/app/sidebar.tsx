@@ -126,7 +126,7 @@ function Full({
     <>
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         <Link
-          href="/chat"
+          href="/chats/new"
           data-tour="new-chat"
           className="mx-1 mb-6 flex h-10 items-center justify-center gap-2 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground transition-all duration-200 hover:bg-accent/90 active:scale-[0.97]"
         >
@@ -138,7 +138,7 @@ function Full({
           <section aria-label="Chats">
             <SectionHeader
               nav={primaryNav[0]}
-              active={pathname === "/chats" || pathname.startsWith("/chat")}
+              active={pathname === "/chats" || pathname.startsWith("/chats/")}
             />
             <div className="mt-1">
               {chats.length === 0 ? (
@@ -146,16 +146,25 @@ function Full({
                   Dein erster Chat landet hier.
                 </p>
               ) : (
-                chats.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/chat?id=${c.id}`}
-                    title={c.title}
-                    className="block truncate rounded-md px-3 py-[7px] text-[13px] text-foreground/60 transition-colors hover:bg-surface-hover hover:text-foreground"
-                  >
-                    {c.title}
-                  </Link>
-                ))
+                chats.map((c) => {
+                  const active = pathname === `/chats/${c.id}`;
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/chats/${c.id}`}
+                      title={c.title}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "block truncate rounded-md px-3 py-[7px] text-[13px] transition-colors",
+                        active
+                          ? "bg-accent-subtle font-medium text-accent-text"
+                          : "text-foreground/60 hover:bg-surface-hover hover:text-foreground"
+                      )}
+                    >
+                      {c.title}
+                    </Link>
+                  );
+                })
               )}
             </div>
           </section>
@@ -259,7 +268,7 @@ function Rail({ pathname }: { pathname: string }) {
     <>
       <div data-tour="nav-main" className="flex flex-1 flex-col items-center gap-1.5 px-2">
         <Link
-          href="/chat"
+          href="/chats/new"
           data-tour="new-chat"
           aria-label="Neuer Chat"
           title="Neuer Chat"
@@ -282,11 +291,7 @@ function Rail({ pathname }: { pathname: string }) {
 
 function RailLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
   const { label, href, Icon } = nav;
-  const active =
-    pathname === href ||
-    pathname.startsWith(href + "/") ||
-    // /chat (Einzel-Chat) gehört zum Bereich Chats.
-    (href === "/chats" && pathname.startsWith("/chat"));
+  const active = pathname === href || pathname.startsWith(href + "/");
   return (
     <Link
       href={href}

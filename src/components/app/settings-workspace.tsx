@@ -346,7 +346,7 @@ export function SettingsWorkspace({
             <Button
               variant="ghost"
               className="shrink-0"
-              onClick={() => router.push("/chats?tour=1")}
+              onClick={() => router.push("/chats/new?tour=1")}
             >
               <Compass className="h-4 w-4" />
               Tour erneut starten

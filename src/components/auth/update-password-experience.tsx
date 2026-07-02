@@ -68,7 +68,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
           <SuccessCelebration
             message="Passwort aktualisiert"
             onDone={() => {
-              router.push("/chats");
+              router.push("/chats/new");
               router.refresh();
             }}
           />

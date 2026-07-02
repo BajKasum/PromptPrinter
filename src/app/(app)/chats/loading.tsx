@@ -10,15 +10,11 @@ export default function ChatsLoading() {
         </div>
         <Skeleton className="h-11 w-36 rounded-lg" />
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="card-surface p-5">
-            <div className="mb-3 flex items-start justify-between">
-              <Skeleton className="h-9 w-9 rounded-lg" />
-              <Skeleton className="h-5 w-16 rounded-full" />
-            </div>
-            <Skeleton className="mb-2 h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/3" />
+          <div key={i} className="border-b border-border px-4 py-3 last:border-0">
+            <Skeleton className="h-4 w-2/5 max-w-full" />
+            <Skeleton className="mt-2 h-3 w-1/4 max-w-full" />
           </div>
         ))}
       </div>
