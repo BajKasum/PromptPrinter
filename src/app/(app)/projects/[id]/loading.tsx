@@ -1,30 +1,20 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ProjectDetailLoading() {
+// Fallback für die Hauptspalte des Workspace — Header + Rail kommen aus dem
+// Layout und stehen bereits, hier lädt nur der jeweilige Raum-Zustand
+// (Übersicht, Chat oder Ergebnisse).
+export default function ProjectWorkspaceLoading() {
   return (
     <div>
-      <div className="mb-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <Skeleton className="h-4 w-44" />
-          <Skeleton className="h-9 w-24 rounded-lg" />
-        </div>
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <Skeleton className="mb-2 h-3 w-28" />
-            <Skeleton className="h-11 w-80 max-w-full" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-surface">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="border-b border-border px-4 py-3 last:border-0">
+            <Skeleton className="h-4 w-2/5 max-w-full" />
+            <Skeleton className="mt-2 h-3 w-1/4 max-w-full" />
           </div>
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-      </div>
-      <div className="mb-5 flex flex-wrap gap-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-8 w-24 rounded-lg" />
         ))}
       </div>
-      <Skeleton className="h-[420px] w-full rounded-xl" />
     </div>
   );
 }

@@ -11,15 +11,21 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > weiter unten sind IST-Zustand und werden phasenweise nachgezogen. Bei
 > Widersprüchen gilt REDESIGN.md.
 >
-> **Stand: Phasen 1+2 umgesetzt** — Nav ist zweigliedrig (Chats/Projekte), die
+> **Stand: Phasen 1–3 umgesetzt** — Nav ist zweigliedrig (Chats/Projekte), die
 > Sidebar ist einklappbar (Cookie `pp-sidebar`, `Strg/⌘+B`) und trägt Recents.
 > Chats sind kanonisch: `/chats/new` (Login-Landing) + `/chats/[id]`; `/chat`
 > und `/dashboard` sind nur noch Redirects. Es gibt **eine** Chat-Erfahrung
 > ohne Modus-Wahl — Prompt speichern / Software-Paket bauen sind eine
 > Handoff-Leiste am Chat-Ende (`conversations.mode` existiert nur noch intern).
-> `/chats` listet nur globale Chats (Projekt-Chats → Workspace) mit
-> Umbenennen/Löschen. Als Nächstes: Phase 3 (Workspace v1, Migration 0011,
-> Projekt-Anlegen, Chat-Subrouten im Projekt).
+> **Projekte sind Workspaces** (Migration 0011: `instructions`, `context`,
+> Inputs nullable): direkt anlegbar per Dialog (`POST /api/projects`, Plan-Limit
+> dort), persistente Shell in `projects/[id]/layout.tsx` (Header + Kontext-Rail
+> mit Anweisungen/Struktur/Dateien-Platzhalter/Ergebnisse-Karte), Hauptspalte
+> wechselt per Subroute: Übersicht (Chat-Liste + Composer), `chats/new`,
+> `chats/[cid]`, `results` (Tabs + Verlauf). Mehrere Chats pro Projekt;
+> `buildProjectContext` v2 injiziert Anweisungen + Struktur zuerst. Als
+> Nächstes: Phase 4 (Dateien, Migration 0012) und Phase 5 (Handoff in den
+> Workspace verdrahten, „Paket bauen" als Ergebnisse-Aktion, Wahrheits-Pass).
 
 ## Was ist PromptPrinter?
 

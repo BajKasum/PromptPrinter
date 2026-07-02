@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { Plus, Star, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Logo, LogoMark } from "@/components/brand/logo";
+import { NewProjectButton } from "@/components/app/new-project";
 import { primaryNav, secondaryNav, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -177,11 +178,14 @@ function Full({
             <div className="mt-1">
               {projects.length === 0 ? (
                 <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
-                  Noch kein Projekt gebaut.
+                  Noch kein Projekt angelegt.
                 </p>
               ) : (
                 projects.map((p) => {
-                  const active = pathname === `/projects/${p.id}`;
+                  // Subrouten (Chats, Ergebnisse) gehören zum selben Raum.
+                  const active =
+                    pathname === `/projects/${p.id}` ||
+                    pathname.startsWith(`/projects/${p.id}/`);
                   return (
                     <Link
                       key={p.id}
@@ -206,6 +210,7 @@ function Full({
                   );
                 })
               )}
+              <NewProjectButton variant="row" />
             </div>
           </section>
         </div>

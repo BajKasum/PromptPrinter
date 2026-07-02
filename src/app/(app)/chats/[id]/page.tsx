@@ -35,7 +35,8 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
     .maybeSingle();
 
   if (!convo) notFound();
-  if (convo.project_id) redirect(`/projects/${convo.project_id}`);
+  // Project chats live in their workspace — forward to the canonical subroute.
+  if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
   const [{ data: rows }, { data: profile }] = await Promise.all([
     supabase

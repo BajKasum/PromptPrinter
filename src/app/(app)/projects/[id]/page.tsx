@@ -1,15 +1,10 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Sparkles, Clock, MessageSquare } from "lucide-react";
-import { ProjectTabs, type ProjectTab } from "@/components/app/project-tabs";
-import { Chat } from "@/components/app/chat";
-import { DeleteProjectButton } from "@/components/app/delete-project";
-import type { ProjectTools } from "@/components/app/project-card";
-import { GENERAL_VARIANTS } from "@/prompts";
+import { Send } from "lucide-react";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { ChatList, type ChatListItem } from "@/components/app/chat-list";
 import { FadeIn } from "@/components/motion/fade-in";
+import { getProject } from "@/lib/project";
 import { createClient } from "@/lib/supabase/server";
-import { relativeTime } from "@/lib/utils";
-import { countArtifacts } from "@/lib/artifacts";
 
 export const dynamic = "force-dynamic";
 
@@ -17,294 +12,71 @@ export const metadata = { title: "Projekt" };
 
 type Params = Promise<{ id: string }>;
 
-type DbMessage = { role: "user" | "assistant"; content: string };
-
-type ProjectRecord = {
+type ConversationQueryRow = {
   id: string;
-  name: string;
-  audience: string;
-  idea: string;
-  // Software projects carry the four build tools; general projects carry { target }.
-  tools: (ProjectTools & { target?: string }) | null;
-  type: string;
-  status: string;
+  title: string;
+  target: string | null;
   updated_at: string;
+  messages: { count: number }[] | null;
 };
 
-type GenerationHistoryRow = {
-  id: string;
-  model: string | null;
-  tokens_in: number | null;
-  tokens_out: number | null;
-  created_at: string;
-  outputs: Record<string, unknown> | null;
-};
-
-const PLACEHOLDER =
-  "_Noch keine Daten für diesen Abschnitt. Erstelle das Projekt neu, um ihn zu füllen._";
-
-const SOFTWARE_TABS: ProjectTab[] = [
-  { id: "overview", label: "Übersicht" },
-  { id: "brief", label: "Produkt-Brief", group: "Planung" },
-  { id: "prd", label: "PRD", group: "Planung" },
-  { id: "master", label: "Master-Prompt", group: "Prompts" },
-  { id: "frontend", label: "Frontend-Prompt", group: "Prompts" },
-  { id: "backend", label: "Backend-Prompt", group: "Prompts" },
-  { id: "schema", label: "Datenbank-Schema", group: "Technik" },
-  { id: "security", label: "Sicherheits-Checkliste", group: "Technik" },
-  { id: "marketing", label: "Marketing-Texte", group: "Go-Live" },
-  { id: "seo", label: "SEO-Plan", group: "Go-Live" },
-  { id: "deployment", label: "Deployment-Anleitung", group: "Go-Live" },
-];
-
-const GENERAL_TABS: ProjectTab[] = [
-  { id: "overview", label: "Übersicht" },
-  { id: "prompt", label: "Haupt-Prompt" },
-  ...GENERAL_VARIANTS.map((v) => ({ id: v.key, label: v.label, group: "Varianten" })),
-];
-
-function buildOverview(p: ProjectRecord): string {
-  const t = p.tools ?? {};
-  const statusLabel = p.status === "ready" ? "Fertig" : "In Arbeit";
-  return `# ${p.name} — Übersicht
-
-**Status** ${statusLabel}  •  **Zielgruppe** ${p.audience}  •  **Aktualisiert** ${relativeTime(
-    p.updated_at
-  )}
-
-## Idee
-${p.idea}
-
-## Stack
-- **Master-Prompt** — ${t.master ?? "—"}
-- **Frontend** — ${t.frontend ?? "—"}
-- **Backend** — ${t.backend ?? "—"}
-- **Datenbank** — ${t.database ?? "—"}
-
-## Nächste Schritte
-- **Master-Prompt** — in deinen KI-Assistenten einfügen, um das Scaffolding zu starten
-- **Datenbank-Schema** — zuerst im Supabase SQL-Editor ausführen
-- **Frontend-Prompt** — in Lovable oder v0 einfügen
-`;
-}
-
-function buildGeneralOverview(p: ProjectRecord): string {
-  const target = p.tools?.target ?? "deine KI";
-  return `# ${p.name} — Übersicht
-
-**Typ** Prompt-Projekt  •  **Ziel-KI** ${target}  •  **Aktualisiert** ${relativeTime(
-    p.updated_at
-  )}
-
-## Ziel
-${p.idea}
-
-## Enthalten
-- **Haupt-Prompt** — die ausgewogene, fertige Version
-- **Varianten** — knapp & direkt, ausführlich & geführt, rollenbasiert
-
-## So nutzt du es
-Kopiere den Haupt-Prompt und füge ihn in ${target} ein. Greif zu einer Variante, wenn du einen anderen Ton oder mehr Führung brauchst.
-`;
-}
-
-function toSoftwareOutputs(
-  p: ProjectRecord,
-  stored: Record<string, string>
-): Record<string, string> {
-  const pick = (key: string) => stored[key]?.trim() || PLACEHOLDER;
-  return {
-    overview: stored.overview?.trim() || buildOverview(p),
-    brief: pick("brief"),
-    prd: pick("prd"),
-    master: pick("master"),
-    frontend: pick("frontend"),
-    backend: pick("backend"),
-    schema: pick("schema"),
-    security: pick("security"),
-    marketing: pick("marketing"),
-    seo: pick("seo"),
-    deployment: pick("deployment"),
-  };
-}
-
-function toGeneralOutputs(
-  p: ProjectRecord,
-  stored: Record<string, string>
-): Record<string, string> {
-  const pick = (key: string) => stored[key]?.trim() || PLACEHOLDER;
-  return {
-    overview: stored.overview?.trim() || buildGeneralOverview(p),
-    prompt: pick("prompt"),
-    variant_a: pick("variant_a"),
-    variant_b: pick("variant_b"),
-    variant_c: pick("variant_c"),
-  };
-}
-
-export default async function ProjectDetailPage({ params }: { params: Params }) {
+// Workspace-Übersicht (REDESIGN.md, Phase 3): die Hauptspalte gehört den
+// Chats dieses Projekts — Composer oben, Verläufe darunter. Die alte
+// Snapshot-Seite (Tabs + Refine-Anhängsel) ist in die Subrouten aufgegangen:
+// Ergebnisse leben unter ./results, jeder Chat unter ./chats/[cid].
+export default async function ProjectOverviewPage({ params }: { params: Params }) {
   const { id } = await params;
+  const project = await getProject(id);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  // RLS scopes this to the owner; a malformed id or foreign project → no row.
-  const { data: project, error } = await supabase
-    .from("projects")
-    .select("id, name, audience, idea, tools, type, status, updated_at")
-    .eq("id", id)
-    .maybeSingle<ProjectRecord>();
-
-  if (error || !project) notFound();
-
-  // Every build run for this project, newest first — the packet's outputs come
-  // from the latest row; the rest render as the compact "Verlauf" section below
-  // (this is where the old standalone Generierungen page's per-run info moved).
-  const { data: generationsRaw } = await supabase
-    .from("generations")
-    .select("id, model, tokens_in, tokens_out, created_at, outputs")
-    .eq("project_id", id)
-    .order("created_at", { ascending: false });
-
-  const generationHistory = (generationsRaw as GenerationHistoryRow[] | null) ?? [];
-  const stored = (generationHistory[0]?.outputs as Record<string, string> | undefined) ?? {};
-  const isGeneral = project.type === "general";
-  const tabs = isGeneral ? GENERAL_TABS : SOFTWARE_TABS;
-  const outputs = isGeneral
-    ? toGeneralOutputs(project, stored)
-    : toSoftwareOutputs(project, stored);
-
-  const typeLabel = isGeneral ? "Prompt-Projekt" : "Software-Projekt";
-  const subtitle = isGeneral
-    ? `Für ${project.tools?.target ?? "deine KI"}`
-    : project.audience
-      ? `Für ${project.audience}`
-      : null;
-
-  // Phase 3: every project carries a refine-chat. Load the most recently active
-  // one (if any) so reopening the project resumes the same conversation. RLS
-  // scopes the read to the owner; project_id ties it to this packet.
-  const { data: refineConvo } = await supabase
+  const { data: raw } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, title, target, updated_at, messages(count)")
     .eq("project_id", id)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<{ id: string }>();
+    .order("updated_at", { ascending: false });
 
-  let refineMessages: DbMessage[] | undefined;
-  let refineConversationId: string | undefined;
-  if (refineConvo) {
-    refineConversationId = refineConvo.id;
-    const { data: rows } = await supabase
-      .from("messages")
-      .select("role, content")
-      .eq("conversation_id", refineConvo.id)
-      .order("created_at", { ascending: true });
-    refineMessages = (rows as DbMessage[] | null) ?? [];
-  }
+  const chats: ChatListItem[] = ((raw as ConversationQueryRow[] | null) ?? []).map((c) => ({
+    id: c.id,
+    title: c.title,
+    target: c.target,
+    updatedAt: c.updated_at,
+    messageCount: c.messages?.[0]?.count ?? 0,
+  }));
 
   return (
     <div>
       <FadeIn>
-        <div className="mb-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <Link
-              href="/projects"
-              className="inline-flex items-center gap-1.5 text-[13px] text-foreground/55 hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Zurück zu Projekten
-            </Link>
-            <DeleteProjectButton projectId={project.id} projectName={project.name} />
-          </div>
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-2">
-                <Sparkles className="h-3 w-3" />
-                {typeLabel}
-              </div>
-              <h1 className="text-[36px] md:text-[44px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-                {project.name}
-              </h1>
-              {subtitle && (
-                <p className="mt-2 text-[14px] text-foreground/55">{subtitle}</p>
-              )}
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5 text-[12px] text-foreground/55">
-              <Clock className="h-3.5 w-3.5" />
-              <span>Aktualisiert {relativeTime(project.updated_at)}</span>
-            </div>
-          </div>
-        </div>
-      </FadeIn>
-      <ProjectTabs projectName={project.name} tabs={tabs} outputs={outputs} />
-
-      <FadeIn>
-        <div className="mt-10 border-t border-border pt-8">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-2">
-            <MessageSquare className="h-3 w-3" />
-            Im Chat verfeinern
-          </div>
-          <h2 className="text-[20px] md:text-[24px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground mb-1">
-            Pass deine Prompts an
-          </h2>
-          <p className="text-[13px] text-foreground/55 mb-5 max-w-xl">
-            Sag der KI, was du ändern willst. Sie kennt dein Projekt und gibt dir
-            die aktualisierte Version zurück.
-          </p>
-          <Chat
-            mode={isGeneral ? "general" : "software"}
-            projectId={project.id}
-            initialMessages={refineMessages}
-            initialConversationId={refineConversationId}
-          />
-        </div>
+        <Link
+          href={`/projects/${id}/chats/new`}
+          className="group flex items-center justify-between gap-3 rounded-xl border border-border-strong bg-surface px-4 py-3 transition-colors hover:border-ring/50 hover:bg-surface-hover"
+        >
+          <span className="text-[13.5px] text-muted-foreground">
+            Neuer Chat in diesem Projekt…
+          </span>
+          <Send className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+        </Link>
       </FadeIn>
 
-      {generationHistory.length > 0 && (
-        <FadeIn>
-          <div className="mt-8 border-t border-border pt-6">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/45 mb-3">
-              <Sparkles className="h-3 w-3" />
-              Verlauf
+      <div className="mt-4">
+        {chats.length === 0 ? (
+          <FadeIn>
+            <div className="card-surface p-8 text-center">
+              <AnimatedMascot state="curious" size={72} priority className="mx-auto mb-3" />
+              <p className="text-[14px] font-semibold text-foreground">
+                Noch kein Chat in „{project.name}“
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
+                Starte oben den ersten — ich kenne dein Briefing und deine Struktur
+                aus der Seitenleiste automatisch.
+              </p>
             </div>
-            <div className="rounded-xl border border-border bg-surface overflow-hidden">
-              {generationHistory.map((g) => {
-                const artifacts = countArtifacts(g.outputs);
-                const tokens = (g.tokens_in ?? 0) + (g.tokens_out ?? 0);
-                const hasModel = Boolean(g.model);
-                return (
-                  <div
-                    key={g.id}
-                    className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0"
-                  >
-                    <span
-                      className={`shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border ${
-                        hasModel
-                          ? "border-accent/30 bg-accent-subtle text-accent-text"
-                          : "border-border bg-surface text-foreground/45"
-                      }`}
-                    >
-                      {hasModel ? "KI" : "Vorschau"}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground/70">
-                      {artifacts} {artifacts === 1 ? "Artefakt" : "Artefakte"}
-                      {tokens > 0 ? ` · ${tokens.toLocaleString("de-CH")} Tokens` : ""}
-                    </span>
-                    <span className="shrink-0 text-[12px] text-foreground/45">
-                      {relativeTime(g.created_at)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </FadeIn>
-      )}
+          </FadeIn>
+        ) : (
+          <FadeIn>
+            <ChatList chats={chats} basePath={`/projects/${id}/chats`} />
+          </FadeIn>
+        )}
+      </div>
     </div>
   );
 }

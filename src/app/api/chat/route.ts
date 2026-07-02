@@ -206,14 +206,15 @@ function deriveTitle(text: string): string {
   return clean.length > 60 ? `${clean.slice(0, 57)}…` : clean;
 }
 
-// Compact context about the project a chat is refining, so the assistant works
-// from the actual saved artifact instead of just the original raw idea.
-// Software packets carry the four build tools + a Master-Prompt artifact under
-// outputs.master; general (Prompt-Projekt) saves carry a single target
-// assistant + the finished prompt under outputs.prompt. Branching on
-// project.type is required — the two packs store genuinely different shapes,
-// not just different labels for the same fields. Returns null when the
-// project isn't found or isn't owned by the caller (RLS-scoped read).
+// Workspace context v2 (REDESIGN.md, Phase 3): a project chat works from the
+// project's living briefing, not just the original raw idea. Order encodes
+// priority — the user's instructions come first and overrule everything else,
+// then the structure fields, then the legacy idea, then the newest saved
+// artifact for reference. Every part is optional (an empty workspace simply
+// yields a shorter block); the artifact is detected by outputs shape
+// (master-Key = build packet, prompt-Key = saved prompt), project.type is
+// legacy data. Returns null when the project isn't found or isn't owned by
+// the caller (RLS-scoped read).
 async function buildProjectContext(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
@@ -221,7 +222,7 @@ async function buildProjectContext(
 ): Promise<string | null> {
   const { data: project } = await supabase
     .from("projects")
-    .select("name, idea, tools, type")
+    .select("name, idea, instructions, context, tools")
     .eq("id", projectId)
     .maybeSingle();
   if (!project) return null;
@@ -235,36 +236,42 @@ async function buildProjectContext(
     .maybeSingle();
   const outputs = (generation?.outputs ?? {}) as Record<string, string>;
 
-  const isGeneral = project.type === "general";
-  const tools = (project.tools ?? {}) as Record<string, string>;
+  const parts: string[] = [`Name: ${project.name}`];
 
-  let detail: string;
-  let artifactBlock = "";
-  if (isGeneral) {
-    detail = tools.target ? `Target assistant: ${tools.target}` : "";
-    const prompt = typeof outputs.prompt === "string" ? outputs.prompt : "";
-    artifactBlock = prompt
-      ? `\n\nCurrent saved prompt (for reference):\n${truncate(prompt, 2400)}`
-      : "";
-  } else {
-    detail = [
-      tools.master && `master prompt target: ${tools.master}`,
-      tools.frontend && `frontend: ${tools.frontend}`,
-      tools.backend && `backend: ${tools.backend}`,
-      tools.database && `database: ${tools.database}`,
-    ]
-      .filter(Boolean)
-      .join(", ");
-    const master = typeof outputs.master === "string" ? outputs.master : "";
-    artifactBlock = master
-      ? `\n\nCurrent Master-Prompt artifact (for reference):\n${truncate(master, 2400)}`
-      : "";
+  const instructions =
+    typeof project.instructions === "string" ? project.instructions.trim() : "";
+  if (instructions) {
+    parts.push(
+      `Instructions (the user's briefing for this project — follow it):\n${truncate(instructions, 4000)}`
+    );
   }
 
-  const label = isGeneral ? "this saved prompt" : "this build packet";
-  return `--- PROJECT CONTEXT (the user is refining ${label}) ---
-Name: ${project.name}
-Idea: ${truncate(String(project.idea ?? ""), 1200)}${detail ? `\nStack: ${detail}` : ""}${artifactBlock}
+  // Structure fields from projects.context; 0011 prefilled legacy tools into
+  // it, so old projects keep their stack here without a special path.
+  const context =
+    project.context && typeof project.context === "object" && !Array.isArray(project.context)
+      ? (project.context as Record<string, unknown>)
+      : {};
+  const structureLines = Object.entries(context)
+    .filter((e): e is [string, string] => typeof e[1] === "string" && e[1].trim().length > 0)
+    .map(([k, v]) => `- ${k}: ${truncate(v.trim(), 200)}`);
+  if (structureLines.length > 0) {
+    parts.push(`Structure:\n${structureLines.join("\n")}`);
+  }
+
+  const idea = typeof project.idea === "string" ? project.idea.trim() : "";
+  if (idea) parts.push(`Idea: ${truncate(idea, 1200)}`);
+
+  const master = typeof outputs.master === "string" ? outputs.master : "";
+  const prompt = typeof outputs.prompt === "string" ? outputs.prompt : "";
+  if (master) {
+    parts.push(`Current Master-Prompt artifact (for reference):\n${truncate(master, 2400)}`);
+  } else if (prompt) {
+    parts.push(`Current saved prompt (for reference):\n${truncate(prompt, 2400)}`);
+  }
+
+  return `--- PROJECT CONTEXT (the user is working inside this project) ---
+${parts.join("\n\n")}
 --- END PROJECT CONTEXT ---`;
 }
 

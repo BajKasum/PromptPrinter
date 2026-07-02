@@ -12,6 +12,7 @@ export type LibraryItem = {
   name: string;
   updatedAt: string; // ISO — drives the "Kürzlich verwendet" filter + the footer's relative time
   artifactCount: number;
+  chatCount: number; // conversations living inside this workspace
   categories: string[]; // artifact category keys present in this project
   toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "Lovable"]
   isFavorite: boolean;
@@ -30,6 +31,18 @@ const FILTERS = [
 type FilterKey = (typeof FILTERS)[number]["key"];
 
 const RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+
+// What lives in this workspace, compact: "2 Chats · 10 Artefakte". A project
+// without either is simply young, not defective.
+function workspaceMeta(it: LibraryItem): string {
+  const parts = [
+    it.chatCount > 0 ? `${it.chatCount} ${it.chatCount === 1 ? "Chat" : "Chats"}` : null,
+    it.artifactCount > 0
+      ? `${it.artifactCount} ${it.artifactCount === 1 ? "Artefakt" : "Artefakte"}`
+      : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Frisch angelegt";
+}
 
 export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   const [query, setQuery] = useState("");
@@ -192,12 +205,12 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                   </div>
                 )}
 
-                {/* Artifact count + freshness — supporting metadata in the footer,
-                    not the headline (mirrors ProjectCard on Start). */}
+                {/* Workspace-Meta + freshness — supporting metadata in the footer:
+                    what lives inside (chats, results), not just artifacts. */}
                 <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
                   <span className="inline-flex items-center gap-1.5">
                     <Sparkles className="h-3 w-3" />
-                    {it.artifactCount} {it.artifactCount === 1 ? "Artefakt" : "Artefakte"}
+                    {workspaceMeta(it)}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Clock className="h-3 w-3" />

@@ -46,6 +46,18 @@ const VARIANTS: Record<Variant, { heading: string; sub: string; starters: string
   },
 };
 
+// A project chat before any result exists: nothing to refine yet — the chat
+// is where the project's first work happens, briefed by the context rail.
+const PROJECT_FRESH = {
+  heading: "Woran arbeiten wir hier?",
+  sub: "Dieser Chat kennt dein Projekt — Anweisungen und Struktur aus der Seitenleiste fließen automatisch ein.",
+  starters: [
+    "Stell mir Fragen, die mein Briefing schärfen.",
+    "Bau mir einen ersten Prompt aus meinem Projektkontext.",
+    "Hilf mir zu planen, was dieses Projekt braucht.",
+  ],
+};
+
 // The refine variant collapses mode away (see `variant` below), but its
 // starter suggestions must still match what the project actually is — a
 // Prompt-Projekt has no Frontend-/Backend-/Datenbank-Anteil to reference.
@@ -69,6 +81,7 @@ export function Chat({
   initialMessages,
   initialConversationId,
   defaultTools,
+  hasResults = false,
 }: {
   /** Internal system-prompt selector; legacy conversations may carry "software". */
   mode: "general" | "software";
@@ -78,17 +91,27 @@ export function Chat({
   initialConversationId?: string;
   /** Per-user tool defaults for the packet handoff. */
   defaultTools?: ProjectTools;
+  /** For project chats: whether saved results exist (drives the empty-state copy). */
+  hasResults?: boolean;
 }) {
-  // Refining a project's packet is its own context; every standalone chat is
-  // the one unified chat. Starters still need the underlying mode when
-  // refining, since "refine" alone doesn't say whether this project is a
-  // software packet or a saved general prompt.
+  // A project chat is its own context; every standalone chat is the one
+  // unified chat. Inside a project the copy depends on whether results exist:
+  // refining a saved packet/prompt vs. doing the project's first work. The
+  // refine starters additionally need the underlying mode, since "refine"
+  // alone doesn't say whether this is a software packet or a saved prompt.
   const variant: Variant = projectId ? "refine" : mode;
-  const { heading, sub } = VARIANTS[variant];
-  const starters = variant === "refine" ? REFINE_STARTERS[mode] : VARIANTS[variant].starters;
+  const empty =
+    variant === "refine" ? (hasResults ? VARIANTS.refine : PROJECT_FRESH) : VARIANTS[variant];
+  const { heading, sub } = empty;
+  const starters =
+    variant === "refine"
+      ? hasResults
+        ? REFINE_STARTERS[mode]
+        : PROJECT_FRESH.starters
+      : VARIANTS[variant].starters;
 
   const placeholder =
-    variant === "refine"
+    variant === "refine" && hasResults
       ? "Sag mir, was ich ändern soll…"
       : "Beschreib, woran wir arbeiten…";
 
@@ -142,14 +165,17 @@ export function Chat({
       setMessages((m) => [...m, { role: "assistant", content: json.reply as string }]);
       // The route returns the conversation id on the first persisted turn; hold
       // onto it so every following turn appends to the same stored chat. That
-      // first turn moves a fresh standalone chat onto its canonical URL
-      // (/chats/new → /chats/[id]) and refreshes the server components so the
-      // sidebar recents pick the chat up. Refine chats stay on their project.
+      // first turn moves a fresh chat onto its canonical URL — /chats/[id] for
+      // global chats, the project subroute for workspace chats — and refreshes
+      // the server components so sidebar recents + project chat lists pick it up.
       if (json.conversationId) {
         const id = json.conversationId as string;
         if (!conversationId) {
-          if (!projectId && !initialConversationId) {
-            router.replace(`/chats/${id}`, { scroll: false });
+          if (!initialConversationId) {
+            router.replace(
+              projectId ? `/projects/${projectId}/chats/${id}` : `/chats/${id}`,
+              { scroll: false }
+            );
           }
           router.refresh();
         }

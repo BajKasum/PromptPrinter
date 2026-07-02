@@ -23,11 +23,18 @@ export type ChatListItem = {
   messageCount: number;
 };
 
-export function ChatList({ chats }: { chats: ChatListItem[] }) {
+export function ChatList({
+  chats,
+  basePath = "/chats",
+}: {
+  chats: ChatListItem[];
+  /** Where a row links to — "/chats" (global) or "/projects/[id]/chats". */
+  basePath?: string;
+}) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       {chats.map((c) => (
-        <ChatRow key={c.id} chat={c} />
+        <ChatRow key={c.id} chat={c} basePath={basePath} />
       ))}
     </div>
   );
@@ -35,7 +42,7 @@ export function ChatList({ chats }: { chats: ChatListItem[] }) {
 
 type RowMode = "view" | "rename" | "confirm-delete";
 
-function ChatRow({ chat }: { chat: ChatListItem }) {
+function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const [mode, setMode] = useState<RowMode>("view");
@@ -165,7 +172,7 @@ function ChatRow({ chat }: { chat: ChatListItem }) {
 
   return (
     <div className="group flex items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 hover:bg-surface-hover">
-      <Link href={`/chats/${chat.id}`} className="min-w-0 flex-1">
+      <Link href={`${basePath}/${chat.id}`} className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-medium text-foreground">{chat.title}</p>
         <p className="mt-0.5 truncate text-[12px] text-foreground/45">{meta}</p>
       </Link>
