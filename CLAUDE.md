@@ -5,6 +5,12 @@ schnell Orientierung geben: was das Projekt ist, in welchem Zustand es steckt,
 und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](README.md),
 [DESIGN.md](DESIGN.md) und [DOCKER.md](DOCKER.md) — hier nur das Wesentliche.
 
+> ⚠️ **Workspace-Redesign beschlossen (2026-07):** [REDESIGN.md](REDESIGN.md) ist
+> das **verbindliche Zielmodell** (Nav ohne Start, Projekte als Workspaces mit
+> mehreren Chats, Chat-Subrouten, einklappbare Sidebar). Die App-/Nav-Beschreibungen
+> weiter unten sind IST-Zustand und werden phasenweise nachgezogen. Bei
+> Widersprüchen gilt REDESIGN.md.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool, das rohe Ideen in **build-fertige Prompt-Pakete** verwandelt —
@@ -179,6 +185,11 @@ Integrations → PricingPreview → FAQ → FinalCTA → Footer
 ---
 
 ## Offene Punkte / Nächste Schritte
+
+**Priorität 1: Das Workspace-Redesign** — Phasen 1–5 aus [REDESIGN.md](REDESIGN.md)
+(Sidebar → Chat-Kanonisierung → Workspace v1 → Dateien → Handoff/Wahrheits-Pass).
+Die Brand-Audit-Punkte unten bleiben gültig, laufen aber danach bzw. werden von
+Phase 5 (Landing-Nachzug) teilweise miterledigt.
 
 Noch nicht umgesetzt aus der Brand-Audit (Priorität absteigend):
 
