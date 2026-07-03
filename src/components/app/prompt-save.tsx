@@ -30,7 +30,12 @@ import { TOOL_OPTIONS } from "@/lib/tools";
 // saved into the project this chat already belongs to instead, landing
 // directly in its Ergebnisse — see PacketBridge for the identical pattern.
 
-type Stage = "idle" | "confirm" | "saving";
+type Stage = "idle" | "confirm" | "saving" | "done";
+
+// How long the "done" beat holds before navigating away — long enough to
+// register as a handoff, short enough to stay out of the way (DESIGN.md's
+// Finn-Physik pacing, ~0.6–0.9s).
+const HANDOFF_DELAY_MS = 850;
 
 const LIMITS = {
   nameMin: 2,
@@ -178,6 +183,10 @@ export function PromptSave({
           // Linking failed — not worth blocking the save over.
         }
       }
+      // A brief, wordless beat before leaving — Finn visibly hands the
+      // prompt over instead of the screen just cutting away.
+      setStage("done");
+      await new Promise((resolve) => window.setTimeout(resolve, HANDOFF_DELAY_MS));
       router.push(
         existingProjectId ? `/projects/${resultProjectId}/results` : `/projects/${resultProjectId}`
       );
@@ -214,6 +223,24 @@ export function PromptSave({
           <p className="text-[14.5px] font-medium text-foreground">Finn macht die Endversion.</p>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
             Haupt-Prompt plus drei Varianten. Einen Moment noch.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === "done") {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="card-surface mt-3 flex items-center gap-4 p-5 md:p-6"
+      >
+        <AnimatedMascot state="delivering" size={64} className="shrink-0" />
+        <div>
+          <p className="text-[14.5px] font-medium text-foreground">Fertig — deine Version liegt bereit.</p>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Du wirst gleich weitergeleitet.
           </p>
         </div>
       </div>

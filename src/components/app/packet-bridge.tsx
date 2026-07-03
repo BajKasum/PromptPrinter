@@ -25,11 +25,17 @@ import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 //    not just this one chat.
 //
 // Stages: idle (slim offer bar) → confirm (editable summary) → building
-// (Finn builds, everything locked) → redirect. Errors return to confirm.
-// Since Phase 2 the chat's handoff strip opens this card directly (autoOpen);
-// "Zurück zum Chat" then unmounts it via onBack instead of falling to idle.
+// (Finn builds, everything locked) → done (Finn hands it over, brief) →
+// redirect. Errors return to confirm. Since Phase 2 the chat's handoff strip
+// opens this card directly (autoOpen); "Zurück zum Chat" then unmounts it via
+// onBack instead of falling to idle.
 
-type Stage = "idle" | "confirm" | "building";
+type Stage = "idle" | "confirm" | "building" | "done";
+
+// How long the "done" beat holds before navigating away — long enough to
+// register as a handoff, short enough to stay out of the way (DESIGN.md's
+// Finn-Physik pacing, ~0.6–0.9s).
+const HANDOFF_DELAY_MS = 850;
 
 // Compact labels for the four build-target choices (mirrors the settings page).
 const TOOL_FIELDS: { key: keyof ProjectTools; label: string }[] = [
@@ -185,6 +191,10 @@ export function PacketBridge({
           // Linking failed — not worth blocking the handoff over.
         }
       }
+      // A brief, wordless beat before leaving — Finn visibly hands the
+      // packet over instead of the screen just cutting away.
+      setStage("done");
+      await new Promise((resolve) => window.setTimeout(resolve, HANDOFF_DELAY_MS));
       router.push(
         existingProjectId ? `/projects/${resultProjectId}/results` : `/projects/${resultProjectId}`
       );
@@ -221,6 +231,24 @@ export function PacketBridge({
           <p className="text-[14.5px] font-medium text-foreground">Finn baut dein Paket.</p>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
             Plan, Prompts, Datenbank-Schema und mehr. Das kann einen Moment dauern.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === "done") {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="card-surface mt-3 flex items-center gap-4 p-5 md:p-6"
+      >
+        <AnimatedMascot state="delivering" size={64} className="shrink-0" />
+        <div>
+          <p className="text-[14.5px] font-medium text-foreground">Fertig — ich leg&apos;s dir hin.</p>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Du wirst gleich weitergeleitet.
           </p>
         </div>
       </div>

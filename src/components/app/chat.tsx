@@ -10,11 +10,11 @@ import {
   Download,
   Package,
   BookmarkPlus,
-  Sparkles,
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { Mascot } from "@/components/brand/mascot";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { DolphinLoader } from "@/components/brand/dolphin-loader";
 import { PacketBridge } from "@/components/app/packet-bridge";
@@ -448,7 +448,9 @@ function ResultPanel({
     >
       <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 md:px-7">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-accent-text" />
+          {/* Finn's delivering pose, static — a quiet badge, not a performing
+              character: this sits on screen for as long as you're reading. */}
+          <Mascot state="delivering" size={22} className="shrink-0" />
           <span className="text-[13px] font-medium text-foreground/75">Dein Ergebnis</span>
         </div>
         <div className="flex items-center gap-1">

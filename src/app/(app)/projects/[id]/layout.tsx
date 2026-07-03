@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, FolderKanban, Clock, FileText, MessageSquare, Sparkles } from "lucide-react";
 import { DeleteProjectButton } from "@/components/app/delete-project";
 import { ProjectRail } from "@/components/app/project-rail";
+import { Mascot } from "@/components/brand/mascot";
 import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
 import { createClient } from "@/lib/supabase/server";
@@ -80,33 +81,38 @@ export default async function ProjectWorkspaceLayout({
             </Link>
             <DeleteProjectButton projectId={project.id} projectName={project.name} />
           </div>
-          <div className="flex flex-col gap-2">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
-              <FolderKanban className="h-3 w-3" />
-              Projekt
-            </div>
-            <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-              {project.name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-foreground/55">
-              <span className="inline-flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" />
-                {chats} {chats === 1 ? "Chat" : "Chats"}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <FileText className="h-3.5 w-3.5" />
-                {files.length} {files.length === 1 ? "Datei" : "Dateien"}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" />
-                {results === 0
-                  ? "Noch keine Ergebnisse"
-                  : `${results} ${results === 1 ? "Ergebnis" : "Ergebnisse"}`}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
-                Aktualisiert {relativeTime(project.updated_at)}
-              </span>
+          <div className="flex items-start gap-3.5">
+            {/* Finn's quiet signature — this is his workspace too, not an
+                anonymous panel. Static and small: a mark, not a performance. */}
+            <Mascot state="idle" size={40} className="mt-0.5 hidden shrink-0 sm:block" />
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
+                <FolderKanban className="h-3 w-3" />
+                Projekt
+              </div>
+              <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
+                {project.name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-foreground/55">
+                <span className="inline-flex items-center gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  {chats} {chats === 1 ? "Chat" : "Chats"}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  {files.length} {files.length === 1 ? "Datei" : "Dateien"}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {results === 0
+                    ? "Noch keine Ergebnisse"
+                    : `${results} ${results === 1 ? "Ergebnis" : "Ergebnisse"}`}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Aktualisiert {relativeTime(project.updated_at)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
