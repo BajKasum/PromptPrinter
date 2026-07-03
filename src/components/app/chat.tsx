@@ -78,6 +78,9 @@ export function Chat({
   mode,
   target,
   projectId,
+  projectName,
+  projectInstructions,
+  projectContext,
   initialMessages,
   initialConversationId,
   defaultTools,
@@ -87,6 +90,12 @@ export function Chat({
   mode: "general" | "software";
   target?: string;
   projectId?: string;
+  /** The workspace's own name — used by the handoff instead of re-asking. */
+  projectName?: string;
+  /** The workspace's Anweisungen — prefixed into the handoff's idea prefill. */
+  projectInstructions?: string | null;
+  /** The workspace's Struktur fields — prefill the handoff's tools/target. */
+  projectContext?: Record<string, string>;
   initialMessages?: Msg[];
   initialConversationId?: string;
   /** Per-user tool defaults for the packet handoff. */
@@ -132,10 +141,27 @@ export function Chat({
   const [handoff, setHandoff] = useState<"none" | "packet" | "save">("none");
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // The handoff appears once there's a real exchange worth keeping. Refine
-  // chats belong to an existing project — nothing to hand off there.
+  // The handoff appears once there's a real exchange worth keeping — inside a
+  // project too: that's the workspace's actual production path (REDESIGN.md
+  // — Handoff im Workspace). A standalone chat hands off into a brand-new
+  // project; a project chat generates directly into the one it already lives
+  // in, whether that's its first result or a fresh regeneration.
   const hasAssistantReply = messages.some((m) => m.role === "assistant");
-  const canHandoff = variant !== "refine" && hasAssistantReply;
+  const canHandoff = hasAssistantReply;
+  const isWorkspace = Boolean(projectId);
+
+  // Inside a project, prefill the packet's tools / the prompt's target from
+  // the workspace's own Struktur before falling back to the user's account
+  // defaults — the project already knows more than the account does.
+  const workspaceTools: ProjectTools | undefined = isWorkspace
+    ? {
+        master: projectContext?.target || defaultTools?.master || DEFAULT_TOOLS.master,
+        frontend: projectContext?.frontend || defaultTools?.frontend || DEFAULT_TOOLS.frontend,
+        backend: projectContext?.backend || defaultTools?.backend || DEFAULT_TOOLS.backend,
+        database: projectContext?.database || defaultTools?.database || DEFAULT_TOOLS.database,
+      }
+    : undefined;
+  const workspaceTarget = isWorkspace ? (projectContext?.target ?? target) : target;
 
   function closeHandoff() {
     setHandoff("none");
@@ -229,16 +255,16 @@ export function Chat({
       {canHandoff && handoff === "none" && (
         <div className="mt-3 flex flex-col gap-3 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] text-foreground/85">
-            Zufrieden? Dann heb dir das Ergebnis auf.
+            {isWorkspace ? "Bereit für ein Ergebnis?" : "Zufrieden? Dann heb dir das Ergebnis auf."}
           </p>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Button size="sm" variant="ghost" onClick={() => setHandoff("packet")}>
               <Package className="h-4 w-4" />
-              Software-Paket bauen
+              {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
             </Button>
             <Button size="sm" variant="accent" onClick={() => setHandoff("save")}>
               <BookmarkPlus className="h-4 w-4" />
-              Prompt speichern
+              {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
             </Button>
           </div>
         </div>
@@ -248,10 +274,13 @@ export function Chat({
         <PacketBridge
           autoOpen
           userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
-          defaultTools={defaultTools ?? DEFAULT_TOOLS}
+          defaultTools={workspaceTools ?? defaultTools ?? DEFAULT_TOOLS}
           conversationId={conversationId}
           onOpenChange={setHandoffOpen}
           onBack={closeHandoff}
+          existingProjectId={projectId}
+          projectName={projectName}
+          projectInstructions={projectInstructions ?? undefined}
         />
       )}
 
@@ -259,10 +288,13 @@ export function Chat({
         <PromptSave
           autoOpen
           userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
-          initialTarget={target}
+          initialTarget={workspaceTarget}
           conversationId={conversationId}
           onOpenChange={setHandoffOpen}
           onBack={closeHandoff}
+          existingProjectId={projectId}
+          projectName={projectName}
+          projectInstructions={projectInstructions ?? undefined}
         />
       )}
 

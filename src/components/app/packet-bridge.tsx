@@ -13,7 +13,16 @@ import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 // The handoff from a chat to a real build packet. The chat collects the idea
 // conversationally; this component is the visible handoff: Finn summarizes
 // what he understood into an editable confirmation card, then calls
-// /api/generate (the packet pipeline) and moves the user into the new project.
+// /api/generate (the packet pipeline).
+//
+// Two destinations (REDESIGN.md — Handoff im Workspace):
+//  - standalone (existingProjectId unset): creates a brand-new project and
+//    moves the user there. Used by global chats (/chats/…).
+//  - workspace (existingProjectId set): adds a generation to the project this
+//    chat already belongs to and moves the user to its Ergebnisse. The name
+//    is the project's own — never re-asked — and the idea prefill leads with
+//    the project's Anweisungen, so the result reflects the whole briefing,
+//    not just this one chat.
 //
 // Stages: idle (slim offer bar) → confirm (editable summary) → building
 // (Finn builds, everything locked) → redirect. Errors return to confirm.
@@ -44,14 +53,20 @@ const LIMITS = {
 const selectClass =
   "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors duration-200 focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50";
 
-// Prefill helpers — the first user turn names the project, the whole
-// conversation becomes the idea text.
+// Prefill helpers. Standalone: the first user turn names the project, the
+// whole conversation becomes the idea text. Workspace: the project already
+// has a name (never re-derived), and the idea leads with the project's own
+// Anweisungen so the result reflects the full briefing, not just this chat.
 function deriveName(userMessages: string[]): string {
   const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
   return first.length > 60 ? `${first.slice(0, 57)}…` : first;
 }
-function deriveIdea(userMessages: string[]): string {
-  return userMessages.join("\n\n").trim().slice(0, LIMITS.ideaMax);
+function deriveIdea(userMessages: string[], instructionsPrefix?: string): string {
+  const joined = userMessages.join("\n\n").trim();
+  const combined = instructionsPrefix?.trim()
+    ? `${instructionsPrefix.trim()}\n\n${joined}`
+    : joined;
+  return combined.slice(0, LIMITS.ideaMax);
 }
 
 export function PacketBridge({
@@ -61,12 +76,15 @@ export function PacketBridge({
   onOpenChange,
   autoOpen = false,
   onBack,
+  existingProjectId,
+  projectName,
+  projectInstructions,
 }: {
   /** The user's own chat turns, oldest first — source for the prefills. */
   userMessages: string[];
-  /** Per-user tool defaults from profiles.settings (settings page maintains them). */
+  /** Per-user tool defaults from profiles.settings (settings page maintains them), or the project's own structure when generating into a workspace. */
   defaultTools: ProjectTools;
-  /** Set once the chat is persisted; links the conversation to the new project. */
+  /** Set once the chat is persisted; links the conversation to the new project (standalone only — a workspace chat is already linked). */
   conversationId?: string;
   /** Lets the chat hide its composer while the handoff card is open. */
   onOpenChange?: (open: boolean) => void;
@@ -74,14 +92,25 @@ export function PacketBridge({
   autoOpen?: boolean;
   /** When set, "Zurück zum Chat" hands control back instead of showing idle. */
   onBack?: () => void;
+  /** Set when this chat belongs to a project — generate into it instead of creating a new one. */
+  existingProjectId?: string;
+  /** The workspace's own name, shown read-only instead of an editable field. */
+  projectName?: string;
+  /** The workspace's Anweisungen, prefixed into the idea prefill. */
+  projectInstructions?: string;
 }) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState(() => (autoOpen ? deriveName(userMessages) : ""));
+  const [name, setName] = useState(() => {
+    if (!autoOpen) return "";
+    return existingProjectId ? (projectName ?? "") : deriveName(userMessages);
+  });
   const [audience, setAudience] = useState("");
-  const [idea, setIdea] = useState(() => (autoOpen ? deriveIdea(userMessages) : ""));
+  const [idea, setIdea] = useState(() =>
+    autoOpen ? deriveIdea(userMessages, projectInstructions) : ""
+  );
   const [tools, setTools] = useState<ProjectTools>(defaultTools);
   const prefilled = useRef(autoOpen);
   const audienceRef = useRef<HTMLInputElement | null>(null);
@@ -100,8 +129,8 @@ export function PacketBridge({
     // if they hop back into the chat and return.
     if (!prefilled.current) {
       prefilled.current = true;
-      setName(deriveName(userMessages));
-      setIdea(deriveIdea(userMessages));
+      setName(existingProjectId ? (projectName ?? "") : deriveName(userMessages));
+      setIdea(deriveIdea(userMessages, projectInstructions));
     }
     setError(null);
     setStage("confirm");
@@ -130,32 +159,36 @@ export function PacketBridge({
           idea: idea.trim(),
           audience: audience.trim(),
           tools,
+          ...(existingProjectId ? { projectId: existingProjectId } : {}),
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail ?? "Generierung fehlgeschlagen.");
-      const projectId = json.projectId as string | undefined;
-      if (!projectId || projectId === "demo" || json.persistError) {
+      const resultProjectId = json.projectId as string | undefined;
+      if (!resultProjectId || resultProjectId === "demo" || json.persistError) {
         throw new Error(
           json.persistError
             ? `Dein Paket konnte nicht gespeichert werden: ${json.persistError}`
             : "Dein Paket konnte nicht gespeichert werden. Versuch es nochmal."
         );
       }
-      // Tie this conversation to its project so opening the project resumes the
-      // same chat. Best effort: the packet exists either way.
-      if (conversationId) {
+      // Standalone only: tie this conversation to its new project so opening
+      // it resumes the same chat. A workspace chat is already linked.
+      if (!existingProjectId && conversationId) {
         try {
           const supabase = createClient();
           await supabase
             .from("conversations")
-            .update({ project_id: projectId })
+            .update({ project_id: resultProjectId })
             .eq("id", conversationId);
         } catch {
           // Linking failed — not worth blocking the handoff over.
         }
       }
-      router.push(`/projects/${projectId}`);
+      router.push(
+        existingProjectId ? `/projects/${resultProjectId}/results` : `/projects/${resultProjectId}`
+      );
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unbekannter Fehler");
       setStage("confirm");
@@ -206,10 +239,12 @@ export function PacketBridge({
             id="packet-bridge-heading"
             className="text-[16px] font-semibold tracking-[-0.01em] text-foreground"
           >
-            Das bau ich dir.
+            {existingProjectId ? "Das erzeuge ich für dein Projekt." : "Das bau ich dir."}
           </h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            Prüf kurz, ob ich alles richtig verstanden hab. Dann leg ich los.
+            {existingProjectId
+              ? "Prüf kurz, ob ich alles richtig verstanden hab. Das Ergebnis landet direkt in Ergebnisse."
+              : "Prüf kurz, ob ich alles richtig verstanden hab. Dann leg ich los."}
           </p>
         </div>
       </div>
@@ -225,17 +260,26 @@ export function PacketBridge({
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="bridge-name">Projektname</Label>
-            <Input
-              id="bridge-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={LIMITS.nameMax}
-              placeholder="Wie soll dein Projekt heißen?"
-              className="mt-1.5"
-            />
-          </div>
+          {existingProjectId ? (
+            <div>
+              <Label>Projekt</Label>
+              <div className="mt-1.5 flex h-10 items-center rounded-lg border border-border bg-surface px-3 text-[13px] text-foreground/70">
+                {name}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="bridge-name">Projektname</Label>
+              <Input
+                id="bridge-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={LIMITS.nameMax}
+                placeholder="Wie soll dein Projekt heißen?"
+                className="mt-1.5"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="bridge-audience">Zielgruppe</Label>
             <Input
@@ -308,7 +352,7 @@ export function PacketBridge({
           )}
           <Button variant="accent" onClick={build} disabled={!valid} className="shrink-0">
             <Hammer className="h-4 w-4" />
-            Paket bauen
+            {existingProjectId ? "Ergebnis erzeugen" : "Paket bauen"}
           </Button>
         </div>
       </div>

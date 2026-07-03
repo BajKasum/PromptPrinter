@@ -68,6 +68,9 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         mode={mode}
         target={(convo.target as string | null) ?? undefined}
         projectId={project.id}
+        projectName={project.name}
+        projectInstructions={project.instructions}
+        projectContext={project.context}
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}
         hasResults={(resultCount ?? 0) > 0}

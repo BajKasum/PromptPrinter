@@ -24,6 +24,11 @@ import { TOOL_OPTIONS } from "@/lib/tools";
 // pipeline the packet bridge uses — so the result is a polished main prompt
 // plus three toned variants, not a literal copy of one chat reply. That's the
 // honest framing in the copy below: "eine fertige Version", not "dieser Chat".
+//
+// Two destinations (REDESIGN.md — Handoff im Workspace): standalone creates a
+// new project (global chats); when `existingProjectId` is set, the prompt is
+// saved into the project this chat already belongs to instead, landing
+// directly in its Ergebnisse — see PacketBridge for the identical pattern.
 
 type Stage = "idle" | "confirm" | "saving";
 
@@ -39,14 +44,20 @@ const TARGET_OPTIONS = TOOL_OPTIONS.master; // ["Claude", "ChatGPT", "Gemini"]
 const selectClass =
   "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors duration-200 focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50";
 
-// Prefill helpers — the first user turn names the prompt, the whole
-// conversation becomes the goal text.
+// Prefill helpers. Standalone: the first user turn names the prompt, the
+// whole conversation becomes the goal text. Workspace: the project already
+// has a name (never re-derived), and the goal leads with the project's own
+// Anweisungen.
 function deriveName(userMessages: string[]): string {
   const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
   return first.length > 60 ? `${first.slice(0, 57)}…` : first;
 }
-function deriveIdea(userMessages: string[]): string {
-  return userMessages.join("\n\n").trim().slice(0, LIMITS.ideaMax);
+function deriveIdea(userMessages: string[], instructionsPrefix?: string): string {
+  const joined = userMessages.join("\n\n").trim();
+  const combined = instructionsPrefix?.trim()
+    ? `${instructionsPrefix.trim()}\n\n${joined}`
+    : joined;
+  return combined.slice(0, LIMITS.ideaMax);
 }
 
 export function PromptSave({
@@ -56,12 +67,15 @@ export function PromptSave({
   onOpenChange,
   autoOpen = false,
   onBack,
+  existingProjectId,
+  projectName,
+  projectInstructions,
 }: {
   /** The user's own chat turns, oldest first — source for the prefills. */
   userMessages: string[];
   /** Pre-selects the target assistant if the chat already knows it. */
   initialTarget?: string;
-  /** Set once the chat is persisted; links the conversation to the new project. */
+  /** Set once the chat is persisted; links the conversation to the new project (standalone only — a workspace chat is already linked). */
   conversationId?: string;
   /** Lets the chat hide its composer while the save card is open. */
   onOpenChange?: (open: boolean) => void;
@@ -69,13 +83,24 @@ export function PromptSave({
   autoOpen?: boolean;
   /** When set, "Zurück zum Chat" hands control back instead of showing idle. */
   onBack?: () => void;
+  /** Set when this chat belongs to a project — save into it instead of creating a new one. */
+  existingProjectId?: string;
+  /** The workspace's own name, shown read-only instead of an editable field. */
+  projectName?: string;
+  /** The workspace's Anweisungen, prefixed into the idea prefill. */
+  projectInstructions?: string;
 }) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState(() => (autoOpen ? deriveName(userMessages) : ""));
-  const [idea, setIdea] = useState(() => (autoOpen ? deriveIdea(userMessages) : ""));
+  const [name, setName] = useState(() => {
+    if (!autoOpen) return "";
+    return existingProjectId ? (projectName ?? "") : deriveName(userMessages);
+  });
+  const [idea, setIdea] = useState(() =>
+    autoOpen ? deriveIdea(userMessages, projectInstructions) : ""
+  );
   const [target, setTarget] = useState(
     initialTarget && TARGET_OPTIONS.includes(initialTarget as (typeof TARGET_OPTIONS)[number])
       ? initialTarget
@@ -83,22 +108,26 @@ export function PromptSave({
   );
   const prefilled = useRef(autoOpen);
   const nameRef = useRef<HTMLInputElement | null>(null);
+  const ideaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     onOpenChange?.(stage !== "idle");
   }, [stage, onOpenChange]);
 
+  // Focus the one thing worth reviewing: the name field when it's editable,
+  // the goal text when it isn't (workspace mode — the name is the project's own).
   useEffect(() => {
-    if (stage === "confirm") nameRef.current?.focus();
-  }, [stage]);
+    if (stage !== "confirm") return;
+    (existingProjectId ? ideaRef : nameRef).current?.focus();
+  }, [stage, existingProjectId]);
 
   function openConfirm() {
     // Prefill once from the conversation; afterwards the user's edits win, even
     // if they hop back into the chat and return.
     if (!prefilled.current) {
       prefilled.current = true;
-      setName(deriveName(userMessages));
-      setIdea(deriveIdea(userMessages));
+      setName(existingProjectId ? (projectName ?? "") : deriveName(userMessages));
+      setIdea(deriveIdea(userMessages, projectInstructions));
     }
     setError(null);
     setStage("confirm");
@@ -123,32 +152,36 @@ export function PromptSave({
           name: name.trim(),
           idea: idea.trim(),
           target,
+          ...(existingProjectId ? { projectId: existingProjectId } : {}),
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail ?? "Speichern fehlgeschlagen.");
-      const projectId = json.projectId as string | undefined;
-      if (!projectId || projectId === "demo" || json.persistError) {
+      const resultProjectId = json.projectId as string | undefined;
+      if (!resultProjectId || resultProjectId === "demo" || json.persistError) {
         throw new Error(
           json.persistError
             ? `Konnte nicht gespeichert werden: ${json.persistError}`
             : "Konnte nicht gespeichert werden. Versuch es nochmal."
         );
       }
-      // Tie this conversation to its project so opening the project resumes the
-      // same chat. Best effort: the prompt is saved either way.
-      if (conversationId) {
+      // Standalone only: tie this conversation to its new project so opening
+      // it resumes the same chat. A workspace chat is already linked.
+      if (!existingProjectId && conversationId) {
         try {
           const supabase = createClient();
           await supabase
             .from("conversations")
-            .update({ project_id: projectId })
+            .update({ project_id: resultProjectId })
             .eq("id", conversationId);
         } catch {
           // Linking failed — not worth blocking the save over.
         }
       }
-      router.push(`/projects/${projectId}`);
+      router.push(
+        existingProjectId ? `/projects/${resultProjectId}/results` : `/projects/${resultProjectId}`
+      );
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unbekannter Fehler");
       setStage("confirm");
@@ -196,10 +229,12 @@ export function PromptSave({
             id="prompt-save-heading"
             className="text-[16px] font-semibold tracking-[-0.01em] text-foreground"
           >
-            Den heb ich dir auf.
+            {existingProjectId ? "Diesen Prompt erzeuge ich fürs Projekt." : "Den heb ich dir auf."}
           </h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            Gib ihm einen Namen. Ich mach eine polierte Version mit drei Varianten draus.
+            {existingProjectId
+              ? "Ich mach eine polierte Version mit drei Varianten draus. Landet direkt in Ergebnisse."
+              : "Gib ihm einen Namen. Ich mach eine polierte Version mit drei Varianten draus."}
           </p>
         </div>
       </div>
@@ -215,18 +250,27 @@ export function PromptSave({
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_160px]">
-          <div>
-            <Label htmlFor="save-name">Name</Label>
-            <Input
-              id="save-name"
-              ref={nameRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={LIMITS.nameMax}
-              placeholder="Wie soll der Prompt heißen?"
-              className="mt-1.5"
-            />
-          </div>
+          {existingProjectId ? (
+            <div>
+              <Label>Projekt</Label>
+              <div className="mt-1.5 flex h-10 items-center rounded-lg border border-border bg-surface px-3 text-[13px] text-foreground/70">
+                {name}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="save-name">Name</Label>
+              <Input
+                id="save-name"
+                ref={nameRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={LIMITS.nameMax}
+                placeholder="Wie soll der Prompt heißen?"
+                className="mt-1.5"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="save-target">Ziel-KI</Label>
             <select
@@ -248,6 +292,7 @@ export function PromptSave({
           <Label htmlFor="save-idea">Worum geht&apos;s</Label>
           <Textarea
             id="save-idea"
+            ref={ideaRef}
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             maxLength={LIMITS.ideaMax}
@@ -273,7 +318,7 @@ export function PromptSave({
           )}
           <Button variant="accent" onClick={save} disabled={!valid} className="shrink-0">
             <Check className="h-4 w-4" />
-            Speichern
+            {existingProjectId ? "Erzeugen" : "Speichern"}
           </Button>
         </div>
       </div>

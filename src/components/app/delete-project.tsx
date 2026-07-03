@@ -116,8 +116,8 @@ export function DeleteProjectButton({
                         Projekt löschen?
                       </h2>
                       <p className="mt-1 text-[13px] text-foreground/55">
-                        „{projectName}“ wird mit allen Artefakten und dem Verfeinerungs-Chat
-                        dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.
+                        „{projectName}“ wird mit allen Chats und Ergebnissen dauerhaft
+                        entfernt. Das kann nicht rückgängig gemacht werden.
                       </p>
                     </div>
                   </div>

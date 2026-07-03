@@ -23,9 +23,18 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > mit Anweisungen/Struktur/Dateien-Platzhalter/Ergebnisse-Karte), Hauptspalte
 > wechselt per Subroute: Übersicht (Chat-Liste + Composer), `chats/new`,
 > `chats/[cid]`, `results` (Tabs + Verlauf). Mehrere Chats pro Projekt;
-> `buildProjectContext` v2 injiziert Anweisungen + Struktur zuerst. Als
-> Nächstes: Phase 4 (Dateien, Migration 0012) und Phase 5 (Handoff in den
-> Workspace verdrahten, „Paket bauen" als Ergebnisse-Aktion, Wahrheits-Pass).
+> `buildProjectContext` v2 injiziert Anweisungen + Struktur zuerst.
+> **Handoff im Workspace vorgezogen** (vor Phase 4): die Chat-Handoff-Leiste
+> erscheint jetzt auch in Projekt-Chats (`canHandoff` prüft nur noch
+> `hasAssistantReply`, nicht mehr `variant !== "refine"`). `/api/generate`
+> nimmt ein optionales `projectId` — dann kein neues Projekt, sondern nur eine
+> weitere `generations`-Zeile im bestehenden Workspace (Ownership geprüft,
+> Projekt-Limit übersprungen), Redirect nach `results` statt in ein neues
+> Projekt. `PacketBridge`/`PromptSave` fragen im Workspace nicht mehr nach dem
+> Namen (kommt vom Projekt) und leiten die Idee mit den Anweisungen ein.
+> Ergebnisse-Leerzustand verlinkt jetzt zum Chat statt Sackgasse zu sein. Als
+> Nächstes: Phase 4 (Dateien, Migration 0012) und der Rest von Phase 5
+> (Wahrheits-Pass, Landing-Nachzug).
 
 ## Was ist PromptPrinter?
 

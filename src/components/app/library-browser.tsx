@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, FolderKanban, Sparkles, Clock, Library, Star } from "lucide-react";
 import { cn, relativeTime } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -45,6 +46,7 @@ function workspaceMeta(it: LibraryItem): string {
 }
 
 export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [favorites, setFavorites] = useState<Set<string>>(
@@ -79,7 +81,11 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
         description: "Bitte versuche es erneut.",
         variant: "error",
       });
+      return;
     }
+    // The sidebar's pinned projects are server-rendered — without this the
+    // new pin order only shows up after the next unrelated navigation.
+    router.refresh();
   }
 
   const visible = useMemo(() => {

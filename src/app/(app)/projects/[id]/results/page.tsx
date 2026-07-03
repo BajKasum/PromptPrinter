@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, MessageSquare, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ProjectTabs, type ProjectTab } from "@/components/app/project-tabs";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -99,11 +100,17 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const project = await getProject(id);
 
   const supabase = await createClient();
-  const { data: generationsRaw } = await supabase
-    .from("generations")
-    .select("id, model, tokens_in, tokens_out, created_at, outputs")
-    .eq("project_id", id)
-    .order("created_at", { ascending: false });
+  const [{ data: generationsRaw }, { count: chatCount }] = await Promise.all([
+    supabase
+      .from("generations")
+      .select("id, model, tokens_in, tokens_out, created_at, outputs")
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", id),
+  ]);
 
   const history = (generationsRaw as GenerationHistoryRow[] | null) ?? [];
   const stored = (history[0]?.outputs as Record<string, string> | undefined) ?? {};
@@ -119,6 +126,10 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   );
 
   if (history.length === 0) {
+    // A result only ever comes out of a chat's handoff strip (REDESIGN.md —
+    // Handoff im Workspace) — so an empty Ergebnisse-Bereich must point there,
+    // not dead-end. Whether a chat already exists decides the exact next step.
+    const hasChats = (chatCount ?? 0) > 0;
     return (
       <FadeIn>
         {backLink}
@@ -127,10 +138,19 @@ export default async function ProjectResultsPage({ params }: { params: Params })
           <p className="text-[14px] font-semibold text-foreground">
             Noch keine Ergebnisse gespeichert
           </p>
-          <p className="mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
             Hier landen deine gespeicherten Ergebnisse — komplette Prompt-Pakete
-            und feine Prompts, mit allem Verlauf.
+            und feine Prompts, mit allem Verlauf.{" "}
+            {hasChats
+              ? "Öffne einen Chat und erzeug von dort dein erstes Ergebnis."
+              : "Starte einen Chat, dann erzeugst du von dort dein erstes Ergebnis."}
           </p>
+          <Button asChild size="sm">
+            <Link href={hasChats ? `/projects/${id}` : `/projects/${id}/chats/new`}>
+              <MessageSquare className="h-4 w-4" />
+              {hasChats ? "Zu deinen Chats" : "Ersten Chat starten"}
+            </Link>
+          </Button>
         </div>
       </FadeIn>
     );

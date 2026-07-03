@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { generateRequestSchema } from "@/lib/schemas";
+import { generateRequestSchema, type GenerateRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
@@ -113,7 +113,10 @@ export async function POST(req: Request) {
     const rawPlan = (profile?.plan as string | undefined) ?? "free";
     const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
     const limits = PLAN_LIMITS[plan];
-    if ((projectCount ?? 0) >= limits.projects) {
+    // Generating into an existing project (workspace-native handoff) never
+    // creates a project row, so the project cap doesn't apply — only a fresh
+    // standalone generation (no projectId) is gated by it.
+    if (!input.projectId && (projectCount ?? 0) >= limits.projects) {
       return problem(
         403,
         `Projekt-Limit erreicht — dein Plan (${plan}) erlaubt ${limits.projects} Projekte. Upgrade für mehr.`,
@@ -126,6 +129,24 @@ export async function POST(req: Request) {
         `Monatslimit für Generierungen erreicht — dein Plan (${plan}) erlaubt ${limits.generations} pro Monat. Upgrade für mehr.`,
         { kind: "generations", limit: limits.generations, current: genCount ?? 0, plan }
       );
+    }
+  }
+
+  // 3.6 Generating into an existing project requires ownership — verify before
+  //     spending a Gemini call. A missing/foreign id must fail loudly instead
+  //     of silently creating an orphan generation; anonymous callers can never
+  //     own a project, so they're rejected outright.
+  if (input.projectId) {
+    if (!userId || !supabase) {
+      return problem(401, "Anmeldung erforderlich, um ein Ergebnis in einem Projekt zu erzeugen.");
+    }
+    const { data: existingProject } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("id", input.projectId)
+      .maybeSingle();
+    if (!existingProject) {
+      return problem(404, "Projekt nicht gefunden.");
     }
   }
 
@@ -189,56 +210,69 @@ export async function POST(req: Request) {
     Object.assign(outputs, prompts);
   }
 
+  // 5.5 The overview is a faithful summary of THIS run's actual input, not a
+  //     model call — a project can now carry several generations over time
+  //     (workspace-native handoff), so reconstructing it later from the
+  //     project row (which only holds the latest/legacy values) would drift.
+  //     Deterministic and un-timestamped so it never goes stale once stored.
+  outputs.overview = input.type === "general" ? buildGeneralOverview(input) : buildSoftwareOverview(input);
+
   // 6. Persist for logged-in users — in BOTH modes, so the project shows up
-  //    in the dashboard regardless of whether real generation ran.
+  //    regardless of whether real generation ran. A projectId in the input
+  //    means this is a workspace-native handoff: no new project, just another
+  //    generation row for the existing one (ownership already verified above).
   let projectId: string | null = null;
   let persistError: string | null = null;
   if (userId && supabase) {
     try {
-      // One explicit row type for both packs. Without it, the two branches
-      // produce a union with differing `tools` shapes, which Supabase's
-      // insert typing (RejectExcessProperties) rejects. `tools` is a jsonb
-      // column, so Record<string, string> covers both the four build tools
-      // and the general pack's { target }.
-      const projectRow: {
-        user_id: string;
-        name: string;
-        audience: string;
-        idea: string;
-        tools: Record<string, string>;
-        type: string;
-        status: string;
-      } =
-        input.type === "general"
-          ? {
-              user_id: userId,
-              name: input.name,
-              // The general pack has no audience; store the target assistant so
-              // the dashboard card still has a meaningful subtitle.
-              audience: input.target,
-              idea: input.idea,
-              tools: { target: input.target },
-              type: "general",
-              status: "ready",
-            }
-          : {
-              user_id: userId,
-              name: input.name,
-              audience: input.audience,
-              idea: input.idea,
-              tools: input.tools,
-              type: "software",
-              status: "ready",
-            };
+      if (input.projectId) {
+        projectId = input.projectId;
+      } else {
+        // One explicit row type for both packs. Without it, the two branches
+        // produce a union with differing `tools` shapes, which Supabase's
+        // insert typing (RejectExcessProperties) rejects. `tools` is a jsonb
+        // column, so Record<string, string> covers both the four build tools
+        // and the general pack's { target }.
+        const projectRow: {
+          user_id: string;
+          name: string;
+          audience: string;
+          idea: string;
+          tools: Record<string, string>;
+          type: string;
+          status: string;
+        } =
+          input.type === "general"
+            ? {
+                user_id: userId,
+                name: input.name,
+                // The general pack has no audience; store the target assistant so
+                // the dashboard card still has a meaningful subtitle.
+                audience: input.target,
+                idea: input.idea,
+                tools: { target: input.target },
+                type: "general",
+                status: "ready",
+              }
+            : {
+                user_id: userId,
+                name: input.name,
+                audience: input.audience,
+                idea: input.idea,
+                tools: input.tools,
+                type: "software",
+                status: "ready",
+              };
 
-      const { data: project, error: projectErr } = await supabase
-        .from("projects")
-        .insert(projectRow)
-        .select("id")
-        .single();
+        const { data: project, error: projectErr } = await supabase
+          .from("projects")
+          .insert(projectRow)
+          .select("id")
+          .single();
 
-      if (projectErr) throw projectErr;
-      projectId = project?.id ?? null;
+        if (projectErr) throw projectErr;
+        projectId = project?.id ?? null;
+      }
 
       if (projectId) {
         const { error: genErr } = await supabase.from("generations").insert({
@@ -268,6 +302,44 @@ export async function POST(req: Request) {
   });
 }
 
+function buildSoftwareOverview(input: Extract<GenerateRequest, { type: "software" }>): string {
+  return `# ${input.name} — Übersicht
+
+**Zielgruppe** ${input.audience}
+
+## Idee
+${input.idea}
+
+## Stack
+- **Master-Prompt** — ${input.tools.master}
+- **Frontend** — ${input.tools.frontend}
+- **Backend** — ${input.tools.backend}
+- **Datenbank** — ${input.tools.database}
+
+## Nächste Schritte
+- **Master-Prompt** — in deinen KI-Assistenten einfügen, um das Scaffolding zu starten
+- **Datenbank-Schema** — zuerst im Supabase SQL-Editor ausführen
+- **Frontend-Prompt** — in Lovable oder v0 einfügen
+`;
+}
+
+function buildGeneralOverview(input: Extract<GenerateRequest, { type: "general" }>): string {
+  return `# ${input.name} — Übersicht
+
+**Typ** Prompt  •  **Ziel-KI** ${input.target}
+
+## Ziel
+${input.idea}
+
+## Enthalten
+- **Haupt-Prompt** — die ausgewogene, fertige Version
+- **Varianten** — knapp & direkt, ausführlich & geführt, rollenbasiert
+
+## So nutzt du es
+Kopiere den Haupt-Prompt und füge ihn in ${input.target} ein. Greif zu einer Variante, wenn du einen anderen Ton oder mehr Führung brauchst.
+`;
+}
+
 function problem(status: number, detail: string, extra: Record<string, unknown> = {}) {
   return NextResponse.json(
     {
@@ -275,11 +347,15 @@ function problem(status: number, detail: string, extra: Record<string, unknown> 
       title:
         status === 400
           ? "Bad Request"
-          : status === 403
-            ? "Forbidden"
-            : status === 429
-              ? "Too Many Requests"
-              : "Error",
+          : status === 401
+            ? "Unauthorized"
+            : status === 403
+              ? "Forbidden"
+              : status === 404
+                ? "Not Found"
+                : status === 429
+                  ? "Too Many Requests"
+                  : "Error",
       status,
       detail,
       ...extra,

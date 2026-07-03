@@ -39,7 +39,14 @@ export default async function NewProjectChatPage({ params }: { params: Params })
           Zurück zur Übersicht
         </Link>
       </FadeIn>
-      <Chat mode={mode} projectId={project.id} hasResults={(count ?? 0) > 0} />
+      <Chat
+        mode={mode}
+        projectId={project.id}
+        projectName={project.name}
+        projectInstructions={project.instructions}
+        projectContext={project.context}
+        hasResults={(count ?? 0) > 0}
+      />
     </div>
   );
 }
