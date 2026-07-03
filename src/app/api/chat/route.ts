@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import { chatRequestSchema, type ChatRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { chatComplete, llmConfig } from "@/lib/llm";
 import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-// Same model + budget as the one-shot generator; a chat turn is just a
-// multi-message call against the same Flash model.
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
-const MAX_OUTPUT_TOKENS = 8192;
 
 export async function POST(req: Request) {
   // 1. Parse + validate the transcript the client replays each turn.
@@ -72,33 +67,22 @@ export async function POST(req: Request) {
     if (ctx) systemInstruction += `\n\n${ctx}`;
   }
 
-  // 5. Produce the reply. Without a key we return a useful stub so the whole
-  //    flow stays testable; with one we replay the transcript to Gemini
-  //    (assistant → "model", user → "user").
-  const apiKey = process.env.GEMINI_API_KEY;
+  // 5. Produce the reply. Without a configured provider we return a useful
+  //    stub so the whole flow stays testable; with one we replay the
+  //    transcript through the provider module (Z.ai primary, see lib/llm.ts).
   let reply: string;
   let mode: "stub" | "generated";
-  if (!apiKey) {
+  if (!llmConfig()) {
     const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
     reply = stubReply(lastUser?.content ?? "");
     mode = "stub";
   } else {
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const contents = input.messages.map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      }));
-      const res = await ai.models.generateContent({
-        model: MODEL,
-        contents,
-        config: { systemInstruction, maxOutputTokens: MAX_OUTPUT_TOKENS },
+      const result = await chatComplete({
+        system: systemInstruction,
+        messages: input.messages,
       });
-      const text = res.text?.trim();
-      if (!text) {
-        return problem(502, "Leere Antwort vom Modell — versuch es nochmal.");
-      }
-      reply = text;
+      reply = result.text;
       mode = "generated";
     } catch (err) {
       return problem(
@@ -345,10 +329,10 @@ function truncate(s: string, max: number): string {
 }
 
 // A placeholder answer that mirrors the real shape (a fenced, paste-ready
-// prompt) so the UI can be exercised before a GEMINI_API_KEY is configured.
+// prompt) so the UI can be exercised before an API key is configured.
 function stubReply(userText: string): string {
   const task = userText.trim() || "[deine Aufgabe]";
-  return `_(Demo-Antwort — kein GEMINI_API_KEY gesetzt. Trag ihn in \`.env.local\` ein, dann kommt echter KI-Output.)_
+  return `_(Demo-Antwort — kein ZAI_API_KEY gesetzt. Trag ihn in \`.env.local\` ein, dann kommt echter KI-Output.)_
 
 Hier ein Grundgerüst, das du anpassen kannst:
 

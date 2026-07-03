@@ -59,17 +59,21 @@ Framer Motion · next-themes · Vitest · Docker.
 
 ## ⚠️ Wichtig zu wissen, bevor du loslegst
 
-1. **Stub-Modus ist Absicht.** Es ist **kein `GEMINI_API_KEY` gesetzt** — bewusst,
-   bis die App fertig ist. `/api/chat` und `/api/generate` fallen ohne Key auf
-   Templates/Stub-Antworten zurück. **Nichts auf echten KI-Output ausrichten**,
-   solange der Key fehlt.
+1. **Modell-Provider ist Z.ai (GLM).** Der komplette Modellzugriff ist in
+   [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt — Priorität: `ZAI_API_KEY`
+   (Z.ai, Default-Modell `glm-5-turbo`, via `ZAI_MODEL` überschreibbar) →
+   `GEMINI_API_KEY` (Gemini als Zweit-Provider) → **Stub-Modus** (Templates
+   kommen unverändert zurück, ganzer Flow bleibt ohne Key testbar). Routen
+   sprechen nie direkt mit einem Provider-SDK.
 2. **Zahlungen → Lemon Squeezy, aber erst später.** Bezahlung läuft künftig über
    **Lemon Squeezy** (nicht Stripe). Das passiert **erst, nachdem die Website
    gehostet ist** — vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
    (UI, `stripe`-Dep, DB-Spalten `stripe_*`); das wird ersetzt, nicht ausgebaut.
-3. **Model-ID prüfen vor Go-Live.** Default ist `gemini-3.5-flash`
-   (`GEMINI_MODEL`-überschreibbar). Vor dem Key-Flip gegen die aktuelle GA-API
-   verifizieren.
+3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
+   Prod-Docker-Container liest `.env` (via `env_file` in docker-compose.yml) —
+   das `--env-file .env.local` im Compose-Befehl steuert nur die
+   ${VAR}-Interpolation, nicht die Container-Runtime-Vars. Ein API-Key muss
+   also je nach Workflow in der richtigen Datei (oder beiden) stehen.
 
 ## Befehle
 
@@ -96,7 +100,7 @@ Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
 - **Commit-Trailer:** `Co-Authored-By: Claude <aktuelles Modell> <noreply@anthropic.com>`.
 - **Nach jeder abgeschlossenen Änderung committen + pushen** — nicht auf Aufforderung warten.
 - **Secrets nie mit `NEXT_PUBLIC_*`** prefixen — landen sonst im Client-Bundle.
-  Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, …) ohne Prefix.
+  Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.
 - **Keine rohen Hex-Farben** in Komponenten — nur semantische Token-Utilities
   (siehe [DESIGN.md](DESIGN.md)).
 - **User-scoped Queries:** RLS scope + zusätzlich explizit `.eq("user_id", …)`

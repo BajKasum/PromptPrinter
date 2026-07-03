@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import { generateRequestSchema, type GenerateRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { chatComplete, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
 import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
 import {
   SYSTEM_PROMPT,
@@ -24,17 +24,6 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-// Gemini 3.5 Flash — the GA/stable successor to the gemini-3-flash-preview
-// line; Pro-level quality at Flash speed/price. A launch-bound product should
-// default to GA, not a preview model. Overridable via GEMINI_MODEL so it can be
-// bumped without a code change once newer versions ship.
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
-
-// Gemini 3 models spend part of their output budget on internal "thinking",
-// so a tight cap can starve the visible answer. 8k leaves room for both the
-// reasoning and a full-length artifact.
-const MAX_OUTPUT_TOKENS = 8192;
 
 export async function POST(req: Request) {
   // 1. Parse + validate body
@@ -87,7 +76,7 @@ export async function POST(req: Request) {
   }
 
   // 3.5 Enforce plan allowances for signed-in users. Anonymous callers persist
-  //     nothing, so only the rate limit gates them. Done before the Gemini calls
+  //     nothing, so only the rate limit gates them. Done before the model calls
   //     so an over-limit request never burns API quota or writes a row.
   if (userId && supabase) {
     const now = new Date();
@@ -133,7 +122,7 @@ export async function POST(req: Request) {
   }
 
   // 3.6 Generating into an existing project requires ownership — verify before
-  //     spending a Gemini call. A missing/foreign id must fail loudly instead
+  //     spending a model call. A missing/foreign id must fail loudly instead
   //     of silently creating an orphan generation; anonymous callers can never
   //     own a project, so they're rejected outright.
   if (input.projectId) {
@@ -178,31 +167,36 @@ export async function POST(req: Request) {
   }
 
   // 5. Produce the outputs.
-  //    - With an API key: call Gemini for each artifact.
-  //    - Without a key: fall back to the unfilled templates so the flow still works.
-  const apiKey = process.env.GEMINI_API_KEY;
-  const mode: "generated" | "stub" = apiKey ? "generated" : "stub";
+  //    - With a configured provider (Z.ai primary, see lib/llm.ts): one
+  //      completion per artifact, all in parallel.
+  //    - Without one: fall back to the unfilled templates so the flow still works.
+  const llm = llmConfig();
+  const mode: "generated" | "stub" = llm ? "generated" : "stub";
   const outputs: Record<string, string> = {};
+  // Summed across all artifact calls of this run; stored on the generation row
+  // so the Verlauf can show what a run actually cost.
+  let tokensIn = 0;
+  let tokensOut = 0;
 
-  if (apiKey) {
-    const ai = new GoogleGenAI({ apiKey });
+  if (llm) {
     const calls = Object.entries(prompts).map(async ([key, prompt]) => {
       try {
-        const res = await ai.models.generateContent({
-          model: MODEL,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-          },
+        const result = await chatComplete({
+          system: systemInstruction,
+          messages: [{ role: "user", content: prompt }],
         });
-        // `text` is undefined when the response was blocked or fully consumed
-        // by thinking — fall back to the unfilled template so every artifact
-        // still has usable content rather than an empty box.
-        const text = res.text?.trim();
-        outputs[key] = text && text.length > 0 ? text : prompt;
+        outputs[key] = result.text;
+        if (result.usage) {
+          tokensIn += result.usage.inputTokens;
+          tokensOut += result.usage.outputTokens;
+        }
       } catch (err) {
-        outputs[key] = `_Generation failed: ${err instanceof Error ? err.message : "unknown"}_`;
+        // An empty reply degrades to the unfilled template — still usable
+        // content instead of an empty box. Real errors surface visibly.
+        outputs[key] =
+          err instanceof LlmEmptyReplyError
+            ? prompt
+            : `_Generation failed: ${err instanceof Error ? err.message : "unknown"}_`;
       }
     });
     await Promise.all(calls);
@@ -279,7 +273,9 @@ export async function POST(req: Request) {
           project_id: projectId,
           user_id: userId,
           outputs,
-          model: mode === "generated" ? MODEL : null,
+          model: llm ? llm.model : null,
+          tokens_in: tokensIn > 0 ? tokensIn : null,
+          tokens_out: tokensOut > 0 ? tokensOut : null,
         });
         if (genErr) throw genErr;
       }
@@ -297,7 +293,7 @@ export async function POST(req: Request) {
     mode,
     ...(persistError ? { persistError } : {}),
     ...(mode === "stub"
-      ? { message: "Kein GEMINI_API_KEY gesetzt — es wurden die Prompt-Vorlagen gespeichert. Trag den Key in .env ein für echte Generierung." }
+      ? { message: "Kein ZAI_API_KEY gesetzt — es wurden die Prompt-Vorlagen gespeichert. Trag den Key in .env.local (Dev) bzw. .env (Prod-Docker) ein für echte Generierung." }
       : {}),
   });
 }

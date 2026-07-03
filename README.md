@@ -33,9 +33,11 @@ cp .env.example .env.local
 npm run dev          # http://localhost:3000
 ```
 
-Ohne `GEMINI_API_KEY` antworten `/api/chat` und `/api/generate` im **Stub-Modus**
-(die Prompt-Vorlagen werden unverändert zurückgegeben) — der ganze Flow bleibt
-testbar, ohne API-Quota zu verbrauchen.
+Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antworten
+`/api/chat` und `/api/generate` im **Stub-Modus** (die Prompt-Vorlagen werden
+unverändert zurückgegeben) — der ganze Flow bleibt testbar, ohne API-Quota zu
+verbrauchen. Der Modellzugriff ist in [`src/lib/llm.ts`](src/lib/llm.ts)
+gekapselt (Z.ai primär, Gemini sekundär).
 
 ## Scripts
 
@@ -60,7 +62,7 @@ Vorlage: [`.env.example`](.env.example). Welche Datei wo gelesen wird:
 | `.env.example` | nur Vorlage (committed) |
 
 **Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen — die landen sonst im
-Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`,
+Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`,
 `STRIPE_*`) bleiben ohne Prefix.
 
 ## Docker
