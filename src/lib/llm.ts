@@ -79,6 +79,67 @@ export async function chatComplete(opts: {
   return geminiComplete(config.model, opts.system, opts.messages, maxOutputTokens);
 }
 
+// Z.ai's current plan caps how many requests it'll serve at once — observed:
+// firing 5 in parallel gets ~2 through and 429s the rest (error code 1302,
+// "Rate limit reached for requests"). /api/generate needs up to 10 artifact
+// completions per run, so a plain Promise.all mostly comes back as error
+// text. One in flight at a time — with a short retry for the odd 429 that
+// slips through anyway — is what actually finishes a run intact; the
+// generate route no longer talks to chatComplete directly so this stays the
+// one place that decides how a batch of completions gets scheduled.
+const RATE_LIMIT_RETRIES = 3;
+const RATE_LIMIT_BASE_DELAY_MS = 1000;
+
+function isRateLimitError(err: unknown): boolean {
+  return err instanceof Error && /\b429\b/.test(err.message);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Runs one completion per prompt, strictly one at a time, retrying a 429
+ * with a short exponential backoff before moving on. Never throws — each
+ * entry comes back as either `{ result }` or `{ error }` (the original
+ * error, e.g. still `instanceof LlmEmptyReplyError`) so the caller keeps
+ * deciding how to degrade per artifact, same as before this existed.
+ */
+export async function chatCompleteSequential(
+  system: string,
+  prompts: Record<string, string>,
+  opts?: { maxOutputTokens?: number }
+): Promise<Record<string, { result?: LlmResult; error?: unknown }>> {
+  const out: Record<string, { result?: LlmResult; error?: unknown }> = {};
+  for (const [key, prompt] of Object.entries(prompts)) {
+    out[key] = await completeWithRetry(system, prompt, opts?.maxOutputTokens);
+  }
+  return out;
+}
+
+async function completeWithRetry(
+  system: string,
+  prompt: string,
+  maxOutputTokens?: number
+): Promise<{ result?: LlmResult; error?: unknown }> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= RATE_LIMIT_RETRIES; attempt++) {
+    try {
+      const result = await chatComplete({
+        system,
+        messages: [{ role: "user", content: prompt }],
+        maxOutputTokens,
+      });
+      return { result };
+    } catch (err) {
+      lastErr = err;
+      if (!isRateLimitError(err) || attempt === RATE_LIMIT_RETRIES) break;
+      await sleep(RATE_LIMIT_BASE_DELAY_MS * 2 ** attempt);
+    }
+  }
+  return { error: lastErr };
+}
+
 // ─── Z.ai (OpenAI-compatible chat/completions) ──────────────────────────────
 
 type ZaiResponse = {

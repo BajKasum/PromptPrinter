@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { generateRequestSchema, type GenerateRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { chatComplete, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
+import { chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
 import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
 import {
   SYSTEM_PROMPT,
@@ -168,7 +168,11 @@ export async function POST(req: Request) {
 
   // 5. Produce the outputs.
   //    - With a configured provider (Z.ai primary, see lib/llm.ts): one
-  //      completion per artifact, all in parallel.
+  //      completion per artifact, run strictly one at a time (with a 429
+  //      retry) via chatCompleteSequential — Z.ai's current plan can't
+  //      sustain the up-to-10-way parallel fan-out this used to do (see
+  //      lib/llm.ts), so sequencing here is what makes a run actually come
+  //      back with real content instead of mostly "_Generation failed_".
   //    - Without one: fall back to the unfilled templates so the flow still works.
   const llm = llmConfig();
   const mode: "generated" | "stub" = llm ? "generated" : "stub";
@@ -179,27 +183,23 @@ export async function POST(req: Request) {
   let tokensOut = 0;
 
   if (llm) {
-    const calls = Object.entries(prompts).map(async ([key, prompt]) => {
-      try {
-        const result = await chatComplete({
-          system: systemInstruction,
-          messages: [{ role: "user", content: prompt }],
-        });
-        outputs[key] = result.text;
-        if (result.usage) {
-          tokensIn += result.usage.inputTokens;
-          tokensOut += result.usage.outputTokens;
+    const results = await chatCompleteSequential(systemInstruction, prompts);
+    for (const [key, entry] of Object.entries(results)) {
+      if (entry.result) {
+        outputs[key] = entry.result.text;
+        if (entry.result.usage) {
+          tokensIn += entry.result.usage.inputTokens;
+          tokensOut += entry.result.usage.outputTokens;
         }
-      } catch (err) {
+      } else {
         // An empty reply degrades to the unfilled template — still usable
         // content instead of an empty box. Real errors surface visibly.
         outputs[key] =
-          err instanceof LlmEmptyReplyError
-            ? prompt
-            : `_Generation failed: ${err instanceof Error ? err.message : "unknown"}_`;
+          entry.error instanceof LlmEmptyReplyError
+            ? prompts[key]
+            : `_Generation failed: ${entry.error instanceof Error ? entry.error.message : "unknown"}_`;
       }
-    });
-    await Promise.all(calls);
+    }
   } else {
     Object.assign(outputs, prompts);
   }
