@@ -22,6 +22,17 @@ export type SidebarProject = { id: string; name: string; isFavorite: boolean };
 const COOKIE = "pp-sidebar";
 export const SIDEBAR_COOKIE = COOKIE;
 
+// Shared active-row language for chats/projects/footer links: a quiet 3px
+// accent mark at the leading edge plus a weight bump — not a filled pill.
+// DESIGN.md reserves the babyblau *fill* for genuine accent moments; a full
+// bg-accent-subtle block behind every active row reads heavier than an
+// "active" state should. The mark carries the color, the text just gets
+// slightly more present (weight, not tint) — two quiet signals instead of
+// three loud ones (fill + tint + weight).
+const ACTIVE_ROW =
+  "relative font-medium text-foreground before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-accent before:content-['']";
+const INACTIVE_ROW = "text-foreground/55 hover:bg-surface-hover hover:text-foreground";
+
 export function Sidebar({
   initialCollapsed,
   chats,
@@ -68,7 +79,7 @@ export function Sidebar({
     >
       <div
         className={cn(
-          "flex items-center pt-5 pb-4",
+          "flex items-center border-b border-border pb-4 pt-5",
           collapsed ? "flex-col gap-3" : "justify-between pl-5 pr-3"
         )}
       >
@@ -125,23 +136,23 @@ function Full({
 }) {
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-3 pb-4">
+      <div className="flex-1 overflow-y-auto px-3 pb-4 pt-4">
         <Link
           href="/chats/new"
           data-tour="new-chat"
-          className="mx-1 mb-6 flex h-10 items-center justify-center gap-2 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground transition-all duration-200 hover:bg-accent/90 active:scale-[0.97]"
+          className="mx-1 mb-5 flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
         >
-          <Plus className="h-4 w-4" strokeWidth={2} />
+          <Plus className="h-[15px] w-[15px]" strokeWidth={2} />
           Neuer Chat
         </Link>
 
-        <div data-tour="nav-main" className="space-y-7">
+        <div data-tour="nav-main" className="space-y-8">
           <section aria-label="Chats">
             <SectionHeader
               nav={primaryNav[0]}
               active={pathname === "/chats" || pathname.startsWith("/chats/")}
             />
-            <div className="mt-1">
+            <div className="mt-2 space-y-0.5">
               {chats.length === 0 ? (
                 <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
                   Dein erster Chat landet hier.
@@ -156,10 +167,8 @@ function Full({
                       title={c.title}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "block truncate rounded-md px-3 py-[7px] text-[13px] transition-colors",
-                        active
-                          ? "bg-accent-subtle font-medium text-accent-text"
-                          : "text-foreground/60 hover:bg-surface-hover hover:text-foreground"
+                        "block truncate rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
+                        active ? ACTIVE_ROW : INACTIVE_ROW
                       )}
                     >
                       {c.title}
@@ -175,7 +184,7 @@ function Full({
               nav={primaryNav[1]}
               active={pathname === "/projects" || pathname.startsWith("/projects/")}
             />
-            <div className="mt-1">
+            <div className="mt-2 space-y-0.5">
               {projects.length === 0 ? (
                 <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
                   Noch kein Projekt angelegt.
@@ -193,10 +202,8 @@ function Full({
                       title={p.name}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex items-center gap-2 rounded-md px-3 py-[7px] text-[13px] transition-colors",
-                        active
-                          ? "bg-accent-subtle font-medium text-accent-text"
-                          : "text-foreground/60 hover:bg-surface-hover hover:text-foreground"
+                        "flex items-center gap-2 rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
+                        active ? ACTIVE_ROW : INACTIVE_ROW
                       )}
                     >
                       <span className="min-w-0 flex-1 truncate">{p.name}</span>
@@ -216,7 +223,7 @@ function Full({
         </div>
       </div>
 
-      <div className="border-t border-border px-3 py-3">
+      <div className="space-y-0.5 border-t border-border px-3 py-3">
         {secondaryNav.map((item) => (
           <FooterLink key={item.href} nav={item} pathname={pathname} />
         ))}
@@ -225,8 +232,10 @@ function Full({
   );
 }
 
-// A section header that is itself the nav destination — label over list, no
-// separate "Alle …"-row needed.
+// A section header that is itself the nav destination — a compact, tracked
+// label distinctly lighter/smaller than the rows beneath it (the previous
+// version matched the list items' own size/weight, so "Chats"/"Projekte"
+// never read as a group label, just another row).
 function SectionHeader({ nav, active }: { nav: NavItem; active: boolean }) {
   const { label, href, Icon } = nav;
   return (
@@ -234,13 +243,11 @@ function SectionHeader({ nav, active }: { nav: NavItem; active: boolean }) {
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
-        active
-          ? "text-accent-text"
-          : "text-foreground/80 hover:bg-surface-hover hover:text-foreground"
+        "flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors",
+        active ? "text-accent-text" : "text-muted-foreground/75 hover:text-foreground"
       )}
     >
-      <Icon className="h-[15px] w-[15px]" strokeWidth={1.8} />
+      <Icon className="h-3 w-3" strokeWidth={2.2} />
       {label}
     </Link>
   );
@@ -254,10 +261,8 @@ function FooterLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex h-9 items-center gap-3 rounded-md px-3 text-[13px] transition-colors",
-        active
-          ? "bg-accent-subtle font-medium text-accent-text"
-          : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+        "flex h-9 items-center gap-3 rounded-md pl-3.5 pr-3 text-[13px] transition-colors",
+        active ? ACTIVE_ROW : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
       )}
     >
       <Icon className="h-4 w-4" strokeWidth={1.8} />
@@ -277,7 +282,7 @@ function Rail({ pathname }: { pathname: string }) {
           data-tour="new-chat"
           aria-label="Neuer Chat"
           title="Neuer Chat"
-          className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-all duration-200 hover:bg-accent/90 active:scale-[0.97]"
+          className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-transparent text-foreground/80 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.97]"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
         </Link>

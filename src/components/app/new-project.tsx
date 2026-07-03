@@ -89,9 +89,11 @@ export function NewProjectButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-[7px] text-left text-[13px] text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          className="group mt-1 flex w-full items-center gap-2.5 rounded-md py-[7px] pl-3.5 pr-3 text-left text-[13px] text-foreground/50 transition-colors hover:bg-surface-hover hover:text-foreground"
         >
-          <Plus className="h-[15px] w-[15px]" strokeWidth={1.8} />
+          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-dashed border-border-strong transition-colors group-hover:border-accent-text/60 group-hover:text-accent-text">
+            <Plus className="h-3 w-3" strokeWidth={2} />
+          </span>
           Neues Projekt
         </button>
       ) : (
