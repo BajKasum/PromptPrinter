@@ -34,7 +34,7 @@ describe("llmConfig", () => {
   it("prefers Z.ai when its key is set", () => {
     vi.stubEnv("ZAI_API_KEY", "test-key");
     vi.stubEnv("GEMINI_API_KEY", "also-set");
-    expect(llmConfig()).toEqual({ provider: "zai", model: "glm-5-turbo" });
+    expect(llmConfig()).toEqual({ provider: "zai", model: "glm-4.5-air" });
   });
 
   it("honors the ZAI_MODEL override", () => {

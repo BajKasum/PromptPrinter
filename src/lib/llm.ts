@@ -35,17 +35,26 @@ export class LlmEmptyReplyError extends Error {
   }
 }
 
-// GLM-5-Turbo — the fast tier of Z.ai's current flagship series: same
-// "near-flagship quality at speed/price" philosophy the previous Gemini
-// Flash default followed. Overridable via ZAI_MODEL without a code change.
-const ZAI_DEFAULT_MODEL = "glm-5-turbo";
+// GLM-4.5-Air — cost-tier default (verified against the live Z.ai account,
+// 2026-07): $0.20/$1.10 per M input/output tokens vs. glm-5-turbo's
+// $1.20/$4.00 — 6x/3.6x cheaper, and a quick quality check against a real
+// product prompt came back coherent and well-structured. Every artifact call
+// (up to 10 per software-pack run) and every chat turn goes through this, so
+// the model choice is the single biggest cost lever in the whole pipeline.
+// Overridable via ZAI_MODEL without a code change if quality needs dialing
+// back up for a given deployment.
+const ZAI_DEFAULT_MODEL = "glm-4.5-air";
 const ZAI_ENDPOINT = "https://api.z.ai/api/paas/v4/chat/completions";
 
 const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 
-// 8k output leaves room for a full-length artifact; thinking is disabled on
-// the Z.ai path (below), so nothing eats into this budget invisibly.
-const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
+// Thinking is disabled on the Z.ai path (below), so this is a hard ceiling on
+// the visible reply, not a budget shared with invisible reasoning tokens.
+// 6144 leaves real headroom over the largest artifact observed in practice
+// (the database-schema artifact, ~3.5k tokens) while capping the cost/latency
+// tail if a model ever rambles — the previous 8192 was ~2.3x oversized against
+// that real-world ceiling.
+const DEFAULT_MAX_OUTPUT_TOKENS = 6144;
 
 /** Which provider is configured, if any — also the display name for storage. */
 export function llmConfig(): LlmConfig | null {

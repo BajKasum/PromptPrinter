@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { chatRequestSchema, type ChatRequest } from "@/lib/schemas";
+import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatComplete, llmConfig } from "@/lib/llm";
@@ -7,6 +7,19 @@ import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+
+// The client replays the whole running transcript every turn (the route
+// itself is stateless) — uncapped, that cost grows with every reply a
+// conversation gets, up to the schema's own 50-message ceiling. Only the most
+// recent turns matter for continuity — especially in the refine loop, where
+// each reply already IS the current, finished version, so older turns are
+// largely superseded rather than needed as history. This only trims what goes
+// to the model; persistTurn (below) always stores the full turn regardless.
+const CHAT_HISTORY_LIMIT = 12;
+
+function trimHistory(messages: ChatMessage[]): ChatMessage[] {
+  return messages.length > CHAT_HISTORY_LIMIT ? messages.slice(-CHAT_HISTORY_LIMIT) : messages;
+}
 
 export async function POST(req: Request) {
   // 1. Parse + validate the transcript the client replays each turn.
@@ -80,7 +93,7 @@ export async function POST(req: Request) {
     try {
       const result = await chatComplete({
         system: systemInstruction,
-        messages: input.messages,
+        messages: trimHistory(input.messages),
       });
       reply = result.text;
       mode = "generated";
@@ -194,8 +207,11 @@ function deriveTitle(text: string): string {
 // first (most token-efficient, so it earns priority), then upload order.
 // Each file is capped individually so one large file can't crowd out the
 // rest; whatever doesn't fit is still named so the assistant knows it exists.
-const FILES_TOTAL_BUDGET = 24000;
-const FILES_PER_FILE_CAP = 6000;
+// Halved from the original 24000/6000 (cost pass, 2026-07) — this and every
+// budget below gets re-sent on EVERY turn of a project chat, so it's pure
+// per-turn cost regardless of how much actually changed since the last turn.
+const FILES_TOTAL_BUDGET = 12000;
+const FILES_PER_FILE_CAP = 3000;
 
 // Workspace context v2 (REDESIGN.md, Phase 3+4): a project chat works from the
 // project's living briefing, not just the original raw idea. Order encodes
@@ -233,7 +249,7 @@ async function buildProjectContext(
     typeof project.instructions === "string" ? project.instructions.trim() : "";
   if (instructions) {
     parts.push(
-      `Instructions (the user's briefing for this project — follow it):\n${truncate(instructions, 4000)}`
+      `Instructions (the user's briefing for this project — follow it):\n${truncate(instructions, 3000)}`
     );
   }
 
@@ -254,14 +270,14 @@ async function buildProjectContext(
   if (filesBlock) parts.push(filesBlock);
 
   const idea = typeof project.idea === "string" ? project.idea.trim() : "";
-  if (idea) parts.push(`Idea: ${truncate(idea, 1200)}`);
+  if (idea) parts.push(`Idea: ${truncate(idea, 1000)}`);
 
   const master = typeof outputs.master === "string" ? outputs.master : "";
   const prompt = typeof outputs.prompt === "string" ? outputs.prompt : "";
   if (master) {
-    parts.push(`Current Master-Prompt artifact (for reference):\n${truncate(master, 2400)}`);
+    parts.push(`Current Master-Prompt artifact (for reference):\n${truncate(master, 1500)}`);
   } else if (prompt) {
-    parts.push(`Current saved prompt (for reference):\n${truncate(prompt, 2400)}`);
+    parts.push(`Current saved prompt (for reference):\n${truncate(prompt, 1500)}`);
   }
 
   return `--- PROJECT CONTEXT (the user is working inside this project) ---

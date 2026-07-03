@@ -41,11 +41,20 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Offen, bewusst zurückgestellt: Settings-Tool-Defaults behalten-oder-
 > streichen (Grundsatzfrage, kein bekannter Bruch).
 > `buildProjectContext` injiziert Dateien jetzt nach Struktur, vor Idee/
-> Artefakt: `.md` zuerst, Gesamtbudget 24.000 Zeichen, 6.000 pro Datei,
-> nicht injizierte Dateien werden nur namentlich erwähnt. Projekt-Löschen
-> räumt jetzt auch die Storage-Objekte auf (kein Leak). Als Nächstes: Rest
-> von Phase 5 (Wahrheits-Pass, Landing-Nachzug, PacketBridge/PromptSave
-> verschmelzen).
+> Artefakt: `.md` zuerst, Gesamtbudget 12.000 Zeichen, 3.000 pro Datei
+> (Kostenpass 2026-07, siehe unten), nicht injizierte Dateien werden nur
+> namentlich erwähnt. Projekt-Löschen räumt jetzt auch die Storage-Objekte
+> auf (kein Leak). Als Nächstes: Rest von Phase 5 (Wahrheits-Pass, Landing-
+> Nachzug, PacketBridge/PromptSave verschmelzen).
+>
+> **Kostenpass (2026-07):** Default-Modell auf `glm-4.5-air` gesenkt (6×/3,6×
+> günstiger als `glm-5-turbo` bei Input/Output, live gegen den Account
+> geprüft), `DEFAULT_MAX_OUTPUT_TOKENS` 8192→6144, Chat trimmt die an das
+> Modell gesendete Historie auf die letzten 12 Nachrichten (gespeichert wird
+> weiterhin die volle Transkript), Projektkontext-Budgets in `buildProjectContext`
+> halbiert (Dateien, Anweisungen, Idee, Artefakt-Referenz). Reine Parameter-
+> optimierung, keine Produktänderung — Details in `src/lib/llm.ts` und
+> `src/app/api/chat/route.ts`.
 
 ## Was ist PromptPrinter?
 
@@ -61,10 +70,10 @@ Framer Motion · next-themes · Vitest · Docker.
 
 1. **Modell-Provider ist Z.ai (GLM).** Der komplette Modellzugriff ist in
    [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt — Priorität: `ZAI_API_KEY`
-   (Z.ai, Default-Modell `glm-5-turbo`, via `ZAI_MODEL` überschreibbar) →
-   `GEMINI_API_KEY` (Gemini als Zweit-Provider) → **Stub-Modus** (Templates
-   kommen unverändert zurück, ganzer Flow bleibt ohne Key testbar). Routen
-   sprechen nie direkt mit einem Provider-SDK.
+   (Z.ai, Default-Modell `glm-4.5-air` — Kosten-Tier, via `ZAI_MODEL`
+   überschreibbar) → `GEMINI_API_KEY` (Gemini als Zweit-Provider) →
+   **Stub-Modus** (Templates kommen unverändert zurück, ganzer Flow bleibt
+   ohne Key testbar). Routen sprechen nie direkt mit einem Provider-SDK.
 2. **Zahlungen → Lemon Squeezy, aber erst später.** Bezahlung läuft künftig über
    **Lemon Squeezy** (nicht Stripe). Das passiert **erst, nachdem die Website
    gehostet ist** — vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
