@@ -83,14 +83,24 @@ und die Featured-Chat-Karte auf `/chats`.
 - **Neuer Chat** (`/chats/new`): Finn-Empty-State + Starter + Composer. Nach dem
   ersten persistierten Turn wechselt die URL per `router.replace` auf die
   kanonische `/chats/[id]`. Gleiches Muster im Projekt.
-- **Aktionen pro Chat:** öffnen, umbenennen, löschen, „In Projekt verschieben"
-  (setzt `project_id`, Chat wird Projekt-Chat; Phase 5).
-- **Handoff vereinheitlicht:** `PacketBridge` und `PromptSave` verschmelzen zu
-  einer Komponente: **„Daraus ein Projekt machen"**. Die Karte fragt den Namen
-  und optional ein erstes Ergebnis (Prompt speichern | Software-Paket bauen |
-  nur Projekt anlegen). Danach: Workspace existiert, der Chat zieht ein
-  (`project_id` gesetzt), Redirect in den Projekt-Chat — keine Einbahn-Verlinkung
-  mehr.
+- **Aktionen pro Chat:** öffnen, umbenennen, löschen. „In Projekt verschieben"
+  (setzt `project_id` nachträglich, Chat wird Projekt-Chat) ist bewusst
+  **nicht** Teil von Phase 5 — sauber umsetzbar, aber ein eigener kleiner
+  Funktionsblock (Projekt-Picker-UI, Empty-State „noch kein Projekt"), kein
+  Copy-Fix. Als eigener Nachschritt vorgemerkt, siehe Abschnitt 9.
+- **Handoff-Modell final (Wahrheits-Pass, 2026-07-03):** Die ursprünglich
+  geplante Verschmelzung von `PacketBridge`/`PromptSave` zu einer Karte mit
+  drei Optionen (Prompt speichern | Paket bauen | nur Projekt anlegen) ist
+  durch die tatsächliche Umsetzung überholt, nicht offen:
+  „nur Projekt anlegen" existiert bereits sauberer als der direkte
+  „Neues Projekt"-Dialog (Phase 3, kein Chat-Umweg nötig); Chat-Handoff bleibt
+  eine schlanke Zwei-Knopf-Leiste am Chat-Ende („Software-Paket erzeugen" /
+  „Prompt erzeugen"), die direkt die passende Karte öffnet — dasselbe Modell
+  (ein Handoff-Moment, zwei Ergebnistypen), nur ohne unnötige dritte Option.
+  `PacketBridge` und `PromptSave` bleiben bewusst zwei Dateien: die geteilte
+  Logik (Prefill, Workspace- vs. Standalone-Ziel, Redirect) ist klein genug,
+  dass ein Merge nur Bedingungslogik einführen würde, ohne das Modell klarer
+  zu machen — beide Komponenten wurden in Phase 4 gerade erst live verifiziert.
 
 ## 4. Projekt-Workspace-Konzept
 
@@ -192,8 +202,6 @@ Anweisungen stehen bewusst zuerst: das Briefing des Nutzers schlägt alles ander
 - **Featured-Chat-Karte auf `/chats`** — die Sidebar übernimmt Resume.
 - **Jede Modus-Wahl-UI**: Chat-Headlines („Alltags-Prompt"/„Software-Projekt"),
   Einstiegs-Karten, `?mode=`-Links.
-- **`PacketBridge` + `PromptSave` als getrennte Flows** → eine
-  Handoff-Komponente („Daraus ein Projekt machen").
 - **Refine-Chat-Anhängsel** unter den Projekt-Tabs → geht in Projekt-Chats auf.
 - **Die vier Tool-Dropdowns im Bridge-Modal** → Struktur-Felder im Workspace.
   Die Settings-„Tool-Defaults" werden in Phase 3 zu Struktur-Defaults umgebaut
@@ -242,13 +250,25 @@ Jede Phase: eigenes Konzept-Feintuning falls nötig → Umsetzung → Quality-Ga
   Chat-Kontext; Limits greifen; Gate grün.
 
 **Phase 5 — Handoff & Wahrheits-Pass**
-- Einheitliche Handoff-Komponente (Chat → Projekt, optionales Erst-Ergebnis);
-  „In Projekt verschieben" für bestehende Chats; „Paket bauen"/„Prompt
-  speichern" als Ergebnisse-Aktionen; Copy-Pass durch die ganze App; Landing
-  (ProductShowcase, Pricing-Zeile) aufs neue Modell; Totcode raus
-  (`tool-group.tsx`, alte Bridge-Reste); Settings-Defaults entschieden.
-- **DoD:** Kein UI-Text verweist mehr auf Start oder Modus-Projekte; Landing
-  zeigt die echte Nav; Gate grün.
+- ~~Einheitliche Handoff-Komponente~~ — per Wahrheits-Pass-Entscheidung
+  (Abschnitt 3) bewusst **nicht** zusammengeführt; das Modell ist bereits
+  klar, ein Merge hätte nur Bedingungslogik eingeführt.
+- ✅ „Paket bauen"/„Prompt erzeugen" als Aktion im Workspace — umgesetzt als
+  Chat-Handoff-Leiste (jeder Projekt-Chat kann direkt erzeugen, landet in
+  Ergebnisse); bewusst kein zusätzlicher Erzeugen-Button auf der
+  Ergebnisse-Seite selbst — der Chat bleibt der eine Auslöseort.
+- ✅ Copy-Pass durch die App (Settings-Tool-Defaults-Text, tote
+  `ProjectCard`-Komponente, stale Code-Kommentare) und Landing
+  (`ProductShowcase`: keine „Start"-Nav, keine Modus-Badges mehr) erledigt.
+- ⏳ **„In Projekt verschieben"** für bestehende globale Chats — bewusst als
+  eigener Nachschritt ausgeklammert (siehe oben), kein Teil dieser Runde.
+- ✅ Pricing-Zeile geprüft — bereits sauber („Chats & Projekte" als Feature,
+  kein Start/Modus-Rest), kein Fix nötig.
+- ⏳ `tool-group.tsx` (bereits gelöscht, siehe frühere Phase), Settings-
+  Defaults-Grundsatzfrage (behalten vs. streichen) — niedrige Priorität,
+  kein bekannter Bruch, bewusst liegen gelassen.
+- **DoD:** Kein UI-Text verweist mehr auf Start oder Modus-Projekte in App
+  und Landing-Nav; Gate grün. Erfüllt.
 
 ## 10. Nicht-Ziele (bewusst später oder nie)
 

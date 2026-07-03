@@ -279,7 +279,7 @@ export function SettingsWorkspace({
           Icon={Sparkles}
           accent="#8FCDF2"
           title="Standard-Tools"
-          description="Diese Auswahl füllt jedes neue Projekt automatisch vor."
+          description="Vorbelegung fürs Software-Paket, solange dein Projekt noch keine eigene Struktur hat."
         >
           <div className="grid gap-3 md:grid-cols-2">
             <ToolPickerGroup

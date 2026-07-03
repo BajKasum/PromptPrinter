@@ -5,39 +5,37 @@ schnell Orientierung geben: was das Projekt ist, in welchem Zustand es steckt,
 und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](README.md),
 [DESIGN.md](DESIGN.md) und [DOCKER.md](DOCKER.md) — hier nur das Wesentliche.
 
-> ⚠️ **Workspace-Redesign beschlossen (2026-07):** [REDESIGN.md](REDESIGN.md) ist
-> das **verbindliche Zielmodell** (Nav ohne Start, Projekte als Workspaces mit
-> mehreren Chats, Chat-Subrouten, einklappbare Sidebar). Die App-/Nav-Beschreibungen
-> weiter unten sind IST-Zustand und werden phasenweise nachgezogen. Bei
-> Widersprüchen gilt REDESIGN.md.
+> ⚠️ **Workspace-Redesign (2026-07): Phasen 1–4 + Wahrheits-Pass umgesetzt.**
+> [REDESIGN.md](REDESIGN.md) ist das **verbindliche Zielmodell** und bleibt die
+> Detailquelle (Datenmodell, Kontext-Injektions-Budget, offene Nachschritte).
+> Kurzfassung des IST-Zustands:
 >
-> **Stand: Phasen 1–3 umgesetzt** — Nav ist zweigliedrig (Chats/Projekte), die
-> Sidebar ist einklappbar (Cookie `pp-sidebar`, `Strg/⌘+B`) und trägt Recents.
-> Chats sind kanonisch: `/chats/new` (Login-Landing) + `/chats/[id]`; `/chat`
-> und `/dashboard` sind nur noch Redirects. Es gibt **eine** Chat-Erfahrung
-> ohne Modus-Wahl — Prompt speichern / Software-Paket bauen sind eine
-> Handoff-Leiste am Chat-Ende (`conversations.mode` existiert nur noch intern).
-> **Projekte sind Workspaces** (Migration 0011: `instructions`, `context`,
-> Inputs nullable): direkt anlegbar per Dialog (`POST /api/projects`, Plan-Limit
-> dort), persistente Shell in `projects/[id]/layout.tsx` (Header + Kontext-Rail
-> mit Anweisungen/Struktur/Dateien-Platzhalter/Ergebnisse-Karte), Hauptspalte
-> wechselt per Subroute: Übersicht (Chat-Liste + Composer), `chats/new`,
-> `chats/[cid]`, `results` (Tabs + Verlauf). Mehrere Chats pro Projekt;
-> `buildProjectContext` v2 injiziert Anweisungen + Struktur zuerst.
-> **Handoff im Workspace vorgezogen** (vor Phase 4): die Chat-Handoff-Leiste
-> erscheint jetzt auch in Projekt-Chats (`canHandoff` prüft nur noch
-> `hasAssistantReply`, nicht mehr `variant !== "refine"`). `/api/generate`
-> nimmt ein optionales `projectId` — dann kein neues Projekt, sondern nur eine
-> weitere `generations`-Zeile im bestehenden Workspace (Ownership geprüft,
-> Projekt-Limit übersprungen), Redirect nach `results` statt in ein neues
-> Projekt. `PacketBridge`/`PromptSave` fragen im Workspace nicht mehr nach dem
-> Namen (kommt vom Projekt) und leiten die Idee mit den Anweisungen ein.
-> Ergebnisse-Leerzustand verlinkt jetzt zum Chat statt Sackgasse zu sein.
-> **Phase 4 (Dateien) umgesetzt:** Migration 0012 (`project_files`-Tabelle +
-> privater `project-files`-Bucket, owner-scoped RLS, 200-KB-Limit am Bucket).
-> Echte Upload/Delete-UI in der Rail (`project-files.tsx`, Muster wie
-> `avatar-upload.tsx` — kein eigener API-Endpunkt), Allowlist
-> `.md/.txt/.json/.csv`, max. 10 Dateien à 200 KB (`src/lib/project-files.ts`).
+> - **Nav zweigliedrig** (Chats/Projekte, kein „Start"), Sidebar einklappbar
+>   (Cookie `pp-sidebar`, `Strg/⌘+B`) mit Recents. Login landet auf `/chats/new`.
+> - **Eine Chat-Erfahrung**, keine Modus-Wahl (`conversations.mode` nur noch
+>   intern). Kanonische Routen `/chats/new` + `/chats/[id]`; `/chat` und
+>   `/dashboard` sind reine Redirects.
+> - **Projekte sind Workspaces**: direkt anlegbar (`POST /api/projects`),
+>   persistente Shell (`projects/[id]/layout.tsx`) mit Kontext-Rail
+>   (Anweisungen, Struktur, Dateien, Ergebnisse-Karte), Hauptspalte wechselt
+>   per Subroute (Übersicht, `chats/[cid]`, `results`). Mehrere Chats pro
+>   Projekt.
+> - **Produktionsweg geschlossen**: jeder Projekt-Chat kann direkt ein
+>   Ergebnis erzeugen (`/api/generate` mit optionalem `projectId` — kein
+>   neues Projekt, nur eine weitere `generations`-Zeile), landet in
+>   `results`. `PacketBridge`/`PromptSave` bleiben bewusst zwei Dateien
+>   (Begründung in REDESIGN.md §3) — beide workspace-fähig.
+> - **Dateien**: `project_files`-Tabelle + privater `project-files`-Bucket,
+>   Upload/Löschen in der Rail, Allowlist `.md/.txt/.json/.csv`, max. 10 à
+>   200 KB. `buildProjectContext` injiziert Anweisungen → Struktur → Dateien
+>   → Idee/Artefakt, mit Budget (Details: REDESIGN.md §7).
+> - **Wahrheits-Pass erledigt**: Landing (`ProductShowcase`) zeigt die echte
+>   Nav ohne Modus-Badges, Settings-Copy korrigiert, toter Code
+>   (`ProjectCard`-Komponente) entfernt.
+>
+> Offen, bewusst zurückgestellt: „In Projekt verschieben" für bestehende
+> globale Chats (eigener Nachschritt, kein Copy-Fix), Settings-Tool-Defaults
+> behalten-oder-streichen (Grundsatzfrage, kein bekannter Bruch).
 > `buildProjectContext` injiziert Dateien jetzt nach Struktur, vor Idee/
 > Artefakt: `.md` zuerst, Gesamtbudget 24.000 Zeichen, 6.000 pro Datei,
 > nicht injizierte Dateien werden nur namentlich erwähnt. Projekt-Löschen

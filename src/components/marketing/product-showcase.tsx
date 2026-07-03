@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   MessageSquare,
-  Code2,
   FolderKanban,
   Sparkles,
   Plus,
@@ -25,14 +24,10 @@ const TABS: { key: ViewKey; label: string }[] = [
   { key: "projects", label: "Projekte" },
 ];
 
-// Mini sidebar — mirrors the real app nav (src/lib/nav.ts: Start, Chats,
-// Projekte) so the preview reads as the genuine workspace, not an invented
-// structure. Start has no browsable list of its own here (it's a personal
-// resume point, not an archive), so it stays a quiet "you are here" entry
-// while Chats and Projekte — the app's two real destinations besides Start —
-// light up with the active tab.
-const NAV: { label: string; Icon: typeof FolderKanban; view?: ViewKey }[] = [
-  { label: "Start", Icon: LayoutDashboard },
+// Mini sidebar — mirrors the real app nav (src/lib/nav.ts: Chats, Projekte;
+// no Start, no mode split) so the preview reads as the genuine workspace,
+// not an invented structure.
+const NAV: { label: string; Icon: typeof FolderKanban; view: ViewKey }[] = [
   { label: "Chats", Icon: MessageSquare, view: "chats" },
   { label: "Projekte", Icon: FolderKanban, view: "projects" },
 ];
@@ -51,9 +46,9 @@ export function ProductShowcase() {
               Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
             </h2>
             <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
-              Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Sagt
-              ein Software-Chat genug, wird daraus ein fertiges Paket — gesammelt
-              in deinen Projekten, durchsuchbar und griffbereit.
+              Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Ein
+              gutes Ergebnis hebst du dir als Projekt auf — gesammelt mit allen
+              Artefakten, durchsuchbar und griffbereit.
             </p>
           </div>
         </div>
@@ -85,20 +80,16 @@ export function ProductShowcase() {
                 <nav className="space-y-0.5">
                   {NAV.map(({ label, Icon, view: target }) => {
                     const active = target === view;
-                    const clickable = Boolean(target);
                     return (
                       <button
                         key={label}
                         type="button"
-                        disabled={!clickable}
-                        onClick={() => target && setView(target)}
+                        onClick={() => setView(target)}
                         className={cn(
                           "flex w-full items-center gap-3 h-9 px-3 rounded-md text-[13px] transition-colors text-left",
                           active
                             ? "bg-accent-subtle text-accent-text font-medium"
-                            : clickable
-                              ? "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
-                              : "text-muted-foreground/50 cursor-default"
+                            : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
                         )}
                       >
                         <Icon className="h-4 w-4" strokeWidth={1.8} />
@@ -165,33 +156,20 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-// ── Chats — mirrors ChatCard: mode badge, "Paket fertig" once the bridge has
-// run, message count + freshness. Deliberately shows all three real states: a
-// finished packet, a plain everyday chat, and a software chat still in
-// progress — the bridge isn't automatic, it's a moment you choose. ──────────
+// ── Chats — mirrors the real /chats list: title, target-if-any, freshness,
+// message count. One chat experience, no mode badge — the outcome (Paket vs.
+// Prompt) is a choice at the end of a chat, not a label on it; a chat that
+// produced one already lives in its project, not here. ─────────────────────
 
-const CHATS = [
-  {
-    title: "KI-Habit-Tracker mit Streaks",
-    mode: "software" as const,
-    hasPacket: true,
-    when: "vor 2 Std.",
-    messages: 8,
-  },
+const CHATS: { title: string; target?: string; when: string; messages: number }[] = [
+  { title: "KI-Habit-Tracker mit Streaks — Prompt-Paket", when: "vor 2 Std.", messages: 8 },
   {
     title: "Bewerbungsschreiben für UX-Rolle",
-    mode: "general" as const,
     target: "ChatGPT",
     when: "vor 5 Std.",
     messages: 4,
   },
-  {
-    title: "Rezept-App für Resteverwertung",
-    mode: "software" as const,
-    hasPacket: false,
-    when: "vor 1 Std.",
-    messages: 3,
-  },
+  { title: "Rezept-App für Resteverwertung", when: "vor 1 Std.", messages: 3 },
 ];
 
 function ChatsView() {
@@ -199,48 +177,29 @@ function ChatsView() {
     <div>
       <ViewHeader title="Deine Chats" sub="Lebendige Gespräche, jederzeit weiterführen." />
       <div className="space-y-2.5">
-        {CHATS.map((c) => {
-          const isCode = c.mode === "software";
-          const Icon = isCode ? Code2 : MessageSquare;
-          const desc = c.target ? `Für ${c.target}` : isCode ? "Software-Projekt" : "Alltags-Prompt";
-          return (
-            <div
-              key={c.title}
-              className="card-surface flex items-center gap-3 p-4 transition-colors"
-            >
-              <div className="h-9 w-9 shrink-0 rounded-lg bg-surface border border-border flex items-center justify-center">
-                <Icon className="h-4 w-4 text-foreground" strokeWidth={1.8} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-medium text-foreground truncate">
-                    {c.title}
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border",
-                      c.hasPacket
-                        ? "border-success/30 bg-success/10 text-success"
-                        : "border-accent/30 bg-accent-subtle text-accent-text"
-                    )}
-                  >
-                    {c.hasPacket ? "Paket fertig" : isCode ? "Software" : "Alltag"}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-foreground/45">
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span className="truncate">
-                    {desc} · {c.when} · {c.messages} Nachrichten
-                  </span>
-                </div>
-              </div>
-              <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-foreground/40 sm:flex">
-                Weiterführen
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
+        {CHATS.map((c) => (
+          <div key={c.title} className="card-surface flex items-center gap-3 p-4 transition-colors">
+            <div className="h-9 w-9 shrink-0 rounded-lg bg-surface border border-border flex items-center justify-center">
+              <MessageSquare className="h-4 w-4 text-foreground" strokeWidth={1.8} />
             </div>
-          );
-        })}
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-[14px] font-medium text-foreground">
+                {c.title}
+              </span>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-foreground/45">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span className="truncate">
+                  {c.target ? `Für ${c.target} · ` : ""}
+                  {c.when} · {c.messages} Nachrichten
+                </span>
+              </div>
+            </div>
+            <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-foreground/40 sm:flex">
+              Weiterführen
+              <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

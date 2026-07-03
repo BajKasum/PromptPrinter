@@ -226,10 +226,10 @@
   }
 
   /*
-   * Dashboard "continue" panel — Finn's World light, scoped to the logged-in
-   * dashboard (the app shell itself stays flat). One soft light from above over
-   * the raised-card surface, so the primary "pick up where you left off" panel
-   * reads as sunlit water, not a flat box. Token-based, theme-driven, static →
+   * Empty-state "continue" panel — Finn's World light, used by Chats and
+   * Projekte's empty states (the app shell itself stays flat). One soft light
+   * from above over the raised-card surface, so the hero panel reads as
+   * sunlit water, not a flat box. Token-based, theme-driven, static →
    * reduced-motion-safe. Felt, not seen. See DESIGN.md → Finn's World.
    */
   .dash-continue {
@@ -247,8 +247,8 @@
    * App room headers (Chats, Projekte) — a soft light from the upper-left,
    * behind Finn and the title, so each section sits in Finn's World light
    * instead of on a flat canvas. Token-based, static, reduced-motion-safe.
-   * Start keeps its stronger .dash-continue hero; this is the quieter echo, so
-   * the three surfaces read as rooms in one world rather than one list template.
+   * The quieter echo of .dash-continue, so the two rooms still read as one
+   * world rather than a flat list template.
    */
   .app-header-glow {
     background: radial-gradient(55% 135% at 8% -20%, hsl(var(--accent) / 0.06), transparent 62%);
