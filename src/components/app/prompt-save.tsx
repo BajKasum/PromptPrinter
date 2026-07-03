@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { BuildProgress, type BuildStep } from "@/components/app/build-progress";
 import { createClient } from "@/lib/supabase/client";
 import { TOOL_OPTIONS } from "@/lib/tools";
 
@@ -36,6 +37,23 @@ type Stage = "idle" | "confirm" | "saving" | "done";
 // register as a handoff, short enough to stay out of the way (DESIGN.md's
 // Finn-Physik pacing, ~0.6–0.9s).
 const HANDOFF_DELAY_MS = 850;
+
+// Mirrors PacketBridge's PROGRESS_COMPLETE_DELAY_MS — a beat to let the
+// checklist visibly finish before swapping to the delivering card.
+const PROGRESS_COMPLETE_DELAY_MS = 400;
+
+// Order matches /api/generate's general prompts object (prompt, then the
+// three GENERAL_VARIANTS in their declared order) — chatCompleteSequential
+// walks it in this same insertion order, so the sequence is real. A shorter,
+// lighter version of PacketBridge's steps: this run is ~4 calls, not 10, so
+// the wait is much shorter and doesn't need four groups — just the two
+// natural phases, summing to the real observed ~35s for this pack.
+const GENERAL_STEPS: BuildStep[] = [
+  { key: "prompt", label: "Haupt-Prompt", group: "Haupt-Prompt", seconds: 12 },
+  { key: "variant_a", label: "Knapp & direkt", group: "Varianten", seconds: 8 },
+  { key: "variant_b", label: "Ausführlich & geführt", group: "Varianten", seconds: 8 },
+  { key: "variant_c", label: "Rollenbasiert", group: "Varianten", seconds: 8 },
+];
 
 const LIMITS = {
   nameMin: 2,
@@ -98,6 +116,9 @@ export function PromptSave({
   const router = useRouter();
   const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
   const [error, setError] = useState<string | null>(null);
+  // Drives BuildProgress: false while saving, flips true the instant the
+  // real fetch resolves so the checklist snaps to fully checked.
+  const [buildComplete, setBuildComplete] = useState(false);
 
   const [name, setName] = useState(() => {
     if (!autoOpen) return "";
@@ -147,6 +168,7 @@ export function PromptSave({
   async function save() {
     if (!valid) return;
     setStage("saving");
+    setBuildComplete(false);
     setError(null);
     try {
       const res = await fetch("/api/generate", {
@@ -183,8 +205,12 @@ export function PromptSave({
           // Linking failed — not worth blocking the save over.
         }
       }
-      // A brief, wordless beat before leaving — Finn visibly hands the
-      // prompt over instead of the screen just cutting away.
+      // Snap the checklist to fully checked and let that register on screen
+      // before cutting to the delivering card — then the same wordless beat
+      // as before leaving, so Finn visibly hands the prompt over instead of
+      // the screen just cutting away.
+      setBuildComplete(true);
+      await new Promise((resolve) => window.setTimeout(resolve, PROGRESS_COMPLETE_DELAY_MS));
       setStage("done");
       await new Promise((resolve) => window.setTimeout(resolve, HANDOFF_DELAY_MS));
       router.push(
@@ -213,18 +239,17 @@ export function PromptSave({
 
   if (stage === "saving") {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="card-surface mt-3 flex items-center gap-4 p-5 md:p-6"
-      >
-        <AnimatedMascot state="organizing" size={64} className="shrink-0" />
-        <div>
-          <p className="text-[14.5px] font-medium text-foreground">Finn macht die Endversion.</p>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-            Haupt-Prompt plus drei Varianten. Einen Moment noch.
-          </p>
+      <div role="status" aria-live="polite" className="card-surface mt-3 p-5 md:p-6">
+        <div className="mb-4 flex items-start gap-4">
+          <AnimatedMascot state="organizing" size={56} className="shrink-0" />
+          <div>
+            <p className="text-[14.5px] font-medium text-foreground">Finn macht die Endversion.</p>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              Haupt-Prompt plus drei Varianten. Einen Moment noch.
+            </p>
+          </div>
         </div>
+        <BuildProgress steps={GENERAL_STEPS} complete={buildComplete} />
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { BuildProgress, type BuildStep } from "@/components/app/build-progress";
 import { createClient } from "@/lib/supabase/client";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 
@@ -36,6 +37,31 @@ type Stage = "idle" | "confirm" | "building" | "done";
 // register as a handoff, short enough to stay out of the way (DESIGN.md's
 // Finn-Physik pacing, ~0.6–0.9s).
 const HANDOFF_DELAY_MS = 850;
+
+// Once the real fetch resolves, hold a beat so the last checked-off group is
+// actually visible before the card swaps to "done" — otherwise the checklist
+// would jump straight to the delivering card mid-step.
+const PROGRESS_COMPLETE_DELAY_MS = 400;
+
+// The order here matches /api/generate's software prompts object exactly —
+// chatCompleteSequential (lib/llm.ts) walks it in this same insertion order,
+// so the sequence is real. Groups mirror results/page.tsx's SOFTWARE_TABS
+// grouping, so what the user watches happen and what they see afterwards in
+// Ergebnisse use the same four names. Per-step seconds are a pacing estimate
+// (short/medium/long tiers), summing to ~3 minutes — the real observed
+// duration of a full run — not a measurement of any individual call.
+const SOFTWARE_STEPS: BuildStep[] = [
+  { key: "brief", label: "Produkt-Brief", group: "Planung", seconds: 12 },
+  { key: "prd", label: "PRD", group: "Planung", seconds: 18 },
+  { key: "master", label: "Master-Prompt", group: "Prompts", seconds: 12 },
+  { key: "frontend", label: "Frontend-Prompt", group: "Prompts", seconds: 18 },
+  { key: "backend", label: "Backend-Prompt", group: "Prompts", seconds: 24 },
+  { key: "schema", label: "Datenbank-Schema", group: "Technik", seconds: 24 },
+  { key: "security", label: "Sicherheits-Checkliste", group: "Technik", seconds: 18 },
+  { key: "marketing", label: "Marketing-Texte", group: "Go-Live", seconds: 12 },
+  { key: "seo", label: "SEO-Plan", group: "Go-Live", seconds: 18 },
+  { key: "deployment", label: "Deployment-Anleitung", group: "Go-Live", seconds: 24 },
+];
 
 // Compact labels for the four build-target choices (mirrors the settings page).
 const TOOL_FIELDS: { key: keyof ProjectTools; label: string }[] = [
@@ -108,6 +134,9 @@ export function PacketBridge({
   const router = useRouter();
   const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
   const [error, setError] = useState<string | null>(null);
+  // Drives BuildProgress: false while building, flips true the instant the
+  // real fetch resolves so the checklist snaps to fully checked.
+  const [buildComplete, setBuildComplete] = useState(false);
 
   const [name, setName] = useState(() => {
     if (!autoOpen) return "";
@@ -154,6 +183,7 @@ export function PacketBridge({
   async function build() {
     if (!valid) return;
     setStage("building");
+    setBuildComplete(false);
     setError(null);
     try {
       const res = await fetch("/api/generate", {
@@ -191,8 +221,12 @@ export function PacketBridge({
           // Linking failed — not worth blocking the handoff over.
         }
       }
-      // A brief, wordless beat before leaving — Finn visibly hands the
-      // packet over instead of the screen just cutting away.
+      // Snap the checklist to fully checked and let that register on screen
+      // before cutting to the delivering card — then the same wordless beat
+      // as before leaving, so Finn visibly hands the packet over instead of
+      // the screen just cutting away.
+      setBuildComplete(true);
+      await new Promise((resolve) => window.setTimeout(resolve, PROGRESS_COMPLETE_DELAY_MS));
       setStage("done");
       await new Promise((resolve) => window.setTimeout(resolve, HANDOFF_DELAY_MS));
       router.push(
@@ -221,18 +255,17 @@ export function PacketBridge({
 
   if (stage === "building") {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="card-surface mt-3 flex items-center gap-4 p-5 md:p-6"
-      >
-        <AnimatedMascot state="building" size={64} className="shrink-0" />
-        <div>
-          <p className="text-[14.5px] font-medium text-foreground">Finn baut dein Paket.</p>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-            Plan, Prompts, Datenbank-Schema und mehr. Das kann einen Moment dauern.
-          </p>
+      <div role="status" aria-live="polite" className="card-surface mt-3 p-5 md:p-6">
+        <div className="mb-4 flex items-start gap-4">
+          <AnimatedMascot state="building" size={56} className="shrink-0" />
+          <div>
+            <p className="text-[14.5px] font-medium text-foreground">Finn baut dein Paket.</p>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              Zehn Teile, eins nach dem anderen — das dauert etwa 2–3 Minuten.
+            </p>
+          </div>
         </div>
+        <BuildProgress steps={SOFTWARE_STEPS} complete={buildComplete} />
       </div>
     );
   }
