@@ -32,9 +32,18 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Projekt-Limit übersprungen), Redirect nach `results` statt in ein neues
 > Projekt. `PacketBridge`/`PromptSave` fragen im Workspace nicht mehr nach dem
 > Namen (kommt vom Projekt) und leiten die Idee mit den Anweisungen ein.
-> Ergebnisse-Leerzustand verlinkt jetzt zum Chat statt Sackgasse zu sein. Als
-> Nächstes: Phase 4 (Dateien, Migration 0012) und der Rest von Phase 5
-> (Wahrheits-Pass, Landing-Nachzug).
+> Ergebnisse-Leerzustand verlinkt jetzt zum Chat statt Sackgasse zu sein.
+> **Phase 4 (Dateien) umgesetzt:** Migration 0012 (`project_files`-Tabelle +
+> privater `project-files`-Bucket, owner-scoped RLS, 200-KB-Limit am Bucket).
+> Echte Upload/Delete-UI in der Rail (`project-files.tsx`, Muster wie
+> `avatar-upload.tsx` — kein eigener API-Endpunkt), Allowlist
+> `.md/.txt/.json/.csv`, max. 10 Dateien à 200 KB (`src/lib/project-files.ts`).
+> `buildProjectContext` injiziert Dateien jetzt nach Struktur, vor Idee/
+> Artefakt: `.md` zuerst, Gesamtbudget 24.000 Zeichen, 6.000 pro Datei,
+> nicht injizierte Dateien werden nur namentlich erwähnt. Projekt-Löschen
+> räumt jetzt auch die Storage-Objekte auf (kein Leak). Als Nächstes: Rest
+> von Phase 5 (Wahrheits-Pass, Landing-Nachzug, PacketBridge/PromptSave
+> verschmelzen).
 
 ## Was ist PromptPrinter?
 

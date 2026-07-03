@@ -51,7 +51,19 @@ export function DeleteProjectButton({
     if (deleting) return;
     setDeleting(true);
     const supabase = createClient();
-    // RLS scopes this to the owner; generations and the refine-chat cascade away.
+
+    // Storage objects don't cascade with the DB row — clean them up first
+    // while the project_files rows (and their storage_path) still exist,
+    // otherwise every deleted project leaks its files in the bucket forever.
+    const { data: files } = await supabase
+      .from("project_files")
+      .select("storage_path")
+      .eq("project_id", projectId);
+    if (files && files.length > 0) {
+      await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
+    }
+
+    // RLS scopes this to the owner; generations, chats and project_files rows cascade away.
     const { error } = await supabase.from("projects").delete().eq("id", projectId);
     if (error) {
       setDeleting(false);
@@ -116,8 +128,8 @@ export function DeleteProjectButton({
                         Projekt löschen?
                       </h2>
                       <p className="mt-1 text-[13px] text-foreground/55">
-                        „{projectName}“ wird mit allen Chats und Ergebnissen dauerhaft
-                        entfernt. Das kann nicht rückgängig gemacht werden.
+                        „{projectName}“ wird mit allen Chats, Dateien und Ergebnissen
+                        dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.
                       </p>
                     </div>
                   </div>

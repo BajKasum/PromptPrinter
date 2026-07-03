@@ -3,18 +3,21 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, FileText, Loader2, NotebookPen, Layers, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Loader2, NotebookPen, Layers, Sparkles } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { ProjectFiles } from "@/components/app/project-files";
+import type { ProjectFile } from "@/lib/project-files";
 
-// The workspace context rail (REDESIGN.md, Phase 3): the living briefing of a
-// project. Anweisungen (free text) and Struktur (fixed optional fields) save
-// on blur via the browser client (RLS scopes writes to the owner) — every
-// project chat reads them server-side on the next turn, so there is nothing
-// to sync beyond the DB row. Dateien is a deliberate placeholder until
-// Phase 4; Ergebnisse is a status card linking to the results area.
+// The workspace context rail (REDESIGN.md, Phase 3+4): the living briefing of
+// a project. Anweisungen (free text) and Struktur (fixed optional fields)
+// save on blur via the browser client (RLS scopes writes to the owner) —
+// every project chat reads them server-side on the next turn, so there is
+// nothing to sync beyond the DB row. Dateien (Phase 4) is a real upload list,
+// injected into chats by buildProjectContext; Ergebnisse is a status card
+// linking to the results area.
 
 const STRUCTURE_FIELDS = [
   { key: "target", label: "Ziel-KI", placeholder: "z. B. Claude, Cursor, Lovable" },
@@ -33,12 +36,14 @@ export function ProjectRail({
   projectId,
   initialInstructions,
   initialContext,
+  files,
   resultCount,
   latestResultAt,
 }: {
   projectId: string;
   initialInstructions: string | null;
   initialContext: Record<string, string>;
+  files: ProjectFile[];
   resultCount: number;
   latestResultAt: string | null;
 }) {
@@ -136,15 +141,7 @@ export function ProjectRail({
         </p>
       </section>
 
-      <section className="card-surface p-4 opacity-70">
-        <h2 className="mb-1 flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <FileText className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-          Dateien
-        </h2>
-        <p className="text-[12px] leading-relaxed text-muted-foreground">
-          Bald legst du hier Kontext-Dateien ab — am besten <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">.md</code>, das ist token-effizient.
-        </p>
-      </section>
+      <ProjectFiles projectId={projectId} initialFiles={files} />
 
       <Link
         href={`/projects/${projectId}/results`}
