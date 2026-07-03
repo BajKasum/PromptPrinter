@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/utils";
+import { MoveToProjectButton } from "@/components/app/move-to-project";
 
 // The global chat list (REDESIGN.md, Phase 2): calm bordered rows instead of
 // cards — the title is the content, the sidebar already carries resume. Each
@@ -177,6 +178,11 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
         <p className="mt-0.5 truncate text-[12px] text-foreground/45">{meta}</p>
       </Link>
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        {/* Only global chats can be moved — a project chat already belongs
+            to one, and moving between projects isn't a thing here. */}
+        {basePath === "/chats" && (
+          <MoveToProjectButton chatId={chat.id} chatTitle={chat.title} />
+        )}
         <button
           type="button"
           onClick={() => setMode("rename")}

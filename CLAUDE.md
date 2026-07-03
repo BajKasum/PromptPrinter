@@ -33,9 +33,13 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   Nav ohne Modus-Badges, Settings-Copy korrigiert, toter Code
 >   (`ProjectCard`-Komponente) entfernt.
 >
-> Offen, bewusst zurückgestellt: „In Projekt verschieben" für bestehende
-> globale Chats (eigener Nachschritt, kein Copy-Fix), Settings-Tool-Defaults
-> behalten-oder-streichen (Grundsatzfrage, kein bekannter Bruch).
+> **Nachschritt erledigt:** „In Projekt verschieben" für bestehende globale
+> Chats — Icon-Button in `chat-list.tsx` (nur global) öffnet einen
+> Projekt-Picker (`move-to-project.tsx`), setzt `conversations.project_id`
+> per RLS-scoped Client-Update, kein neuer API-Endpunkt.
+>
+> Offen, bewusst zurückgestellt: Settings-Tool-Defaults behalten-oder-
+> streichen (Grundsatzfrage, kein bekannter Bruch).
 > `buildProjectContext` injiziert Dateien jetzt nach Struktur, vor Idee/
 > Artefakt: `.md` zuerst, Gesamtbudget 24.000 Zeichen, 6.000 pro Datei,
 > nicht injizierte Dateien werden nur namentlich erwähnt. Projekt-Löschen

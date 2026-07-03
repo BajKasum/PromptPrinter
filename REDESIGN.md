@@ -83,11 +83,13 @@ und die Featured-Chat-Karte auf `/chats`.
 - **Neuer Chat** (`/chats/new`): Finn-Empty-State + Starter + Composer. Nach dem
   ersten persistierten Turn wechselt die URL per `router.replace` auf die
   kanonische `/chats/[id]`. Gleiches Muster im Projekt.
-- **Aktionen pro Chat:** öffnen, umbenennen, löschen. „In Projekt verschieben"
-  (setzt `project_id` nachträglich, Chat wird Projekt-Chat) ist bewusst
-  **nicht** Teil von Phase 5 — sauber umsetzbar, aber ein eigener kleiner
-  Funktionsblock (Projekt-Picker-UI, Empty-State „noch kein Projekt"), kein
-  Copy-Fix. Als eigener Nachschritt vorgemerkt, siehe Abschnitt 9.
+- **Aktionen pro Chat:** öffnen, umbenennen, löschen, **„In Projekt
+  verschieben"** (nachträglicher Nachschritt nach Phase 5, siehe Abschnitt 9)
+  — setzt `project_id` per RLS-scoped Client-Update, derselbe Aufruf, den
+  `PacketBridge`/`PromptSave` beim Handoff bereits automatisch machen, hier
+  manuell ausgelöst über einen Projekt-Picker in der Chat-Zeile
+  (`move-to-project.tsx`). Nur für globale Chats sichtbar — ein Projekt-Chat
+  gehört schon einem Projekt.
 - **Handoff-Modell final (Wahrheits-Pass, 2026-07-03):** Die ursprünglich
   geplante Verschmelzung von `PacketBridge`/`PromptSave` zu einer Karte mit
   drei Optionen (Prompt speichern | Paket bauen | nur Projekt anlegen) ist
@@ -260,8 +262,8 @@ Jede Phase: eigenes Konzept-Feintuning falls nötig → Umsetzung → Quality-Ga
 - ✅ Copy-Pass durch die App (Settings-Tool-Defaults-Text, tote
   `ProjectCard`-Komponente, stale Code-Kommentare) und Landing
   (`ProductShowcase`: keine „Start"-Nav, keine Modus-Badges mehr) erledigt.
-- ⏳ **„In Projekt verschieben"** für bestehende globale Chats — bewusst als
-  eigener Nachschritt ausgeklammert (siehe oben), kein Teil dieser Runde.
+- ✅ **„In Projekt verschieben"** für bestehende globale Chats — als eigener
+  Nachschritt nach Phase 5 umgesetzt (`move-to-project.tsx`), siehe Abschnitt 3.
 - ✅ Pricing-Zeile geprüft — bereits sauber („Chats & Projekte" als Feature,
   kein Start/Modus-Rest), kein Fix nötig.
 - ⏳ `tool-group.tsx` (bereits gelöscht, siehe frühere Phase), Settings-
