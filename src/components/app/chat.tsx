@@ -267,13 +267,7 @@ export function Chat({
               <UserBubble key={i} content={m.content} />
             ) : i === lastAssistantIndex ? (
               <div key={i} ref={resultRef} className="scroll-mt-24">
-                <ResultPanel
-                  content={m.content}
-                  showHandoff={canHandoff && handoff === "none"}
-                  isWorkspace={isWorkspace}
-                  onBuildPacket={() => setHandoff("packet")}
-                  onSavePrompt={() => setHandoff("save")}
-                />
+                <ResultPanel content={m.content} />
               </div>
             ) : (
               <AssistantBubble key={i} content={m.content} index={i} />
@@ -341,9 +335,34 @@ export function Chat({
               className="min-h-[56px] resize-none border-0 bg-transparent px-2 focus:ring-0"
             />
             <div className="mt-1 flex items-center justify-between gap-3 pl-2">
-              <p className="hidden text-[11px] text-foreground/35 sm:block">
-                Enter sendet · Shift+Enter neue Zeile · wird automatisch gespeichert.
-              </p>
+              {/* Once there's a result, the composer's helper slot carries the
+                  save/packet handoff instead of the keyboard hint — a dezent
+                  entry in the input chrome, so the reading area above stays
+                  pure result and the decision isn't pushed under the answer.
+                  Same triggers as before, only relocated (no new logic). */}
+              {canHandoff ? (
+                <p className="min-w-0 text-[11px] text-foreground/35">
+                  <button
+                    type="button"
+                    onClick={() => setHandoff("save")}
+                    className="font-medium text-accent-text transition-colors hover:text-accent-text/80"
+                  >
+                    {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
+                  </button>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={() => setHandoff("packet")}
+                    className="transition-colors hover:text-foreground"
+                  >
+                    {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
+                  </button>
+                </p>
+              ) : (
+                <p className="hidden text-[11px] text-foreground/35 sm:block">
+                  Enter sendet · Shift+Enter neue Zeile · wird automatisch gespeichert.
+                </p>
+              )}
               <Button
                 onClick={() => send()}
                 disabled={loading || !input.trim()}
@@ -408,24 +427,12 @@ function UserBubble({ content }: { content: string }) {
 }
 
 // The current result, first-class: a document-like panel (not a chat bubble)
-// that carries the newest assistant reply. Reading is calm and full-width.
-// The only copy action lives on the prompt block itself (inside
-// MarkdownMessage's CodeBlock) — the panel used to also offer copy/export for
-// the whole result, but that was a second, redundant way to grab the same
-// content; the packet/save handoff is the panel's footer.
-function ResultPanel({
-  content,
-  showHandoff,
-  isWorkspace,
-  onBuildPacket,
-  onSavePrompt,
-}: {
-  content: string;
-  showHandoff: boolean;
-  isWorkspace: boolean;
-  onBuildPacket: () => void;
-  onSavePrompt: () => void;
-}) {
+// that carries the newest assistant reply. Reading is calm and full-width —
+// nothing but the result lives here. The only copy action is on the prompt
+// block itself (MarkdownMessage's CodeBlock); the save/packet handoff moved
+// out of the panel entirely to the composer row, so a fresh reply is read,
+// not immediately answered with a decision.
+function ResultPanel({ content }: { content: string }) {
   return (
     <section
       aria-label="Aktuelles Ergebnis"
@@ -444,29 +451,6 @@ function ResultPanel({
       <div className="px-5 py-5 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
         <MarkdownMessage content={content} />
       </div>
-
-      {showHandoff && (
-        // A quiet footnote, not a CTA strip: no fill, no accent button, no
-        // prose — just a hairline and two dezent links. Reading the result
-        // stays the moment; saving is available without interrupting it. (The
-        // heavier confirm/generate happens later, once a link is clicked.)
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-5 py-2.5 text-[12.5px] md:px-7">
-          <button
-            type="button"
-            onClick={onSavePrompt}
-            className="font-medium text-accent-text transition-colors hover:text-accent-text/80"
-          >
-            {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
-          </button>
-          <button
-            type="button"
-            onClick={onBuildPacket}
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
-          </button>
-        </div>
-      )}
     </section>
   );
 }
