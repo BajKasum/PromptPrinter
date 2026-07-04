@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { cn } from "@/lib/utils";
 import type { TourStep } from "@/components/onboarding/tour-steps";
 
@@ -258,9 +259,23 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
             </button>
           </div>
 
-          <h2 id="tour-step-title" className="mb-1.5 text-[16px] font-semibold tracking-[-0.01em] text-foreground">
-            {step.title}
-          </h2>
+          {/* Finn is the tour's throughline, not a logo somewhere else in the
+              product — he's beside every single step, speaking in his own
+              voice below (tour-steps.ts), so this reads as him walking you
+              through the app rather than a neutral info card. */}
+          <div className="mb-1.5 flex items-start gap-2.5">
+            <AnimatedMascot
+              state={step.mascot}
+              size={40}
+              className="shrink-0 [&_img]:h-9 [&_img]:w-9"
+            />
+            <h2
+              id="tour-step-title"
+              className="pt-1 text-[16px] font-semibold tracking-[-0.01em] text-foreground"
+            >
+              {step.title}
+            </h2>
+          </div>
           <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
 
           {/* Progress bar */}
