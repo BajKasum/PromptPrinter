@@ -18,10 +18,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // The sidebar's collapse state lives in a cookie so the server renders the
-  // correct width on first paint — no client-side snap after hydration.
+  // The sidebar's collapse state and user-chosen width both live in cookies
+  // so the server renders the correct size on first paint — no client-side
+  // snap after hydration for either.
   const cookieStore = await cookies();
   const sidebarCollapsed = cookieStore.get("pp-sidebar")?.value === "1";
+  const sidebarWidthCookie = Number(cookieStore.get("pp-sidebar-width")?.value);
+  const sidebarWidth =
+    Number.isFinite(sidebarWidthCookie) && sidebarWidthCookie > 0 ? sidebarWidthCookie : 264;
 
   // Recents for the sidebar: the latest global chats (project chats live in
   // their workspace) and pinned-then-recent projects. RLS scopes both reads.
@@ -71,6 +75,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen md:flex">
         <Sidebar
           initialCollapsed={sidebarCollapsed}
+          initialWidth={sidebarWidth}
           chats={sidebarChats}
           projects={sidebarProjects}
         />

@@ -7,6 +7,16 @@ interface LogoProps {
   size?: number;
   /** Render only the dolphin mark, without the "PromptPrinter" wordmark. */
   iconOnly?: boolean;
+  /**
+   * Two-tone wordmark — "Prompt" in the accent blue, "Printer" in the
+   * foreground color — for placements that want more brand presence (the
+   * sidebar header). `text-foreground` rather than a literal white keeps it
+   * theme-correct: near-white in dark mode (the default experience) but still
+   * legible in light mode, instead of a hardcoded color that would vanish on
+   * a light background. Defaults to the plain single-color wordmark used
+   * everywhere else (navbar, auth, marketing).
+   */
+  accentWordmark?: boolean;
 }
 
 /**
@@ -15,7 +25,7 @@ interface LogoProps {
  * file reskins the logo everywhere. The wordmark is real text — crisp at any
  * size and theme-aware — instead of being baked into the image.
  */
-export function Logo({ className, size = 28, iconOnly = false }: LogoProps) {
+export function Logo({ className, size = 28, iconOnly = false, accentWordmark = false }: LogoProps) {
   return (
     <span
       className={cn("inline-flex shrink-0 items-center gap-2", className)}
@@ -26,10 +36,17 @@ export function Logo({ className, size = 28, iconOnly = false }: LogoProps) {
       {!iconOnly && (
         <span
           aria-hidden
-          className="font-semibold leading-none tracking-[-0.02em] text-foreground"
+          className="font-semibold leading-none tracking-[-0.02em]"
           style={{ fontSize: Math.round(size * 0.66) }}
         >
-          PromptPrinter
+          {accentWordmark ? (
+            <>
+              <span className="text-accent-text">Prompt</span>
+              <span className="text-foreground">Printer</span>
+            </>
+          ) : (
+            <span className="text-foreground">PromptPrinter</span>
+          )}
         </span>
       )}
     </span>

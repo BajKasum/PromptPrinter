@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -22,6 +29,22 @@ export type SidebarProject = { id: string; name: string; isFavorite: boolean };
 const COOKIE = "pp-sidebar";
 export const SIDEBAR_COOKIE = COOKIE;
 
+// User-resizable width (drag handle on the trailing edge, see the `aside`
+// below). Bounds keep it from ever feeling broken: narrow enough to stop
+// being useful below MIN, wide enough to start eating the main content
+// above MAX. Persisted the same way as the collapsed flag — a cookie the
+// server layout reads for the first paint, so there's no flash/jump on load.
+export const SIDEBAR_WIDTH_COOKIE = "pp-sidebar-width";
+export const MIN_SIDEBAR_WIDTH = 220;
+export const MAX_SIDEBAR_WIDTH = 380;
+export const DEFAULT_SIDEBAR_WIDTH = 264;
+const COLLAPSED_WIDTH = 68;
+const KEYBOARD_STEP = 16;
+
+function clampWidth(w: number): number {
+  return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, w));
+}
+
 // Shared active-row language for chats/projects/footer links: a quiet 3px
 // accent mark at the leading edge plus a weight bump — not a filled pill.
 // DESIGN.md reserves the babyblau *fill* for genuine accent moments; a full
@@ -35,16 +58,23 @@ const INACTIVE_ROW = "text-foreground/55 hover:bg-surface-hover hover:text-foreg
 
 export function Sidebar({
   initialCollapsed,
+  initialWidth,
   chats,
   projects,
 }: {
   initialCollapsed: boolean;
+  initialWidth: number;
   chats: SidebarChat[];
   projects: SidebarProject[];
 }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [width, setWidth] = useState(() => clampWidth(initialWidth));
+  // True only while the handle is actively being dragged — suppresses the
+  // collapse/expand transition so the width tracks the pointer with zero lag,
+  // and lights up the handle's visual line.
+  const [dragging, setDragging] = useState(false);
   // First paint must match the server exactly; content fades only on toggles.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -69,17 +99,76 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
+  function persistWidth(w: number) {
+    document.cookie = `${SIDEBAR_WIDTH_COOKIE}=${Math.round(w)}; path=/; max-age=31536000; samesite=lax`;
+  }
+
+  // Drag-to-resize via Pointer Events + capture: one element gets every move/up
+  // regardless of what the cursor crosses, so there's no window-listener
+  // bookkeeping and touch works the same as mouse. Only the width state
+  // changes while dragging — the cookie is written once, on release, not on
+  // every pixel of movement.
+  const dragStart = useRef<{ x: number; width: number } | null>(null);
+
+  const onHandlePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      dragStart.current = { x: e.clientX, width };
+      setDragging(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [width]
+  );
+
+  const onHandlePointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    setWidth(clampWidth(dragStart.current.width + (e.clientX - dragStart.current.x)));
+  }, []);
+
+  const onHandlePointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    dragStart.current = null;
+    setDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    setWidth((w) => {
+      persistWidth(w);
+      return w;
+    });
+  }, []);
+
+  const onHandleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    setWidth((w) => {
+      const next = clampWidth(w + (e.key === "ArrowRight" ? KEYBOARD_STEP : -KEYBOARD_STEP));
+      persistWidth(next);
+      return next;
+    });
+  }, []);
+
+  // Native browser text-selection would otherwise highlight page content
+  // while dragging across it — this is the standard fix, scoped to the drag.
+  useEffect(() => {
+    if (!dragging) return;
+    const prev = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+    return () => {
+      document.body.style.userSelect = prev;
+    };
+  }, [dragging]);
+
   return (
     <aside
+      style={{ width: collapsed ? COLLAPSED_WIDTH : width }}
       className={cn(
         "sidebar-glow sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border md:flex",
-        "transition-[width] duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
-        collapsed ? "w-[68px]" : "w-[264px]"
+        !dragging &&
+          "transition-[width] duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
       )}
     >
       <div
         className={cn(
-          "flex items-center border-b border-border pb-4 pt-5",
+          "relative flex items-center pb-4 pt-5",
           collapsed ? "flex-col gap-3" : "justify-between pl-5 pr-3"
         )}
       >
@@ -88,7 +177,7 @@ export function Sidebar({
           className="inline-flex"
           aria-label="PromptPrinter — zu deinen Chats"
         >
-          {collapsed ? <LogoMark size={26} /> : <Logo />}
+          {collapsed ? <LogoMark size={26} /> : <Logo accentWordmark />}
         </Link>
         <button
           type="button"
@@ -104,6 +193,13 @@ export function Sidebar({
             <PanelLeftClose className="h-4 w-4" strokeWidth={1.8} />
           )}
         </button>
+        {/* A soft, fading wash instead of a ruled line — a hard border here
+            read as technical chrome; this grounds the header zone the same
+            way without a hard edge. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
+        />
       </div>
 
       <motion.div
@@ -119,6 +215,38 @@ export function Sidebar({
           <Full pathname={pathname} chats={chats} projects={projects} />
         )}
       </motion.div>
+
+      {/* Drag-to-resize handle — invisible at rest (VS Code/Linear-style),
+          a thin accent line on hover/focus/drag. Hit area (w-2) is wider than
+          the visible line (w-px) so it's easy to grab without looking heavy.
+          Collapsed rail has a fixed width — nothing to resize, so this only
+          renders expanded. */}
+      {!collapsed && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Seitenleisten-Breite"
+          aria-valuenow={Math.round(width)}
+          aria-valuemin={MIN_SIDEBAR_WIDTH}
+          aria-valuemax={MAX_SIDEBAR_WIDTH}
+          tabIndex={0}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+          onKeyDown={onHandleKeyDown}
+          className="group absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none outline-none"
+        >
+          <span
+            aria-hidden
+            className={cn(
+              "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors duration-150",
+              "group-hover:bg-border-strong group-focus-visible:bg-accent",
+              dragging && "!bg-accent"
+            )}
+          />
+        </div>
+      )}
     </aside>
   );
 }
