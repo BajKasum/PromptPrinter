@@ -340,7 +340,7 @@ export function SettingsWorkspace({
           title="Sicherheit"
           description="Ändere dein Passwort."
         >
-          <ChangePassword email={email} />
+          <ChangePassword />
         </SettingsCard>
 
         {/* Help & onboarding */}
