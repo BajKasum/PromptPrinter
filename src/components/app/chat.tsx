@@ -9,6 +9,9 @@ import {
   Check,
   Download,
   MessageSquare,
+  MoreHorizontal,
+  BookmarkPlus,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -147,6 +150,10 @@ export function Chat({
   // prompt or building the full software packet — the outcome is a choice at
   // the end of a chat, no longer a mode picked at the start.
   const [handoff, setHandoff] = useState<"none" | "packet" | "save">("none");
+  // The trigger for the two handoff cards above lives in a small, closed-by-
+  // default menu off the composer — reachable, but not a permanent action
+  // display competing with reading or writing.
+  const [handoffMenuOpen, setHandoffMenuOpen] = useState(false);
   // Two scroll anchors: the bottom of the thread (used while a turn is in
   // flight, so the user sees their message + the typing indicator clear the
   // sticky composer) and the top of the latest result (used once the reply
@@ -180,6 +187,16 @@ export function Chat({
     setHandoff("none");
     setHandoffOpen(false);
   }
+
+  // Escape closes the handoff menu — same convention as the topbar's dropdowns.
+  useEffect(() => {
+    if (!handoffMenuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setHandoffMenuOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handoffMenuOpen]);
 
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -335,42 +352,68 @@ export function Chat({
               className="min-h-[56px] resize-none border-0 bg-transparent px-2 focus:ring-0"
             />
             <div className="mt-1 flex items-center justify-between gap-3 pl-2">
-              {/* Once there's a result, the composer's helper slot carries the
-                  save/packet handoff instead of the keyboard hint — a dezent
-                  entry in the input chrome, so the reading area above stays
-                  pure result and the decision isn't pushed under the answer.
-                  Same triggers as before, only relocated (no new logic). */}
-              {canHandoff ? (
-                <p className="min-w-0 text-[11px] text-foreground/35">
-                  <button
-                    type="button"
-                    onClick={() => setHandoff("save")}
-                    className="font-medium text-accent-text transition-colors hover:text-accent-text/80"
-                  >
-                    {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
-                  </button>
-                  {" · "}
-                  <button
-                    type="button"
-                    onClick={() => setHandoff("packet")}
-                    className="transition-colors hover:text-foreground"
-                  >
-                    {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
-                  </button>
-                </p>
-              ) : (
-                <p className="hidden text-[11px] text-foreground/35 sm:block">
-                  Enter sendet · Shift+Enter neue Zeile · wird automatisch gespeichert.
-                </p>
-              )}
-              <Button
-                onClick={() => send()}
-                disabled={loading || !input.trim()}
-                className="ml-auto shrink-0"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Senden
-              </Button>
+              <p className="hidden text-[11px] text-foreground/35 sm:block">
+                Enter sendet · Shift+Enter neue Zeile · wird automatisch gespeichert.
+              </p>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {/* The save/packet handoff sits behind one quiet icon button,
+                    closed by default — reachable without ever showing as a
+                    permanent action bar next to reading or writing. Same
+                    setHandoff triggers as before, just tucked into a menu
+                    (the same click-away pattern the topbar's dropdowns use). */}
+                {canHandoff && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setHandoffMenuOpen((v) => !v)}
+                      aria-label="Nächster Schritt"
+                      aria-haspopup="true"
+                      aria-expanded={handoffMenuOpen}
+                      title="Nächster Schritt"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+                    >
+                      <MoreHorizontal className="h-4 w-4" strokeWidth={1.8} />
+                    </button>
+                    {handoffMenuOpen && (
+                      <>
+                        <button
+                          aria-label="Menü schliessen"
+                          className="fixed inset-0 z-40 cursor-default"
+                          onClick={() => setHandoffMenuOpen(false)}
+                        />
+                        <div className="absolute bottom-full right-0 z-50 mb-2 w-60 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHandoffMenuOpen(false);
+                              setHandoff("save");
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] text-foreground/85 transition-colors hover:bg-surface-hover"
+                          >
+                            <BookmarkPlus className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                            {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHandoffMenuOpen(false);
+                              setHandoff("packet");
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] text-foreground/85 transition-colors hover:bg-surface-hover"
+                          >
+                            <Package className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                            {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                <Button onClick={() => send()} disabled={loading || !input.trim()} className="shrink-0">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Senden
+                </Button>
+              </div>
             </div>
           </div>
         </div>
