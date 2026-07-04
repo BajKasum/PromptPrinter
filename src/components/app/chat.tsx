@@ -8,7 +8,6 @@ import {
   Copy,
   Check,
   Download,
-  BookmarkPlus,
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -447,23 +446,25 @@ function ResultPanel({
       </div>
 
       {showHandoff && (
-        <div className="flex flex-col gap-3 border-t border-border bg-surface px-5 py-3.5 md:px-7 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[13px] text-foreground/70">
-            {isWorkspace ? "Bereit, das als Ergebnis zu sichern?" : "Zufrieden? Dann heb dir das Ergebnis auf."}
-          </p>
-          <div className="flex shrink-0 flex-wrap items-center gap-3">
-            <Button size="sm" variant="accent" onClick={onSavePrompt}>
-              <BookmarkPlus className="h-4 w-4" />
-              {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
-            </Button>
-            <button
-              type="button"
-              onClick={onBuildPacket}
-              className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {isWorkspace ? "oder Software-Paket erzeugen →" : "oder Software-Paket bauen →"}
-            </button>
-          </div>
+        // A quiet footnote, not a CTA strip: no fill, no accent button, no
+        // prose — just a hairline and two dezent links. Reading the result
+        // stays the moment; saving is available without interrupting it. (The
+        // heavier confirm/generate happens later, once a link is clicked.)
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-5 py-2.5 text-[12.5px] md:px-7">
+          <button
+            type="button"
+            onClick={onSavePrompt}
+            className="font-medium text-accent-text transition-colors hover:text-accent-text/80"
+          >
+            {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
+          </button>
+          <button
+            type="button"
+            onClick={onBuildPacket}
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
+          </button>
         </div>
       )}
     </section>
