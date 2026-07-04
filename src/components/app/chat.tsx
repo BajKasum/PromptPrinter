@@ -8,7 +8,6 @@ import {
   Copy,
   Check,
   Download,
-  Package,
   BookmarkPlus,
   MessageSquare,
 } from "lucide-react";
@@ -452,15 +451,18 @@ function ResultPanel({
           <p className="text-[13px] text-foreground/70">
             {isWorkspace ? "Bereit, das als Ergebnis zu sichern?" : "Zufrieden? Dann heb dir das Ergebnis auf."}
           </p>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={onBuildPacket}>
-              <Package className="h-4 w-4" />
-              {isWorkspace ? "Software-Paket erzeugen" : "Software-Paket bauen"}
-            </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
             <Button size="sm" variant="accent" onClick={onSavePrompt}>
               <BookmarkPlus className="h-4 w-4" />
               {isWorkspace ? "Prompt erzeugen" : "Prompt speichern"}
             </Button>
+            <button
+              type="button"
+              onClick={onBuildPacket}
+              className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {isWorkspace ? "oder Software-Paket erzeugen →" : "oder Software-Paket bauen →"}
+            </button>
           </div>
         </div>
       )}
