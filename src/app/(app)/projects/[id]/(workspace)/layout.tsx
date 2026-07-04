@@ -10,9 +10,13 @@ import { relativeTime } from "@/lib/utils";
 import type { ProjectFile } from "@/lib/project-files";
 
 // The workspace shell (REDESIGN.md, Phase 3): header + context rail persist
-// across the project's subroutes — Übersicht, einzelne Chats, Ergebnisse are
-// states of the same room, swapped in the main column. getProject() is
-// request-cached, so the child pages re-using it cost no extra query.
+// across the project's "Arbeitsraum" subroutes — Übersicht and Ergebnisse are
+// states of the same room, swapped in the main column. Deliberately scoped to
+// this (workspace) route group only: ./chats/* lives one level up, outside
+// it, so a project chat renders as a plain chat room with no rail and no
+// project header (Chat-vs-Workspace-Trennung) — same URLs as before, route
+// groups don't affect the path. getProject() is request-cached, so the child
+// pages re-using it cost no extra query.
 
 type Params = Promise<{ id: string }>;
 

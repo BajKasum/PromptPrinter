@@ -28,8 +28,12 @@ export default async function NewProjectChatPage({ params }: { params: Params })
 
   const mode = project.type === "software" ? ("software" as const) : ("general" as const);
 
+  // A chat room, not a workspace panel (Chat-vs-Workspace-Trennung): no rail,
+  // no project meta here — same narrow reading column the standalone chats
+  // use, so a project chat feels like any other chat, just aware of its
+  // project in the background. Only the back-link ties it to the workspace.
   return (
-    <div>
+    <div className="mx-auto max-w-[900px]">
       <FadeIn>
         <Link
           href={`/projects/${id}`}

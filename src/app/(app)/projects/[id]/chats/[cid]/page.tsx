@@ -14,9 +14,11 @@ type Params = Promise<{ id: string; cid: string }>;
 
 type DbMessage = { role: "user" | "assistant"; content: string };
 
-// Ein Projekt-Chat auf seiner kanonischen Subroute (REDESIGN.md, Phase 3):
-// technisch eigene URL, gestalterisch derselbe Raum — die Workspace-Shell
-// (Header + Rail) bleibt stehen, nur die Hauptspalte zeigt den Chat.
+// Ein Projekt-Chat auf seiner kanonischen Subroute (REDESIGN.md, Phase 3).
+// Chat-vs-Workspace-Trennung: diese Route liegt bewusst ausserhalb der
+// (workspace)-Gruppe (siehe ../(workspace)/layout.tsx) — kein Rail, kein
+// Projekt-Header hier. Ein ruhiger Gesprächsraum, der zum Projekt gehört,
+// aber dessen Kontext-Fläche nicht mit ins Chatfenster zieht.
 export default async function ProjectChatPage({ params }: { params: Params }) {
   const { id, cid } = await params;
   const project = await getProject(id);
@@ -49,7 +51,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
 
   return (
-    <div>
+    <div className="mx-auto max-w-[900px]">
       <FadeIn>
         <div className="mb-4">
           <Link
