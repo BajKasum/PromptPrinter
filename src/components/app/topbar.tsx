@@ -11,11 +11,15 @@ import { MobileNav } from "@/components/app/mobile-nav";
 export function Topbar({
   email,
   plan,
+  isAdmin = false,
   displayName,
   avatarUrl,
 }: {
   email: string;
   plan: string;
+  /** A role (profiles.is_admin), not a plan — shows "Admin" instead of the
+   * tier badge below and never affects what `plan` itself says. */
+  isAdmin?: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
 }) {
@@ -191,9 +195,15 @@ export function Topbar({
                       <div className="text-[12px] text-muted-foreground truncate">{email}</div>
                     </div>
                   </div>
-                  <span className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-accent/30 bg-accent-subtle text-accent-text">
-                    {plan} Plan
-                  </span>
+                  {isAdmin ? (
+                    <span className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-500/15 text-amber-300">
+                      Admin
+                    </span>
+                  ) : (
+                    <span className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.08em] px-2 py-0.5 rounded-full border border-accent/30 bg-accent-subtle text-accent-text">
+                      {plan} Plan
+                    </span>
+                  )}
                 </div>
                 <div className="p-1.5">
                   <Link

@@ -5,7 +5,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { PLANS } from "@/components/marketing/pricing-preview";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
-import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
+import { effectiveLimits, type PlanKey } from "@/lib/plans";
 
 export const metadata = { title: "Abrechnung" };
 
@@ -27,7 +27,7 @@ export default async function BillingPage() {
 
   const [{ data: profile }, { count: projectsCount }, { count: monthlyGenerations }] =
     await Promise.all([
-      supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
       // Owner filter is explicit on top of RLS (defense in depth).
       supabase
         .from("projects")
@@ -42,15 +42,21 @@ export default async function BillingPage() {
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const currentPlan = planKey.charAt(0).toUpperCase() + planKey.slice(1);
-  const limits = PLAN_LIMITS[planKey];
+  // Admin is a role (profiles.is_admin), not a plan — planKey/rawPlan stay
+  // whatever they actually are in billing terms; only the display and the
+  // limits below change for this one account.
+  const isAdmin = profile?.is_admin ?? false;
+  const currentPlan = isAdmin ? "Admin" : planKey.charAt(0).toUpperCase() + planKey.slice(1);
+  const limits = effectiveLimits(planKey, isAdmin);
   const projectsUsed = projectsCount ?? 0;
   const generationsUsed = monthlyGenerations ?? 0;
   const isFree = planKey === "free";
-  const planDescription = isFree
-    ? "Du nutzt PromptPrinter kostenlos mit deinen eigenen API-Keys."
-    : "Voller Zugang mit inkludierter API und höheren Limits.";
-  const apiAccessLabel = isFree ? "Eigener Key" : "Inklusive";
+  const planDescription = isAdmin
+    ? "Admin-Konto — alle Limits und Upgrade-Hinweise sind für dich aufgehoben."
+    : isFree
+      ? "Du nutzt PromptPrinter kostenlos mit deinen eigenen API-Keys."
+      : "Voller Zugang mit inkludierter API und höheren Limits.";
+  const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : "Eigener Key";
 
   const fmtUsage = (used: number, limit: number) =>
     limit === Infinity ? String(used) : `${used} / ${limit}`;
@@ -86,54 +92,60 @@ export default async function BillingPage() {
         </div>
       </FadeIn>
 
-      <FadeIn delay={0.1}>
-        <div className="mb-4">
-          <h2 className="text-[18px] font-semibold text-foreground">Plan wechseln</h2>
-          <p className="mt-1 text-[13px] text-foreground/55 max-w-xl">
-            Bald kannst du deinen Plan direkt hier wechseln. Bis dahin nutzt du den
-            Free-Plan mit deinen eigenen API-Keys.
-          </p>
-        </div>
-      </FadeIn>
-
-      <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
-        {PLANS.map((p, i) => (
-          <FadeIn key={p.name} delay={0.1 + i * 0.05}>
-            <div
-              className={cn(
-                "rounded-2xl p-6 h-full",
-                p.highlight ? "gradient-border bg-surface" : "card-surface"
-              )}
-            >
-              <div className="flex items-baseline justify-between mb-2">
-                <h3 className="text-[16px] font-semibold text-foreground">{p.name}</h3>
-                {p.name === currentPlan && (
-                  <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-success border border-success/30 bg-success/10 px-2 py-0.5 rounded-full">
-                    Aktiv
-                  </span>
-                )}
-              </div>
-              <div className="flex items-baseline gap-1.5 mb-5">
-                <span className="text-[28px] font-semibold tracking-[-0.02em] text-foreground">
-                  {p.price}
-                </span>
-                <span className="text-[12px] text-foreground/45">/ {p.cadence}</span>
-              </div>
-              <ul className="space-y-1.5 mb-5">
-                {p.features.slice(0, 4).map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-[12.5px] text-foreground/70">
-                    <Check className="h-3.5 w-3.5 mt-0.5 text-accent-text/90 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Button variant="ghost" className="w-full" disabled>
-                {p.name === currentPlan ? "Aktueller Plan" : "Bald verfügbar"}
-              </Button>
+      {/* Upgrade-Hinweise gelten nur fuer normale Nutzer — ein Admin-Konto hat
+          bereits vollen Zugang, ein Upsell hier waere irrefuehrend. */}
+      {!isAdmin && (
+        <>
+          <FadeIn delay={0.1}>
+            <div className="mb-4">
+              <h2 className="text-[18px] font-semibold text-foreground">Plan wechseln</h2>
+              <p className="mt-1 text-[13px] text-foreground/55 max-w-xl">
+                Bald kannst du deinen Plan direkt hier wechseln. Bis dahin nutzt du den
+                Free-Plan mit deinen eigenen API-Keys.
+              </p>
             </div>
           </FadeIn>
-        ))}
-      </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
+            {PLANS.map((p, i) => (
+              <FadeIn key={p.name} delay={0.1 + i * 0.05}>
+                <div
+                  className={cn(
+                    "rounded-2xl p-6 h-full",
+                    p.highlight ? "gradient-border bg-surface" : "card-surface"
+                  )}
+                >
+                  <div className="flex items-baseline justify-between mb-2">
+                    <h3 className="text-[16px] font-semibold text-foreground">{p.name}</h3>
+                    {p.name === currentPlan && (
+                      <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-success border border-success/30 bg-success/10 px-2 py-0.5 rounded-full">
+                        Aktiv
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-baseline gap-1.5 mb-5">
+                    <span className="text-[28px] font-semibold tracking-[-0.02em] text-foreground">
+                      {p.price}
+                    </span>
+                    <span className="text-[12px] text-foreground/45">/ {p.cadence}</span>
+                  </div>
+                  <ul className="space-y-1.5 mb-5">
+                    {p.features.slice(0, 4).map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-[12.5px] text-foreground/70">
+                        <Check className="h-3.5 w-3.5 mt-0.5 text-accent-text/90 shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="ghost" className="w-full" disabled>
+                    {p.name === currentPlan ? "Aktueller Plan" : "Bald verfügbar"}
+                  </Button>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

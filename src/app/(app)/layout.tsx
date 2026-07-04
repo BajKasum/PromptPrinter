@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [{ data: profile }, { data: rawChats }, { data: rawProjects }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("plan, display_name, avatar_url, settings")
+      .select("plan, is_admin, display_name, avatar_url, settings")
       .eq("id", user.id)
       .maybeSingle(),
     supabase
@@ -83,6 +83,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Topbar
             email={user.email ?? ""}
             plan={profile?.plan ?? "free"}
+            isAdmin={profile?.is_admin ?? false}
             displayName={profile?.display_name ?? null}
             avatarUrl={profile?.avatar_url ?? null}
           />

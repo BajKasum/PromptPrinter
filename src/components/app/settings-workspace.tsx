@@ -58,6 +58,7 @@ export function SettingsWorkspace({
   initialTools,
   baseSettings,
   plan,
+  isAdmin = false,
   usage,
   memberSince,
 }: {
@@ -68,6 +69,9 @@ export function SettingsWorkspace({
   initialTools: ProjectTools;
   baseSettings: Record<string, unknown> | null;
   plan: PlanKey;
+  /** A role (profiles.is_admin), not a plan — shows "Admin" instead of the
+   * tier badge and means the usage meters below never actually cap out. */
+  isAdmin?: boolean;
   usage: Usage;
   memberSince: string | null;
 }) {
@@ -209,14 +213,20 @@ export function SettingsWorkspace({
             title="Workspace"
             description="Konto- und Plan-Übersicht."
             headerRight={
-              <span
-                className={cn(
-                  "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize",
-                  PLAN_BADGE[plan]
-                )}
-              >
-                {plan}
-              </span>
+              isAdmin ? (
+                <span className="shrink-0 rounded-full border border-amber-400/40 bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium text-amber-300">
+                  Admin
+                </span>
+              ) : (
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize",
+                    PLAN_BADGE[plan]
+                  )}
+                >
+                  {plan}
+                </span>
+              )
             }
           >
             <div className="divide-y divide-border">

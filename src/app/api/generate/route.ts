@@ -3,7 +3,7 @@ import { generateRequestSchema, type GenerateRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
-import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
+import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import {
   SYSTEM_PROMPT,
   GENERAL_SYSTEM_PROMPT,
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     ).toISOString();
     const [{ data: profile }, { count: projectCount }, { count: genCount }] =
       await Promise.all([
-        supabase.from("profiles").select("plan").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
         // Filter by owner explicitly even though RLS already scopes these to the
         // caller — defense in depth. These counts gate resource creation, so a
         // single mis-scoped policy must never let them read the global total.
@@ -101,7 +101,9 @@ export async function POST(req: Request) {
       ]);
     const rawPlan = (profile?.plan as string | undefined) ?? "free";
     const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-    const limits = PLAN_LIMITS[plan];
+    // Admin is a role, not a plan (profiles.is_admin) — it exempts this one
+    // account from every limit below without changing what plan it's on.
+    const limits = effectiveLimits(plan, profile?.is_admin ?? false);
     // Generating into an existing project (workspace-native handoff) never
     // creates a project row, so the project cap doesn't apply — only a fresh
     // standalone generation (no projectId) is gated by it.

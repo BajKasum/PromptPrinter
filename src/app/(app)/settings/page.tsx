@@ -3,7 +3,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { SettingsWorkspace } from "@/components/app/settings-workspace";
 import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
-import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
+import { effectiveLimits, type PlanKey } from "@/lib/plans";
 
 export const metadata = { title: "Einstellungen" };
 
@@ -24,7 +24,7 @@ export default async function SettingsPage() {
   const [{ data: profile }, { count: projectCount }, { count: genCount }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, settings, plan, avatar_url")
+      .select("display_name, settings, plan, is_admin, avatar_url")
       .eq("id", user.id)
       .maybeSingle(),
     // RLS scopes both counts to the signed-in owner; the explicit owner filter
@@ -44,7 +44,8 @@ export default async function SettingsPage() {
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
   const toolDefaults = parseToolDefaults(profile?.settings);
   const plan = (profile?.plan ?? "free") as PlanKey;
-  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const isAdmin = profile?.is_admin ?? false;
+  const limits = effectiveLimits(plan, isAdmin);
 
   // Only forward a genuine settings object so the client can safely merge it.
   const rawSettings = profile?.settings;
@@ -72,6 +73,7 @@ export default async function SettingsPage() {
         initialTools={toolDefaults}
         baseSettings={baseSettings}
         plan={plan}
+        isAdmin={isAdmin}
         usage={{
           projects: projectCount ?? 0,
           projectLimit: limits.projects,
