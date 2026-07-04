@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import { cn } from "@/lib/utils";
 
@@ -93,9 +92,10 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Right: theme + auth (desktop) / theme + menu toggle (mobile) */}
+        {/* Right: auth (desktop) / menu toggle (mobile). No theme switch here —
+            the public site keeps one deliberate, always-light mood; theme
+            choice lives in the logged-in app's settings instead. */}
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <Button
             asChild
             variant="ghost"

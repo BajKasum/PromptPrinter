@@ -7,7 +7,6 @@ import { Search, Bell, ChevronDown, Settings, CreditCard, LogOut, Loader2 } from
 import { createClient } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/app/command-palette";
 import { MobileNav } from "@/components/app/mobile-nav";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Topbar({
   email,
@@ -96,7 +95,6 @@ export function Topbar({
         </span>
       </button>
       <div className="ml-auto flex items-center gap-2" data-tour="topbar-actions">
-        <ThemeToggle />
         <div className="relative">
           <button
             onClick={() => {

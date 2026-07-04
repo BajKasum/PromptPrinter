@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useTheme } from "next-themes";
 import { Logo } from "@/components/brand/logo";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // three.js only loads on the client and is code-split out of the main bundle.
 const CanvasRevealEffect = dynamic(
@@ -14,11 +12,10 @@ const CanvasRevealEffect = dynamic(
   { ssr: false }
 );
 
-// White glowing dots on dark; soft dark dots on light.
-const DARK_DOTS = [
-  [255, 255, 255],
-  [255, 255, 255],
-];
+// Soft dark dots on light — the public site (this included) is forced to the
+// light theme (Theme-Entscheidung: one deliberate public mood, no header
+// toggle), so the dark-dot variant this used to switch to for dark mode no
+// longer applies here.
 const LIGHT_DOTS = [
   [51, 65, 85],
   [51, 65, 85],
@@ -26,11 +23,9 @@ const LIGHT_DOTS = [
 
 /**
  * Full-bleed auth backdrop shared by the login, signup and password-reset
- * experiences: the animated dot-matrix reveal, a brand header with the theme
- * toggle, and a centered content slot. Follows the active theme (light/dark) —
- * the dot colour and blending flip so the effect reads in both. `overlay`
- * renders inside the root but outside the animated content wrapper (e.g. the
- * success celebration).
+ * experiences: the animated dot-matrix reveal, a brand header, and a centered
+ * content slot. `overlay` renders inside the root but outside the animated
+ * content wrapper (e.g. the success celebration).
  */
 export function AuthExperienceShell({
   children,
@@ -39,25 +34,21 @@ export function AuthExperienceShell({
   children: React.ReactNode;
   overlay?: React.ReactNode;
 }) {
-  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  // Before mount the theme is unknown; default to the dark treatment.
-  const isDark = !mounted || resolvedTheme !== "light";
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-background text-foreground">
       {overlay}
 
       <div className="absolute inset-0 z-0">
-        {/* Mounted-gate so the canvas paints with the correct theme from frame one. */}
+        {/* Mounted-gate so the canvas only paints on the client. */}
         {mounted && (
           <CanvasRevealEffect
             animationSpeed={3}
             containerClassName="bg-background"
-            colors={isDark ? DARK_DOTS : LIGHT_DOTS}
-            blend={isDark ? "additive" : "normal"}
+            colors={LIGHT_DOTS}
+            blend="normal"
             dotSize={6}
           />
         )}
@@ -70,7 +61,6 @@ export function AuthExperienceShell({
           <Link href="/" className="inline-flex">
             <Logo />
           </Link>
-          <ThemeToggle />
         </header>
 
         <div className="flex flex-1 items-center justify-center px-6 pb-16">

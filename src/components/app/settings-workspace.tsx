@@ -19,6 +19,7 @@ import {
   Loader2,
   Check,
   Compass,
+  SunMoon,
   type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import { ToolPickerGroup } from "@/components/app/tool-picker";
 import { DeleteAccount } from "@/components/app/delete-account";
 import { ChangePassword } from "@/components/app/change-password";
 import { AvatarUpload } from "@/components/app/avatar-upload";
+import { ThemePreference } from "@/components/app/theme-preference";
 import { ToolLogo } from "@/components/brand/tool-logos";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
@@ -230,6 +232,16 @@ export function SettingsWorkspace({
             </Link>
           </SettingsCard>
         </div>
+
+        {/* Appearance — a deliberate workspace preference, not a header toggle. */}
+        <SettingsCard
+          Icon={SunMoon}
+          accent="#8FCDF2"
+          title="Erscheinungsbild"
+          description="Hell, dunkel oder automatisch nach Systemeinstellung — nur hier im Workspace."
+        >
+          <ThemePreference />
+        </SettingsCard>
 
         {/* Row: Usage + API providers */}
         <div className="grid gap-4 md:grid-cols-5">

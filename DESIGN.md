@@ -7,8 +7,17 @@
 ## Themes
 
 Light + Dark über `next-themes` (`attribute="class"`, `defaultTheme="dark"`,
-`enableSystem`). Der Umschalter ist `ThemeToggle` (`src/components/ui/theme-toggle.tsx`),
-sitzt in der Topbar. Tokens flippen über `.dark` auf `<html>`.
+`enableSystem`). Tokens flippen über `.dark` auf `<html>`.
+
+> **Theme-Entscheidung (2026-07):** Die öffentliche Website (Marketing, Auth,
+> Legal) hat **eine** bewusste, immer helle Grundstimmung — kein Toggle im
+> Header. `ThemeProvider` (`src/components/theme-provider.tsx`) erzwingt das
+> per next-themes' eigenem `forcedTheme`-Mechanismus routenbasiert
+> (`usePathname`), ohne die tatsächlich gespeicherte Praeferenz zu
+> überschreiben. Umschaltbar ist das Theme nur innerhalb des eingeloggten
+> Bereichs, als bewusste Workspace-Praeferenz in den Einstellungen
+> (`ThemePreference`, `src/components/app/theme-preference.tsx`) — Hell /
+> Dunkel / System, kein Header-Button mehr.
 
 ## Farb-Tokens
 
