@@ -271,7 +271,6 @@ export function Chat({
               <div key={i} ref={resultRef} className="scroll-mt-24">
                 <ResultPanel
                   content={m.content}
-                  index={i}
                   showHandoff={canHandoff && handoff === "none"}
                   isWorkspace={isWorkspace}
                   onBuildPacket={() => setHandoff("packet")}
@@ -411,36 +410,24 @@ function UserBubble({ content }: { content: string }) {
 }
 
 // The current result, first-class: a document-like panel (not a chat bubble)
-// that carries the newest assistant reply. Reading is calm and full-width; the
-// actions that belong to a result all live on it — copy/export in the header,
-// the packet/save handoff as its footer — so nothing competes below it.
+// that carries the newest assistant reply. Reading is calm and full-width.
+// The only copy action lives on the prompt block itself (inside
+// MarkdownMessage's CodeBlock) — the panel used to also offer copy/export for
+// the whole result, but that was a second, redundant way to grab the same
+// content; the packet/save handoff is the panel's footer.
 function ResultPanel({
   content,
-  index,
   showHandoff,
   isWorkspace,
   onBuildPacket,
   onSavePrompt,
 }: {
   content: string;
-  index: number;
   showHandoff: boolean;
   isWorkspace: boolean;
   onBuildPacket: () => void;
   onSavePrompt: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copyAll() {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  function exportMd() {
-    downloadFile(`prompt-${index + 1}.md`, content, "text/markdown");
-  }
-
   return (
     <section
       aria-label="Aktuelles Ergebnis"
@@ -452,20 +439,6 @@ function ResultPanel({
               character: this sits on screen for as long as you're reading. */}
           <Mascot state="delivering" size={22} className="shrink-0" />
           <span className="text-[13px] font-medium text-foreground/75">Dein Ergebnis</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="ghost" onClick={copyAll}>
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-success" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-            {copied ? "Kopiert" : "Kopieren"}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={exportMd}>
-            <Download className="h-3.5 w-3.5" />
-            Export
-          </Button>
         </div>
       </header>
 
