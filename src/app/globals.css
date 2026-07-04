@@ -232,29 +232,39 @@
    * sunlit water, not a flat box. Token-based, theme-driven, static →
    * reduced-motion-safe. Felt, not seen. See DESIGN.md → Finn's World.
    */
+  /*
+   * Shares .app-header-glow's corrected recipe below (same shape, same
+   * alpha) — this card's mascot is centered, and the previous origin
+   * (50% -28%, 92% tall) sat almost exactly on top of it, producing the same
+   * pale spotlight-on-Finn effect the header had, just stronger.
+   */
   .dash-continue {
     background:
-      radial-gradient(120% 92% at 50% -28%, hsl(var(--accent) / 0.09), transparent 60%),
+      radial-gradient(140% 50% at 50% -60%, hsl(var(--accent) / 0.03), transparent 72%),
       hsl(var(--surface-raised));
   }
   .dark .dash-continue {
     background:
-      radial-gradient(120% 92% at 50% -28%, hsl(var(--accent) / 0.11), transparent 58%),
+      radial-gradient(140% 50% at 50% -60%, hsl(var(--accent) / 0.045), transparent 70%),
       hsl(var(--surface-raised));
   }
 
   /*
-   * App room headers (Chats, Projekte) — a soft light from the upper-left,
-   * behind Finn and the title, so each section sits in Finn's World light
-   * instead of on a flat canvas. Token-based, static, reduced-motion-safe.
-   * The quieter echo of .dash-continue, so the two rooms still read as one
-   * world rather than a flat list template.
+   * App room headers (Chats, Projekte) — a soft light from above, so each
+   * section sits in Finn's World light instead of on a flat canvas. Wide and
+   * shallow, centered rather than anchored on Finn's own position (an earlier
+   * version sat at 8% -20% — almost exactly where the mascot renders, which
+   * spotlit him with a visible pale patch instead of lighting the room around
+   * him). Same shape philosophy as .sidebar-glow: broad horizontal spread,
+   * short vertical falloff, origin pushed well above the box so only the
+   * already-faded tail of the gradient reaches the visible area. Token-based,
+   * static, reduced-motion-safe, felt-not-seen (DESIGN.md).
    */
   .app-header-glow {
-    background: radial-gradient(55% 135% at 8% -20%, hsl(var(--accent) / 0.06), transparent 62%);
+    background: radial-gradient(140% 50% at 50% -60%, hsl(var(--accent) / 0.03), transparent 72%);
   }
   .dark .app-header-glow {
-    background: radial-gradient(55% 135% at 8% -20%, hsl(var(--accent) / 0.08), transparent 60%);
+    background: radial-gradient(140% 50% at 50% -60%, hsl(var(--accent) / 0.045), transparent 70%);
   }
 
   /*
