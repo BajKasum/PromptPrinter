@@ -45,15 +45,15 @@ function clampWidth(w: number): number {
   return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, w));
 }
 
-// Shared active-row language for chats/projects/footer links: a quiet 3px
-// accent mark at the leading edge plus a weight bump — not a filled pill.
-// DESIGN.md reserves the babyblau *fill* for genuine accent moments; a full
-// bg-accent-subtle block behind every active row reads heavier than an
-// "active" state should. The mark carries the color, the text just gets
-// slightly more present (weight, not tint) — two quiet signals instead of
-// three loud ones (fill + tint + weight).
+// Shared active-row language for chats/projects/footer links: the 3px accent
+// mark plus a weight bump, now with a soft bg-accent-subtle tint too — the
+// mark alone tested as too easy to miss when scanning a long chat list (it's
+// a thin line at the far edge, easy to not notice, especially past a
+// truncated title). The tint is the same token the collapsed icon rail
+// already uses for its active state, so this isn't a new pattern — it's
+// bringing the expanded view in line with what the rail already does.
 const ACTIVE_ROW =
-  "relative font-medium text-foreground before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-accent before:content-['']";
+  "relative rounded-md bg-accent-subtle font-medium text-foreground before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-accent before:content-['']";
 const INACTIVE_ROW = "text-foreground/55 hover:bg-surface-hover hover:text-foreground";
 
 export function Sidebar({
@@ -262,57 +262,57 @@ function Full({
   chats: SidebarChat[];
   projects: SidebarProject[];
 }) {
+  // Which list is on screen — driven by the route, not separate client state,
+  // so a direct link into /projects/[id] lands on the right tab for free and
+  // back/forward navigation can't drift out of sync with what's shown. Any
+  // other route (settings, billing) defaults to Chats.
+  const tab: "chats" | "projects" =
+    pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";
+
   return (
     <>
       <div className="flex-1 overflow-y-auto px-3 pb-4 pt-4">
-        <Link
-          href="/chats/new"
-          data-tour="new-chat"
-          className="mx-1 mb-5 flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
-        >
-          <Plus className="h-[15px] w-[15px]" strokeWidth={2} />
-          Neuer Chat
-        </Link>
+        <TabSwitcher tab={tab} />
 
-        <div data-tour="nav-main" className="space-y-8">
-          <section aria-label="Chats">
-            <SectionHeader
-              nav={primaryNav[0]}
-              active={pathname === "/chats" || pathname.startsWith("/chats/")}
-            />
-            <div className="mt-2 space-y-0.5">
-              {chats.length === 0 ? (
-                <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
-                  Dein erster Chat landet hier.
-                </p>
-              ) : (
-                chats.map((c) => {
-                  const active = pathname === `/chats/${c.id}`;
-                  return (
-                    <Link
-                      key={c.id}
-                      href={`/chats/${c.id}`}
-                      title={c.title}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "block truncate rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
-                        active ? ACTIVE_ROW : INACTIVE_ROW
-                      )}
-                    >
-                      {c.title}
-                    </Link>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-          <section aria-label="Projekte">
-            <SectionHeader
-              nav={primaryNav[1]}
-              active={pathname === "/projects" || pathname.startsWith("/projects/")}
-            />
-            <div className="mt-2 space-y-0.5">
+        <div data-tour="nav-main">
+          {tab === "chats" ? (
+            <>
+              <Link
+                href="/chats/new"
+                data-tour="new-chat"
+                className="mx-1 mb-5 flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
+              >
+                <Plus className="h-[15px] w-[15px]" strokeWidth={2} />
+                Neuer Chat
+              </Link>
+              <div className="space-y-0.5">
+                {chats.length === 0 ? (
+                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                    Dein erster Chat landet hier.
+                  </p>
+                ) : (
+                  chats.map((c) => {
+                    const active = pathname === `/chats/${c.id}`;
+                    return (
+                      <Link
+                        key={c.id}
+                        href={`/chats/${c.id}`}
+                        title={c.title}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "block truncate rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
+                          active ? ACTIVE_ROW : INACTIVE_ROW
+                        )}
+                      >
+                        {c.title}
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-0.5">
               {projects.length === 0 ? (
                 <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
                   Noch kein Projekt angelegt.
@@ -347,7 +347,7 @@ function Full({
               )}
               <NewProjectButton variant="row" />
             </div>
-          </section>
+          )}
         </div>
       </div>
 
@@ -360,22 +360,53 @@ function Full({
   );
 }
 
-// A section header that is itself the nav destination — a compact, tracked
-// label distinctly lighter/smaller than the rows beneath it (the previous
-// version matched the list items' own size/weight, so "Chats"/"Projekte"
-// never read as a group label, just another row).
-function SectionHeader({ nav, active }: { nav: NavItem; active: boolean }) {
-  const { label, href, Icon } = nav;
+// Pill switcher between the sidebar's two destinations. Each pill is a real
+// link (not a client-only toggle), so `tab` above and the URL can never
+// drift apart. Labels are deliberately singular ("Chat"/"Projekt") to match
+// this switcher specifically — everywhere else in the app still says the
+// plural "Chats"/"Projekte" (primaryNav, page titles, command palette).
+function TabSwitcher({ tab }: { tab: "chats" | "projects" }) {
+  return (
+    <div className="mb-4 flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
+      <TabPill
+        href={primaryNav[0].href}
+        active={tab === "chats"}
+        Icon={primaryNav[0].Icon}
+        label="Chat"
+      />
+      <TabPill
+        href={primaryNav[1].href}
+        active={tab === "projects"}
+        Icon={primaryNav[1].Icon}
+        label="Projekt"
+      />
+    </div>
+  );
+}
+
+function TabPill({
+  href,
+  active,
+  Icon,
+  label,
+}: {
+  href: string;
+  active: boolean;
+  Icon: NavItem["Icon"];
+  label: string;
+}) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors",
-        active ? "text-accent-text" : "text-muted-foreground/75 hover:text-foreground"
+        "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12.5px] font-medium transition-colors",
+        active
+          ? "bg-surface-raised text-foreground shadow-sm"
+          : "text-muted-foreground/70 hover:text-foreground"
       )}
     >
-      <Icon className="h-3 w-3" strokeWidth={2.2} />
+      <Icon className="h-3.5 w-3.5" strokeWidth={2} />
       {label}
     </Link>
   );
