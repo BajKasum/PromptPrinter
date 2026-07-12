@@ -77,7 +77,7 @@ export function Navbar() {
             onClick={() => setOpen(false)}
             className="flex items-center transition-opacity hover:opacity-80"
           >
-            <Logo />
+            <Logo accentWordmark />
           </Link>
           <div className="hidden items-center gap-1 md:flex">
             {nav.map((item) => (
