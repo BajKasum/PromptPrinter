@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Package, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { BuildProgress, type BuildStep } from "@/components/app/build-progress";
-import { createClient } from "@/lib/supabase/client";
+import { useHandoffFlow, NAME_LIMITS, IDEA_LIMITS } from "@/lib/use-handoff-flow";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 
 // The handoff from a chat to a real build packet. The chat collects the idea
 // conversationally; this component is the visible handoff: Finn summarizes
 // what he understood into an editable confirmation card, then calls
-// /api/generate (the packet pipeline).
+// /api/generate (the packet pipeline). The shared confirm→building→done
+// choreography (fetch, project-linking, timing, redirect) lives in
+// useHandoffFlow — this component owns only what's specific to a software
+// packet: the audience field, the tool selects, and its own copy.
 //
 // Two destinations (REDESIGN.md — Handoff im Workspace):
 //  - standalone (existingProjectId unset): creates a brand-new project and
@@ -30,18 +32,6 @@ import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 // redirect. Errors return to confirm. Since Phase 2 the chat's handoff strip
 // opens this card directly (autoOpen); "Zurück zum Chat" then unmounts it via
 // onBack instead of falling to idle.
-
-type Stage = "idle" | "confirm" | "building" | "done";
-
-// How long the "done" beat holds before navigating away — long enough to
-// register as a handoff, short enough to stay out of the way (DESIGN.md's
-// Finn-Physik pacing, ~0.6–0.9s).
-const HANDOFF_DELAY_MS = 850;
-
-// Once the real fetch resolves, hold a beat so the last checked-off group is
-// actually visible before the card swaps to "done" — otherwise the checklist
-// would jump straight to the delivering card mid-step.
-const PROGRESS_COMPLETE_DELAY_MS = 400;
 
 // The order here matches /api/generate's software prompts object exactly —
 // chatCompleteSequential (lib/llm.ts) walks it in this same insertion order,
@@ -71,35 +61,12 @@ const TOOL_FIELDS: { key: keyof ProjectTools; label: string }[] = [
   { key: "database", label: "Datenbank" },
 ];
 
-// Mirrors generateRequestSchema (software branch) so the card never submits a
-// request the route would reject.
-const LIMITS = {
-  nameMin: 2,
-  nameMax: 80,
-  ideaMin: 20,
-  ideaMax: 5000,
-  audienceMin: 2,
-  audienceMax: 300,
-} as const;
+// Audience is specific to a software packet (PromptSave has no equivalent
+// field) — kept local rather than in the shared NAME_LIMITS/IDEA_LIMITS.
+const AUDIENCE_LIMITS = { min: 2, max: 300 } as const;
 
 const selectClass =
   "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors duration-200 focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50";
-
-// Prefill helpers. Standalone: the first user turn names the project, the
-// whole conversation becomes the idea text. Workspace: the project already
-// has a name (never re-derived), and the idea leads with the project's own
-// Anweisungen so the result reflects the full briefing, not just this chat.
-function deriveName(userMessages: string[]): string {
-  const first = (userMessages[0] ?? "").trim().replace(/\s+/g, " ");
-  return first.length > 60 ? `${first.slice(0, 57)}…` : first;
-}
-function deriveIdea(userMessages: string[], instructionsPrefix?: string): string {
-  const joined = userMessages.join("\n\n").trim();
-  const combined = instructionsPrefix?.trim()
-    ? `${instructionsPrefix.trim()}\n\n${joined}`
-    : joined;
-  return combined.slice(0, LIMITS.ideaMax);
-}
 
 export function PacketBridge({
   userMessages,
@@ -131,112 +98,52 @@ export function PacketBridge({
   /** The workspace's Anweisungen, prefixed into the idea prefill. */
   projectInstructions?: string;
 }) {
-  const router = useRouter();
-  const [stage, setStage] = useState<Stage>(autoOpen ? "confirm" : "idle");
-  const [error, setError] = useState<string | null>(null);
-  // Drives BuildProgress: false while building, flips true the instant the
-  // real fetch resolves so the checklist snaps to fully checked.
-  const [buildComplete, setBuildComplete] = useState(false);
-
-  const [name, setName] = useState(() => {
-    if (!autoOpen) return "";
-    return existingProjectId ? (projectName ?? "") : deriveName(userMessages);
+  const {
+    stage,
+    error,
+    buildComplete,
+    name,
+    setName,
+    idea,
+    setIdea,
+    nameOk,
+    ideaOk,
+    openConfirm,
+    close,
+    run,
+  } = useHandoffFlow({
+    autoOpen,
+    userMessages,
+    conversationId,
+    existingProjectId,
+    projectName,
+    projectInstructions,
+    onOpenChange,
   });
-  const [audience, setAudience] = useState("");
-  const [idea, setIdea] = useState(() =>
-    autoOpen ? deriveIdea(userMessages, projectInstructions) : ""
-  );
-  const [tools, setTools] = useState<ProjectTools>(defaultTools);
-  const prefilled = useRef(autoOpen);
-  const audienceRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    onOpenChange?.(stage !== "idle");
-  }, [stage, onOpenChange]);
+  const [audience, setAudience] = useState("");
+  const [tools, setTools] = useState<ProjectTools>(defaultTools);
+  const audienceRef = useRef<HTMLInputElement | null>(null);
 
   // The audience is the one field the chat can't derive — guide the eye there.
   useEffect(() => {
     if (stage === "confirm") audienceRef.current?.focus();
   }, [stage]);
 
-  function openConfirm() {
-    // Prefill once from the conversation; afterwards the user's edits win, even
-    // if they hop back into the chat and return.
-    if (!prefilled.current) {
-      prefilled.current = true;
-      setName(existingProjectId ? (projectName ?? "") : deriveName(userMessages));
-      setIdea(deriveIdea(userMessages, projectInstructions));
-    }
-    setError(null);
-    setStage("confirm");
-  }
-
-  const nameOk =
-    name.trim().length >= LIMITS.nameMin && name.trim().length <= LIMITS.nameMax;
-  const ideaOk =
-    idea.trim().length >= LIMITS.ideaMin && idea.trim().length <= LIMITS.ideaMax;
   const audienceOk =
-    audience.trim().length >= LIMITS.audienceMin &&
-    audience.trim().length <= LIMITS.audienceMax;
+    audience.trim().length >= AUDIENCE_LIMITS.min &&
+    audience.trim().length <= AUDIENCE_LIMITS.max;
   const valid = nameOk && ideaOk && audienceOk;
 
   async function build() {
     if (!valid) return;
-    setStage("building");
-    setBuildComplete(false);
-    setError(null);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          type: "software",
-          name: name.trim(),
-          idea: idea.trim(),
-          audience: audience.trim(),
-          tools,
-          ...(existingProjectId ? { projectId: existingProjectId } : {}),
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail ?? "Generierung fehlgeschlagen.");
-      const resultProjectId = json.projectId as string | undefined;
-      if (!resultProjectId || resultProjectId === "demo" || json.persistError) {
-        throw new Error(
-          json.persistError
-            ? `Dein Paket konnte nicht gespeichert werden: ${json.persistError}`
-            : "Dein Paket konnte nicht gespeichert werden. Versuch es nochmal."
-        );
-      }
-      // Standalone only: tie this conversation to its new project so opening
-      // it resumes the same chat. A workspace chat is already linked.
-      if (!existingProjectId && conversationId) {
-        try {
-          const supabase = createClient();
-          await supabase
-            .from("conversations")
-            .update({ project_id: resultProjectId })
-            .eq("id", conversationId);
-        } catch {
-          // Linking failed — not worth blocking the handoff over.
-        }
-      }
-      // Snap the checklist to fully checked and let that register on screen
-      // before cutting to the delivering card — then the same wordless beat
-      // as before leaving, so Finn visibly hands the packet over instead of
-      // the screen just cutting away.
-      setBuildComplete(true);
-      await new Promise((resolve) => window.setTimeout(resolve, PROGRESS_COMPLETE_DELAY_MS));
-      setStage("done");
-      await new Promise((resolve) => window.setTimeout(resolve, HANDOFF_DELAY_MS));
-      router.push(
-        existingProjectId ? `/projects/${resultProjectId}/results` : `/projects/${resultProjectId}`
-      );
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unbekannter Fehler");
-      setStage("confirm");
-    }
+    await run({
+      extraBody: { type: "software", audience: audience.trim(), tools },
+      failureMessage: "Generierung fehlgeschlagen.",
+      notSavedMessage: "Dein Paket konnte nicht gespeichert werden",
+      resultPath: (resultProjectId) =>
+        existingProjectId ? `/projects/${resultProjectId}/results` : `/projects/${resultProjectId}`,
+    });
   }
 
   if (stage === "idle") {
@@ -335,7 +242,7 @@ export function PacketBridge({
                 id="bridge-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                maxLength={LIMITS.nameMax}
+                maxLength={NAME_LIMITS.max}
                 placeholder="Wie soll dein Projekt heißen?"
                 className="mt-1.5"
               />
@@ -348,7 +255,7 @@ export function PacketBridge({
               ref={audienceRef}
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
-              maxLength={LIMITS.audienceMax}
+              maxLength={AUDIENCE_LIMITS.max}
               placeholder="Wer soll das nutzen? z. B. Hobbyköche, kleine Teams"
               className="mt-1.5"
             />
@@ -361,12 +268,12 @@ export function PacketBridge({
             id="bridge-idea"
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
-            maxLength={LIMITS.ideaMax}
+            maxLength={IDEA_LIMITS.max}
             className="mt-1.5 min-h-[96px]"
           />
           {!ideaOk && (
             <p className="mt-1 text-[12px] text-muted-foreground">
-              Mindestens {LIMITS.ideaMin} Zeichen. Je genauer, desto besser wird dein Paket.
+              Mindestens {IDEA_LIMITS.min} Zeichen. Je genauer, desto besser wird dein Paket.
             </p>
           )}
         </div>
@@ -398,7 +305,7 @@ export function PacketBridge({
       </div>
 
       <div className="mt-5 flex flex-col-reverse items-stretch gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" size="sm" onClick={() => (onBack ? onBack() : setStage("idle"))}>
+        <Button variant="ghost" size="sm" onClick={() => (onBack ? onBack() : close())}>
           Zurück zum Chat
         </Button>
         <div className="flex items-center gap-3 sm:justify-end">

@@ -170,6 +170,20 @@ export function Chat({
     -1
   );
 
+  // Every field both handoff cards need — only what's specific to a software
+  // packet (tools) vs. a general prompt (target) stays on each JSX call below,
+  // instead of this component repeating the same eight prop names twice.
+  const handoffProps = {
+    autoOpen: true as const,
+    userMessages: messages.filter((m) => m.role === "user").map((m) => m.content),
+    conversationId,
+    onOpenChange: setHandoffOpen,
+    onBack: closeHandoff,
+    existingProjectId: projectId,
+    projectName,
+    projectInstructions: projectInstructions ?? undefined,
+  };
+
   return (
     <div className="flex flex-col gap-5">
       {messages.length === 0 ? (
@@ -206,31 +220,11 @@ export function Chat({
       )}
 
       {canHandoff && handoff === "packet" && (
-        <PacketBridge
-          autoOpen
-          userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
-          defaultTools={workspaceTools ?? defaultTools ?? DEFAULT_TOOLS}
-          conversationId={conversationId}
-          onOpenChange={setHandoffOpen}
-          onBack={closeHandoff}
-          existingProjectId={projectId}
-          projectName={projectName}
-          projectInstructions={projectInstructions ?? undefined}
-        />
+        <PacketBridge {...handoffProps} defaultTools={workspaceTools ?? defaultTools ?? DEFAULT_TOOLS} />
       )}
 
       {canHandoff && handoff === "save" && (
-        <PromptSave
-          autoOpen
-          userMessages={messages.filter((m) => m.role === "user").map((m) => m.content)}
-          initialTarget={workspaceTarget}
-          conversationId={conversationId}
-          onOpenChange={setHandoffOpen}
-          onBack={closeHandoff}
-          existingProjectId={projectId}
-          projectName={projectName}
-          projectInstructions={projectInstructions ?? undefined}
-        />
+        <PromptSave {...handoffProps} initialTarget={workspaceTarget} />
       )}
 
       {error && (
