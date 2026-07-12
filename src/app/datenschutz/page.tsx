@@ -88,9 +88,14 @@ export default function DatenschutzPage() {
           deiner Konto- und Inhaltsdaten. Datenregion: {LEGAL.dataRegion}.
         </li>
         <li>
-          <strong>Google Gemini</strong> (Google Ireland Ltd. / Google LLC) — die von dir
-          eingegebenen Projektangaben werden zur KI-Generierung an die Gemini-API übermittelt. Dabei
-          kann eine Übermittlung in die <strong>USA</strong> stattfinden.
+          <strong>Z.ai</strong> (Zhipu AI) — die von dir eingegebenen Projektangaben und
+          Chat-Nachrichten werden zur KI-Generierung an die Z.ai-API übermittelt. Dabei kann eine
+          Übermittlung nach <strong>China</strong> stattfinden.
+        </li>
+        <li>
+          <strong>Google Gemini</strong> (Google Ireland Ltd. / Google LLC) — als Ausweich-Anbieter,
+          falls Z.ai nicht verfügbar ist. Dabei kann eine Übermittlung in die <strong>USA</strong>{" "}
+          stattfinden.
         </li>
         <li>
           <strong>Upstash</strong> (Upstash Inc.) — Rate-Limiting (sofern aktiviert); bearbeitet zu
@@ -106,11 +111,12 @@ export default function DatenschutzPage() {
 
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
-        Einzelne der oben genannten Dienste können Daten ausserhalb der Schweiz bzw. des EWR – insbesondere
-        in den <strong>USA</strong> – bearbeiten. Soweit ein Land kein gleichwertiges Datenschutzniveau
-        gewährleistet, stützen wir solche Übermittlungen auf geeignete Garantien, namentlich die
-        Standardvertragsklauseln der EU-Kommission bzw. eine Zertifizierung nach dem EU-US Data Privacy
-        Framework.
+        Einzelne der oben genannten Dienste können Daten ausserhalb der Schweiz bzw. des EWR
+        bearbeiten – insbesondere in die <strong>USA</strong> (Google Gemini, {LEGAL.appHost}) und
+        nach <strong>China</strong> (Z.ai). Für die USA stützen wir solche Übermittlungen auf eine
+        Zertifizierung nach dem EU-US Data Privacy Framework bzw. die Standardvertragsklauseln der
+        EU-Kommission. Für China, wo kein Angemessenheitsbeschluss der EU-Kommission besteht, stützen
+        wir uns auf die Standardvertragsklauseln der EU-Kommission als geeignete Garantie.
       </p>
 
       <h2>6. Speicherdauer</h2>
