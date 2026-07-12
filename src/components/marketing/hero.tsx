@@ -280,7 +280,7 @@ function HeroDemo() {
             <span className="h-2.5 w-2.5 rounded-full bg-surface" />
           </div>
           <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/40">
-            PromptPrinter
+            PromptPrinter · Demo
           </span>
           <span className="font-mono text-[11px]">
             {live ? (
@@ -371,7 +371,7 @@ function HeroDemo() {
           <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
             Deine Idee
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+          <div className="flex select-none items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
             <span className="text-[15px] md:text-[16px] text-foreground/90">
               {demo.idea.slice(0, typed)}
               {stage === 0 && typed < demo.idea.length && (
