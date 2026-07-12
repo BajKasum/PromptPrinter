@@ -224,6 +224,18 @@ export function SignUpExperience() {
         </button>
       </form>
 
+      <p className="text-[12px] leading-relaxed text-foreground/45">
+        Mit der Registrierung akzeptierst du unsere{" "}
+        <Link href="/agb" className="text-foreground/70 hover:underline">
+          AGB
+        </Link>{" "}
+        und unsere{" "}
+        <Link href="/datenschutz" className="text-foreground/70 hover:underline">
+          Datenschutzerklärung
+        </Link>
+        .
+      </p>
+
       <p className="text-[13px] text-foreground/55">
         Schon ein Konto?{" "}
         <Link href="/login" className="text-foreground hover:underline">
