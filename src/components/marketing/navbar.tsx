@@ -15,23 +15,15 @@ const nav = [
   { label: "Preise", href: "#preise" },
 ];
 
-// Past this point the hero's own headline has scrolled out of view, so
-// collapsing the wordmark down to just the dolphin doesn't compete with the
-// 8px pill-morph — the two effects land at clearly different moments.
-const LOGO_COLLAPSE_SCROLL_Y = 150;
-
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [logoCollapsed, setLogoCollapsed] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Shrink/blur the bar into a floating pill once the user leaves the top;
-  // collapse the wordmark further down, once further past the hero.
+  // Shrink/blur the bar into a floating pill once the user leaves the top.
+  // The logo collapse rides the same `scrolled` flag, so both land in the
+  // same frame instead of firing at two different scroll depths.
   useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 8);
-      setLogoCollapsed(window.scrollY > LOGO_COLLAPSE_SCROLL_Y);
-    };
+    const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -87,7 +79,7 @@ export function Navbar() {
             onClick={() => setOpen(false)}
             className="flex items-center transition-opacity hover:opacity-80"
           >
-            <Logo accentWordmark collapsed={logoCollapsed} />
+            <Logo accentWordmark collapsed={scrolled} />
           </Link>
           <div className="hidden items-center gap-1 md:flex">
             {nav.map((item) => (
