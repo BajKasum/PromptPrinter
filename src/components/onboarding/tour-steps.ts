@@ -40,7 +40,7 @@ export const TOUR_STEPS: TourStep[] = [
     selectors: ['[data-tour="nav-main"]'],
     mascot: "explaining",
     title: "Deine zwei Arbeitsorte",
-    body: "Chats sind für den schnellen, ruhigen Austausch mit mir — die letzten stehen direkt hier. Ein gutes Ergebnis heben wir uns als Projekt auf, mit einem eigenen Arbeitsraum dafür.",
+    body: "Chats sind für den schnellen, ruhigen Austausch mit mir — die letzten stehen direkt hier. Mit der Pille oben schaltest du auf deine Projekte um: da heben wir uns ein gutes Ergebnis auf, mit einem eigenen Arbeitsraum dafür.",
   },
   {
     id: "project-context",
