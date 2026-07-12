@@ -17,6 +17,13 @@ interface LogoProps {
    * everywhere else (navbar, auth, marketing).
    */
   accentWordmark?: boolean;
+  /**
+   * Animate the wordmark away, leaving just the dolphin — for scroll-driven
+   * navbars where the full lockup only fits near the top. Omit entirely for
+   * the plain non-animated lockup used everywhere else; only pass this when
+   * the placement actually tracks scroll position.
+   */
+  collapsed?: boolean;
 }
 
 /**
@@ -25,7 +32,18 @@ interface LogoProps {
  * file reskins the logo everywhere. The wordmark is real text — crisp at any
  * size and theme-aware — instead of being baked into the image.
  */
-export function Logo({ className, size = 28, iconOnly = false, accentWordmark = false }: LogoProps) {
+export function Logo({
+  className,
+  size = 28,
+  iconOnly = false,
+  accentWordmark = false,
+  collapsed,
+}: LogoProps) {
+  // `collapsed` undefined (the default everywhere but the scroll navbar) skips
+  // the animation wrapper entirely — every other placement renders exactly as
+  // before, with the wordmark at its natural width.
+  const isCollapsible = collapsed !== undefined;
+
   return (
     <span
       className={cn("inline-flex shrink-0 items-center gap-2", className)}
@@ -36,8 +54,20 @@ export function Logo({ className, size = 28, iconOnly = false, accentWordmark = 
       {!iconOnly && (
         <span
           aria-hidden
-          className="font-semibold leading-none tracking-[-0.02em]"
-          style={{ fontSize: Math.round(size * 0.66) }}
+          className={cn(
+            "font-semibold leading-none tracking-[-0.02em]",
+            isCollapsible &&
+              cn(
+                "overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-out motion-reduce:transition-none",
+                collapsed ? "opacity-0" : "opacity-100"
+              )
+          )}
+          style={{
+            fontSize: Math.round(size * 0.66),
+            // Fixed px target (not `auto`) so max-width can animate at all.
+            // Comfortably covers the 13-character wordmark at any `size`.
+            ...(isCollapsible && { maxWidth: collapsed ? 0 : size * 6 }),
+          }}
         >
           {accentWordmark ? (
             <>
