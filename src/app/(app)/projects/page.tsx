@@ -21,10 +21,15 @@ type ProjectQueryRow = {
   is_favorite: boolean;
 };
 
-type GenQueryRow = {
+// One row per project — see supabase/migrations/0016_project_summaries.sql.
+// Postgres does the "latest generation + chat count per project" reduction
+// via an indexed LATERAL join, so this page never pulls raw generation/
+// conversation rows into JS just to throw almost all of them away.
+type ProjectSummaryRow = {
   project_id: string;
-  outputs: Record<string, unknown> | null;
-  created_at: string;
+  latest_outputs: Record<string, unknown> | null;
+  latest_generation_at: string | null;
+  chat_count: number;
 };
 
 // Deduplicated tool names across the chosen AI assistant + builders.
@@ -63,43 +68,30 @@ export default async function ProjectsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: rawProjects }, { data: rawGens }, { data: rawConvos }] = await Promise.all([
+  const [{ data: rawProjects }, { data: rawSummaries }] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, tools, updated_at, is_favorite")
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false }),
-    supabase
-      .from("generations")
-      .select("project_id, outputs, created_at")
-      .order("created_at", { ascending: false }),
-    // Workspace-Meta: wie viele Chats leben in jedem Projekt.
-    supabase.from("conversations").select("project_id").not("project_id", "is", null),
+    supabase.rpc("project_summaries"),
   ]);
 
   const projects = (rawProjects as ProjectQueryRow[] | null) ?? [];
-  const gens = (rawGens as GenQueryRow[] | null) ?? [];
-
-  // Generations come back newest-first, so the first hit per project is its latest run.
-  const latestByProject = new Map<string, GenQueryRow>();
-  for (const g of gens) {
-    if (!latestByProject.has(g.project_id)) latestByProject.set(g.project_id, g);
-  }
-
-  const chatCountByProject = new Map<string, number>();
-  for (const c of (rawConvos as { project_id: string | null }[] | null) ?? []) {
-    if (!c.project_id) continue;
-    chatCountByProject.set(c.project_id, (chatCountByProject.get(c.project_id) ?? 0) + 1);
+  const summaryByProject = new Map<string, ProjectSummaryRow>();
+  for (const s of (rawSummaries as ProjectSummaryRow[] | null) ?? []) {
+    summaryByProject.set(s.project_id, s);
   }
 
   const items: LibraryItem[] = projects.map((p) => {
-    const latest = latestByProject.get(p.id);
-    const { count, categories } = deriveArtifacts(latest?.outputs ?? null);
+    const summary = summaryByProject.get(p.id);
+    const { count, categories } = deriveArtifacts(summary?.latest_outputs ?? null);
     return {
       id: p.id,
       name: p.name,
       updatedAt: p.updated_at,
       artifactCount: count,
-      chatCount: chatCountByProject.get(p.id) ?? 0,
+      chatCount: summary?.chat_count ?? 0,
       categories,
       toolList: toolListOf(p.tools),
       isFavorite: p.is_favorite,

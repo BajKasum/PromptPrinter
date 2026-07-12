@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, FolderKanban, Sparkles, Clock, Library, Star } from "lucide-react";
@@ -33,6 +33,13 @@ type FilterKey = (typeof FILTERS)[number]["key"];
 
 const RECENT_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Projects load in one server-side shot (no server-side pagination yet — the
+// list is one row per project, not per generation, so it stays small for a
+// long time). This just caps how much of it renders as DOM at once, so the
+// page doesn't start paying render cost as project counts grow into the
+// hundreds. Bump/replace with real server pagination if that day ever comes.
+const PAGE_SIZE = 24;
+
 // What lives in this workspace, compact: "2 Chats · 10 Artefakte". A project
 // without either is simply young, not defective.
 function workspaceMeta(it: LibraryItem): string {
@@ -52,6 +59,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   const [favorites, setFavorites] = useState<Set<string>>(
     () => new Set(items.filter((i) => i.isFavorite).map((i) => i.id))
   );
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const { toast } = useToast();
 
   async function toggleFavorite(id: string) {
@@ -107,6 +115,16 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
     });
   }, [items, query, filter, favorites]);
 
+  // A changed search/filter invalidates whatever page you'd scrolled to —
+  // land back on the first page of the new result set instead of showing an
+  // arbitrary slice (or nothing, if the new set is shorter than the old offset).
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, filter]);
+
+  const visiblePage = visible.slice(0, visibleCount);
+  const hasMore = visible.length > visibleCount;
+
   return (
     <div>
       <div className="relative max-w-md mb-4">
@@ -154,7 +172,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {visible.map((it) => {
+          {visiblePage.map((it) => {
             const fav = favorites.has(it.id);
             return (
               <div
@@ -226,6 +244,18 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="text-[13px] px-4 py-2 rounded-lg border border-border bg-surface text-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors active:scale-[0.98]"
+          >
+            {visiblePage.length} von {visible.length} — mehr laden
+          </button>
         </div>
       )}
     </div>
