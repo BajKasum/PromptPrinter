@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { chatComplete, llmConfig, type LlmOverride } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
+import { problem } from "@/lib/api-problem";
 import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
@@ -406,26 +407,4 @@ Einschränkungen: [Länge, Ton, was vermieden werden soll]
 \`\`\`
 
 Sag mir, was ich schärfen soll — kürzer, ausführlicher, mit Beispiel, anderer Ton.`;
-}
-
-function problem(status: number, detail: string, extra: Record<string, unknown> = {}) {
-  return NextResponse.json(
-    {
-      type: "about:blank",
-      title:
-        status === 400
-          ? "Bad Request"
-          : status === 403
-            ? "Forbidden"
-            : status === 429
-              ? "Too Many Requests"
-              : status === 502
-                ? "Bad Gateway"
-                : "Error",
-      status,
-      detail,
-      ...extra,
-    },
-    { status, headers: { "content-type": "application/problem+json" } }
-  );
 }
