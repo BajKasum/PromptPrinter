@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, Download, FileText, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, downloadFile } from "@/lib/utils";
-import { downloadMarkdownAsPdf } from "@/lib/pdf-export";
 
 // A tab is just an output key + its display label. The caller (the project page)
 // supplies the right set for the project's pack — software gets the 10-artifact
@@ -42,7 +41,11 @@ export function ProjectTabs({
     downloadFile(`${slug}.${active}.md`, text, "text/markdown");
   }
 
-  function exportPdf() {
+  // jsPDF is a large, PDF-only dependency — loaded on demand instead of a
+  // static import so Free-plan visitors (who can never trigger this) never
+  // pay for it in the route's initial bundle.
+  async function exportPdf() {
+    const { downloadMarkdownAsPdf } = await import("@/lib/pdf-export");
     downloadMarkdownAsPdf(`${slug}.${active}.pdf`, `${projectName} — ${activeLabel}`, text);
   }
 
@@ -54,7 +57,8 @@ export function ProjectTabs({
     downloadFile(`${slug}.bundle.md`, bundle(), "text/markdown");
   }
 
-  function exportAllPdf() {
+  async function exportAllPdf() {
+    const { downloadMarkdownAsPdf } = await import("@/lib/pdf-export");
     downloadMarkdownAsPdf(`${slug}.bundle.pdf`, projectName, bundle());
   }
 
