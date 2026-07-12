@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Check, Download, FileText } from "lucide-react";
+import { Copy, Check, Download, FileText, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, downloadFile } from "@/lib/utils";
+import { downloadMarkdownAsPdf } from "@/lib/pdf-export";
 
 // A tab is just an output key + its display label. The caller (the project page)
 // supplies the right set for the project's pack — software gets the 10-artifact
@@ -16,14 +17,20 @@ export function ProjectTabs({
   projectName,
   tabs,
   outputs,
+  /** PDF export is a Pro/Team feature (pricing-preview.tsx) — Free only gets
+   * Markdown. Admin bypasses the same way it bypasses every other plan gate. */
+  canExportPdf,
 }: {
   projectName: string;
   tabs: ProjectTab[];
   outputs: Record<string, string>;
+  canExportPdf: boolean;
 }) {
   const [active, setActive] = useState<string>(tabs[0]?.id ?? "");
   const [copied, setCopied] = useState(false);
   const text = outputs[active] ?? "";
+  const activeLabel = tabs.find((t) => t.id === active)?.label ?? projectName;
+  const slug = projectName.toLowerCase().replace(/\s+/g, "-");
 
   async function copy() {
     await navigator.clipboard.writeText(text);
@@ -32,14 +39,23 @@ export function ProjectTabs({
   }
 
   function exportMd() {
-    const filename = `${projectName.toLowerCase().replace(/\s+/g, "-")}.${active}.md`;
-    downloadFile(filename, text, "text/markdown");
+    downloadFile(`${slug}.${active}.md`, text, "text/markdown");
+  }
+
+  function exportPdf() {
+    downloadMarkdownAsPdf(`${slug}.${active}.pdf`, `${projectName} — ${activeLabel}`, text);
+  }
+
+  function bundle() {
+    return tabs.map((t) => `\n\n# ${t.label}\n\n${outputs[t.id] ?? ""}`).join("").trim();
   }
 
   function exportAll() {
-    const bundle = tabs.map((t) => `\n\n# ${t.label}\n\n${outputs[t.id] ?? ""}`).join("");
-    const filename = `${projectName.toLowerCase().replace(/\s+/g, "-")}.bundle.md`;
-    downloadFile(filename, bundle.trim(), "text/markdown");
+    downloadFile(`${slug}.bundle.md`, bundle(), "text/markdown");
+  }
+
+  function exportAllPdf() {
+    downloadMarkdownAsPdf(`${slug}.bundle.pdf`, projectName, bundle());
   }
 
   return (
@@ -76,21 +92,39 @@ export function ProjectTabs({
           <Download className="h-4 w-4" />
           Alle exportieren (Markdown)
         </Button>
+        {canExportPdf ? (
+          <Button variant="ghost" className="w-full mt-2" onClick={exportAllPdf}>
+            <FileDown className="h-4 w-4" />
+            Alle exportieren (PDF)
+          </Button>
+        ) : (
+          <a
+            href="/billing"
+            className="mt-2 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-[12.5px] text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+          >
+            <FileDown className="h-3.5 w-3.5" />
+            PDF-Export · Pro
+          </a>
+        )}
       </nav>
 
       <div className="card-surface p-0 overflow-hidden">
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
           <div className="flex items-center gap-2 min-w-0">
             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="text-[13px] font-medium text-foreground truncate">
-              {tabs.find((t) => t.id === active)?.label}
-            </span>
+            <span className="text-[13px] font-medium text-foreground truncate">{activeLabel}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button size="sm" onClick={copy}>
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "Kopiert" : "Kopieren"}
             </Button>
+            {canExportPdf && (
+              <Button size="sm" variant="ghost" onClick={exportPdf}>
+                <FileDown className="h-3.5 w-3.5" />
+                PDF
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={exportMd}>
               <Download className="h-3.5 w-3.5" />
               Export

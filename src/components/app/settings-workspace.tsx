@@ -30,12 +30,13 @@ import { DeleteAccount } from "@/components/app/delete-account";
 import { ChangePassword } from "@/components/app/change-password";
 import { AvatarUpload } from "@/components/app/avatar-upload";
 import { ThemePreference } from "@/components/app/theme-preference";
-import { ToolLogo } from "@/components/brand/tool-logos";
+import { ApiKeys } from "@/components/app/api-keys";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type PlanKey = "free" | "pro" | "team";
+type ByokProvider = "anthropic" | "openai" | "gemini";
 
 type Usage = {
   projects: number;
@@ -61,6 +62,7 @@ export function SettingsWorkspace({
   isAdmin = false,
   usage,
   memberSince,
+  configuredProviders,
 }: {
   userId: string;
   email: string;
@@ -74,6 +76,8 @@ export function SettingsWorkspace({
   isAdmin?: boolean;
   usage: Usage;
   memberSince: string | null;
+  /** Which BYOK providers this user already has a key stored for. */
+  configuredProviders: ByokProvider[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -281,17 +285,12 @@ export function SettingsWorkspace({
             Icon={KeyRound}
             accent="#8FCDF2"
             title="Eigene API-Keys"
-            description="Bald kannst du hier deine eigenen Keys hinterlegen."
-            badge="Bald"
+            description="Nutze dein eigenes Kontingent statt unserer Limits."
           >
-            <div className="space-y-2">
-              <ProviderRow logo="Claude" name="Anthropic" sub="Claude" />
-              <ProviderRow logo="ChatGPT" name="OpenAI" sub="GPT" />
-              <ProviderRow logo="Gemini" name="Google" sub="Gemini" />
-            </div>
+            <ApiKeys configured={configuredProviders} />
             <p className="mt-3 text-[12px] text-foreground/45">
-              Nutze dein eigenes Kontingent bei Anthropic, OpenAI oder Google, statt auf
-              unsere Limits angewiesen zu sein.
+              Mit eigenem Key entfällt das monatliche Generierungen-Limit — dein Projekt-Limit
+              bleibt bestehen.
             </p>
           </SettingsCard>
         </div>
@@ -551,20 +550,6 @@ function UsageMeter({ label, used, limit }: { label: string; used: number; limit
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className={cn("h-full rounded-full bg-gradient-to-r", tone)}
         />
-      </div>
-    </div>
-  );
-}
-
-function ProviderRow({ logo, name, sub }: { logo: string; name: string; sub: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface">
-        <ToolLogo name={logo} size={16} />
-      </span>
-      <div className="min-w-0 flex-1 leading-tight">
-        <div className="truncate text-[13px] font-medium text-foreground">{name}</div>
-        <div className="truncate text-[11px] text-foreground/40">{sub}</div>
       </div>
     </div>
   );

@@ -1,18 +1,31 @@
 import { GoogleGenAI } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 // The one place that talks to a model provider. Both API routes (/api/chat,
 // /api/generate) call chatComplete() and never touch provider SDKs or fetch
 // shapes themselves, so switching or adding a provider is a change here only.
 //
-// Provider priority (first configured key wins):
+// Server-side provider priority (first configured key wins) — used whenever
+// the caller has no BYOK override:
 //   1. Z.ai   — ZAI_API_KEY  (primary; OpenAI-compatible chat/completions)
-//   2. Gemini — GEMINI_API_KEY (kept as secondary: the code existed and works,
-//      and multi-provider is where the product is headed anyway — BYOK is part
-//      of the Free-plan positioning. Costs ~25 lines, changes nothing else.)
+//   2. Gemini — GEMINI_API_KEY (kept as secondary: the code existed and works)
 //   3. none   — the routes fall back to their stub responses, so the whole
 //      flow stays testable without any key (deliberate, see CLAUDE.md).
+//
+// BYOK (settings → "Eigene API-Keys"): a signed-in user can store their own
+// Anthropic/OpenAI/Gemini key (encrypted, src/lib/crypto.ts) and have their
+// calls run against their own account instead of Z.ai. Z.ai itself is never
+// a BYOK choice — it's the platform's own default, not something a user
+// would already hold a key for. See ByokProvider/LlmOverride below.
 
 export type LlmConfig = { provider: "zai" | "gemini"; model: string };
+
+/** Providers a user can bring their own key for (settings → BYOK). */
+export type ByokProvider = "anthropic" | "openai" | "gemini";
+
+/** A user's own key, passed per-call to bypass the server's configured provider. */
+export type LlmOverride = { provider: ByokProvider; apiKey: string };
 
 export type LlmMessage = { role: "user" | "assistant"; content: string };
 
@@ -48,6 +61,13 @@ const ZAI_ENDPOINT = "https://api.z.ai/api/paas/v4/chat/completions";
 
 const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 
+// BYOK defaults — a user's own account, so cost isn't a lever here the way it
+// is for ZAI_DEFAULT_MODEL; these just need to be a solid, current model per
+// provider. Each is overridable without a code change (mirrors ZAI_MODEL/
+// GEMINI_MODEL above), worth revisiting as each provider's lineup moves on.
+const ANTHROPIC_DEFAULT_MODEL = "claude-sonnet-5";
+const OPENAI_DEFAULT_MODEL = "gpt-5.1";
+
 // Thinking is disabled on the Z.ai path (below), so this is a hard ceiling on
 // the visible reply, not a budget shared with invisible reasoning tokens.
 // 6144 leaves real headroom over the largest artifact observed in practice
@@ -68,24 +88,52 @@ export function llmConfig(): LlmConfig | null {
 }
 
 /**
- * One completion against the configured provider. Throws on transport errors,
- * non-2xx responses and empty replies — callers decide how to degrade (the
- * chat route surfaces a 502, the generate route falls back per artifact).
- * Must not be called when llmConfig() is null.
+ * One completion. With `opts.override` (a user's own BYOK key), runs against
+ * that provider/account directly — the server's configured provider never
+ * enters the picture, so this works even with no server key at all. Without
+ * an override, uses the server's configured provider (llmConfig()) and must
+ * not be called when that's null. Throws on transport errors, non-2xx
+ * responses and empty replies — callers decide how to degrade (the chat
+ * route surfaces a 502, the generate route falls back per artifact).
  */
 export async function chatComplete(opts: {
   system: string;
   messages: LlmMessage[];
   maxOutputTokens?: number;
+  override?: LlmOverride;
 }): Promise<LlmResult> {
+  const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+
+  if (opts.override) {
+    const { provider, apiKey } = opts.override;
+    if (provider === "anthropic") {
+      return anthropicComplete(
+        ANTHROPIC_DEFAULT_MODEL,
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey
+      );
+    }
+    if (provider === "openai") {
+      return openaiComplete(OPENAI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+    }
+    return geminiComplete(GEMINI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+  }
+
   const config = llmConfig();
   if (!config) throw new Error("no LLM provider configured");
-  const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
 
   if (config.provider === "zai") {
     return zaiComplete(config.model, opts.system, opts.messages, maxOutputTokens);
   }
-  return geminiComplete(config.model, opts.system, opts.messages, maxOutputTokens);
+  return geminiComplete(
+    config.model,
+    opts.system,
+    opts.messages,
+    maxOutputTokens,
+    process.env.GEMINI_API_KEY ?? ""
+  );
 }
 
 // Z.ai's current plan caps how many requests it'll serve at once — observed:
@@ -117,11 +165,11 @@ function sleep(ms: number): Promise<void> {
 export async function chatCompleteSequential(
   system: string,
   prompts: Record<string, string>,
-  opts?: { maxOutputTokens?: number }
+  opts?: { maxOutputTokens?: number; override?: LlmOverride }
 ): Promise<Record<string, { result?: LlmResult; error?: unknown }>> {
   const out: Record<string, { result?: LlmResult; error?: unknown }> = {};
   for (const [key, prompt] of Object.entries(prompts)) {
-    out[key] = await completeWithRetry(system, prompt, opts?.maxOutputTokens);
+    out[key] = await completeWithRetry(system, prompt, opts?.maxOutputTokens, opts?.override);
   }
   return out;
 }
@@ -129,7 +177,8 @@ export async function chatCompleteSequential(
 async function completeWithRetry(
   system: string,
   prompt: string,
-  maxOutputTokens?: number
+  maxOutputTokens?: number,
+  override?: LlmOverride
 ): Promise<{ result?: LlmResult; error?: unknown }> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= RATE_LIMIT_RETRIES; attempt++) {
@@ -138,6 +187,7 @@ async function completeWithRetry(
         system,
         messages: [{ role: "user", content: prompt }],
         maxOutputTokens,
+        override,
       });
       return { result };
     } catch (err) {
@@ -214,15 +264,16 @@ async function zaiComplete(
   return { text, usage };
 }
 
-// ─── Gemini (secondary provider) ─────────────────────────────────────────────
+// ─── Gemini (secondary provider, and a BYOK choice) ─────────────────────────
 
 async function geminiComplete(
   model: string,
   system: string,
   messages: LlmMessage[],
-  maxOutputTokens: number
+  maxOutputTokens: number,
+  apiKey: string
 ): Promise<LlmResult> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   const res = await ai.models.generateContent({
     model,
     contents: messages.map((m) => ({
@@ -242,6 +293,63 @@ async function geminiComplete(
     meta && typeof meta.promptTokenCount === "number" && typeof meta.candidatesTokenCount === "number"
       ? { inputTokens: meta.promptTokenCount, outputTokens: meta.candidatesTokenCount }
       : null;
+
+  return { text, usage };
+}
+
+// ─── Anthropic (BYOK only — never the server's own provider) ────────────────
+
+async function anthropicComplete(
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): Promise<LlmResult> {
+  const anthropic = new Anthropic({ apiKey });
+  const res = await anthropic.messages.create({
+    model,
+    system,
+    max_tokens: maxOutputTokens,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  });
+
+  const text = res.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+  if (!text) throw new LlmEmptyReplyError("Anthropic");
+
+  const usage = res.usage
+    ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
+    : null;
+
+  return { text, usage };
+}
+
+// ─── OpenAI (BYOK only — never the server's own provider) ───────────────────
+
+async function openaiComplete(
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): Promise<LlmResult> {
+  const client = new OpenAI({ apiKey });
+  const res = await client.chat.completions.create({
+    model,
+    messages: [{ role: "system", content: system }, ...messages],
+    max_completion_tokens: maxOutputTokens,
+  });
+
+  const text = res.choices[0]?.message?.content?.trim() ?? "";
+  if (!text) throw new LlmEmptyReplyError("OpenAI");
+
+  const usage = res.usage
+    ? { inputTokens: res.usage.prompt_tokens, outputTokens: res.usage.completion_tokens }
+    : null;
 
   return { text, usage };
 }

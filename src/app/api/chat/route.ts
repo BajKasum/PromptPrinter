@@ -3,6 +3,7 @@ import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/sch
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatComplete, llmConfig } from "@/lib/llm";
+import { getUserOverride } from "@/lib/byok";
 import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
@@ -80,12 +81,17 @@ export async function POST(req: Request) {
     if (ctx) systemInstruction += `\n\n${ctx}`;
   }
 
-  // 5. Produce the reply. Without a configured provider we return a useful
-  //    stub so the whole flow stays testable; with one we replay the
-  //    transcript through the provider module (Z.ai primary, see lib/llm.ts).
+  // 4.5 A user's own BYOK key (settings → "Eigene API-Keys") takes over from
+  //     the server's provider entirely — including when the server has none
+  //     configured at all, so a BYOK user isn't blocked by that.
+  const override = userId && supabase ? await getUserOverride(supabase, userId) : null;
+
+  // 5. Produce the reply. Without a configured provider (server or BYOK) we
+  //    return a useful stub so the whole flow stays testable; otherwise we
+  //    replay the transcript through the provider module (lib/llm.ts).
   let reply: string;
   let mode: "stub" | "generated";
-  if (!llmConfig()) {
+  if (!llmConfig() && !override) {
     const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
     reply = stubReply(lastUser?.content ?? "");
     mode = "stub";
@@ -94,6 +100,7 @@ export async function POST(req: Request) {
       const result = await chatComplete({
         system: systemInstruction,
         messages: trimHistory(input.messages),
+        override: override ?? undefined,
       });
       reply = result.text;
       mode = "generated";

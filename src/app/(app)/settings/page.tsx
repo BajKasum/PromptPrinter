@@ -4,6 +4,7 @@ import { SettingsWorkspace } from "@/components/app/settings-workspace";
 import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
+import { getConfiguredProviders } from "@/lib/byok";
 
 export const metadata = { title: "Einstellungen" };
 
@@ -21,24 +22,26 @@ export default async function SettingsPage() {
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 
-  const [{ data: profile }, { count: projectCount }, { count: genCount }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("display_name, settings, plan, is_admin, avatar_url")
-      .eq("id", user.id)
-      .maybeSingle(),
-    // RLS scopes both counts to the signed-in owner; the explicit owner filter
-    // below is defense in depth on top of it.
-    supabase
-      .from("projects")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id),
-    supabase
-      .from("generations")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", monthStart),
-  ]);
+  const [{ data: profile }, { count: projectCount }, { count: genCount }, configuredProviders] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("display_name, settings, plan, is_admin, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle(),
+      // RLS scopes both counts to the signed-in owner; the explicit owner filter
+      // below is defense in depth on top of it.
+      supabase
+        .from("projects")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+      supabase
+        .from("generations")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", monthStart),
+      getConfiguredProviders(supabase, user.id),
+    ]);
 
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
@@ -46,6 +49,10 @@ export default async function SettingsPage() {
   const plan = (profile?.plan ?? "free") as PlanKey;
   const isAdmin = profile?.is_admin ?? false;
   const limits = effectiveLimits(plan, isAdmin);
+  // A configured BYOK key lifts the generations cap (see api/generate/route.ts)
+  // — UsageMeter already renders "Unbegrenzt" for a non-finite limit.
+  const hasByok = configuredProviders.length > 0;
+  const generationLimit = hasByok ? Infinity : limits.generations;
 
   // Only forward a genuine settings object so the client can safely merge it.
   const rawSettings = profile?.settings;
@@ -78,9 +85,10 @@ export default async function SettingsPage() {
           projects: projectCount ?? 0,
           projectLimit: limits.projects,
           generations: genCount ?? 0,
-          generationLimit: limits.generations,
+          generationLimit,
         }}
         memberSince={user.created_at ?? null}
+        configuredProviders={configuredProviders}
       />
     </div>
   );

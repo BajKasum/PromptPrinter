@@ -6,6 +6,7 @@ import { PLANS } from "@/components/marketing/pricing-preview";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
+import { getConfiguredProviders } from "@/lib/byok";
 
 export const metadata = { title: "Abrechnung" };
 
@@ -25,7 +26,7 @@ export default async function BillingPage() {
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
   ).toISOString();
 
-  const [{ data: profile }, { count: projectsCount }, { count: monthlyGenerations }] =
+  const [{ data: profile }, { count: projectsCount }, { count: monthlyGenerations }, configuredProviders] =
     await Promise.all([
       supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
       // Owner filter is explicit on top of RLS (defense in depth).
@@ -38,6 +39,7 @@ export default async function BillingPage() {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .gte("created_at", monthStart),
+      getConfiguredProviders(supabase, user.id),
     ]);
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
@@ -51,12 +53,15 @@ export default async function BillingPage() {
   const projectsUsed = projectsCount ?? 0;
   const generationsUsed = monthlyGenerations ?? 0;
   const isFree = planKey === "free";
+  const hasByok = configuredProviders.length > 0;
   const planDescription = isAdmin
     ? "Admin-Konto — alle Limits und Upgrade-Hinweise sind für dich aufgehoben."
     : isFree
-      ? "Du nutzt PromptPrinter kostenlos mit deinen eigenen API-Keys."
+      ? hasByok
+        ? "Du nutzt PromptPrinter kostenlos mit deinem eigenen API-Key — das Generierungen-Limit entfällt."
+        : "Du nutzt PromptPrinter kostenlos. Hinterlege in den Einstellungen einen eigenen API-Key, um das Generierungen-Limit aufzuheben."
       : "Voller Zugang mit inkludierter API und höheren Limits.";
-  const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : "Eigener Key";
+  const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
 
   const fmtUsage = (used: number, limit: number) =>
     limit === Infinity ? String(used) : `${used} / ${limit}`;
@@ -85,7 +90,10 @@ export default async function BillingPage() {
             <Stat label="Projekte" value={fmtUsage(projectsUsed, limits.projects)} />
             <Stat
               label="Generierungen (Monat)"
-              value={fmtUsage(generationsUsed, limits.generations)}
+              // Ein eigener Key hebt das Generierungen-Limit auf (siehe
+              // api/generate/route.ts) — das muss sich auch hier zeigen, sonst
+              // wirkt der Zähler wie eine Deckelung, die gar nicht mehr gilt.
+              value={hasByok ? `${generationsUsed} · Unbegrenzt` : fmtUsage(generationsUsed, limits.generations)}
             />
             <Stat label="API-Zugang" value={apiAccessLabel} />
           </div>

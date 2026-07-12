@@ -11,7 +11,7 @@ Build-Instruktionen übersetzen wollen.
 - **Next.js 15** (App Router) · **React 19** · **TypeScript** (strict)
 - **Supabase** — Auth, Postgres, Row-Level-Security
 - **Stripe** — Billing (UI gebaut, Checkout/Webhook in Arbeit)
-- **Gemini** (`@google/genai`) — Prompt-Generierung; ohne Key läuft der Stub-Modus
+- **Z.ai (GLM)** — Prompt-Generierung, Gemini als Zweit-Provider; ohne Key läuft der Stub-Modus
 - **Tailwind** mit HSL-Token-System · **Framer Motion** · **next-themes**
 - **Vitest** für Unit-Tests · **Docker** für Dev (Hot-Reload) und Prod (standalone)
 
@@ -27,7 +27,7 @@ cp .env.example .env.local
 
 # 3. Datenbank-Migrationen einspielen
 #    Supabase SQL-Editor oder CLI — die Dateien in supabase/migrations/ der
-#    Reihe nach (0001 → 0010).
+#    Reihe nach (0001 → 0015).
 
 # 4. Dev-Server
 npm run dev          # http://localhost:3000

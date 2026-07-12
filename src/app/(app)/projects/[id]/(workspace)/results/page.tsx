@@ -100,7 +100,10 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const project = await getProject(id);
 
   const supabase = await createClient();
-  const [{ data: generationsRaw }, { count: chatCount }] = await Promise.all([
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const [{ data: generationsRaw }, { count: chatCount }, { data: profile }] = await Promise.all([
     supabase
       .from("generations")
       .select("id, model, tokens_in, tokens_out, created_at, outputs")
@@ -110,7 +113,12 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .from("conversations")
       .select("id", { count: "exact", head: true })
       .eq("project_id", id),
+    // PDF export is Pro/Team (pricing-preview.tsx) — Free only gets Markdown.
+    user
+      ? supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const canExportPdf = profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";
 
   const history = (generationsRaw as GenerationHistoryRow[] | null) ?? [];
   const stored = (history[0]?.outputs as Record<string, string> | undefined) ?? {};
@@ -198,7 +206,12 @@ export default async function ProjectResultsPage({ params }: { params: Params })
         </div>
       </FadeIn>
 
-      <ProjectTabs projectName={project.name} tabs={tabs} outputs={outputs} />
+      <ProjectTabs
+        projectName={project.name}
+        tabs={tabs}
+        outputs={outputs}
+        canExportPdf={canExportPdf}
+      />
 
       <FadeIn>
         <div className="mt-8 border-t border-border pt-6">

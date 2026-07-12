@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { generateRequestSchema, type GenerateRequest } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
+import { chatCompleteSequential, llmConfig, LlmEmptyReplyError, type LlmOverride } from "@/lib/llm";
+import { getUserOverride } from "@/lib/byok";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import {
   SYSTEM_PROMPT,
@@ -78,12 +79,18 @@ export async function POST(req: Request) {
   // 3.5 Enforce plan allowances for signed-in users. Anonymous callers persist
   //     nothing, so only the rate limit gates them. Done before the model calls
   //     so an over-limit request never burns API quota or writes a row.
+  //     A BYOK key (own Anthropic/OpenAI/Gemini account, settings) skips the
+  //     generations check entirely — that cost is on the user's own account,
+  //     not ours, so metering it against our allowance makes no sense. The
+  //     project cap still applies: that one is about our storage/infra, not
+  //     AI cost, so BYOK doesn't change it.
+  let override: LlmOverride | null = null;
   if (userId && supabase) {
     const now = new Date();
     const monthStart = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
     ).toISOString();
-    const [{ data: profile }, { count: projectCount }, { count: genCount }] =
+    const [{ data: profile }, { count: projectCount }, { count: genCount }, userOverride] =
       await Promise.all([
         supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
         // Filter by owner explicitly even though RLS already scopes these to the
@@ -98,7 +105,9 @@ export async function POST(req: Request) {
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
           .gte("created_at", monthStart),
+        getUserOverride(supabase, userId),
       ]);
+    override = userOverride;
     const rawPlan = (profile?.plan as string | undefined) ?? "free";
     const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
     // Admin is a role, not a plan (profiles.is_admin) — it exempts this one
@@ -114,7 +123,7 @@ export async function POST(req: Request) {
         { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
       );
     }
-    if ((genCount ?? 0) >= limits.generations) {
+    if (!override && (genCount ?? 0) >= limits.generations) {
       return problem(
         403,
         `Monatslimit für Generierungen erreicht — dein Plan (${plan}) erlaubt ${limits.generations} pro Monat. Upgrade für mehr.`,
@@ -169,23 +178,25 @@ export async function POST(req: Request) {
   }
 
   // 5. Produce the outputs.
-  //    - With a configured provider (Z.ai primary, see lib/llm.ts): one
-  //      completion per artifact, run strictly one at a time (with a 429
-  //      retry) via chatCompleteSequential — Z.ai's current plan can't
-  //      sustain the up-to-10-way parallel fan-out this used to do (see
-  //      lib/llm.ts), so sequencing here is what makes a run actually come
+  //    - With a configured provider (server's Z.ai, or a user's own BYOK key
+  //      — see lib/llm.ts): one completion per artifact, run strictly one at
+  //      a time (with a 429 retry) via chatCompleteSequential — Z.ai's
+  //      current plan can't sustain the up-to-10-way parallel fan-out this
+  //      used to do, so sequencing here is what makes a run actually come
   //      back with real content instead of mostly "_Generation failed_".
-  //    - Without one: fall back to the unfilled templates so the flow still works.
+  //    - Without either: fall back to the unfilled templates so the flow still works.
   const llm = llmConfig();
-  const mode: "generated" | "stub" = llm ? "generated" : "stub";
+  const mode: "generated" | "stub" = llm || override ? "generated" : "stub";
   const outputs: Record<string, string> = {};
   // Summed across all artifact calls of this run; stored on the generation row
   // so the Verlauf can show what a run actually cost.
   let tokensIn = 0;
   let tokensOut = 0;
 
-  if (llm) {
-    const results = await chatCompleteSequential(systemInstruction, prompts);
+  if (llm || override) {
+    const results = await chatCompleteSequential(systemInstruction, prompts, {
+      override: override ?? undefined,
+    });
     for (const [key, entry] of Object.entries(results)) {
       if (entry.result) {
         outputs[key] = entry.result.text;
@@ -275,7 +286,7 @@ export async function POST(req: Request) {
           project_id: projectId,
           user_id: userId,
           outputs,
-          model: llm ? llm.model : null,
+          model: llm ? llm.model : override ? `${override.provider} (BYOK)` : null,
           tokens_in: tokensIn > 0 ? tokensIn : null,
           tokens_out: tokensOut > 0 ? tokensOut : null,
         });
