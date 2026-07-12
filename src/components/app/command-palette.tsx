@@ -24,6 +24,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [chats, setChats] = useState<{ id: string; title: string; project_id: string | null }[]>(
+    []
+  );
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -45,19 +48,29 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     return () => window.clearTimeout(t);
   }, [open]);
 
-  // Lazily load the user's projects the first time the palette opens.
+  // Lazily load the user's projects + chats the first time the palette opens
+  // — chats are the primary object since the redesign, so they belong here
+  // just as much as projects do.
   useEffect(() => {
     if (!open || loaded) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("projects")
-        .select("id, name")
-        .order("updated_at", { ascending: false })
-        .limit(50);
+      const [{ data: projectRows }, { data: chatRows }] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("id, name")
+          .order("updated_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("conversations")
+          .select("id, title, project_id")
+          .order("updated_at", { ascending: false })
+          .limit(50),
+      ]);
       if (!cancelled) {
-        setProjects(data ?? []);
+        setProjects(projectRows ?? []);
+        setChats(chatRows ?? []);
         setLoaded(true);
       }
     })();
@@ -84,6 +97,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }, [go]);
 
   const results = useMemo<Cmd[]>(() => {
+    const chatCommands: Cmd[] = chats.map((c) => ({
+      id: `chat-${c.id}`,
+      label: c.title,
+      group: "Chats",
+      Icon: MessageSquare,
+      // A project chat lives at its workspace's own route, not /chats/[id].
+      perform: () =>
+        go(c.project_id ? `/projects/${c.project_id}/chats/${c.id}` : `/chats/${c.id}`),
+    }));
     const projectCommands: Cmd[] = projects.map((p) => ({
       id: `project-${p.id}`,
       label: p.name,
@@ -91,11 +113,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       Icon: FolderKanban,
       perform: () => go(`/projects/${p.id}`),
     }));
-    const all = [...navCommands, ...projectCommands];
+    const all = [...navCommands, ...chatCommands, ...projectCommands];
     const q = query.trim().toLowerCase();
     if (!q) return all;
     return all.filter((c) => c.label.toLowerCase().includes(q));
-  }, [navCommands, projects, query, go]);
+  }, [navCommands, chats, projects, query, go]);
 
   // Keep the highlighted row valid as the result set shrinks/grows.
   useEffect(() => {
@@ -149,7 +171,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Projekte, Seiten, Aktionen…"
+                placeholder="Chats, Projekte, Seiten, Aktionen…"
                 aria-label="Suchen"
                 className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
