@@ -34,7 +34,6 @@ export const PLANS = [
       "Meine API inklusive, kein eigener Key nötig",
       "Höhere Limits, auch mit eigenem Key",
       "PDF- & Markdown-Export",
-      "Priorisierte Warteschlange",
     ],
   },
 ];

@@ -204,7 +204,7 @@ Integrations → PricingPreview → FAQ → FinalCTA → Footer
 | `example-output.tsx` | 6 Tabs (a11y: tablist/tab/tabpanel, Keyboard-Nav): Produktplan / KI-Anweisungen / App-Design / Datenbank / Sicherheit / Marketing | `delivering` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen | Kein Finn |
 | `integrations.tsx` | Slim Strip: eine Zeile + 12 Tool-Pills | Kein Finn |
-| `pricing-preview.tsx` | 3 Tiers: Free/$0 · Pro/$19 · Team/$49 | `helping` |
+| `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
 | `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst. — Finn" + 5 echte Links | `idle` |
