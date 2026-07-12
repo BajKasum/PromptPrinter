@@ -306,7 +306,7 @@ export async function POST(req: Request) {
     mode,
     ...(persistError ? { persistError } : {}),
     ...(mode === "stub"
-      ? { message: "Kein ZAI_API_KEY gesetzt — es wurden die Prompt-Vorlagen gespeichert. Trag den Key in .env.local (Dev) bzw. .env (Prod-Docker) ein für echte Generierung." }
+      ? { message: "Die KI-Anbindung ist gerade nicht aktiv — es wurden die Prompt-Vorlagen ungefüllt gespeichert." }
       : {}),
   });
 }

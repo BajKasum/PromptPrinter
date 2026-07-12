@@ -389,7 +389,7 @@ function truncate(s: string, max: number): string {
 // prompt) so the UI can be exercised before an API key is configured.
 function stubReply(userText: string): string {
   const task = userText.trim() || "[deine Aufgabe]";
-  return `_(Demo-Antwort — kein ZAI_API_KEY gesetzt. Trag ihn in \`.env.local\` ein, dann kommt echter KI-Output.)_
+  return `_(Demo-Antwort — die KI-Anbindung ist gerade nicht aktiv, das hier ist nur eine Vorschau.)_
 
 Hier ein Grundgerüst, das du anpassen kannst:
 
