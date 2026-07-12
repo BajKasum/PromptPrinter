@@ -52,7 +52,7 @@ describe("ProjectRail", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
-  it("persists trimmed instructions on blur when changed", async () => {
+  it("persists only instructions on blur when changed — Struktur is untouched", async () => {
     const eq = vi.fn().mockResolvedValue({ error: null });
     update.mockReturnValue({ eq });
     const user = userEvent.setup();
@@ -63,17 +63,15 @@ describe("ProjectRail", () => {
     await user.type(textarea, "  mehr Kontext  ");
     await user.tab();
 
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        instructions: expect.stringContaining("mehr Kontext"),
-      })
-    );
+    // Exact match, not objectContaining: proves the write no longer carries
+    // along the unrelated context column the way the old shared persist() did.
+    expect(update).toHaveBeenCalledWith({ instructions: "Ausgangslage  mehr Kontext" });
     expect(eq).toHaveBeenCalledWith("id", "proj-1");
     expect(await screen.findByText("Gespeichert")).toBeInTheDocument();
     expect(refresh).toHaveBeenCalled();
   });
 
-  it("persists a Struktur field on blur, dropping blank fields from context", async () => {
+  it("persists only Struktur on blur, dropping blank fields — Anweisungen is untouched", async () => {
     const eq = vi.fn().mockResolvedValue({ error: null });
     update.mockReturnValue({ eq });
     const user = userEvent.setup();
@@ -84,9 +82,27 @@ describe("ProjectRail", () => {
     await user.type(frontendInput, "Next.js");
     await user.tab();
 
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({ context: { frontend: "Next.js" } })
-    );
+    // Exact match: proves the write no longer carries along the Anweisungen
+    // text the way the old shared persist() did.
+    expect(update).toHaveBeenCalledWith({ context: { frontend: "Next.js" } });
+  });
+
+  it("shows the Struktur save indicator independently of Anweisungen's", async () => {
+    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    const user = userEvent.setup();
+    setup({ initialContext: {} });
+
+    const frontendInput = screen.getByLabelText("Frontend");
+    await user.click(frontendInput);
+    await user.type(frontendInput, "Next.js");
+    await user.tab();
+
+    // Only one indicator lights up (Struktur's) — Anweisungen's stays idle
+    // (SaveIndicator renders null for "idle"), so exactly one "status" node
+    // exists at this point.
+    const indicators = await screen.findAllByRole("status");
+    expect(indicators).toHaveLength(1);
+    expect(indicators[0]).toHaveTextContent("Gespeichert");
   });
 
   it("shows an error toast and indicator when persisting fails", async () => {

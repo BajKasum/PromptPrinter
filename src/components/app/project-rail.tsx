@@ -51,43 +51,68 @@ export function ProjectRail({
   const { toast } = useToast();
   const [instructions, setInstructions] = useState(initialInstructions ?? "");
   const [context, setContext] = useState<Record<string, string>>(initialContext);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  // Compare against the last persisted snapshot so blur without changes
-  // doesn't fire a write (and updated_at doesn't churn the sidebar recents).
-  const persisted = useRef({ instructions: initialInstructions ?? "", context: initialContext });
+  // Anweisungen and Struktur save independently — editing one no longer
+  // fires a write of the other's last-known value just because they used to
+  // share one persist() call. Each keeps its own in-flight indicator and its
+  // own "did this actually change" snapshot.
+  const [instructionsSaveState, setInstructionsSaveState] = useState<SaveState>("idle");
+  const [contextSaveState, setContextSaveState] = useState<SaveState>("idle");
+  const persistedInstructions = useRef(initialInstructions ?? "");
+  const persistedContext = useRef(initialContext);
 
-  async function persist(nextInstructions: string, nextContext: Record<string, string>) {
-    const cleanContext: Record<string, string> = {};
-    for (const [k, v] of Object.entries(nextContext)) {
-      if (v.trim().length > 0) cleanContext[k] = v.trim();
-    }
-    const trimmed = nextInstructions.trim();
-    const prev = persisted.current;
-    if (
-      trimmed === prev.instructions.trim() &&
-      JSON.stringify(cleanContext) === JSON.stringify(prev.context)
-    ) {
-      return;
-    }
+  async function persistInstructions(next: string) {
+    const trimmed = next.trim();
+    if (trimmed === persistedInstructions.current.trim()) return;
 
-    setSaveState("saving");
+    setInstructionsSaveState("saving");
     const supabase = createClient();
     const { error } = await supabase
       .from("projects")
-      .update({ instructions: trimmed.length > 0 ? trimmed : null, context: cleanContext })
+      .update({ instructions: trimmed.length > 0 ? trimmed : null })
       .eq("id", projectId);
     if (error) {
-      setSaveState("error");
+      setInstructionsSaveState("error");
       toast({
         title: "Speichern fehlgeschlagen",
-        description: "Deine Änderung am Briefing konnte nicht gespeichert werden.",
+        description: "Deine Anweisungen konnten nicht gespeichert werden.",
         variant: "error",
       });
       return;
     }
-    persisted.current = { instructions: trimmed, context: cleanContext };
-    setSaveState("saved");
-    window.setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 2000);
+    persistedInstructions.current = trimmed;
+    setInstructionsSaveState("saved");
+    window.setTimeout(
+      () => setInstructionsSaveState((s) => (s === "saved" ? "idle" : s)),
+      2000
+    );
+    router.refresh();
+  }
+
+  async function persistContext(nextContext: Record<string, string>) {
+    const cleanContext: Record<string, string> = {};
+    for (const [k, v] of Object.entries(nextContext)) {
+      if (v.trim().length > 0) cleanContext[k] = v.trim();
+    }
+    if (JSON.stringify(cleanContext) === JSON.stringify(persistedContext.current)) return;
+
+    setContextSaveState("saving");
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("projects")
+      .update({ context: cleanContext })
+      .eq("id", projectId);
+    if (error) {
+      setContextSaveState("error");
+      toast({
+        title: "Speichern fehlgeschlagen",
+        description: "Deine Struktur-Angaben konnten nicht gespeichert werden.",
+        variant: "error",
+      });
+      return;
+    }
+    persistedContext.current = cleanContext;
+    setContextSaveState("saved");
+    window.setTimeout(() => setContextSaveState((s) => (s === "saved" ? "idle" : s)), 2000);
     router.refresh();
   }
 
@@ -99,7 +124,7 @@ export function ProjectRail({
             <NotebookPen className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
             Anweisungen
           </h2>
-          <SaveIndicator state={saveState} />
+          <SaveIndicator state={instructionsSaveState} />
         </div>
         <textarea
           value={instructions}
@@ -107,17 +132,20 @@ export function ProjectRail({
           rows={5}
           placeholder="Wie soll dein Prompt aussehen? Ton, Format, Ziel — ich richte mich in jedem Chat dieses Projekts danach."
           onChange={(e) => setInstructions(e.target.value)}
-          onBlur={() => void persist(instructions, context)}
+          onBlur={() => void persistInstructions(instructions)}
           aria-label="Projekt-Anweisungen"
           className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[13px] leading-relaxed text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
         />
       </section>
 
       <section className="card-surface p-4">
-        <h2 className="mb-3 flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <Layers className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-          Struktur
-        </h2>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+            <Layers className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
+            Struktur
+          </h2>
+          <SaveIndicator state={contextSaveState} />
+        </div>
         <div className="space-y-2.5">
           {STRUCTURE_FIELDS.map(({ key, label, placeholder }) => (
             <div key={key} className="grid grid-cols-[88px_1fr] items-center gap-2">
@@ -130,7 +158,7 @@ export function ProjectRail({
                 maxLength={120}
                 placeholder={placeholder}
                 onChange={(e) => setContext((c) => ({ ...c, [key]: e.target.value }))}
-                onBlur={() => void persist(instructions, context)}
+                onBlur={() => void persistContext(context)}
                 className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-muted-foreground/60 transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
               />
             </div>
