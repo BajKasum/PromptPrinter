@@ -4,16 +4,38 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus } from "lucide-react";
+import { Menu, X, Plus, Star } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-import { primaryNav, secondaryNav } from "@/lib/nav";
+import { NewProjectButton } from "@/components/app/new-project";
+import {
+  ACTIVE_ROW,
+  INACTIVE_ROW,
+  TabSwitcher,
+  type SidebarChat,
+  type SidebarProject,
+} from "@/components/app/sidebar";
+import { secondaryNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 // Mobile-only navigation. The desktop sidebar is hidden below md, so without
-// this the app has no way to move between sections on a phone.
-export function MobileNav() {
+// this the app has no way to move between sections on a phone — and it needs
+// to carry the same recents + Chat/Projekt switcher the sidebar does
+// (ACTIVE_ROW/INACTIVE_ROW/TabSwitcher come from sidebar.tsx directly, not a
+// second copy of the same styling that could drift out of sync).
+export function MobileNav({
+  chats,
+  projects,
+}: {
+  chats: SidebarChat[];
+  projects: SidebarProject[];
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Which list is on screen — same route-derived logic as the desktop
+  // sidebar's Full(), so switching devices mid-session never feels different.
+  const tab: "chats" | "projects" =
+    pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";
 
   // Close whenever the route changes (e.g. after tapping a link).
   useEffect(() => {
@@ -82,37 +104,82 @@ export function MobileNav() {
               </div>
 
               <div className="px-3 py-4 flex-1 overflow-y-auto">
-                <Link
-                  href="/chats/new"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 mb-5 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
-                >
-                  <Plus className="h-4 w-4" strokeWidth={2} />
-                  Neuer Chat
-                </Link>
+                <TabSwitcher tab={tab} />
 
-                <nav aria-label="Hauptbereiche" className="space-y-0.5">
-                  {primaryNav.map(({ label, href, Icon }) => {
-                    const active = pathname === href || pathname.startsWith(href + "/");
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setOpen(false)}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "flex items-center gap-3 h-10 px-3 rounded-md text-[14px] transition-colors",
-                          active
-                            ? "bg-accent-subtle text-accent-text font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" strokeWidth={1.8} />
-                        <span>{label}</span>
-                      </Link>
-                    );
-                  })}
-                </nav>
+                {tab === "chats" ? (
+                  <>
+                    <Link
+                      href="/chats/new"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center justify-center gap-2 mb-4 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={2} />
+                      Neuer Chat
+                    </Link>
+                    <nav aria-label="Chats" className="space-y-0.5">
+                      {chats.length === 0 ? (
+                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                          Dein erster Chat landet hier.
+                        </p>
+                      ) : (
+                        chats.map((c) => {
+                          const active = pathname === `/chats/${c.id}`;
+                          return (
+                            <Link
+                              key={c.id}
+                              href={`/chats/${c.id}`}
+                              onClick={() => setOpen(false)}
+                              title={c.title}
+                              aria-current={active ? "page" : undefined}
+                              className={cn(
+                                "block truncate rounded-md py-[9px] pl-3.5 pr-3 text-[14px] transition-colors",
+                                active ? ACTIVE_ROW : INACTIVE_ROW
+                              )}
+                            >
+                              {c.title}
+                            </Link>
+                          );
+                        })
+                      )}
+                    </nav>
+                  </>
+                ) : (
+                  <nav aria-label="Projekte" className="space-y-0.5">
+                    {projects.length === 0 ? (
+                      <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                        Noch kein Projekt angelegt.
+                      </p>
+                    ) : (
+                      projects.map((p) => {
+                        const active =
+                          pathname === `/projects/${p.id}` ||
+                          pathname.startsWith(`/projects/${p.id}/`);
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/projects/${p.id}`}
+                            onClick={() => setOpen(false)}
+                            title={p.name}
+                            aria-current={active ? "page" : undefined}
+                            className={cn(
+                              "flex items-center gap-2 rounded-md py-[9px] pl-3.5 pr-3 text-[14px] transition-colors",
+                              active ? ACTIVE_ROW : INACTIVE_ROW
+                            )}
+                          >
+                            <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                            {p.isFavorite && (
+                              <Star
+                                aria-label="Angepinnt"
+                                className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
+                              />
+                            )}
+                          </Link>
+                        );
+                      })
+                    )}
+                    <NewProjectButton variant="row" />
+                  </nav>
+                )}
 
                 <div className="my-5 h-px bg-border" />
 
@@ -127,9 +194,7 @@ export function MobileNav() {
                         aria-current={active ? "page" : undefined}
                         className={cn(
                           "flex items-center gap-3 h-10 px-3 rounded-md text-[14px] transition-colors",
-                          active
-                            ? "bg-accent-subtle text-accent-text font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+                          active ? ACTIVE_ROW : INACTIVE_ROW
                         )}
                       >
                         <Icon className="h-4 w-4" strokeWidth={1.8} />

@@ -52,9 +52,11 @@ function clampWidth(w: number): number {
 // truncated title). The tint is the same token the collapsed icon rail
 // already uses for its active state, so this isn't a new pattern — it's
 // bringing the expanded view in line with what the rail already does.
-const ACTIVE_ROW =
+// Exported so the mobile drawer (mobile-nav.tsx) renders identical rows
+// instead of a second, easily-drifting copy of the same styling.
+export const ACTIVE_ROW =
   "relative rounded-md bg-accent-subtle font-medium text-foreground before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-accent before:content-['']";
-const INACTIVE_ROW = "text-foreground/55 hover:bg-surface-hover hover:text-foreground";
+export const INACTIVE_ROW = "text-foreground/55 hover:bg-surface-hover hover:text-foreground";
 
 export function Sidebar({
   initialCollapsed,
@@ -365,7 +367,8 @@ function Full({
 // drift apart. Labels are deliberately singular ("Chat"/"Projekt") to match
 // this switcher specifically — everywhere else in the app still says the
 // plural "Chats"/"Projekte" (primaryNav, page titles, command palette).
-function TabSwitcher({ tab }: { tab: "chats" | "projects" }) {
+// Exported so the mobile drawer uses the exact same switcher, not a copy.
+export function TabSwitcher({ tab }: { tab: "chats" | "projects" }) {
   return (
     <div className="mb-4 flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
       <TabPill

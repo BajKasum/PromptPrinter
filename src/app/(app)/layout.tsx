@@ -86,6 +86,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             isAdmin={profile?.is_admin ?? false}
             displayName={profile?.display_name ?? null}
             avatarUrl={profile?.avatar_url ?? null}
+            chats={sidebarChats}
+            projects={sidebarProjects}
           />
           <main
             id="main-content"

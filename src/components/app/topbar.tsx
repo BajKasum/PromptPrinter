@@ -7,6 +7,7 @@ import { Search, Bell, ChevronDown, Settings, CreditCard, LogOut, Loader2 } from
 import { createClient } from "@/lib/supabase/client";
 import { CommandPalette } from "@/components/app/command-palette";
 import { MobileNav } from "@/components/app/mobile-nav";
+import type { SidebarChat, SidebarProject } from "@/components/app/sidebar";
 
 export function Topbar({
   email,
@@ -14,6 +15,8 @@ export function Topbar({
   isAdmin = false,
   displayName,
   avatarUrl,
+  chats,
+  projects,
 }: {
   email: string;
   plan: string;
@@ -22,6 +25,9 @@ export function Topbar({
   isAdmin?: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
+  /** Same recents the desktop sidebar shows — the mobile drawer mirrors it. */
+  chats: SidebarChat[];
+  projects: SidebarProject[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -81,17 +87,17 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-30 -mx-6 md:-mx-10 px-6 md:px-10 py-3 flex items-center gap-3 sm:gap-4 border-b border-border backdrop-blur-xl bg-background/70">
-      <MobileNav />
+      <MobileNav chats={chats} projects={projects} />
       <button
         type="button"
         onClick={() => setCmdOpen(true)}
-        aria-label="Suche öffnen: Projekte, Seiten und Aktionen"
+        aria-label="Suche öffnen: Chats, Projekte, Seiten und Aktionen"
         data-tour="search"
         className="group relative flex-1 min-w-0 max-w-[420px] flex items-center h-9 pl-9 pr-2.5 rounded-lg border border-border bg-surface text-left text-[13px] text-muted-foreground hover:bg-surface-hover hover:border-border-strong focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
       >
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <span className="truncate group-hover:text-foreground transition-colors">
-          Projekte, Seiten, Aktionen…
+          Chats, Projekte, Seiten, Aktionen…
         </span>
         <span className="ml-auto hidden md:inline-flex items-center gap-0.5 text-[10px] font-mono text-muted-foreground">
           <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface">{modKey}</kbd>
