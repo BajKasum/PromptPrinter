@@ -26,21 +26,33 @@ export default async function BillingPage() {
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
   ).toISOString();
 
-  const [{ data: profile }, { count: projectsCount }, { count: monthlyGenerations }, configuredProviders] =
-    await Promise.all([
-      supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
-      // Owner filter is explicit on top of RLS (defense in depth).
-      supabase
-        .from("projects")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-      supabase
-        .from("generations")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .gte("created_at", monthStart),
-      getConfiguredProviders(supabase, user.id),
-    ]);
+  const [
+    { data: profile },
+    { count: projectsCount },
+    { count: monthlyGenerations },
+    { count: monthlyChatMessages },
+    configuredProviders,
+  ] = await Promise.all([
+    supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
+    // Owner filter is explicit on top of RLS (defense in depth).
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("generations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", monthStart),
+    // One row per turn (see api/chat/route.ts's own count for why role=assistant).
+    supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("role", "assistant")
+      .gte("created_at", monthStart),
+    getConfiguredProviders(supabase, user.id),
+  ]);
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
@@ -52,14 +64,15 @@ export default async function BillingPage() {
   const limits = effectiveLimits(planKey, isAdmin);
   const projectsUsed = projectsCount ?? 0;
   const generationsUsed = monthlyGenerations ?? 0;
+  const chatMessagesUsed = monthlyChatMessages ?? 0;
   const isFree = planKey === "free";
   const hasByok = configuredProviders.length > 0;
   const planDescription = isAdmin
     ? "Admin-Konto — alle Limits und Upgrade-Hinweise sind für dich aufgehoben."
     : isFree
       ? hasByok
-        ? "Du nutzt PromptPrinter kostenlos mit deinem eigenen API-Key — das Generierungen-Limit entfällt."
-        : "Du nutzt PromptPrinter kostenlos. Hinterlege in den Einstellungen einen eigenen API-Key, um das Generierungen-Limit aufzuheben."
+        ? "Du nutzt PromptPrinter kostenlos mit deinem eigenen API-Key — Generierungen- und Chat-Limit entfallen."
+        : "Du nutzt PromptPrinter kostenlos. Hinterlege in den Einstellungen einen eigenen API-Key, um Generierungen- und Chat-Limit aufzuheben."
       : "Voller Zugang mit inkludierter API und höheren Limits.";
   const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
 
@@ -86,14 +99,19 @@ export default async function BillingPage() {
             <span className="text-[24px] font-semibold text-foreground">{currentPlan}</span>
             <p className="mt-1.5 text-[13px] text-foreground/55 max-w-md">{planDescription}</p>
           </div>
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 border-t border-border">
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 pt-6 border-t border-border">
             <Stat label="Projekte" value={fmtUsage(projectsUsed, limits.projects)} />
             <Stat
               label="Generierungen (Monat)"
-              // Ein eigener Key hebt das Generierungen-Limit auf (siehe
-              // api/generate/route.ts) — das muss sich auch hier zeigen, sonst
-              // wirkt der Zähler wie eine Deckelung, die gar nicht mehr gilt.
+              // Ein eigener Key hebt Generierungen- und Chat-Limit auf (siehe
+              // api/generate + api/chat) — das muss sich auch hier zeigen,
+              // sonst wirkt der Zähler wie eine Deckelung, die gar nicht mehr
+              // gilt.
               value={hasByok ? `${generationsUsed} · Unbegrenzt` : fmtUsage(generationsUsed, limits.generations)}
+            />
+            <Stat
+              label="Chat-Nachrichten (Monat)"
+              value={hasByok ? `${chatMessagesUsed} · Unbegrenzt` : fmtUsage(chatMessagesUsed, limits.chatMessages)}
             />
             <Stat label="API-Zugang" value={apiAccessLabel} />
           </div>

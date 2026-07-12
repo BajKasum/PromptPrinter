@@ -43,6 +43,8 @@ type Usage = {
   projectLimit: number;
   generations: number;
   generationLimit: number;
+  chatMessages: number;
+  chatMessageLimit: number;
 };
 
 const PLAN_BADGE: Record<PlanKey, string> = {
@@ -276,6 +278,11 @@ export function SettingsWorkspace({
                 label="Generierungen (Monat)"
                 used={usage.generations}
                 limit={usage.generationLimit}
+              />
+              <UsageMeter
+                label="Chat-Nachrichten (Monat)"
+                used={usage.chatMessages}
+                limit={usage.chatMessageLimit}
               />
             </div>
           </SettingsCard>

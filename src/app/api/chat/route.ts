@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { chatComplete, llmConfig } from "@/lib/llm";
+import { chatComplete, llmConfig, type LlmOverride } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
+import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
@@ -66,6 +67,44 @@ export async function POST(req: Request) {
     });
   }
 
+  // 3.5 Enforce the monthly chat allowance for signed-in users, unless
+  //     they've configured their own BYOK key. Chat had no monthly cap until
+  //     now — only the hourly rate limit above — so a free user with no BYOK
+  //     key could otherwise chat all month on the server's own Z.ai key with
+  //     no real ceiling (see plans.ts). Checked before the model call, same
+  //     principle as /api/generate's project/generation limits.
+  let override: LlmOverride | null = null;
+  if (userId && supabase) {
+    const now = new Date();
+    const monthStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    ).toISOString();
+    const [{ data: profile }, { count: chatCount }, userOverride] = await Promise.all([
+      supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
+      // One row per turn — persistTurn always inserts exactly one assistant
+      // reply alongside the user message, so counting only that role avoids
+      // double-counting a turn as two units.
+      supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("role", "assistant")
+        .gte("created_at", monthStart),
+      getUserOverride(supabase, userId),
+    ]);
+    override = userOverride;
+    const rawPlan = (profile?.plan as string | undefined) ?? "free";
+    const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
+    const limits = effectiveLimits(plan, profile?.is_admin ?? false);
+    if (!override && (chatCount ?? 0) >= limits.chatMessages) {
+      return problem(
+        403,
+        `Monatslimit für Chat-Nachrichten erreicht — dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
+        { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
+      );
+    }
+  }
+
   // 4. Build the system instruction.
   //    - general mode  → the everyday prompt engineer (+ optional target hint)
   //    - software mode → the code-refinement assistant
@@ -80,11 +119,6 @@ export async function POST(req: Request) {
     const ctx = await buildProjectContext(supabase, userId, input.projectId);
     if (ctx) systemInstruction += `\n\n${ctx}`;
   }
-
-  // 4.5 A user's own BYOK key (settings → "Eigene API-Keys") takes over from
-  //     the server's provider entirely — including when the server has none
-  //     configured at all, so a BYOK user isn't blocked by that.
-  const override = userId && supabase ? await getUserOverride(supabase, userId) : null;
 
   // 5. Produce the reply. Without a configured provider (server or BYOK) we
   //    return a useful stub so the whole flow stays testable; otherwise we
@@ -381,11 +415,13 @@ function problem(status: number, detail: string, extra: Record<string, unknown> 
       title:
         status === 400
           ? "Bad Request"
-          : status === 429
-            ? "Too Many Requests"
-            : status === 502
-              ? "Bad Gateway"
-              : "Error",
+          : status === 403
+            ? "Forbidden"
+            : status === 429
+              ? "Too Many Requests"
+              : status === 502
+                ? "Bad Gateway"
+                : "Error",
       status,
       detail,
       ...extra,
