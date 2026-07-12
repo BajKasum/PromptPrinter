@@ -55,6 +55,61 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > halbiert (Dateien, Anweisungen, Idee, Artefakt-Referenz). Reine Parameter-
 > optimierung, keine Produktänderung — Details in `src/lib/llm.ts` und
 > `src/app/api/chat/route.ts`.
+>
+> **Kritik-Pass + BYOK + Refactoring (2026-07):** Auf Bitte um eine schonungslos
+> kritische Bewertung der App als neuer Nutzer entstand eine lange Liste
+> echter Lücken — alle abgearbeitet (Commits `977474a`..`bb923eb`):
+>
+> - **BYOK ist jetzt real, nicht nur versprochen** (`3a8f1b8`): Nutzer
+>   hinterlegen in Settings (`api-keys.tsx`) eigene Anthropic-/OpenAI-/
+>   Gemini-Keys — `POST/DELETE /api/settings/api-key`, AES-256-GCM-
+>   verschlüsselt (`src/lib/crypto.ts` + Server-Secret
+>   `API_KEY_ENCRYPTION_SECRET`, siehe `.env.example`), Tabelle
+>   `user_api_keys` (Migration `0015_user_api_keys.sql`, **live gegen die
+>   Supabase-DB angewendet**, nicht nur lokal committed). `llm.ts` kennt
+>   jetzt 4 Provider: Z.ai (Server-Default), Gemini (Server-Zweit), Anthropic
+>   + OpenAI (nur BYOK, kein Server-Key dafür vorgesehen). Ein eigener Key
+>   übersteuert den Server-Key komplett und hebt sowohl das Generierungen- als
+>   auch das Chat-Nachrichten-Limit auf (der Nutzer zahlt dann selbst).
+> - **PDF-Export** für Pro eingelöst (`jspdf`, `src/lib/pdf-export.ts`);
+>   „Priorisierte Warteschlange" (nie gebaut) aus dem Pricing gestrichen.
+> - **Chat-Kostenrisiko geschlossen** (`826b753`): `/api/chat` hatte kein
+>   Plan-Limit, nur den 120/h-Ratelimit — theoretisch ~86k Nachrichten/Monat
+>   auf dem Server-Key. Jetzt `chatMessages` in `plans.ts` (Free 200/Monat,
+>   Pro/Team 2000/Monat), BYOK hebt es auf, Anzeige in Settings + Billing.
+> - **Datenschutzerklärung korrigiert** (`977474a`): nannte nur Google Gemini
+>   als Auftragsbearbeiter, tatsächlich läuft die Generierung primär über
+>   Z.ai — China als Drittland ergänzt (Standardvertragsklauseln statt
+>   EU-US Data Privacy Framework, da kein Angemessenheitsbeschluss besteht).
+> - **Zwei God-Objekte aufgelöst** — reine Verhalten-erhaltende Refactorings,
+>   keine Logik-/Optikänderung: `api/generate/route.ts` 375→~130 Zeilen
+>   (`b0975d3`, → `lib/generate-guards.ts`, `build-generate-content.ts`,
+>   `run-generation.ts`, `persist-generation.ts`, geteiltes `lib/api-problem.ts`
+>   jetzt auch von `api/chat/route.ts` genutzt — vorher zwei divergierende
+>   Kopien); `chat.tsx` 667→260 Zeilen (`bb923eb`, → `chat-markdown.tsx`,
+>   `chat-empty-state.tsx`, `chat-result-panel.tsx`, `chat-transcript.tsx`,
+>   `chat-handoff-menu.tsx`, `chat-composer.tsx`, `lib/chat-variants.ts`,
+>   `lib/use-copy-to-clipboard.ts`).
+> - **Sidebar umgebaut** (`f453b81`): Pillen-Umschalter Chat/Projekt (nur eine
+>   Liste sichtbar, routegetrieben über `pathname`) statt beide Listen
+>   dauerhaft übereinander. Desktop (`sidebar.tsx`) und Mobile-Drawer
+>   (`mobile-nav.tsx`, `4dc716f`) teilen sich seither `ACTIVE_ROW`/
+>   `INACTIVE_ROW`/`TabSwitcher` aus `sidebar.tsx`, statt zweier Kopien, die
+>   auseinanderdriften können. ⌘K durchsucht jetzt auch Chats (`64ec1cb`).
+> - **Kleinere Fixes:** Navbar-Wortmarke zweifarbig + kollabiert beim
+>   Scrollen (synchron mit dem 8px-Pillen-Trigger), Signup zeigt AGB/
+>   Datenschutz-Hinweis + natives `minlength=8`, Hero-Demo-Fenster sagt
+>   „· Demo" (sah wie ein echtes Eingabefeld aus), Stub-Antworten ohne
+>   Entwickler-Jargon (kein „.env.local" mehr Richtung Endnutzer), FAQ
+>   „Ist meine Idee sicher?" nennt jetzt den KI-Anbieter.
+>
+> **Offen, wartet auf den Nutzer:** [`src/lib/legal.ts`](src/lib/legal.ts) hat
+> noch Platzhalter (`[VOLLSTÄNDIGER NAME/FIRMA]`, `[STRASSE NR.]`,
+> `[PLZ ORT]`, `[GERICHTSSTAND]`) — Impressum/AGB/Datenschutz sind damit
+> **live mit sichtbaren Platzhaltern**, bis echte Angaben kommen. `appHost`
+> bleibt ohnehin offen, bis die Hosting-Entscheidung gefallen ist (Punkt 2
+> oben). Alles andere aus dem Kritik-Pass ist erledigt — keine bekannten
+> offenen Findings mehr aus dieser Runde.
 
 ## Was ist PromptPrinter?
 
@@ -68,12 +123,17 @@ Framer Motion · next-themes · Vitest · Docker.
 
 ## ⚠️ Wichtig zu wissen, bevor du loslegst
 
-1. **Modell-Provider ist Z.ai (GLM).** Der komplette Modellzugriff ist in
-   [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt — Priorität: `ZAI_API_KEY`
-   (Z.ai, Default-Modell `glm-4.5-air` — Kosten-Tier, via `ZAI_MODEL`
-   überschreibbar) → `GEMINI_API_KEY` (Gemini als Zweit-Provider) →
+1. **Modell-Provider ist Z.ai (GLM), plus BYOK.** Der komplette Modellzugriff
+   ist in [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt — Server-seitig:
+   `ZAI_API_KEY` (Z.ai, Default-Modell `glm-4.5-air` — Kosten-Tier, via
+   `ZAI_MODEL` überschreibbar) → `GEMINI_API_KEY` (Zweit-Provider) →
    **Stub-Modus** (Templates kommen unverändert zurück, ganzer Flow bleibt
-   ohne Key testbar). Routen sprechen nie direkt mit einem Provider-SDK.
+   ohne Key testbar). Zusätzlich kann jeder Nutzer in den Einstellungen einen
+   eigenen Anthropic-/OpenAI-/Gemini-Key hinterlegen (BYOK,
+   [`src/lib/byok.ts`](src/lib/byok.ts) + `user_api_keys`-Tabelle,
+   verschlüsselt via `API_KEY_ENCRYPTION_SECRET`) — der übersteuert den
+   Server-Key komplett und hebt Generierungen-/Chat-Nachrichten-Limits auf.
+   Routen sprechen nie direkt mit einem Provider-SDK.
 2. **Zahlungen → Lemon Squeezy, aber erst später.** Bezahlung läuft künftig über
    **Lemon Squeezy** (nicht Stripe). Das passiert **erst, nachdem die Website
    gehostet ist** — vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
