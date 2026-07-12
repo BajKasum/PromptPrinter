@@ -187,6 +187,7 @@ export function SignUpExperience() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             required
+            minLength={8}
             className="w-full rounded-full border border-foreground/10 bg-foreground/5 px-5 py-3 text-center text-foreground backdrop-blur-[1px] transition-colors placeholder:text-foreground/40 focus:border-foreground/30 focus:outline-none"
           />
           <button
