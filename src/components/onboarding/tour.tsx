@@ -242,7 +242,9 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
           style={tipStyle}
           className={cn(
             "absolute rounded-2xl border border-border bg-surface-raised shadow-elevated focus:outline-none",
-            sheet ? "p-5" : "w-[340px] p-5"
+            // A bit wider than before — the bigger Finn + his speech bubble
+            // need more breathing room than the old small-icon-plus-title row did.
+            sheet ? "p-5" : "w-[380px] p-5"
           )}
         >
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -259,24 +261,32 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
             </button>
           </div>
 
-          {/* Finn is the tour's throughline, not a logo somewhere else in the
-              product — he's beside every single step, speaking in his own
-              voice below (tour-steps.ts), so this reads as him walking you
-              through the app rather than a neutral info card. */}
-          <div className="mb-1.5 flex items-start gap-2.5">
+          {/* Finn is the tour's main character, not a logo beside an info card
+              — he's noticeably bigger here than anywhere else he appears in
+              the app chrome, and the explanation itself sits inside a real
+              speech bubble (tail pointing back at him, same construction as
+              the hero's), so every step reads as him talking you through the
+              product, not a neutral tooltip he happens to stand next to. */}
+          <div className="mb-4 flex items-start gap-3">
             <AnimatedMascot
               state={step.mascot}
-              size={40}
-              className="shrink-0 [&_img]:h-9 [&_img]:w-9"
+              size={64}
+              className="shrink-0 [&_img]:h-14 [&_img]:w-14"
             />
-            <h2
-              id="tour-step-title"
-              className="pt-1 text-[16px] font-semibold tracking-[-0.01em] text-foreground"
-            >
-              {step.title}
-            </h2>
+            <div className="relative flex-1 rounded-2xl border border-border bg-surface px-4 py-3 shadow-card">
+              <span
+                aria-hidden
+                className="absolute left-0 top-6 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-border bg-surface"
+              />
+              <h2
+                id="tour-step-title"
+                className="mb-1 text-[15px] font-semibold tracking-[-0.01em] text-foreground"
+              >
+                {step.title}
+              </h2>
+              <p className="text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
+            </div>
           </div>
-          <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
 
           {/* Progress bar */}
           <div className="mb-4 h-1 overflow-hidden rounded-full bg-surface">
