@@ -164,9 +164,13 @@ export function ProjectRail({
             </div>
           ))}
         </div>
-        <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted-foreground/70">
-          Alles optional — was du ausfüllst, kennt jeder Chat in diesem Projekt.
-        </p>
+        {/* Only before anything's filled in — once a field carries content,
+            "alles optional" has already been learned by using it. */}
+        {Object.values(context).every((v) => !v?.trim()) && (
+          <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted-foreground/70">
+            Alles optional — was du ausfüllst, kennt jeder Chat in diesem Projekt.
+          </p>
+        )}
       </section>
 
       <ProjectFiles projectId={projectId} initialFiles={files} />

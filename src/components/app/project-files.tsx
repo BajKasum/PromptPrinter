@@ -204,13 +204,18 @@ export function ProjectFiles({
       {error ? (
         <p className="mt-2 text-[11.5px] text-destructive">{error}</p>
       ) : (
-        <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground/70">
-          Am besten{" "}
-          <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
-            .md
-          </code>{" "}
-          — token-effizient. Auch .txt, .json, .csv, bis {Math.round(MAX_FILE_BYTES / 1024)} KB.
-        </p>
+        // Format/size tip only before the first upload — once a file's in the
+        // list, the constraint has already been learned; repeating it forever
+        // would be chrome, not help.
+        files.length === 0 && (
+          <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground/70">
+            Am besten{" "}
+            <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
+              .md
+            </code>{" "}
+            — token-effizient. Auch .txt, .json, .csv, bis {Math.round(MAX_FILE_BYTES / 1024)} KB.
+          </p>
+        )
       )}
     </section>
   );

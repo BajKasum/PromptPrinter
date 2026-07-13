@@ -45,10 +45,10 @@ export function ChatComposer({
           }}
           className="min-h-[56px] resize-none border-0 bg-transparent px-2 focus:ring-0"
         />
-        <div className="mt-1 flex items-center justify-between gap-3 pl-2">
-          <p className="hidden text-[11px] text-foreground/35 sm:block">
-            Enter sendet · Shift+Enter neue Zeile · wird automatisch gespeichert.
-          </p>
+        {/* No permanent "Enter sendet…" hint here — Enter-to-send is a
+            convention every chat app already teaches; repeating it on every
+            single message would be chrome, not help. */}
+        <div className="mt-1 flex items-center justify-end gap-3 pl-2">
           <div className="flex shrink-0 items-center gap-1.5">
             {canHandoff && (
               <ChatHandoffMenu

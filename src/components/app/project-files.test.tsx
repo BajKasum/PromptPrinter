@@ -68,6 +68,29 @@ describe("ProjectFiles", () => {
     expect(screen.getByText("0/10")).toBeInTheDocument();
   });
 
+  it("shows the format/size tip when there are no files yet", () => {
+    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    expect(screen.getByText(/token-effizient/)).toBeInTheDocument();
+  });
+
+  it("hides the format/size tip once a file already exists", () => {
+    render(
+      <ProjectFiles
+        projectId="p1"
+        initialFiles={[
+          {
+            id: "f1",
+            name: "notes.md",
+            storagePath: "path",
+            sizeBytes: 10,
+            createdAt: new Date().toISOString(),
+          },
+        ]}
+      />
+    );
+    expect(screen.queryByText(/token-effizient/)).not.toBeInTheDocument();
+  });
+
   it("rejects a disallowed extension without calling Supabase", async () => {
     render(<ProjectFiles projectId="p1" initialFiles={[]} />);
     await uploadFile(makeFile("script.exe", 100));

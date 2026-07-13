@@ -87,6 +87,21 @@ describe("ProjectRail", () => {
     expect(update).toHaveBeenCalledWith({ context: { frontend: "Next.js" } });
   });
 
+  it("shows the Struktur hint only while every field is still empty", async () => {
+    const user = userEvent.setup();
+    setup({ initialContext: {} });
+    expect(screen.getByText(/Alles optional/)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Frontend"));
+    await user.type(screen.getByLabelText("Frontend"), "Next.js");
+    expect(screen.queryByText(/Alles optional/)).not.toBeInTheDocument();
+  });
+
+  it("hides the Struktur hint when a field already carries content", () => {
+    setup({ initialContext: { target: "Claude" } });
+    expect(screen.queryByText(/Alles optional/)).not.toBeInTheDocument();
+  });
+
   it("shows the Struktur save indicator independently of Anweisungen's", async () => {
     update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
     const user = userEvent.setup();

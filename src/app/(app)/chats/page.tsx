@@ -58,14 +58,12 @@ export default async function ChatsPage() {
 
   return (
     <div>
+      {/* Only the empty state gets a subtitle — once chats exist, the list
+          itself is self-explanatory and doesn't need re-narrating on every visit. */}
       <AppHeader
         mascot="listening"
         title="Deine Chats"
-        subtitle={
-          hasChats
-            ? "Deine freien Gespräche mit mir — jederzeit weiterführen, umbenennen oder aufräumen. Ein gutes Ergebnis heben wir zusammen als Projekt auf."
-            : "Hier laufen deine Gespräche weiter, sobald du eins startest."
-        }
+        subtitle={hasChats ? undefined : "Hier laufen deine Gespräche weiter, sobald du eins startest."}
         action={hasChats ? newChatAction : undefined}
       />
 

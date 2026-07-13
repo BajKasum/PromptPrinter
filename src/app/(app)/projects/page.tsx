@@ -100,13 +100,16 @@ export default async function ProjectsPage() {
 
   return (
     <div>
+      {/* Only the empty state gets a subtitle — once projects exist, the
+          grid itself is self-explanatory and doesn't need re-narrating on
+          every visit. */}
       <AppHeader
         mascot="delivering"
         title="Deine Projekte"
         subtitle={
           items.length === 0
             ? "Ein Projekt ist dein Arbeitsraum: Briefing, Struktur, Chats und Ergebnisse an einem Ort."
-            : "Deine Arbeitsräume — mit Briefing, Chats und allen Ergebnissen. Durchsuchen, filtern, weiterbauen."
+            : undefined
         }
         action={items.length > 0 ? <NewProjectButton /> : undefined}
       />
