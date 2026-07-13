@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { ArrowRight, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { siteUrl } from "@/lib/site-url";
+import { siteUrl, safeNextPath } from "@/lib/site-url";
 import { translateAuthError } from "@/lib/auth-errors";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
@@ -25,7 +25,7 @@ const schema = z.object({
 export function SignUpExperience() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/chats/new";
+  const next = safeNextPath(search.get("next"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

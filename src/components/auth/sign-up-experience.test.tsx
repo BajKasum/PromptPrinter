@@ -18,7 +18,8 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({ auth: { signUp, resend } }),
 }));
 
-vi.mock("@/lib/site-url", () => ({
+vi.mock("@/lib/site-url", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/site-url")>()),
   siteUrl: (path: string) => `https://promptprinter.app${path}`,
 }));
 
@@ -132,5 +133,23 @@ describe("SignUpExperience", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "weiter" }));
     expect(push).toHaveBeenCalledWith("/chats/new");
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it("never redirects to an attacker-supplied next target", async () => {
+    searchParams = new URLSearchParams({ next: "https://evil.example/phish" });
+    signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
+    render(<SignUpExperience />);
+    await fillAndSubmit("user@example.com", "password123");
+    await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
+    expect(push).toHaveBeenCalledWith("/chats/new");
+  });
+
+  it("never redirects to a protocol-relative next target", async () => {
+    searchParams = new URLSearchParams({ next: "//evil.example" });
+    signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
+    render(<SignUpExperience />);
+    await fillAndSubmit("user@example.com", "password123");
+    await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
+    expect(push).toHaveBeenCalledWith("/chats/new");
   });
 });

@@ -121,4 +121,22 @@ describe("SignInExperience", () => {
     render(<SignInExperience />);
     expect(screen.getByRole("alert")).toHaveTextContent("Bestätigungs- oder Reset-Link");
   });
+
+  it("never redirects to an attacker-supplied next target", async () => {
+    searchParams = new URLSearchParams({ next: "https://evil.example/phish" });
+    signInWithPassword.mockResolvedValue({ error: null });
+    render(<SignInExperience />);
+    await fillAndSubmit("user@example.com", "password123");
+    await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
+    expect(push).toHaveBeenCalledWith("/chats/new");
+  });
+
+  it("never redirects to a protocol-relative next target", async () => {
+    searchParams = new URLSearchParams({ next: "//evil.example" });
+    signInWithPassword.mockResolvedValue({ error: null });
+    render(<SignInExperience />);
+    await fillAndSubmit("user@example.com", "password123");
+    await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
+    expect(push).toHaveBeenCalledWith("/chats/new");
+  });
 });
