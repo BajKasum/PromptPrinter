@@ -6,16 +6,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: [
-        "/api/",
-        "/dashboard",
-        "/projects",
-        "/generations",
-        "/library",
-        "/settings",
-        "/billing",
-        "/chat",
-      ],
+      disallow: ["/api/", "/chats", "/projects", "/settings", "/billing"],
     },
     sitemap: "https://promptprinter.app/sitemap.xml",
   };

@@ -29,13 +29,10 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isProtected =
-    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/chats") ||
     pathname.startsWith("/projects") ||
-    pathname.startsWith("/generations") ||
-    pathname.startsWith("/library") ||
     pathname.startsWith("/settings") ||
-    pathname.startsWith("/billing") ||
-    pathname.startsWith("/chat");
+    pathname.startsWith("/billing");
 
   if (!user && isProtected) {
     const redirect = request.nextUrl.clone();
