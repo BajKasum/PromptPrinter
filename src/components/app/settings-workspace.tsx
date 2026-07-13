@@ -31,12 +31,13 @@ import { ChangePassword } from "@/components/app/change-password";
 import { AvatarUpload } from "@/components/app/avatar-upload";
 import { ThemePreference } from "@/components/app/theme-preference";
 import { ApiKeys } from "@/components/app/api-keys";
+import type { CustomProviderMeta } from "@/lib/byok";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type PlanKey = "free" | "pro" | "team";
-type ByokProvider = "anthropic" | "openai" | "gemini";
+type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
 type Usage = {
   projects: number;
@@ -65,6 +66,7 @@ export function SettingsWorkspace({
   usage,
   memberSince,
   configuredProviders,
+  customProvider,
 }: {
   userId: string;
   email: string;
@@ -80,6 +82,8 @@ export function SettingsWorkspace({
   memberSince: string | null;
   /** Which BYOK providers this user already has a key stored for. */
   configuredProviders: ByokProvider[];
+  /** The user's custom-endpoint BYOK config (no key), if any. */
+  customProvider: CustomProviderMeta | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -294,7 +298,7 @@ export function SettingsWorkspace({
             title="Eigene API-Keys"
             description="Nutze dein eigenes Kontingent statt unserer Limits."
           >
-            <ApiKeys configured={configuredProviders} />
+            <ApiKeys configured={configuredProviders} customProvider={customProvider} />
             <p className="mt-3 text-[12px] text-foreground/45">
               Mit eigenem Key entfällt das monatliche Generierungen-Limit — dein Projekt-Limit
               bleibt bestehen.

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { chatCompleteSequential, llmConfig } from "@/lib/llm";
+import { chatComplete, chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
 
 // llmConfig reads process.env at call time, so stubbing per test is enough —
 // no module re-import dance needed.
@@ -122,5 +122,82 @@ describe("chatCompleteSequential", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(results.a.error).toBeInstanceOf(Error);
+  });
+});
+
+// BYOK's "custom" provider — any OpenAI-compatible endpoint the user names
+// themselves (Z.ai, DeepSeek, Groq, OpenRouter, …). No server key involved;
+// the endpoint/model/key all come from the override.
+describe("chatComplete — custom BYOK override", () => {
+  it("posts to the user's own endpoint and model, with their key", async () => {
+    let capturedUrl = "";
+    let capturedInit: RequestInit = {};
+    const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+      capturedUrl = url;
+      capturedInit = init;
+      return mockResponse(200, OK_BODY);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await chatComplete({
+      system: "sys",
+      messages: [{ role: "user", content: "hi" }],
+      override: {
+        provider: "custom",
+        apiKey: "user-key",
+        baseUrl: "https://api.z.ai/api/paas/v4/chat/completions",
+        model: "glm-4.6",
+      },
+    });
+
+    expect(result.text).toBe("ok");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(capturedUrl).toBe("https://api.z.ai/api/paas/v4/chat/completions");
+    expect((capturedInit.headers as Record<string, string>).authorization).toBe("Bearer user-key");
+    const body = JSON.parse(capturedInit.body as string);
+    expect(body.model).toBe("glm-4.6");
+    expect(body.thinking).toBeUndefined();
+  });
+
+  it("throws LlmEmptyReplyError when the endpoint returns no content", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(200, JSON.stringify({ choices: [{ message: {} }] })))
+    );
+
+    await expect(
+      chatComplete({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    ).rejects.toBeInstanceOf(LlmEmptyReplyError);
+  });
+
+  it("surfaces the provider's error message on a non-2xx response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        mockResponse(401, JSON.stringify({ error: { message: "invalid api key" } }))
+      )
+    );
+
+    await expect(
+      chatComplete({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "bad-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    ).rejects.toThrow("invalid api key");
   });
 });

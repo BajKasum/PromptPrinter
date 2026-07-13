@@ -15,17 +15,27 @@ import OpenAI from "openai";
 //
 // BYOK (settings → "Eigene API-Keys"): a signed-in user can store their own
 // Anthropic/OpenAI/Gemini key (encrypted, src/lib/crypto.ts) and have their
-// calls run against their own account instead of Z.ai. Z.ai itself is never
-// a BYOK choice — it's the platform's own default, not something a user
-// would already hold a key for. See ByokProvider/LlmOverride below.
+// calls run against their own account instead of Z.ai, or plug in a generic
+// "custom" endpoint (their own label + chat-completions URL + model — Z.ai,
+// DeepSeek, Groq, OpenRouter, a self-hosted gateway, anything OpenAI-
+// compatible). Z.ai's own server-default key is never a BYOK choice itself —
+// it's the platform's own default, not something a user brings a spare key
+// for — but a user's own Z.ai key fits perfectly through 'custom'. See
+// ByokProvider/LlmOverride below.
 
 export type LlmConfig = { provider: "zai" | "gemini"; model: string };
 
 /** Providers a user can bring their own key for (settings → BYOK). */
-export type ByokProvider = "anthropic" | "openai" | "gemini";
+export type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
-/** A user's own key, passed per-call to bypass the server's configured provider. */
-export type LlmOverride = { provider: ByokProvider; apiKey: string };
+/**
+ * A user's own key, passed per-call to bypass the server's configured
+ * provider. 'custom' carries its own endpoint + model since there's no
+ * built-in default for an arbitrary OpenAI-compatible provider.
+ */
+export type LlmOverride =
+  | { provider: "anthropic" | "openai" | "gemini"; apiKey: string }
+  | { provider: "custom"; apiKey: string; baseUrl: string; model: string };
 
 export type LlmMessage = { role: "user" | "assistant"; content: string };
 
@@ -118,6 +128,16 @@ export async function chatComplete(opts: {
     if (provider === "openai") {
       return openaiComplete(OPENAI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
     }
+    if (provider === "custom") {
+      return customComplete(
+        opts.override.baseUrl,
+        opts.override.model,
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey
+      );
+    }
     return geminiComplete(GEMINI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
   }
 
@@ -201,7 +221,7 @@ async function completeWithRetry(
 
 // ─── Z.ai (OpenAI-compatible chat/completions) ──────────────────────────────
 
-type ZaiResponse = {
+type OpenAiCompatibleResponse = {
   choices?: {
     message?: { content?: string; reasoning_content?: string };
   }[];
@@ -239,7 +259,7 @@ async function zaiComplete(
     const raw = await res.text().catch(() => "");
     let detail = raw.slice(0, 300);
     try {
-      const parsed = JSON.parse(raw) as ZaiResponse;
+      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
       if (parsed.error?.message) detail = parsed.error.message;
     } catch {
       // keep the truncated raw text
@@ -247,12 +267,68 @@ async function zaiComplete(
     throw new Error(`Z.ai ${res.status}: ${detail || res.statusText}`);
   }
 
-  const json = (await res.json()) as ZaiResponse;
+  const json = (await res.json()) as OpenAiCompatibleResponse;
   const message = json.choices?.[0]?.message;
   // content is the final answer; reasoning_content only ever carries thinking
   // output, so it's a last-resort fallback rather than an equal source.
   const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
   if (!text) throw new LlmEmptyReplyError("Z.ai");
+
+  const usage =
+    json.usage &&
+    typeof json.usage.prompt_tokens === "number" &&
+    typeof json.usage.completion_tokens === "number"
+      ? { inputTokens: json.usage.prompt_tokens, outputTokens: json.usage.completion_tokens }
+      : null;
+
+  return { text, usage };
+}
+
+// ─── Custom (BYOK only) — any OpenAI-compatible chat/completions endpoint ───
+// The user supplies their own endpoint + model alongside the key (settings →
+// "Eigene API-Keys" → "Custom"), so this covers Z.ai, DeepSeek, Groq,
+// OpenRouter, a self-hosted gateway — anything speaking the OpenAI chat/
+// completions shape. No "thinking" flag here unlike zaiComplete — that's a
+// Z.ai-specific quirk, not something to impose on an arbitrary endpoint.
+
+async function customComplete(
+  endpoint: string,
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): Promise<LlmResult> {
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: maxOutputTokens,
+      stream: false,
+    }),
+  });
+
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let detail = raw.slice(0, 300);
+    try {
+      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
+      if (parsed.error?.message) detail = parsed.error.message;
+    } catch {
+      // keep the truncated raw text
+    }
+    throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
+  }
+
+  const json = (await res.json()) as OpenAiCompatibleResponse;
+  const message = json.choices?.[0]?.message;
+  const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
+  if (!text) throw new LlmEmptyReplyError("Custom-Provider");
 
   const usage =
     json.usage &&
