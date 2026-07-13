@@ -1,129 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Search, FolderKanban, Sparkles, Clock, Library, Star } from "lucide-react";
-import { cn, relativeTime } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { useToast } from "@/components/ui/toast";
+import { Search, Library } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLibraryFavorites } from "@/lib/use-library-favorites";
+import { useLibraryFilter, FILTERS, type LibraryItem } from "@/lib/use-library-filter";
+import { LibraryCard } from "@/components/app/library-card";
 
-export type LibraryItem = {
-  id: string;
-  name: string;
-  updatedAt: string; // ISO — drives the "Kürzlich verwendet" filter + the footer's relative time
-  artifactCount: number;
-  chatCount: number; // conversations living inside this workspace
-  categories: string[]; // artifact category keys present in this project
-  toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "Lovable"]
-  isFavorite: boolean;
-};
+export type { LibraryItem };
 
-const FILTERS = [
-  { key: "all", label: "Alle" },
-  { key: "favorites", label: "Favoriten" },
-  { key: "recent", label: "Kürzlich verwendet" },
-  { key: "frontend", label: "Frontend" },
-  { key: "backend", label: "Backend" },
-  { key: "marketing", label: "Marketing" },
-  { key: "database", label: "Datenbank" },
-] as const;
-
-type FilterKey = (typeof FILTERS)[number]["key"];
-
-const RECENT_MS = 7 * 24 * 60 * 60 * 1000;
-
-// Projects load in one server-side shot (no server-side pagination yet — the
-// list is one row per project, not per generation, so it stays small for a
-// long time). This just caps how much of it renders as DOM at once, so the
-// page doesn't start paying render cost as project counts grow into the
-// hundreds. Bump/replace with real server pagination if that day ever comes.
-const PAGE_SIZE = 24;
-
-// What lives in this workspace, compact: "2 Chats · 10 Artefakte". A project
-// without either is simply young, not defective.
-function workspaceMeta(it: LibraryItem): string {
-  const parts = [
-    it.chatCount > 0 ? `${it.chatCount} ${it.chatCount === 1 ? "Chat" : "Chats"}` : null,
-    it.artifactCount > 0
-      ? `${it.artifactCount} ${it.artifactCount === 1 ? "Artefakt" : "Artefakte"}`
-      : null,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Frisch angelegt";
-}
-
+// Orchestrator only — search/filter/pagination lives in useLibraryFilter, the
+// favorites mutation lives in useLibraryFavorites, and a single result's
+// presentation lives in LibraryCard. This component just composes them.
 export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("all");
-  const [favorites, setFavorites] = useState<Set<string>>(
-    () => new Set(items.filter((i) => i.isFavorite).map((i) => i.id))
-  );
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const { toast } = useToast();
-
-  async function toggleFavorite(id: string) {
-    const next = !favorites.has(id);
-    // Optimistic flip — buttons must feel instant.
-    setFavorites((prev) => {
-      const s = new Set(prev);
-      if (next) s.add(id);
-      else s.delete(id);
-      return s;
-    });
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("projects")
-      .update({ is_favorite: next })
-      .eq("id", id);
-    if (error) {
-      // Revert on failure so the UI never lies about persisted state.
-      setFavorites((prev) => {
-        const s = new Set(prev);
-        if (next) s.delete(id);
-        else s.add(id);
-        return s;
-      });
-      toast({
-        title: "Favorit konnte nicht gespeichert werden",
-        description: "Bitte versuche es erneut.",
-        variant: "error",
-      });
-      return;
-    }
-    // The sidebar's pinned projects are server-rendered — without this the
-    // new pin order only shows up after the next unrelated navigation.
-    router.refresh();
-  }
-
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const now = Date.now();
-    return items.filter((it) => {
-      if (filter === "favorites") {
-        if (!favorites.has(it.id)) return false;
-      } else if (filter === "recent") {
-        if (now - new Date(it.updatedAt).getTime() > RECENT_MS) return false;
-      } else if (filter !== "all") {
-        if (!it.categories.includes(filter)) return false;
-      }
-      if (q) {
-        const haystack = (it.name + " " + it.toolList.join(" ")).toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [items, query, filter, favorites]);
-
-  // A changed search/filter invalidates whatever page you'd scrolled to —
-  // land back on the first page of the new result set instead of showing an
-  // arbitrary slice (or nothing, if the new set is shorter than the old offset).
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [query, filter]);
-
-  const visiblePage = visible.slice(0, visibleCount);
-  const hasMore = visible.length > visibleCount;
+  const { favorites, toggleFavorite } = useLibraryFavorites(items);
+  const { query, setQuery, filter, setFilter, visiblePage, visibleTotal, hasMore, loadMore } =
+    useLibraryFilter(items, favorites);
 
   return (
     <div>
@@ -158,7 +49,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
         })}
       </div>
 
-      {visible.length === 0 ? (
+      {visibleTotal === 0 ? (
         <div className="card-surface p-12 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
             <Library className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
@@ -172,78 +63,14 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {visiblePage.map((it) => {
-            const fav = favorites.has(it.id);
-            return (
-              <div
-                key={it.id}
-                className="card-surface relative h-full p-5 flex flex-col hover:border-border-strong transition-colors"
-              >
-                {/* Full-card click target; the star sits above it via z-10. */}
-                <Link
-                  href={`/projects/${it.id}`}
-                  aria-label={`${it.name} öffnen`}
-                  className="absolute inset-0 rounded-xl"
-                />
-                <div className="flex items-start justify-between mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-surface border border-border flex items-center justify-center">
-                    <FolderKanban className="h-4 w-4 text-foreground" strokeWidth={1.8} />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      void toggleFavorite(it.id);
-                    }}
-                    aria-pressed={fav}
-                    aria-label={fav ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
-                    className="relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-foreground/40 hover:text-amber-300 hover:bg-surface-hover transition-colors active:scale-90"
-                  >
-                    <Star
-                      className={cn(
-                        "h-4 w-4 transition-colors",
-                        fav && "fill-amber-300 text-amber-300"
-                      )}
-                      strokeWidth={1.8}
-                    />
-                  </button>
-                </div>
-
-                {/* Name leads — this is a workspace you enter, not a record. */}
-                <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-2 line-clamp-1">
-                  {it.name}
-                </h3>
-
-                {/* What's inside — category pills as the project's content areas. */}
-                {it.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {it.categories.map((c) => (
-                      <span
-                        key={c}
-                        className="text-[10.5px] px-2 py-0.5 rounded-full border border-accent/25 bg-accent-subtle text-accent-text"
-                      >
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Workspace-Meta + freshness — supporting metadata in the footer:
-                    what lives inside (chats, results), not just artifacts. */}
-                <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Sparkles className="h-3 w-3" />
-                    {workspaceMeta(it)}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="h-3 w-3" />
-                    {relativeTime(it.updatedAt)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {visiblePage.map((it) => (
+            <LibraryCard
+              key={it.id}
+              item={it}
+              isFavorite={favorites.has(it.id)}
+              onToggleFavorite={() => void toggleFavorite(it.id)}
+            />
+          ))}
         </div>
       )}
 
@@ -251,10 +78,10 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            onClick={loadMore}
             className="text-[13px] px-4 py-2 rounded-lg border border-border bg-surface text-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors active:scale-[0.98]"
           >
-            {visiblePage.length} von {visible.length} — mehr laden
+            {visiblePage.length} von {visibleTotal} — mehr laden
           </button>
         </div>
       )}
