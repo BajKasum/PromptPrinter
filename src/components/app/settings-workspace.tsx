@@ -31,12 +31,13 @@ import { ChangePassword } from "@/components/app/change-password";
 import { AvatarUpload } from "@/components/app/avatar-upload";
 import { ThemePreference } from "@/components/app/theme-preference";
 import { ApiKeys } from "@/components/app/api-keys";
+import { PlanBadge } from "@/components/app/plan-badge";
+import { UsageMeter } from "@/components/app/usage-meter";
 import type { CustomProviderMeta } from "@/lib/byok";
+import type { PlanKey } from "@/lib/plans";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-
-type PlanKey = "free" | "pro" | "team";
 type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
 type Usage = {
@@ -46,12 +47,6 @@ type Usage = {
   generationLimit: number;
   chatMessages: number;
   chatMessageLimit: number;
-};
-
-const PLAN_BADGE: Record<PlanKey, string> = {
-  free: "border-border bg-surface text-foreground/70",
-  pro: "border-accent/40 bg-accent-subtle text-accent-text",
-  team: "border-cyan-400/40 bg-cyan-500/15 text-cyan-200",
 };
 
 export function SettingsWorkspace({
@@ -222,22 +217,7 @@ export function SettingsWorkspace({
             accent="#8FCDF2"
             title="Workspace"
             description="Konto- und Plan-Übersicht."
-            headerRight={
-              isAdmin ? (
-                <span className="shrink-0 rounded-full border border-amber-400/40 bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium text-amber-300">
-                  Admin
-                </span>
-              ) : (
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize",
-                    PLAN_BADGE[plan]
-                  )}
-                >
-                  {plan}
-                </span>
-              )
-            }
+            headerRight={<PlanBadge plan={plan} isAdmin={isAdmin} />}
           >
             <div className="divide-y divide-border">
               <InfoRow label="Rolle" value="Eigentümer" />
@@ -527,41 +507,3 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
   );
 }
 
-function UsageMeter({ label, used, limit }: { label: string; used: number; limit: number }) {
-  const unlimited = !Number.isFinite(limit);
-  const pct = unlimited ? 6 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
-  const tone =
-    !unlimited && pct >= 100
-      ? "from-red-500 to-red-400"
-      : !unlimited && pct >= 80
-        ? "from-amber-500 to-amber-400"
-        : "from-accent to-accent-text";
-
-  return (
-    <div>
-      <div className="mb-2 flex items-baseline justify-between">
-        <span className="text-[13px] font-medium text-foreground/80">{label}</span>
-        <span className="text-[13px] tabular-nums text-foreground/55">
-          {unlimited ? (
-            <>
-              {used} <span className="text-foreground/35">· Unbegrenzt</span>
-            </>
-          ) : (
-            <>
-              <span className="text-foreground/85">{used}</span>
-              <span className="text-foreground/35"> / {limit}</span>
-            </>
-          )}
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-surface">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className={cn("h-full rounded-full bg-gradient-to-r", tone)}
-        />
-      </div>
-    </div>
-  );
-}

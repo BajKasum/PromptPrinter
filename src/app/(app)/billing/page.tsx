@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
+import { PlanBadge } from "@/components/app/plan-badge";
+import { UsageMeter } from "@/components/app/usage-meter";
 import { PLANS } from "@/components/marketing/pricing-preview";
 import { createClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { getConfiguredProviders } from "@/lib/byok";
 
@@ -56,133 +56,103 @@ export default async function BillingPage() {
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  // Admin is a role (profiles.is_admin), not a plan — planKey/rawPlan stay
-  // whatever they actually are in billing terms; only the display and the
-  // limits below change for this one account.
   const isAdmin = profile?.is_admin ?? false;
-  const currentPlan = isAdmin ? "Admin" : planKey.charAt(0).toUpperCase() + planKey.slice(1);
-  const limits = effectiveLimits(planKey, isAdmin);
-  const projectsUsed = projectsCount ?? 0;
-  const generationsUsed = monthlyGenerations ?? 0;
-  const chatMessagesUsed = monthlyChatMessages ?? 0;
   const isFree = planKey === "free";
   const hasByok = configuredProviders.length > 0;
-  const planDescription = isAdmin
-    ? "Admin-Konto — alle Limits und Upgrade-Hinweise sind für dich aufgehoben."
-    : isFree
-      ? hasByok
-        ? "Du nutzt PromptPrinter kostenlos mit deinem eigenen API-Key — Generierungen- und Chat-Limit entfallen."
-        : "Du nutzt PromptPrinter kostenlos. Hinterlege in den Einstellungen einen eigenen API-Key, um Generierungen- und Chat-Limit aufzuheben."
-      : "Voller Zugang mit inkludierter API und höheren Limits.";
+  const limits = effectiveLimits(planKey, isAdmin);
+  // A BYOK key lifts the generations and chat caps the same way admin lifts
+  // all three — the project cap still applies either way.
+  const generationLimit = hasByok ? Infinity : limits.generations;
+  const chatLimit = hasByok ? Infinity : limits.chatMessages;
   const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
 
-  const fmtUsage = (used: number, limit: number) =>
-    limit === Infinity ? String(used) : `${used} / ${limit}`;
+  const usageNote = isAdmin
+    ? "Admin-Konto — die Balken unten sind nur zur Orientierung, sie greifen für dich nicht."
+    : hasByok
+      ? "Mit deinem eigenen Key entfallen Generierungen- und Chat-Limit. Das Projekt-Limit bleibt bestehen."
+      : isFree
+        ? "Ist ein Balken voll, geht's erst im nächsten Monat weiter — oder sofort mit Pro oder deinem eigenen Key."
+        : "Ist ein Balken voll, geht's erst im nächsten Monat weiter.";
+
+  const pro = PLANS.find((p) => p.name === "Pro");
+  // features[0] is "Alles aus Free", a meta-line, not something new — the
+  // upgrade panel only cares about what's actually different.
+  const proDelta = pro?.features.slice(1) ?? [];
 
   return (
     <div>
       <FadeIn>
-        <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-          Abrechnung
-        </h1>
-        <p className="mt-1 text-[14px] text-foreground/55 mb-8">
-          Verwalte dein Abo und deine Nutzung.
-        </p>
-      </FadeIn>
-
-      <FadeIn>
-        <div className="card-surface mb-8">
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/45 mb-1.5">
-              Aktueller Plan
-            </div>
-            <span className="text-[24px] font-semibold text-foreground">{currentPlan}</span>
-            <p className="mt-1.5 text-[13px] text-foreground/55 max-w-md">{planDescription}</p>
+            <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
+              Abrechnung
+            </h1>
+            <p className="mt-1.5 text-[14px] text-foreground/55">
+              Dein Plan und deine Nutzung im aktuellen Monat.
+            </p>
           </div>
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 pt-6 border-t border-border">
-            <Stat label="Projekte" value={fmtUsage(projectsUsed, limits.projects)} />
-            <Stat
-              label="Generierungen (Monat)"
-              // Ein eigener Key hebt Generierungen- und Chat-Limit auf (siehe
-              // api/generate + api/chat) — das muss sich auch hier zeigen,
-              // sonst wirkt der Zähler wie eine Deckelung, die gar nicht mehr
-              // gilt.
-              value={hasByok ? `${generationsUsed} · Unbegrenzt` : fmtUsage(generationsUsed, limits.generations)}
-            />
-            <Stat
-              label="Chat-Nachrichten (Monat)"
-              value={hasByok ? `${chatMessagesUsed} · Unbegrenzt` : fmtUsage(chatMessagesUsed, limits.chatMessages)}
-            />
-            <Stat label="API-Zugang" value={apiAccessLabel} />
+          <div className="flex items-center gap-2.5 pb-0.5">
+            <PlanBadge plan={planKey} isAdmin={isAdmin} />
+            <span className="text-[12.5px] text-foreground/45">API-Zugang: {apiAccessLabel}</span>
           </div>
         </div>
       </FadeIn>
 
-      {/* Upgrade-Hinweise gelten nur fuer normale Nutzer — ein Admin-Konto hat
-          bereits vollen Zugang, ein Upsell hier waere irrefuehrend. */}
-      {!isAdmin && (
-        <>
-          <FadeIn delay={0.1}>
-            <div className="mb-4">
-              <h2 className="text-[18px] font-semibold text-foreground">Plan wechseln</h2>
-              <p className="mt-1 text-[13px] text-foreground/55 max-w-xl">
-                Bald kannst du deinen Plan direkt hier wechseln. Bis dahin nutzt du den
-                Free-Plan mit deinen eigenen API-Keys.
-              </p>
-            </div>
-          </FadeIn>
-
-          <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
-            {PLANS.map((p, i) => (
-              <FadeIn key={p.name} delay={0.1 + i * 0.05}>
-                <div
-                  className={cn(
-                    "rounded-2xl p-6 h-full",
-                    p.highlight ? "gradient-border bg-surface" : "card-surface"
-                  )}
-                >
-                  <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="text-[16px] font-semibold text-foreground">{p.name}</h3>
-                    {p.name === currentPlan && (
-                      <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-success border border-success/30 bg-success/10 px-2 py-0.5 rounded-full">
-                        Aktiv
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-1.5 mb-5">
-                    <span className="text-[28px] font-semibold tracking-[-0.02em] text-foreground">
-                      {p.price}
-                    </span>
-                    <span className="text-[12px] text-foreground/45">/ {p.cadence}</span>
-                  </div>
-                  <ul className="space-y-1.5 mb-5">
-                    {p.features.slice(0, 4).map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-[12.5px] text-foreground/70">
-                        <Check className="h-3.5 w-3.5 mt-0.5 text-accent-text/90 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button variant="ghost" className="w-full" disabled>
-                    {p.name === currentPlan ? "Aktueller Plan" : "Bald verfügbar"}
-                  </Button>
-                </div>
-              </FadeIn>
-            ))}
+      <FadeIn delay={0.06}>
+        <section className={isFree && !isAdmin ? "mb-12" : ""}>
+          <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">Nutzung diesen Monat</h2>
+          <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-foreground/55">{usageNote}</p>
+          <div className="grid gap-x-10 gap-y-7 sm:grid-cols-3">
+            <UsageMeter label="Projekte" used={projectsCount ?? 0} limit={limits.projects} />
+            <UsageMeter
+              label="Generierungen"
+              used={monthlyGenerations ?? 0}
+              limit={generationLimit}
+            />
+            <UsageMeter
+              label="Chat-Nachrichten"
+              used={monthlyChatMessages ?? 0}
+              limit={chatLimit}
+            />
           </div>
-        </>
-      )}
-    </div>
-  );
-}
+        </section>
+      </FadeIn>
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/45 mb-1">
-        {label}
-      </div>
-      <div className="text-[15px] font-medium text-foreground">{value}</div>
+      {/* Only a Free, non-admin account has anything to gain here — a Pro/
+          Team account seeing its own plan pitched back at itself would read
+          as broken, not helpful. */}
+      {isFree && !isAdmin && pro && (
+        <FadeIn delay={0.12}>
+          <section className="card-surface p-6 md:p-8">
+            <div className="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
+              <div className="max-w-sm">
+                <h2 className="text-[17px] font-semibold text-foreground">Mehr Spielraum mit Pro</h2>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/55">
+                  {pro.description}
+                </p>
+                <div className="mt-4 flex items-baseline gap-1.5">
+                  <span className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">
+                    {pro.price}
+                  </span>
+                  <span className="text-[12.5px] text-foreground/45">/ {pro.cadence}</span>
+                </div>
+              </div>
+              <ul className="space-y-2.5 md:min-w-[260px]">
+                {proDelta.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-[13.5px] text-foreground/80">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-text" strokeWidth={2.2} />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[12.5px] text-foreground/45">
+              <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+              Bezahlung ist noch nicht freigeschaltet — sobald es so weit ist, meld ich mich.
+            </div>
+          </section>
+        </FadeIn>
+      )}
     </div>
   );
 }
