@@ -2,9 +2,10 @@
 
 import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { Pencil, MessageSquare, PackageCheck, Star } from "lucide-react";
+import { Pencil, MessageSquare, PackageCheck } from "lucide-react";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 import { cn } from "@/lib/utils";
 
 const steps = [
@@ -29,20 +30,9 @@ const steps = [
   },
 ];
 
-// Ambient decoration adrift around the section — Finn's ocean (rising
-// bubbles) plus a few playful sparks, in place of NoteMage's leaves (a
-// forest motif that doesn't fit a dolphin's world). Fixed positions/timings
-// so the layout stays deterministic across renders, not randomized per load.
-type Floater = {
-  kind: "star" | "bubble";
-  top: string;
-  left: string;
-  size: number;
-  delay: number;
-  duration: number;
-};
-
-const FLOATERS: Floater[] = [
+// In place of NoteMage's leaves (a forest motif that doesn't fit a dolphin's
+// world) — see components/brand/floaters.tsx for the shared component.
+const FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "3%", left: "6%", size: 14, delay: 0, duration: 3.4 },
   { kind: "bubble", top: "9%", left: "91%", size: 18, delay: 0.5, duration: 4.6 },
   { kind: "star", top: "26%", left: "95%", size: 10, delay: 1.2, duration: 3 },
@@ -79,49 +69,12 @@ function StepConnector({ index }: { index: number }) {
   );
 }
 
-function Floaters() {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) return null;
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {FLOATERS.map((f, i) => (
-        <motion.span
-          key={i}
-          className="absolute hidden sm:block"
-          style={{ top: f.top, left: f.left }}
-          animate={{ y: [0, -16, 0], opacity: [0.3, 0.85, 0.3] }}
-          transition={{
-            duration: f.duration,
-            delay: f.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          {f.kind === "star" ? (
-            <Star
-              style={{ width: f.size, height: f.size }}
-              className="text-accent-warm"
-              fill="currentColor"
-              strokeWidth={0}
-            />
-          ) : (
-            <span
-              style={{ width: f.size, height: f.size }}
-              className="block rounded-full border border-accent/40 bg-accent/10"
-            />
-          )}
-        </motion.span>
-      ))}
-    </div>
-  );
-}
-
 export function HowItWorks() {
   const reduceMotion = useReducedMotion();
 
   return (
     <section className="container-x relative overflow-hidden pt-16 pb-24 md:pt-20 md:pb-32">
-      <Floaters />
+      <Floaters items={FLOATERS} />
 
       <FadeIn>
         <div className="relative z-10 mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">

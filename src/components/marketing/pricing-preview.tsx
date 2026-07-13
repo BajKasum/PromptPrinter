@@ -2,8 +2,17 @@ import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const PRICING_FLOATERS: FloaterSpec[] = [
+  { kind: "star", top: "5%", left: "9%", size: 13, delay: 0.2, duration: 3.4 },
+  { kind: "bubble", top: "14%", left: "90%", size: 18, delay: 0.8, duration: 4.6 },
+  { kind: "star", top: "40%", left: "95%", size: 10, delay: 1.4, duration: 3.2 },
+  { kind: "bubble", top: "60%", left: "3%", size: 16, delay: 0.5, duration: 4.3 },
+  { kind: "star", top: "90%", left: "85%", size: 9, delay: 1.0, duration: 3.5 },
+];
 
 export const PLANS = [
   {
@@ -40,8 +49,10 @@ export const PLANS = [
 
 export function PricingPreview() {
   return (
-    <section id="preise" className="scroll-mt-24 container-x py-24 md:py-32">
-      <FadeIn>
+    <section id="preise" className="relative overflow-hidden scroll-mt-24 container-x py-24 md:py-32">
+      <Floaters items={PRICING_FLOATERS} />
+
+      <FadeIn className="relative z-10">
         <div className="mb-12 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
@@ -55,6 +66,7 @@ export function PricingPreview() {
           {/* Finn helps you pick — most builders start free. */}
           <AnimatedMascot
             state="helping"
+            motion="bob"
             size={140}
             className="hidden shrink-0 md:block"
             alt="Der Delfin hilft dir bei der Wahl des Plans"

@@ -4,7 +4,16 @@ import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "reac
 import { motion, AnimatePresence } from "framer-motion";
 import { FadeIn } from "@/components/motion/fade-in";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 import { cn } from "@/lib/utils";
+
+const EXAMPLE_FLOATERS: FloaterSpec[] = [
+  { kind: "star", top: "3%", left: "8%", size: 13, delay: 0.1, duration: 3.3 },
+  { kind: "bubble", top: "10%", left: "92%", size: 19, delay: 0.7, duration: 4.7 },
+  { kind: "star", top: "30%", left: "96%", size: 10, delay: 1.5, duration: 3.4 },
+  { kind: "bubble", top: "50%", left: "2%", size: 14, delay: 0.4, duration: 4.1 },
+  { kind: "star", top: "88%", left: "6%", size: 9, delay: 1.1, duration: 3.6 },
+];
 
 // Plain-language tab labels — the technical names (PRD, Master-Prompt, Schema)
 // only show up once the visitor is already convinced, never as the first thing
@@ -170,8 +179,10 @@ export function ExampleOutput() {
   }
 
   return (
-    <section id="example" className="scroll-mt-24 container-x py-24 md:py-32">
-      <FadeIn>
+    <section id="example" className="relative overflow-hidden scroll-mt-24 container-x py-24 md:py-32">
+      <Floaters items={EXAMPLE_FLOATERS} />
+
+      <FadeIn className="relative z-10">
         <div className="mb-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
@@ -193,6 +204,7 @@ export function ExampleOutput() {
           {/* Proud dolphin hands over the finished build package. */}
           <AnimatedMascot
             state="delivering"
+            motion="bob"
             size={150}
             className="mx-auto shrink-0 md:mx-0"
             alt="Der Delfin präsentiert stolz das fertige Bau-Paket"
@@ -200,7 +212,7 @@ export function ExampleOutput() {
         </div>
       </FadeIn>
 
-      <FadeIn delay={0.1}>
+      <FadeIn delay={0.1} className="relative z-10">
         <div className="gradient-border rounded-2xl">
           <div className="rounded-2xl glass-strong overflow-hidden">
             <div className="relative border-b border-border">

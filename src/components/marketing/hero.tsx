@@ -17,7 +17,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import type { MascotState } from "@/components/brand/mascot-states";
+import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 import { cn } from "@/lib/utils";
+
+// Spread across the whole hero, top to bottom, so both the intro mascot and
+// the demo card below feel like they share the same drifting water.
+const HERO_FLOATERS: FloaterSpec[] = [
+  { kind: "star", top: "4%", left: "10%", size: 15, delay: 0, duration: 3.5 },
+  { kind: "bubble", top: "8%", left: "88%", size: 20, delay: 0.6, duration: 4.8 },
+  { kind: "star", top: "22%", left: "94%", size: 10, delay: 1.3, duration: 3.1 },
+  { kind: "bubble", top: "38%", left: "4%", size: 16, delay: 0.3, duration: 4.4 },
+  { kind: "star", top: "55%", left: "3%", size: 11, delay: 1.7, duration: 3.7 },
+  { kind: "bubble", top: "68%", left: "95%", size: 24, delay: 0.9, duration: 5.2 },
+  { kind: "star", top: "82%", left: "8%", size: 9, delay: 0.5, duration: 3.2 },
+  { kind: "bubble", top: "92%", left: "90%", size: 17, delay: 1.1, duration: 4.6 },
+];
 
 export function Hero() {
   return (
@@ -28,8 +42,9 @@ export function Hero() {
     >
       {/* Subtle grid backdrop — restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
+      <Floaters items={HERO_FLOATERS} />
 
-      <div className="container-x relative">
+      <div className="container-x relative z-10">
         {/* Finn is here and talking to you — the first guide on the page, not a
             logo in the corner. Asymmetric on purpose: he stands beside his words. */}
         <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:gap-12 md:text-left">
@@ -41,6 +56,7 @@ export function Hero() {
           >
             <AnimatedMascot
               state="welcoming"
+              motion="bob"
               size={216}
               priority
               className="[&_img]:h-[156px] [&_img]:w-[156px] md:[&_img]:h-[216px] md:[&_img]:w-[216px]"
