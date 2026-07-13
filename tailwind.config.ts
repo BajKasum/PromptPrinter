@@ -42,6 +42,7 @@ const config: Config = {
           foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
           text: "hsl(var(--accent-text) / <alpha-value>)",
           subtle: "hsl(var(--accent-subtle) / <alpha-value>)",
+          warm: "hsl(var(--accent-warm) / <alpha-value>)",
         },
         ring: "hsl(var(--ring) / <alpha-value>)",
         destructive: {
