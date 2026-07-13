@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { rateLimitKey } from "@/lib/rate-limit";
 
 function req(headers: Record<string, string> = {}) {
@@ -28,5 +28,40 @@ describe("rateLimitKey", () => {
 
   it('falls back to "unknown" without any ip headers', () => {
     expect(rateLimitKey(req())).toBe("ip:unknown");
+  });
+});
+
+// redis/isProduction are module-level singletons resolved from process.env at
+// import time, so exercising both configurations needs a fresh module
+// instance per test (vi.resetModules() + a dynamic re-import) rather than
+// the statically-imported rateLimitKey above.
+describe("rateLimit — Upstash-missing behavior differs by environment", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("fails closed in production when Upstash isn't configured, instead of a per-instance fallback", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit } = await import("@/lib/rate-limit");
+
+    const result = await rateLimit("ip:1.2.3.4", { limit: 5, windowMs: 60_000 });
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+
+  it("still uses the in-memory limiter outside production when Upstash isn't configured", async () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit } = await import("@/lib/rate-limit");
+
+    const result = await rateLimit("ip:dev-check", { limit: 5, windowMs: 60_000 });
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(4);
   });
 });

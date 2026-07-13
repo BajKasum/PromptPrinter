@@ -1,8 +1,13 @@
 /**
  * Rate limiter. Uses Upstash Redis when UPSTASH_REDIS_REST_URL +
  * UPSTASH_REDIS_REST_TOKEN are set — durable and shared across serverless
- * instances, the production path. Falls back to an in-memory map otherwise, so
- * local dev and any unconfigured deploy still work without an Upstash account.
+ * instances, the only limiter that's actually global. Falls back to an
+ * in-memory map when unconfigured, but that fallback is scoped to one
+ * process/instance — fine for local dev (a single process), not a real limit
+ * in serverless/multi-instance production (each instance gets its own N
+ * requests, multiplying the real ceiling by however many instances are warm).
+ * In production without Upstash configured, requests fail closed instead of
+ * silently running under a limiter that no longer limits anything global.
  */
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -45,6 +50,9 @@ const redis =
     ? Redis.fromEnv()
     : null;
 
+const isProduction = process.env.NODE_ENV === "production";
+let warnedMissingRedisInProduction = false;
+
 // One Ratelimit per (limit, windowMs) combo — the route uses two (5/h anonymous,
 // 30/h authed) — memoised so we don't rebuild a limiter on every request.
 const limiters = new Map<string, Ratelimit>();
@@ -78,6 +86,21 @@ export async function rateLimit(
       return memoryRateLimit(key, { limit, windowMs });
     }
   }
+
+  if (isProduction) {
+    // Upstash was never configured at all — not a transient outage, a missing
+    // setup step. Refuse instead of quietly enforcing a per-instance limit
+    // that isn't a real ceiling anymore (see the module comment above).
+    if (!warnedMissingRedisInProduction) {
+      warnedMissingRedisInProduction = true;
+      console.error(
+        "[rate-limit] UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN missing in production — " +
+          "refusing requests instead of silently falling back to a per-instance limiter."
+      );
+    }
+    return { allowed: false, remaining: 0, resetAt: Date.now() + windowMs };
+  }
+
   return memoryRateLimit(key, { limit, windowMs });
 }
 
