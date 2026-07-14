@@ -8,8 +8,8 @@ interface LogoProps {
   /** Render only the dolphin mark, without the "PromptPrinter" wordmark. */
   iconOnly?: boolean;
   /**
-   * Two-tone wordmark — "Prompt" in the accent blue, "Printer" in the
-   * foreground color — for placements that want more brand presence (the
+   * Two-tone wordmark, "Prompt" in the accent blue, "Printer" in the
+   * foreground color, for placements that want more brand presence (the
    * sidebar header). `text-foreground` rather than a literal white keeps it
    * theme-correct: near-white in dark mode (the default experience) but still
    * legible in light mode, instead of a hardcoded color that would vanish on
@@ -18,7 +18,7 @@ interface LogoProps {
    */
   accentWordmark?: boolean;
   /**
-   * Animate the wordmark away, leaving just the dolphin — for scroll-driven
+   * Animate the wordmark away, leaving just the dolphin, for scroll-driven
    * navbars where the full lockup only fits near the top. Omit entirely for
    * the plain non-animated lockup used everywhere else; only pass this when
    * the placement actually tracks scroll position.
@@ -29,8 +29,8 @@ interface LogoProps {
 /**
  * Brand lockup: the dolphin mascot + the "PromptPrinter" wordmark. The dolphin
  * is the single source PNG (/mascot/dolphin.png via <Mascot>), so swapping that
- * file reskins the logo everywhere. The wordmark is real text — crisp at any
- * size and theme-aware — instead of being baked into the image.
+ * file reskins the logo everywhere. The wordmark is real text, crisp at any
+ * size and theme-aware, instead of being baked into the image.
  */
 export function Logo({
   className,
@@ -40,7 +40,7 @@ export function Logo({
   collapsed,
 }: LogoProps) {
   // `collapsed` undefined (the default everywhere but the scroll navbar) skips
-  // the animation wrapper entirely — every other placement renders exactly as
+  // the animation wrapper entirely, every other placement renders exactly as
   // before, with the wordmark at its natural width.
   const isCollapsible = collapsed !== undefined;
 
@@ -84,7 +84,7 @@ export function Logo({
 }
 
 /**
- * Compact mark for tight spots (favicons, avatars) — just the dolphin.
+ * Compact mark for tight spots (favicons, avatars), just the dolphin.
  */
 export function LogoMark({ size = 28 }: { size?: number }) {
   return <Mascot size={size} priority alt="PromptPrinter" />;

@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useCopyToClipboard } from "@/lib/use-copy-to-clipboard";
 
-// Render an assistant reply as real Markdown — headings, lists, bold, tables —
+// Render an assistant reply as real Markdown, headings, lists, bold, tables,
 // instead of raw text. Any fenced block becomes a CodeBlock with its own copy
 // button, which is where the paste-ready prompt lives. Fully self-contained:
 // doesn't touch any chat state, just the string it's given.

@@ -50,7 +50,7 @@ describe("MobileNav", () => {
   });
 
   it("closes when the backdrop is clicked", async () => {
-    // Both the backdrop and the X button share the "Menü schliessen" label —
+    // Both the backdrop and the X button share the "Menü schliessen" label,
     // the backdrop is the first one in DOM order.
     const user = userEvent.setup();
     render(<MobileNav chats={chats} projects={[]} />);

@@ -23,8 +23,8 @@ const schema = z.object({
 /**
  * Signup, right column of the two-column auth layout (Finn lives in the
  * left panel, see AuthExperienceShell): OAuth first (Google/GitHub), then
- * email + password with an explicit terms checkbox and — when a Turnstile
- * site key is configured — Cloudflare's human check. The email-confirmation
+ * email + password with an explicit terms checkbox and, when a Turnstile
+ * site key is configured, Cloudflare's human check. The email-confirmation
  * state and the dolphin celebration for instant sessions stay as before.
  */
 export function SignUpExperience() {
@@ -41,7 +41,7 @@ export function SignUpExperience() {
   const [signupSent, setSignupSent] = useState(false);
   const [celebrateMsg, setCelebrateMsg] = useState<string | null>(null);
 
-  // Turnstile tokens are single-use — bump the nonce after any failed auth
+  // Turnstile tokens are single-use, bump the nonce after any failed auth
   // call so the widget issues a fresh one for the retry.
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaNonce, setCaptchaNonce] = useState(0);
@@ -191,7 +191,7 @@ export function SignUpExperience() {
   return (
     <AuthExperienceShell
       panelTitle="Schön, dass du da bist."
-      panelSub="Ich bin Finn. Erzähl mir deine Idee — ich mach einen fertigen Plan draus."
+      panelSub="Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Plan draus."
       overlay={
         celebrateMsg && (
           <SuccessCelebration

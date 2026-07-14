@@ -13,7 +13,7 @@ export type FloaterSpec = {
 };
 
 /**
- * Ambient decoration adrift around a section — Finn's ocean (rising bubbles)
+ * Ambient decoration adrift around a section, Finn's ocean (rising bubbles)
  * plus a few playful sparks. Each caller passes its own tailored `items` (a
  * fixed, deterministic layout, not randomized per render) so density and
  * spread match that section's own size instead of every section reusing one

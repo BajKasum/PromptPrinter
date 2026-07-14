@@ -5,7 +5,7 @@ import { LEGAL } from "@/lib/legal";
 export const metadata: Metadata = {
   title: "Datenschutz",
   description:
-    "Wie PromptPrinter deine Personendaten bearbeitet — Konto, Eingaben, KI-Verarbeitung und deine Rechte.",
+    "Wie PromptPrinter deine Personendaten bearbeitet: Konto, Eingaben, KI-Verarbeitung und deine Rechte.",
 };
 
 export default function DatenschutzPage() {
@@ -13,13 +13,13 @@ export default function DatenschutzPage() {
     <LegalShell
       badge="Rechtliches"
       title="Datenschutzerklärung"
-      intro="Wir bearbeiten nur die Daten, die für den Betrieb von PromptPrinter nötig sind — und legen offen, an wen sie weitergegeben werden."
+      intro="Wir bearbeiten nur die Daten, die für den Betrieb von PromptPrinter nötig sind, und legen offen, an wen sie weitergegeben werden."
       updated={LEGAL.lastUpdated}
     >
       <h2>1. Verantwortlicher</h2>
       <p>
         Verantwortlich für die Bearbeitung deiner Personendaten im Sinne des Schweizer
-        Datenschutzgesetzes (revDSG) und – soweit anwendbar – der EU-Datenschutz-Grundverordnung
+        Datenschutzgesetzes (revDSG) und (soweit anwendbar) der EU-Datenschutz-Grundverordnung
         (DSGVO) ist:
       </p>
       <p>
@@ -63,16 +63,16 @@ export default function DatenschutzPage() {
       <ul>
         <li>
           <strong>Bereitstellung des Dienstes</strong> (Konto, Erstellung und Speicherung von
-          Projekten, KI-Generierung) — zur Erfüllung des Nutzungsvertrags (Art. 6 Abs. 1 lit. b
+          Projekten, KI-Generierung), zur Erfüllung des Nutzungsvertrags (Art. 6 Abs. 1 lit. b
           DSGVO; Art. 31 Abs. 1 revDSG).
         </li>
         <li>
-          <strong>Sicherheit und Missbrauchsschutz</strong> (Rate-Limiting, Protokolle) — aufgrund
+          <strong>Sicherheit und Missbrauchsschutz</strong> (Rate-Limiting, Protokolle), aufgrund
           unseres berechtigten Interesses am stabilen und sicheren Betrieb (Art. 6 Abs. 1 lit. f
           DSGVO).
         </li>
         <li>
-          <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Artefakte — zur
+          <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Artefakte, zur
           Erfüllung des Nutzungsvertrags.
         </li>
       </ul>
@@ -84,25 +84,25 @@ export default function DatenschutzPage() {
       </p>
       <ul>
         <li>
-          <strong>Supabase</strong> (Supabase Inc.) — Authentifizierung, Datenbank und Speicherung
+          <strong>Supabase</strong> (Supabase Inc.): Authentifizierung, Datenbank und Speicherung
           deiner Konto- und Inhaltsdaten. Datenregion: {LEGAL.dataRegion}.
         </li>
         <li>
-          <strong>Z.ai</strong> (Zhipu AI) — die von dir eingegebenen Projektangaben und
+          <strong>Z.ai</strong> (Zhipu AI): die von dir eingegebenen Projektangaben und
           Chat-Nachrichten werden zur KI-Generierung an die Z.ai-API übermittelt. Dabei kann eine
           Übermittlung nach <strong>China</strong> stattfinden.
         </li>
         <li>
-          <strong>Google Gemini</strong> (Google Ireland Ltd. / Google LLC) — als Ausweich-Anbieter,
+          <strong>Google Gemini</strong> (Google Ireland Ltd. / Google LLC): als Ausweich-Anbieter,
           falls Z.ai nicht verfügbar ist. Dabei kann eine Übermittlung in die <strong>USA</strong>{" "}
           stattfinden.
         </li>
         <li>
-          <strong>Upstash</strong> (Upstash Inc.) — Rate-Limiting (sofern aktiviert); bearbeitet zu
+          <strong>Upstash</strong> (Upstash Inc.): Rate-Limiting (sofern aktiviert); bearbeitet zu
           diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung.
         </li>
         <li>
-          <strong>{LEGAL.appHost}</strong> — Betrieb und Auslieferung der Anwendung.
+          <strong>{LEGAL.appHost}</strong>: Betrieb und Auslieferung der Anwendung.
         </li>
       </ul>
       <p>
@@ -112,7 +112,7 @@ export default function DatenschutzPage() {
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
         Einzelne der oben genannten Dienste können Daten ausserhalb der Schweiz bzw. des EWR
-        bearbeiten – insbesondere in die <strong>USA</strong> (Google Gemini, {LEGAL.appHost}) und
+        bearbeiten, insbesondere in die <strong>USA</strong> (Google Gemini, {LEGAL.appHost}) und
         nach <strong>China</strong> (Z.ai). Für die USA stützen wir solche Übermittlungen auf eine
         Zertifizierung nach dem EU-US Data Privacy Framework bzw. die Standardvertragsklauseln der
         EU-Kommission. Für China, wo kein Angemessenheitsbeschluss der EU-Kommission besteht, stützen
@@ -127,7 +127,7 @@ export default function DatenschutzPage() {
       </p>
 
       <h2>7. Deine Rechte</h2>
-      <p>Du hast – im Rahmen des anwendbaren Rechts – das Recht auf:</p>
+      <p>Du hast (im Rahmen des anwendbaren Rechts) das Recht auf:</p>
       <ul>
         <li>Auskunft über die zu dir bearbeiteten Personendaten;</li>
         <li>Berichtigung unrichtiger Daten;</li>
@@ -138,13 +138,13 @@ export default function DatenschutzPage() {
       <p>
         Zur Ausübung dieser Rechte genügt eine Nachricht an{" "}
         <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>. Du hast zudem das Recht, dich bei einer
-        Aufsichtsbehörde zu beschweren – in der Schweiz beim Eidgenössischen Datenschutz- und
+        Aufsichtsbehörde zu beschweren, in der Schweiz beim Eidgenössischen Datenschutz- und
         Öffentlichkeitsbeauftragten (EDÖB), in der EU bei der für dich zuständigen Datenschutzbehörde.
       </p>
 
       <h2>8. Konto und Daten löschen</h2>
       <p>
-        Du kannst dein Konto jederzeit selbst löschen — direkt in der App unter{" "}
+        Du kannst dein Konto jederzeit selbst löschen, direkt in der App unter{" "}
         <strong>Einstellungen</strong>. Dabei werden dein Profil sowie alle zugehörigen Projekte und
         Generierungen unwiderruflich entfernt.
       </p>

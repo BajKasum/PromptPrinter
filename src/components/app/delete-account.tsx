@@ -42,7 +42,7 @@ export function DeleteAccount({ email }: { email: string }) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(body?.error ?? "Unbekannter Fehler.");
       }
-      // Account + session are gone — hard navigate to a clean public page.
+      // Account + session are gone, hard navigate to a clean public page.
       window.location.href = "/";
     } catch (err) {
       setDeleting(false);

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Cloudflare Turnstile site key — public by design (NEXT_PUBLIC_). When unset,
+ * Cloudflare Turnstile site key, public by design (NEXT_PUBLIC_). When unset,
  * the widget renders nothing and the auth forms skip their captcha guard, so
  * local dev and tests keep working without any Cloudflare setup. The matching
  * SECRET key never touches this app: it goes into Supabase → Authentication →
@@ -28,7 +28,7 @@ const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render
 
 /**
  * Renders the "Bestätigen Sie, dass Sie ein Mensch sind"-box and reports the
- * token upward (`null` when it expires or errors). Tokens are single-use —
+ * token upward (`null` when it expires or errors). Tokens are single-use,
  * after a failed submit the caller bumps `resetSignal` to get a fresh one.
  * `onToken` must be referentially stable (useCallback) or the widget remounts.
  */
@@ -64,7 +64,7 @@ export function TurnstileWidget({
     if (window.turnstile) {
       renderWidget();
     } else {
-      // Load the script once, app-wide — a second widget (login → signup
+      // Load the script once, app-wide, a second widget (login → signup
       // navigation) reuses the same tag instead of appending another.
       let script = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_SRC}"]`);
       if (!script) {

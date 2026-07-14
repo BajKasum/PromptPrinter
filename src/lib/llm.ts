@@ -6,21 +6,21 @@ import OpenAI from "openai";
 // /api/generate) call chatComplete() and never touch provider SDKs or fetch
 // shapes themselves, so switching or adding a provider is a change here only.
 //
-// Server-side provider priority (first configured key wins) — used whenever
+// Server-side provider priority (first configured key wins), used whenever
 // the caller has no BYOK override:
-//   1. Z.ai   — ZAI_API_KEY  (primary; OpenAI-compatible chat/completions)
-//   2. Gemini — GEMINI_API_KEY (kept as secondary: the code existed and works)
-//   3. none   — the routes fall back to their stub responses, so the whole
+//   1. Z.ai: ZAI_API_KEY (primary; OpenAI-compatible chat/completions)
+//   2. Gemini: GEMINI_API_KEY (kept as secondary: the code existed and works)
+//   3. none: the routes fall back to their stub responses, so the whole
 //      flow stays testable without any key (deliberate, see CLAUDE.md).
 //
 // BYOK (settings → "Eigene API-Keys"): a signed-in user can store their own
 // Anthropic/OpenAI/Gemini key (encrypted, src/lib/crypto.ts) and have their
 // calls run against their own account instead of Z.ai, or plug in a generic
-// "custom" endpoint (their own label + chat-completions URL + model — Z.ai,
+// "custom" endpoint (their own label + chat-completions URL + model, Z.ai,
 // DeepSeek, Groq, OpenRouter, a self-hosted gateway, anything OpenAI-
-// compatible). Z.ai's own server-default key is never a BYOK choice itself —
+// compatible). Z.ai's own server-default key is never a BYOK choice itself,
 // it's the platform's own default, not something a user brings a spare key
-// for — but a user's own Z.ai key fits perfectly through 'custom'. See
+// for, but a user's own Z.ai key fits perfectly through 'custom'. See
 // ByokProvider/LlmOverride below.
 
 export type LlmConfig = { provider: "zai" | "gemini"; model: string };
@@ -48,7 +48,7 @@ export type LlmResult = {
 /**
  * The provider answered, but with nothing usable (blocked, consumed by
  * thinking, …). Distinct from transport/API errors so callers can degrade
- * differently — the generate route falls back to the unfilled template
+ * differently, the generate route falls back to the unfilled template
  * instead of showing a failure note.
  */
 export class LlmEmptyReplyError extends Error {
@@ -58,9 +58,9 @@ export class LlmEmptyReplyError extends Error {
   }
 }
 
-// GLM-4.5-Air — cost-tier default (verified against the live Z.ai account,
+// GLM-4.5-Air, cost-tier default (verified against the live Z.ai account,
 // 2026-07): $0.20/$1.10 per M input/output tokens vs. glm-5-turbo's
-// $1.20/$4.00 — 6x/3.6x cheaper, and a quick quality check against a real
+// $1.20/$4.00, 6x/3.6x cheaper, and a quick quality check against a real
 // product prompt came back coherent and well-structured. Every artifact call
 // (up to 10 per software-pack run) and every chat turn goes through this, so
 // the model choice is the single biggest cost lever in the whole pipeline.
@@ -71,7 +71,7 @@ const ZAI_ENDPOINT = "https://api.z.ai/api/paas/v4/chat/completions";
 
 const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 
-// BYOK defaults — a user's own account, so cost isn't a lever here the way it
+// BYOK defaults, a user's own account, so cost isn't a lever here the way it
 // is for ZAI_DEFAULT_MODEL; these just need to be a solid, current model per
 // provider. Each is overridable without a code change (mirrors ZAI_MODEL/
 // GEMINI_MODEL above), worth revisiting as each provider's lineup moves on.
@@ -82,11 +82,11 @@ const OPENAI_DEFAULT_MODEL = "gpt-5.1";
 // the visible reply, not a budget shared with invisible reasoning tokens.
 // 6144 leaves real headroom over the largest artifact observed in practice
 // (the database-schema artifact, ~3.5k tokens) while capping the cost/latency
-// tail if a model ever rambles — the previous 8192 was ~2.3x oversized against
+// tail if a model ever rambles, the previous 8192 was ~2.3x oversized against
 // that real-world ceiling.
 const DEFAULT_MAX_OUTPUT_TOKENS = 6144;
 
-/** Which provider is configured, if any — also the display name for storage. */
+/** Which provider is configured, if any, also the display name for storage. */
 export function llmConfig(): LlmConfig | null {
   if (process.env.ZAI_API_KEY) {
     return { provider: "zai", model: process.env.ZAI_MODEL ?? ZAI_DEFAULT_MODEL };
@@ -99,11 +99,11 @@ export function llmConfig(): LlmConfig | null {
 
 /**
  * One completion. With `opts.override` (a user's own BYOK key), runs against
- * that provider/account directly — the server's configured provider never
+ * that provider/account directly, the server's configured provider never
  * enters the picture, so this works even with no server key at all. Without
  * an override, uses the server's configured provider (llmConfig()) and must
  * not be called when that's null. Throws on transport errors, non-2xx
- * responses and empty replies — callers decide how to degrade (the chat
+ * responses and empty replies, callers decide how to degrade (the chat
  * route surfaces a 502, the generate route falls back per artifact).
  */
 export async function chatComplete(opts: {
@@ -156,12 +156,12 @@ export async function chatComplete(opts: {
   );
 }
 
-// Z.ai's current plan caps how many requests it'll serve at once — observed:
+// Z.ai's current plan caps how many requests it'll serve at once, observed:
 // firing 5 in parallel gets ~2 through and 429s the rest (error code 1302,
 // "Rate limit reached for requests"). /api/generate needs up to 10 artifact
 // completions per run, so a plain Promise.all mostly comes back as error
-// text. One in flight at a time — with a short retry for the odd 429 that
-// slips through anyway — is what actually finishes a run intact; the
+// text. One in flight at a time, with a short retry for the odd 429 that
+// slips through anyway, is what actually finishes a run intact; the
 // generate route no longer talks to chatComplete directly so this stays the
 // one place that decides how a batch of completions gets scheduled.
 const RATE_LIMIT_RETRIES = 3;
@@ -177,7 +177,7 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Runs one completion per prompt, strictly one at a time, retrying a 429
- * with a short exponential backoff before moving on. Never throws — each
+ * with a short exponential backoff before moving on. Never throws, each
  * entry comes back as either `{ result }` or `{ error }` (the original
  * error, e.g. still `instanceof LlmEmptyReplyError`) so the caller keeps
  * deciding how to degrade per artifact, same as before this existed.
@@ -247,7 +247,7 @@ async function zaiComplete(
       max_tokens: maxOutputTokens,
       stream: false,
       // GLM models decide on their own whether to "think"; for prompt-artifact
-      // generation that only adds latency and burns output budget — 11 calls
+      // generation that only adds latency and burns output budget, 11 calls
       // run in parallel per software packet. Explicitly off.
       thinking: { type: "disabled" },
     }),
@@ -284,11 +284,11 @@ async function zaiComplete(
   return { text, usage };
 }
 
-// ─── Custom (BYOK only) — any OpenAI-compatible chat/completions endpoint ───
+// ─── Custom (BYOK only), any OpenAI-compatible chat/completions endpoint ───
 // The user supplies their own endpoint + model alongside the key (settings →
 // "Eigene API-Keys" → "Custom"), so this covers Z.ai, DeepSeek, Groq,
-// OpenRouter, a self-hosted gateway — anything speaking the OpenAI chat/
-// completions shape. No "thinking" flag here unlike zaiComplete — that's a
+// OpenRouter, a self-hosted gateway, anything speaking the OpenAI chat/
+// completions shape. No "thinking" flag here unlike zaiComplete, that's a
 // Z.ai-specific quirk, not something to impose on an arbitrary endpoint.
 
 async function customComplete(
@@ -360,7 +360,7 @@ async function geminiComplete(
   });
 
   // `text` is undefined when the response was blocked or fully consumed by
-  // thinking — treat as empty and let the caller degrade.
+  // thinking, treat as empty and let the caller degrade.
   const text = res.text?.trim() ?? "";
   if (!text) throw new LlmEmptyReplyError("Gemini");
 
@@ -373,7 +373,7 @@ async function geminiComplete(
   return { text, usage };
 }
 
-// ─── Anthropic (BYOK only — never the server's own provider) ────────────────
+// ─── Anthropic (BYOK only, never the server's own provider) ────────────────
 
 async function anthropicComplete(
   model: string,
@@ -404,7 +404,7 @@ async function anthropicComplete(
   return { text, usage };
 }
 
-// ─── OpenAI (BYOK only — never the server's own provider) ───────────────────
+// ─── OpenAI (BYOK only, never the server's own provider) ───────────────────
 
 async function openaiComplete(
   model: string,

@@ -11,7 +11,7 @@ export const TOOL_OPTIONS = {
 } as const;
 
 // Each field is either one of the preset options above or a user-supplied
-// custom tool name (Deepseek, NoSQL, …) — so the stored type is just a string.
+// custom tool name (Deepseek, NoSQL, …), so the stored type is just a string.
 export type ProjectTools = {
   master: string;
   frontend: string;

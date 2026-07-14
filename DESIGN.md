@@ -1,4 +1,4 @@
-# PromptPrinter — Design System
+# PromptPrinter, Design System
 
 > **Richtung:** Refined Dev-Brand (Linear / Vercel / Raycast). Monochrome Chrome
 > + **ein** Akzent (Babyblau). Light **und** Dark mit Toggle. Weg von
@@ -10,13 +10,13 @@ Light + Dark über `next-themes` (`attribute="class"`, `defaultTheme="dark"`,
 `enableSystem`). Tokens flippen über `.dark` auf `<html>`.
 
 > **Theme-Entscheidung (2026-07):** Die öffentliche Website (Marketing, Auth,
-> Legal) hat **eine** bewusste, immer helle Grundstimmung — kein Toggle im
+> Legal) hat **eine** bewusste, immer helle Grundstimmung, kein Toggle im
 > Header. `ThemeProvider` (`src/components/theme-provider.tsx`) erzwingt das
 > per next-themes' eigenem `forcedTheme`-Mechanismus routenbasiert
 > (`usePathname`), ohne die tatsächlich gespeicherte Praeferenz zu
 > überschreiben. Umschaltbar ist das Theme nur innerhalb des eingeloggten
 > Bereichs, als bewusste Workspace-Praeferenz in den Einstellungen
-> (`ThemePreference`, `src/components/app/theme-preference.tsx`) — Hell /
+> (`ThemePreference`, `src/components/app/theme-preference.tsx`), Hell /
 > Dunkel / System, kein Header-Button mehr.
 
 ## Farb-Tokens
@@ -24,7 +24,7 @@ Light + Dark über `next-themes` (`attribute="class"`, `defaultTheme="dark"`,
 Alle Farben sind semantische CSS-Variablen in `src/app/globals.css`
 (`:root` = light, `.dark` = dark), als HSL-Channels gespeichert, damit
 Tailwind-Opacity (`bg-accent/10`, `ring-ring/40`) funktioniert. **Nie rohe
-Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
+Hex-Werte in Komponenten**, immer Token-Utilities nutzen.
 
 | Token (Tailwind) | Rolle | Light | Dark |
 |---|---|---|---|
@@ -39,7 +39,7 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
 | `text-accent-text` | **Links / Akzent-Text** (kontrast-sicher) | `#15679E` | `#8FCDF2` |
 | `bg-accent-subtle` | Akzent-Tint-Fläche | hell-babyblau | dunkel-babyblau |
 | `ring-ring` | Focus-Ring | babyblau | babyblau |
-| `bg-destructive` / `success` / `warning` | Status | — | — |
+| `bg-destructive` / `success` / `warning` | Status |, |, |
 
 > **Hinweis (Finn's World, Phase 1):** Die Neutrals oben wurden in **beiden Themes**
 > auf einen ozeanischen Hue rekalibriert (Hue-only, S/L unverändert): Dark `208`,
@@ -51,14 +51,14 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
 - **Primär-Aktionen sind monochrom** (`variant="primary"` = schwarz/weiss).
 - **Babyblau ist Akzent**, nicht Default-CTA: Links, aktive Nav, Focus-Ring,
   Selection, Charts, Brand-Momente. Babyblau-Fill nur via `variant="accent"`
-  (trägt dunklen Text, nie weissen — sonst Kontrast < 4.5:1).
+  (trägt dunklen Text, nie weissen, sonst Kontrast < 4.5:1).
 - Farbiger Akzent-**Text** immer `text-accent-text` (pro Theme kalibriert),
   nie `text-accent` (das ist der helle Fill-Ton, auf Weiss unlesbar).
 
 ## Typografie
 
-- **Geist Sans** (`font-sans`) — UI & Fliesstext.
-- **Geist Mono** (`font-mono`) — Labels, Caps, tabellarische Zahlen, Code,
+- **Geist Sans** (`font-sans`), UI & Fliesstext.
+- **Geist Mono** (`font-mono`), Labels, Caps, tabellarische Zahlen, Code,
   Chips, Tastatur-Shortcuts.
 - Type-Scale: `display-*`, `headline-*`, `body-*`, `label`, `label-caps`, `code`
   (siehe `tailwind.config.ts`).
@@ -68,7 +68,7 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
 - Radius eng: `sm 6 / md 8 / lg 10 / xl 12 / 2xl 16`.
 - Flache Flächen + 1px-Hairline-Border statt Glassmorphism. Shadows dezent
   (`shadow-card`, `shadow-elevated`).
-- Micro-Interaktionen 150–300 ms, `prefers-reduced-motion` respektieren.
+- Micro-Interaktionen 150-300 ms, `prefers-reduced-motion` respektieren.
 
 ## Regeln (aus ui-ux-pro-max)
 
@@ -76,17 +76,17 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
 - Sichtbare Focus-Rings (`focus-visible:ring-2 ring-ring/50`), nie entfernen.
 - Tap-Targets ≥ 44px, Icon-only-Buttons brauchen `aria-label`.
 - SVG-Icons (Lucide), keine Emoji als Icons; konsistente Stroke-Width (~1.8).
-- Beide Themes vor Auslieferung testen — nicht aus einem ableiten.
+- Beide Themes vor Auslieferung testen, nicht aus einem ableiten.
 
 ## Komponenten-Migration (Status)
 
-- **Phase A — Fundament:** Tokens, `globals.css`, Root-Layout + Geist +
+- **Phase A, Fundament:** Tokens, `globals.css`, Root-Layout + Geist +
   ThemeProvider, ThemeToggle, UI-Primitives (button/card/input/label/toast/
   skeleton/password-input), Topbar. ✅
-- **Phase B — App-Shell:** sidebar, mobile-nav, command-palette, dashboard,
+- **Phase B, App-Shell:** sidebar, mobile-nav, command-palette, dashboard,
   chat, projects, generations, library, settings, billing, alle App-Komponenten,
   Error-/Not-Found-Boundaries. ✅
-- **Phase C — Marketing + Auth + Legal:** navbar (+ Toggle), hero (Glow entfernt),
+- **Phase C, Marketing + Auth + Legal:** navbar (+ Toggle), hero (Glow entfernt),
   alle marketing/*, auth-form, login/signup/reset, legal-shell, pricing/features,
   global-error + opengraph-image. ✅
 - **Polish:** Settings-Karten-Akzente auf Babyblau vereinheitlicht (Danger bleibt
@@ -102,28 +102,27 @@ Hex-Werte in Komponenten** — immer Token-Utilities nutzen.
 
 ---
 
-## Finn's World — Atmosphäre & Markenwelt
+## Finn's World, Atmosphäre & Markenwelt
 
-PromptPrinter soll sich anfühlen wie eine ruhige, lichtdurchflutete Ozeanlandschaft
-— **premium, kreativ, intelligent**, nicht wie ein SaaS-Template oder ein Kinderdesign.
+PromptPrinter soll sich anfühlen wie eine ruhige, lichtdurchflutete Ozeanlandschaft, **premium, kreativ, intelligent**, nicht wie ein SaaS-Template oder ein Kinderdesign.
 Finn führt unauffällig durch die Seite. Technisch: monochrome Palette + Wasserblau-Akzent
 + seltene Korall-Tupfer, subtile Tiefen-Gradienten/Lichtquellen, viel Weißraum, schwebende
 Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-motion`).
 
-### Manifesto — 10 Prinzipien (Kompass für jede Entscheidung)
+### Manifesto, 10 Prinzipien (Kompass für jede Entscheidung)
 
-1. **Ozean durch Licht, nicht Objekte** — Farbverläufe & Beleuchtung, keine Fische/Wellenmuster.
-2. **Sonnenlicht statt Aquarium** — offenes, lichtdurchflutetes Wasser; kein Tiefsee-Diorama, keine Glaskiste. Licht von oben.
-3. **Premium-Produkt mit Finn** — ernstzunehmende Software. Entfernt man Finn, wirkt die Seite immer noch seriös.
-4. **Ein Akzent ist Wasser, Koralle das Feuer** — Babyblau allgegenwärtig & kühl; Koralle nur punktuell, nie im Standard-UI.
-5. **Tiefe hat Richtung** — beim Scrollen sinnhaft tiefer: oben hell (Oberfläche), unten dunkler.
-6. **Alles schwebt** — sanfte, „schwere" Feder-Physik, leicht verzögertes Aufkommen, nichts abruptes.
-7. **Zurückhaltung ist Luxus** — Weißraum = offenes Wasser. Springt ein Effekt ins Auge, ist er zu stark.
-8. **Warme Neutrals** — Creme statt reinem Weiß, erwärmtes Navy statt kühlem Schwarzblau.
-9. **Biolumineszenz-Akzent** — Akzent/Licht wie lebendes Licht: sparsam, aber präsent (Fokus-Ring leuchtet sanft, nie Neon).
-10. **Stimmung: ruhig – edel – intelligent – kreativ – vertrauenswürdig** — keine grellen oder albernen Elemente.
+1. **Ozean durch Licht, nicht Objekte**, Farbverläufe & Beleuchtung, keine Fische/Wellenmuster.
+2. **Sonnenlicht statt Aquarium**, offenes, lichtdurchflutetes Wasser; kein Tiefsee-Diorama, keine Glaskiste. Licht von oben.
+3. **Premium-Produkt mit Finn**, ernstzunehmende Software. Entfernt man Finn, wirkt die Seite immer noch seriös.
+4. **Ein Akzent ist Wasser, Koralle das Feuer**, Babyblau allgegenwärtig & kühl; Koralle nur punktuell, nie im Standard-UI.
+5. **Tiefe hat Richtung**, beim Scrollen sinnhaft tiefer: oben hell (Oberfläche), unten dunkler.
+6. **Alles schwebt**, sanfte, „schwere" Feder-Physik, leicht verzögertes Aufkommen, nichts abruptes.
+7. **Zurückhaltung ist Luxus**, Weißraum = offenes Wasser. Springt ein Effekt ins Auge, ist er zu stark.
+8. **Warme Neutrals**, Creme statt reinem Weiß, erwärmtes Navy statt kühlem Schwarzblau.
+9. **Biolumineszenz-Akzent**, Akzent/Licht wie lebendes Licht: sparsam, aber präsent (Fokus-Ring leuchtet sanft, nie Neon).
+10. **Stimmung: ruhig, edel, intelligent, kreativ, vertrauenswürdig**, keine grellen oder albernen Elemente.
 
-### Palette (Finn's World) — Ist-Zustand
+### Palette (Finn's World), Ist-Zustand
 
 > ✅ **Phase 1 in beiden Themes geshippt.** Die Werte unten sind live. `--accent-warm`
 > ist in `:root` **und** `.dark` definiert, wird aber **nirgends angewendet** (reserviert
@@ -137,9 +136,9 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
 | `--surface-hover` | `206 20% 95%` | `208 16% 15%` | Hover-Fläche |
 | `--shadow` | `210 44% 12%` (≈ `#11181F`, dunkles Blau, niedrige Alpha) | `208 25% 3%` | Schlagschatten (kühl getönt) |
 | `--accent` (Wasser) | `203 79% 72%` | `204 80% 75%` | Akzent = Wasserfarbe |
-| `--accent-warm` (Koralle) | `14 84% 64%` | `12 88% 70%` | ✅ definiert (beide Themes), **ungenutzt** — reserviert |
+| `--accent-warm` (Koralle) | `14 84% 64%` | `12 88% 70%` | ✅ definiert (beide Themes), **ungenutzt**, reserviert |
 
-### Atmosphäre — erlaubt vs. verboten
+### Atmosphäre, erlaubt vs. verboten
 
 | **Erlaubt** | **Verboten** |
 |---|---|
@@ -152,21 +151,21 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
 
 ### Bewegung & Reduced Motion
 
-- Gemeinsame **„Finn-Physik"**: Spring-Easing (Richtwert `stiffness 30–50`, `damping 15–20`),
-  Einblendungen ~0,6–0,8 s, immer dieselbe „Schwerkraft" für Konsistenz (Prinzip #6).
+- Gemeinsame **„Finn-Physik"**: Spring-Easing (Richtwert `stiffness 30-50`, `damping 15-20`),
+  Einblendungen ~0,6-0,8 s, immer dieselbe „Schwerkraft" für Konsistenz (Prinzip #6).
 - `@media (prefers-reduced-motion: reduce)` schaltet **alle** nicht-essenziellen Animationen
-  ab (statisch / Dauer 0) — Pflicht (WCAG 2.3.3).
+  ab (statisch / Dauer 0), Pflicht (WCAG 2.3.3).
 
 ### Umsetzungs-Roadmap
 
-- **Phase 1 — Token-Kalibrierung (dark + light) ✅ abgeschlossen.** Neutrals auf
+- **Phase 1, Token-Kalibrierung (dark + light) ✅ abgeschlossen.** Neutrals auf
   ozeanischen Hue vereint (Hue-only), Creme-Background im Light, `--accent-warm` in
   beiden Themes reserviert. „Felt, not seen": Body-BG-Shift nur minimal
   (Dark `rgb(12,14,18)→rgb(12,16,18)`, Light `rgb(255,255,255)→rgb(254,254,253)`).
-- **Phase 2 — Ambienter Tiefen-Effekt + Motion-Physik (offen).** Subtiler Hintergrund-Gradient,
+- **Phase 2, Ambienter Tiefen-Effekt + Motion-Physik (offen).** Subtiler Hintergrund-Gradient,
   **eine** weiche Lichtquelle, gemeinsame Spring-Konstante, biolumineszenter Fokus-Ring.
   Risiko: Performance (GPU-freundlich: opacity/transform statt schwerer Box-Shadows) + Subtilität.
-- **Phase 3 — Optionale Immersion (offen, jeder Punkt streichbar).** Scroll-abhängige Tiefe,
+- **Phase 3, Optionale Immersion (offen, jeder Punkt streichbar).** Scroll-abhängige Tiefe,
   sehr schwache statische Kaustik-Textur, Koralle bei echten Höhepunkten, dezente Parallax/Hover-Licht.
 
 ### QA vor jedem Commit

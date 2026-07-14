@@ -1,11 +1,11 @@
-# CLAUDE.md — Projekt-Kontext für Claude-Code-Sessions
+# CLAUDE.md, Projekt-Kontext für Claude-Code-Sessions
 
 Diese Datei wird bei jedem Session-Start automatisch geladen. Sie soll dir
 schnell Orientierung geben: was das Projekt ist, in welchem Zustand es steckt,
 und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](README.md),
-[DESIGN.md](DESIGN.md) und [DOCKER.md](DOCKER.md) — hier nur das Wesentliche.
+[DESIGN.md](DESIGN.md) und [DOCKER.md](DOCKER.md), hier nur das Wesentliche.
 
-> ⚠️ **Workspace-Redesign (2026-07): Phasen 1–4 + Wahrheits-Pass umgesetzt.**
+> ⚠️ **Workspace-Redesign (2026-07): Phasen 1-4 + Wahrheits-Pass umgesetzt.**
 > [REDESIGN.md](REDESIGN.md) ist das **verbindliche Zielmodell** und bleibt die
 > Detailquelle (Datenmodell, Kontext-Injektions-Budget, offene Nachschritte).
 > Kurzfassung des IST-Zustands:
@@ -21,10 +21,10 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   per Subroute (Übersicht, `chats/[cid]`, `results`). Mehrere Chats pro
 >   Projekt.
 > - **Produktionsweg geschlossen**: jeder Projekt-Chat kann direkt ein
->   Ergebnis erzeugen (`/api/generate` mit optionalem `projectId` — kein
+>   Ergebnis erzeugen (`/api/generate` mit optionalem `projectId`, kein
 >   neues Projekt, nur eine weitere `generations`-Zeile), landet in
 >   `results`. `PacketBridge`/`PromptSave` bleiben bewusst zwei Dateien
->   (Begründung in REDESIGN.md §3) — beide workspace-fähig.
+>   (Begründung in REDESIGN.md §3), beide workspace-fähig.
 > - **Dateien**: `project_files`-Tabelle + privater `project-files`-Bucket,
 >   Upload/Löschen in der Rail, Allowlist `.md/.txt/.json/.csv`, max. 10 à
 >   200 KB. `buildProjectContext` injiziert Anweisungen → Struktur → Dateien
@@ -34,7 +34,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   (`ProjectCard`-Komponente) entfernt.
 >
 > **Nachschritt erledigt:** „In Projekt verschieben" für bestehende globale
-> Chats — Icon-Button in `chat-list.tsx` (nur global) öffnet einen
+> Chats, Icon-Button in `chat-list.tsx` (nur global) öffnet einen
 > Projekt-Picker (`move-to-project.tsx`), setzt `conversations.project_id`
 > per RLS-scoped Client-Update, kein neuer API-Endpunkt.
 >
@@ -53,16 +53,16 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Modell gesendete Historie auf die letzten 12 Nachrichten (gespeichert wird
 > weiterhin die volle Transkript), Projektkontext-Budgets in `buildProjectContext`
 > halbiert (Dateien, Anweisungen, Idee, Artefakt-Referenz). Reine Parameter-
-> optimierung, keine Produktänderung — Details in `src/lib/llm.ts` und
+> optimierung, keine Produktänderung, Details in `src/lib/llm.ts` und
 > `src/app/api/chat/route.ts`.
 >
 > **Kritik-Pass + BYOK + Refactoring (2026-07):** Auf Bitte um eine schonungslos
 > kritische Bewertung der App als neuer Nutzer entstand eine lange Liste
-> echter Lücken — alle abgearbeitet (Commits `977474a`..`bb923eb`):
+> echter Lücken, alle abgearbeitet (Commits `977474a`..`bb923eb`):
 >
 > - **BYOK ist jetzt real, nicht nur versprochen** (`3a8f1b8`): Nutzer
 >   hinterlegen in Settings (`api-keys.tsx`) eigene Anthropic-/OpenAI-/
->   Gemini-Keys — `POST/DELETE /api/settings/api-key`, AES-256-GCM-
+>   Gemini-Keys, `POST/DELETE /api/settings/api-key`, AES-256-GCM-
 >   verschlüsselt (`src/lib/crypto.ts` + Server-Secret
 >   `API_KEY_ENCRYPTION_SECRET`, siehe `.env.example`), Tabelle
 >   `user_api_keys` (Migration `0015_user_api_keys.sql`, **live gegen die
@@ -74,18 +74,18 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > - **PDF-Export** für Pro eingelöst (`jspdf`, `src/lib/pdf-export.ts`);
 >   „Priorisierte Warteschlange" (nie gebaut) aus dem Pricing gestrichen.
 > - **Chat-Kostenrisiko geschlossen** (`826b753`): `/api/chat` hatte kein
->   Plan-Limit, nur den 120/h-Ratelimit — theoretisch ~86k Nachrichten/Monat
+>   Plan-Limit, nur den 120/h-Ratelimit, theoretisch ~86k Nachrichten/Monat
 >   auf dem Server-Key. Jetzt `chatMessages` in `plans.ts` (Free 200/Monat,
 >   Pro/Team 2000/Monat), BYOK hebt es auf, Anzeige in Settings + Billing.
 > - **Datenschutzerklärung korrigiert** (`977474a`): nannte nur Google Gemini
 >   als Auftragsbearbeiter, tatsächlich läuft die Generierung primär über
->   Z.ai — China als Drittland ergänzt (Standardvertragsklauseln statt
+>   Z.ai, China als Drittland ergänzt (Standardvertragsklauseln statt
 >   EU-US Data Privacy Framework, da kein Angemessenheitsbeschluss besteht).
-> - **Zwei God-Objekte aufgelöst** — reine Verhalten-erhaltende Refactorings,
+> - **Zwei God-Objekte aufgelöst**, reine Verhalten-erhaltende Refactorings,
 >   keine Logik-/Optikänderung: `api/generate/route.ts` 375→~130 Zeilen
 >   (`b0975d3`, → `lib/generate-guards.ts`, `build-generate-content.ts`,
 >   `run-generation.ts`, `persist-generation.ts`, geteiltes `lib/api-problem.ts`
->   jetzt auch von `api/chat/route.ts` genutzt — vorher zwei divergierende
+>   jetzt auch von `api/chat/route.ts` genutzt, vorher zwei divergierende
 >   Kopien); `chat.tsx` 667→260 Zeilen (`bb923eb`, → `chat-markdown.tsx`,
 >   `chat-empty-state.tsx`, `chat-result-panel.tsx`, `chat-transcript.tsx`,
 >   `chat-handoff-menu.tsx`, `chat-composer.tsx`, `lib/chat-variants.ts`,
@@ -105,16 +105,15 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >
 > **Offen, wartet auf den Nutzer:** [`src/lib/legal.ts`](src/lib/legal.ts) hat
 > noch Platzhalter (`[VOLLSTÄNDIGER NAME/FIRMA]`, `[STRASSE NR.]`,
-> `[PLZ ORT]`, `[GERICHTSSTAND]`) — Impressum/AGB/Datenschutz sind damit
+> `[PLZ ORT]`, `[GERICHTSSTAND]`), Impressum/AGB/Datenschutz sind damit
 > **live mit sichtbaren Platzhaltern**, bis echte Angaben kommen. `appHost`
 > bleibt ohnehin offen, bis die Hosting-Entscheidung gefallen ist (Punkt 2
-> oben). Alles andere aus dem Kritik-Pass ist erledigt — keine bekannten
+> oben). Alles andere aus dem Kritik-Pass ist erledigt, keine bekannten
 > offenen Findings mehr aus dieser Runde.
 
 ## Was ist PromptPrinter?
 
-SaaS-Tool, das rohe Ideen in **build-fertige Prompt-Pakete** verwandelt —
-optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co. Zielgruppe:
+SaaS-Tool, das rohe Ideen in **build-fertige Prompt-Pakete** verwandelt, optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co. Zielgruppe:
 Developer und Vibe-Coder. Solo-/Indie-Projekt, ein Gründer.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
@@ -124,23 +123,22 @@ Framer Motion · next-themes · Vitest · Docker.
 ## ⚠️ Wichtig zu wissen, bevor du loslegst
 
 1. **Modell-Provider ist Z.ai (GLM), plus BYOK.** Der komplette Modellzugriff
-   ist in [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt — Server-seitig:
-   `ZAI_API_KEY` (Z.ai, Default-Modell `glm-4.5-air` — Kosten-Tier, via
+   ist in [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt, Server-seitig:
+   `ZAI_API_KEY` (Z.ai, Default-Modell `glm-4.5-air`, Kosten-Tier, via
    `ZAI_MODEL` überschreibbar) → `GEMINI_API_KEY` (Zweit-Provider) →
    **Stub-Modus** (Templates kommen unverändert zurück, ganzer Flow bleibt
    ohne Key testbar). Zusätzlich kann jeder Nutzer in den Einstellungen einen
    eigenen Anthropic-/OpenAI-/Gemini-Key hinterlegen (BYOK,
    [`src/lib/byok.ts`](src/lib/byok.ts) + `user_api_keys`-Tabelle,
-   verschlüsselt via `API_KEY_ENCRYPTION_SECRET`) — der übersteuert den
+   verschlüsselt via `API_KEY_ENCRYPTION_SECRET`), der übersteuert den
    Server-Key komplett und hebt Generierungen-/Chat-Nachrichten-Limits auf.
    Routen sprechen nie direkt mit einem Provider-SDK.
 2. **Zahlungen → Lemon Squeezy, aber erst später.** Bezahlung läuft künftig über
    **Lemon Squeezy** (nicht Stripe). Das passiert **erst, nachdem die Website
-   gehostet ist** — vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
+   gehostet ist**, vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
    (UI, `stripe`-Dep, DB-Spalten `stripe_*`); das wird ersetzt, nicht ausgebaut.
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
-   Prod-Docker-Container liest `.env` (via `env_file` in docker-compose.yml) —
-   das `--env-file .env.local` im Compose-Befehl steuert nur die
+   Prod-Docker-Container liest `.env` (via `env_file` in docker-compose.yml), das `--env-file .env.local` im Compose-Befehl steuert nur die
    ${VAR}-Interpolation, nicht die Container-Runtime-Vars. Ein API-Key muss
    also je nach Workflow in der richtigen Datei (oder beiden) stehen.
 
@@ -154,7 +152,7 @@ npm run test         # vitest run
 npm run build        # Production-Build (standalone)
 ```
 
-**Quality-Gate — vor JEDEM Commit muss das komplett grün sein:**
+**Quality-Gate, vor JEDEM Commit muss das komplett grün sein:**
 
 ```bash
 npm run typecheck && npm run lint && npm run test && npm run build
@@ -164,13 +162,13 @@ Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
 
 ## Arbeitsregeln (verbindlich)
 
-- **Git-Staging immer explizit per Dateiname** — nie `git add .` / `git add -A`.
+- **Git-Staging immer explizit per Dateiname**, nie `git add .` / `git add -A`.
 - **Gate vor jedem Commit** (siehe oben), alles grün.
 - **Commit-Trailer:** `Co-Authored-By: Claude <aktuelles Modell> <noreply@anthropic.com>`.
-- **Nach jeder abgeschlossenen Änderung committen + pushen** — nicht auf Aufforderung warten.
-- **Secrets nie mit `NEXT_PUBLIC_*`** prefixen — landen sonst im Client-Bundle.
+- **Nach jeder abgeschlossenen Änderung committen + pushen**, nicht auf Aufforderung warten.
+- **Secrets nie mit `NEXT_PUBLIC_*`** prefixen, landen sonst im Client-Bundle.
   Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.
-- **Keine rohen Hex-Farben** in Komponenten — nur semantische Token-Utilities
+- **Keine rohen Hex-Farben** in Komponenten, nur semantische Token-Utilities
   (siehe [DESIGN.md](DESIGN.md)).
 - **User-scoped Queries:** RLS scope + zusätzlich explizit `.eq("user_id", …)`
   (Defense-in-depth), v.a. wo Counts Limits durchsetzen.
@@ -188,20 +186,20 @@ Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
 ## Struktur (Kurzform)
 
 ```
-src/app/         Routen — (app) = eingeloggt, (auth) = Login/Signup, api/ = Handler
+src/app/         Routen, (app) = eingeloggt, (auth) = Login/Signup, api/ = Handler
 src/components/  ui / app / marketing / onboarding / brand / motion
 src/lib/         Supabase-Clients, rate-limit, plans, Zod-schemas, utils
 src/prompts/     Prompt-Vorlagen + System-Prompts pro Artefakt
-supabase/migrations/  SQL — Schema, RLS, Grants, gehärtete Funktionen (0001→)
+supabase/migrations/  SQL, Schema, RLS, Grants, gehärtete Funktionen (0001→)
 ```
 
 Sicherheits-Header sitzen in [next.config.ts](next.config.ts). Der DB-Layer
-(RLS, Grants, `search_path`-Hardening) ist bewusst sorgfältig — beim Ändern den
+(RLS, Grants, `search_path`-Hardening) ist bewusst sorgfältig, beim Ändern den
 Stil halten und neue Tabellen mit Policy + Grant versehen.
 
 ---
 
-## Mascot-System — Finn
+## Mascot-System, Finn
 
 Finn ist das zentrale Markenmerkmal. Das vollständige Spec steht in [MASCOT.md](MASCOT.md).
 
@@ -209,10 +207,10 @@ Finn ist das zentrale Markenmerkmal. Das vollständige Spec steht in [MASCOT.md]
 building | organizing | explaining | delivering | celebrating | helping | waiting | sad`
 
 **Schlüssel-Komponenten:**
-- `src/components/brand/mascot-states.ts` — State-Registry (Single Source of Truth)
-- `src/components/brand/mascot.tsx` — Base-Komponente mit `state?` prop
-- `src/components/brand/animated-mascot.tsx` — AnimatePresence-Crossfade + Idle-Loops
-- `public/mascot/dolphin-<state>.png` — 16 Assets total (original 4 + 12 neue)
+- `src/components/brand/mascot-states.ts`, State-Registry (Single Source of Truth)
+- `src/components/brand/mascot.tsx`, Base-Komponente mit `state?` prop
+- `src/components/brand/animated-mascot.tsx`, AnimatePresence-Crossfade + Idle-Loops
+- `public/mascot/dolphin-<state>.png`, 16 Assets total (original 4 + 12 neue)
 
 **Animations-Presets:** `float | lean | nod | think | bob | cheer | peek | sigh`
 Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, nicht `Target`.
@@ -237,7 +235,7 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 
 ---
 
-## Landing Page — Aktueller Zustand
+## Landing Page, Aktueller Zustand
 
 **Aktuelle Seiten-Reihenfolge** (`src/app/page.tsx`):
 ```
@@ -246,12 +244,12 @@ Integrations → PricingPreview → FAQ → FinalCTA → Footer
 ```
 
 **Entfernte Sektionen** (bewusst gelöscht, nicht wiederherstellen):
-- `FeaturesGrid` — wiederholte dieselben 4 Outputs wie ExampleOutput. Unique Content
+- `FeaturesGrid`, wiederholte dieselben 4 Outputs wie ExampleOutput. Unique Content
   (Sicherheit, Marketing, Deployment) wurde als neue ExampleOutput-Tabs bewahrt.
-- `Capabilities` — früh entfernt (war Jargon-lastig)
+- `Capabilities`, früh entfernt (war Jargon-lastig)
 
 > **Update:** `HowItWorks` wurde auf Nutzerwunsch wieder eingebunden (nach `Problem`,
-> vor `ExampleOutput`) — schließt den Story-Flow (Schmerz → so gehen wir vor → echtes
+> vor `ExampleOutput`), schließt den Story-Flow (Schmerz → so gehen wir vor → echtes
 > Ergebnis). Flache `card-surface`-Karten + `building`-Finn heben es klar von der
 > glänzenden Hero-Demo ab; damit ist die ursprüngliche Redundanz aufgelöst.
 
@@ -267,53 +265,52 @@ Integrations → PricingPreview → FAQ → FinalCTA → Footer
 | `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst. — Finn" + 5 echte Links | `idle` |
-| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: "Funktionen" (#example), "Preise" (#preise) | — |
+| `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst., Finn" + 5 echte Links | `idle` |
+| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: "Funktionen" (#example), "Preise" (#preise) |, |
 
 **Navbar-Anchor:** `#funktionen` wurde zu `#example` geändert (FeaturesGrid-Entfernung).
 
 **ExampleOutput-Tabs** (6 gesamt):
-- Produktplan, KI-Anweisungen, App-Design, Datenbank — Original-4
-- Sicherheit, Marketing — neu hinzugefügt beim FeaturesGrid-Merge
+- Produktplan, KI-Anweisungen, App-Design, Datenbank, Original-4
+- Sicherheit, Marketing, neu hinzugefügt beim FeaturesGrid-Merge
 
 ---
 
 ## Brand-Prinzipien (aus laufenden Design-Entscheidungen)
 
-- **Finn spricht in Ich-Form** — alle Marketing-Copy ist in Finn's Stimme, nicht Corporate-Voice.
-- **Kein Jargon in Marketing-Texten** — PRD, Blueprint, Schema, Long-Context, Artefakt,
+- **Finn spricht in Ich-Form**, alle Marketing-Copy ist in Finn's Stimme, nicht Corporate-Voice.
+- **Kein Jargon in Marketing-Texten**, PRD, Blueprint, Schema, Long-Context, Artefakt,
   RLS sind aus allen Landing-Page-Texten gestrichen. Nur im App-UI und FAQ (wo Nutzer
   es erwarten) erlaubt.
-- **Keine SaaS-Template-Muster** — kein Feature-Grid, keine nummerierten Karten,
+- **Keine SaaS-Template-Muster**, kein Feature-Grid, keine nummerierten Karten,
   keine corporate Footer-Spalten, keine Status-Pulse-Indikatoren.
-- **Whitespace ist Absicht** — Litany-Prinzip: weniger Struktur = mehr emotionaler Impact.
-- **Finn reist durch die Seite** — welcoming → sad → delivering → helping → celebrating → idle.
+- **Whitespace ist Absicht**, Litany-Prinzip: weniger Struktur = mehr emotionaler Impact.
+- **Finn reist durch die Seite**, welcoming → sad → delivering → helping → celebrating → idle.
   Er soll nicht als dekorativer Sticker wirken, sondern als Begleiter.
-- **Footer = Finn's Abschluss** — die Seite beginnt mit Finn, sie endet mit Finn.
+- **Footer = Finn's Abschluss**, die Seite beginnt mit Finn, sie endet mit Finn.
 
 ---
 
 ## Offene Punkte / Nächste Schritte
 
-**Priorität 1: Das Workspace-Redesign** — Phasen 1–5 aus [REDESIGN.md](REDESIGN.md)
+**Priorität 1: Das Workspace-Redesign**, Phasen 1-5 aus [REDESIGN.md](REDESIGN.md)
 (Sidebar → Chat-Kanonisierung → Workspace v1 → Dateien → Handoff/Wahrheits-Pass).
 Die Brand-Audit-Punkte unten bleiben gültig, laufen aber danach bzw. werden von
 Phase 5 (Landing-Nachzug) teilweise miterledigt.
 
 Noch nicht umgesetzt aus der Brand-Audit (Priorität absteigend):
 
-1. **ProductShowcase** — Finn fehlt komplett in der längsten Sektion. "Alles, was wir
+1. **ProductShowcase**, Finn fehlt komplett in der längsten Sektion. "Alles, was wir
    zusammen bauen" ohne Finn im Raum ist ein Widerspruch. Idee: kleiner Finn im
    Mock-Sidebar oder als Avatar.
-2. **Finn-Welt-Atmosphäre / Dark Mode** — Dark Mode wirkt kalt; der Charakter wirkt
+2. **Finn-Welt-Atmosphäre / Dark Mode**, Dark Mode wirkt kalt; der Charakter wirkt
    wie ein aufgeklebter Sticker auf einem generischen Canvas. Keine Verbindung zwischen
    Finn's Palette (Creme, Coral, Navy) und der Seiten-Palette.
-3. **Integrations-Sektion** — Copy ist in Finn's Stimme, aber visuelle Shell ist noch
+3. **Integrations-Sektion**, Copy ist in Finn's Stimme, aber visuelle Shell ist noch
    generischer SaaS-Baustein (zentrierte Pill-Kapsel). Kein Finn.
-4. **Sektions-Übergänge / Rhythmus** — alle Sektionen haben denselben `py-24/32`-Abstand,
+4. **Sektions-Übergänge / Rhythmus**, alle Sektionen haben denselben `py-24/32`-Abstand,
    metronomischen Rhythmus. Keine dynamische Pacing. Litany bewies: engerer Beat = mehr Emotion.
-5. **Mono-Eyebrow auf jeder Sektion** (`SCHAU ES DIR AN`, `DEIN ARBEITSPLATZ` etc.) —
-   SaaS-Template-Konvention. Finn würde einfach reden, nicht labeln.
+5. **Mono-Eyebrow auf jeder Sektion** (`SCHAU ES DIR AN`, `DEIN ARBEITSPLATZ` etc.), SaaS-Template-Konvention. Finn würde einfach reden, nicht labeln.
 
 **Nicht anfassen (stabil, fertig):**
 - Mascot-State-System und alle 16 Assets

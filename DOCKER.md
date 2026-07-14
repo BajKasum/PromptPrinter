@@ -1,4 +1,4 @@
-# Docker — PromptPrinter starten & stoppen
+# Docker, PromptPrinter starten & stoppen
 
 **Voraussetzung:** Docker Desktop muss **laufen** (Wal-Icon unten rechts ruhig/grün).
 Prüfen:
@@ -11,7 +11,7 @@ Wenn das einen Fehler gibt → Docker Desktop öffnen und warten, bis es gestart
 
 ---
 
-## Entwicklung — der Ersatz für `npm run dev` (mit Hot-Reload)
+## Entwicklung, der Ersatz für `npm run dev` (mit Hot-Reload)
 
 ```powershell
 docker compose -f docker-compose.dev.yml up
@@ -20,7 +20,7 @@ docker compose -f docker-compose.dev.yml up
 - App läuft auf **http://localhost:3000**
 - Code-Änderungen laden **automatisch neu** (Hot-Reload, der Quellcode ist in den Container gemountet)
 - Liest deine **`.env.local`**
-- Erster Start dauert etwas (lädt `node:22` und installiert die Abhängigkeiten im Container — danach gecacht)
+- Erster Start dauert etwas (lädt `node:22` und installiert die Abhängigkeiten im Container, danach gecacht)
 
 **Stoppen:** im selben Terminal **`Strg + C`**, danach sauber aufräumen:
 
@@ -32,7 +32,7 @@ Im Hintergrund starten: `... up -d` · Logs ansehen: `docker compose -f docker-c
 
 ---
 
-## Produktion — gebautes Image (wie es deployed würde)
+## Produktion, gebautes Image (wie es deployed würde)
 
 ```powershell
 docker compose --env-file .env.local up --build -d
@@ -68,7 +68,7 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 
 ## Hinweis zu `npm run dev`
 
-`npm run dev` bleibt vorhanden — der **Dev-Container ruft es intern selbst auf**, deshalb darf es nicht entfernt werden. Dein Workflow ist jetzt aber **ein Docker-Befehl** statt npm direkt:
+`npm run dev` bleibt vorhanden, der **Dev-Container ruft es intern selbst auf**, deshalb darf es nicht entfernt werden. Dein Workflow ist jetzt aber **ein Docker-Befehl** statt npm direkt:
 
 ```powershell
 docker compose -f docker-compose.dev.yml up

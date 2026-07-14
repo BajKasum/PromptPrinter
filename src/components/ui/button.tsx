@@ -13,7 +13,7 @@ const buttonVariants = cva(
         // Primary action is monochrome (black on light, white on dark).
         primary:
           "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98]",
-        // Baby blue fill — use when an action should carry the brand accent.
+        // Baby blue fill, use when an action should carry the brand accent.
         accent:
           "bg-accent text-accent-foreground hover:bg-accent/90 active:scale-[0.98]",
         ghost:

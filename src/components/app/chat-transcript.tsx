@@ -10,7 +10,7 @@ import { downloadFile } from "@/lib/utils";
 // The message-list rendering family: one component per row that can appear
 // in the transcript (a user turn, an older assistant turn, the in-flight
 // typing indicator) plus the condensed strip shown while a handoff card is
-// on stage. The current/newest assistant reply is its own thing —
+// on stage. The current/newest assistant reply is its own thing,
 // see chat-result-panel.tsx.
 
 export function ChatUserBubble({ content }: { content: string }) {

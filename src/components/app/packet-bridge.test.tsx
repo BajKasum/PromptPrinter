@@ -103,7 +103,7 @@ describe("PacketBridge", () => {
     expect(screen.getByText(/Sag mir noch, wer das nutzen soll/)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Zielgruppe"), "Hobbyköche");
-    // Idea from "Kurz" alone is below ideaMin (20 chars) — still invalid.
+    // Idea from "Kurz" alone is below ideaMin (20 chars), still invalid.
     expect(buildButton).toBeDisabled();
 
     await user.clear(screen.getByLabelText("Deine Idee"));
@@ -137,7 +137,7 @@ describe("PacketBridge", () => {
       })
     );
     expect(await screen.findByText(/Finn baut dein Paket/)).toBeInTheDocument();
-    expect(await screen.findByText(/ich leg's dir hin/, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByText(/ich leg's dir hin/i, {}, { timeout: 3000 })).toBeInTheDocument();
     expect(conversationsUpdate).toHaveBeenCalledWith({ project_id: "proj-99" });
 
     // router.push only fires after the post-"done" HANDOFF_DELAY_MS beat.
@@ -165,7 +165,7 @@ describe("PacketBridge", () => {
     await user.type(screen.getByLabelText("Zielgruppe"), "Hobbyköche");
     await user.click(screen.getByRole("button", { name: /Ergebnis erzeugen/ }));
 
-    expect(await screen.findByText(/ich leg's dir hin/, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByText(/ich leg's dir hin/i, {}, { timeout: 3000 })).toBeInTheDocument();
     expect(conversationsUpdate).not.toHaveBeenCalled();
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/projects/proj-1/results"), {

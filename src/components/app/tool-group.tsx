@@ -59,7 +59,7 @@ export function ToolGroup({
           );
         })}
 
-        {/* Custom choice — fills the 4th column and reveals a free-text field. */}
+        {/* Custom choice, fills the 4th column and reveals a free-text field. */}
         <button
           type="button"
           onClick={pickCustom}
@@ -81,7 +81,7 @@ export function ToolGroup({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="z. B. Deepseek, MongoDB…"
-          aria-label={`${label} — eigenes Tool`}
+          aria-label={`${label}, eigenes Tool`}
           maxLength={40}
           className="mt-2 h-10"
         />

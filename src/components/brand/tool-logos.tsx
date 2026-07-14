@@ -44,7 +44,7 @@ export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
 
   switch (name) {
     case "Claude":
-      // Anthropic sunburst — a dense star of tapered rays.
+      // Anthropic sunburst, a dense star of tapered rays.
       return (
         <svg {...common}>
           <g stroke="#D97757" strokeWidth="1.5" strokeLinecap="round">
@@ -170,7 +170,7 @@ export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
       );
 
     case "PostgreSQL":
-      // Stylized elephant head — Postgres blue.
+      // Stylized elephant head, Postgres blue.
       return (
         <svg {...common}>
           <path
@@ -187,7 +187,7 @@ export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
       );
 
     case "MySQL":
-      // Leaping dolphin — MySQL teal with an orange ripple.
+      // Leaping dolphin, MySQL teal with an orange ripple.
       return (
         <svg {...common}>
           <path

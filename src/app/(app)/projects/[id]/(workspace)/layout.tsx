@@ -10,11 +10,11 @@ import { relativeTime } from "@/lib/utils";
 import type { ProjectFile } from "@/lib/project-files";
 
 // The workspace shell (REDESIGN.md, Phase 3): header + context rail persist
-// across the project's "Arbeitsraum" subroutes — Übersicht and Ergebnisse are
+// across the project's "Arbeitsraum" subroutes, Übersicht and Ergebnisse are
 // states of the same room, swapped in the main column. Deliberately scoped to
 // this (workspace) route group only: ./chats/* lives one level up, outside
 // it, so a project chat renders as a plain chat room with no rail and no
-// project header (Chat-vs-Workspace-Trennung) — same URLs as before, route
+// project header (Chat-vs-Workspace-Trennung), same URLs as before, route
 // groups don't affect the path. getProject() is request-cached, so the child
 // pages re-using it cost no extra query.
 
@@ -86,7 +86,7 @@ export default async function ProjectWorkspaceLayout({
             <DeleteProjectButton projectId={project.id} projectName={project.name} />
           </div>
           <div className="flex items-start gap-3.5">
-            {/* Finn's quiet signature — this is his workspace too, not an
+            {/* Finn's quiet signature, this is his workspace too, not an
                 anonymous panel. Static and small: a mark, not a performance. */}
             <Mascot state="idle" size={40} className="mt-0.5 hidden shrink-0 sm:block" />
             <div className="flex min-w-0 flex-col gap-2">

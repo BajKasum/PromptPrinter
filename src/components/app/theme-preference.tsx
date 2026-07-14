@@ -15,8 +15,8 @@ const OPTIONS = [
  * The theme switch lives here now, not as a header button (Theme-Entscheidung,
  * REDESIGN): the public site keeps one deliberate, always-light mood, and
  * inside the app the choice is a considered workspace preference instead of a
- * one-click header toy. next-themes still does the actual work — persists to
- * localStorage, resolves "system" via prefers-color-scheme — only the UI
+ * one-click header toy. next-themes still does the actual work, persists to
+ * localStorage, resolves "system" via prefers-color-scheme, only the UI
  * surface moved from the topbar to here.
  */
 export function ThemePreference() {

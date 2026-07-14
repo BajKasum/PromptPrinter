@@ -30,5 +30,5 @@ The master prompt itself, ready to paste into ${tgt}. It must:
 - End with a tone directive ("be terse", etc.).
 - Be under 400 words.
 
-Do NOT include preamble like "Here is the prompt" — output only the master prompt itself.`;
+Do NOT include preamble like "Here is the prompt", output only the master prompt itself.`;
 }

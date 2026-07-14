@@ -1,12 +1,12 @@
 import { jsPDF } from "jspdf";
 
 // Pro-only export (pricing-preview.tsx → "PDF- & Markdown-Export"). Renders
-// the artifact's markdown as real, selectable text — not a rasterized
-// screenshot (jsPDF's `.html()`/html2canvas path) — so the output stays
+// the artifact's markdown as real, selectable text, not a rasterized
+// screenshot (jsPDF's `.html()`/html2canvas path), so the output stays
 // small, crisp at any zoom, and searchable/copyable. Markdown support is
 // deliberately shallow (headings + bullet lists + stripped emphasis
 // markers): these are reference documents meant to be read, not a full
-// markdown renderer — a heading hierarchy and readable body text cover that.
+// markdown renderer, a heading hierarchy and readable body text cover that.
 
 const MARGIN = 18; // mm
 const LINE_HEIGHT = 5.2; // mm
@@ -77,7 +77,7 @@ export function markdownToPdf(title: string, markdown: string): jsPDF {
       continue;
     }
 
-    // Strip markdown emphasis/code markers rather than rendering them — real
+    // Strip markdown emphasis/code markers rather than rendering them, real
     // inline bold/mono runs would need per-span styling jsPDF's plain text()
     // doesn't give for free, and isn't worth it for a reference export.
     const clean = line

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 // Password field with a built-in show/hide toggle. Drop-in replacement for
-// <Input type="password" /> — it owns the type, so callers must not pass one.
+// <Input type="password" />, it owns the type, so callers must not pass one.
 export const PasswordInput = React.forwardRef<
   HTMLInputElement,
   Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">

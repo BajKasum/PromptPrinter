@@ -53,7 +53,7 @@ vi.mock("@/components/brand/success-celebration", () => ({
 
 // Same rationale as sign-in-experience.test.tsx: bypass jsdom's native
 // type="email"/required constraint validation so our own Zod check runs.
-// Ticks the terms checkbox by default — the one test exercising the
+// Ticks the terms checkbox by default, the one test exercising the
 // terms guard passes acceptTerms: false explicitly.
 async function fillAndSubmit(email: string, password: string, acceptTerms = true) {
   const user = userEvent.setup();

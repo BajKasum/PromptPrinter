@@ -9,7 +9,7 @@ import { TOUR_STEPS } from "@/components/onboarding/tour-steps";
 /**
  * Mounts the first-login tour. Auto-starts once on /chats/new (the login
  * landing) when the profile hasn't completed it yet; `?tour=1` (the settings
- * restart button) forces a run regardless. Closing — finish, skip or Escape — persists
+ * restart button) forces a run regardless. Closing, finish, skip or Escape, persists
  * `onboarding_done` into profiles.settings so it never auto-opens again.
  */
 export function Onboarding({ userId, initialDone }: { userId: string; initialDone: boolean }) {
@@ -38,7 +38,7 @@ function OnboardingInner({ userId, initialDone }: { userId: string; initialDone:
     const auto = !initialDone && !ranRef.current && pathname === "/chats/new";
     if (forced || auto) {
       // Small delay so the dashboard has painted and targets are measurable.
-      // The ref is only set when the timer actually fires — setting it earlier
+      // The ref is only set when the timer actually fires, setting it earlier
       // would let StrictMode's mount/cleanup/mount cycle cancel the tour.
       const t = window.setTimeout(() => {
         ranRef.current = true;
@@ -51,7 +51,7 @@ function OnboardingInner({ userId, initialDone }: { userId: string; initialDone:
   const close = useCallback(() => {
     setOpen(false);
     if (forced) router.replace(pathname, { scroll: false });
-    // Persist in the background — closing the tour must never feel blocked.
+    // Persist in the background, closing the tour must never feel blocked.
     void (async () => {
       try {
         const supabase = createClient();

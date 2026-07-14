@@ -5,7 +5,7 @@ import { FolderKanban, Sparkles, Clock, Star } from "lucide-react";
 import { cn, relativeTime } from "@/lib/utils";
 import type { LibraryItem } from "@/lib/use-library-filter";
 
-// Split out of library-browser.tsx: purely presentational — one project's
+// Split out of library-browser.tsx: purely presentational, one project's
 // card, agnostic to how the list was filtered or how favorites are persisted.
 
 // What lives in this workspace, compact: "2 Chats · 10 Artefakte". A project
@@ -62,12 +62,12 @@ export function LibraryCard({
         </button>
       </div>
 
-      {/* Name leads — this is a workspace you enter, not a record. */}
+      {/* Name leads, this is a workspace you enter, not a record. */}
       <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-2 line-clamp-1">
         {item.name}
       </h3>
 
-      {/* What's inside — category pills as the project's content areas. */}
+      {/* What's inside, category pills as the project's content areas. */}
       {item.categories.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {item.categories.map((c) => (
@@ -81,7 +81,7 @@ export function LibraryCard({
         </div>
       )}
 
-      {/* Workspace-Meta + freshness — supporting metadata in the footer:
+      {/* Workspace-Meta + freshness, supporting metadata in the footer:
           what lives inside (chats, results), not just artifacts. */}
       <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
         <span className="inline-flex items-center gap-1.5">

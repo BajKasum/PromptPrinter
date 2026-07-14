@@ -10,7 +10,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 export const metadata = {
   title: "Funktionen",
   description:
-    "Jedes Artefakt, das du zum Ausliefern brauchst — PRD, Master-Prompt, Frontend- & Backend-Prompts, Schema, Sicherheit, Marketing, SEO, Deployment.",
+    "Jedes Artefakt, das du zum Ausliefern brauchst, PRD, Master-Prompt, Frontend- & Backend-Prompts, Schema, Sicherheit, Marketing, SEO, Deployment.",
 };
 
 export default function FeaturesPage() {
@@ -32,7 +32,7 @@ export default function FeaturesPage() {
             Alles, was du brauchst, um <span className="gradient-text">von der Idee zum Commit zu kommen.</span>
           </h1>
           <p className="mt-6 text-[17px] text-foreground/55 max-w-2xl mx-auto">
-            Jedes Projekt ist ein komplettes Build-Packet — generiert, strukturiert, exportierbar.
+            Jedes Projekt ist ein komplettes Build-Packet, generiert, strukturiert, exportierbar.
           </p>
         </FadeIn>
       </section>

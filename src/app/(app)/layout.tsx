@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   // The sidebar's collapse state and user-chosen width both live in cookies
-  // so the server renders the correct size on first paint — no client-side
+  // so the server renders the correct size on first paint, no client-side
   // snap after hydration for either.
   const cookieStore = await cookies();
   const sidebarCollapsed = cookieStore.get("pp-sidebar")?.value === "1";

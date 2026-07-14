@@ -1,17 +1,17 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto";
 
 // Encrypts user-supplied AI provider API keys (BYOK, settings) before they
-// hit the database — see supabase/migrations/0015_user_api_keys.sql. AES-256-
+// hit the database, see supabase/migrations/0015_user_api_keys.sql. AES-256-
 // GCM: authenticated encryption, so a tampered ciphertext fails loudly on
 // decrypt instead of silently returning garbage that gets sent to a provider
 // as someone's API key.
 //
-// API_KEY_ENCRYPTION_SECRET is a server-only env var, never in the database —
+// API_KEY_ENCRYPTION_SECRET is a server-only env var, never in the database,
 // even a full DB dump of user_api_keys yields nothing usable without it.
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // GCM's recommended nonce length
-const SALT = "promptprinter-byok"; // fixed, non-secret — scrypt still needs *a* salt
+const SALT = "promptprinter-byok"; // fixed, non-secret, scrypt still needs *a* salt
 
 function getKey(): Buffer {
   const secret = process.env.API_KEY_ENCRYPTION_SECRET;
@@ -23,7 +23,7 @@ function getKey(): Buffer {
 
 /**
  * Encrypts `plaintext` into a single opaque base64 string (iv + auth tag +
- * ciphertext, packed together) — the one value stored in `encrypted_key`.
+ * ciphertext, packed together), the one value stored in `encrypted_key`.
  */
 export function encrypt(plaintext: string): string {
   const iv = randomBytes(IV_LENGTH);
@@ -35,7 +35,7 @@ export function encrypt(plaintext: string): string {
 
 /**
  * Reverses `encrypt`. Throws if the secret is wrong or the blob was tampered
- * with (GCM's auth tag check) — callers should treat any throw as "this key
+ * with (GCM's auth tag check), callers should treat any throw as "this key
  * is unusable," not attempt to recover a partial value.
  */
 export function decrypt(blob: string): string {

@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     q: "Ist meine Idee bei dir sicher?",
-    a: "Ja. Deine Projekte gehören nur dir und sind fest an dein Konto gebunden. Niemand sonst sieht sie. Für die KI-Antworten schicke ich deine Eingaben an unseren KI-Anbieter (Details dazu in der Datenschutzerklärung) — sonst bleibt alles bei uns. Löschst du ein Projekt, ist es endgültig weg.",
+    a: "Ja. Deine Projekte gehören nur dir und sind fest an dein Konto gebunden. Niemand sonst sieht sie. Für die KI-Antworten schicke ich deine Eingaben an unseren KI-Anbieter (Details dazu in der Datenschutzerklärung), sonst bleibt alles bei uns. Löschst du ein Projekt, ist es endgültig weg.",
   },
   {
     q: "Gehört mir, was dabei rauskommt?",

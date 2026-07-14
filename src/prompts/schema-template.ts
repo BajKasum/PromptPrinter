@@ -20,5 +20,5 @@ A single SQL block (no commentary, no Markdown preamble) containing:
 
 Use lowercase snake_case names. Use \`uuid\` primary keys defaulting to \`gen_random_uuid()\` (Postgres) or \`UUID()\` (MySQL).
 
-Output only the SQL — wrap in a single \`\`\`sql ... \`\`\` block.`;
+Output only the SQL, wrap in a single \`\`\`sql ... \`\`\` block.`;
 }

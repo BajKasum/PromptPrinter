@@ -1,7 +1,7 @@
 # PromptPrinter
 
-> Verwandelt rohe Ideen in build-fertige **Prompt-Pakete** — Master-Prompt, PRD,
-> Schema, API, UI, Tests — optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co.
+> Verwandelt rohe Ideen in build-fertige **Prompt-Pakete**, Master-Prompt, PRD,
+> Schema, API, UI, Tests, optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co.
 
 SaaS-Tool für Developer und Vibe-Coder, die eine Idee schnell in ausführbare
 Build-Instruktionen übersetzen wollen.
@@ -9,9 +9,9 @@ Build-Instruktionen übersetzen wollen.
 ## Tech-Stack
 
 - **Next.js 15** (App Router) · **React 19** · **TypeScript** (strict)
-- **Supabase** — Auth, Postgres, Row-Level-Security
-- **Stripe** — Billing (UI gebaut, Checkout/Webhook in Arbeit)
-- **Z.ai (GLM)** — Prompt-Generierung, Gemini als Zweit-Provider; ohne Key läuft der Stub-Modus
+- **Supabase**, Auth, Postgres, Row-Level-Security
+- **Stripe**, Billing (UI gebaut, Checkout/Webhook in Arbeit)
+- **Z.ai (GLM)**, Prompt-Generierung, Gemini als Zweit-Provider; ohne Key läuft der Stub-Modus
 - **Tailwind** mit HSL-Token-System · **Framer Motion** · **next-themes**
 - **Vitest** für Unit-Tests · **Docker** für Dev (Hot-Reload) und Prod (standalone)
 
@@ -26,7 +26,7 @@ cp .env.example .env.local
 #   → NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY und SUPABASE_SERVICE_ROLE_KEY eintragen
 
 # 3. Datenbank-Migrationen einspielen
-#    Supabase SQL-Editor oder CLI — die Dateien in supabase/migrations/ der
+#    Supabase SQL-Editor oder CLI, die Dateien in supabase/migrations/ der
 #    Reihe nach (0001 → 0015).
 
 # 4. Dev-Server
@@ -35,7 +35,7 @@ npm run dev          # http://localhost:3000
 
 Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antworten
 `/api/chat` und `/api/generate` im **Stub-Modus** (die Prompt-Vorlagen werden
-unverändert zurückgegeben) — der ganze Flow bleibt testbar, ohne API-Quota zu
+unverändert zurückgegeben), der ganze Flow bleibt testbar, ohne API-Quota zu
 verbrauchen. Der Modellzugriff ist in [`src/lib/llm.ts`](src/lib/llm.ts)
 gekapselt (Z.ai primär, Gemini sekundär).
 
@@ -61,18 +61,18 @@ Vorlage: [`.env.example`](.env.example). Welche Datei wo gelesen wird:
 | `.env` | Prod-Docker (`docker-compose.yml`, via `env_file`) |
 | `.env.example` | nur Vorlage (committed) |
 
-**Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen — die landen sonst im
+**Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen, die landen sonst im
 Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`,
 `STRIPE_*`) bleiben ohne Prefix.
 
 ## Docker
 
-Siehe [`DOCKER.md`](DOCKER.md) — Dev (Hot-Reload, Port 3000) und Prod (standalone,
+Siehe [`DOCKER.md`](DOCKER.md), Dev (Hot-Reload, Port 3000) und Prod (standalone,
 Port 3001) als jeweils ein Befehl.
 
 ## Design
 
-Siehe [`DESIGN.md`](DESIGN.md) — Token-System, Theme-Regeln, Komponenten-Status.
+Siehe [`DESIGN.md`](DESIGN.md), Token-System, Theme-Regeln, Komponenten-Status.
 
 ## Qualität
 

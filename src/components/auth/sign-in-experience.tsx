@@ -23,8 +23,8 @@ const schema = z.object({
 /**
  * Login, right column of the two-column auth layout (Finn lives in the left
  * panel, see AuthExperienceShell): OAuth first (Google/GitHub), then email +
- * password — plus Cloudflare's human check when a Turnstile site key is
- * configured — with the dolphin success celebration.
+ * password, plus Cloudflare's human check when a Turnstile site key is
+ * configured, with the dolphin success celebration.
  */
 export function SignInExperience() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export function SignInExperience() {
   );
   const [celebrateMsg, setCelebrateMsg] = useState<string | null>(null);
 
-  // Turnstile tokens are single-use — bump the nonce after any failed auth
+  // Turnstile tokens are single-use, bump the nonce after any failed auth
   // call so the widget issues a fresh one for the retry.
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaNonce, setCaptchaNonce] = useState(0);
@@ -90,7 +90,7 @@ export function SignInExperience() {
   return (
     <AuthExperienceShell
       panelTitle="Schön, dass du wieder da bist."
-      panelSub="Deine Ideen warten schon — tauchen wir wieder ein."
+      panelSub="Deine Ideen warten schon, tauchen wir wieder ein."
       overlay={
         celebrateMsg && (
           <SuccessCelebration

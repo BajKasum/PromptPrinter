@@ -40,12 +40,12 @@ export function Hero() {
       tabIndex={-1}
       className="relative overflow-hidden pt-24 md:pt-36 pb-20 md:pb-32 focus:outline-none"
     >
-      {/* Subtle grid backdrop — restrained, IDE-like. No glow. */}
+      {/* Subtle grid backdrop, restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
       <Floaters items={HERO_FLOATERS} />
 
       <div className="container-x relative z-10">
-        {/* Finn is here and talking to you — the first guide on the page, not a
+        {/* Finn is here and talking to you, the first guide on the page, not a
             logo in the corner. Asymmetric on purpose: he stands beside his words. */}
         <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:gap-12 md:text-left">
           <motion.div
@@ -64,7 +64,7 @@ export function Hero() {
           </motion.div>
 
           <div className="max-w-2xl">
-            {/* His opening line lives in a real speech bubble — Finn is speaking,
+            {/* His opening line lives in a real speech bubble, Finn is speaking,
                 with a tail pointing back at him (up on mobile, left on desktop). */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -256,11 +256,11 @@ function HeroDemo() {
     setLaunchRevealed(0);
     setLive(false);
 
-    // Stage 1 — Idea: type it out.
+    // Stage 1, Idea: type it out.
     for (let i = 1; i <= current.idea.length; i++) at(i * 45, () => setTyped(i));
     let t = current.idea.length * 45 + 700;
 
-    // Stage 2 — Plan: reveal each line.
+    // Stage 2, Plan: reveal each line.
     at(t, () => setStage(1));
     for (let i = 1; i <= current.plan.length; i++) {
       const d = t + i * 420;
@@ -268,12 +268,12 @@ function HeroDemo() {
     }
     t += current.plan.length * 420 + 700;
 
-    // Stage 3 — Build: light up artifacts.
+    // Stage 3, Build: light up artifacts.
     at(t, () => setStage(2));
     for (let i = 1; i <= OUTPUTS.length; i++) at(t + i * 300, () => setBuilt(i));
     t += OUTPUTS.length * 300 + 600;
 
-    // Stage 4 — Launch: tick the checklist, then go live.
+    // Stage 4, Launch: tick the checklist, then go live.
     at(t, () => setStage(3));
     for (let i = 1; i <= LAUNCH_CHECKS.length; i++) at(t + i * 380, () => setLaunchRevealed(i));
     t += LAUNCH_CHECKS.length * 380 + 500;
@@ -313,7 +313,7 @@ function HeroDemo() {
           </span>
         </div>
 
-        {/* Active stepper — the real journey, visibly progressing. */}
+        {/* Active stepper, the real journey, visibly progressing. */}
         <div className="flex items-center gap-1.5 px-4 md:px-6 pt-4">
           {STAGES.map((s, i) => {
             const done = i < stage || (i === stage && live && i === 3);
@@ -359,7 +359,7 @@ function HeroDemo() {
 
         {/* Body */}
         <div className="p-5 md:p-7 text-left">
-          {/* Finn narrates the current stage — reacts as the work happens. */}
+          {/* Finn narrates the current stage, reacts as the work happens. */}
           <div className="mb-5 flex items-center gap-3">
             <AnimatedMascot
               state={NARRATION[stageKey].state}
@@ -383,7 +383,7 @@ function HeroDemo() {
             </div>
           </div>
 
-          {/* The idea stays pinned at the top — it's the thread through every stage. */}
+          {/* The idea stays pinned at the top, it's the thread through every stage. */}
           <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
             Deine Idee
           </div>
@@ -399,7 +399,7 @@ function HeroDemo() {
             </span>
           </div>
 
-          {/* Stage-specific content — morphs as the journey advances. */}
+          {/* Stage-specific content, morphs as the journey advances. */}
           <div className="mt-4 min-h-[176px]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -553,7 +553,7 @@ function LaunchStage({
           );
         })}
 
-        {/* The deployed URL bar — the payoff. */}
+        {/* The deployed URL bar, the payoff. */}
         <div
           className={cn(
             "mt-3 flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-all duration-500",

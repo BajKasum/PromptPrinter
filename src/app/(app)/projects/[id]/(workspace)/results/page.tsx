@@ -52,38 +52,38 @@ const GENERAL_TABS: ProjectTab[] = [
 // own overview. Null-safe: since 0011 the generation inputs are nullable.
 function buildSoftwareOverview(p: WorkspaceProject): string {
   const t = p.tools ?? {};
-  return `# ${p.name} — Übersicht
+  return `# ${p.name}, Übersicht
 
-**Zielgruppe** ${p.audience ?? "—"}  •  **Aktualisiert** ${relativeTime(p.updated_at)}
+**Zielgruppe** ${p.audience ?? "-"}  •  **Aktualisiert** ${relativeTime(p.updated_at)}
 
 ## Idee
-${p.idea ?? "—"}
+${p.idea ?? "-"}
 
 ## Stack
-- **Master-Prompt** — ${t.master ?? "—"}
-- **Frontend** — ${t.frontend ?? "—"}
-- **Backend** — ${t.backend ?? "—"}
-- **Datenbank** — ${t.database ?? "—"}
+- **Master-Prompt**, ${t.master ?? "-"}
+- **Frontend**, ${t.frontend ?? "-"}
+- **Backend**, ${t.backend ?? "-"}
+- **Datenbank**, ${t.database ?? "-"}
 
 ## Nächste Schritte
-- **Master-Prompt** — in deinen KI-Assistenten einfügen, um das Scaffolding zu starten
-- **Datenbank-Schema** — zuerst im Supabase SQL-Editor ausführen
-- **Frontend-Prompt** — in Lovable oder v0 einfügen
+- **Master-Prompt**, in deinen KI-Assistenten einfügen, um das Scaffolding zu starten
+- **Datenbank-Schema**, zuerst im Supabase SQL-Editor ausführen
+- **Frontend-Prompt**, in Lovable oder v0 einfügen
 `;
 }
 
 function buildGeneralOverview(p: WorkspaceProject): string {
   const target = p.tools?.target ?? p.context.target ?? "deine KI";
-  return `# ${p.name} — Übersicht
+  return `# ${p.name}, Übersicht
 
 **Typ** Prompt  •  **Ziel-KI** ${target}  •  **Aktualisiert** ${relativeTime(p.updated_at)}
 
 ## Ziel
-${p.idea ?? "—"}
+${p.idea ?? "-"}
 
 ## Enthalten
-- **Haupt-Prompt** — die ausgewogene, fertige Version
-- **Varianten** — knapp & direkt, ausführlich & geführt, rollenbasiert
+- **Haupt-Prompt**, die ausgewogene, fertige Version
+- **Varianten**, knapp & direkt, ausführlich & geführt, rollenbasiert
 
 ## So nutzt du es
 Kopiere den Haupt-Prompt und füge ihn in ${target} ein. Greif zu einer Variante, wenn du einen anderen Ton oder mehr Führung brauchst.
@@ -93,7 +93,7 @@ Kopiere den Haupt-Prompt und füge ihn in ${target} ein. Greif zu einer Variante
 // Der Ergebnisse-Bereich des Workspace (REDESIGN.md, Phase 3): die früheren
 // Projekt-Tabs + der Verlauf, jetzt als Zustand desselben Raums. Der
 // Ergebnistyp wird aus der outputs-Form abgeleitet (master-Key = Paket,
-// prompt-Key = Prompt), project.type ist nur noch der Fallback — so bleiben
+// prompt-Key = Prompt), project.type ist nur noch der Fallback, so bleiben
 // alle Altprojekte korrekt lesbar, ohne dass der Typ das Projekt definiert.
 export default async function ProjectResultsPage({ params }: { params: Params }) {
   const { id } = await params;
@@ -113,7 +113,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .from("conversations")
       .select("id", { count: "exact", head: true })
       .eq("project_id", id),
-    // PDF export is Pro/Team (pricing-preview.tsx) — Free only gets Markdown.
+    // PDF export is Pro/Team (pricing-preview.tsx), Free only gets Markdown.
     user
       ? supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -134,8 +134,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   );
 
   if (history.length === 0) {
-    // A result only ever comes out of a chat's handoff strip (REDESIGN.md —
-    // Handoff im Workspace) — so an empty Ergebnisse-Bereich must point there,
+    // A result only ever comes out of a chat's handoff strip (REDESIGN.md,
+    // Handoff im Workspace), so an empty Ergebnisse-Bereich must point there,
     // not dead-end. Whether a chat already exists decides the exact next step.
     const hasChats = (chatCount ?? 0) > 0;
     return (
@@ -147,7 +147,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
             Noch keine Ergebnisse gespeichert
           </p>
           <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-            Hier landen deine gespeicherten Ergebnisse — komplette Prompt-Pakete
+            Hier landen deine gespeicherten Ergebnisse, komplette Prompt-Pakete
             und feine Prompts, mit allem Verlauf.{" "}
             {hasChats
               ? "Öffne einen Chat und erzeug von dort dein erstes Ergebnis."

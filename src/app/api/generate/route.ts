@@ -12,7 +12,7 @@ import { persistGeneration } from "@/lib/persist-generation";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-// Orchestrator only — each step below is a single call into a focused,
+// Orchestrator only, each step below is a single call into a focused,
 // independently testable module (lib/generate-guards.ts,
 // lib/build-generate-content.ts, lib/run-generation.ts,
 // lib/persist-generation.ts). This route used to carry all of that inline;
@@ -40,14 +40,14 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  // 2. Identify user (optional — anonymous is allowed but rate-limited harder).
+  // 2. Identify user (optional, anonymous is allowed but rate-limited harder).
   //    The client is hoisted so the allowance check and the persistence step
   //    below can reuse it instead of re-creating one per phase.
   let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
   try {
     supabase = await createClient();
   } catch {
-    // No Supabase configured — fall through anonymously.
+    // No Supabase configured, fall through anonymously.
   }
   let userId: string | null = null;
   if (supabase) {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       const { data } = await supabase.auth.getUser();
       userId = data.user?.id ?? null;
     } catch {
-      // Auth lookup failed — treat as anonymous.
+      // Auth lookup failed, treat as anonymous.
     }
   }
 
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     override = allowance.override;
   }
 
-  // 5. A projectId means this is a workspace-native handoff — verify
+  // 5. A projectId means this is a workspace-native handoff, verify
   //    ownership before spending a model call. A missing/foreign id must
   //    fail loudly instead of silently creating an orphan generation;
   //    anonymous callers can never own a project, so they're rejected
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
   );
   outputs.overview = buildOverview(input);
 
-  // 7. Persist for signed-in users — in both modes, so the project shows up
+  // 7. Persist for signed-in users, in both modes, so the project shows up
   //    regardless of whether real generation ran.
   let projectId: string | null = null;
   let persistError: string | null = null;
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     ...(mode === "stub"
       ? {
           message:
-            "Die KI-Anbindung ist gerade nicht aktiv — es wurden die Prompt-Vorlagen ungefüllt gespeichert.",
+            "Die KI-Anbindung ist gerade nicht aktiv, es wurden die Prompt-Vorlagen ungefüllt gespeichert.",
         }
       : {}),
   });

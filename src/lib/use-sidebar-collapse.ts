@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 // The sidebar's collapse state persists in a cookie so the server-rendered
-// layout knows it on first paint — no flash/snap after hydration (see
+// layout knows it on first paint, no flash/snap after hydration (see
 // src/app/(app)/layout.tsx). Split out of sidebar.tsx: this is interaction
 // logic (state + a global keyboard shortcut), not rendering.
 export const SIDEBAR_COOKIE = "pp-sidebar";

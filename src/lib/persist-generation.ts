@@ -6,12 +6,12 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
 export type PersistResult = { projectId: string | null; persistError: string | null };
 
 /**
- * Persists one generation run for a signed-in caller — in both stub and
+ * Persists one generation run for a signed-in caller, in both stub and
  * generated mode, so the project shows up regardless of whether a real
  * model call ran. A projectId on the input means this is a workspace-native
  * handoff: no new project, just another generation row for the existing one
  * (ownership already verified by the caller, see generate-guards.ts).
- * Persistence failures are surfaced but never thrown — the caller still has
+ * Persistence failures are surfaced but never thrown, the caller still has
  * a usable `outputs` to hand back even if storing it failed.
  */
 export async function persistGeneration(
@@ -88,7 +88,7 @@ export async function persistGeneration(
       if (genErr) throw genErr;
     }
   } catch (err) {
-    // Surface persistence failures instead of silently dropping them — a
+    // Surface persistence failures instead of silently dropping them, a
     // missing profile row or RLS issue would otherwise look like success.
     persistError = err instanceof Error ? err.message : "persist failed";
     projectId = null;

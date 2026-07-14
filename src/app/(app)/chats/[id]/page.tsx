@@ -15,7 +15,7 @@ type Params = Promise<{ id: string }>;
 type DbMessage = { role: "user" | "assistant"; content: string };
 
 // The canonical home of one global chat (REDESIGN.md, Phase 2). Chats that
-// belong to a project live in their workspace instead — opening one here
+// belong to a project live in their workspace instead, opening one here
 // forwards to the project, where the same conversation continues as its
 // refine chat.
 export default async function ChatDetailPage({ params }: { params: Params }) {
@@ -27,7 +27,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS scopes the read to the owner — a foreign or malformed id yields no row.
+  // RLS scopes the read to the owner, a foreign or malformed id yields no row.
   const { data: convo } = await supabase
     .from("conversations")
     .select("id, title, mode, target, project_id")
@@ -35,7 +35,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
     .maybeSingle();
 
   if (!convo) notFound();
-  // Project chats live in their workspace — forward to the canonical subroute.
+  // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
   const [{ data: rows }, { data: profile }] = await Promise.all([

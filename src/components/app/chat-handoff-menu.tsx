@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MoreHorizontal, BookmarkPlus, Package } from "lucide-react";
 
 // The save/packet handoff sits behind one quiet icon button, closed by
-// default — reachable without ever showing as a permanent action bar next to
+// default, reachable without ever showing as a permanent action bar next to
 // reading or writing (same click-away pattern the topbar's dropdowns use).
 // Fully self-contained: owns its own open state and Escape handling, so the
 // parent chat only needs to know which handoff the user picked.
@@ -19,7 +19,7 @@ export function ChatHandoffMenu({
 }) {
   const [open, setOpen] = useState(false);
 
-  // Escape closes the handoff menu — same convention as the topbar's dropdowns.
+  // Escape closes the handoff menu, same convention as the topbar's dropdowns.
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {

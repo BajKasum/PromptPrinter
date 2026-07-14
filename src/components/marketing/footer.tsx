@@ -12,7 +12,7 @@ export function Footer() {
             <p className="text-[15px] text-foreground/60 leading-snug">
               Schön, dass du da warst.
               <br />
-              <span className="text-foreground/40">— Finn</span>
+              <span className="text-foreground/40">· Finn</span>
             </p>
           </div>
 

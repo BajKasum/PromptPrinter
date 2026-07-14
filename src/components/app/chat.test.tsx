@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // The real PacketBridge/PromptSave open (autoOpen) by calling
-// onOpenChange(true) in an effect on mount — Chat relies on that to hide the
+// onOpenChange(true) in an effect on mount, Chat relies on that to hide the
 // composer and collapse the transcript, so the stub mirrors it.
 vi.mock("@/components/app/packet-bridge", () => ({
   PacketBridge: ({
@@ -76,7 +76,7 @@ describe("Chat", () => {
     expect(screen.getByText("Woran arbeiten wir?")).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "Ich hab eine App-Idee — bau mir das komplette Prompt-Paket dafür.",
+        name: "Ich hab eine App-Idee, bau mir das komplette Prompt-Paket dafür.",
       })
     ).toBeInTheDocument();
   });

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): "Neues Projekt" ist ein
-// echter Projektstart — ein Name genügt, kein Umweg über einen Chat. Der
+// echter Projektstart, ein Name genügt, kein Umweg über einen Chat. Der
 // Dialog folgt der delete-project-Choreografie (Portal, Escape, Fokus).
 
 export function NewProjectButton({
@@ -129,7 +129,7 @@ export function NewProjectButton({
                   <div className="border-b border-border p-5">
                     <h2 className="text-[15px] font-semibold text-foreground">Neues Projekt</h2>
                     <p className="mt-1 text-[13px] text-foreground/55">
-                      Gib ihm einen Namen — Briefing, Struktur und Chats wachsen danach im
+                      Gib ihm einen Namen, Briefing, Struktur und Chats wachsen danach im
                       Workspace.
                     </p>
                   </div>

@@ -8,7 +8,7 @@ const pains = [
   "Der Plan bleibt im Kopf.",
 ];
 
-// A compact, quiet section — just a few drifting sparks, not a full field.
+// A compact, quiet section, just a few drifting sparks, not a full field.
 const PROBLEM_FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "8%", left: "88%", size: 11, delay: 0.2, duration: 3.4 },
   { kind: "bubble", top: "40%", left: "94%", size: 15, delay: 0.9, duration: 4.4 },

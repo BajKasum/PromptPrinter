@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 /**
- * Copy-to-clipboard with a brief "copied" flash — the exact pattern that
+ * Copy-to-clipboard with a brief "copied" flash, the exact pattern that
  * used to be duplicated in both the assistant-reply copy button and the
  * code-block copy button (chat.tsx), each with its own copy()/copied/
  * setTimeout trio.

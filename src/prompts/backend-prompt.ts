@@ -2,7 +2,7 @@ import type { GenerationInput } from "./types";
 
 const BACKEND_NOTES: Record<string, string> = {
   "Claude Code":
-    "Claude Code works file-by-file — request explicit file paths and step ordering.",
+    "Claude Code works file-by-file, request explicit file paths and step ordering.",
   Cursor: "Cursor prefers tightly scoped tasks with clear acceptance criteria per file.",
   Windsurf: "Windsurf benefits from a high-level plan followed by per-file directives.",
 };
@@ -29,7 +29,7 @@ The backend prompt itself, ready to paste into ${tgt}. Include:
 - Auth & RLS rules (assume Supabase or equivalent)
 - Validation rules (Zod at every boundary)
 - Rate-limit and error-shape conventions
-- File ordering — what to scaffold first, second, third
+- File ordering, what to scaffold first, second, third
 
-Output only the prompt — no commentary.`;
+Output only the prompt, no commentary.`;
 }

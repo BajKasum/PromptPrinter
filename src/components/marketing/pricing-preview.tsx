@@ -63,7 +63,7 @@ export function PricingPreview() {
               hast, dass du das hier regelmäßig nutzt.
             </p>
           </div>
-          {/* Finn helps you pick — most builders start free. */}
+          {/* Finn helps you pick, most builders start free. */}
           <AnimatedMascot
             state="helping"
             motion="bob"

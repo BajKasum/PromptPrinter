@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       ? { provider, apiKey, baseUrl: parsed.data.baseUrl, model: parsed.data.model }
       : { provider, apiKey };
 
-  // Test the key against its real provider before it's ever persisted — a
+  // Test the key against its real provider before it's ever persisted, a
   // bad key should fail loudly right here, not silently at generation time.
   try {
     await chatComplete({
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   }
 
   // Same shape either way (nulling the custom-only columns for named
-  // providers) — the explicit type keeps this one concrete row type instead
+  // providers), the explicit type keeps this one concrete row type instead
   // of a union the client's upsert typing can't resolve.
   type UserApiKeyRow = {
     user_id: string;

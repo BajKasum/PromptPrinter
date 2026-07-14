@@ -52,7 +52,7 @@ describe("ProjectRail", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
-  it("persists only instructions on blur when changed — Struktur is untouched", async () => {
+  it("persists only instructions on blur when changed, Struktur is untouched", async () => {
     const eq = vi.fn().mockResolvedValue({ error: null });
     update.mockReturnValue({ eq });
     const user = userEvent.setup();
@@ -71,7 +71,7 @@ describe("ProjectRail", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
-  it("persists only Struktur on blur, dropping blank fields — Anweisungen is untouched", async () => {
+  it("persists only Struktur on blur, dropping blank fields, Anweisungen is untouched", async () => {
     const eq = vi.fn().mockResolvedValue({ error: null });
     update.mockReturnValue({ eq });
     const user = userEvent.setup();
@@ -112,7 +112,7 @@ describe("ProjectRail", () => {
     await user.type(frontendInput, "Next.js");
     await user.tab();
 
-    // Only one indicator lights up (Struktur's) — Anweisungen's stays idle
+    // Only one indicator lights up (Struktur's), Anweisungen's stays idle
     // (SaveIndicator renders null for "idle"), so exactly one "status" node
     // exists at this point.
     const indicators = await screen.findAllByRole("status");

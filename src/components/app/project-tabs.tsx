@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn, downloadFile } from "@/lib/utils";
 
 // A tab is just an output key + its display label. The caller (the project page)
-// supplies the right set for the project's pack — software gets the 10-artifact
-// list, the general pack gets prompt + variants — so this component stays
+// supplies the right set for the project's pack, software gets the 10-artifact
+// list, the general pack gets prompt + variants, so this component stays
 // agnostic to what's being shown.
 export type ProjectTab = { id: string; label: string; group?: string };
 
@@ -16,7 +16,7 @@ export function ProjectTabs({
   projectName,
   tabs,
   outputs,
-  /** PDF export is a Pro/Team feature (pricing-preview.tsx) — Free only gets
+  /** PDF export is a Pro/Team feature (pricing-preview.tsx), Free only gets
    * Markdown. Admin bypasses the same way it bypasses every other plan gate. */
   canExportPdf,
 }: {
@@ -41,12 +41,12 @@ export function ProjectTabs({
     downloadFile(`${slug}.${active}.md`, text, "text/markdown");
   }
 
-  // jsPDF is a large, PDF-only dependency — loaded on demand instead of a
+  // jsPDF is a large, PDF-only dependency, loaded on demand instead of a
   // static import so Free-plan visitors (who can never trigger this) never
   // pay for it in the route's initial bundle.
   async function exportPdf() {
     const { downloadMarkdownAsPdf } = await import("@/lib/pdf-export");
-    downloadMarkdownAsPdf(`${slug}.${active}.pdf`, `${projectName} — ${activeLabel}`, text);
+    downloadMarkdownAsPdf(`${slug}.${active}.pdf`, `${projectName}, ${activeLabel}`, text);
   }
 
   function bundle() {

@@ -39,7 +39,7 @@ function makeFile(name: string, sizeBytes: number, type = "text/plain") {
   return file;
 }
 
-// applyAccept: false — the input's accept=".md,.txt,.json,.csv" would
+// applyAccept: false, the input's accept=".md,.txt,.json,.csv" would
 // otherwise make user-event silently filter out a disallowed file before it
 // ever reaches the change handler, the same way a real file picker does.
 // That's exactly the case the component's own hasAllowedExtension check

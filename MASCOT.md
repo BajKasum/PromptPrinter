@@ -1,7 +1,7 @@
-# PromptPrinter — Maskottchen-System („Finn der Delfin")
+# PromptPrinter, Maskottchen-System („Finn der Delfin")
 
 > **Ziel:** Der Delfin ist kein Deko-Element mehr, sondern der **Produkt-Guide
-> und Marken-Charakter** von PromptPrinter — auf einer Ebene mit Duolingos Owl,
+> und Marken-Charakter** von PromptPrinter, auf einer Ebene mit Duolingos Owl,
 > GitHubs Octocat und Mailchimps Freddie. Der Besucher soll fühlen: *„Ich werde
 > geführt"* statt *„Ich lese eine Landingpage"*.
 >
@@ -17,16 +17,16 @@ Verwandt: [DESIGN.md](DESIGN.md) (Tokens, Motion-Regeln), `[[project-dolphin-mas
 
 ### Name: **Finn**
 
-Ein Mensch erinnert sich an *Duo*, *Octocat*, *Freddie* — nicht an „das
+Ein Mensch erinnert sich an *Duo*, *Octocat*, *Freddie*, nicht an „das
 Eulen-Logo". Ein Name macht das Maskottchen zitierbar („Frag Finn", „Finn baut
-das für dich"). Empfehlung: **Finn** — Flossen-Wortspiel, funktioniert in DE & EN,
+das für dich"). Empfehlung: **Finn**, Flossen-Wortspiel, funktioniert in DE & EN,
 freundlich, kurz, merkbar.
 
 Alternativen, falls gewünscht:
-- **Echo** — konzeptionell stark (Delfine nutzen Echolokation; PromptPrinter wirft
+- **Echo**, konzeptionell stark (Delfine nutzen Echolokation; PromptPrinter wirft
   deine Idee strukturiert zurück), Risiko: Verwechslung mit Amazon Echo.
-- **Pip** — verspielt, „P" wie PromptPrinter.
-- **Marlo** — eigenständig, charmant.
+- **Pip**, verspielt, „P" wie PromptPrinter.
+- **Marlo**, eigenständig, charmant.
 
 > Der Rest des Dokuments verwendet **Finn** als Arbeitsnamen. Ein Find-&-Replace
 > reicht, falls die Wahl anders ausfällt.
@@ -57,10 +57,10 @@ Viewport **maximal ein** Finn. Nie zwei Finns gleichzeitig sichtbar.
 | `dolphin-think.png` | Bauhelm + Werkzeug | How-It-Works |
 
 ### Vorhandene Maskottchen-Infrastruktur (wiederverwenden!)
-- `src/components/brand/mascot.tsx` — Basis-Komponente (`<Mascot src size alt priority>`), via `next/image`.
-- `src/components/brand/logo.tsx` — Lockup Delfin + Wordmark, plus `LogoMark`.
-- `src/components/brand/dolphin-loader.tsx` — **Swim-Bob + aufsteigende Bubbles**, respektiert reduced-motion. (= Animationsmuster „Waiting")
-- `src/components/brand/success-celebration.tsx` — **Konfetti-Burst + Spring-Pop**. (= Animationsmuster „Celebrating")
+- `src/components/brand/mascot.tsx`, Basis-Komponente (`<Mascot src size alt priority>`), via `next/image`.
+- `src/components/brand/logo.tsx`, Lockup Delfin + Wordmark, plus `LogoMark`.
+- `src/components/brand/dolphin-loader.tsx`, **Swim-Bob + aufsteigende Bubbles**, respektiert reduced-motion. (= Animationsmuster „Waiting")
+- `src/components/brand/success-celebration.tsx`, **Konfetti-Burst + Spring-Pop**. (= Animationsmuster „Celebrating")
 
 ### Befund
 Nur **3 Emotionen** (happy / neutral / sad) + 1 Sonderpose (Bauhelm). Für ein
@@ -75,10 +75,10 @@ Feiern; „sad" deckt Schmerz **und** Fehler ab; es fehlen alle aktiven Zuständ
 Echte Maskottchen-Systeme sind **endlich** und **modular**. Wir bauen wie Octocat:
 ein konsistenter Körper, getauschte Ausdrücke + Requisiten. Zwei Ebenen:
 
-**A. Core-Ausdrücke** — die emotionale Basis (Gesicht/Körperhaltung). Klein
+**A. Core-Ausdrücke**, die emotionale Basis (Gesicht/Körperhaltung). Klein
 gehalten, damit produzierbar & konsistent.
 
-**B. Kontext-Posen** — Core-Ausdruck **plus Requisite/Geste** (Bauhelm, Lupe,
+**B. Kontext-Posen**, Core-Ausdruck **plus Requisite/Geste** (Bauhelm, Lupe,
 Klemmbrett, Paket, Megafon, …). So entsteht Vielfalt ohne Stil-Drift.
 
 ### Vollständige State-Tabelle
@@ -112,94 +112,94 @@ produzierbare Mindestmenge für ein vollwertiges Guide-System.
 
 Für jeden State: **Wo · Welche Emotion · Welches Business-Ziel · Animation**.
 
-### 1) `welcoming` — Begrüßend
+### 1) `welcoming`, Begrüßend
 - **Wo:** Hero, ganz oben (heute schon: schwebender Delfin).
 - **Emotion:** „Ich bin willkommen, das ist freundlich, kein kaltes Tool."
 - **Business-Ziel:** Erste-5-Sekunden-Sympathie → senkt die Absprungrate, macht die Marke menschlich.
-- **Animation:** sanftes Idle-**Float** (y ±8px, 4s) — *existiert in `hero.tsx`*. Beim ersten Laden: Wink-Geste (Flosse) einmalig.
+- **Animation:** sanftes Idle-**Float** (y ±8px, 4s), *existiert in `hero.tsx`*. Beim ersten Laden: Wink-Geste (Flosse) einmalig.
 
-### 2) `curious` — Neugierig
+### 2) `curious`, Neugierig
 - **Wo:** Hero-Demo, wenn das Idee-Eingabefeld im Fokus / „getippt" wird; im App-Chat beim Input-Fokus.
-- **Emotion:** „Erzähl mir deine Idee — ich bin gespannt." Senkt die Hemmschwelle, den ersten Satz zu tippen.
-- **Business-Ziel:** **Aktivierung** — mehr Besucher tippen ihre erste Idee ein (Top-of-Funnel-Conversion).
+- **Emotion:** „Erzähl mir deine Idee, ich bin gespannt." Senkt die Hemmschwelle, den ersten Satz zu tippen.
+- **Business-Ziel:** **Aktivierung**, mehr Besucher tippen ihre erste Idee ein (Top-of-Funnel-Conversion).
 - **Animation:** **Lean-in** (scale 1→1.04, leichte Neigung zum Input) + Blinzeln. Reduced-motion: statisch.
 
-### 3) `listening` — Zuhörend
+### 3) `listening`, Zuhörend
 - **Wo:** How-It-Works **Schritt 1** („Idee reinwerfen"); App-Chat während der Nutzer tippt.
 - **Emotion:** „Ich werde gehört, nicht in ein Formular gepresst."
 - **Business-Ziel:** **Vertrauen**, die eigene (oft unfertige) Idee zu teilen → weniger Abbruch im Onboarding.
 - **Animation:** ruhiges **Nicken** (rotate ±3°, 1.5s), gelegentliches Blinzeln.
 
-### 4) `thinking` — Nachdenklich
+### 4) `thinking`, Nachdenklich
 - **Wo:** How-It-Works **Schritt 2** („gemeinsam schärfen"); Lade-/Generier-Phasen („Finn denkt nach…").
 - **Emotion:** „Da passiert echte Arbeit, ich bin in guten Händen."
 - **Business-Ziel:** **Wahrgenommene Intelligenz & Qualität**; rechtfertigt Wartezeit (gefühlte Latenz sinkt).
 - **Animation:** aufsteigende **Gedanken-Punkte** (•••), leichte Kopfneigung. Variante des Loader-Musters.
 
-### 5) `researching` — Recherchierend
+### 5) `researching`, Recherchierend
 - **Wo:** optionale Generier-Phase „prüft Tools/Stack…"; Integrationen-Abschnitt.
 - **Emotion:** „Es wird gründlich gearbeitet, nicht nur drauflosgeraten."
-- **Business-Ziel:** **Qualitäts-Signal** — differenziert von „einfach ChatGPT fragen".
+- **Business-Ziel:** **Qualitäts-Signal**, differenziert von „einfach ChatGPT fragen".
 - **Animation:** **Lupe** fährt suchend über eine Fläche; kurzes „!"-Aufleuchten bei Fund.
 
-### 6) `building` — Bauend  *(= heutiges `dolphin-think.png`)*
+### 6) `building`, Bauend  *(= heutiges `dolphin-think.png`)*
 - **Wo:** How-It-Works (Section-Guide); Hero-Demo-Status „baut…".
 - **Emotion:** „Mein Projekt entsteht gerade."
 - **Business-Ziel:** **Fortschritt sichtbar machen** → hält Aufmerksamkeit, transportiert den Kern-Nutzen (Bauplan entsteht).
 - **Animation:** leichtes **Hammer-Tippen** / Zahnrad-Dreh; Bauhelm wackelt minimal.
 - **Migration:** Datei zu `dolphin-building.png` umbenennen, `building` als Alias auf das vorhandene Asset.
 
-### 7) `organizing` — Sortierend
+### 7) `organizing`, Sortierend
 - **Wo:** „Was du bekommst"-Grid (Intro); App-Bibliothek/Workspace.
 - **Emotion:** „Aus dem Chaos in meinem Kopf wird Ordnung."
 - **Business-Ziel:** Verkauft das **„alles in einem Paket"**-Versprechen.
 - **Animation:** Karten/Dokumente **schnappen** in einen sauberen Stapel (stagger).
 
-### 8) `explaining` — Erklärend
+### 8) `explaining`, Erklärend
 - **Wo:** Example-Output (präsentiert das Ergebnis); FAQ.
-- **Emotion:** „Das verstehe sogar ich — es ist nicht kryptisch."
+- **Emotion:** „Das verstehe sogar ich, es ist nicht kryptisch."
 - **Business-Ziel:** **Verständlichkeit** des Outputs → entkräftet „zu technisch"-Einwand.
 - **Animation:** **Zeigen** auf den aktiven Tab/Inhalt; Inhalt „enthüllt" sich im Takt.
 
-### 9) `delivering` — Übergebend
+### 9) `delivering`, Übergebend
 - **Wo:** Example-Output-Footer; Export-/Download-Moment in der App.
 - **Emotion:** „Das gehört jetzt mir, ich kann sofort los."
 - **Business-Ziel:** **Greifbarkeit** des Deliverables → erhöht wahrgenommenen Wert.
 - **Animation:** **Paket gleitet** vom Delfin nach vorn / zum Nutzer; kurzes „fertig"-Häkchen.
 
-### 10) `celebrating` — Feiernd  *(= `success-celebration`)*
+### 10) `celebrating`, Feiernd  *(= `success-celebration`)*
 - **Wo:** Final-CTA; jeder Erfolg (Login, Signup, Passwort, erstes Paket fertig).
 - **Emotion:** „Geschafft! Momentum, Freude."
 - **Business-Ziel:** **Conversion-Push** am Seitenende; positive Verstärkung in der App.
-- **Animation:** **Konfetti-Burst + Spring-Pop** — *existiert in `success-celebration.tsx`*. Pose mit Flossen-hoch schärfen.
+- **Animation:** **Konfetti-Burst + Spring-Pop**, *existiert in `success-celebration.tsx`*. Pose mit Flossen-hoch schärfen.
 
-### 11) `helping` — Helfend
+### 11) `helping`, Helfend
 - **Wo:** schwebender Helfer (Navbar/Ecke) bei Scroll; Pricing (zeigt auf Empfehlung); leere Zustände.
 - **Emotion:** „Es ist jemand da, falls ich hänge."
 - **Business-Ziel:** **Reduziert Abbruch** an Entscheidungsstellen (z. B. Plan-Wahl).
 - **Animation:** **Peek-in** vom Bildschirmrand; bei Pricing: deutet auf „Am beliebtesten".
 
-### 12) `waiting` — Wartend  *(= `dolphin-loader`)*
+### 12) `waiting`, Wartend  *(= `dolphin-loader`)*
 - **Wo:** alle Ladezustände; App-Empty-State.
 - **Emotion:** „Geduld lohnt sich, es tut sich was."
 - **Business-Ziel:** **Gefühlte Ladezeit senken** → weniger Abbruch beim Warten.
-- **Animation:** **Swim-Bob + Bubbles** — *existiert in `dolphin-loader.tsx`*.
+- **Animation:** **Swim-Bob + Bubbles**, *existiert in `dolphin-loader.tsx`*.
 
-### 13) `sad` — Mitfühlend / Fehler
+### 13) `sad`, Mitfühlend / Fehler
 - **Wo:** Problem-Section (mitfühlend); Error-Pages, 404, abgelaufener Link, Toast-Error.
 - **Emotion (Problem):** „Finn kennt den Schmerz auch" → Resonanz.
 - **Emotion (Fehler):** „Schade, aber niemand schimpft mit mir."
 - **Business-Ziel:** **Empathie** (Problem) bzw. **Fehler entschärfen** (App).
 - **Animation:** kleines Absacken/Seufzen (y +4px, langsam). Reduced-motion: statisch.
 
-### 14) `idle` — Neutral / Marke
+### 14) `idle`, Neutral / Marke
 - **Wo:** Logo, Favicon, Avatar, jeder neutrale Kontext.
-- **Business-Ziel:** **Wiedererkennung** — der Anker, von dem alle States abgeleitet wirken.
+- **Business-Ziel:** **Wiedererkennung**, der Anker, von dem alle States abgeleitet wirken.
 - **Animation:** keine (statisch im Logo).
 
 ---
 
-## 5. Section-Mapping — die Finn-Reise über die Landingpage
+## 5. Section-Mapping, die Finn-Reise über die Landingpage
 
 Ein **einziger** Charakter begleitet den Besucher von oben nach unten und
 **wechselt mit jedem Abschnitt seinen Zustand**. Das erzeugt das „ich werde
@@ -207,7 +207,7 @@ geführt"-Gefühl: derselbe Buddy, eine durchgehende Geschichte.
 
 | Reihenfolge | Section | Finn-State | Mikro-Botschaft (optional, Sprechblase/Caption) |
 |---|---|---|---|
-| 0 | Navbar | `idle` (Logo) → `helping` beim Scrollen | — |
+| 0 | Navbar | `idle` (Logo) → `helping` beim Scrollen |, |
 | 1 | **Hero** | `welcoming` → `curious` (bei Demo) | „Sag mir, was du bauen willst." |
 | 2 | **Problem** | `sad` (mitfühlend) | „Kenn ich. Die leere Seite ist brutal." |
 | 3 | **How It Works** | `listening` → `thinking` → `building` (pro Schritt) | „Erzähl. Ich frag nach. Ich bau's." |
@@ -215,9 +215,9 @@ geführt"-Gefühl: derselbe Buddy, eine durchgehende Geschichte.
 | 5 | **Was du bekommst** | `organizing` | „Alles sortiert, an einem Ort." |
 | 6 | **Integrationen** | `researching` / `helping` | „Passt zu den Tools, die du eh nutzt." |
 | 7 | **Pricing** | `helping` (zeigt auf Empfehlung) | „Die meisten starten hier." |
-| 8 | **FAQ** | `explaining` | „Frag ruhig — ich erklär's." |
-| 9 | **Final CTA** | `celebrating` | „Los geht's — ich feier mit." |
-| 10 | Footer | `idle` (winkt zum Abschied) | — |
+| 8 | **FAQ** | `explaining` | „Frag ruhig, ich erklär's." |
+| 9 | **Final CTA** | `celebrating` | „Los geht's, ich feier mit." |
+| 10 | Footer | `idle` (winkt zum Abschied) |, |
 
 **Storyboard in einem Satz:** Finn winkt dich herein → fühlt deinen Schmerz →
 hört zu → denkt nach → baut → sortiert → erklärt → übergibt dir das Paket →
@@ -239,10 +239,10 @@ feiert mit dir.
 | **Fehler / leer / 404** | `sad` bzw. `waiting` | Error-/Empty-States |
 | **Reduced Motion** | jeder State rendert **statisch** (kein Loop) | global, Pflicht |
 
-**Premium-Idee — „Finn reist mit":** ein dezent persistenter Mini-Finn (32–40px)
+**Premium-Idee, „Finn reist mit":** ein dezent persistenter Mini-Finn (32-40px)
 unten rechts, der seinen State passend zur sichtbaren Section ändert und sanft
 „mitschwimmt". Optional, abschaltbar, nie inhaltsverdeckend. Das ist der stärkste
-Hebel fürs „geführt"-Gefühl — als Phase 2 nach den statischen Platzierungen.
+Hebel fürs „geführt"-Gefühl, als Phase 2 nach den statischen Platzierungen.
 
 ---
 
@@ -267,35 +267,34 @@ Aufbauend auf den bestehenden Mustern; alle als Framer-Motion-Presets, alle mit
 | `peek-in` | von Bildschirmrand hereinlugen | 🆕 | `helping` |
 | `sigh` | langsames Absacken | 🆕 | `sad` |
 
-**Regeln:** Mikro-Interaktionen 150–300 ms (vgl. DESIGN.md). Loops dezent, nie
+**Regeln:** Mikro-Interaktionen 150-300 ms (vgl. DESIGN.md). Loops dezent, nie
 hektisch. Nie mehr als eine bewegte Finn-Instanz pro Viewport.
 
 ---
 
 ## 8. Storytelling-Ideen
 
-1. **„Die Reise mit Finn"** — durchgehender Bogen (siehe §5). Roter Faden:
-   Finn ist dein *Bau-Buddy von der Idee bis zum Launch* — exakt die
+1. **„Die Reise mit Finn"**, durchgehender Bogen (siehe §5). Roter Faden:
+   Finn ist dein *Bau-Buddy von der Idee bis zum Launch*, exakt die
    `Idee → Plan → Build → Launch`-Leiste aus dem Hero.
 2. **Das Ideen-Objekt wächst mit.** Ein wiederkehrendes Motiv: aus einem
    Funken (Hero) wird ein Stapel (Organizing) wird ein Paket (Delivering). Finn
-   trägt/zeigt es durch die Seite — visuelle Kontinuität.
+   trägt/zeigt es durch die Seite, visuelle Kontinuität.
 3. **Mikro-Captions in Finns Stimme.** Optionale, sehr kurze Sprechblasen pro
-   Section (Spalte „Mikro-Botschaft" in §5) — geben Finn eine Stimme, ohne
+   Section (Spalte „Mikro-Botschaft" in §5), geben Finn eine Stimme, ohne
    Walltext. A/B-testbar, standardmäßig sparsam.
 4. **Finn-„Octodex".** Wie GitHubs Octodex: eine kleine Galerie von Finn-Posen
    als Marken-Asset (Social, Changelog, Sticker, 404). Macht ihn teilbar/merkbar.
 5. **Onboarding-Begleiter.** In der App führt Finn (states `listening`/`thinking`/
-   `building`) durch das erste Projekt — die Landingpage-Story setzt sich nahtlos
+   `building`) durch das erste Projekt, die Landingpage-Story setzt sich nahtlos
    im Produkt fort (Konsistenz Marketing ↔ Produkt).
-6. **Empty-/Error-Empathie.** Finn ist auch da, wenn's klemmt (`sad`, `waiting`) —
-   die Marke bleibt menschlich, gerade in Fehlmomenten.
+6. **Empty-/Error-Empathie.** Finn ist auch da, wenn's klemmt (`sad`, `waiting`), die Marke bleibt menschlich, gerade in Fehlmomenten.
 
 ---
 
 ## 9. Implementierungs-Architektur (Vertrag für die Asset-Phase)
 
-> Noch nicht zu bauen — aber so wird verdrahtet, sobald Assets existieren. Damit
+> Noch nicht zu bauen, aber so wird verdrahtet, sobald Assets existieren. Damit
 > ist der nächste Schritt reines „Asset rein, Key eintragen".
 
 ### 9.1 Zentrale State-Registry
@@ -328,9 +327,9 @@ export type MascotState =
 
 ### 9.4 Asset-Produktions-Checkliste (für die Higgsfield-Phase)
 - **Format:** quadratisches, **transparentes PNG** (wie heute), ein großes Master
-  (~512–1024px); `next/image` skaliert pro Einsatz.
+  (~512-1024px); `next/image` skaliert pro Einsatz.
 - **Konsistenz (kritisch!):** identische Körperproportion, **gleiche Augen-Höhe,
-  gleiche Mitte, gleicher Maßstab & Safe-Area** über alle States — sonst
+  gleiche Mitte, gleicher Maßstab & Safe-Area** über alle States, sonst
   „springt" Finn beim Wechsel. Gleicher Stil/Outline/Schattierung, gleiche
   Babyblau-Palette wie die Marke (siehe DESIGN.md `--accent`).
 - **Benennung:** `/mascot/dolphin-<state>.png` exakt nach §9.1-Keys.
@@ -346,8 +345,8 @@ export type MascotState =
 ## 10. Roadmap
 
 1. ✅ **Diese Spec.** System, States, Mapping, Architektur.
-2. ⬜ **Assets generieren** (Higgsfield) — 8 neu + 3 schärfen, nach §9.4-Regeln.
-3. ⬜ **Registry + `Mascot`-Erweiterung** bauen (§9.1–9.3), Bestand migrieren.
+2. ⬜ **Assets generieren** (Higgsfield), 8 neu + 3 schärfen, nach §9.4-Regeln.
+3. ⬜ **Registry + `Mascot`-Erweiterung** bauen (§9.1-9.3), Bestand migrieren.
 4. ⬜ **Statische State-Platzierungen** pro Section verdrahten (§5).
 5. ⬜ **Animations-Presets** ergänzen (§7), reduced-motion verifizieren.
 6. ⬜ **Phase 2 (optional):** „Finn reist mit" (persistenter Mini-Guide), Mikro-Captions, Octodex.

@@ -21,7 +21,7 @@ type ProjectQueryRow = {
   is_favorite: boolean;
 };
 
-// One row per project — see supabase/migrations/0016_project_summaries.sql.
+// One row per project, see supabase/migrations/0016_project_summaries.sql.
 // Postgres does the "latest generation + chat count per project" reduction
 // via an indexed LATERAL join, so this page never pulls raw generation/
 // conversation rows into JS just to throw almost all of them away.
@@ -57,7 +57,7 @@ function deriveArtifacts(outputs: Record<string, unknown> | null) {
   return { count, categories: Array.from(categories) };
 }
 
-// Projekte is the one home for every build packet — this page used to be a
+// Projekte is the one home for every build packet, this page used to be a
 // plain grid; it now also carries what Bibliothek used to do (search, filter
 // by category/favorites/tools, artifact counts) since the two were always the
 // same underlying rows viewed two ways. See DESIGN.md-adjacent IA notes.
@@ -100,7 +100,7 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      {/* Only the empty state gets a subtitle — once projects exist, the
+      {/* Only the empty state gets a subtitle, once projects exist, the
           grid itself is self-explanatory and doesn't need re-narrating on
           every visit. */}
       <AppHeader
@@ -120,7 +120,7 @@ export default async function ProjectsPage() {
             <AnimatedMascot state="building" size={92} priority className="mx-auto mb-4" />
             <p className="text-[15px] font-semibold text-foreground">Noch kein Projekt angelegt</p>
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-              Leg direkt eins an — ein Name genügt, Briefing und Struktur wachsen
+              Leg direkt eins an, ein Name genügt, Briefing und Struktur wachsen
               im Workspace. Oder beschreib deine Idee zuerst im Chat und heb dir
               das Ergebnis als Projekt auf.
             </p>

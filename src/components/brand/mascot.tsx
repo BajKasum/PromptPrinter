@@ -7,14 +7,14 @@ interface MascotProps {
   size?: number;
   className?: string;
   /**
-   * Decorative by default (empty alt) — the mascot usually sits next to real
+   * Decorative by default (empty alt), the mascot usually sits next to real
    * copy, so a screen reader announcing it would just be noise. Pass an alt
    * (or use the state's `alt` from the registry) only when Finn stands alone.
    */
   alt?: string;
   /** Set on above-the-fold placements (e.g. an empty state) to skip lazy-load. */
   priority?: boolean;
-  /** Mascot state — resolves artwork via the state registry (preferred). */
+  /** Mascot state, resolves artwork via the state registry (preferred). */
   state?: MascotState;
   /** Manual artwork override (e.g. /mascot/dolphin-sad.png). Wins over `state`. */
   src?: string;

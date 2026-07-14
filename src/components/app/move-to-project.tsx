@@ -8,9 +8,9 @@ import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 
 // Lets a global chat become a project chat after the fact, when a free
-// conversation turns into real project work (REDESIGN.md — "In Projekt
+// conversation turns into real project work (REDESIGN.md, "In Projekt
 // verschieben"). A plain conversations.project_id update via the RLS-scoped
-// browser client — the same call PacketBridge/PromptSave already make when a
+// browser client, the same call PacketBridge/PromptSave already make when a
 // fresh handoff links a conversation to its new project, just triggered
 // manually here instead of automatically. No new table, no API route.
 

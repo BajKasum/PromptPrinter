@@ -70,7 +70,7 @@ export function SettingsWorkspace({
   initialTools: ProjectTools;
   baseSettings: Record<string, unknown> | null;
   plan: PlanKey;
-  /** A role (profiles.is_admin), not a plan — shows "Admin" instead of the
+  /** A role (profiles.is_admin), not a plan, shows "Admin" instead of the
    * tier badge and means the usage meters below never actually cap out. */
   isAdmin?: boolean;
   usage: Usage;
@@ -155,7 +155,7 @@ export function SettingsWorkspace({
   }
 
   const memberSinceLabel = useMemo(() => {
-    if (!memberSince) return "—";
+    if (!memberSince) return "-";
     return new Intl.DateTimeFormat("de-CH", {
       month: "long",
       year: "numeric",
@@ -233,12 +233,12 @@ export function SettingsWorkspace({
           </SettingsCard>
         </div>
 
-        {/* Appearance — a deliberate workspace preference, not a header toggle. */}
+        {/* Appearance, a deliberate workspace preference, not a header toggle. */}
         <SettingsCard
           Icon={SunMoon}
           accent="#8FCDF2"
           title="Erscheinungsbild"
-          description="Hell, dunkel oder automatisch nach Systemeinstellung — nur hier im Workspace."
+          description="Hell, dunkel oder automatisch nach Systemeinstellung, nur hier im Workspace."
         >
           <ThemePreference />
         </SettingsCard>
@@ -280,13 +280,13 @@ export function SettingsWorkspace({
           >
             <ApiKeys configured={configuredProviders} customProvider={customProvider} />
             <p className="mt-3 text-[12px] text-foreground/45">
-              Mit eigenem Key entfällt das monatliche Generierungen-Limit — dein Projekt-Limit
+              Mit eigenem Key entfällt das monatliche Generierungen-Limit, dein Projekt-Limit
               bleibt bestehen.
             </p>
           </SettingsCard>
         </div>
 
-        {/* Default tools — the centerpiece */}
+        {/* Default tools, the centerpiece */}
         <SettingsCard
           Icon={Sparkles}
           accent="#8FCDF2"
@@ -377,7 +377,7 @@ export function SettingsWorkspace({
         </SettingsCard>
       </div>
 
-      {/* Sticky save bar — Stripe / Linear style */}
+      {/* Sticky save bar, Stripe / Linear style */}
       <AnimatePresence>
         {dirty && (
           <motion.div

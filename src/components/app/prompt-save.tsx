@@ -10,33 +10,33 @@ import { BuildProgress, type BuildStep } from "@/components/app/build-progress";
 import { useHandoffFlow, NAME_LIMITS, IDEA_LIMITS } from "@/lib/use-handoff-flow";
 import { TOOL_OPTIONS } from "@/lib/tools";
 
-// The save flow for an everyday (general) chat — the sibling of PacketBridge,
+// The save flow for an everyday (general) chat, the sibling of PacketBridge,
 // not a merge with it: the fields and moment are genuinely different. A
 // software chat has nothing to show until the bridge builds it; a general
 // chat already hands over a finished prompt inline, so saving only makes
 // sense once there's a reply worth keeping (see Chat's `hasAssistantReply`
 // gate). The shared confirm→saving→done choreography (fetch, project-
-// linking, timing, redirect) lives in useHandoffFlow — this component owns
+// linking, timing, redirect) lives in useHandoffFlow, this component owns
 // only what's specific to a general prompt: the target-assistant select and
 // its own copy. Since Phase 2 the chat's handoff strip opens the confirm
 // card directly (autoOpen); "Zurück zum Chat" then unmounts it via onBack
 // instead of falling to idle.
 //
 // Saving re-runs /api/generate (type: "general") from the goal, the same
-// pipeline the packet bridge uses — so the result is a polished main prompt
+// pipeline the packet bridge uses, so the result is a polished main prompt
 // plus three toned variants, not a literal copy of one chat reply. That's the
 // honest framing in the copy below: "eine fertige Version", not "dieser Chat".
 //
-// Two destinations (REDESIGN.md — Handoff im Workspace): standalone creates a
+// Two destinations (REDESIGN.md, Handoff im Workspace): standalone creates a
 // new project (global chats); when `existingProjectId` is set, the prompt is
 // saved into the project this chat already belongs to instead, landing
-// directly in its Ergebnisse — see PacketBridge for the identical pattern.
+// directly in its Ergebnisse, see PacketBridge for the identical pattern.
 
 // Order matches /api/generate's general prompts object (prompt, then the
-// three GENERAL_VARIANTS in their declared order) — chatCompleteSequential
+// three GENERAL_VARIANTS in their declared order), chatCompleteSequential
 // walks it in this same insertion order, so the sequence is real. A shorter,
 // lighter version of PacketBridge's steps: this run is ~4 calls, not 10, so
-// the wait is much shorter and doesn't need four groups — just the two
+// the wait is much shorter and doesn't need four groups, just the two
 // natural phases, summing to the real observed ~35s for this pack.
 const GENERAL_STEPS: BuildStep[] = [
   { key: "prompt", label: "Haupt-Prompt", group: "Haupt-Prompt", seconds: 12 },
@@ -61,11 +61,11 @@ export function PromptSave({
   projectName,
   projectInstructions,
 }: {
-  /** The user's own chat turns, oldest first — source for the prefills. */
+  /** The user's own chat turns, oldest first, source for the prefills. */
   userMessages: string[];
   /** Pre-selects the target assistant if the chat already knows it. */
   initialTarget?: string;
-  /** Set once the chat is persisted; links the conversation to the new project (standalone only — a workspace chat is already linked). */
+  /** Set once the chat is persisted; links the conversation to the new project (standalone only, a workspace chat is already linked). */
   conversationId?: string;
   /** Lets the chat hide its composer while the save card is open. */
   onOpenChange?: (open: boolean) => void;
@@ -73,7 +73,7 @@ export function PromptSave({
   autoOpen?: boolean;
   /** When set, "Zurück zum Chat" hands control back instead of showing idle. */
   onBack?: () => void;
-  /** Set when this chat belongs to a project — save into it instead of creating a new one. */
+  /** Set when this chat belongs to a project, save into it instead of creating a new one. */
   existingProjectId?: string;
   /** The workspace's own name, shown read-only instead of an editable field. */
   projectName?: string;
@@ -112,7 +112,7 @@ export function PromptSave({
   const ideaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Focus the one thing worth reviewing: the name field when it's editable,
-  // the goal text when it isn't (workspace mode — the name is the project's own).
+  // the goal text when it isn't (workspace mode, the name is the project's own).
   useEffect(() => {
     if (stage !== "confirm") return;
     (existingProjectId ? ideaRef : nameRef).current?.focus();
@@ -171,7 +171,7 @@ export function PromptSave({
       >
         <AnimatedMascot state="delivering" size={64} className="shrink-0" />
         <div>
-          <p className="text-[14.5px] font-medium text-foreground">Fertig — deine Version liegt bereit.</p>
+          <p className="text-[14.5px] font-medium text-foreground">Fertig, deine Version liegt bereit.</p>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
             Du wirst gleich weitergeleitet.
           </p>

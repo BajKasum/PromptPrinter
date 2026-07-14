@@ -13,7 +13,7 @@ import type { ProjectFile } from "@/lib/project-files";
 
 // The workspace context rail (REDESIGN.md, Phase 3+4): the living briefing of
 // a project. Anweisungen (free text) and Struktur (fixed optional fields)
-// save on blur via the browser client (RLS scopes writes to the owner) —
+// save on blur via the browser client (RLS scopes writes to the owner),
 // every project chat reads them server-side on the next turn, so there is
 // nothing to sync beyond the DB row. Dateien (Phase 4) is a real upload list,
 // injected into chats by buildProjectContext; Ergebnisse is a status card
@@ -51,7 +51,7 @@ export function ProjectRail({
   const { toast } = useToast();
   const [instructions, setInstructions] = useState(initialInstructions ?? "");
   const [context, setContext] = useState<Record<string, string>>(initialContext);
-  // Anweisungen and Struktur save independently — editing one no longer
+  // Anweisungen and Struktur save independently, editing one no longer
   // fires a write of the other's last-known value just because they used to
   // share one persist() call. Each keeps its own in-flight indicator and its
   // own "did this actually change" snapshot.
@@ -130,7 +130,7 @@ export function ProjectRail({
           value={instructions}
           maxLength={INSTRUCTIONS_MAX}
           rows={5}
-          placeholder="Wie soll dein Prompt aussehen? Ton, Format, Ziel — ich richte mich in jedem Chat dieses Projekts danach."
+          placeholder="Wie soll dein Prompt aussehen? Ton, Format, Ziel. Ich richte mich in jedem Chat dieses Projekts danach."
           onChange={(e) => setInstructions(e.target.value)}
           onBlur={() => void persistInstructions(instructions)}
           aria-label="Projekt-Anweisungen"
@@ -164,11 +164,11 @@ export function ProjectRail({
             </div>
           ))}
         </div>
-        {/* Only before anything's filled in — once a field carries content,
+        {/* Only before anything's filled in, once a field carries content,
             "alles optional" has already been learned by using it. */}
         {Object.values(context).every((v) => !v?.trim()) && (
           <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted-foreground/70">
-            Alles optional — was du ausfüllst, kennt jeder Chat in diesem Projekt.
+            Alles optional, was du ausfüllst, kennt jeder Chat in diesem Projekt.
           </p>
         )}
       </section>

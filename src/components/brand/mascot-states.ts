@@ -1,5 +1,5 @@
 /**
- * Finn — the PromptPrinter dolphin mascot — as a finite state system.
+ * Finn, the PromptPrinter dolphin mascot, as a finite state system.
  *
  * Single source of truth for "which artwork + which idle animation" each mascot
  * state uses. Swap a PNG here (or retrain the look) and it changes everywhere.
@@ -28,14 +28,14 @@ export type MascotState =
 /** Named idle-motion presets (implemented in animated-mascot.tsx). */
 export type MascotMotion =
   | "none"
-  | "float" // gentle vertical bob — welcoming / idle
-  | "lean" // slow inquisitive tilt — curious / explaining / researching
-  | "nod" // attentive nodding — listening
-  | "think" // slow drift while pondering — thinking
-  | "bob" // swim-bob + sway — waiting
-  | "cheer" // energetic hop + wiggle — celebrating
-  | "peek" // small supportive nudge — helping
-  | "sigh"; // slow downward settle — sad
+  | "float" // gentle vertical bob, welcoming / idle
+  | "lean" // slow inquisitive tilt, curious / explaining / researching
+  | "nod" // attentive nodding, listening
+  | "think" // slow drift while pondering, thinking
+  | "bob" // swim-bob + sway, waiting
+  | "cheer" // energetic hop + wiggle, celebrating
+  | "peek" // small supportive nudge, helping
+  | "sigh"; // slow downward settle, sad
 
 export interface MascotStateDef {
   /** Artwork path under /public. */

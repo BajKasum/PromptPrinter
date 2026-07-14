@@ -70,7 +70,7 @@ describe("ChatList", () => {
 
     expect(update).toHaveBeenCalledWith({ title: "Neuer Titel" });
     expect(eq).toHaveBeenCalledWith("id", "chat-1");
-    // The row itself still shows the prop's title — a real rename only
+    // The row itself still shows the prop's title, a real rename only
     // reflects once router.refresh() re-fetches the server data; this only
     // asserts the row leaves rename mode (the input disappears).
     await waitFor(() => {

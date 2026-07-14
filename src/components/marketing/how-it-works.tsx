@@ -10,7 +10,7 @@ import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 import { cn } from "@/lib/utils";
 
 // GSAP (DrawSVG + MotionPath) lives entirely in this sibling chunk, loaded
-// only client-side and only once mounted — see how-it-works-spine.tsx for
+// only client-side and only once mounted, see how-it-works-spine.tsx for
 // why ssr:false is safe here (purely decorative overlay, no content).
 const HowItWorksSpine = dynamic(
   () => import("@/components/marketing/how-it-works-spine").then((m) => m.HowItWorksSpine),
@@ -40,7 +40,7 @@ const steps = [
 ];
 
 // In place of NoteMage's leaves (a forest motif that doesn't fit a dolphin's
-// world) — see components/brand/floaters.tsx for the shared component.
+// world), see components/brand/floaters.tsx for the shared component.
 const FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "3%", left: "6%", size: 14, delay: 0, duration: 3.4 },
   { kind: "bubble", top: "9%", left: "91%", size: 18, delay: 0.5, duration: 4.6 },
@@ -83,7 +83,7 @@ export function HowItWorks() {
         </div>
       </FadeIn>
 
-      {/* A vertical step rail — a sequence, not three parallel cards. One
+      {/* A vertical step rail, a sequence, not three parallel cards. One
           continuous spine threads every node (see how-it-works-spine.tsx),
           drawn progressively as the section scrolls into view. */}
       <div ref={railRef} className="relative z-10 mx-auto max-w-3xl">
@@ -106,7 +106,7 @@ export function HowItWorks() {
                       transition={{ type: "spring", stiffness: 320, damping: 18 }}
                       className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/40 bg-surface-raised shadow-[0_0_0_1px_hsl(var(--accent)/0.12),0_0_22px_3px_hsl(var(--accent)/0.28)] md:h-12 md:w-12"
                     >
-                      {/* Pulsing glow ring — a slow radar ping, staggered per step
+                      {/* Pulsing glow ring, a slow radar ping, staggered per step
                           so the three nodes don't pulse in lockstep. */}
                       {!reduceMotion && (
                         <motion.span
@@ -125,7 +125,7 @@ export function HowItWorks() {
                     </motion.div>
                   </div>
 
-                  {/* Content card — lifts and glows a little brighter on hover. */}
+                  {/* Content card, lifts and glows a little brighter on hover. */}
                   <motion.div
                     whileHover={reduceMotion ? undefined : { y: -4 }}
                     transition={{ type: "spring", stiffness: 300, damping: 24 }}
@@ -139,7 +139,7 @@ export function HowItWorks() {
                     </h3>
                     <p className="max-w-xl text-[14.5px] leading-[1.6] text-foreground/55">{body}</p>
 
-                    {/* Step 2 shows the real conversational feel — same baby-blue
+                    {/* Step 2 shows the real conversational feel, same baby-blue
                         user bubble as the app. */}
                     {chat && (
                       <div className="mt-4 space-y-2.5">

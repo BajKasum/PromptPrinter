@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { chatComplete, chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
 
-// llmConfig reads process.env at call time, so stubbing per test is enough —
+// llmConfig reads process.env at call time, so stubbing per test is enough,
 // no module re-import dance needed.
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -125,10 +125,10 @@ describe("chatCompleteSequential", () => {
   });
 });
 
-// BYOK's "custom" provider — any OpenAI-compatible endpoint the user names
+// BYOK's "custom" provider, any OpenAI-compatible endpoint the user names
 // themselves (Z.ai, DeepSeek, Groq, OpenRouter, …). No server key involved;
 // the endpoint/model/key all come from the override.
-describe("chatComplete — custom BYOK override", () => {
+describe("chatComplete: custom BYOK override", () => {
   it("posts to the user's own endpoint and model, with their key", async () => {
     let capturedUrl = "";
     let capturedInit: RequestInit = {};

@@ -35,7 +35,7 @@ describe("rateLimitKey", () => {
 // import time, so exercising both configurations needs a fresh module
 // instance per test (vi.resetModules() + a dynamic re-import) rather than
 // the statically-imported rateLimitKey above.
-describe("rateLimit — Upstash-missing behavior differs by environment", () => {
+describe("rateLimit, Upstash-missing behavior differs by environment", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();

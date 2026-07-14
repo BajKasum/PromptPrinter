@@ -28,7 +28,7 @@ export interface GenerationOutputs {
 }
 
 // The general pack: a freeform goal turned into one ready-to-use prompt plus a
-// few stylistic variants. Not tied to software — works for study material,
+// few stylistic variants. Not tied to software, works for study material,
 // writing, planning, anything. `target` is the assistant the prompt is written
 // for (Claude / ChatGPT / Gemini or a custom name).
 export interface GeneralInput {

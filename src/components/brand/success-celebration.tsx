@@ -10,14 +10,14 @@ interface SuccessCelebrationProps {
   message: string;
   /** Optional second line. */
   description?: string;
-  /** Called once the celebration is over — use it to navigate / dismiss. */
+  /** Called once the celebration is over, use it to navigate / dismiss. */
   onDone?: () => void;
   /** How long the overlay stays before calling onDone (ms). */
   durationMs?: number;
   className?: string;
 }
 
-// Confetti burst around the dolphin — token-colored pieces flung outward, then
+// Confetti burst around the dolphin, token-colored pieces flung outward, then
 // drifting down. x/y are end offsets in px from the dolphin's center.
 const CONFETTI = [
   { x: -130, y: -70, r: -50, d: 0.0, c: "bg-accent", w: 8, h: 8 },

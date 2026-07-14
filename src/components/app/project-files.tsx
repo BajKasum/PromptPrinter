@@ -16,10 +16,10 @@ import {
 import { formatBytes } from "@/lib/utils";
 
 // Workspace-Dateien (REDESIGN.md, Phase 4): kleine Text-Kontextdateien, die
-// buildProjectContext direkt in jeden Projekt-Chat injiziert. Bewusst eng —
+// buildProjectContext direkt in jeden Projekt-Chat injiziert. Bewusst eng,
 // kein Dateimanager, sondern gezielter Kontext. Upload/Delete laufen direkt
 // über den Browser-Client (RLS-scoped), gleiches Muster wie
-// avatar-upload.tsx — keine eigene API-Route nötig.
+// avatar-upload.tsx, keine eigene API-Route nötig.
 
 export function ProjectFiles({
   projectId,
@@ -204,7 +204,7 @@ export function ProjectFiles({
       {error ? (
         <p className="mt-2 text-[11.5px] text-destructive">{error}</p>
       ) : (
-        // Format/size tip only before the first upload — once a file's in the
+        // Format/size tip only before the first upload, once a file's in the
         // list, the constraint has already been learned; repeating it forever
         // would be chrome, not help.
         files.length === 0 && (
@@ -212,8 +212,8 @@ export function ProjectFiles({
             Am besten{" "}
             <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
               .md
-            </code>{" "}
-            — token-effizient. Auch .txt, .json, .csv, bis {Math.round(MAX_FILE_BYTES / 1024)} KB.
+            </code>
+            , token-effizient. Auch .txt, .json, .csv, bis {Math.round(MAX_FILE_BYTES / 1024)} KB.
           </p>
         )
       )}

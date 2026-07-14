@@ -23,7 +23,7 @@ type ConversationQueryRow = {
 // The home of the global chats (REDESIGN.md, Phase 2): a calm list, newest
 // first. Chats that belong to a project live in their workspace and are
 // deliberately not shown here; the sidebar carries resume, so this page needs
-// no featured hero — just the work.
+// no featured hero, just the work.
 export default async function ChatsPage() {
   const supabase = await createClient();
   const {
@@ -58,7 +58,7 @@ export default async function ChatsPage() {
 
   return (
     <div>
-      {/* Only the empty state gets a subtitle — once chats exist, the list
+      {/* Only the empty state gets a subtitle, once chats exist, the list
           itself is self-explanatory and doesn't need re-narrating on every visit. */}
       <AppHeader
         mascot="listening"
@@ -73,7 +73,7 @@ export default async function ChatsPage() {
             <AnimatedMascot state="curious" size={92} priority className="mx-auto mb-4" />
             <p className="text-[15px] font-semibold text-foreground">Noch kein Gespräch</p>
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-              Erzähl mir dein Ziel — einen Text, einen Plan, eine ganze Software-Idee.
+              Erzähl mir dein Ziel, einen Text, einen Plan, eine ganze Software-Idee.
               Jeder Chat lässt sich jederzeit fortsetzen, und ein gutes Ergebnis
               speicherst du dir als Projekt.
             </p>

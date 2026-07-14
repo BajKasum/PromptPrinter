@@ -16,7 +16,7 @@ type DbMessage = { role: "user" | "assistant"; content: string };
 
 // Ein Projekt-Chat auf seiner kanonischen Subroute (REDESIGN.md, Phase 3).
 // Chat-vs-Workspace-Trennung: diese Route liegt bewusst ausserhalb der
-// (workspace)-Gruppe (siehe ../(workspace)/layout.tsx) — kein Rail, kein
+// (workspace)-Gruppe (siehe ../(workspace)/layout.tsx), kein Rail, kein
 // Projekt-Header hier. Ein ruhiger Gesprächsraum, der zum Projekt gehört,
 // aber dessen Kontext-Fläche nicht mit ins Chatfenster zieht.
 export default async function ProjectChatPage({ params }: { params: Params }) {

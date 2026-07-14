@@ -6,7 +6,7 @@ import { Logo } from "@/components/brand/logo";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 
-// Finn's side of the screen — bubbles rising and a few sparks drifting
+// Finn's side of the screen, bubbles rising and a few sparks drifting
 // around him, same shared vocabulary as the landing page's sections.
 const PANEL_FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "10%", left: "16%", size: 14, delay: 0.2, duration: 3.4 },
@@ -21,7 +21,7 @@ const PANEL_FLOATERS: FloaterSpec[] = [
 
 /**
  * Two-column auth layout shared by login, signup and the password-reset
- * screens. Left half (desktop): Finn's panel — a soft water-tinted surface
+ * screens. Left half (desktop): Finn's panel, a soft water-tinted surface
  * with the big animated dolphin, drifting bubbles/stars, and one line in his
  * voice. Right half: the form. On mobile the panel collapses to a small Finn
  * above the form. `overlay` renders at the root (e.g. success celebration).
@@ -30,11 +30,11 @@ export function AuthExperienceShell({
   children,
   overlay,
   panelTitle = "Schön, dass du da bist.",
-  panelSub = "Ich bin Finn. Erzähl mir deine Idee — ich mach einen fertigen Plan draus.",
+  panelSub = "Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Plan draus.",
 }: {
   children: React.ReactNode;
   overlay?: React.ReactNode;
-  /** Headline on Finn's panel — one line in his own voice, per page. */
+  /** Headline on Finn's panel, one line in his own voice, per page. */
   panelTitle?: string;
   panelSub?: string;
 }) {
@@ -42,7 +42,7 @@ export function AuthExperienceShell({
     <div className="relative flex min-h-screen w-full bg-background text-foreground">
       {overlay}
 
-      {/* Finn's panel — desktop only. */}
+      {/* Finn's panel, desktop only. */}
       <aside className="relative hidden w-1/2 overflow-hidden bg-accent-subtle lg:flex lg:flex-col">
         {/* One soft light source from above (Finn's World: sunlight, not aquarium). */}
         <div
@@ -89,7 +89,7 @@ export function AuthExperienceShell({
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-md space-y-6"
           >
-            {/* Small Finn for mobile — desktop has the big one on the left. */}
+            {/* Small Finn for mobile, desktop has the big one on the left. */}
             <div className="flex justify-center lg:hidden">
               <AnimatedMascot state="welcoming" motion="bob" size={72} alt="" />
             </div>

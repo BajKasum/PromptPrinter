@@ -45,10 +45,10 @@ const BUTTON_ROW =
   "flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-surface-raised text-[14px] font-medium text-foreground transition-colors hover:bg-surface-hover disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 /**
- * "Weiter mit Google / GitHub" — Supabase OAuth (PKCE). The provider redirect
+ * "Weiter mit Google / GitHub", Supabase OAuth (PKCE). The provider redirect
  * lands on the existing /auth/callback, which exchanges the code and forwards
  * to `next`. Requires the providers to be enabled in the Supabase dashboard
- * (Authentication → Providers) — until then Supabase returns a clear
+ * (Authentication → Providers), until then Supabase returns a clear
  * "provider is not enabled" error, surfaced right here.
  */
 export function OAuthButtons({ next }: { next: string }) {
@@ -69,7 +69,7 @@ export function OAuthButtons({ next }: { next: string }) {
         setError(translateAuthError(oauthError.message));
         setPending(null);
       }
-      // On success the browser navigates to the provider — keep the spinner.
+      // On success the browser navigates to the provider, keep the spinner.
     } catch (err) {
       setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
       setPending(null);

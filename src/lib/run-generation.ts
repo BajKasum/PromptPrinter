@@ -5,15 +5,15 @@ export type GenerationRun = {
   mode: "generated" | "stub";
   tokensIn: number;
   tokensOut: number;
-  /** Label stored on the generation row — null in stub mode. */
+  /** Label stored on the generation row, null in stub mode. */
   model: string | null;
 };
 
 /**
  * Produces the outputs for one generation run.
- *   - With a configured provider (server's Z.ai, or a user's own BYOK key —
+ *   - With a configured provider (server's Z.ai, or a user's own BYOK key,
  *     see lib/llm.ts): one completion per artifact, run strictly one at a
- *     time (with a 429 retry) via chatCompleteSequential — Z.ai's current
+ *     time (with a 429 retry) via chatCompleteSequential, Z.ai's current
  *     plan can't sustain the up-to-10-way parallel fan-out this used to do,
  *     so sequencing here is what makes a run actually come back with real
  *     content instead of mostly "_Generation failed_".
@@ -48,7 +48,7 @@ export async function runGeneration(
         tokensOut += entry.result.usage.outputTokens;
       }
     } else {
-      // An empty reply degrades to the unfilled template — still usable
+      // An empty reply degrades to the unfilled template, still usable
       // content instead of an empty box. Real errors surface visibly.
       outputs[key] =
         entry.error instanceof LlmEmptyReplyError

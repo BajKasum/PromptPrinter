@@ -1,6 +1,6 @@
 export type ChatMode = "general" | "software";
 
-// There is one chat (REDESIGN.md, Phase 2) — no mode choice at the start. The
+// There is one chat (REDESIGN.md, Phase 2), no mode choice at the start. The
 // `mode` prop survives as an internal value (legacy conversations carry it, and
 // the API picks its system prompt from it), but the empty state is identical
 // for both stored modes. Only refining a project's packet is its own context.
@@ -10,11 +10,11 @@ type EmptyConfig = { heading: string; sub: string; starters: string[] };
 
 const UNIFIED_EMPTY: EmptyConfig = {
   heading: "Woran arbeiten wir?",
-  sub: "Beschreib dein Ziel — ein Text, ein Lernplan, eine ganze Software-Idee. Ich bau dir den fertigen Prompt und verfeinere ihn mit dir.",
+  sub: "Beschreib dein Ziel, ein Text, ein Lernplan, eine ganze Software-Idee. Ich bau dir den fertigen Prompt und verfeinere ihn mit dir.",
   starters: [
     "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
     "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
-    "Ich hab eine App-Idee — bau mir das komplette Prompt-Paket dafür.",
+    "Ich hab eine App-Idee, bau mir das komplette Prompt-Paket dafür.",
   ],
 };
 
@@ -25,18 +25,18 @@ const VARIANTS: Record<Variant, EmptyConfig> = {
   refine: {
     heading: "Pass deine Prompts an",
     sub: "Sag mir, was ich an deinen Prompts ändern soll. Du bekommst die aktualisierte, fertige Version zurück.",
-    // Unused directly — refine's starters depend on the project's own mode
+    // Unused directly, refine's starters depend on the project's own mode
     // (software vs. general), see REFINE_STARTERS below. Kept here only so
     // every Variant has the same shape; resolveEmptyState below never reads it.
     starters: [],
   },
 };
 
-// A project chat before any result exists: nothing to refine yet — the chat
+// A project chat before any result exists: nothing to refine yet, the chat
 // is where the project's first work happens, briefed by the context rail.
 const PROJECT_FRESH: EmptyConfig = {
   heading: "Woran arbeiten wir hier?",
-  sub: "Dieser Chat kennt dein Projekt — Anweisungen und Struktur aus der Seitenleiste fließen automatisch ein.",
+  sub: "Dieser Chat kennt dein Projekt, Anweisungen und Struktur aus der Seitenleiste fließen automatisch ein.",
   starters: [
     "Stell mir Fragen, die mein Briefing schärfen.",
     "Bau mir einen ersten Prompt aus meinem Projektkontext.",
@@ -45,7 +45,7 @@ const PROJECT_FRESH: EmptyConfig = {
 };
 
 // The refine variant collapses mode away (see resolveVariant), but its
-// starter suggestions must still match what the project actually is — a
+// starter suggestions must still match what the project actually is, a
 // Prompt-Projekt has no Frontend-/Backend-/Datenbank-Anteil to reference.
 const REFINE_STARTERS: Record<ChatMode, string[]> = {
   software: [
@@ -55,7 +55,7 @@ const REFINE_STARTERS: Record<ChatMode, string[]> = {
   ],
   general: [
     "Mach den Haupt-Prompt kürzer und direkter.",
-    "Passe den Ton an — freundlicher und weniger formell.",
+    "Passe den Ton an, freundlicher und weniger formell.",
     "Ergänze ein konkretes Beispiel für die gewünschte Ausgabe.",
   ],
 };

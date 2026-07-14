@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 // RFC 7807-ish error body, shared by every API route instead of each one
-// carrying its own copy — two near-identical copies (chat + generate) had
+// carrying its own copy, two near-identical copies (chat + generate) had
 // already drifted (chat was missing 401/404, generate was missing 502)
 // before this existed. One status→title map, used everywhere.
 const STATUS_TITLES: Record<number, string> = {

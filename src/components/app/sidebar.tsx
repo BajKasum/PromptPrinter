@@ -20,10 +20,10 @@ import {
 
 // The sidebar is a product surface, not a link list (REDESIGN.md, Phase 1):
 // the two nav destinations (Chats, Projekte) double as section headers, and the
-// user's actual work — recent chats, pinned + recent projects — lives directly
+// user's actual work, recent chats, pinned + recent projects, lives directly
 // beneath them. Collapsed it becomes a quiet icon rail. The collapse/resize
 // interaction logic itself lives in use-sidebar-collapse.ts/use-sidebar-
-// resize.ts — this file only renders and re-exports their public constants.
+// resize.ts, this file only renders and re-exports their public constants.
 
 export type SidebarChat = { id: string; title: string };
 export type SidebarProject = { id: string; name: string; isFavorite: boolean };
@@ -33,11 +33,11 @@ export { SIDEBAR_COOKIE, SIDEBAR_WIDTH_COOKIE, MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WI
 const COLLAPSED_WIDTH = 68;
 
 // Shared active-row language for chats/projects/footer links: the 3px accent
-// mark plus a weight bump, now with a soft bg-accent-subtle tint too — the
+// mark plus a weight bump, now with a soft bg-accent-subtle tint too, the
 // mark alone tested as too easy to miss when scanning a long chat list (it's
 // a thin line at the far edge, easy to not notice, especially past a
 // truncated title). The tint is the same token the collapsed icon rail
-// already uses for its active state, so this isn't a new pattern — it's
+// already uses for its active state, so this isn't a new pattern, it's
 // bringing the expanded view in line with what the rail already does.
 // Exported so the mobile drawer (mobile-nav.tsx) renders identical rows
 // instead of a second, easily-drifting copy of the same styling.
@@ -83,7 +83,7 @@ export function Sidebar({
         <Link
           href="/chats"
           className="inline-flex"
-          aria-label="PromptPrinter — zu deinen Chats"
+          aria-label="PromptPrinter, zu deinen Chats"
         >
           {collapsed ? <LogoMark size={26} /> : <Logo accentWordmark />}
         </Link>
@@ -101,7 +101,7 @@ export function Sidebar({
             <PanelLeftClose className="h-4 w-4" strokeWidth={1.8} />
           )}
         </button>
-        {/* A soft, fading wash instead of a ruled line — a hard border here
+        {/* A soft, fading wash instead of a ruled line, a hard border here
             read as technical chrome; this grounds the header zone the same
             way without a hard edge. */}
         <div
@@ -124,10 +124,10 @@ export function Sidebar({
         )}
       </motion.div>
 
-      {/* Drag-to-resize handle — invisible at rest (VS Code/Linear-style),
+      {/* Drag-to-resize handle, invisible at rest (VS Code/Linear-style),
           a thin accent line on hover/focus/drag. Hit area (w-2) is wider than
           the visible line (w-px) so it's easy to grab without looking heavy.
-          Collapsed rail has a fixed width — nothing to resize, so this only
+          Collapsed rail has a fixed width, nothing to resize, so this only
           renders expanded. */}
       {!collapsed && (
         <div
@@ -170,7 +170,7 @@ function Full({
   chats: SidebarChat[];
   projects: SidebarProject[];
 }) {
-  // Which list is on screen — driven by the route, not separate client state,
+  // Which list is on screen, driven by the route, not separate client state,
   // so a direct link into /projects/[id] lands on the right tab for free and
   // back/forward navigation can't drift out of sync with what's shown. Any
   // other route (settings, billing) defaults to Chats.
@@ -271,7 +271,7 @@ function Full({
 // Pill switcher between the sidebar's two destinations. Each pill is a real
 // link (not a client-only toggle), so `tab` above and the URL can never
 // drift apart. Labels are deliberately singular ("Chat"/"Projekt") to match
-// this switcher specifically — everywhere else in the app still says the
+// this switcher specifically, everywhere else in the app still says the
 // plural "Chats"/"Projekte" (primaryNav, page titles, command palette).
 // Exported so the mobile drawer uses the exact same switcher, not a copy.
 export function TabSwitcher({ tab }: { tab: "chats" | "projects" }) {

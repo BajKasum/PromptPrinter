@@ -2,7 +2,7 @@
  * Zentrale Betreiber- und Rechtsangaben für Impressum, Datenschutz und AGB.
  *
  * VOR DEM LAUNCH: alle [PLATZHALTER] durch echte Angaben ersetzen. Diese
- * Vorlagen sind ein solider Startpunkt, ersetzen aber keine Rechtsberatung —
+ * Vorlagen sind ein solider Startpunkt, ersetzen aber keine Rechtsberatung,
  * vor einem öffentlichen Launch mit echten Nutzern juristisch prüfen lassen.
  */
 export const LEGAL = {

@@ -40,7 +40,7 @@ function findTarget(step: TourStep): HTMLElement | null {
 export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose: () => void }) {
   const reduce = useReducedMotion();
 
-  // Freeze the reachable steps once at mount — keeps the X/Y progress stable.
+  // Freeze the reachable steps once at mount, keeps the X/Y progress stable.
   const [steps] = useState<TourStep[]>(() =>
     allSteps.filter((s) => !s.selectors || findTarget(s) !== null)
   );
@@ -159,7 +159,7 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
     return () => window.clearTimeout(t);
   }, [index]);
 
-  // Nothing reachable at all — never trap the user in an empty overlay.
+  // Nothing reachable at all, never trap the user in an empty overlay.
   useEffect(() => {
     if (steps.length === 0) onClose();
   }, [steps.length, onClose]);
@@ -209,7 +209,7 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
 
   return createPortal(
     <div className="fixed inset-0 z-[100]">
-      {/* Click shield — the dim layer is a box-shadow and catches no events,
+      {/* Click shield, the dim layer is a box-shadow and catches no events,
           so this transparent layer keeps the page inert during the tour. */}
       <div className="absolute inset-0" aria-hidden="true" />
 
@@ -242,7 +242,7 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
           style={tipStyle}
           className={cn(
             "absolute rounded-2xl border border-border bg-surface-raised shadow-elevated focus:outline-none",
-            // A bit wider than before — the bigger Finn + his speech bubble
+            // A bit wider than before, the bigger Finn + his speech bubble
             // need more breathing room than the old small-icon-plus-title row did.
             sheet ? "p-5" : "w-[380px] p-5"
           )}
@@ -262,7 +262,7 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
           </div>
 
           {/* Finn is the tour's main character, not a logo beside an info card
-              — he's noticeably bigger here than anywhere else he appears in
+             , he's noticeably bigger here than anywhere else he appears in
               the app chrome, and the explanation itself sits inside a real
               speech bubble (tail pointing back at him, same construction as
               the hero's), so every step reads as him talking you through the

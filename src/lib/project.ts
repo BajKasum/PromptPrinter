@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 // The workspace shell (layout) and its subroutes (Übersicht, Chats, Ergebnisse)
 // all need the same project row. Layouts can't pass props to pages, so every
-// segment calls getProject(id) — React's cache() dedupes it to one query per
+// segment calls getProject(id), React's cache() dedupes it to one query per
 // request. Missing/foreign ids 404 here, so callers get a non-null project.
 
 export type WorkspaceProject = {
@@ -42,7 +42,7 @@ export const getProject = cache(async (id: string): Promise<WorkspaceProject> =>
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS scopes the read to the owner — a malformed or foreign id yields no row.
+  // RLS scopes the read to the owner, a malformed or foreign id yields no row.
   const { data } = await supabase
     .from("projects")
     .select(

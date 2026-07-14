@@ -20,12 +20,12 @@ export function Topbar({
 }: {
   email: string;
   plan: string;
-  /** A role (profiles.is_admin), not a plan — shows "Admin" instead of the
+  /** A role (profiles.is_admin), not a plan, shows "Admin" instead of the
    * tier badge below and never affects what `plan` itself says. */
   isAdmin?: boolean;
   displayName?: string | null;
   avatarUrl?: string | null;
-  /** Same recents the desktop sidebar shows — the mobile drawer mirrors it. */
+  /** Same recents the desktop sidebar shows, the mobile drawer mirrors it. */
   chats: SidebarChat[];
   projects: SidebarProject[];
 }) {
@@ -59,7 +59,7 @@ export function Topbar({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Escape closes whichever dropdown is open — click-away alone traps
+  // Escape closes whichever dropdown is open, click-away alone traps
   // keyboard users.
   useEffect(() => {
     if (!open && !notifOpen) return;

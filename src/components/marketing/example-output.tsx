@@ -15,7 +15,7 @@ const EXAMPLE_FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "88%", left: "6%", size: 9, delay: 1.1, duration: 3.6 },
 ];
 
-// Plain-language tab labels — the technical names (PRD, Master-Prompt, Schema)
+// Plain-language tab labels, the technical names (PRD, Master-Prompt, Schema)
 // only show up once the visitor is already convinced, never as the first thing
 // they read.
 const tabs = [
@@ -28,14 +28,14 @@ const tabs = [
 ];
 
 const content: Record<string, string> = {
-  prd: `# Streak Coach — Produktanforderungen
+  prd: `# Streak Coach: Produktanforderungen
 
 ## Vision
 Ein durchdachter Habit-Tracker, der mit KI personalisierte Mikro-Belohnungen
 basierend auf dem Streak-Fortschritt und den Verhaltensmustern vorschlägt.
 
 ## Zielgruppe
-- Selbstoptimierungs-Enthusiasten (25–40)
+- Selbstoptimierungs-Enthusiasten (25-40)
 - Wissensarbeiter, die tägliche Routinen aufbauen
 - Bestehende Notion-/Todoist-Nutzer, die Gamification suchen
 
@@ -54,7 +54,7 @@ basierend auf dem Streak-Fortschritt und den Verhaltensmustern vorschlägt.
 - Social-Features
 - Apple-Health-/Google-Fit-Integration
 - Native Mobile-Apps`,
-  master: `Du bist ein erfahrener Full-Stack-Produkt-Engineer und baust «Streak Coach» — einen
+  master: `Du bist ein erfahrener Full-Stack-Produkt-Engineer und baust «Streak Coach», einen
 KI-gestützten Habit-Tracker. Deine Aufgabe: vollständige, produktionsreife
 Implementierungen liefern, ein Feature nach dem anderen.
 
@@ -76,15 +76,15 @@ Sei knapp. Zeigen statt erzählen. Liefere Code, der läuft.`,
   frontend: `Entwirf ein mobile-first Dashboard für «Streak Coach» mit Tailwind + shadcn/ui.
 
 ## Screens
-1. Heute — Liste aktiver Habits mit Check-in-Tap-Targets
-2. Habit-Detail — Kalender-Heatmap + KI-Belohnungs-Feed
-3. Onboarding — 3-Schritt-Wizard
+1. Heute: Liste aktiver Habits mit Check-in-Tap-Targets
+2. Habit-Detail: Kalender-Heatmap + KI-Belohnungs-Feed
+3. Onboarding: 3-Schritt-Wizard
 
 ## Design-Tokens
 - Hintergrund: #0C0E12
 - Surface: #14171C
 - Akzent: Babyblau (#8FCDF2)
-- Radius: 10–16px
+- Radius: 10-16px
 - Schrift: Geist Sans (UI), Geist Mono (Daten)
 
 ## Motion
@@ -110,7 +110,7 @@ create index habits_user_idx on public.habits(user_id);
 alter table public.habits enable row level security;
 create policy habits_owner on public.habits
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);`,
-  security: `# Streak Coach — Sicherheits-Checkliste
+  security: `# Streak Coach: Sicherheits-Checkliste
 
 ## Authentifizierung
 ✅ E-Mail-Bestätigung vor erstem Login aktiv
@@ -119,7 +119,7 @@ create policy habits_owner on public.habits
 
 ## Datenzugriff
 ✅ Row Level Security auf jeder Tabelle mit Nutzerdaten
-✅ Kein direkter Tabellenzugriff — nur über Supabase-Client mit RLS
+✅ Kein direkter Tabellenzugriff, nur über Supabase-Client mit RLS
 ✅ API-Keys nie im Client-Bundle (kein NEXT_PUBLIC_ für Service-Keys)
 
 ## Infrastruktur
@@ -128,9 +128,9 @@ create policy habits_owner on public.habits
 ✅ Abhängigkeiten auf bekannte Schwachstellen geprüft (npm audit)
 
 ## Zahlungsdaten
-✅ Kreditkarten werden nur bei Stripe gespeichert — nie in eigener DB
+✅ Kreditkarten werden nur bei Stripe gespeichert, nie in eigener DB
 ✅ Webhook-Signaturen werden bei jedem Event verifiziert`,
-  marketing: `# Streak Coach — Marketing-Texte & Launch-Plan
+  marketing: `# Streak Coach: Marketing-Texte & Launch-Plan
 
 ## Landingpage-Headline
 Deine Gewohnheiten verdienen einen Hype-Man.
@@ -146,7 +146,7 @@ Je länger deine Serie, desto kreativer die Belohnung.
 - «Woher kommen die Belohnungen?» → Claude schlägt sie vor, du wählst.
 
 ## SEO-Grundlagen
-- Title-Tag: «Streak Coach — Habit-Tracker mit KI-Belohnungen»
+- Title-Tag: «Streak Coach, Habit-Tracker mit KI-Belohnungen»
 - Meta-Description: max. 155 Zeichen, Fokus-Keyword + Nutzen
 - H1 = Landingpage-Headline, nur 1× pro Seite
 

@@ -20,7 +20,7 @@ export default async function BillingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Start of the current month (UTC) — generations are a per-month allowance.
+  // Start of the current month (UTC), generations are a per-month allowance.
   const now = new Date();
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
@@ -61,21 +61,21 @@ export default async function BillingPage() {
   const hasByok = configuredProviders.length > 0;
   const limits = effectiveLimits(planKey, isAdmin);
   // A BYOK key lifts the generations and chat caps the same way admin lifts
-  // all three — the project cap still applies either way.
+  // all three, the project cap still applies either way.
   const generationLimit = hasByok ? Infinity : limits.generations;
   const chatLimit = hasByok ? Infinity : limits.chatMessages;
   const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
 
   const usageNote = isAdmin
-    ? "Admin-Konto — die Balken unten sind nur zur Orientierung, sie greifen für dich nicht."
+    ? "Admin-Konto, die Balken unten sind nur zur Orientierung, sie greifen für dich nicht."
     : hasByok
       ? "Mit deinem eigenen Key entfallen Generierungen- und Chat-Limit. Das Projekt-Limit bleibt bestehen."
       : isFree
-        ? "Ist ein Balken voll, geht's erst im nächsten Monat weiter — oder sofort mit Pro oder deinem eigenen Key."
+        ? "Ist ein Balken voll, geht's erst im nächsten Monat weiter, oder sofort mit Pro oder deinem eigenen Key."
         : "Ist ein Balken voll, geht's erst im nächsten Monat weiter.";
 
   const pro = PLANS.find((p) => p.name === "Pro");
-  // features[0] is "Alles aus Free", a meta-line, not something new — the
+  // features[0] is "Alles aus Free", a meta-line, not something new, the
   // upgrade panel only cares about what's actually different.
   const proDelta = pro?.features.slice(1) ?? [];
 
@@ -118,7 +118,7 @@ export default async function BillingPage() {
         </section>
       </FadeIn>
 
-      {/* Only a Free, non-admin account has anything to gain here — a Pro/
+      {/* Only a Free, non-admin account has anything to gain here, a Pro/
           Team account seeing its own plan pitched back at itself would read
           as broken, not helpful. */}
       {isFree && !isAdmin && pro && (
@@ -148,7 +148,7 @@ export default async function BillingPage() {
             </div>
             <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[12.5px] text-foreground/45">
               <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-              Bezahlung ist noch nicht freigeschaltet — sobald es so weit ist, meld ich mich.
+              Bezahlung ist noch nicht freigeschaltet, sobald es so weit ist, meld ich mich.
             </div>
           </section>
         </FadeIn>

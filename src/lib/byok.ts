@@ -6,7 +6,7 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
 
 /**
  * A signed-in user's stored BYOK key, ready to pass as chatComplete's
- * `override` — or null if they haven't configured one (or a stored row
+ * `override`, or null if they haven't configured one (or a stored row
  * fails to decrypt, which degrades to "no override" rather than a hard
  * failure, since /api/chat and /api/generate both have a working fallback:
  * the server's own configured provider).
@@ -31,7 +31,7 @@ export async function getUserOverride(
       const baseUrl = data.base_url as string | null;
       const model = data.model as string | null;
       // The DB constraint guarantees these alongside provider='custom'; a
-      // null here means something is inconsistent — degrade to "no override"
+      // null here means something is inconsistent, degrade to "no override"
       // rather than crash the caller.
       if (!baseUrl || !model) return null;
       return { provider: "custom", apiKey, baseUrl, model };
@@ -42,7 +42,7 @@ export async function getUserOverride(
   }
 }
 
-/** Which BYOK providers this user has configured — for the settings UI. */
+/** Which BYOK providers this user has configured, for the settings UI. */
 export async function getConfiguredProviders(
   supabase: SupabaseServerClient,
   userId: string
@@ -53,7 +53,7 @@ export async function getConfiguredProviders(
 
 export type CustomProviderMeta = { label: string; baseUrl: string; model: string };
 
-/** The user's custom-endpoint BYOK config (no key) — for the settings UI. */
+/** The user's custom-endpoint BYOK config (no key), for the settings UI. */
 export async function getCustomProvider(
   supabase: SupabaseServerClient,
   userId: string

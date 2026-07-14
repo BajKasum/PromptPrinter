@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 /**
  * A category of build-target choices rendered as selectable product cards:
  * brand logo, blurb, hover-lift, a accent selected state and a spring-in
- * checkmark. The final card is always "Eigenes" — pick it to type a tool we
+ * checkmark. The final card is always "Eigenes", pick it to type a tool we
  * don't list (Deepseek, MongoDB, …) and the entry is stored verbatim.
  */
 export function ToolPickerGroup({
@@ -39,7 +39,7 @@ export function ToolPickerGroup({
   const focusNext = useRef(false);
 
   // Focus the free-text field the instant the user switches into custom mode,
-  // but never on mount — a saved custom value shouldn't steal focus on load.
+  // but never on mount, a saved custom value shouldn't steal focus on load.
   useEffect(() => {
     if (isCustom && focusNext.current) {
       inputRef.current?.focus();
@@ -106,7 +106,7 @@ export function ToolPickerGroup({
           );
         })}
 
-        {/* Always-present custom choice — type your own tool name. */}
+        {/* Always-present custom choice, type your own tool name. */}
         <motion.button
           type="button"
           role="radio"
@@ -135,7 +135,7 @@ export function ToolPickerGroup({
         </motion.button>
       </div>
 
-      {/* Free-text entry — only while the custom card is selected. */}
+      {/* Free-text entry, only while the custom card is selected. */}
       <AnimatePresence initial={false}>
         {isCustom && (
           <motion.div
@@ -151,7 +151,7 @@ export function ToolPickerGroup({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="z. B. Deepseek, MongoDB…"
-                aria-label={`${label} — eigenes Tool`}
+                aria-label={`${label}, eigenes Tool`}
                 maxLength={40}
                 className={cn(
                   "h-10",

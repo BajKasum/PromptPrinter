@@ -33,7 +33,7 @@ export function DeleteProjectButton({
     return () => window.clearTimeout(t);
   }, [open]);
 
-  // Escape closes the dialog — but never while a delete is in flight.
+  // Escape closes the dialog, but never while a delete is in flight.
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -52,7 +52,7 @@ export function DeleteProjectButton({
     setDeleting(true);
     const supabase = createClient();
 
-    // Storage objects don't cascade with the DB row — clean them up first
+    // Storage objects don't cascade with the DB row, clean them up first
     // while the project_files rows (and their storage_path) still exist,
     // otherwise every deleted project leaks its files in the bucket forever.
     const { data: files } = await supabase
@@ -79,7 +79,7 @@ export function DeleteProjectButton({
       description: `„${projectName}“ wurde entfernt.`,
       variant: "success",
     });
-    // The detail page no longer exists — leave for the list, which re-fetches.
+    // The detail page no longer exists, leave for the list, which re-fetches.
     router.push("/projects");
     router.refresh();
   }

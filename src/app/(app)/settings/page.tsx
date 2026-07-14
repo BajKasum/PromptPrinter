@@ -64,7 +64,7 @@ export default async function SettingsPage() {
   const isAdmin = profile?.is_admin ?? false;
   const limits = effectiveLimits(plan, isAdmin);
   // A configured BYOK key lifts both the generations and chat caps (see
-  // api/generate + api/chat) — UsageMeter already renders "Unbegrenzt" for a
+  // api/generate + api/chat), UsageMeter already renders "Unbegrenzt" for a
   // non-finite limit.
   const hasByok = configuredProviders.length > 0;
   const generationLimit = hasByok ? Infinity : limits.generations;

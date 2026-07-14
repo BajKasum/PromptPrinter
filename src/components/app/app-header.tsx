@@ -6,12 +6,12 @@ import { FadeIn } from "@/components/motion/fade-in";
 /**
  * Shared header for the app's "rooms" (Chats, Projekte). Gives each page a
  * small, room-appropriate Finn beside a Finn-voiced title, sitting in a soft
- * upper-left light (.app-header-glow) — so the sections feel like places Finn
+ * upper-left light (.app-header-glow), so the sections feel like places Finn
  * walks you through, not repeated list templates.
  *
  * Start deliberately does NOT use this: it has its own larger welcoming-Finn
  * hero. The size hierarchy (big greeting Finn on Start, small watchful Finn in
- * these headers) is the point — Finn scales to each room.
+ * these headers) is the point, Finn scales to each room.
  */
 export function AppHeader({
   mascot,

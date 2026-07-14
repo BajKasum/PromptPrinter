@@ -18,11 +18,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://promptprinter.app"),
   title: {
-    default: "PromptPrinter — Aus rohen Ideen build-fertige Prompts",
+    default: "PromptPrinter, Aus rohen Ideen build-fertige Prompts",
     template: "%s · PromptPrinter",
   },
   description:
-    "Generiere Produkt-Briefs, PRDs, technische Blueprints und optimierte Prompts — zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.",
+    "Generiere Produkt-Briefs, PRDs, technische Blueprints und optimierte Prompts, zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.",
   keywords: [
     "KI-Prompts",
     "PRD-Generator",

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /**
- * One metric's real relationship to its cap, not just a number — the bar is
+ * One metric's real relationship to its cap, not just a number, the bar is
  * the point. Shared between Settings' quick-glance card and Billing's full
  * usage section so the same metric never looks like two different widgets.
  */

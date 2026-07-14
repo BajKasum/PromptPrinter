@@ -11,7 +11,7 @@ type MenuToggleProps = React.ComponentProps<"svg"> & {
 };
 
 /**
- * Animated hamburger ⇆ close icon. Purely presentational — the toggling button
+ * Animated hamburger ⇆ close icon. Purely presentational, the toggling button
  * owns the aria-label/aria-expanded. Stroke morph respects reduced-motion via
  * the consumer (we keep the transition short and non-essential).
  */

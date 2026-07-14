@@ -14,7 +14,7 @@ interface DolphinLoaderProps {
 
 /**
  * Looping loading indicator built entirely from the transparent mascot PNG +
- * Framer Motion — so it's truly transparent on any theme, perfectly seamless,
+ * Framer Motion, so it's truly transparent on any theme, perfectly seamless,
  * and weighs nothing extra. The dolphin bobs and sways (swimming) while small
  * bubbles drift upward. Use anywhere the app is waiting.
  *

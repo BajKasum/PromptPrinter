@@ -18,7 +18,7 @@ import { secondaryNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 // Mobile-only navigation. The desktop sidebar is hidden below md, so without
-// this the app has no way to move between sections on a phone — and it needs
+// this the app has no way to move between sections on a phone, and it needs
 // to carry the same recents + Chat/Projekt switcher the sidebar does
 // (ACTIVE_ROW/INACTIVE_ROW/TabSwitcher come from sidebar.tsx directly, not a
 // second copy of the same styling that could drift out of sync).
@@ -32,7 +32,7 @@ export function MobileNav({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // Which list is on screen — same route-derived logic as the desktop
+  // Which list is on screen, same route-derived logic as the desktop
   // sidebar's Full(), so switching devices mid-session never feels different.
   const tab: "chats" | "projects" =
     pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";

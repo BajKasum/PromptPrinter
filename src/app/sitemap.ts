@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 const BASE = "https://promptprinter.app";
 
-// Public, indexable routes only — the app pages live behind auth.
+// Public, indexable routes only, the app pages live behind auth.
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   return [

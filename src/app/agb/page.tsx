@@ -12,7 +12,7 @@ export default function AgbPage() {
     <LegalShell
       badge="Rechtliches"
       title="Allgemeine Geschäftsbedingungen"
-      intro="Die Bedingungen für die Nutzung von PromptPrinter — kurz gehalten und in verständlicher Sprache."
+      intro="Die Bedingungen für die Nutzung von PromptPrinter, kurz gehalten und in verständlicher Sprache."
       updated={LEGAL.lastUpdated}
     >
       <h2>1. Geltungsbereich und Anbieter</h2>
@@ -42,7 +42,7 @@ export default function AgbPage() {
       <h2>4. Nutzung der Ergebnisse</h2>
       <p>
         Die generierten Artefakte darfst du für eigene Zwecke frei verwenden. Du bist allein dafür
-        verantwortlich, wie du die Ergebnisse einsetzt — insbesondere für die Prüfung auf rechtliche
+        verantwortlich, wie du die Ergebnisse einsetzt, insbesondere für die Prüfung auf rechtliche
         Zulässigkeit, Richtigkeit und Eignung für deinen konkreten Anwendungsfall.
       </p>
 
@@ -55,7 +55,7 @@ export default function AgbPage() {
         <li>Rechte Dritter oder geltendes Recht zu verletzen.</li>
       </ul>
 
-      <h2>6. KI-generierte Inhalte — keine Gewähr</h2>
+      <h2>6. KI-generierte Inhalte: keine Gewähr</h2>
       <p>
         Die Ergebnisse werden automatisiert durch KI-Modelle erzeugt und können{" "}
         <strong>Fehler, Ungenauigkeiten oder unpassende Inhalte</strong> enthalten. Wir übernehmen
@@ -80,7 +80,7 @@ export default function AgbPage() {
       <h2>9. Haftung</h2>
       <p>
         Wir haften für Schäden nur bei Vorsatz oder grober Fahrlässigkeit sowie bei der Verletzung
-        wesentlicher Vertragspflichten. Im Übrigen ist die Haftung – soweit gesetzlich zulässig –
+        wesentlicher Vertragspflichten. Im Übrigen ist die Haftung (soweit gesetzlich zulässig)
         ausgeschlossen. Für mittelbare Schäden und Folgeschäden wird nicht gehaftet.
       </p>
 

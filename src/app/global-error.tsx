@@ -2,7 +2,7 @@
 
 // Last-resort boundary: only renders when the ROOT layout itself throws, which
 // means globals.css and the font setup may never have loaded. So this page is
-// deliberately self-contained with inline styles — no Tailwind, no imports — so
+// deliberately self-contained with inline styles, no Tailwind, no imports, so
 // it stays on-brand and readable even in a catastrophic failure.
 export default function GlobalError({
   error,
@@ -68,7 +68,7 @@ export default function GlobalError({
             }}
           >
             Ein unerwarteter Fehler hat die Anwendung gestoppt. Versuch es erneut
-            — wenn das Problem bleibt, lade die Seite später neu.
+           , wenn das Problem bleibt, lade die Seite später neu.
           </p>
           {error.digest && (
             <p

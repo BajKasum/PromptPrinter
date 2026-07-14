@@ -58,7 +58,7 @@ describe("OAuthButtons", () => {
   });
 
   it("disables both buttons while a flow is starting", async () => {
-    // Never resolves — simulates the window between click and provider redirect.
+    // Never resolves, simulates the window between click and provider redirect.
     signInWithOAuth.mockReturnValue(new Promise(() => {}));
     render(<OAuthButtons next="/chats/new" />);
 

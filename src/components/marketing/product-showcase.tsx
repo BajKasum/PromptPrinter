@@ -24,7 +24,7 @@ const TABS: { key: ViewKey; label: string }[] = [
   { key: "projects", label: "Projekte" },
 ];
 
-// Mini sidebar — mirrors the real app nav (src/lib/nav.ts: Chats, Projekte;
+// Mini sidebar, mirrors the real app nav (src/lib/nav.ts: Chats, Projekte;
 // no Start, no mode split) so the preview reads as the genuine workspace,
 // not an invented structure.
 const NAV: { label: string; Icon: typeof FolderKanban; view: ViewKey }[] = [
@@ -38,7 +38,7 @@ export function ProductShowcase() {
   return (
     <section id="produkt" className="scroll-mt-24 container-x pt-12 md:pt-16 pb-24 md:pb-32">
       <FadeIn>
-        {/* Lighter header — this is the embedded "serving" follow-up to the
+        {/* Lighter header, this is the embedded "serving" follow-up to the
             prominent ExampleOutput proof, not a second co-equal demo section. */}
         <div className="mx-auto mb-7 max-w-4xl">
           <div className="max-w-xl">
@@ -47,7 +47,7 @@ export function ProductShowcase() {
             </h2>
             <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
               Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Ein
-              gutes Ergebnis hebst du dir als Projekt auf — gesammelt mit allen
+              gutes Ergebnis hebst du dir als Projekt auf, gesammelt mit allen
               Artefakten, durchsuchbar und griffbereit.
             </p>
           </div>
@@ -55,11 +55,11 @@ export function ProductShowcase() {
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        {/* Flatter, embedded "app" frame — deliberately not a third glossy
+        {/* Flatter, embedded "app" frame, deliberately not a third glossy
             browser window, so it reads as your workspace, not another demo. */}
         <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-border bg-surface/40">
           <div>
-            {/* Slim app header — icon + path, no browser chrome. */}
+            {/* Slim app header, icon + path, no browser chrome. */}
             <div className="flex items-center gap-2 border-b border-border bg-surface/50 px-4 py-2.5">
               <LayoutDashboard className="h-3.5 w-3.5 text-foreground/40" strokeWidth={1.8} />
               <span className="font-mono text-[11px] text-foreground/45">
@@ -145,7 +145,7 @@ export function ProductShowcase() {
 // The same three ideas travel through Hero's demo, ExampleOutput and this
 // showcase: "KI-Habit-Tracker mit Streaks" becomes the project "Streak Coach",
 // "Airbnb für Hundesitter" becomes "Hundesitter-Markt", "Marktplatz für lokale
-// Künstler" becomes "Artlokal" — one consistent story, not disconnected mockups.
+// Künstler" becomes "Artlokal", one consistent story, not disconnected mockups.
 
 function ViewHeader({ title, sub }: { title: string; sub: string }) {
   return (
@@ -156,13 +156,13 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-// ── Chats — mirrors the real /chats list: title, target-if-any, freshness,
-// message count. One chat experience, no mode badge — the outcome (Paket vs.
+// ── Chats, mirrors the real /chats list: title, target-if-any, freshness,
+// message count. One chat experience, no mode badge, the outcome (Paket vs.
 // Prompt) is a choice at the end of a chat, not a label on it; a chat that
 // produced one already lives in its project, not here. ─────────────────────
 
 const CHATS: { title: string; target?: string; when: string; messages: number }[] = [
-  { title: "KI-Habit-Tracker mit Streaks — Prompt-Paket", when: "vor 2 Std.", messages: 8 },
+  { title: "KI-Habit-Tracker mit Streaks, Prompt-Paket", when: "vor 2 Std.", messages: 8 },
   {
     title: "Bewerbungsschreiben für UX-Rolle",
     target: "ChatGPT",
@@ -205,10 +205,10 @@ function ChatsView() {
   );
 }
 
-// ── Projekte — mirrors the real Projekte page exactly: search + filter chips
+// ── Projekte, mirrors the real Projekte page exactly: search + filter chips
 // over favorites/categories, cards led by name with category pills, artifact
 // count and freshness as footer metadata (not a headline number). This is
-// what used to be a separate "Bibliothek" — now it's just Projekte. ────────
+// what used to be a separate "Bibliothek", now it's just Projekte. ────────
 
 const PROJECT_FILTERS = ["Alle", "Favoriten", "Kürzlich verwendet", "Frontend", "Backend", "Marketing", "Datenbank"];
 

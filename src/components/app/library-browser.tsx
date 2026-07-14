@@ -8,7 +8,7 @@ import { LibraryCard } from "@/components/app/library-card";
 
 export type { LibraryItem };
 
-// Orchestrator only — search/filter/pagination lives in useLibraryFilter, the
+// Orchestrator only, search/filter/pagination lives in useLibraryFilter, the
 // favorites mutation lives in useLibraryFavorites, and a single result's
 // presentation lives in LibraryCard. This component just composes them.
 export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
@@ -81,7 +81,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
             onClick={loadMore}
             className="text-[13px] px-4 py-2 rounded-lg border border-border bg-surface text-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors active:scale-[0.98]"
           >
-            {visiblePage.length} von {visibleTotal} — mehr laden
+            {visiblePage.length} von {visibleTotal}, mehr laden
           </button>
         </div>
       )}

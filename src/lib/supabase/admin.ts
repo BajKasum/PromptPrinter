@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
  * Service-role Supabase client. It bypasses Row Level Security, so it must
  * NEVER reach the browser. Two things keep it server-only:
  *   1. SUPABASE_SERVICE_ROLE_KEY is not a NEXT_PUBLIC_ var, so Next never
- *      bundles it into client code — a client import would get `undefined`.
+ *      bundles it into client code, a client import would get `undefined`.
  *   2. The window guard below turns any accidental client-side call into a
  *      loud error instead of a silent misconfiguration.
  *

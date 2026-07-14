@@ -7,18 +7,18 @@ import { cn } from "@/lib/utils";
 
 export type BuildStep = {
   key: string;
-  /** What's actually being produced right now — the sub-caption under the active group. */
+  /** What's actually being produced right now, the sub-caption under the active group. */
   label: string;
   /** Groups steps into the same rows the result later shows as tabs (results/page.tsx's
-   * SOFTWARE_TABS groups) — the wait and the result share one mental model. */
+   * SOFTWARE_TABS groups), the wait and the result share one mental model. */
   group: string;
-  /** Rough estimated seconds for this step — a pacing aid, not a measurement. */
+  /** Rough estimated seconds for this step, a pacing aid, not a measurement. */
   seconds: number;
 };
 
 interface BuildProgressProps {
   steps: BuildStep[];
-  /** Flip true once the real request actually resolves — snaps every step to
+  /** Flip true once the real request actually resolves, snaps every step to
    * done immediately, wherever the estimate had gotten to. The estimate only
    * ever fills idle waiting time; it never gates real completion, and real
    * completion always cuts the estimate short, never the other way round. */
@@ -27,7 +27,7 @@ interface BuildProgressProps {
 
 /**
  * A calm, honest stand-in for real per-artifact progress. There is no
- * streaming API behind /api/generate — this can't know which artifact the
+ * streaming API behind /api/generate, this can't know which artifact the
  * server is actually on. What it CAN know: the server processes artifacts in
  * exactly this order (chatCompleteSequential walks the prompts object in
  * insertion order, which matches `steps` here), so the sequence shown is
@@ -56,7 +56,7 @@ export function BuildProgress({ steps, complete }: BuildProgressProps) {
       timers.current.forEach((t) => window.clearTimeout(t));
       timers.current = [];
     };
-    // `steps` is a fixed array from the caller for the lifetime of one build —
+    // `steps` is a fixed array from the caller for the lifetime of one build,
     // only `complete` (real completion) should ever restart this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [complete]);
@@ -116,14 +116,14 @@ export function BuildProgress({ steps, complete }: BuildProgressProps) {
               {g.name}
             </span>
             {groupActive && activeStep && (
-              <span className="truncate text-[12px] text-foreground/45">— {activeStep.label}</span>
+              <span className="truncate text-[12px] text-foreground/45">· {activeStep.label}</span>
             )}
           </div>
         );
       })}
       {overrun && !complete && (
         <p role="status" className="pt-1 text-[12px] text-foreground/45">
-          Bei umfangreichen Ideen dauert das schon mal länger — Finn bleibt dran.
+          Bei umfangreichen Ideen dauert das schon mal länger, Finn bleibt dran.
         </p>
       )}
     </div>

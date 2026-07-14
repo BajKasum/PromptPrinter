@@ -3,7 +3,7 @@ import { markdownToPdf } from "@/lib/pdf-export";
 
 describe("markdownToPdf", () => {
   it("produces a non-empty PDF for a typical artifact", () => {
-    const md = `# Streak Coach — Produktanforderungen
+    const md = `# Streak Coach, Produktanforderungen
 
 ## Vision
 Ein durchdachter Habit-Tracker.

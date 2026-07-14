@@ -7,7 +7,7 @@ import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
 export const runtime = "nodejs";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): ein Projekt entsteht ab
-// jetzt am Anfang der Arbeit — Name reicht, alles andere wächst im Workspace.
+// jetzt am Anfang der Arbeit, Name reicht, alles andere wächst im Workspace.
 // Server-seitig, damit das Projekt-Limit des Plans hier genauso greift wie
 // bisher in /api/generate.
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     });
   }
 
-  // Plan allowance — the project cap now gates workspace creation. Filter by
+  // Plan allowance, the project cap now gates workspace creation. Filter by
   // owner explicitly even though RLS already scopes the count (defense in
   // depth; this count enforces a limit).
   const [{ data: profile }, { count: projectCount }] = await Promise.all([
@@ -62,13 +62,13 @@ export async function POST(req: Request) {
   if ((projectCount ?? 0) >= limits.projects) {
     return problem(
       403,
-      `Projekt-Limit erreicht — dein Plan (${plan}) erlaubt ${limits.projects} Projekte. Upgrade für mehr.`,
+      `Projekt-Limit erreicht, dein Plan (${plan}) erlaubt ${limits.projects} Projekte. Upgrade für mehr.`,
       { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
     );
   }
 
   // Ein leerer Workspace: nur Name + Owner. `type` ist ein internes Alt-Datum
-  // (bestimmt den System-Prompt der Projekt-Chats) — neutraler Default general.
+  // (bestimmt den System-Prompt der Projekt-Chats), neutraler Default general.
   const { data: project, error } = await supabase
     .from("projects")
     .insert({ user_id: user.id, name: parsed.data.name, type: "general", status: "ready" })

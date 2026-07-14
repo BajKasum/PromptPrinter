@@ -20,7 +20,7 @@ const PROVIDERS: { id: Provider; logo: string; name: string; sub: string }[] = [
 ];
 
 /**
- * Settings → "Eigene API-Keys" (BYOK). One row per named provider — connected
+ * Settings → "Eigene API-Keys" (BYOK). One row per named provider, connected
  * ones show a quiet "Verbunden" state with a remove action; the rest offer an
  * inline key field. Below them, one generic "Custom" row covers any other
  * OpenAI-compatible endpoint (Z.ai, DeepSeek, Groq, OpenRouter, …) via a

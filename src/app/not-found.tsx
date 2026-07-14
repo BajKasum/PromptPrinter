@@ -6,7 +6,7 @@ import { Mascot } from "@/components/brand/mascot";
 export const metadata = { title: "Seite nicht gefunden" };
 
 // Root 404 for unmatched public URLs. Renders inside the root layout, so the
-// fonts and globals.css are available — no shell, just a centered full page.
+// fonts and globals.css are available, no shell, just a centered full page.
 export default function NotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6">

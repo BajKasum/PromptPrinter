@@ -15,15 +15,15 @@ import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 // what he understood into an editable confirmation card, then calls
 // /api/generate (the packet pipeline). The shared confirm→building→done
 // choreography (fetch, project-linking, timing, redirect) lives in
-// useHandoffFlow — this component owns only what's specific to a software
+// useHandoffFlow, this component owns only what's specific to a software
 // packet: the audience field, the tool selects, and its own copy.
 //
-// Two destinations (REDESIGN.md — Handoff im Workspace):
+// Two destinations (REDESIGN.md, Handoff im Workspace):
 //  - standalone (existingProjectId unset): creates a brand-new project and
 //    moves the user there. Used by global chats (/chats/…).
 //  - workspace (existingProjectId set): adds a generation to the project this
 //    chat already belongs to and moves the user to its Ergebnisse. The name
-//    is the project's own — never re-asked — and the idea prefill leads with
+//    is the project's own (never re-asked) and the idea prefill leads with
 //    the project's Anweisungen, so the result reflects the whole briefing,
 //    not just this one chat.
 //
@@ -33,13 +33,13 @@ import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 // opens this card directly (autoOpen); "Zurück zum Chat" then unmounts it via
 // onBack instead of falling to idle.
 
-// The order here matches /api/generate's software prompts object exactly —
+// The order here matches /api/generate's software prompts object exactly,
 // chatCompleteSequential (lib/llm.ts) walks it in this same insertion order,
 // so the sequence is real. Groups mirror results/page.tsx's SOFTWARE_TABS
 // grouping, so what the user watches happen and what they see afterwards in
 // Ergebnisse use the same four names. Per-step seconds are a pacing estimate
-// (short/medium/long tiers), summing to ~3 minutes — the real observed
-// duration of a full run — not a measurement of any individual call.
+// (short/medium/long tiers), summing to ~3 minutes (the real observed
+// duration of a full run), not a measurement of any individual call.
 const SOFTWARE_STEPS: BuildStep[] = [
   { key: "brief", label: "Produkt-Brief", group: "Planung", seconds: 12 },
   { key: "prd", label: "PRD", group: "Planung", seconds: 18 },
@@ -62,7 +62,7 @@ const TOOL_FIELDS: { key: keyof ProjectTools; label: string }[] = [
 ];
 
 // Audience is specific to a software packet (PromptSave has no equivalent
-// field) — kept local rather than in the shared NAME_LIMITS/IDEA_LIMITS.
+// field), kept local rather than in the shared NAME_LIMITS/IDEA_LIMITS.
 const AUDIENCE_LIMITS = { min: 2, max: 300 } as const;
 
 const selectClass =
@@ -79,11 +79,11 @@ export function PacketBridge({
   projectName,
   projectInstructions,
 }: {
-  /** The user's own chat turns, oldest first — source for the prefills. */
+  /** The user's own chat turns, oldest first, source for the prefills. */
   userMessages: string[];
   /** Per-user tool defaults from profiles.settings (settings page maintains them), or the project's own structure when generating into a workspace. */
   defaultTools: ProjectTools;
-  /** Set once the chat is persisted; links the conversation to the new project (standalone only — a workspace chat is already linked). */
+  /** Set once the chat is persisted; links the conversation to the new project (standalone only, a workspace chat is already linked). */
   conversationId?: string;
   /** Lets the chat hide its composer while the handoff card is open. */
   onOpenChange?: (open: boolean) => void;
@@ -91,7 +91,7 @@ export function PacketBridge({
   autoOpen?: boolean;
   /** When set, "Zurück zum Chat" hands control back instead of showing idle. */
   onBack?: () => void;
-  /** Set when this chat belongs to a project — generate into it instead of creating a new one. */
+  /** Set when this chat belongs to a project, generate into it instead of creating a new one. */
   existingProjectId?: string;
   /** The workspace's own name, shown read-only instead of an editable field. */
   projectName?: string;
@@ -125,7 +125,7 @@ export function PacketBridge({
   const [tools, setTools] = useState<ProjectTools>(defaultTools);
   const audienceRef = useRef<HTMLInputElement | null>(null);
 
-  // The audience is the one field the chat can't derive — guide the eye there.
+  // The audience is the one field the chat can't derive, guide the eye there.
   useEffect(() => {
     if (stage === "confirm") audienceRef.current?.focus();
   }, [stage]);
@@ -168,7 +168,7 @@ export function PacketBridge({
           <div>
             <p className="text-[14.5px] font-medium text-foreground">Finn baut dein Paket.</p>
             <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              Zehn Teile, eins nach dem anderen — das dauert etwa 2–3 Minuten.
+              Zehn Teile, eins nach dem anderen, das dauert etwa 2-3 Minuten.
             </p>
           </div>
         </div>
@@ -186,7 +186,7 @@ export function PacketBridge({
       >
         <AnimatedMascot state="delivering" size={64} className="shrink-0" />
         <div>
-          <p className="text-[14.5px] font-medium text-foreground">Fertig — ich leg&apos;s dir hin.</p>
+          <p className="text-[14.5px] font-medium text-foreground">Fertig. Ich leg&apos;s dir hin.</p>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
             Du wirst gleich weitergeleitet.
           </p>

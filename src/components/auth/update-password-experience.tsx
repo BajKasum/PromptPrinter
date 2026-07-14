@@ -12,14 +12,14 @@ function translatePasswordError(message: string): string {
   if (m.includes("different from the old") || m.includes("should be different"))
     return "Das neue Passwort muss sich vom alten unterscheiden.";
   if (m.includes("password should be")) return "Passwort zu schwach (mindestens 8 Zeichen).";
-  if (m.includes("rate limit")) return "Zu viele Versuche — bitte kurz warten.";
+  if (m.includes("rate limit")) return "Zu viele Versuche, bitte kurz warten.";
   if (m.includes("session") || m.includes("expired") || m.includes("jwt"))
     return "Die Sitzung ist abgelaufen. Fordere den Link bitte erneut an.";
   return message;
 }
 
 /**
- * Full-bleed "set a new password" screen — same animated backdrop as login. The
+ * Full-bleed "set a new password" screen, same animated backdrop as login. The
  * recovery session is already established by the callback; on success the dolphin
  * celebration plays and we land in the app.
  */
@@ -94,7 +94,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
           <label htmlFor="new-password" className="block text-[13px] font-medium text-foreground">
             Neues Passwort
           </label>
-          {/* One shared visibility toggle for both fields — comparing two
+          {/* One shared visibility toggle for both fields, comparing two
               masked values you can't see helps nobody. */}
           <div className="relative">
             <input

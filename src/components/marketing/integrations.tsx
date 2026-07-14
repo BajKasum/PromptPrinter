@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 
-// One friendly line + a single row of the tools people actually recognize —
+// One friendly line + a single row of the tools people actually recognize,
 // not a 16-item checklist. Finn "speaks their language".
 const TOOLS = [
   "Claude",
@@ -48,7 +48,7 @@ export function Integrations() {
         </div>
       </FadeIn>
 
-      {/* Trust before pricing — points to the real, verifiable outputs above,
+      {/* Trust before pricing, points to the real, verifiable outputs above,
           not invented testimonials or metrics. */}
       <FadeIn delay={0.1}>
         <p className="mt-8 max-w-lg text-[13.5px] leading-[1.6] text-foreground/45">

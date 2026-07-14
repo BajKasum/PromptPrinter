@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Fallback für die Hauptspalte des Workspace — Header + Rail kommen aus dem
+// Fallback für die Hauptspalte des Workspace, Header + Rail kommen aus dem
 // Layout und stehen bereits, hier lädt nur der jeweilige Raum-Zustand
 // (Übersicht, Chat oder Ergebnisse).
 export default function ProjectWorkspaceLoading() {

@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/brand/mascot";
 
-// Rendered by notFound() inside the authed shell — most often from the project
+// Rendered by notFound() inside the authed shell, most often from the project
 // detail page when an id is malformed or the row belongs to another owner (RLS
 // returns no row). Keeps the sidebar/topbar mounted around it.
 export default function AppNotFound() {

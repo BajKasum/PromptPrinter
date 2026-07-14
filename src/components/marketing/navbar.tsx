@@ -8,7 +8,7 @@ import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import { cn } from "@/lib/utils";
 
 // In-page section links. Native <a> (not next/link) so the browser handles the
-// hash jump — next/link is for route changes and scrolls unreliably to a bare
+// hash jump, next/link is for route changes and scrolls unreliably to a bare
 // hash in the App Router. Smooth scroll + the targets' scroll-mt do the rest.
 const nav = [
   { label: "Funktionen", href: "#example" },
@@ -37,7 +37,7 @@ export function Navbar() {
     };
   }, [open]);
 
-  // The mobile panel is md:hidden — if the viewport grows past the breakpoint
+  // The mobile panel is md:hidden, if the viewport grows past the breakpoint
   // while it's open, close it so we never leave the body scroll-locked.
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -94,8 +94,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Right: auth (desktop) / menu toggle (mobile). No theme switch here —
-            the public site keeps one deliberate, always-light mood; theme
+        {/* Right: auth (desktop) / menu toggle (mobile). No theme switch here, the public site keeps one deliberate, always-light mood; theme
             choice lives in the logged-in app's settings instead. */}
         <div className="flex items-center gap-2">
           <Button
@@ -129,7 +128,7 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile menu — full-height sheet below the bar. Hidden from the a11y
+      {/* Mobile menu, full-height sheet below the bar. Hidden from the a11y
           tree (display:none) when closed. */}
       <div
         id="mobile-menu"

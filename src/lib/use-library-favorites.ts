@@ -8,7 +8,7 @@ import type { LibraryItem } from "@/lib/use-library-filter";
 
 // Split out of library-browser.tsx: the favorites mutation (optimistic flip,
 // Supabase write, rollback on failure, toast, sidebar refresh) is its own
-// concern — independent from search/filter and from how a card renders.
+// concern, independent from search/filter and from how a card renders.
 export function useLibraryFavorites(items: LibraryItem[]) {
   const router = useRouter();
   const { toast } = useToast();
@@ -18,7 +18,7 @@ export function useLibraryFavorites(items: LibraryItem[]) {
 
   async function toggleFavorite(id: string) {
     const next = !favorites.has(id);
-    // Optimistic flip — buttons must feel instant.
+    // Optimistic flip, buttons must feel instant.
     setFavorites((prev) => {
       const s = new Set(prev);
       if (next) s.add(id);
@@ -45,7 +45,7 @@ export function useLibraryFavorites(items: LibraryItem[]) {
       });
       return;
     }
-    // The sidebar's pinned projects are server-rendered — without this the
+    // The sidebar's pinned projects are server-rendered, without this the
     // new pin order only shows up after the next unrelated navigation.
     router.refresh();
   }

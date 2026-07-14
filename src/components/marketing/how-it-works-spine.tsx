@@ -10,7 +10,7 @@ gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, MotionPathPlugin);
 
 type Point = { x: number; y: number };
 
-// One continuous winding spine through every node's real center — not three
+// One continuous winding spine through every node's real center, not three
 // independent straight segments. Endpoints stay pinned exactly on each icon;
 // only the curve between them bows left/right (alternating per segment), so
 // it reads as one drawn path threading the whole journey, the way
@@ -29,7 +29,7 @@ function buildSpinePath(points: Point[]): string {
 }
 
 /**
- * The GSAP-powered piece of How-It-Works' step rail — isolated into its own
+ * The GSAP-powered piece of How-It-Works' step rail, isolated into its own
  * chunk (see how-it-works.tsx's dynamic(..., { ssr: false }) import) so
  * GSAP + DrawSVG/MotionPath, a real payload, never lands in the landing
  * page's initial JS. Purely decorative: `nodeRefs`/`railRef` belong to
@@ -54,7 +54,7 @@ export function HowItWorksSpine({
 
   // Measure real node centers (not guessed coordinates) so the spine always
   // threads exactly through each icon, at any viewport width or content
-  // height — text length, breakpoint, font load, all self-correct via the
+  // height, text length, breakpoint, font load, all self-correct via the
   // observer instead of a hardcoded path.
   useEffect(() => {
     const railEl = railRef.current;
@@ -85,7 +85,7 @@ export function HowItWorksSpine({
   }, [railRef, nodeRefs]);
 
   // Draw the spine and send the marker traveling along it, both scrubbed to
-  // scroll position — GSAP's DrawSVG (the line) and MotionPath (the marker)
+  // scroll position, GSAP's DrawSVG (the line) and MotionPath (the marker)
   // driven by the same ScrollTrigger timeline so they stay perfectly in sync.
   useEffect(() => {
     if (!rail?.d) return;
@@ -152,7 +152,7 @@ export function HowItWorksSpine({
         strokeWidth={2.5}
         strokeLinecap="round"
       />
-      {/* The traveling marker — a small living spark, not a game-board
+      {/* The traveling marker, a small living spark, not a game-board
           token, so it stays inside Finn's ocean-of-light vocabulary. */}
       <g ref={markerRef} style={{ opacity: 0 }}>
         <circle r={9} fill="hsl(var(--accent))" opacity={0.3} />

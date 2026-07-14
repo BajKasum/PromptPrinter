@@ -24,7 +24,7 @@ type Preset = { animate: TargetAndTransition; transition: Transition };
 
 // Idle-motion presets. Each loops gently and is skipped entirely under
 // prefers-reduced-motion (the mascot then renders perfectly still). Durations
-// and easings follow DESIGN.md — calm, never hectic.
+// and easings follow DESIGN.md, calm, never hectic.
 const PRESETS: Record<Exclude<MascotMotion, "none">, Preset> = {
   float: {
     animate: { y: [0, -8, 0] },

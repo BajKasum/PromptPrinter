@@ -15,7 +15,7 @@ const emailSchema = z.string().email("Bitte eine gültige Email eingeben");
 /**
  * "Request password reset", right column of the two-column auth layout.
  * Sends the recovery link through the shared /auth/callback, which forwards
- * to the password-update page. Carries the Turnstile token when configured —
+ * to the password-update page. Carries the Turnstile token when configured,
  * Supabase enforces the captcha on this endpoint too once it's enabled.
  */
 export function RequestPasswordResetExperience() {
@@ -52,7 +52,7 @@ export function RequestPasswordResetExperience() {
       // Only surface rate-limiting; otherwise stay neutral so we never reveal
       // whether an email is registered.
       if (resetError && resetError.message.toLowerCase().includes("rate limit")) {
-        setError("Zu viele Versuche — bitte kurz warten.");
+        setError("Zu viele Versuche, bitte kurz warten.");
         setCaptchaToken(null);
         setCaptchaNonce((n) => n + 1);
         return;
@@ -71,7 +71,7 @@ export function RequestPasswordResetExperience() {
     return (
       <AuthExperienceShell
         panelTitle="Kriegen wir wieder hin."
-        panelSub="Ein neuer Link, ein neues Passwort — und du bist wieder drin."
+        panelSub="Ein neuer Link, ein neues Passwort, und du bist wieder drin."
       >
         <div className="space-y-6 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-success/30 bg-success/10">
@@ -99,14 +99,14 @@ export function RequestPasswordResetExperience() {
   return (
     <AuthExperienceShell
       panelTitle="Kriegen wir wieder hin."
-      panelSub="Ein neuer Link, ein neues Passwort — und du bist wieder drin."
+      panelSub="Ein neuer Link, ein neues Passwort, und du bist wieder drin."
     >
       <div className="space-y-1.5">
         <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
           Passwort vergessen?
         </h1>
         <p className="text-[15px] font-light text-foreground/60">
-          Gib deine Email ein — wir senden dir einen Link zum Zurücksetzen.
+          Gib deine Email ein, wir senden dir einen Link zum Zurücksetzen.
         </p>
       </div>
 

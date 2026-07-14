@@ -49,7 +49,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }, [open]);
 
   // Lazily load the user's projects + chats the first time the palette opens
-  // — chats are the primary object since the redesign, so they belong here
+  //, chats are the primary object since the redesign, so they belong here
   // just as much as projects do.
   useEffect(() => {
     if (!open || loaded) return;

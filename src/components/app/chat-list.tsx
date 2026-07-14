@@ -11,7 +11,7 @@ import { relativeTime } from "@/lib/utils";
 import { MoveToProjectButton } from "@/components/app/move-to-project";
 
 // The global chat list (REDESIGN.md, Phase 2): calm bordered rows instead of
-// cards — the title is the content, the sidebar already carries resume. Each
+// cards, the title is the content, the sidebar already carries resume. Each
 // row can be renamed inline or deleted with an inline confirm; both go through
 // the browser Supabase client (RLS scopes writes to the owner) and re-fetch
 // the server components afterwards so list + sidebar recents stay in sync.
@@ -29,7 +29,7 @@ export function ChatList({
   basePath = "/chats",
 }: {
   chats: ChatListItem[];
-  /** Where a row links to — "/chats" (global) or "/projects/[id]/chats". */
+  /** Where a row links to, "/chats" (global) or "/projects/[id]/chats". */
   basePath?: string;
 }) {
   return (
@@ -178,7 +178,7 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
         <p className="mt-0.5 truncate text-[12px] text-foreground/45">{meta}</p>
       </Link>
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-        {/* Only global chats can be moved — a project chat already belongs
+        {/* Only global chats can be moved, a project chat already belongs
             to one, and moving between projects isn't a thing here. */}
         {basePath === "/chats" && (
           <MoveToProjectButton chatId={chat.id} chatTitle={chat.title} />

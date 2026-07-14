@@ -21,7 +21,7 @@ type ConversationQueryRow = {
 };
 
 // Workspace-Übersicht (REDESIGN.md, Phase 3): die Hauptspalte gehört den
-// Chats dieses Projekts — Composer oben, Verläufe darunter. Die alte
+// Chats dieses Projekts, Composer oben, Verläufe darunter. Die alte
 // Snapshot-Seite (Tabs + Refine-Anhängsel) ist in die Subrouten aufgegangen:
 // Ergebnisse leben unter ./results, jeder Chat unter ./chats/[cid].
 export default async function ProjectOverviewPage({ params }: { params: Params }) {
@@ -66,7 +66,7 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
                 Noch kein Chat in „{project.name}“
               </p>
               <p className="mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-                Starte oben den ersten — ich kenne dein Briefing und deine Struktur
+                Starte oben den ersten, ich kenne dein Briefing und deine Struktur
                 aus der Seitenleiste automatisch.
               </p>
             </div>

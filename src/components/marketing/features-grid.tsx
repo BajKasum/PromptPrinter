@@ -18,32 +18,32 @@ const features = [
   {
     Icon: FileText,
     title: "Dein Produktplan",
-    body: "Damit du immer weisst, was als Nächstes dran ist — Zielgruppe, Funktionen und die richtige Reihenfolge, schwarz auf weiss.",
+    body: "Damit du immer weisst, was als Nächstes dran ist, Zielgruppe, Funktionen und die richtige Reihenfolge, schwarz auf weiss.",
   },
   {
     Icon: Sparkles,
     title: "Deine KI-Anweisungen",
-    body: "Der fertige Prompt, der Claude, ChatGPT oder Cursor deine ganze App von Tag eins an versteht — kein ewiges Nacherklären.",
+    body: "Der fertige Prompt, der Claude, ChatGPT oder Cursor deine ganze App von Tag eins an versteht. Kein ewiges Nacherklären.",
   },
   {
     Icon: Palette,
     title: "Dein App-Design",
-    body: "Screens, Komponenten und Farben — abgestimmt darauf, wie Lovable, v0, Figma oder Stitch sie erwarten.",
+    body: "Screens, Komponenten und Farben, abgestimmt darauf, wie Lovable, v0, Figma oder Stitch sie erwarten.",
   },
   {
     Icon: Database,
     title: "Deine Datenbank",
-    body: "Die komplette Datenstruktur deiner App, fertig zum Einfügen — damit nichts durcheinanderkommt.",
+    body: "Die komplette Datenstruktur deiner App, fertig zum Einfügen, damit nichts durcheinanderkommt.",
   },
   {
     Icon: ShieldCheck,
     title: "Deine Sicherheits-Checkliste",
-    body: "Die Dinge, die man später bereut — vorher abgehakt und in verständlicher Sprache erklärt.",
+    body: "Die Dinge, die man später bereut, vorher abgehakt und in verständlicher Sprache erklärt.",
   },
   {
     Icon: Megaphone,
     title: "Dein Marketing",
-    body: "Texte für Landingpage, FAQ und E-Mails, die deine Idee verkaufen — nicht nur beschreiben.",
+    body: "Texte für Landingpage, FAQ und E-Mails, die deine Idee verkaufen, nicht nur beschreiben.",
   },
 ];
 
@@ -61,7 +61,7 @@ export function FeaturesGrid() {
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
               Keine halben Sachen. Alles, was du brauchst, um von der Idee zur
-              ersten Zeile Code zu kommen — fertig vorbereitet.
+              ersten Zeile Code zu kommen, fertig vorbereitet.
             </p>
           </div>
           {/* Finn sorts the chaos into one tidy package. */}

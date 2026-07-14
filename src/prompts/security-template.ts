@@ -16,5 +16,5 @@ A checkbox list grouped by concern:
 - **Headers** (CSP, HSTS, SameSite cookies)
 - **Dependencies** (lockfile, audit, automated updates)
 
-Each item: "- [ ] specific actionable check". Tailor items to this project's idea — don't be generic.`;
+Each item: "- [ ] specific actionable check". Tailor items to this project's idea, don't be generic.`;
 }
