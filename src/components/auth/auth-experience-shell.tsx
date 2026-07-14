@@ -1,75 +1,98 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/brand/logo";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 
-// three.js only loads on the client and is code-split out of the main bundle.
-const CanvasRevealEffect = dynamic(
-  () => import("./canvas-reveal-effect").then((m) => m.CanvasRevealEffect),
-  { ssr: false }
-);
-
-// Soft dark dots on light — the public site (this included) is forced to the
-// light theme (Theme-Entscheidung: one deliberate public mood, no header
-// toggle), so the dark-dot variant this used to switch to for dark mode no
-// longer applies here.
-const LIGHT_DOTS = [
-  [51, 65, 85],
-  [51, 65, 85],
+// Finn's side of the screen — bubbles rising and a few sparks drifting
+// around him, same shared vocabulary as the landing page's sections.
+const PANEL_FLOATERS: FloaterSpec[] = [
+  { kind: "star", top: "10%", left: "16%", size: 14, delay: 0.2, duration: 3.4 },
+  { kind: "bubble", top: "18%", left: "76%", size: 20, delay: 0.8, duration: 4.8 },
+  { kind: "star", top: "32%", left: "84%", size: 10, delay: 1.4, duration: 3.1 },
+  { kind: "bubble", top: "46%", left: "10%", size: 16, delay: 0.4, duration: 4.3 },
+  { kind: "star", top: "58%", left: "22%", size: 11, delay: 1.7, duration: 3.6 },
+  { kind: "bubble", top: "66%", left: "80%", size: 24, delay: 1.0, duration: 5.1 },
+  { kind: "bubble", top: "82%", left: "28%", size: 14, delay: 0.6, duration: 4.5 },
+  { kind: "star", top: "86%", left: "70%", size: 9, delay: 0.3, duration: 3.2 },
 ];
 
 /**
- * Full-bleed auth backdrop shared by the login, signup and password-reset
- * experiences: the animated dot-matrix reveal, a brand header, and a centered
- * content slot. `overlay` renders inside the root but outside the animated
- * content wrapper (e.g. the success celebration).
+ * Two-column auth layout shared by login, signup and the password-reset
+ * screens. Left half (desktop): Finn's panel — a soft water-tinted surface
+ * with the big animated dolphin, drifting bubbles/stars, and one line in his
+ * voice. Right half: the form. On mobile the panel collapses to a small Finn
+ * above the form. `overlay` renders at the root (e.g. success celebration).
  */
 export function AuthExperienceShell({
   children,
   overlay,
+  panelTitle = "Schön, dass du da bist.",
+  panelSub = "Ich bin Finn. Erzähl mir deine Idee — ich mach einen fertigen Plan draus.",
 }: {
   children: React.ReactNode;
   overlay?: React.ReactNode;
+  /** Headline on Finn's panel — one line in his own voice, per page. */
+  panelTitle?: string;
+  panelSub?: string;
 }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-background text-foreground">
+    <div className="relative flex min-h-screen w-full bg-background text-foreground">
       {overlay}
 
-      <div className="absolute inset-0 z-0">
-        {/* Mounted-gate so the canvas only paints on the client. */}
-        {mounted && (
-          <CanvasRevealEffect
-            animationSpeed={3}
-            containerClassName="bg-background"
-            colors={LIGHT_DOTS}
-            blend="normal"
-            dotSize={6}
-          />
-        )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--background))_0%,transparent_100%)]" />
-        <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-background to-transparent" />
-      </div>
+      {/* Finn's panel — desktop only. */}
+      <aside className="relative hidden w-1/2 overflow-hidden bg-accent-subtle lg:flex lg:flex-col">
+        {/* One soft light source from above (Finn's World: sunlight, not aquarium). */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--background)/0.55)_0%,transparent_65%)]"
+        />
+        <Floaters items={PANEL_FLOATERS} />
 
-      <div className="relative z-10 flex flex-1 flex-col">
-        <header className="flex items-center justify-between px-6 py-6 md:px-10">
+        <div className="relative z-10 px-10 py-7">
+          <Link href="/" className="inline-flex">
+            <Logo />
+          </Link>
+        </div>
+
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 px-10 pb-24 text-center">
+          <AnimatedMascot
+            state="welcoming"
+            motion="bob"
+            size={240}
+            priority
+            alt="Finn begrüßt dich"
+          />
+          <div className="max-w-sm space-y-2.5">
+            <h2 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">
+              {panelTitle}
+            </h2>
+            <p className="text-[15px] leading-relaxed text-foreground/60">{panelSub}</p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Form column. */}
+      <div className="relative flex min-h-screen flex-1 flex-col">
+        <header className="flex items-center px-6 py-6 md:px-10 lg:hidden">
           <Link href="/" className="inline-flex">
             <Logo />
           </Link>
         </header>
 
-        <div className="flex flex-1 items-center justify-center px-6 pb-16">
+        <div className="flex flex-1 items-center justify-center px-6 py-8 md:px-12 lg:py-16">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-sm space-y-7 text-center"
+            className="w-full max-w-md space-y-6"
           >
+            {/* Small Finn for mobile — desktop has the big one on the left. */}
+            <div className="flex justify-center lg:hidden">
+              <AnimatedMascot state="welcoming" motion="bob" size={72} alt="" />
+            </div>
             {children}
           </motion.div>
         </div>

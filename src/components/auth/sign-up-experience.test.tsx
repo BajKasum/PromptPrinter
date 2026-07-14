@@ -53,12 +53,15 @@ vi.mock("@/components/brand/success-celebration", () => ({
 
 // Same rationale as sign-in-experience.test.tsx: bypass jsdom's native
 // type="email"/required constraint validation so our own Zod check runs.
-async function fillAndSubmit(email: string, password: string) {
+// Ticks the terms checkbox by default — the one test exercising the
+// terms guard passes acceptTerms: false explicitly.
+async function fillAndSubmit(email: string, password: string, acceptTerms = true) {
   const user = userEvent.setup();
   const emailInput = screen.getByPlaceholderText("du@example.com");
   const passwordInput = screen.getByPlaceholderText(/^Passwort/);
   if (email) await user.type(emailInput, email);
   if (password) await user.type(passwordInput, password);
+  if (acceptTerms) await user.click(screen.getByRole("checkbox"));
   fireEvent.submit(emailInput.closest("form")!);
   return user;
 }
@@ -83,6 +86,13 @@ describe("SignUpExperience", () => {
     render(<SignUpExperience />);
     await fillAndSubmit("user@example.com", "short");
     expect(screen.getByRole("alert")).toHaveTextContent("Mindestens 8 Zeichen");
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it("blocks submission until the terms checkbox is accepted", async () => {
+    render(<SignUpExperience />);
+    await fillAndSubmit("user@example.com", "password123", false);
+    expect(screen.getByRole("alert")).toHaveTextContent("AGB");
     expect(signUp).not.toHaveBeenCalled();
   });
 
