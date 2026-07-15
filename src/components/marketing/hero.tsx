@@ -123,15 +123,6 @@ export function Hero() {
             <Link href="#example">Erst mal zuschauen</Link>
           </Button>
         </motion.div>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.55 }}
-              className="mt-5 text-xs font-mono uppercase tracking-[0.08em] text-foreground/35"
-            >
-              Kostenlos starten · Keine Kreditkarte · Jederzeit kündbar
-            </motion.p>
           </div>
         </div>
 

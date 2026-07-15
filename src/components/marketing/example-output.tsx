@@ -3,7 +3,6 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FadeIn } from "@/components/motion/fade-in";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
 import { cn } from "@/lib/utils";
 
@@ -183,32 +182,14 @@ export function ExampleOutput() {
       <Floaters items={EXAMPLE_FLOATERS} />
 
       <FadeIn className="relative z-10">
-        <div className="mb-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
-            <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              Echtes Ergebnis, kein Lorem Ipsum.
-            </h2>
-            <p className="mt-4 text-[17px] text-foreground/55">
-              Jemand hat mir nur diesen einen Satz gesagt:
-            </p>
-            <div className="mt-4 inline-flex max-w-full items-start gap-2.5 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3">
-              <span className="mt-0.5 font-mono text-[12px] text-accent-text">„</span>
-              <span className="text-[15px] leading-snug text-foreground">
-                Ein Habit-Tracker, der Streaks mit cleveren Mini-Belohnungen feiert.
-              </span>
-            </div>
-            <p className="mt-4 text-[15px] text-foreground/55">
-              Das hab ich daraus gemacht, fertig zum Kopieren. Klick dich durch.
-            </p>
-          </div>
-          {/* Proud dolphin hands over the finished build package. */}
-          <AnimatedMascot
-            state="delivering"
-            motion="bob"
-            size={150}
-            className="mx-auto shrink-0 md:mx-0"
-            alt="Der Delfin präsentiert stolz das fertige Bau-Paket"
-          />
+        <div className="mb-10 max-w-2xl">
+          <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
+            Echtes Ergebnis, kein Lorem Ipsum.
+          </h2>
+          <p className="mt-4 text-[17px] text-foreground/55">
+            Aus „Ein Habit-Tracker, der Streaks mit cleveren Mini-Belohnungen feiert“
+            wird das hier, fertig zum Kopieren. Klick dich durch.
+          </p>
         </div>
       </FadeIn>
 

@@ -6,15 +6,11 @@ import { FadeIn } from "@/components/motion/fade-in";
 const TOOLS = [
   "Claude",
   "ChatGPT",
-  "Gemini",
   "Cursor",
-  "Claude Code",
   "Lovable",
-  "v0",
+  "Gemini",
   "Figma",
-  "Stitch",
   "Supabase",
-  "Postgres",
   "Vercel",
 ];
 
