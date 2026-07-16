@@ -12,8 +12,8 @@ const faqs = [
     a: "Nein. Du beschreibst deine Idee in ganz normaler Sprache, den technischen Teil übernehme ich. Was du bekommst, bringt dich auch ohne tiefes Vorwissen voran.",
   },
   {
-    q: "Was, wenn der Plan nicht zu meinem Projekt passt?",
-    a: "Dann sagst du's mir und wir passen ihn an. Nichts ist endgültig: Du kannst einzelne Teile neu erzeugen, nachschärfen oder den Stack wechseln, bis es wirklich zu deinem Projekt passt.",
+    q: "Was, wenn der Prompt nicht passt?",
+    a: "Dann sagst du mir einfach im Chat, was anders sein soll, kürzer, ausführlicher, ein anderer Ton. Ich schreib dir den ganzen Prompt neu, so oft wie nötig. Nichts ist endgültig.",
   },
   {
     q: "Was bringt mir das, statt Claude einfach selbst zu fragen?",

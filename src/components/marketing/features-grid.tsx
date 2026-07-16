@@ -1,49 +1,48 @@
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import {
-  FileText,
-  Sparkles,
-  Palette,
-  Database,
-  ShieldCheck,
-  Megaphone,
-  Rocket,
-  Search,
+  MessagesSquare,
+  Copy,
+  Target,
+  FolderKanban,
+  KeyRound,
+  Clock,
 } from "lucide-react";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 
-// Benefit-first: each card leads with what it does *for you*, not the
-// document's industry name. The technical terms (PRD, Schema, RLS) live in the
-// FAQ for people who already know to look for them.
+// Benefit-first, and grounded in what actually happens in a chat with Finn
+// (src/prompts/system.ts's CHAT_SYSTEM_PROMPT): one clarifying question, then
+// the finished prompt in the conversation, not a set of auto-generated
+// documents.
 const features = [
   {
-    Icon: FileText,
-    title: "Dein Produktplan",
-    body: "Damit du immer weisst, was als Nächstes dran ist, Zielgruppe, Funktionen und die richtige Reihenfolge, schwarz auf weiss.",
+    Icon: MessagesSquare,
+    title: "Ich frag nach, bis es passt",
+    body: "Statt zu raten, hak ich kurz nach, Zielgruppe, Ton, das Wichtigste, bevor der Prompt fertig ist.",
   },
   {
-    Icon: Sparkles,
-    title: "Deine KI-Anweisungen",
-    body: "Der fertige Prompt, der Claude, ChatGPT oder Cursor deine ganze App von Tag eins an versteht. Kein ewiges Nacherklären.",
+    Icon: Copy,
+    title: "Dein fertiger Prompt",
+    body: "Ausformuliert, direkt im Chat, mit einem Klick kopiert und sofort einsatzbereit.",
   },
   {
-    Icon: Palette,
-    title: "Dein App-Design",
-    body: "Screens, Komponenten und Farben, abgestimmt darauf, wie Lovable, v0, Figma oder Stitch sie erwarten.",
+    Icon: Target,
+    title: "Zugeschnitten auf dein Tool",
+    body: "Sag mir, ob's für Claude, ChatGPT, Lovable oder Cursor ist, ich pass die Wortwahl darauf an.",
   },
   {
-    Icon: Database,
-    title: "Deine Datenbank",
-    body: "Die komplette Datenstruktur deiner App, fertig zum Einfügen, damit nichts durcheinanderkommt.",
+    Icon: FolderKanban,
+    title: "Projekte als Arbeitsplatz",
+    body: "Mehrere Chats, eigene Dateien und Notizen an einem Ort, statt jedes Mal neu zu erklären.",
   },
   {
-    Icon: ShieldCheck,
-    title: "Deine Sicherheits-Checkliste",
-    body: "Die Dinge, die man später bereut, vorher abgehakt und in verständlicher Sprache erklärt.",
+    Icon: KeyRound,
+    title: "Dein eigener KI-Key",
+    body: "Hinterleg deinen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen und zahl nur, was du wirklich brauchst.",
   },
   {
-    Icon: Megaphone,
-    title: "Dein Marketing",
-    body: "Texte für Landingpage, FAQ und E-Mails, die deine Idee verkaufen, nicht nur beschreiben.",
+    Icon: Clock,
+    title: "Nichts geht verloren",
+    body: "Jedes Gespräch bleibt gespeichert, jederzeit weiterführen oder nochmal nachlesen.",
   },
 ];
 
@@ -57,19 +56,19 @@ export function FeaturesGrid() {
               Das bekommst du von mir
             </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              Eine Idee rein. Alles zum Bauen raus.
+              Eine Idee rein. Ein fertiger Prompt raus.
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
-              Keine halben Sachen. Alles, was du brauchst, um von der Idee zur
-              ersten Zeile Code zu kommen, fertig vorbereitet.
+              Kein Rätselraten mehr, was du der KI sagen sollst. Ich frag nach,
+              bis ich es genau weiss, dann schreib ich es für dich auf.
             </p>
           </div>
-          {/* Finn sorts the chaos into one tidy package. */}
+          {/* Finn brings your scattered idea into one clear shape. */}
           <AnimatedMascot
             state="organizing"
             size={160}
             className="hidden shrink-0 md:block"
-            alt="Der Delfin sortiert alles zu einem Paket"
+            alt="Der Delfin bringt deine Idee in Form"
           />
         </div>
       </FadeIn>
@@ -92,38 +91,6 @@ export function FeaturesGrid() {
           </StaggerItem>
         ))}
       </StaggerChildren>
-
-      <FadeIn delay={0.2}>
-        <div className="mt-6 card-surface p-8 md:p-10 relative overflow-hidden">
-          <div className="relative flex flex-col gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-2.5 py-1 mb-3">
-                <Rocket className="h-3 w-3 text-accent-text" />
-                <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/70">
-                  Ebenfalls dabei
-                </span>
-              </div>
-              <h3 className="text-[22px] font-semibold tracking-tight text-foreground">
-                Und der Weg nach draussen.
-              </h3>
-              <p className="mt-1.5 text-[14.5px] text-foreground/55 max-w-xl">
-                Eine Schritt-für-Schritt-Anleitung, um deine App online zu bringen, plus
-                einen Plan, mit dem dich Google auch findet.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] text-foreground/75">
-                <Rocket className="h-3.5 w-3.5 text-foreground/50" />
-                Deployment-Anleitung
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] text-foreground/75">
-                <Search className="h-3.5 w-3.5 text-foreground/50" />
-                SEO-Plan
-              </span>
-            </div>
-          </div>
-        </div>
-      </FadeIn>
     </section>
   );
 }

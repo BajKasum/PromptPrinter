@@ -8,7 +8,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 export const metadata = {
   title: "Funktionen",
   description:
-    "Jedes Artefakt, das du zum Ausliefern brauchst, PRD, Master-Prompt, Frontend- & Backend-Prompts, Schema, Sicherheit, Marketing, SEO, Deployment.",
+    "Ein KI-Chat, der nachfragt, bis deine Idee klar ist, und dir dann den fertigen, passenden Prompt für Claude, ChatGPT, Lovable, Cursor & Co. liefert.",
 };
 
 export default function FeaturesPage() {
@@ -27,10 +27,11 @@ export default function FeaturesPage() {
             </span>
           </div>
           <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-3xl mx-auto">
-            Alles, was du brauchst, um <span className="gradient-text">von der Idee zum Commit zu kommen.</span>
+            Von der rohen Idee <span className="gradient-text">zum fertigen Prompt.</span>
           </h1>
           <p className="mt-6 text-[17px] text-foreground/55 max-w-2xl mx-auto">
-            Jedes Projekt ist ein komplettes Build-Packet, generiert, strukturiert, exportierbar.
+            Ein Gespräch, eine klärende Rückfrage, dein passender Prompt, zugeschnitten
+            auf das Tool, mit dem du weiterbaust.
           </p>
         </FadeIn>
       </section>

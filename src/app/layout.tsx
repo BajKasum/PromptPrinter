@@ -23,17 +23,16 @@ export const metadata: Metadata = {
     template: "%s · PromptPrinter",
   },
   description:
-    "Generiere Produkt-Briefs, PRDs, technische Blueprints und optimierte Prompts, zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.",
+    "Ein KI-Chat, der nachfragt, bis deine Idee klar ist, und dir dann den fertigen, passenden Prompt liefert, zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.",
   keywords: [
     "KI-Prompts",
-    "PRD-Generator",
+    "Prompt-Engineering",
     "Claude",
     "ChatGPT",
     "Cursor",
     "Lovable",
     "v0",
     "Stitch",
-    "Produktanforderungen",
   ],
   openGraph: {
     title: "PromptPrinter",

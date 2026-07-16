@@ -3,17 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
-import {
-  ArrowRight,
-  Check,
-  FileText,
-  Palette,
-  Database,
-  Server,
-  Megaphone,
-  CornerDownLeft,
-  Globe,
-} from "lucide-react";
+import { ArrowRight, Check, Copy, CornerDownLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import type { MascotState } from "@/components/brand/mascot-states";
@@ -141,65 +131,69 @@ export function Hero() {
 
 // ── Demo data ──────────────────────────────────────────────────────────────
 
-type StageKey = "idea" | "plan" | "build" | "launch";
+type StageKey = "idea" | "clarify" | "prompt";
 const STAGES: { key: StageKey; label: string }[] = [
   { key: "idea", label: "Idee" },
-  { key: "plan", label: "Plan" },
-  { key: "build", label: "Build" },
-  { key: "launch", label: "Launch" },
+  { key: "clarify", label: "Rückfrage" },
+  { key: "prompt", label: "Prompt" },
 ];
 
-// Each demo is a real, plain-language idea with the plan + launch domain it
-// would produce. Build artifacts are the same set every project gets.
+// Each demo is a real, plain-language idea that walks through what actually
+// happens today: Finn asks exactly one clarifying question, then delivers
+// the finished, paste-ready prompt, tailored to the named target assistant.
+// This mirrors src/prompts/system.ts's CHAT_SYSTEM_PROMPT, not an invented
+// pipeline (there is no automatic multi-document generation anymore).
 const DEMOS = [
   {
     idea: "Airbnb für Hundesitter",
-    domain: "hundesitter.app",
-    plan: [
-      ["Zielgruppe", "Hundebesitzer, die kurzfristig Betreuung suchen"],
-      ["Kernfunktionen", "Suche, Buchung, Bezahlung, Bewertungen"],
-      ["Erfolg", "100 vermittelte Buchungen im ersten Monat"],
+    target: "Lovable",
+    question: "Für wen zuerst, Hundebesitzer oder Sitter?",
+    answer: "Für Besitzer, die kurzfristig jemanden brauchen.",
+    prompt: [
+      "Rolle: erfahrener Product Engineer.",
+      "Baue einen Marktplatz, der Hundebesitzer mit",
+      "verfügbaren Sittern in der Nähe verbindet.",
+      "Kernfunktionen: Suche, Buchung, Bezahlung,",
+      "Bewertungen nach dem Termin.",
+      "Zielgruppe: Besitzer, die kurzfristig",
+      "Betreuung suchen.",
     ],
   },
   {
     idea: "KI-Habit-Tracker mit Streaks",
-    domain: "streakcoach.app",
-    plan: [
-      ["Zielgruppe", "Menschen, die feste Routinen aufbauen wollen"],
-      ["Kernfunktionen", "Habits, Check-ins, KI-Mikrobelohnungen"],
-      ["Erfolg", "35 % der Nutzer nach 7 Tagen noch aktiv"],
+    target: "Claude",
+    question: "Sollen die KI-Anstupser eher locker-witzig oder ernsthaft-coachig klingen?",
+    answer: "Locker und ein bisschen witzig.",
+    prompt: [
+      "Rolle: Produkt-Coach, locker und ein",
+      "bisschen witzig im Ton.",
+      "Baue eine Habit-Tracking-App mit Streaks",
+      "und kurzen KI-Anstupsern nach jedem Check-in.",
+      "Kernfunktionen: Habits anlegen, tägliche",
+      "Check-ins, Streak-Zähler, Mikro-Belohnungen.",
     ],
   },
   {
     idea: "Marktplatz für lokale Künstler",
-    domain: "artlokal.app",
-    plan: [
-      ["Zielgruppe", "Lokale Künstler und ihre Sammler"],
-      ["Kernfunktionen", "Shops, Zahlungen, Entdecken-Feed"],
-      ["Erfolg", "50 aktive Shops in den ersten 30 Tagen"],
+    target: "ChatGPT",
+    question: "Verkaufen die Künstler direkt in der App, oder erstmal nur ein Schaufenster?",
+    answer: "Erstmal nur Schaufenster, Verkauf kommt später.",
+    prompt: [
+      "Rolle: erfahrener Product Engineer.",
+      "Baue ein Schaufenster für lokale Künstler,",
+      "noch ohne eingebauten Checkout.",
+      "Kernfunktionen: Profile, Werk-Galerien,",
+      "Entdecken-Feed nach Stadt.",
+      "Zielgruppe: lokale Künstler und ihre",
+      "Sammler.",
     ],
   },
 ];
 
-const OUTPUTS = [
-  { Icon: FileText, label: "Produktplan" },
-  { Icon: Palette, label: "App-Design" },
-  { Icon: Database, label: "Datenbank" },
-  { Icon: Server, label: "Backend" },
-  { Icon: Megaphone, label: "Marketing" },
-];
-
-const LAUNCH_CHECKS = [
-  "Deployment für Vercel konfiguriert",
-  "Umgebungsvariablen & Secrets gesetzt",
-  "Datenbank migriert und startklar",
-];
-
 const NARRATION: Record<StageKey, { state: MascotState; line: string }> = {
   idea: { state: "curious", line: "Erzähl mir, was du bauen willst …" },
-  plan: { state: "thinking", line: "Ich plane Zielgruppe, Funktionen und Stack …" },
-  build: { state: "building", line: "Ich baue dein komplettes Bau-Paket …" },
-  launch: { state: "delivering", line: "Fertig, bereit zum Launch!" },
+  clarify: { state: "listening", line: "Nur kurz nachgefragt, damit's wirklich passt …" },
+  prompt: { state: "delivering", line: "Fertig, kopier ihn dir direkt …" },
 };
 
 // ── Demo component ─────────────────────────────────────────────────────────
@@ -210,27 +204,26 @@ function HeroDemo() {
   const inView = useInView(ref, { margin: "-80px" });
 
   const [demoIndex, setDemoIndex] = useState(0);
-  const [stage, setStage] = useState(0); // 0..3
+  const [stage, setStage] = useState(0); // 0..2
   const [typed, setTyped] = useState(0); // chars of idea
-  const [planRevealed, setPlanRevealed] = useState(0);
-  const [built, setBuilt] = useState(0);
-  const [launchRevealed, setLaunchRevealed] = useState(0);
-  const [live, setLive] = useState(false);
+  const [clarifyRevealed, setClarifyRevealed] = useState(0); // 0 none, 1 question, 2 +answer
+  const [promptRevealed, setPromptRevealed] = useState(0); // lines of the prompt
+  const [copied, setCopied] = useState(false);
 
   const demo = DEMOS[demoIndex];
   const stageKey = STAGES[stage].key;
 
-  // One scripted cycle: type the idea → reveal the plan → build artifacts →
-  // launch checklist goes live → hold → next idea. Pauses off-screen; reduced
-  // motion shows the finished launch state, no loop.
+  // One scripted cycle: type the idea → Finn asks, the user answers → the
+  // finished prompt reveals line by line → auto-"copied" → hold → next idea.
+  // Pauses off-screen; reduced motion shows the finished, copied prompt, no
+  // loop.
   useEffect(() => {
     if (reduce) {
-      setStage(3);
+      setStage(2);
       setTyped(DEMOS[demoIndex].idea.length);
-      setPlanRevealed(DEMOS[demoIndex].plan.length);
-      setBuilt(OUTPUTS.length);
-      setLaunchRevealed(LAUNCH_CHECKS.length);
-      setLive(true);
+      setClarifyRevealed(2);
+      setPromptRevealed(DEMOS[demoIndex].prompt.length);
+      setCopied(true);
       return;
     }
     if (!inView) return;
@@ -241,35 +234,27 @@ function HeroDemo() {
 
     setStage(0);
     setTyped(0);
-    setPlanRevealed(0);
-    setBuilt(0);
-    setLaunchRevealed(0);
-    setLive(false);
+    setClarifyRevealed(0);
+    setPromptRevealed(0);
+    setCopied(false);
 
     // Stage 1, Idea: type it out.
     for (let i = 1; i <= current.idea.length; i++) at(i * 45, () => setTyped(i));
     let t = current.idea.length * 45 + 700;
 
-    // Stage 2, Plan: reveal each line.
+    // Stage 2, Rückfrage: Finn asks, then the user answers.
     at(t, () => setStage(1));
-    for (let i = 1; i <= current.plan.length; i++) {
-      const d = t + i * 420;
-      at(d, () => setPlanRevealed(i));
-    }
-    t += current.plan.length * 420 + 700;
+    at(t + 500, () => setClarifyRevealed(1));
+    at(t + 1500, () => setClarifyRevealed(2));
+    t += 2400;
 
-    // Stage 3, Build: light up artifacts.
+    // Stage 3, Prompt: reveal it line by line, then "copy" it.
     at(t, () => setStage(2));
-    for (let i = 1; i <= OUTPUTS.length; i++) at(t + i * 300, () => setBuilt(i));
-    t += OUTPUTS.length * 300 + 600;
+    for (let i = 1; i <= current.prompt.length; i++) at(t + i * 260, () => setPromptRevealed(i));
+    t += current.prompt.length * 260 + 500;
+    at(t, () => setCopied(true));
 
-    // Stage 4, Launch: tick the checklist, then go live.
-    at(t, () => setStage(3));
-    for (let i = 1; i <= LAUNCH_CHECKS.length; i++) at(t + i * 380, () => setLaunchRevealed(i));
-    t += LAUNCH_CHECKS.length * 380 + 500;
-    at(t, () => setLive(true));
-
-    // Hold the launched state, then move to the next idea.
+    // Hold the copied state, then move to the next idea.
     at(t + 2600, () => setDemoIndex((n) => (n + 1) % DEMOS.length));
 
     return () => timers.forEach(clearTimeout);
@@ -286,15 +271,15 @@ function HeroDemo() {
             <span className="h-2.5 w-2.5 rounded-full bg-surface" />
           </div>
           <span className="font-mono text-[11px]">
-            {live ? (
+            {copied ? (
               <span className="inline-flex items-center gap-1.5 text-accent-text">
                 <Check className="h-3 w-3" strokeWidth={2.4} />
-                live
+                kopiert
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-foreground/45">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                Schritt {stage + 1}/4
+                Schritt {stage + 1}/3
               </span>
             )}
           </span>
@@ -303,7 +288,7 @@ function HeroDemo() {
         {/* Active stepper, the real journey, visibly progressing. */}
         <div className="flex items-center gap-1.5 px-4 md:px-6 pt-4">
           {STAGES.map((s, i) => {
-            const done = i < stage || (i === stage && live && i === 3);
+            const done = i < stage || (i === stage && copied && i === STAGES.length - 1);
             const active = i === stage;
             return (
               <div key={s.key} className="flex flex-1 items-center gap-1.5">
@@ -387,7 +372,7 @@ function HeroDemo() {
           </div>
 
           {/* Stage-specific content, morphs as the journey advances. */}
-          <div className="mt-4 min-h-[176px]">
+          <div className="mt-4 min-h-[200px]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={stageKey}
@@ -397,10 +382,20 @@ function HeroDemo() {
                 transition={{ duration: 0.25, ease: "easeOut" }}
               >
                 {stage === 0 && <StageHint />}
-                {stage === 1 && <PlanStage plan={demo.plan} revealed={planRevealed} />}
-                {stage === 2 && <BuildStage built={built} />}
-                {stage === 3 && (
-                  <LaunchStage revealed={launchRevealed} live={live} domain={demo.domain} />
+                {stage === 1 && (
+                  <ClarifyStage
+                    question={demo.question}
+                    answer={demo.answer}
+                    revealed={clarifyRevealed}
+                  />
+                )}
+                {stage === 2 && (
+                  <PromptStage
+                    lines={demo.prompt}
+                    target={demo.target}
+                    revealed={promptRevealed}
+                    copied={copied}
+                  />
                 )}
               </motion.div>
             </AnimatePresence>
@@ -415,147 +410,102 @@ function HeroDemo() {
 
 function StageHint() {
   return (
-    <div className="flex h-[176px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-center">
+    <div className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-center">
       <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-foreground/40">
         wird zu
       </span>
-      <span className="text-[13px] text-foreground/55">
-        Plan → Bau-Paket → startklares Projekt
-      </span>
+      <span className="text-[13px] text-foreground/55">Eine Rückfrage → dein fertiger Prompt</span>
     </div>
   );
 }
 
-function PlanStage({ plan, revealed }: { plan: string[][]; revealed: number }) {
+function ClarifyStage({
+  question,
+  answer,
+  revealed,
+}: {
+  question: string;
+  answer: string;
+  revealed: number;
+}) {
   return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
-        Produktplan
+    <div className="space-y-2.5">
+      <div
+        className={cn(
+          "max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2.5 text-[13px] leading-snug text-foreground/85 transition-all duration-300",
+          revealed >= 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+        )}
+      >
+        {question}
       </div>
-      <div className="space-y-2 rounded-xl border border-border bg-surface p-4">
-        {plan.map(([label, value], i) => (
+      <div
+        className={cn(
+          "ml-auto max-w-[85%] rounded-2xl rounded-br-sm border border-accent/25 bg-accent-subtle px-3.5 py-2.5 text-[13px] leading-snug text-foreground/85 transition-all duration-300",
+          revealed >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+        )}
+      >
+        {answer}
+      </div>
+    </div>
+  );
+}
+
+// Mirrors chat-markdown.tsx's real CodeBlock chrome (label left, copy button
+// right) on purpose, so this demo doubles as an honest preview of the actual
+// chat UI, not a separate invented mockup.
+function PromptStage({
+  lines,
+  target,
+  revealed,
+  copied,
+}: {
+  lines: string[];
+  target: string;
+  revealed: number;
+  copied: boolean;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="flex items-center justify-between border-b border-border px-3.5 py-2">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-foreground/45">
+            Prompt
+          </span>
+          <span className="rounded-full border border-accent/25 bg-accent-subtle px-2 py-0.5 text-[10.5px] text-accent-text">
+            Für {target}
+          </span>
+        </div>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 text-[11.5px] transition-colors duration-300",
+            copied ? "text-success" : "text-foreground/40"
+          )}
+        >
+          {copied ? (
+            <>
+              <Check className="h-3 w-3" strokeWidth={2.6} />
+              Kopiert
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" strokeWidth={2} />
+              Prompt kopieren
+            </>
+          )}
+        </span>
+      </div>
+      <div className="space-y-1 px-3.5 py-3 font-mono text-[12px] leading-relaxed text-foreground/80">
+        {lines.map((line, i) => (
           <div
-            key={label}
+            key={line}
             className={cn(
-              "flex items-baseline gap-3 transition-all duration-300",
+              "transition-all duration-300",
               i < revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
             )}
           >
-            <span className="w-24 shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-accent-text">
-              {label}
-            </span>
-            <span className="text-[13.5px] leading-snug text-foreground/80">{value}</span>
+            {line}
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function BuildStage({ built }: { built: number }) {
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
-        Dein Bau-Paket
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-        {OUTPUTS.map(({ Icon, label }, i) => {
-          const lit = i < built;
-          return (
-            <div
-              key={label}
-              className={cn(
-                "relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-all duration-500",
-                lit ? "border-accent/30 bg-accent-subtle" : "border-border bg-surface opacity-50"
-              )}
-            >
-              <div
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-500",
-                  lit ? "bg-accent/20 text-accent-text" : "bg-surface-hover text-foreground/40"
-                )}
-              >
-                <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-              </div>
-              <span
-                className={cn(
-                  "text-[12px] font-medium transition-colors duration-500",
-                  lit ? "text-foreground" : "text-foreground/45"
-                )}
-              >
-                {label}
-              </span>
-              <span
-                className={cn(
-                  "absolute right-2 top-2 transition-all duration-300",
-                  lit ? "scale-100 opacity-100" : "scale-50 opacity-0"
-                )}
-              >
-                <Check className="h-3.5 w-3.5 text-accent-text" strokeWidth={2.6} />
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function LaunchStage({
-  revealed,
-  live,
-  domain,
-}: {
-  revealed: number;
-  live: boolean;
-  domain: string;
-}) {
-  return (
-    <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
-        Bereit zum Launch
-      </div>
-      <div className="space-y-2 rounded-xl border border-border bg-surface p-4">
-        {LAUNCH_CHECKS.map((c, i) => {
-          const ok = i < revealed;
-          return (
-            <div key={c} className="flex items-center gap-2.5">
-              <span
-                className={cn(
-                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors duration-300",
-                  ok ? "bg-success/20 text-success" : "bg-surface-hover text-foreground/30"
-                )}
-              >
-                <Check className="h-2.5 w-2.5" strokeWidth={3} />
-              </span>
-              <span
-                className={cn(
-                  "text-[13px] transition-colors duration-300",
-                  ok ? "text-foreground/80" : "text-foreground/35"
-                )}
-              >
-                {c}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* The deployed URL bar, the payoff. */}
-        <div
-          className={cn(
-            "mt-3 flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-all duration-500",
-            live ? "border-accent/30 bg-accent-subtle" : "border-border bg-surface opacity-50"
-          )}
-        >
-          <Globe className="h-3.5 w-3.5 shrink-0 text-accent-text" strokeWidth={1.8} />
-          <span className="font-mono text-[12.5px] text-foreground/80">{domain}</span>
-          {live && (
-            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.08em] text-success">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              live
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );

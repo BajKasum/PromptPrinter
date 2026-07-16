@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
-import { Pencil, MessageSquare, PackageCheck } from "lucide-react";
+import { Pencil, MessageSquare, Copy } from "lucide-react";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
@@ -33,9 +33,9 @@ const steps = [
   },
   {
     n: "03",
-    Icon: PackageCheck,
-    title: "Du bekommst alles, startklar",
-    body: "Du bekommst einen kompletten Plan plus die fertigen Anweisungen für jedes KI-Tool. Ein Klick, kopiert, und du legst los.",
+    Icon: Copy,
+    title: "Du bekommst deinen Prompt, startklar",
+    body: "Fertig formuliert, zugeschnitten auf dein Tool, direkt im Chat. Ein Klick, kopiert, und du legst los.",
   },
 ];
 
@@ -65,7 +65,7 @@ export function HowItWorks() {
         <div className="relative z-10 mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              In drei Schritten von der Idee zum fertigen Plan.
+              In drei Schritten von der Idee zum fertigen Prompt.
             </h2>
             <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
               Kein Formular, kein Fachchinesisch. Du redest ganz normal, um den

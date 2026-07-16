@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare,
   FolderKanban,
-  Sparkles,
   Clock,
   Star,
   Search,
@@ -39,9 +38,9 @@ export function ProductShowcase() {
               Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
             </h2>
             <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
-              Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Ein
-              gutes Ergebnis hebst du dir als Projekt auf, gesammelt mit allen
-              Artefakten, durchsuchbar und griffbereit.
+              Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Für
+              alles, was zusammengehört, legst du dir ein Projekt an, mehrere
+              Chats, eigene Dateien, durchsuchbar und griffbereit.
             </p>
           </div>
         </div>
@@ -134,12 +133,11 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
 }
 
 // ── Chats, mirrors the real /chats list: title, target-if-any, freshness,
-// message count. One chat experience, no mode badge, the outcome (Paket vs.
-// Prompt) is a choice at the end of a chat, not a label on it; a chat that
-// produced one already lives in its project, not here. ─────────────────────
+// message count. One chat experience, no mode badge, no outcome label, the
+// finished prompt lives inside the conversation itself. ────────────────────
 
 const CHATS: { title: string; target?: string; when: string; messages: number }[] = [
-  { title: "KI-Habit-Tracker mit Streaks, Prompt-Paket", when: "vor 2 Std.", messages: 8 },
+  { title: "KI-Habit-Tracker mit Streaks", target: "Claude", when: "vor 2 Std.", messages: 8 },
   {
     title: "Bewerbungsschreiben für UX-Rolle",
     target: "ChatGPT",
@@ -182,45 +180,28 @@ function ChatsView() {
   );
 }
 
-// ── Projekte, mirrors the real Projekte page exactly: search + filter chips
-// over favorites/categories, cards led by name with category pills, artifact
-// count and freshness as footer metadata (not a headline number). This is
-// what used to be a separate "Bibliothek", now it's just Projekte. ────────
+// ── Projekte, mirrors the real Projekte page exactly: search + favorites
+// filter, cards led by name, chat count and freshness as footer metadata
+// (not a headline artifact number, real projects don't auto-generate
+// documents, see library-card.tsx's workspaceMeta). This is what used to be
+// a separate "Bibliothek", now it's just Projekte. ─────────────────────────
 
-const PROJECT_FILTERS = ["Alle", "Favoriten", "Kürzlich verwendet", "Frontend", "Backend", "Marketing", "Datenbank"];
+const PROJECT_FILTERS = ["Alle", "Favoriten", "Kürzlich verwendet"];
 
 const PROJECTS = [
-  {
-    name: "Streak Coach",
-    categories: ["doc", "prompt", "frontend", "backend", "database"],
-    artifacts: 9,
-    fav: true,
-    when: "vor 2 Std.",
-  },
-  {
-    name: "Hundesitter-Markt",
-    categories: ["doc", "prompt", "frontend", "backend"],
-    artifacts: 7,
-    fav: false,
-    when: "vor 1 Tag",
-  },
-  {
-    name: "Artlokal",
-    categories: ["doc", "prompt", "marketing"],
-    artifacts: 5,
-    fav: false,
-    when: "vor 3 Tagen",
-  },
+  { name: "Streak Coach", chats: 3, fav: true, when: "vor 2 Std." },
+  { name: "Hundesitter-Markt", chats: 2, fav: false, when: "vor 1 Tag" },
+  { name: "Artlokal", chats: 1, fav: false, when: "vor 3 Tagen" },
 ];
 
 function ProjectsView() {
   return (
     <div>
-      <ViewHeader title="Deine Projekte" sub="3 Projekte mit allen Artefakten." />
+      <ViewHeader title="Deine Projekte" sub="3 Projekte, jederzeit weiter dran." />
       <div className="relative max-w-xs mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/40" />
         <div className="h-9 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13px] text-foreground/40 flex items-center">
-          Projekte oder Tools durchsuchen…
+          Projekte durchsuchen…
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-5">
@@ -250,23 +231,13 @@ function ProjectsView() {
                 strokeWidth={1.8}
               />
             </div>
-            <h4 className="text-[16px] font-semibold tracking-tight text-foreground mb-2">
+            <h4 className="text-[16px] font-semibold tracking-tight text-foreground mb-4">
               {p.name}
             </h4>
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {p.categories.map((c) => (
-                <span
-                  key={c}
-                  className="text-[10.5px] px-2 py-0.5 rounded-full border border-accent/25 bg-accent-subtle text-accent-text"
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
             <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
               <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="h-3 w-3" />
-                {p.artifacts} Artefakte
+                <MessageSquare className="h-3 w-3" />
+                {p.chats} {p.chats === 1 ? "Chat" : "Chats"}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Clock className="h-3 w-3" />
