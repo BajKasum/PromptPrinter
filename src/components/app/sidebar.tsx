@@ -43,7 +43,7 @@ const COLLAPSED_WIDTH = 68;
 // instead of a second, easily-drifting copy of the same styling.
 export const ACTIVE_ROW =
   "relative rounded-md bg-accent-subtle font-medium text-foreground before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-accent before:content-['']";
-export const INACTIVE_ROW = "text-foreground/55 hover:bg-surface-hover hover:text-foreground";
+export const INACTIVE_ROW = "text-foreground/70 hover:bg-surface-hover hover:text-foreground";
 
 export function Sidebar({
   initialCollapsed,

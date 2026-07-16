@@ -97,7 +97,7 @@ export function Topbar({
       >
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <span className="truncate group-hover:text-foreground transition-colors">
-          Chats, Projekte, Seiten, Aktionen…
+          Wonach suchst du?
         </span>
         <span className="ml-auto hidden md:inline-flex items-center gap-0.5 text-[10px] font-mono text-muted-foreground">
           <kbd className="px-1.5 py-0.5 rounded border border-border bg-surface">{modKey}</kbd>

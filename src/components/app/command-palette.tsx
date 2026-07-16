@@ -171,7 +171,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Chats, Projekte, Seiten, Aktionen…"
+                placeholder="Wonach suchst du?"
                 aria-label="Suchen"
                 className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
@@ -199,11 +199,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                         onClick={() => c.perform()}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] transition-colors",
-                          active ? "bg-accent-subtle text-accent-text" : "text-muted-foreground hover:bg-surface-hover"
+                          active ? "bg-accent-subtle text-accent-text" : "text-foreground/70 hover:bg-surface-hover"
                         )}
                       >
                         <c.Icon
-                          className={cn("h-4 w-4 shrink-0", active ? "text-accent-text" : "text-muted-foreground")}
+                          className={cn("h-4 w-4 shrink-0", active ? "text-accent-text" : "text-foreground/70")}
                           strokeWidth={1.8}
                         />
                         <span className="flex-1 truncate">{c.label}</span>
