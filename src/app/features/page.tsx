@@ -2,8 +2,6 @@ import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
 import { FeaturesGrid } from "@/components/marketing/features-grid";
 import { HowItWorks } from "@/components/marketing/how-it-works";
-import { Integrations } from "@/components/marketing/integrations";
-import { ExampleOutput } from "@/components/marketing/example-output";
 import { FinalCTA } from "@/components/marketing/final-cta";
 import { FadeIn } from "@/components/motion/fade-in";
 
@@ -38,8 +36,6 @@ export default function FeaturesPage() {
       </section>
       <HowItWorks />
       <FeaturesGrid />
-      <ExampleOutput />
-      <Integrations />
       <FinalCTA />
       <Footer />
     </main>

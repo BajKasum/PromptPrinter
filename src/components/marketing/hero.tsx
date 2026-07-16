@@ -120,7 +120,7 @@ export function Hero() {
             </Link>
           </Button>
           <Button asChild size="lg" variant="ghost">
-            <Link href="#example">Erst mal zuschauen</Link>
+            <Link href="#produkt">Erst mal zuschauen</Link>
           </Button>
         </motion.div>
           </div>

@@ -32,8 +32,8 @@ export function ProductShowcase() {
   return (
     <section id="produkt" className="scroll-mt-24 container-x pt-12 md:pt-16 pb-24 md:pb-32">
       <FadeIn>
-        {/* Lighter header, this is the embedded "serving" follow-up to the
-            prominent ExampleOutput proof, not a second co-equal demo section. */}
+        {/* Lighter header, this is the embedded "serving" follow-up to
+            Hero's own live demo, not a second co-equal demo section. */}
         <div className="mx-auto mb-7 max-w-4xl">
           <div className="max-w-xl">
             <h2 className="text-balance text-[26px] md:text-[32px] leading-[1.15] tracking-[-0.03em] font-semibold text-foreground">
@@ -128,8 +128,8 @@ function NavSwitcher({ view, onChange }: { view: ViewKey; onChange: (v: ViewKey)
 }
 
 // ── Sample data (realistic, plain-language) ─────────────────────────────────
-// The same three ideas travel through Hero's demo, ExampleOutput and this
-// showcase: "KI-Habit-Tracker mit Streaks" becomes the project "Streak Coach",
+// The same three ideas travel through Hero's demo and this showcase:
+// "KI-Habit-Tracker mit Streaks" becomes the project "Streak Coach",
 // "Airbnb für Hundesitter" becomes "Hundesitter-Markt", "Marktplatz für lokale
 // Künstler" becomes "Artlokal", one consistent story, not disconnected mockups.
 

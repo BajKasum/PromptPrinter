@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // hash jump, next/link is for route changes and scrolls unreliably to a bare
 // hash in the App Router. Smooth scroll + the targets' scroll-mt do the rest.
 const nav = [
-  { label: "Funktionen", href: "#example" },
+  { label: "Funktionen", href: "#produkt" },
   { label: "Preise", href: "#preise" },
 ];
 
