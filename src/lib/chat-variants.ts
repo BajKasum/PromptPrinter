@@ -6,59 +6,23 @@ export type ChatMode = "general" | "software";
 // for both stored modes. Only refining a project's packet is its own context.
 export type Variant = "general" | "software" | "refine";
 
-type EmptyConfig = { heading: string; sub: string; starters: string[] };
+type EmptyConfig = { heading: string };
 
-const UNIFIED_EMPTY: EmptyConfig = {
-  heading: "Woran arbeiten wir?",
-  sub: "Beschreib dein Ziel, ein Text, ein Lernplan, eine ganze Software-Idee. Ich bau dir den fertigen Prompt und verfeinere ihn mit dir.",
-  starters: [
-    "Schreib mir einen Prompt für ein professionelles Bewerbungsschreiben.",
-    "Ich brauche einen Prompt, der mir einen Lernplan für meine Prüfung erstellt.",
-    "Ich hab eine App-Idee, bau mir das komplette Prompt-Paket dafür.",
-  ],
-};
+// Just Finn's opening line, no subtext or starter suggestions, Finn is the
+// whole empty state. No trailing "?" here, resolveEmptyState below adds it
+// after an optional ", {name}" so both read as one clean question.
+const UNIFIED_EMPTY: EmptyConfig = { heading: "Woran arbeiten wir" };
 
 const VARIANTS: Record<Variant, EmptyConfig> = {
   general: UNIFIED_EMPTY,
   // Legacy mode value on old conversations; the chat experience is one.
   software: UNIFIED_EMPTY,
-  refine: {
-    heading: "Pass deine Prompts an",
-    sub: "Sag mir, was ich an deinen Prompts ändern soll. Du bekommst die aktualisierte, fertige Version zurück.",
-    // Unused directly, refine's starters depend on the project's own mode
-    // (software vs. general), see REFINE_STARTERS below. Kept here only so
-    // every Variant has the same shape; resolveEmptyState below never reads it.
-    starters: [],
-  },
+  refine: { heading: "Pass deine Prompts an" },
 };
 
 // A project chat before any result exists: nothing to refine yet, the chat
 // is where the project's first work happens, briefed by the context rail.
-const PROJECT_FRESH: EmptyConfig = {
-  heading: "Woran arbeiten wir hier?",
-  sub: "Dieser Chat kennt dein Projekt, Anweisungen und Struktur aus der Seitenleiste fließen automatisch ein.",
-  starters: [
-    "Stell mir Fragen, die mein Briefing schärfen.",
-    "Bau mir einen ersten Prompt aus meinem Projektkontext.",
-    "Hilf mir zu planen, was dieses Projekt braucht.",
-  ],
-};
-
-// The refine variant collapses mode away (see resolveVariant), but its
-// starter suggestions must still match what the project actually is, a
-// Prompt-Projekt has no Frontend-/Backend-/Datenbank-Anteil to reference.
-const REFINE_STARTERS: Record<ChatMode, string[]> = {
-  software: [
-    "Mach den Master-Prompt kürzer und prägnanter.",
-    "Ergänze den Frontend-Prompt um einen Dark-Mode.",
-    "Erkläre das Datenbank-Schema mit mehr Kommentaren.",
-  ],
-  general: [
-    "Mach den Haupt-Prompt kürzer und direkter.",
-    "Passe den Ton an, freundlicher und weniger formell.",
-    "Ergänze ein konkretes Beispiel für die gewünschte Ausgabe.",
-  ],
-};
+const PROJECT_FRESH: EmptyConfig = { heading: "Woran arbeiten wir hier?" };
 
 // A project chat is its own context; every standalone chat is the one
 // unified chat.
@@ -66,29 +30,26 @@ export function resolveVariant(mode: ChatMode, projectId: string | undefined): V
   return projectId ? "refine" : mode;
 }
 
-export type ResolvedEmptyState = EmptyConfig & { placeholder: string };
+export type ResolvedEmptyState = { heading: string; placeholder: string };
 
 // Inside a project the copy depends on whether results exist: refining a
-// saved packet/prompt vs. doing the project's first work. The refine
-// starters additionally need the underlying mode, since "refine" alone
-// doesn't say whether this is a software packet or a saved prompt.
+// saved packet/prompt vs. doing the project's first work. `name` (the
+// user's display name, or undefined if unset) personalizes only the unified
+// greeting, "Woran arbeiten wir, Kasum?", the project/refine headings read
+// fine as-is and stay untouched.
 export function resolveEmptyState(
   variant: Variant,
-  mode: ChatMode,
-  hasResults: boolean
+  hasResults: boolean,
+  name?: string | null
 ): ResolvedEmptyState {
   const empty =
     variant === "refine" ? (hasResults ? VARIANTS.refine : PROJECT_FRESH) : VARIANTS[variant];
-  const starters =
-    variant === "refine"
-      ? hasResults
-        ? REFINE_STARTERS[mode]
-        : PROJECT_FRESH.starters
-      : VARIANTS[variant].starters;
   const placeholder =
     variant === "refine" && hasResults
       ? "Sag mir, was ich ändern soll…"
       : "Beschreib, woran wir arbeiten…";
+  const heading =
+    variant !== "refine" ? `${empty.heading}${name ? `, ${name}` : ""}?` : empty.heading;
 
-  return { heading: empty.heading, sub: empty.sub, starters, placeholder };
+  return { heading, placeholder };
 }

@@ -71,14 +71,14 @@ describe("Chat", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows the empty state with starters when there are no messages", () => {
+  it("shows just Finn's greeting when there are no messages", () => {
     render(<Chat mode="general" />);
     expect(screen.getByText("Woran arbeiten wir?")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "Ich hab eine App-Idee, bau mir das komplette Prompt-Paket dafür.",
-      })
-    ).toBeInTheDocument();
+  });
+
+  it("personalizes the greeting with the user's name when given", () => {
+    render(<Chat mode="general" name="Kasum" />);
+    expect(screen.getByText("Woran arbeiten wir, Kasum?")).toBeInTheDocument();
   });
 
   it("sends a message, shows it optimistically, and renders the reply", async () => {

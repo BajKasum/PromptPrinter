@@ -23,15 +23,16 @@ export default async function NewChatPage() {
   // defaults (settings page: "füllt jedes neue Projekt automatisch vor").
   const { data: profile } = await supabase
     .from("profiles")
-    .select("settings")
+    .select("settings, display_name")
     .eq("id", user.id)
     .maybeSingle();
   const defaultTools = parseToolDefaults(profile?.settings);
+  const name = profile?.display_name || user.email?.split("@")[0] || null;
 
   return (
     <div className="mx-auto max-w-[900px]">
       <FadeIn>
-        <Chat mode="general" defaultTools={defaultTools} />
+        <Chat mode="general" defaultTools={defaultTools} name={name} />
       </FadeIn>
     </div>
   );

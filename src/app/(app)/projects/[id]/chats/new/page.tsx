@@ -21,10 +21,19 @@ export default async function NewProjectChatPage({ params }: { params: Params })
   // Whether saved results exist decides the empty-state copy: refining
   // something vs. starting the project's first work.
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("generations")
-    .select("id", { count: "exact", head: true })
-    .eq("project_id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const [{ count }, { data: profile }] = await Promise.all([
+    supabase
+      .from("generations")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", id),
+    // getProject already redirected to /login if unauthenticated, user.id is
+    // safe here; the "" fallback just matches no row instead of throwing.
+    supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
+  ]);
+  const name = profile?.display_name || user?.email?.split("@")[0] || null;
 
   const mode = project.type === "software" ? ("software" as const) : ("general" as const);
 
@@ -50,6 +59,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
         projectInstructions={project.instructions}
         projectContext={project.context}
         hasResults={(count ?? 0) > 0}
+        name={name}
       />
     </div>
   );

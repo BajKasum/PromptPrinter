@@ -24,6 +24,9 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   const project = await getProject(id);
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: convo } = await supabase
     .from("conversations")
     .select("id, title, mode, target, project_id")
@@ -35,7 +38,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [{ data: rows }, { count: resultCount }] = await Promise.all([
+  const [{ data: rows }, { count: resultCount }, { data: profile }] = await Promise.all([
     supabase
       .from("messages")
       .select("role, content")
@@ -45,10 +48,14 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       .from("generations")
       .select("id", { count: "exact", head: true })
       .eq("project_id", id),
+    // getProject already redirected to /login if unauthenticated, user.id is
+    // safe here; the "" fallback just matches no row instead of throwing.
+    supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
   ]);
 
   const initialMessages = (rows as DbMessage[] | null) ?? [];
   const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
+  const name = profile?.display_name || user?.email?.split("@")[0] || null;
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -76,6 +83,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}
         hasResults={(resultCount ?? 0) > 0}
+        name={name}
       />
     </div>
   );

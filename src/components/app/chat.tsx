@@ -36,6 +36,7 @@ export function Chat({
   initialConversationId,
   defaultTools,
   hasResults = false,
+  name,
 }: {
   /** Internal system-prompt selector; legacy conversations may carry "software". */
   mode: ChatMode;
@@ -53,11 +54,13 @@ export function Chat({
   defaultTools?: ProjectTools;
   /** For project chats: whether saved results exist (drives the empty-state copy). */
   hasResults?: boolean;
+  /** The user's display name, personalizes the unified empty-state greeting. */
+  name?: string | null;
 }) {
   // A project chat is its own context; every standalone chat is the one
   // unified chat. See lib/chat-variants.ts for what each variant means.
   const variant = resolveVariant(mode, projectId);
-  const { heading, sub, starters, placeholder } = resolveEmptyState(variant, mode, hasResults);
+  const { heading, placeholder } = resolveEmptyState(variant, hasResults, name);
 
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
@@ -186,38 +189,38 @@ export function Chat({
 
   return (
     <div className="flex flex-col gap-5">
-      {messages.length === 0 ? (
-        <ChatEmptyState
-          heading={heading}
-          sub={sub}
-          starters={starters}
-          onPick={(t) => send(t)}
-          disabled={loading}
-        />
-      ) : handoffOpen ? (
-        // A handoff card is on stage, the transcript condenses to a slim,
-        // non-scrolling context strip so nothing competes with the card.
-        <ChatConversationStrip count={messages.length} />
-      ) : (
-        // role="log" + aria-live: screen readers announce new replies as they
-        // arrive without moving focus out of the input. The whole page scrolls;
-        // there is no inner scroller anymore.
-        <div role="log" aria-live="polite" className="flex flex-col gap-6">
-          {messages.map((m, i) =>
-            m.role === "user" ? (
-              <ChatUserBubble key={i} content={m.content} />
-            ) : i === lastAssistantIndex ? (
-              <div key={i} ref={resultRef} className="scroll-mt-24">
-                <ChatResultPanel content={m.content} />
-              </div>
-            ) : (
-              <ChatAssistantBubble key={i} content={m.content} index={i} />
-            )
-          )}
-          {loading && <ChatTyping />}
-          <div ref={endRef} className="h-0 scroll-mb-32" />
-        </div>
-      )}
+      {/* min-h keeps this area (and the composer right below it) roughly the
+          same height whether it's showing the empty state or a short first
+          exchange, otherwise the composer visibly jumps up the moment the
+          empty state's own min-height goes away after the first reply. */}
+      <div className="min-h-[58vh]">
+        {messages.length === 0 ? (
+          <ChatEmptyState heading={heading} />
+        ) : handoffOpen ? (
+          // A handoff card is on stage, the transcript condenses to a slim,
+          // non-scrolling context strip so nothing competes with the card.
+          <ChatConversationStrip count={messages.length} />
+        ) : (
+          // role="log" + aria-live: screen readers announce new replies as they
+          // arrive without moving focus out of the input. The whole page scrolls;
+          // there is no inner scroller anymore.
+          <div role="log" aria-live="polite" className="flex flex-col gap-6">
+            {messages.map((m, i) =>
+              m.role === "user" ? (
+                <ChatUserBubble key={i} content={m.content} />
+              ) : i === lastAssistantIndex ? (
+                <div key={i} ref={resultRef} className="scroll-mt-24">
+                  <ChatResultPanel content={m.content} />
+                </div>
+              ) : (
+                <ChatAssistantBubble key={i} content={m.content} index={i} />
+              )
+            )}
+            {loading && <ChatTyping />}
+            <div ref={endRef} className="h-0 scroll-mb-32" />
+          </div>
+        )}
+      </div>
 
       {canHandoff && handoff === "packet" && (
         <PacketBridge {...handoffProps} defaultTools={workspaceTools ?? defaultTools ?? DEFAULT_TOOLS} />

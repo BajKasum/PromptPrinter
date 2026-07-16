@@ -44,11 +44,12 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
       .select("role, content")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true }),
-    supabase.from("profiles").select("settings").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("settings, display_name").eq("id", user.id).maybeSingle(),
   ]);
 
   const initialMessages = (rows as DbMessage[] | null) ?? [];
   const defaultTools = parseToolDefaults(profile?.settings);
+  const name = profile?.display_name || user.email?.split("@")[0] || null;
   const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
   const target = (convo.target as string | null) ?? undefined;
 
@@ -75,6 +76,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}
         defaultTools={defaultTools}
+        name={name}
       />
     </div>
   );
