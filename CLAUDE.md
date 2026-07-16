@@ -284,9 +284,9 @@ FAQ → FinalCTA → Footer
 **Sektion-Dateien:**
 | Datei | Zustand | Finn |
 |---|---|---|
-| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt` (2026-07-16). | `welcoming` + Stage-States |
+| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt`. Subtext auf einen kurzen Zweizeiler gekürzt + vergrößert (18/21px statt 16/18px), Demo-Fensterchrome ohne „PromptPrinter · Demo"-Label (2026-07-16). | `welcoming` + Stage-States |
 | `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase. | `building` |
-| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen. Mini-Sidebar nutzt seit 2026-07-16 denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar. Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. | Kein Finn |
+| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. | Kein Finn |
 | `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
