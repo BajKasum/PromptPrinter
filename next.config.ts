@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
-// Baseline security headers, applied to every response. Deliberately excludes a
-// full Content-Security-Policy: next-themes' anti-flash inline script, Next's
-// own inline bootstrap, Stripe and Supabase would all need nonces/allowlisting,
-// so a CSP is a separate, larger task. These five are safe to ship as-is.
+// Baseline security headers, applied to every response. Content-Security-Policy
+// is deliberately NOT here: it needs a per-request nonce (next-themes' anti-flash
+// inline script, Next's own hydration scripts), which this static headers()
+// config can't produce. See src/middleware.ts + src/lib/csp.ts instead.
 const securityHeaders = [
   // Force HTTPS for two years incl. subdomains. Ignored over plain http (dev),
   // so it only ever hardens production. No `preload` — that's an irreversible

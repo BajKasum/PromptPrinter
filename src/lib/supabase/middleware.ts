@@ -3,8 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 type CookieSet = { name: string; value: string; options: CookieOptions };
 
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+export async function updateSession(request: NextRequest, requestHeaders: Headers) {
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
       getAll: () => request.cookies.getAll(),
       setAll: (toSet: CookieSet[]) => {
         toSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: { headers: requestHeaders } });
         toSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options)
         );
