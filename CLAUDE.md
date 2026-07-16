@@ -217,6 +217,30 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Aufbau (unverhältnismässig für dieses Projekt), schliesst aber den
 > üblichen Fall. Fehlerantworten geben nur noch die geparste, erwartete
 > Provider-Fehlerform zurück, nie mehr den rohen Response-Body.
+>
+> **Kritik-Pass „S-2" behoben (2026-07-16, `e54161b`):** Keine
+> Content-Security-Policy trotz Fremd-Markdown-Rendering im Chat,
+> [next.config.ts](next.config.ts) liess sie bisher bewusst weg, weil eine
+> echte CSP einen Nonce braucht, den eine statische `headers()`-Config
+> nicht liefern kann. react-markdown läuft ohne
+> `rehype-raw`/`dangerouslySetInnerHTML`, hat also keinen bekannten
+> Injection-Pfad, CSP ist trotzdem die übliche zweite Verteidigungslinie.
+> Neu: [`src/lib/csp.ts`](src/lib/csp.ts) baut die Policy aus einem
+> Pro-Request-Nonce, [`src/middleware.ts`](src/middleware.ts) erzeugt ihn
+> (`Buffer.from(crypto.randomUUID())`, ein roher UUID-String ist wegen der
+> Bindestriche kein gültiger CSP-Nonce) und reicht ihn per Request-Header
+> durch, Next hängt seine eigenen Hydration-Scripts automatisch an
+> denselben Nonce, `src/app/layout.tsx` liest ihn über `headers()` zurück
+> und reicht ihn an next-themes' `nonce`-Prop weiter (Layout dafür zur
+> async Function gemacht). Cloudflare Turnstile bleibt über einen
+> Origin-Allowlist-Eintrag erlaubt (externes `<script src>`, kein Nonce
+> nötig). `script-src` erlaubt `'unsafe-eval'` nur in `development` (Next
+> Fast Refresh braucht `eval()`, die Produktion nicht). `connect-src`
+> bekommt die Supabase-Projekt-Origin, kein LLM-Provider braucht einen
+> Eintrag, die laufen alle serverseitig. Im Dev-Server per Browser-Preview
+> verifiziert: CSP-Header korrekt gesetzt, Turnstile lädt weiterhin,
+> next-themes + Next-Hydration-Scripts tragen denselben Nonce, keine
+> CSP-Verstösse in der Konsole.
 
 ## Was ist PromptPrinter?
 
