@@ -110,6 +110,20 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > bleibt ohnehin offen, bis die Hosting-Entscheidung gefallen ist (Punkt 2
 > oben). Alles andere aus dem Kritik-Pass ist erledigt, keine bekannten
 > offenen Findings mehr aus dieser Runde.
+>
+> **Landing-Aufräumung (2026-07-16):** Auf Zuruf aus Live-Screenshots drei
+> Sektionen entschlackt (`499208c`): Trust-Badge-Zeile aus dem Hero raus
+> (SaaS-Klischee), ExampleOutput-Header von Headline+Subtext+Zitat-Bubble+Finn
+> auf Headline + eine Zeile gekürzt, Integrations-Pills von 12 auf die 8 am
+> ehesten erkennbaren Tools reduziert. Danach (`df538a1`): **Problem-Sektion
+> komplett entfernt** (Komponente gelöscht, nicht mehr in `page.tsx`, war
+> zuvor als „nicht anfassen" markiert, jetzt überholt) und die
+> ProductShowcase-Mini-Sidebar zeigte noch das Vor-Redesign-Muster (gestapelte
+> Chats/Projekte-Zeilen + fixer „+ Neuer Chat"-Button); jetzt auf denselben
+> Pillen-Umschalter wie die echte Sidebar umgestellt (`NavSwitcher`,
+> singuläre Labels „Chat"/„Projekt"), Desktop und Mobile teilen sich die
+> Komponente. Die untenstehenden Landing-Page-Abschnitte sind entsprechend
+> angepasst.
 
 ## Was ist PromptPrinter?
 
@@ -218,7 +232,6 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 **State-Zuordnung (Landing Page):**
 - Hero-Intro: `welcoming`
 - Hero-Demo-Narration: `curious → thinking → building → delivering` (je Stage)
-- Problem: `sad`
 - HowItWorks: `building`
 - ExampleOutput: `delivering`
 - Pricing: `helping`
@@ -239,7 +252,7 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 
 **Aktuelle Seiten-Reihenfolge** (`src/app/page.tsx`):
 ```
-Navbar → Hero → Problem → HowItWorks → ExampleOutput → ProductShowcase →
+Navbar → Hero → HowItWorks → ExampleOutput → ProductShowcase →
 Integrations → PricingPreview → FAQ → FinalCTA → Footer
 ```
 
@@ -247,21 +260,22 @@ Integrations → PricingPreview → FAQ → FinalCTA → Footer
 - `FeaturesGrid`, wiederholte dieselben 4 Outputs wie ExampleOutput. Unique Content
   (Sicherheit, Marketing, Deployment) wurde als neue ExampleOutput-Tabs bewahrt.
 - `Capabilities`, früh entfernt (war Jargon-lastig)
+- `Problem` (Litany + trauriger Finn), auf Nutzerwunsch entfernt (2026-07-16,
+  `df538a1`), Komponente gelöscht. War zuvor als „nicht anfassen" markiert.
 
-> **Update:** `HowItWorks` wurde auf Nutzerwunsch wieder eingebunden (nach `Problem`,
-> vor `ExampleOutput`), schließt den Story-Flow (Schmerz → so gehen wir vor → echtes
+> **Update:** `HowItWorks` folgt jetzt direkt auf `Hero` (seit dem
+> Problem-Löschen), schließt den Story-Flow (so gehen wir vor → echtes
 > Ergebnis). Flache `card-surface`-Karten + `building`-Finn heben es klar von der
-> glänzenden Hero-Demo ab; damit ist die ursprüngliche Redundanz aufgelöst.
+> glänzenden Hero-Demo ab.
 
 **Sektion-Dateien:**
 | Datei | Zustand | Finn |
 |---|---|---|
-| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). | `welcoming` + Stage-States |
-| `problem.tsx` | Litany-Format: Headline + 3 bare Schmerzzeilen in gedämpftem Typ. Kein Grid. | `sad` (klein, desktop-only) |
-| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Nach Problem, vor ExampleOutput. | `building` |
-| `example-output.tsx` | 6 Tabs (a11y: tablist/tab/tabpanel, Keyboard-Nav): Produktplan / KI-Anweisungen / App-Design / Datenbank / Sicherheit / Marketing | `delivering` |
-| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen | Kein Finn |
-| `integrations.tsx` | Slim Strip: eine Zeile + 12 Tool-Pills | Kein Finn |
+| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt (2026-07-16). | `welcoming` + Stage-States |
+| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ExampleOutput. | `building` |
+| `example-output.tsx` | 6 Tabs (a11y: tablist/tab/tabpanel, Keyboard-Nav): Produktplan / KI-Anweisungen / App-Design / Datenbank / Sicherheit / Marketing. Header auf Headline + eine Zeile gekürzt (Zitat-Bubble + Finn raus, 2026-07-16). | `delivering` |
+| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen. Mini-Sidebar nutzt seit 2026-07-16 denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar. | Kein Finn |
+| `integrations.tsx` | Slim Strip: eine Zeile + 8 Tool-Pills (Claude, ChatGPT, Cursor, Lovable, Gemini, Figma, Supabase, Vercel; von 12 auf 8 reduziert, 2026-07-16) | Kein Finn |
 | `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
@@ -285,7 +299,7 @@ Integrations → PricingPreview → FAQ → FinalCTA → Footer
 - **Keine SaaS-Template-Muster**, kein Feature-Grid, keine nummerierten Karten,
   keine corporate Footer-Spalten, keine Status-Pulse-Indikatoren.
 - **Whitespace ist Absicht**, Litany-Prinzip: weniger Struktur = mehr emotionaler Impact.
-- **Finn reist durch die Seite**, welcoming → sad → delivering → helping → celebrating → idle.
+- **Finn reist durch die Seite**, welcoming → building → delivering → helping → celebrating → idle.
   Er soll nicht als dekorativer Sticker wirken, sondern als Begleiter.
 - **Footer = Finn's Abschluss**, die Seite beginnt mit Finn, sie endet mit Finn.
 
@@ -316,6 +330,5 @@ Noch nicht umgesetzt aus der Brand-Audit (Priorität absteigend):
 - Mascot-State-System und alle 16 Assets
 - Hero-Demo (Idea→Plan→Build→Launch)
 - ExampleOutput-Tabs (alle 6)
-- Problem-Litany
 - Footer (Finn's Farewell)
 - Auth-Flow, DB-Migrationen, RLS-Policies
