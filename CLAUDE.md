@@ -197,6 +197,26 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Marketing (Hero-Demo „Dein Bau-Paket", ProductShowcase-Artefakt-Zahlen,
 > `/features`), das ist ein separater Kreativ-/Positionierungs-Auftrag, kein
 > mechanischer Korrektur-Fix, siehe 2nd-brain für den offenen Punkt.
+>
+> **Kritik-Pass „S-1" behoben (2026-07-16, `682039d`):** Der zweite kritische
+> QA-Befund, SSRF über den BYOK-Custom-Provider. Der `baseUrl` (Settings)
+> wurde nur mit `z.string().url()` validiert, der Server fetchte sie direkt
+> bei jedem Settings-Test-Call, Chat und Generate. Jeder registrierte
+> Free-Nutzer konnte den Server damit zu Requests an interne Ziele bringen
+> (Cloud-Metadaten `169.254.169.254`, `localhost`, RFC1918-Bereiche),
+> verschärft durch teilweise Response-Body-Reflektion in der Fehlermeldung
+> (SSRF mit Exfiltration). Neu: [`src/lib/url-safety.ts`](src/lib/url-safety.ts),
+> `assertPublicHttpsUrl()` erzwingt https, löst den Hostnamen auf und lehnt
+> jede aufgelöste Adresse in privaten/reservierten Bereichen ab (inkl. der
+> von WHATWG-URL normalisierten Hex-Schreibweise für IPv4-mapped IPv6, ein
+> anfänglicher Test-Fail zeigte das: `::ffff:127.0.0.1` wird zu
+> `::ffff:7f00:1` normalisiert). Verdrahtet in `llm.ts`s `customComplete()`,
+> dem einen Ort, der tatsächlich fetcht, deckt damit alle drei Aufrufpfade
+> in einem Rutsch ab. `redirect: "error"` verhindert zusätzlich einen
+> Redirect-basierten Bypass. Kein DNS-Rebinding-fester Pinned-Connection-
+> Aufbau (unverhältnismässig für dieses Projekt), schliesst aber den
+> üblichen Fall. Fehlerantworten geben nur noch die geparste, erwartete
+> Provider-Fehlerform zurück, nie mehr den rohen Response-Body.
 
 ## Was ist PromptPrinter?
 
