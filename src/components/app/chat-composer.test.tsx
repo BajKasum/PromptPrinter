@@ -6,8 +6,6 @@ import { ChatComposer } from "./chat-composer";
 function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
   const onInputChange = vi.fn();
   const onSend = vi.fn();
-  const onHandoffSave = vi.fn();
-  const onHandoffPacket = vi.fn();
   render(
     <ChatComposer
       input=""
@@ -15,14 +13,10 @@ function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {
       placeholder="Schreib etwas..."
       loading={false}
       onSend={onSend}
-      canHandoff={false}
-      isWorkspace={false}
-      onHandoffSave={onHandoffSave}
-      onHandoffPacket={onHandoffPacket}
       {...overrides}
     />
   );
-  return { onInputChange, onSend, onHandoffSave, onHandoffPacket };
+  return { onInputChange, onSend };
 }
 
 describe("ChatComposer", () => {
@@ -76,15 +70,5 @@ describe("ChatComposer", () => {
     const { onInputChange } = setup({ input: "" });
     await user.type(screen.getByPlaceholderText("Schreib etwas..."), "x");
     expect(onInputChange).toHaveBeenCalledWith("x");
-  });
-
-  it("hides the handoff menu when canHandoff is false", () => {
-    setup({ canHandoff: false });
-    expect(screen.queryByRole("button", { name: "Nächster Schritt" })).not.toBeInTheDocument();
-  });
-
-  it("shows the handoff menu when canHandoff is true", () => {
-    setup({ canHandoff: true });
-    expect(screen.getByRole("button", { name: "Nächster Schritt" })).toBeInTheDocument();
   });
 });

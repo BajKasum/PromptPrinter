@@ -1,29 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {
-  ChatAssistantBubble,
-  ChatConversationStrip,
-  ChatTyping,
-  ChatUserBubble,
-} from "./chat-transcript";
+import { ChatAssistantBubble, ChatTyping, ChatUserBubble } from "./chat-transcript";
 
 describe("ChatUserBubble", () => {
   it("renders the message content", () => {
     render(<ChatUserBubble content="Baue mir eine Todo-App" />);
     expect(screen.getByText("Baue mir eine Todo-App")).toBeInTheDocument();
-  });
-});
-
-describe("ChatConversationStrip", () => {
-  it("pluralizes a single message correctly", () => {
-    render(<ChatConversationStrip count={1} />);
-    expect(screen.getByText(/1 Nachricht$/)).toBeInTheDocument();
-  });
-
-  it("pluralizes multiple messages correctly", () => {
-    render(<ChatConversationStrip count={3} />);
-    expect(screen.getByText(/3 Nachrichten/)).toBeInTheDocument();
   });
 });
 

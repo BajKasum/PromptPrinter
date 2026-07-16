@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { Chat } from "@/components/app/chat";
 import { FadeIn } from "@/components/motion/fade-in";
-import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -19,20 +18,17 @@ export default async function NewChatPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // The packet handoff prefills its tool choices from the user's saved
-  // defaults (settings page: "füllt jedes neue Projekt automatisch vor").
   const { data: profile } = await supabase
     .from("profiles")
-    .select("settings, display_name")
+    .select("display_name")
     .eq("id", user.id)
     .maybeSingle();
-  const defaultTools = parseToolDefaults(profile?.settings);
   const name = profile?.display_name || user.email?.split("@")[0] || null;
 
   return (
     <div className="mx-auto max-w-[900px]">
       <FadeIn>
-        <Chat mode="general" defaultTools={defaultTools} name={name} />
+        <Chat mode="general" name={name} />
       </FadeIn>
     </div>
   );

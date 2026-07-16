@@ -10,9 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 // Lets a global chat become a project chat after the fact, when a free
 // conversation turns into real project work (REDESIGN.md, "In Projekt
 // verschieben"). A plain conversations.project_id update via the RLS-scoped
-// browser client, the same call PacketBridge/PromptSave already make when a
-// fresh handoff links a conversation to its new project, just triggered
-// manually here instead of automatically. No new table, no API route.
+// browser client, no new table, no API route.
 
 type ProjectOption = { id: string; name: string };
 

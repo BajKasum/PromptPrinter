@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -9,49 +8,6 @@ const refresh = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh }),
-}));
-
-// The real PacketBridge/PromptSave open (autoOpen) by calling
-// onOpenChange(true) in an effect on mount, Chat relies on that to hide the
-// composer and collapse the transcript, so the stub mirrors it.
-vi.mock("@/components/app/packet-bridge", () => ({
-  PacketBridge: ({
-    onBack,
-    onOpenChange,
-  }: {
-    onBack: () => void;
-    onOpenChange?: (open: boolean) => void;
-  }) => {
-    useEffect(() => {
-      onOpenChange?.(true);
-    }, [onOpenChange]);
-    return (
-      <div data-testid="packet-bridge">
-        Software-Paket-Handoff
-        <button onClick={onBack}>Zurück</button>
-      </div>
-    );
-  },
-}));
-
-vi.mock("@/components/app/prompt-save", () => ({
-  PromptSave: ({
-    onBack,
-    onOpenChange,
-  }: {
-    onBack: () => void;
-    onOpenChange?: (open: boolean) => void;
-  }) => {
-    useEffect(() => {
-      onOpenChange?.(true);
-    }, [onOpenChange]);
-    return (
-      <div data-testid="prompt-save">
-        Prompt-Speichern-Handoff
-        <button onClick={onBack}>Zurück</button>
-      </div>
-    );
-  },
 }));
 
 function mockFetchOnce(body: unknown, ok = true) {
@@ -153,51 +109,6 @@ describe("Chat", () => {
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Server explodiert");
-  });
-
-  it("only offers the handoff menu once an assistant reply exists", async () => {
-    mockFetchOnce({ reply: "Erledigt.", conversationId: "conv-1" });
-    render(<Chat mode="general" />);
-    expect(screen.queryByRole("button", { name: "Nächster Schritt" })).not.toBeInTheDocument();
-
-    const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
-    await user.click(screen.getByRole("button", { name: /Senden/ }));
-
-    expect(await screen.findByRole("button", { name: "Nächster Schritt" })).toBeInTheDocument();
-  });
-
-  it("opens the packet handoff and hides the composer while it's on stage", async () => {
-    mockFetchOnce({ reply: "Erledigt.", conversationId: "conv-1" });
-    render(<Chat mode="general" />);
-
-    const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
-    await user.click(screen.getByRole("button", { name: /Senden/ }));
-    await screen.findByRole("button", { name: "Nächster Schritt" });
-
-    await user.click(screen.getByRole("button", { name: "Nächster Schritt" }));
-    await user.click(screen.getByText("Software-Paket bauen"));
-
-    expect(screen.getByTestId("packet-bridge")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Senden/ })).not.toBeInTheDocument();
-  });
-
-  it("collapses the transcript to a conversation strip while the handoff card is open", async () => {
-    mockFetchOnce({ reply: "Erledigt.", conversationId: "conv-1" });
-    render(<Chat mode="general" />);
-
-    const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
-    await user.click(screen.getByRole("button", { name: /Senden/ }));
-    await screen.findByRole("button", { name: "Nächster Schritt" });
-
-    await user.click(screen.getByRole("button", { name: "Nächster Schritt" }));
-    await user.click(screen.getByText("Prompt speichern"));
-
-    expect(screen.getByTestId("prompt-save")).toBeInTheDocument();
-    expect(screen.getByText(/Dein Chat/)).toBeInTheDocument();
-    expect(screen.queryByText("Hi")).not.toBeInTheDocument();
   });
 
   it("disables the send button while a request is in flight", async () => {

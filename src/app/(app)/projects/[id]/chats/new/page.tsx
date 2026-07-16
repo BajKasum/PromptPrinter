@@ -55,9 +55,6 @@ export default async function NewProjectChatPage({ params }: { params: Params })
       <Chat
         mode={mode}
         projectId={project.id}
-        projectName={project.name}
-        projectInstructions={project.instructions}
-        projectContext={project.context}
         hasResults={(count ?? 0) > 0}
         name={name}
       />

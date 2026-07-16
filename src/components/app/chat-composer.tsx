@@ -3,7 +3,6 @@
 import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
-import { ChatHandoffMenu } from "@/components/app/chat-handoff-menu";
 
 // The composer is subordinate to the result but always reachable: it sticks
 // to the bottom of the viewport while the page scrolls, with a fade so the
@@ -14,20 +13,12 @@ export function ChatComposer({
   placeholder,
   loading,
   onSend,
-  canHandoff,
-  isWorkspace,
-  onHandoffSave,
-  onHandoffPacket,
 }: {
   input: string;
   onInputChange: (value: string) => void;
   placeholder: string;
   loading: boolean;
   onSend: () => void;
-  canHandoff: boolean;
-  isWorkspace: boolean;
-  onHandoffSave: () => void;
-  onHandoffPacket: () => void;
 }) {
   return (
     <div className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5">
@@ -49,19 +40,10 @@ export function ChatComposer({
             convention every chat app already teaches; repeating it on every
             single message would be chrome, not help. */}
         <div className="mt-1 flex items-center justify-end gap-3 pl-2">
-          <div className="flex shrink-0 items-center gap-1.5">
-            {canHandoff && (
-              <ChatHandoffMenu
-                isWorkspace={isWorkspace}
-                onSave={onHandoffSave}
-                onPacket={onHandoffPacket}
-              />
-            )}
-            <Button onClick={onSend} disabled={loading || !input.trim()} className="shrink-0">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Senden
-            </Button>
-          </div>
+          <Button onClick={onSend} disabled={loading || !input.trim()} className="shrink-0">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Senden
+          </Button>
         </div>
       </div>
     </div>
