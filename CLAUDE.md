@@ -134,6 +134,28 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > auf `#produkt` (ProductShowcase, das einzige verbleibende Proof-Element
 > auf der Landing Page). Die untenstehenden Landing-Page-Abschnitte sind
 > entsprechend angepasst.
+>
+> **App-UI-Pass (2026-07-16):** Zwei Screenshot-getriebene Funde in der
+> eingeloggten App, nicht der Landing Page. Erstens (`5f84a37`): Sidebar-
+> Chat-/Projektliste (`INACTIVE_ROW` in `sidebar.tsx`, geteilt mit
+> `mobile-nav.tsx`) lag bei `text-foreground/55`, rechnerisch ~4.2:1 Kontrast,
+> unter dem WCAG-AA-Minimum (4.5:1). Auf `/70` angehoben (~7.2:1), dieselbe
+> Anhebung in der Command-Palette (lief über `text-muted-foreground`) und in
+> der ChatList-Metazeile (`/45` → `/60`). Der listige Platzhalter „Chats,
+> Projekte, Seiten, Aktionen…" (Command-Palette-Input + Topbar-Suchbutton)
+> durch „Wonach suchst du?" ersetzt. Zweitens (`6404e66`): Die `is_admin`-
+> Ausnahme (`plans.ts`, `effectiveLimits`) galt bisher nur für die
+> monatlichen Plan-Kontingente, nicht für den stündlichen `rateLimit()` in
+> `/api/chat`, `/api/generate`, `/api/projects` und `/api/settings/api-key`,
+> der komplett unabhängig lief, der Betreiber-Account (is_admin=true, per
+> Supabase-MCP verifiziert) wurde beim eigenen Testen genauso gedrosselt wie
+> jeder andere Nutzer. Jetzt vor dem Rate-Limiter geprüft (bestehende
+> Profil-Fetches wiederverwendet, `generate-guards.ts` gibt `isAdmin` jetzt
+> im `GenerateAllowance`-Result zurück). Nebenbei gefunden: `/api/projects`
+> nutzte noch rohes `PLAN_LIMITS` statt `effectiveLimits` für den
+> Projekt-Cap, ebenfalls korrigiert. Der rohe englische Fehlertext „Rate
+> limit exceeded. Try again later." (identisch in allen vier Routen) durch
+> „Zu viele Anfragen, bitte warte kurz und versuch es erneut." ersetzt.
 
 ## Was ist PromptPrinter?
 
