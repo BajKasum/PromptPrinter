@@ -20,11 +20,10 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   (Anweisungen, Struktur, Dateien, Ergebnisse-Karte), Hauptspalte wechselt
 >   per Subroute (Übersicht, `chats/[cid]`, `results`). Mehrere Chats pro
 >   Projekt.
-> - **Produktionsweg geschlossen**: jeder Projekt-Chat kann direkt ein
->   Ergebnis erzeugen (`/api/generate` mit optionalem `projectId`, kein
->   neues Projekt, nur eine weitere `generations`-Zeile), landet in
->   `results`. `PacketBridge`/`PromptSave` bleiben bewusst zwei Dateien
->   (Begründung in REDESIGN.md §3), beide workspace-fähig.
+> - **Produktionsweg entfernt (2026-07-16, siehe „Handoff entfernt" unten)**:
+>   ~~jeder Projekt-Chat kann direkt ein Ergebnis erzeugen~~, das war der
+>   Stand bis zur Entfernung der Handoff-Funktion. `/api/generate` existiert
+>   weiter als Route, wird aber von keiner UI mehr aufgerufen.
 > - **Dateien**: `project_files`-Tabelle + privater `project-files`-Bucket,
 >   Upload/Löschen in der Rail, Allowlist `.md/.txt/.json/.csv`, max. 10 à
 >   200 KB. `buildProjectContext` injiziert Anweisungen → Struktur → Dateien
@@ -44,8 +43,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Artefakt: `.md` zuerst, Gesamtbudget 12.000 Zeichen, 3.000 pro Datei
 > (Kostenpass 2026-07, siehe unten), nicht injizierte Dateien werden nur
 > namentlich erwähnt. Projekt-Löschen räumt jetzt auch die Storage-Objekte
-> auf (kein Leak). Als Nächstes: Rest von Phase 5 (Wahrheits-Pass, Landing-
-> Nachzug, PacketBridge/PromptSave verschmelzen).
+> auf (kein Leak).
 >
 > **Kostenpass (2026-07):** Default-Modell auf `glm-4.5-air` gesenkt (6×/3,6×
 > günstiger als `glm-5-turbo` bei Input/Output, live gegen den Account
@@ -156,11 +154,42 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Projekt-Cap, ebenfalls korrigiert. Der rohe englische Fehlertext „Rate
 > limit exceeded. Try again later." (identisch in allen vier Routen) durch
 > „Zu viele Anfragen, bitte warte kurz und versuch es erneut." ersetzt.
+>
+> ⚠️ **Handoff entfernt (2026-07-16, `ad0271e`), grundlegende Änderung:**
+> Auf expliziten Nutzerwunsch, nach expliziter Rückfrage bestätigt (das
+> "..."-Menü im Composer war der **einzige** Weg im ganzen Chat, aus einer
+> Unterhaltung ein Ergebnis zu erzeugen), komplett gelöscht:
+> `chat-handoff-menu.tsx`, `packet-bridge.tsx`, `prompt-save.tsx`,
+> `use-handoff-flow.ts`, `build-progress.tsx` (dadurch verwaist), je mit
+> Tests. `ChatConversationStrip` aus `chat-transcript.tsx` entfernt.
+> `chat.tsx`/`chat-composer.tsx`/die vier `<Chat>`-Seiten von der reinen
+> Handoff-Verkabelung befreit (`canHandoff`, `projectName`/
+> `-Instructions`/`-Context`, `defaultTools`). `/api/generate` existiert
+> als Route weiter, wird aber von keiner UI mehr aufgerufen. **Chats
+> erzeugen damit nie mehr automatisch einen Prompt oder ein
+> Software-Paket** — das widerspricht der Produktbeschreibung direkt unten
+> ("verwandelt Ideen in build-fertige Prompt-Pakete"), die ist damit nicht
+> mehr aktuell und wartet auf eine bewusste Neuformulierung, keine
+> Vermutung meinerseits eingetragen.
+>
+> **Chat-Empty-State vereinfacht (`bd2b20f`, dieselbe Sitzung):** Zeigte
+> vorher Finn + Erklärzeile + „Oder starte mit einem Beispiel" + 3
+> Starter-Buttons, jetzt nur noch Finn + personalisierte Grußzeile ("Woran
+> arbeiten wir, {Name}?", Name = `profiles.display_name` oder E-Mail-Präfix,
+> wie im Topbar-Label). `sub`/`starters`/`REFINE_STARTERS` aus
+> `chat-variants.ts` entfernt. Nebenbei den sichtbaren Sprung des Composers
+> nach der ersten Nachricht behoben (Mindesthöhe lag nur auf dem Empty-State,
+> nicht auf dem gemeinsamen Inhaltsbereich).
 
 ## Was ist PromptPrinter?
 
 SaaS-Tool, das rohe Ideen in **build-fertige Prompt-Pakete** verwandelt, optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co. Zielgruppe:
 Developer und Vibe-Coder. Solo-/Indie-Projekt, ein Gründer.
+
+> ⚠️ Diese Beschreibung ist seit der Handoff-Entfernung oben (2026-07-16)
+> nicht mehr akkurat, ein Chat kann aktuell kein Prompt-Paket mehr
+> erzeugen. Noch nicht neu formuliert, absichtlich, das ist eine
+> Produktentscheidung, keine Textkorrektur.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
 (Auth/DB/RLS) · Gemini (`@google/genai`) · Tailwind (HSL-Token-System) ·
