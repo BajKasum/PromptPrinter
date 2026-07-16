@@ -24,11 +24,10 @@ export default function AgbPage() {
 
       <h2>2. Leistungsbeschreibung</h2>
       <p>
-        Der Dienst erzeugt aus deinen Eingaben (Idee, Zielgruppe, Tool-Auswahl) mithilfe von
-        Künstlicher Intelligenz strukturierte Prompt-Artefakte wie Brief, PRD, Master-Prompt,
-        Frontend- und Backend-Prompts, Datenbankschema sowie weitere Bausteine. Der Dienst befindet
-        sich in einer <strong>Beta-Phase</strong>; Funktionsumfang und Verfügbarkeit können sich
-        ändern.
+        Der Dienst bietet einen KI-gestützten Chat mit Finn, der dich beim Formulieren,
+        Strukturieren und Verfeinern von Prompts für andere KI-Tools (z. B. Claude, ChatGPT,
+        Lovable, Cursor) unterstützt. Der Dienst befindet sich in einer <strong>Beta-Phase</strong>;
+        Funktionsumfang und Verfügbarkeit können sich ändern.
       </p>
 
       <h2>3. Registrierung und Konto</h2>
@@ -41,9 +40,9 @@ export default function AgbPage() {
 
       <h2>4. Nutzung der Ergebnisse</h2>
       <p>
-        Die generierten Artefakte darfst du für eigene Zwecke frei verwenden. Du bist allein dafür
-        verantwortlich, wie du die Ergebnisse einsetzt, insbesondere für die Prüfung auf rechtliche
-        Zulässigkeit, Richtigkeit und Eignung für deinen konkreten Anwendungsfall.
+        Die Inhalte, die du über den Dienst erhältst, darfst du für eigene Zwecke frei verwenden. Du
+        bist allein dafür verantwortlich, wie du sie einsetzt, insbesondere für die Prüfung auf
+        rechtliche Zulässigkeit, Richtigkeit und Eignung für deinen konkreten Anwendungsfall.
       </p>
 
       <h2>5. Pflichten der Nutzer</h2>
