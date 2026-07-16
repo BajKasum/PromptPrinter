@@ -55,11 +55,20 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return problem(401, "Anmeldung erforderlich.");
 
-  const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
-  if (!rl.allowed) {
-    return problem(429, "Rate limit exceeded. Try again later.", {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
+  // Admin exemption mirrors /api/chat, /api/generate and /api/projects:
+  // a single is_admin lookup gates whether the hourly limit below applies.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!(profile?.is_admin ?? false)) {
+    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
   }
 
   const override: LlmOverride =

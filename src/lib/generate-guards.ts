@@ -6,7 +6,7 @@ import type { createClient } from "@/lib/supabase/server";
 type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 
 export type GenerateAllowance =
-  | { allowed: true; override: LlmOverride | null }
+  | { allowed: true; override: LlmOverride | null; isAdmin: boolean }
   | { allowed: false; status: number; detail: string; extra: Record<string, unknown> };
 
 /**
@@ -54,7 +54,8 @@ export async function checkGenerateAllowance(
   const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
   // Admin is a role, not a plan (profiles.is_admin), it exempts this one
   // account from every limit below without changing what plan it's on.
-  const limits = effectiveLimits(plan, profile?.is_admin ?? false);
+  const isAdmin = profile?.is_admin ?? false;
+  const limits = effectiveLimits(plan, isAdmin);
 
   // Generating into an existing project (workspace-native handoff) never
   // creates a project row, so the project cap doesn't apply, only a fresh
@@ -76,7 +77,7 @@ export async function checkGenerateAllowance(
     };
   }
 
-  return { allowed: true, override };
+  return { allowed: true, override, isAdmin };
 }
 
 export type OwnershipCheck = { ok: true } | { ok: false; status: number; detail: string };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { PLAN_LIMITS, type PlanKey } from "@/lib/plans";
+import { effectiveLimits, type PlanKey } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -36,21 +36,13 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return problem(401, "Anmeldung erforderlich.");
 
-  const rl = await rateLimit(rateLimitKey(req, user.id), {
-    limit: 30,
-    windowMs: 60 * 60 * 1000,
-  });
-  if (!rl.allowed) {
-    return problem(429, "Rate limit exceeded. Try again later.", {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
-
   // Plan allowance, the project cap now gates workspace creation. Filter by
   // owner explicitly even though RLS already scopes the count (defense in
-  // depth; this count enforces a limit).
+  // depth; this count enforces a limit). Runs before the rate limit so its
+  // is_admin result can exempt the account from that too, admin used to
+  // only bypass the project cap, not the hourly rate limit.
   const [{ data: profile }, { count: projectCount }] = await Promise.all([
-    supabase.from("profiles").select("plan").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
     supabase
       .from("projects")
       .select("id", { count: "exact", head: true })
@@ -58,13 +50,26 @@ export async function POST(req: Request) {
   ]);
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const limits = PLAN_LIMITS[plan];
+  const isAdmin = profile?.is_admin ?? false;
+  const limits = effectiveLimits(plan, isAdmin);
   if ((projectCount ?? 0) >= limits.projects) {
     return problem(
       403,
       `Projekt-Limit erreicht, dein Plan (${plan}) erlaubt ${limits.projects} Projekte. Upgrade für mehr.`,
       { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
     );
+  }
+
+  if (!isAdmin) {
+    const rl = await rateLimit(rateLimitKey(req, user.id), {
+      limit: 30,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rl.allowed) {
+      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
   }
 
   // Ein leerer Workspace: nur Name + Owner. `type` ist ein internes Alt-Datum

@@ -59,25 +59,31 @@ export async function POST(req: Request) {
     }
   }
 
-  // 3. Rate limit (anonymous: 5/hr, authed: 30/hr).
-  const limit = userId ? 30 : 5;
-  const rl = await rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
-  if (!rl.allowed) {
-    return problem(429, "Rate limit exceeded. Try again later.", {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
-
-  // 4. Plan allowances for signed-in callers (project cap, generation cap
+  // 3. Plan allowances for signed-in callers (project cap, generation cap
   //    unless BYOK) + resolve their BYOK override, if any. Anonymous callers
-  //    persist nothing, so only the rate limit above gates them.
+  //    persist nothing, so only the rate limit below gates them. Runs before
+  //    the rate limit so its isAdmin result can exempt the account from that
+  //    too, admin used to only bypass the monthly caps, not the hourly one.
   let override: LlmOverride | null = null;
+  let isAdmin = false;
   if (userId && supabase) {
     const allowance = await checkGenerateAllowance(supabase, userId, !!input.projectId);
     if (!allowance.allowed) {
       return problem(allowance.status, allowance.detail, allowance.extra);
     }
     override = allowance.override;
+    isAdmin = allowance.isAdmin;
+  }
+
+  // 4. Rate limit (anonymous: 5/hr, authed: 30/hr), skipped for admins.
+  if (!isAdmin) {
+    const limit = userId ? 30 : 5;
+    const rl = await rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
   }
 
   // 5. A projectId means this is a workspace-native handoff, verify

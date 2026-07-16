@@ -58,23 +58,16 @@ export async function POST(req: Request) {
     }
   }
 
-  // 3. Rate limit. Chat is chattier than one-shot generation, so the ceiling
-  //    is higher (anonymous: 20/hr, authed: 120/hr).
-  const limit = userId ? 120 : 20;
-  const rl = await rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
-  if (!rl.allowed) {
-    return problem(429, "Rate limit exceeded. Try again later.", {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
-
-  // 3.5 Enforce the monthly chat allowance for signed-in users, unless
-  //     they've configured their own BYOK key. Chat had no monthly cap until
-  //     now, only the hourly rate limit above, so a free user with no BYOK
-  //     key could otherwise chat all month on the server's own Z.ai key with
-  //     no real ceiling (see plans.ts). Checked before the model call, same
-  //     principle as /api/generate's project/generation limits.
+  // 3. Enforce the monthly chat allowance for signed-in users, unless
+  //    they've configured their own BYOK key. Chat had no monthly cap until
+  //    now, only the hourly rate limit below, so a free user with no BYOK
+  //    key could otherwise chat all month on the server's own Z.ai key with
+  //    no real ceiling (see plans.ts). Checked before the model call, same
+  //    principle as /api/generate's project/generation limits. Runs before
+  //    the rate limit so its isAdmin result can exempt the account from that
+  //    too, admin used to only bypass the monthly cap, not the hourly one.
   let override: LlmOverride | null = null;
+  let isAdmin = false;
   if (userId && supabase) {
     const now = new Date();
     const monthStart = new Date(
@@ -94,9 +87,10 @@ export async function POST(req: Request) {
       getUserOverride(supabase, userId),
     ]);
     override = userOverride;
+    isAdmin = profile?.is_admin ?? false;
     const rawPlan = (profile?.plan as string | undefined) ?? "free";
     const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-    const limits = effectiveLimits(plan, profile?.is_admin ?? false);
+    const limits = effectiveLimits(plan, isAdmin);
     if (!override && (chatCount ?? 0) >= limits.chatMessages) {
       return problem(
         403,
@@ -106,7 +100,19 @@ export async function POST(req: Request) {
     }
   }
 
-  // 4. Build the system instruction.
+  // 4. Hourly rate limit, skipped for admins. Chat is chattier than one-shot
+  //    generation, so the ceiling is higher (anonymous: 20/hr, authed: 120/hr).
+  if (!isAdmin) {
+    const limit = userId ? 120 : 20;
+    const rl = await rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
+  }
+
+  // 5. Build the system instruction.
   //    - general mode  → the everyday prompt engineer (+ optional target hint)
   //    - software mode → the code-refinement assistant
   //    When the chat refines a project (Code mode), append a compact context
@@ -121,7 +127,7 @@ export async function POST(req: Request) {
     if (ctx) systemInstruction += `\n\n${ctx}`;
   }
 
-  // 5. Produce the reply. Without a configured provider (server or BYOK) we
+  // 6. Produce the reply. Without a configured provider (server or BYOK) we
   //    return a useful stub so the whole flow stays testable; otherwise we
   //    replay the transcript through the provider module (lib/llm.ts).
   let reply: string;
@@ -147,7 +153,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // 6. Persist the turn for signed-in users (in both modes), so the chat shows
+  // 7. Persist the turn for signed-in users (in both modes), so the chat shows
   //    up in the dashboard and can be reopened/continued. Persistence failures
   //    are surfaced but never block the reply the user is waiting on.
   let conversationId: string | null = input.conversationId ?? null;
