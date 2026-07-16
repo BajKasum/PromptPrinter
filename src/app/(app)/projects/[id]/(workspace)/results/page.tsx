@@ -134,9 +134,11 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   );
 
   if (history.length === 0) {
-    // A result only ever comes out of a chat's handoff strip (REDESIGN.md,
-    // Handoff im Workspace), so an empty Ergebnisse-Bereich must point there,
-    // not dead-end. Whether a chat already exists decides the exact next step.
+    // Kein Handoff mehr im Chat (2026-07-16, "Handoff entfernt"), es gibt
+    // aktuell keinen Weg, von hier aus ein Ergebnis zu erzeugen. Der leere
+    // Zustand darf das deshalb nicht mehr behaupten, der Chat-Link bleibt als
+    // reine Navigation stehen (das Projekt bespielen ist weiterhin sinnvoll),
+    // aber ohne das falsche "erzeugt dort dein Ergebnis"-Versprechen.
     const hasChats = (chatCount ?? 0) > 0;
     return (
       <FadeIn>
@@ -147,11 +149,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
             Noch keine Ergebnisse gespeichert
           </p>
           <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-            Hier landen deine gespeicherten Ergebnisse, komplette Prompt-Pakete
-            und feine Prompts, mit allem Verlauf.{" "}
-            {hasChats
-              ? "Öffne einen Chat und erzeug von dort dein erstes Ergebnis."
-              : "Starte einen Chat, dann erzeugst du von dort dein erstes Ergebnis."}
+            Hier sammelst du deine fertigen Prompt-Pakete und Prompts, sobald
+            welche entstehen.
           </p>
           <Button asChild size="sm">
             <Link href={hasChats ? `/projects/${id}` : `/projects/${id}/chats/new`}>
