@@ -122,8 +122,14 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Chats/Projekte-Zeilen + fixer „+ Neuer Chat"-Button); jetzt auf denselben
 > Pillen-Umschalter wie die echte Sidebar umgestellt (`NavSwitcher`,
 > singuläre Labels „Chat"/„Projekt"), Desktop und Mobile teilen sich die
-> Komponente. Die untenstehenden Landing-Page-Abschnitte sind entsprechend
-> angepasst.
+> Komponente. Danach (`ed9ebee`): **`ExampleOutput` und `Integrations`
+> ebenfalls komplett entfernt**, auf Nutzerwunsch, beide Komponenten
+> gelöscht (nicht nur die Landing Page, auch `/features` nutzte beide und
+> ist live via Footer-Link + Sitemap). Anchor-Links, die auf `#example`
+> zeigten (Navbar „Funktionen", Hero-CTA „Erst mal zuschauen"), zeigen jetzt
+> auf `#produkt` (ProductShowcase, das einzige verbleibende Proof-Element
+> auf der Landing Page). Die untenstehenden Landing-Page-Abschnitte sind
+> entsprechend angepasst.
 
 ## Was ist PromptPrinter?
 
@@ -252,41 +258,45 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 
 **Aktuelle Seiten-Reihenfolge** (`src/app/page.tsx`):
 ```
-Navbar → Hero → HowItWorks → ExampleOutput → ProductShowcase →
-Integrations → PricingPreview → FAQ → FinalCTA → Footer
+Navbar → Hero → HowItWorks → ProductShowcase → PricingPreview →
+FAQ → FinalCTA → Footer
 ```
 
 **Entfernte Sektionen** (bewusst gelöscht, nicht wiederherstellen):
 - `FeaturesGrid`, wiederholte dieselben 4 Outputs wie ExampleOutput. Unique Content
-  (Sicherheit, Marketing, Deployment) wurde als neue ExampleOutput-Tabs bewahrt.
+  (Sicherheit, Marketing, Deployment) wurde als neue ExampleOutput-Tabs bewahrt
+  (lebt noch auf `/features`, siehe unten).
 - `Capabilities`, früh entfernt (war Jargon-lastig)
 - `Problem` (Litany + trauriger Finn), auf Nutzerwunsch entfernt (2026-07-16,
   `df538a1`), Komponente gelöscht. War zuvor als „nicht anfassen" markiert.
+- `ExampleOutput` und `Integrations`, auf Nutzerwunsch entfernt (2026-07-16,
+  `ed9ebee`), beide Komponenten gelöscht. Betraf zwei Seiten: die Landing
+  Page und `/features` (nutzte beide ebenfalls, live per Footer-Link +
+  Sitemap). Anchor-Links, die auf `#example` zeigten (Navbar „Funktionen",
+  Hero-CTA „Erst mal zuschauen"), zeigen jetzt auf `#produkt`
+  (ProductShowcase), sonst wären sie ins Leere gelaufen.
 
-> **Update:** `HowItWorks` folgt jetzt direkt auf `Hero` (seit dem
-> Problem-Löschen), schließt den Story-Flow (so gehen wir vor → echtes
-> Ergebnis). Flache `card-surface`-Karten + `building`-Finn heben es klar von der
-> glänzenden Hero-Demo ab.
+> **Update:** `HowItWorks` folgt jetzt direkt auf `Hero`, `ProductShowcase`
+> direkt danach auf `PricingPreview`. Schließt den Story-Flow (so gehen wir
+> vor → dein Arbeitsplatz → Preis). Flache `card-surface`-Karten +
+> `building`-Finn heben `HowItWorks` klar von der glänzenden Hero-Demo ab.
 
 **Sektion-Dateien:**
 | Datei | Zustand | Finn |
 |---|---|---|
-| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt (2026-07-16). | `welcoming` + Stage-States |
-| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ExampleOutput. | `building` |
-| `example-output.tsx` | 6 Tabs (a11y: tablist/tab/tabpanel, Keyboard-Nav): Produktplan / KI-Anweisungen / App-Design / Datenbank / Sicherheit / Marketing. Header auf Headline + eine Zeile gekürzt (Zitat-Bubble + Finn raus, 2026-07-16). | `delivering` |
-| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen. Mini-Sidebar nutzt seit 2026-07-16 denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar. | Kein Finn |
-| `integrations.tsx` | Slim Strip: eine Zeile + 8 Tool-Pills (Claude, ChatGPT, Cursor, Lovable, Gemini, Figma, Supabase, Vercel; von 12 auf 8 reduziert, 2026-07-16) | Kein Finn |
+| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt` (2026-07-16). | `welcoming` + Stage-States |
+| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase. | `building` |
+| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen. Mini-Sidebar nutzt seit 2026-07-16 denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar. Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. | Kein Finn |
 | `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
 | `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst., Finn" + 5 echte Links | `idle` |
-| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: "Funktionen" (#example), "Preise" (#preise) |, |
+| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: "Funktionen" (#produkt), "Preise" (#preise) |, |
 
-**Navbar-Anchor:** `#funktionen` wurde zu `#example` geändert (FeaturesGrid-Entfernung).
-
-**ExampleOutput-Tabs** (6 gesamt):
-- Produktplan, KI-Anweisungen, App-Design, Datenbank, Original-4
-- Sicherheit, Marketing, neu hinzugefügt beim FeaturesGrid-Merge
+**`/features`-Seite** (`src/app/features/page.tsx`, live via Footer-Link +
+Sitemap): Navbar → Intro-Header → HowItWorks → FeaturesGrid → FinalCTA →
+Footer. `ExampleOutput`/`Integrations` waren hier ebenfalls eingebunden,
+mit der Landing-Page-Löschung (2026-07-16) auch hier entfernt.
 
 ---
 
@@ -320,15 +330,12 @@ Noch nicht umgesetzt aus der Brand-Audit (Priorität absteigend):
 2. **Finn-Welt-Atmosphäre / Dark Mode**, Dark Mode wirkt kalt; der Charakter wirkt
    wie ein aufgeklebter Sticker auf einem generischen Canvas. Keine Verbindung zwischen
    Finn's Palette (Creme, Coral, Navy) und der Seiten-Palette.
-3. **Integrations-Sektion**, Copy ist in Finn's Stimme, aber visuelle Shell ist noch
-   generischer SaaS-Baustein (zentrierte Pill-Kapsel). Kein Finn.
-4. **Sektions-Übergänge / Rhythmus**, alle Sektionen haben denselben `py-24/32`-Abstand,
+3. **Sektions-Übergänge / Rhythmus**, alle Sektionen haben denselben `py-24/32`-Abstand,
    metronomischen Rhythmus. Keine dynamische Pacing. Litany bewies: engerer Beat = mehr Emotion.
-5. **Mono-Eyebrow auf jeder Sektion** (`SCHAU ES DIR AN`, `DEIN ARBEITSPLATZ` etc.), SaaS-Template-Konvention. Finn würde einfach reden, nicht labeln.
+4. **Mono-Eyebrow auf jeder Sektion** (`SCHAU ES DIR AN`, `DEIN ARBEITSPLATZ` etc.), SaaS-Template-Konvention. Finn würde einfach reden, nicht labeln.
 
 **Nicht anfassen (stabil, fertig):**
 - Mascot-State-System und alle 16 Assets
 - Hero-Demo (Idea→Plan→Build→Launch)
-- ExampleOutput-Tabs (alle 6)
 - Footer (Finn's Farewell)
 - Auth-Flow, DB-Migrationen, RLS-Policies
