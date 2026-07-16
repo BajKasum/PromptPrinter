@@ -180,16 +180,35 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > `chat-variants.ts` entfernt. Nebenbei den sichtbaren Sprung des Composers
 > nach der ersten Nachricht behoben (Mindesthöhe lag nur auf dem Empty-State,
 > nicht auf dem gemeinsamen Inhaltsbereich).
+>
+> **Kritik-Pass „F-1" behoben (2026-07-16):** Eine angeforderte schonungslose
+> QA-Bewertung fand als Top-Befund, dass nach der Handoff-Entfernung mehrere
+> Flächen noch den nicht mehr existierenden Chat→Ergebnis-Weg versprachen.
+> Behoben, in dieser Reihenfolge: **Ergebnisse-Leerzustand** (`8de5264`,
+> `results/page.tsx`) sagte „Öffne einen Chat und erzeug von dort dein
+> erstes Ergebnis", führte aktiv in eine tote Aktion, Copy jetzt ohne
+> Kausalbehauptung, Chat-Link bleibt als reine Navigation. **AGB §2/§4**
+> (`973b4a3`) versprachen vertraglich „erzeugt strukturierte Prompt-
+> Artefakte wie Brief, PRD, Master-Prompt…", eine Leistung, die die
+> Software nicht mehr erbringt, rechtlich heikel; jetzt ehrliche
+> Beschreibung als KI-gestützter Prompt-Chat. Die Produktbeschreibung
+> direkt unten ist entsprechend aktualisiert, der ⚠️-Hinweis von zuvor ist
+> damit aufgelöst. **Bewusst nicht in diesem Pass angefasst:** Landing-Page-
+> Marketing (Hero-Demo „Dein Bau-Paket", ProductShowcase-Artefakt-Zahlen,
+> `/features`), das ist ein separater Kreativ-/Positionierungs-Auftrag, kein
+> mechanischer Korrektur-Fix, siehe 2nd-brain für den offenen Punkt.
 
 ## Was ist PromptPrinter?
 
-SaaS-Tool, das rohe Ideen in **build-fertige Prompt-Pakete** verwandelt, optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co. Zielgruppe:
-Developer und Vibe-Coder. Solo-/Indie-Projekt, ein Gründer.
+SaaS-Tool mit einem **KI-gestützten Chat** (Finn), der beim Formulieren,
+Strukturieren und Verfeinern von Prompts für andere KI-Tools hilft (Claude,
+ChatGPT, Lovable, Cursor & Co.). Zielgruppe: Developer und Vibe-Coder.
+Solo-/Indie-Projekt, ein Gründer.
 
-> ⚠️ Diese Beschreibung ist seit der Handoff-Entfernung oben (2026-07-16)
-> nicht mehr akkurat, ein Chat kann aktuell kein Prompt-Paket mehr
-> erzeugen. Noch nicht neu formuliert, absichtlich, das ist eine
-> Produktentscheidung, keine Textkorrektur.
+> Bis 2026-07-16 lautete die Beschreibung hier „verwandelt Ideen in
+> build-fertige Prompt-Pakete" — das setzte den Chat→Ergebnis-Handoff
+> voraus, der an diesem Tag ersatzlos entfernt wurde (siehe oben). Diese
+> Fassung beschreibt den tatsächlichen, aktuellen Funktionsumfang.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
 (Auth/DB/RLS) · Gemini (`@google/genai`) · Tailwind (HSL-Token-System) ·
