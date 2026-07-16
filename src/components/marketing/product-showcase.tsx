@@ -7,7 +7,6 @@ import {
   MessageSquare,
   FolderKanban,
   Sparkles,
-  Plus,
   Clock,
   Star,
   Search,
@@ -19,17 +18,12 @@ import { cn } from "@/lib/utils";
 
 type ViewKey = "chats" | "projects";
 
-const TABS: { key: ViewKey; label: string }[] = [
-  { key: "chats", label: "Chats" },
-  { key: "projects", label: "Projekte" },
-];
-
-// Mini sidebar, mirrors the real app nav (src/lib/nav.ts: Chats, Projekte;
-// no Start, no mode split) so the preview reads as the genuine workspace,
-// not an invented structure.
+// Mirrors the real sidebar's pill switcher (src/components/app/sidebar.tsx,
+// TabSwitcher): one list visible at a time, singular labels ("Chat"/
+// "Projekt") the same way that component names its two pills.
 const NAV: { label: string; Icon: typeof FolderKanban; view: ViewKey }[] = [
-  { label: "Chats", Icon: MessageSquare, view: "chats" },
-  { label: "Projekte", Icon: FolderKanban, view: "projects" },
+  { label: "Chat", Icon: MessageSquare, view: "chats" },
+  { label: "Projekt", Icon: FolderKanban, view: "projects" },
 ];
 
 export function ProductShowcase() {
@@ -73,51 +67,14 @@ export function ProductShowcase() {
                 <div className="px-2 py-2 mb-3">
                   <Logo />
                 </div>
-                <div className="mb-3 flex h-9 items-center justify-center gap-2 rounded-lg bg-accent text-[12.5px] font-medium text-accent-foreground">
-                  <Plus className="h-4 w-4" strokeWidth={2} />
-                  Neuer Chat
-                </div>
-                <nav className="space-y-0.5">
-                  {NAV.map(({ label, Icon, view: target }) => {
-                    const active = target === view;
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => setView(target)}
-                        className={cn(
-                          "flex w-full items-center gap-3 h-9 px-3 rounded-md text-[13px] transition-colors text-left",
-                          active
-                            ? "bg-accent-subtle text-accent-text font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" strokeWidth={1.8} />
-                        <span>{label}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
+                <NavSwitcher view={view} onChange={setView} />
               </aside>
 
               {/* Content */}
               <div className="p-5 md:p-6 min-h-[260px]">
                 {/* Mobile tab control (sidebar is desktop-only) */}
-                <div className="md:hidden mb-5 flex gap-1.5">
-                  {TABS.map((t) => (
-                    <button
-                      key={t.key}
-                      onClick={() => setView(t.key)}
-                      className={cn(
-                        "flex-1 rounded-lg border px-2 py-1.5 text-[12px] font-medium transition-colors",
-                        view === t.key
-                          ? "border-accent/40 bg-accent-subtle text-accent-text"
-                          : "border-border bg-surface text-foreground/55"
-                      )}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+                <div className="md:hidden mb-5">
+                  <NavSwitcher view={view} onChange={setView} />
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -138,6 +95,35 @@ export function ProductShowcase() {
         </div>
       </FadeIn>
     </section>
+  );
+}
+
+// Pill switcher, shared between the desktop sidebar and the mobile tab
+// control (real app: sidebar.tsx's TabSwitcher, reused by mobile-nav.tsx
+// instead of two drifting copies).
+function NavSwitcher({ view, onChange }: { view: ViewKey; onChange: (v: ViewKey) => void }) {
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
+      {NAV.map(({ label, Icon, view: target }) => {
+        const active = target === view;
+        return (
+          <button
+            key={target}
+            type="button"
+            onClick={() => onChange(target)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12.5px] font-medium transition-colors",
+              active
+                ? "bg-surface-raised text-foreground shadow-sm"
+                : "text-muted-foreground/70 hover:text-foreground"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
