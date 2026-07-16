@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
   MessageSquare,
   FolderKanban,
   Sparkles,
@@ -53,14 +52,6 @@ export function ProductShowcase() {
             browser window, so it reads as your workspace, not another demo. */}
         <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-border bg-surface/40">
           <div>
-            {/* Slim app header, icon + path, no browser chrome. */}
-            <div className="flex items-center gap-2 border-b border-border bg-surface/50 px-4 py-2.5">
-              <LayoutDashboard className="h-3.5 w-3.5 text-foreground/40" strokeWidth={1.8} />
-              <span className="font-mono text-[11px] text-foreground/45">
-                app.promptprinter.dev/{view}
-              </span>
-            </div>
-
             <div className="grid md:grid-cols-[200px_1fr]">
               {/* Mini sidebar */}
               <aside className="hidden md:flex flex-col border-r border-border bg-surface/60 p-3">

@@ -100,11 +100,10 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-4 text-balance text-[16px] md:text-[18px] leading-[1.55] md:leading-[1.6] text-foreground/60"
+              className="mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-foreground/60"
             >
-              Ich frag dich gleich ein paar Dinge und mach aus deiner Idee einen
-              klaren Plan plus die fertigen Anweisungen für Claude, Cursor, Lovable
-              und ChatGPT. Kopieren, einfügen, loslegen.
+              Erzähl mir, was du bauen willst. Ich bereite dir den fertigen
+              Prompt auf.
             </motion.p>
 
         <motion.div
@@ -286,9 +285,6 @@ function HeroDemo() {
             <span className="h-2.5 w-2.5 rounded-full bg-surface" />
             <span className="h-2.5 w-2.5 rounded-full bg-surface" />
           </div>
-          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/40">
-            PromptPrinter · Demo
-          </span>
           <span className="font-mono text-[11px]">
             {live ? (
               <span className="inline-flex items-center gap-1.5 text-accent-text">
