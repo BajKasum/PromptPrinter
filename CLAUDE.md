@@ -241,6 +241,33 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > verifiziert: CSP-Header korrekt gesetzt, Turnstile lädt weiterhin,
 > next-themes + Next-Hydration-Scripts tragen denselben Nonce, keine
 > CSP-Verstösse in der Konsole.
+>
+> **Kritik-Pass „U-1" behoben (2026-07-16, `ddded15`):** Hero-Demo,
+> FeaturesGrid, `/features` und ProductShowcase bewarben weiterhin die
+> automatische Mehrfach-Dokument-Erzeugung, die mit der Handoff-Entfernung
+> ersatzlos gestrichen wurde. Bewusst zurückgestellt bis zur Entscheidung,
+> wie die Seite den tatsächlichen Chat-Flow zeigen soll, jetzt umgesetzt:
+> neue Erzählung, grundiert in `src/prompts/system.ts`s
+> `CHAT_SYSTEM_PROMPT` (eine Rückfrage, dann der fertige Prompt im
+> Codeblock). `hero.tsx`s HeroDemo von 4 Stufen (Idee→Plan→Build→Launch
+> mit auto-generiertem Produktplan/Design/DB/Backend/Marketing +
+> Live-Domain) auf 3 Stufen (Idee → Rückfrage → Prompt) umgebaut, die
+> Prompt-Stufe spiegelt bewusst `chat-markdown.tsx`s echtes CodeBlock-
+> Chrome. `features-grid.tsx`: 6 Karten mit generierten Dokumenten ersetzt
+> durch das, was ein Chat tatsächlich liefert (Rückfragen, Ziel-KI-
+> Tailoring, Projekte, BYOK, Verlauf), die „Ebenfalls dabei"-Bonuskarte
+> (Deployment-Anleitung, SEO-Plan) ersatzlos entfernt. `how-it-works.tsx`s
+> Schritt 3 versprach „einen kompletten Plan plus die fertigen Anweisungen
+> für jedes KI-Tool", jetzt der eine zugeschnittene Prompt.
+> `features/page.tsx` + `layout.tsx`: Meta-Description nannte PRD/
+> Blueprints/Schema als generierte Artefakte, jetzt der Chat-Kern
+> beschrieben. `product-showcase.tsx`: Mock-Projekte zeigten „9 Artefakte"
+> + Kategorie-Pills aus der toten Pipeline, echte Projekte haben heute 0
+> Artefakte (keine `generations`-Zeilen mehr, siehe F-1-Fix), auf
+> Chat-Zähler umgestellt. `faq.tsx` + `pricing-preview.tsx`: „Stack
+> wechseln"/„Alle Ausgabetypen" durch den echten Weg ersetzt. Verifiziert
+> im Dev-Server (Browser-Preview): alle Seiten rendern die neue Copy
+> korrekt, keine Konsolenfehler.
 
 ## Was ist PromptPrinter?
 
