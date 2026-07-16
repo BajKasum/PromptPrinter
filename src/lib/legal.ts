@@ -7,9 +7,9 @@
  */
 export const LEGAL = {
   /** Vollständiger Name oder Firma des Betreibers. */
-  operator: "[VOLLSTÄNDIGER NAME / FIRMA]",
-  street: "[STRASSE NR.]",
-  postalCity: "[PLZ ORT]",
+  operator: "Kasum Bajrami",
+  street: "Riehenstrasse 80",
+  postalCity: "4058 Basel",
   country: "Schweiz",
   /** Kontakt-E-Mail für Nutzer- und Datenschutzanfragen. */
   email: "kasumbajrami7@gmail.com",
@@ -20,7 +20,7 @@ export const LEGAL = {
   /** Anbieter, der die App hostet, z. B. "Vercel Inc., USA". */
   appHost: "[HOSTING-ANBIETER, z. B. Vercel Inc., USA]",
   /** Gerichtsstand für die AGB, z. B. "Zürich". */
-  jurisdiction: "[GERICHTSSTAND, z. B. Zürich]",
+  jurisdiction: "Basel-Stadt",
   /** Letzte Aktualisierung der Rechtstexte. */
-  lastUpdated: "4. Juni 2026",
+  lastUpdated: "16. Juli 2026",
 } as const;

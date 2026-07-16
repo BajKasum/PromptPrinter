@@ -103,13 +103,17 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   Entwickler-Jargon (kein „.env.local" mehr Richtung Endnutzer), FAQ
 >   „Ist meine Idee sicher?" nennt jetzt den KI-Anbieter.
 >
-> **Offen, wartet auf den Nutzer:** [`src/lib/legal.ts`](src/lib/legal.ts) hat
-> noch Platzhalter (`[VOLLSTÄNDIGER NAME/FIRMA]`, `[STRASSE NR.]`,
-> `[PLZ ORT]`, `[GERICHTSSTAND]`), Impressum/AGB/Datenschutz sind damit
-> **live mit sichtbaren Platzhaltern**, bis echte Angaben kommen. `appHost`
-> bleibt ohnehin offen, bis die Hosting-Entscheidung gefallen ist (Punkt 2
-> oben). Alles andere aus dem Kritik-Pass ist erledigt, keine bekannten
-> offenen Findings mehr aus dieser Runde.
+> **Rechtstexte ausgefüllt (2026-07-16):** [`src/lib/legal.ts`](src/lib/legal.ts)
+> trägt jetzt echte Angaben (Kasum Bajrami, Riehenstrasse 80, 4058 Basel,
+> Gerichtsstand Basel-Stadt, Privatperson ⇒ `companyId` bleibt leer). Vor dem
+> Eintragen wurde der Nutzer explizit gefragt und hingewiesen, dass das Repo
+> öffentlich ist und die Adresse damit dauerhaft in der Git-Historie steht,
+> er hat sich bewusst für die echte Adresse entschieden. Impressum/AGB/
+> Datenschutz sind damit inhaltlich vollständig. Einzig offen: `appHost`
+> bleibt Platzhalter, bis die Hosting-Entscheidung gefallen ist (Punkt 2
+> oben), das ist beabsichtigt, kein Versehen. Alles andere aus dem
+> Kritik-Pass ist erledigt, keine bekannten offenen Findings mehr aus
+> dieser Runde.
 >
 > **Landing-Aufräumung (2026-07-16):** Auf Zuruf aus Live-Screenshots drei
 > Sektionen entschlackt (`499208c`): Trust-Badge-Zeile aus dem Hero raus
