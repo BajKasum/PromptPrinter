@@ -1,12 +1,25 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { chatComplete, chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
 
+// customComplete (the 'custom' BYOK provider) resolves its endpoint through
+// url-safety.ts's SSRF check before every fetch; stub DNS to a public address
+// by default so the existing custom-provider tests below don't depend on real
+// network resolution. Tests that specifically exercise the SSRF guard
+// override this per-case.
+const lookupMock = vi.fn<(...args: unknown[]) => Promise<{ address: string; family: number }[]>>(
+  async () => [{ address: "93.184.216.34", family: 4 }]
+);
+vi.mock("node:dns", () => ({
+  promises: { lookup: (...args: unknown[]) => lookupMock(...args) },
+}));
+
 // llmConfig reads process.env at call time, so stubbing per test is enough,
 // no module re-import dance needed.
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  lookupMock.mockClear();
 });
 
 function mockResponse(status: number, bodyText: string): Response {
@@ -199,5 +212,71 @@ describe("chatComplete: custom BYOK override", () => {
         },
       })
     ).rejects.toThrow("invalid api key");
+  });
+
+  // SSRF guard (url-safety.ts): a custom baseUrl is attacker-controlled, so
+  // it's checked before every fetch, not only when it's first saved.
+  it("refuses a baseUrl that resolves to a private/metadata address, without ever fetching", async () => {
+    lookupMock.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      chatComplete({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://sneaky.example/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    ).rejects.toThrow("nicht erlaubt");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a non-https baseUrl, without ever fetching", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      chatComplete({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "http://example.com/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    ).rejects.toThrow("Nur https://");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not leak an unparsed response body into the thrown error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(500, "iam-role-credentials-secret-payload"))
+    );
+
+    let caught: unknown;
+    try {
+      await chatComplete({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "some-model",
+        },
+      });
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).not.toContain("iam-role-credentials-secret-payload");
   });
 });

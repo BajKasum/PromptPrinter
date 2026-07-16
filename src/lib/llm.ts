@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { assertPublicHttpsUrl } from "@/lib/url-safety";
 
 // The one place that talks to a model provider. Both API routes (/api/chat,
 // /api/generate) call chatComplete() and never touch provider SDKs or fetch
@@ -299,8 +300,19 @@ async function customComplete(
   maxOutputTokens: number,
   apiKey: string
 ): Promise<LlmResult> {
+  // `endpoint` is the user's own BYOK baseUrl (settings), never a fixed,
+  // trusted URL like zaiComplete's, so it's checked against SSRF (private/
+  // loopback/link-local targets, cloud metadata) before every request, not
+  // only when it's first saved. See url-safety.ts for what this does and
+  // doesn't cover (no DNS-rebinding-proof pinning).
+  await assertPublicHttpsUrl(endpoint);
+
   const res = await fetch(endpoint, {
     method: "POST",
+    // A same-origin redirect would still be user-controlled; a cross-origin
+    // one would re-point at an unvalidated URL after the check above already
+    // passed. Neither is expected from a real chat/completions endpoint.
+    redirect: "error",
     headers: {
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
@@ -315,13 +327,18 @@ async function customComplete(
 
   if (!res.ok) {
     const raw = await res.text().catch(() => "");
-    let detail = raw.slice(0, 300);
+    // Only ever surface a *parsed* error in the provider's expected JSON
+    // shape, never the raw body: if `endpoint` ever slipped past the check
+    // above (or a legitimate custom provider is compromised), an arbitrary
+    // response body must not become a client-visible exfiltration channel.
+    let detail = "";
     try {
       const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
       if (parsed.error?.message) detail = parsed.error.message;
     } catch {
-      // keep the truncated raw text
+      // Not the expected shape, nothing safe to surface from the body.
     }
+    if (!detail) console.error(`[custom-provider] ${res.status} response body:`, raw.slice(0, 500));
     throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
   }
 
