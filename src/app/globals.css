@@ -297,7 +297,25 @@
   .input-base:focus {
     outline: none;
     border-color: hsl(var(--ring));
-    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18);
+    /* Bioluminescent focus (Finn's World #9): crisp water ring + soft bloom. */
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18), 0 0 10px hsl(var(--ring) / 0.16);
+  }
+
+  /* Shared bioluminescent focus (Finn's World, Manifesto #9): a soft
+     water-light bloom just outside a crisp ring, "leuchtet sanft, nie Neon".
+     Buttons glow on keyboard focus (focus-visible); text fields glow on any
+     focus so a click still confirms the field is active. box-shadow only, on a
+     single momentary element — GPU-cheap and within the atmosphere No-Go on
+     large-area glows (that ban is about the ambient background, #9 explicitly
+     wants the focus ring to glow). Replaces the flat Tailwind ring on the
+     shared Button/Input/Textarea primitives. */
+  .focus-glow:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.55), 0 0 11px hsl(var(--ring) / 0.22);
+  }
+  .input-glow:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.35), 0 0 10px hsl(var(--ring) / 0.16);
   }
 
   .chip {
