@@ -14,7 +14,7 @@ const FINAL_CTA_FLOATERS: FloaterSpec[] = [
 
 export function FinalCTA() {
   return (
-    <section className="container-x py-24 md:py-32">
+    <section className="container-x pt-20 md:pt-28 pb-28 md:pb-36">
       <FadeIn>
         <div className="relative overflow-hidden rounded-3xl border border-border p-10 md:p-16 text-center">
           <div className="pointer-events-none absolute inset-0 bg-accent/[0.06]" />

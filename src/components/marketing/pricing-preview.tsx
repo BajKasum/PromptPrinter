@@ -49,7 +49,7 @@ export const PLANS = [
 
 export function PricingPreview() {
   return (
-    <section id="preise" className="relative overflow-hidden scroll-mt-24 container-x py-24 md:py-32">
+    <section id="preise" className="relative overflow-hidden scroll-mt-24 container-x pt-24 md:pt-32 pb-20 md:pb-24">
       <Floaters items={PRICING_FLOATERS} />
 
       <FadeIn className="relative z-10">

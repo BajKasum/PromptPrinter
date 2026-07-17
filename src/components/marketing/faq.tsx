@@ -35,7 +35,7 @@ const faqs = [
 
 export function FAQ() {
   return (
-    <section className="container-x py-24 md:py-32">
+    <section className="container-x pt-16 md:pt-20 pb-16 md:pb-20">
       <FadeIn>
         <div className="max-w-2xl mb-10">
           <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
