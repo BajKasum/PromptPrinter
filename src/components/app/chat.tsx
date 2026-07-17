@@ -138,7 +138,7 @@ export function Chat({
                 <ChatUserBubble key={i} content={m.content} />
               ) : i === lastAssistantIndex ? (
                 <div key={i} ref={resultRef} className="scroll-mt-24">
-                  <ChatResultPanel content={m.content} />
+                  <ChatResultPanel content={m.content} projectId={projectId} target={target} />
                 </div>
               ) : (
                 <ChatAssistantBubble key={i} content={m.content} index={i} />

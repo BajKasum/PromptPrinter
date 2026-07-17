@@ -58,7 +58,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
           <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
             {filter === "favorites"
               ? "Du hast noch keine Favoriten markiert. Tippe auf den Stern einer Karte."
-              : "Keine Artefakte passen zu dieser Auswahl. Passe Suche oder Filter an."}
+              : "Keine Projekte passen zu dieser Auswahl. Passe Suche oder Filter an."}
           </p>
         </div>
       ) : (

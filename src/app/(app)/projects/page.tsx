@@ -5,7 +5,6 @@ import { AppHeader } from "@/components/app/app-header";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { LibraryBrowser, type LibraryItem } from "@/components/app/library-browser";
 import { NewProjectButton } from "@/components/app/new-project";
-import { ARTIFACT_META } from "@/lib/artifacts";
 import { createClient } from "@/lib/supabase/server";
 import type { ProjectTools } from "@/components/app/project-card";
 
@@ -22,13 +21,13 @@ type ProjectQueryRow = {
 };
 
 // One row per project, see supabase/migrations/0016_project_summaries.sql.
-// Postgres does the "latest generation + chat count per project" reduction
-// via an indexed LATERAL join, so this page never pulls raw generation/
-// conversation rows into JS just to throw almost all of them away.
+// We use it here only for the per-project chat count (its indexed LATERAL join
+// beats pulling every conversation row into JS); the saved-prompt count comes
+// from a separate tally below. The RPC still returns latest_outputs, unused
+// since the Ergebnisse-Neubau (2026-07) moved projects off the old artifact
+// packet, kept only to avoid a DB round-trip just to drop a column.
 type ProjectSummaryRow = {
   project_id: string;
-  latest_outputs: Record<string, unknown> | null;
-  latest_generation_at: string | null;
   chat_count: number;
 };
 
@@ -41,25 +40,9 @@ function toolListOf(tools: ProjectTools | null): string[] {
   return Array.from(new Set(picked));
 }
 
-// Count non-empty artifacts and the distinct categories they belong to.
-function deriveArtifacts(outputs: Record<string, unknown> | null) {
-  const categories = new Set<string>();
-  let count = 0;
-  if (outputs) {
-    for (const meta of ARTIFACT_META) {
-      const v = outputs[meta.key];
-      if (typeof v === "string" && v.trim().length > 0) {
-        count++;
-        categories.add(meta.category);
-      }
-    }
-  }
-  return { count, categories: Array.from(categories) };
-}
-
-// Projekte is the one home for every build packet, this page used to be a
-// plain grid; it now also carries what Bibliothek used to do (search, filter
-// by category/favorites/tools, artifact counts) since the two were always the
+// Projekte is the one home for every workspace, this page used to be a plain
+// grid; it now also carries what Bibliothek used to do (search, filter by
+// favorites/recency, saved-prompt + chat counts) since the two were always the
 // same underlying rows viewed two ways. See DESIGN.md-adjacent IA notes.
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -68,35 +51,37 @@ export default async function ProjectsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: rawProjects }, { data: rawSummaries }] = await Promise.all([
+  const [{ data: rawProjects }, { data: rawSummaries }, { data: rawSaved }] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, tools, updated_at, is_favorite")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false }),
     supabase.rpc("project_summaries"),
+    // One id per saved prompt, tallied per project below. Owner filter is
+    // explicit on top of RLS (defense in depth), same as every other count.
+    supabase.from("generations").select("project_id").eq("user_id", user.id),
   ]);
 
   const projects = (rawProjects as ProjectQueryRow[] | null) ?? [];
-  const summaryByProject = new Map<string, ProjectSummaryRow>();
+  const chatByProject = new Map<string, number>();
   for (const s of (rawSummaries as ProjectSummaryRow[] | null) ?? []) {
-    summaryByProject.set(s.project_id, s);
+    chatByProject.set(s.project_id, s.chat_count);
+  }
+  const savedByProject = new Map<string, number>();
+  for (const g of (rawSaved as { project_id: string }[] | null) ?? []) {
+    savedByProject.set(g.project_id, (savedByProject.get(g.project_id) ?? 0) + 1);
   }
 
-  const items: LibraryItem[] = projects.map((p) => {
-    const summary = summaryByProject.get(p.id);
-    const { count, categories } = deriveArtifacts(summary?.latest_outputs ?? null);
-    return {
-      id: p.id,
-      name: p.name,
-      updatedAt: p.updated_at,
-      artifactCount: count,
-      chatCount: summary?.chat_count ?? 0,
-      categories,
-      toolList: toolListOf(p.tools),
-      isFavorite: p.is_favorite,
-    };
-  });
+  const items: LibraryItem[] = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    updatedAt: p.updated_at,
+    savedPromptCount: savedByProject.get(p.id) ?? 0,
+    chatCount: chatByProject.get(p.id) ?? 0,
+    toolList: toolListOf(p.tools),
+    isFavorite: p.is_favorite,
+  }));
 
   return (
     <div>

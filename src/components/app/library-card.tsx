@@ -8,13 +8,13 @@ import type { LibraryItem } from "@/lib/use-library-filter";
 // Split out of library-browser.tsx: purely presentational, one project's
 // card, agnostic to how the list was filtered or how favorites are persisted.
 
-// What lives in this workspace, compact: "2 Chats · 10 Artefakte". A project
+// What lives in this workspace, compact: "2 Chats · 3 Prompts". A project
 // without either is simply young, not defective.
 function workspaceMeta(it: LibraryItem): string {
   const parts = [
     it.chatCount > 0 ? `${it.chatCount} ${it.chatCount === 1 ? "Chat" : "Chats"}` : null,
-    it.artifactCount > 0
-      ? `${it.artifactCount} ${it.artifactCount === 1 ? "Artefakt" : "Artefakte"}`
+    it.savedPromptCount > 0
+      ? `${it.savedPromptCount} ${it.savedPromptCount === 1 ? "Prompt" : "Prompts"}`
       : null,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "Frisch angelegt";
@@ -67,22 +67,8 @@ export function LibraryCard({
         {item.name}
       </h3>
 
-      {/* What's inside, category pills as the project's content areas. */}
-      {item.categories.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {item.categories.map((c) => (
-            <span
-              key={c}
-              className="text-[10.5px] px-2 py-0.5 rounded-full border border-accent/25 bg-accent-subtle text-accent-text"
-            >
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Workspace-Meta + freshness, supporting metadata in the footer:
-          what lives inside (chats, results), not just artifacts. */}
+          what lives inside (chats, saved prompts). */}
       <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
         <span className="inline-flex items-center gap-1.5">
           <Sparkles className="h-3 w-3" />

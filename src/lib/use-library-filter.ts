@@ -11,9 +11,8 @@ export type LibraryItem = {
   id: string;
   name: string;
   updatedAt: string; // ISO, drives the "Kürzlich verwendet" filter + the footer's relative time
-  artifactCount: number;
+  savedPromptCount: number; // prompts kept in this project's Ergebnisse
   chatCount: number; // conversations living inside this workspace
-  categories: string[]; // artifact category keys present in this project
   toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "Lovable"]
   isFavorite: boolean;
 };
@@ -22,10 +21,6 @@ export const FILTERS = [
   { key: "all", label: "Alle" },
   { key: "favorites", label: "Favoriten" },
   { key: "recent", label: "Kürzlich verwendet" },
-  { key: "frontend", label: "Frontend" },
-  { key: "backend", label: "Backend" },
-  { key: "marketing", label: "Marketing" },
-  { key: "database", label: "Datenbank" },
 ] as const;
 
 export type FilterKey = (typeof FILTERS)[number]["key"];
@@ -52,8 +47,6 @@ export function useLibraryFilter(items: LibraryItem[], favorites: Set<string>) {
         if (!favorites.has(it.id)) return false;
       } else if (filter === "recent") {
         if (now - new Date(it.updatedAt).getTime() > RECENT_MS) return false;
-      } else if (filter !== "all") {
-        if (!it.categories.includes(filter)) return false;
       }
       if (q) {
         const haystack = (it.name + " " + it.toolList.join(" ")).toLowerCase();

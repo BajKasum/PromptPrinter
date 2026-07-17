@@ -136,7 +136,7 @@ export function Topbar({
                   </div>
                   <p className="text-[13px] text-muted-foreground">Keine neuen Benachrichtigungen</p>
                   <p className="text-[12px] text-muted-foreground/70">
-                    Updates zu deinen Generierungen erscheinen hier.
+                    Updates zu deinen Projekten erscheinen hier.
                   </p>
                 </div>
               </div>

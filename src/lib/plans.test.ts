@@ -10,13 +10,12 @@ describe("effectiveLimits", () => {
   it("returns unlimited for an admin account regardless of plan", () => {
     expect(effectiveLimits("free", true)).toEqual({
       projects: Infinity,
-      generations: Infinity,
       chatMessages: Infinity,
     });
   });
 
   it("never mutates PLAN_LIMITS itself, admin is a role, not a plan", () => {
     effectiveLimits("free", true);
-    expect(PLAN_LIMITS.free).toEqual({ projects: 3, generations: 20, chatMessages: 200 });
+    expect(PLAN_LIMITS.free).toEqual({ projects: 3, chatMessages: 200 });
   });
 });

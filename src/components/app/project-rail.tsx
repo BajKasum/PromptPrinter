@@ -187,7 +187,7 @@ export function ProjectRail({
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             {resultCount === 0
               ? "Noch keine gespeichert"
-              : `${resultCount} ${resultCount === 1 ? "Lauf" : "Läufe"}${
+              : `${resultCount} ${resultCount === 1 ? "Prompt" : "Prompts"}${
                   latestResultAt ? ` · zuletzt ${latestResultAt}` : ""
                 }`}
           </p>

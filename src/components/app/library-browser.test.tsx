@@ -25,9 +25,8 @@ function makeItems(count: number): LibraryItem[] {
     id: `p${i}`,
     name: `Projekt ${i}`,
     updatedAt: new Date(2026, 0, 1 + i).toISOString(),
-    artifactCount: 1,
+    savedPromptCount: 1,
     chatCount: 1,
-    categories: [],
     toolList: [],
     isFavorite: false,
   }));

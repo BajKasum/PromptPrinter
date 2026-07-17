@@ -18,14 +18,13 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Count generations within the current calendar month (UTC) only.
+  // Count chat messages within the current calendar month (UTC) only.
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 
   const [
     { data: profile },
     { count: projectCount },
-    { count: genCount },
     { count: chatCount },
     configuredProviders,
     customProvider,
@@ -41,11 +40,6 @@ export default async function SettingsPage() {
       .from("projects")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
-    supabase
-      .from("generations")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", monthStart),
     // One row per turn (see api/chat/route.ts's own count for why role=assistant).
     supabase
       .from("messages")
@@ -63,11 +57,9 @@ export default async function SettingsPage() {
   const plan = (profile?.plan ?? "free") as PlanKey;
   const isAdmin = profile?.is_admin ?? false;
   const limits = effectiveLimits(plan, isAdmin);
-  // A configured BYOK key lifts both the generations and chat caps (see
-  // api/generate + api/chat), UsageMeter already renders "Unbegrenzt" for a
-  // non-finite limit.
+  // A configured BYOK key lifts the chat cap (see api/chat); UsageMeter already
+  // renders "Unbegrenzt" for a non-finite limit.
   const hasByok = configuredProviders.length > 0;
-  const generationLimit = hasByok ? Infinity : limits.generations;
   const chatLimit = hasByok ? Infinity : limits.chatMessages;
 
   // Only forward a genuine settings object so the client can safely merge it.
@@ -100,8 +92,6 @@ export default async function SettingsPage() {
         usage={{
           projects: projectCount ?? 0,
           projectLimit: limits.projects,
-          generations: genCount ?? 0,
-          generationLimit,
           chatMessages: chatCount ?? 0,
           chatMessageLimit: chatLimit,
         }}

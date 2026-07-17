@@ -20,7 +20,7 @@ export default async function BillingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Start of the current month (UTC), generations are a per-month allowance.
+  // Start of the current month (UTC), the chat-message allowance is per-month.
   const now = new Date();
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
@@ -29,7 +29,6 @@ export default async function BillingPage() {
   const [
     { data: profile },
     { count: projectsCount },
-    { count: monthlyGenerations },
     { count: monthlyChatMessages },
     configuredProviders,
   ] = await Promise.all([
@@ -39,11 +38,6 @@ export default async function BillingPage() {
       .from("projects")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
-    supabase
-      .from("generations")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", monthStart),
     // One row per turn (see api/chat/route.ts's own count for why role=assistant).
     supabase
       .from("messages")
@@ -60,16 +54,15 @@ export default async function BillingPage() {
   const isFree = planKey === "free";
   const hasByok = configuredProviders.length > 0;
   const limits = effectiveLimits(planKey, isAdmin);
-  // A BYOK key lifts the generations and chat caps the same way admin lifts
-  // all three, the project cap still applies either way.
-  const generationLimit = hasByok ? Infinity : limits.generations;
+  // A BYOK key lifts the chat cap the same way admin lifts both, the project
+  // cap still applies either way.
   const chatLimit = hasByok ? Infinity : limits.chatMessages;
   const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
 
   const usageNote = isAdmin
     ? "Admin-Konto, die Balken unten sind nur zur Orientierung, sie greifen für dich nicht."
     : hasByok
-      ? "Mit deinem eigenen Key entfallen Generierungen- und Chat-Limit. Das Projekt-Limit bleibt bestehen."
+      ? "Mit deinem eigenen Key entfällt das Chat-Limit. Das Projekt-Limit bleibt bestehen."
       : isFree
         ? "Ist ein Balken voll, geht's erst im nächsten Monat weiter, oder sofort mit Pro oder deinem eigenen Key."
         : "Ist ein Balken voll, geht's erst im nächsten Monat weiter.";
@@ -102,13 +95,8 @@ export default async function BillingPage() {
         <section className={isFree && !isAdmin ? "mb-12" : ""}>
           <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">Nutzung diesen Monat</h2>
           <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-foreground/55">{usageNote}</p>
-          <div className="grid gap-x-10 gap-y-7 sm:grid-cols-3">
+          <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
             <UsageMeter label="Projekte" used={projectsCount ?? 0} limit={limits.projects} />
-            <UsageMeter
-              label="Generierungen"
-              used={monthlyGenerations ?? 0}
-              limit={generationLimit}
-            />
             <UsageMeter
               label="Chat-Nachrichten"
               used={monthlyChatMessages ?? 0}

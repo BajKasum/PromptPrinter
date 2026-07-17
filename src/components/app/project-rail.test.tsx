@@ -140,13 +140,13 @@ describe("ProjectRail", () => {
     expect(screen.getByText("Noch keine gespeichert")).toBeInTheDocument();
   });
 
-  it("shows the run count and last-result timestamp when results exist", () => {
+  it("shows the saved-prompt count and last-result timestamp when results exist", () => {
     setup({ resultCount: 3, latestResultAt: "vor 2 Tagen" });
-    expect(screen.getByText("3 Läufe · zuletzt vor 2 Tagen")).toBeInTheDocument();
+    expect(screen.getByText("3 Prompts · zuletzt vor 2 Tagen")).toBeInTheDocument();
   });
 
-  it("singularizes a single run", () => {
+  it("singularizes a single saved prompt", () => {
     setup({ resultCount: 1, latestResultAt: null });
-    expect(screen.getByText("1 Lauf")).toBeInTheDocument();
+    expect(screen.getByText("1 Prompt")).toBeInTheDocument();
   });
 });

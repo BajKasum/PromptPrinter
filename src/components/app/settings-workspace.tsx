@@ -43,8 +43,6 @@ type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 type Usage = {
   projects: number;
   projectLimit: number;
-  generations: number;
-  generationLimit: number;
   chatMessages: number;
   chatMessageLimit: number;
 };
@@ -259,11 +257,6 @@ export function SettingsWorkspace({
                 limit={usage.projectLimit}
               />
               <UsageMeter
-                label="Generierungen (Monat)"
-                used={usage.generations}
-                limit={usage.generationLimit}
-              />
-              <UsageMeter
                 label="Chat-Nachrichten (Monat)"
                 used={usage.chatMessages}
                 limit={usage.chatMessageLimit}
@@ -280,7 +273,7 @@ export function SettingsWorkspace({
           >
             <ApiKeys configured={configuredProviders} customProvider={customProvider} />
             <p className="mt-3 text-[12px] text-foreground/45">
-              Mit eigenem Key entfällt das monatliche Generierungen-Limit, dein Projekt-Limit
+              Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit
               bleibt bestehen.
             </p>
           </SettingsCard>
