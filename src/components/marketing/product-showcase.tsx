@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Logo } from "@/components/brand/logo";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { cn } from "@/lib/utils";
 
 type ViewKey = "chats" | "projects";
@@ -33,15 +34,27 @@ export function ProductShowcase() {
         {/* Lighter header, this is the embedded "serving" follow-up to
             Hero's own live demo, not a second co-equal demo section. */}
         <div className="mx-auto mb-7 max-w-4xl">
-          <div className="max-w-xl">
-            <h2 className="text-balance text-[26px] md:text-[32px] leading-[1.15] tracking-[-0.03em] font-semibold text-foreground">
-              Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
-            </h2>
-            <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
-              Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Für
-              alles, was zusammengehört, legst du dir ein Projekt an, mehrere
-              Chats, eigene Dateien, durchsuchbar und griffbereit.
-            </p>
+          <div className="flex items-start justify-between gap-6">
+            <div className="max-w-xl">
+              <h2 className="text-balance text-[26px] md:text-[32px] leading-[1.15] tracking-[-0.03em] font-semibold text-foreground">
+                Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
+              </h2>
+              <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
+                Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Für
+                alles, was zusammengehört, legst du dir ein Projekt an, mehrere
+                Chats, eigene Dateien, durchsuchbar und griffbereit.
+              </p>
+            </div>
+            {/* Finn is in the room too, this is his workspace. A calm
+                "organizing" float (not a performing pose) matches the quiet,
+                embedded framing of the panel below; he was the one section
+                where Finn was missing entirely (Brand-Audit). */}
+            <AnimatedMascot
+              state="organizing"
+              size={104}
+              className="hidden shrink-0 lg:block"
+              alt="Finn ordnet deinen Arbeitsplatz"
+            />
           </div>
         </div>
       </FadeIn>
