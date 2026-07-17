@@ -162,9 +162,14 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
   ozeanischen Hue vereint (Hue-only), Creme-Background im Light, `--accent-warm` in
   beiden Themes reserviert. „Felt, not seen": Body-BG-Shift nur minimal
   (Dark `rgb(12,14,18)→rgb(12,16,18)`, Light `rgb(255,255,255)→rgb(254,254,253)`).
-- **Phase 2, Ambienter Tiefen-Effekt + Motion-Physik (offen).** Subtiler Hintergrund-Gradient,
-  **eine** weiche Lichtquelle, gemeinsame Spring-Konstante, biolumineszenter Fokus-Ring.
-  Risiko: Performance (GPU-freundlich: opacity/transform statt schwerer Box-Shadows) + Subtilität.
+- **Phase 2, Ambienter Tiefen-Effekt + Motion-Physik (grösstenteils ✅).**
+  Subtiler Hintergrund-Gradient + **eine** weiche Lichtquelle ✅ (`FinnAtmosphere`,
+  Landing). Biolumineszenter Fokus-Ring ✅ (2026-07-17, `005718d`): `.focus-glow`
+  (Buttons, focus-visible) + `.input-glow` (Textfelder, focus) in globals.css,
+  an den geteilten Primitives (`ui/button.tsx`, `ui/input.tsx`, `.input-base`),
+  Wasser-Ring + weicher Bloom, box-shadow-only. **Offen:** gemeinsame „Finn-Physik"-
+  Spring-Konstante (Motion-Konsistenz). Risiko: Performance (GPU-freundlich:
+  opacity/transform statt schwerer Box-Shadows) + Subtilität.
 - **Phase 3, Optionale Immersion (offen, jeder Punkt streichbar).** Scroll-abhängige Tiefe,
   sehr schwache statische Kaustik-Textur, Koralle bei echten Höhepunkten, dezente Parallax/Hover-Licht.
 
