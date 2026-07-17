@@ -22,8 +22,9 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   Projekt.
 > - **Produktionsweg entfernt (2026-07-16, siehe „Handoff entfernt" unten)**:
 >   ~~jeder Projekt-Chat kann direkt ein Ergebnis erzeugen~~, das war der
->   Stand bis zur Entfernung der Handoff-Funktion. `/api/generate` existiert
->   weiter als Route, wird aber von keiner UI mehr aufgerufen.
+>   Stand bis zur Entfernung der Handoff-Funktion. `/api/generate` samt der
+>   ganzen Erzeugungs-Pipeline ist seit 2026-07-17 komplett entfernt (C-1,
+>   siehe unten), keine tote Route mehr im Repo.
 > - **Dateien**: `project_files`-Tabelle + privater `project-files`-Bucket,
 >   Upload/Löschen in der Rail, Allowlist `.md/.txt/.json/.csv`, max. 10 à
 >   200 KB. `buildProjectContext` injiziert Anweisungen → Struktur → Dateien
@@ -268,6 +269,29 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > wechseln"/„Alle Ausgabetypen" durch den echten Weg ersetzt. Verifiziert
 > im Dev-Server (Browser-Preview): alle Seiten rendern die neue Copy
 > korrekt, keine Konsolenfehler.
+>
+> **Kritik-Pass „C-1" behoben (2026-07-17):** Die tote `/api/generate`-
+> Pipeline (siehe QA-Kritik-Pass oben) war seit der Handoff-Entfernung von
+> keiner UI mehr erreichbar, wurde aber weiter gewartet und blieb als
+> direkt POST-bare, nicht per UI verlinkte Route live. Komplett entfernt:
+> die Route selbst, `generate-guards.ts`, `build-generate-content.ts` (+
+> Test), `run-generation.ts`, `persist-generation.ts`, sowie die zehn nur
+> dafür genutzten Paket-Prompt-Templates (`brief/prd/master/frontend/
+> backend/schema/security/marketing/seo/deployment-template.ts`).
+> Mitentfernt, weil ausschliesslich von der toten Pipeline importiert:
+> `SYSTEM_PROMPT`/`GENERAL_SYSTEM_PROMPT` aus `prompts/system.ts`,
+> `generalPromptTemplate`/`generalVariantTemplate` aus
+> `prompts/general-prompt.ts`, `generateRequestSchema`/`GenerateRequest`
+> aus `lib/schemas.ts`, `prompts/types.ts` (alle vier Interfaces waren
+> ungenutzt). Bewusst **nicht** angefasst: `GENERAL_VARIANTS`,
+> `lib/artifacts.ts` und die `generations`-Tabelle, die tragen weiterhin
+> die Ergebnisse-Anzeige und die Usage-Meter für bestehende Zeilen. Die
+> Grundsatzfrage (kommt je ein Ersatz-Feature für den Chat→Ergebnis-Weg?)
+> bleibt offen; falls ja, wird die Pipeline aus der Git-Historie
+> rekonstruiert, kein Verlust durchs Löschen. Quality-Gate komplett grün
+> (`npm run typecheck && npm run lint && npm run test && npm run build`),
+> `.next`-Cache musste einmal geleert werden, weil er noch einen Typ für
+> die gelöschte Route generiert hatte.
 
 ## Was ist PromptPrinter?
 
