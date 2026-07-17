@@ -437,7 +437,7 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 - Hero-Intro: `welcoming`
 - Hero-Demo-Narration: `curious → thinking → building → delivering` (je Stage)
 - HowItWorks: `building`
-- ExampleOutput: `delivering`
+- ProductShowcase: `organizing` (float, rechts neben der Headline, ab lg; Brand-Audit #1, 2026-07-17)
 - Pricing: `helping`
 - FinalCTA: `celebrating`
 - Footer: idle (Base-PNG via `<Mascot>`)
@@ -484,7 +484,7 @@ FAQ → FinalCTA → Footer
 |---|---|---|
 | `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt`. Subtext auf einen kurzen Zweizeiler gekürzt + vergrößert (18/21px statt 16/18px), Demo-Fensterchrome ohne „PromptPrinter · Demo"-Label (2026-07-16). | `welcoming` + Stage-States |
 | `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase. | `building` |
-| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Projects / Bibliothek / Generierungen. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. | Kein Finn |
+| `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
 | `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
@@ -520,17 +520,27 @@ mit der Landing-Page-Löschung (2026-07-16) auch hier entfernt.
 Die Brand-Audit-Punkte unten bleiben gültig, laufen aber danach bzw. werden von
 Phase 5 (Landing-Nachzug) teilweise miterledigt.
 
-Noch nicht umgesetzt aus der Brand-Audit (Priorität absteigend):
+Brand-Audit-Status (2026-07-17 durchgegangen):
 
-1. **ProductShowcase**, Finn fehlt komplett in der längsten Sektion. "Alles, was wir
-   zusammen bauen" ohne Finn im Raum ist ein Widerspruch. Idee: kleiner Finn im
-   Mock-Sidebar oder als Avatar.
-2. **Finn-Welt-Atmosphäre / Dark Mode**, Dark Mode wirkt kalt; der Charakter wirkt
-   wie ein aufgeklebter Sticker auf einem generischen Canvas. Keine Verbindung zwischen
-   Finn's Palette (Creme, Coral, Navy) und der Seiten-Palette.
-3. **Sektions-Übergänge / Rhythmus**, alle Sektionen haben denselben `py-24/32`-Abstand,
-   metronomischen Rhythmus. Keine dynamische Pacing. Litany bewies: engerer Beat = mehr Emotion.
-4. **Mono-Eyebrow auf jeder Sektion** (`SCHAU ES DIR AN`, `DEIN ARBEITSPLATZ` etc.), SaaS-Template-Konvention. Finn würde einfach reden, nicht labeln.
+1. ✅ **ProductShowcase** (erledigt, `c233d15`), `organizing`-Finn (float) rechts
+   neben der Headline, ab lg sichtbar. Die längste Sektion hatte als einzige
+   keinen Finn — behoben.
+4. ✅ **Mono-Eyebrow auf jeder Sektion** (bereits erledigt), die
+   `SCHAU ES DIR AN`/`DEIN ARBEITSPLATZ`-Eyebrows sind in den früheren
+   Landing-Umbauten schon aus allen Landing-Sektionen verschwunden. Verbliebene
+   `font-mono uppercase`-Treffer sind Demo-Fenster-Chrome im Hero,
+   `/features` und Legal-Seiten, keine Sektions-Eyebrows. Kein Handlungsbedarf.
+2. ⏳ **Finn-Welt-Atmosphäre / Dark Mode** (offen, bewusst), Dark Mode wirkt
+   kalt; keine Verbindung zwischen Finn's Palette (Creme, Coral, Navy) und der
+   Seiten-Palette. `FinnAtmosphere` (Phase 2) existiert bereits als dezenter
+   Tiefen-Layer. Weiterbau ist heikles „felt, not seen"-Terrain (Intensität
+   minimal halten, sonst gimmickhaft) — wartet auf bewusste Richtungsentscheidung,
+   kein mechanischer Fix. Roadmap in DESIGN.md → „Finn's World" (Phase 2 Rest +
+   Phase 3, `--accent-warm`/Koralle wartet auf echte Höhepunkte).
+3. ⏳ **Sektions-Übergänge / Rhythmus** (offen), Sektionen laufen grösstenteils
+   auf `py-24/32`; ProductShowcase variiert schon (`pt-12/pb-24`). Engeres/
+   dynamischeres Pacing ist reine Taste-Frage auf der Landing — subjektiv,
+   wartet auf Richtung.
 
 **Nicht anfassen (stabil, fertig):**
 - Mascot-State-System und alle 16 Assets
