@@ -530,17 +530,21 @@ Brand-Audit-Status (2026-07-17 durchgegangen):
    Landing-Umbauten schon aus allen Landing-Sektionen verschwunden. Verbliebene
    `font-mono uppercase`-Treffer sind Demo-Fenster-Chrome im Hero,
    `/features` und Legal-Seiten, keine Sektions-Eyebrows. Kein Handlungsbedarf.
-2. ⏳ **Finn-Welt-Atmosphäre / Dark Mode** (offen, bewusst), Dark Mode wirkt
-   kalt; keine Verbindung zwischen Finn's Palette (Creme, Coral, Navy) und der
-   Seiten-Palette. `FinnAtmosphere` (Phase 2) existiert bereits als dezenter
-   Tiefen-Layer. Weiterbau ist heikles „felt, not seen"-Terrain (Intensität
-   minimal halten, sonst gimmickhaft) — wartet auf bewusste Richtungsentscheidung,
-   kein mechanischer Fix. Roadmap in DESIGN.md → „Finn's World" (Phase 2 Rest +
-   Phase 3, `--accent-warm`/Koralle wartet auf echte Höhepunkte).
-3. ⏳ **Sektions-Übergänge / Rhythmus** (offen), Sektionen laufen grösstenteils
-   auf `py-24/32`; ProductShowcase variiert schon (`pt-12/pb-24`). Engeres/
-   dynamischeres Pacing ist reine Taste-Frage auf der Landing — subjektiv,
-   wartet auf Richtung.
+2. ◐ **Finn-Welt-Atmosphäre / Dark Mode** (teilweise, `005718d`), erster
+   „vorsichtig ausbauen"-Pass: biolumineszenter Fokus-Ring (Manifesto #9)
+   an den geteilten Primitives (`.focus-glow`/`.input-glow` in globals.css,
+   Wasser-Ring + weicher Bloom, box-shadow-only). `FinnAtmosphere` (ambienter
+   Tiefen-Layer) existierte schon. **Offen bleibt** die grössere „Dark Mode
+   wirkt kalt"-Frage (Palette-Verbindung Creme/Coral/Navy, `--accent-warm`
+   wartet auf echte Höhepunkte, Phase 3) — heikles „felt, not seen"-Terrain,
+   Roadmap in DESIGN.md → „Finn's World". Die ~13 verstreuten `focus:ring`-
+   Call-Sites blieben (noch) auf dem flachen Ring.
+3. ✅ **Sektions-Übergänge / Rhythmus** (erledigt, `246a820`), die untere
+   Hälfte (Pricing → FAQ → FinalCTA) lief dreimal identisch `py-24/32`
+   (metronomisch); die obere Hälfte hatte mit fallenden Top-Paddings 36→20→16
+   schon Rhythmus. FAQ ist jetzt der engere Zwischenbeat (md 20/20) zwischen
+   Pricing (32/24) und FinalCTA (28/36), Abstände ziehen sich zum CTA hin
+   zusammen. Reine Whitespace-Änderung.
 
 **Nicht anfassen (stabil, fertig):**
 - Mascot-State-System und alle 16 Assets
