@@ -292,6 +292,35 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > (`npm run typecheck && npm run lint && npm run test && npm run build`),
 > `.next`-Cache musste einmal geleert werden, weil er noch einen Typ für
 > die gelöschte Route generiert hatte.
+>
+> **Grundsatzfrage beantwortet + „Prompt speichern" gebaut (2026-07-17,
+> `b3ae4af`):** Auf die Frage, womit der Chat→Ergebnis-Weg ersetzt wird,
+> die Entscheidung: **„Ergebnisse" bleibt als Konzept, aber
+> leichtgewichtig.** In einem Projekt-Chat sichert ein „Speichern"-Button
+> (`chat-result-panel.tsx` → `save-prompt-button.tsx`) den fertigen Prompt
+> aus der aktuellen Antwort in die Ergebnisse des Projekts. **Kein
+> Auto-Generieren, kein Modell-Call** — nur der Prompt, den der Nutzer
+> schon hat, das unterscheidet es klar vom entfernten Handoff (der
+> automatisch 10 Artefakte generierte). Speicher: die bestehende **leere**
+> `generations`-Tabelle wird wiederverwendet statt einer neuen Tabelle
+> (ein gespeicherter Prompt = eine Zeile mit `outputs = { prompt, title,
+> target }`); die Tabelle behält aus Pragmatismus ihren Namen, semantisch
+> ist eine Zeile jetzt ein gespeicherter Prompt. Einzige DB-Änderung:
+> Migration `0018_generations_owner_delete.sql` ergänzt die fehlende
+> owner-scoped DELETE-Policy + Grant (0001 hatte nur select/insert), live
+> gegen die Supabase-DB angewendet und per SQL verifiziert. Neue
+> Ergebnisse-Seite = Liste gespeicherter Prompts (Kopieren/Löschen/
+> PDF-für-Pro, jsPDF lazy) statt der toten 10-Tab-Ansicht. Das tote
+> „Generierungen"-Monatslimit (zählte 0, wurde nirgends erzwungen) ist
+> raus (Meter aus Billing/Settings, `generations`-Feld aus `plans.ts`),
+> Speichern ist unbegrenzt/gratis, nur Chat-Nachrichten bleibt gemessen.
+> Toter Paket-Code, der dadurch verwaiste, entfernt: `artifacts.ts`
+> (+Test), `project-tabs.tsx`, `general-prompt.ts`/`GENERAL_VARIANTS`
+> (die letzten Reste aus dem C-1-„nicht angefasst") — Bibliothek zeigt
+> jetzt Prompt- statt Artefakt-Zähler, die immer leeren Kategorie-Filter
+> sind weg. Quality-Gate grün (222 Tests, +12 für die neuen Helfer). Der
+> interaktive Speichern-Flow wurde nicht per Browser verifiziert (braucht
+> Login), die reine Logik ist unit-getestet, DB-Migration per SQL geprüft.
 
 ## Was ist PromptPrinter?
 
