@@ -41,10 +41,9 @@ Hex-Werte in Komponenten**, immer Token-Utilities nutzen.
 | `ring-ring` | Focus-Ring | babyblau | babyblau |
 | `bg-destructive` / `success` / `warning` | Status |, |, |
 
-> **Hinweis (Finn's World, Phase 1):** Die Neutrals oben wurden in **beiden Themes**
-> auf einen ozeanischen Hue rekalibriert (Hue-only, S/L unverändert): Dark `208`,
-> Light `206` + Creme-Background. Aktuelle Ist-Werte stehen unten im Abschnitt
-> **Finn's World**.
+> **Hinweis (Finn's World):** Die Neutrals oben sind auf ein spürbar blaues
+> Ozean-Thema gestellt, in beiden Themes (Light Hue `205`, Dark Hue `213`).
+> Aktuelle Ist-Werte stehen unten im Abschnitt **Finn's World**.
 
 ### Akzent-Regeln (wichtig)
 
@@ -118,23 +117,32 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
 5. **Tiefe hat Richtung**, beim Scrollen sinnhaft tiefer: oben hell (Oberfläche), unten dunkler.
 6. **Alles schwebt**, sanfte, „schwere" Feder-Physik, leicht verzögertes Aufkommen, nichts abruptes.
 7. **Zurückhaltung ist Luxus**, Weißraum = offenes Wasser. Springt ein Effekt ins Auge, ist er zu stark.
-8. **Warme Neutrals**, Creme statt reinem Weiß, erwärmtes Navy statt kühlem Schwarzblau.
+8. **Blau statt neutral**, Light Mode ein helles, spürbar blaues Himmelblau statt Creme/Weiß,
+   Dark Mode ein sattes Tiefsee-Blau statt neutralem Schwarzblau (2026-07-22 bewusst von
+   Kasum entschieden, ersetzt die vorige „Creme statt Weiß"-Kalibrierung).
 9. **Biolumineszenz-Akzent**, Akzent/Licht wie lebendes Licht: sparsam, aber präsent (Fokus-Ring leuchtet sanft, nie Neon).
 10. **Stimmung: ruhig, edel, intelligent, kreativ, vertrauenswürdig**, keine grellen oder albernen Elemente.
 
 ### Palette (Finn's World), Ist-Zustand
 
-> ✅ **Phase 1 in beiden Themes geshippt.** Die Werte unten sind live. `--accent-warm`
-> ist in `:root` **und** `.dark` definiert, wird aber **nirgends angewendet** (reserviert
-> für Höhepunkte, siehe Roadmap Phase 3).
+> ✅ **Phase 1 in beiden Themes geshippt, 2026-07-22 auf Ozean-Blau umgestellt**
+> (`d0897e6`). Die Werte unten sind live. Kasum entschied sich bewusst gegen
+> das vorige Creme/neutrale-Navy und für ein spürbar blaues Theme in beiden
+> Modi, Light an `--accent`s Wasserfarbe angelehnt (Hue 205), Dark tiefer und
+> gesättigter (Hue 213) für ein „tief im Ozean"-Gefühl. Relative Elevation-
+> Reihenfolge unverändert (Light: raised > background > surface > hover;
+> Dark: background < surface < raised < hover). Alle Kombinationen vorab
+> gegen WCAG AA geprüft (schwächster Wert 5.36:1). `--accent-warm` ist in
+> `:root` **und** `.dark` definiert, wird aber **nirgends angewendet**
+> (reserviert für Höhepunkte, siehe Roadmap Phase 3).
 
 | Token | Light (`H S% L%`) | Dark (`H S% L%`) | Rolle |
 |---|---|---|---|
-| `--background` | `40 24% 99.5%` | `208 20% 6%` | Creme (Tag) / tiefes Navy (Nacht) |
-| `--surface` | `206 24% 97%` | `208 16% 9%` | Eingelassene Fläche (Input-BG) |
-| `--surface-raised` | `0 0% 100%` | `208 17% 12%` | Karten/Dropdown (Light: hellste Ebene) |
-| `--surface-hover` | `206 20% 95%` | `208 16% 15%` | Hover-Fläche |
-| `--shadow` | `210 44% 12%` (≈ `#11181F`, dunkles Blau, niedrige Alpha) | `208 25% 3%` | Schlagschatten (kühl getönt) |
+| `--background` | `205 60% 95%` | `213 42% 6%` | Helles Himmelblau (Tag) / tiefes Ozean-Blau (Nacht) |
+| `--surface` | `205 42% 91%` | `213 32% 9%` | Eingelassene Fläche (Input-BG) |
+| `--surface-raised` | `205 30% 98%` | `213 28% 13%` | Karten/Dropdown (Light: hellste Ebene) |
+| `--surface-hover` | `205 42% 88%` | `213 26% 17%` | Hover-Fläche |
+| `--shadow` | `205 48% 10%` | `213 50% 3%` | Schlagschatten (kühl getönt) |
 | `--accent` (Wasser) | `203 79% 72%` | `204 80% 75%` | Akzent = Wasserfarbe |
 | `--accent-warm` (Koralle) | `14 84% 64%` | `12 88% 70%` | ✅ definiert (beide Themes), **ungenutzt**, reserviert |
 
