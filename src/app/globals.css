@@ -11,12 +11,12 @@
   :root {
     color-scheme: light;
 
-    --background: 40 24% 99.5%;
+    --background: 205 60% 95%;
     --foreground: 216 22% 6%;
 
-    --surface: 206 24% 97%;
-    --surface-raised: 0 0% 100%;
-    --surface-hover: 206 20% 95%;
+    --surface: 205 42% 91%;
+    --surface-raised: 205 30% 98%;
+    --surface-hover: 205 42% 88%;
 
     --border: 214 22% 91%;
     --border-strong: 214 20% 84%;
@@ -44,18 +44,18 @@
     --warning: 33 92% 44%;
     --warning-foreground: 0 0% 100%;
 
-    --shadow: 210 44% 12%;
+    --shadow: 205 48% 10%;
   }
 
   .dark {
     color-scheme: dark;
 
-    --background: 208 20% 6%;
+    --background: 213 42% 6%;
     --foreground: 213 20% 92%;
 
-    --surface: 208 16% 9%;
-    --surface-raised: 208 17% 12%;
-    --surface-hover: 208 16% 15%;
+    --surface: 213 32% 9%;
+    --surface-raised: 213 28% 13%;
+    --surface-hover: 213 26% 17%;
 
     --border: 214 14% 16%;
     --border-strong: 215 13% 23%;
@@ -87,7 +87,7 @@
     --warning: 43 96% 56%;
     --warning-foreground: 216 22% 6%;
 
-    --shadow: 208 25% 3%;
+    --shadow: 213 50% 3%;
   }
 
   @media (prefers-reduced-motion: no-preference) {
