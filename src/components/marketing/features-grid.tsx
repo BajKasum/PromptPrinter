@@ -10,9 +10,9 @@ import {
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 
 // Benefit-first, and grounded in what actually happens in a chat with Finn
-// (src/prompts/system.ts's CHAT_SYSTEM_PROMPT): one clarifying question, then
-// the finished prompt in the conversation, not a set of auto-generated
-// documents.
+// (src/prompts/system.ts's CHAT_SYSTEM_PROMPT): a bundled clarifying question
+// covering only what this idea needs, then the finished prompt in the
+// conversation, not a set of auto-generated documents.
 const features = [
   {
     Icon: MessagesSquare,

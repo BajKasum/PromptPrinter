@@ -139,10 +139,11 @@ const STAGES: { key: StageKey; label: string }[] = [
 ];
 
 // Each demo is a real, plain-language idea that walks through what actually
-// happens today: Finn asks exactly one clarifying question, then delivers
-// the finished, paste-ready prompt, tailored to the named target assistant.
-// This mirrors src/prompts/system.ts's CHAT_SYSTEM_PROMPT, not an invented
-// pipeline (there is no automatic multi-document generation anymore).
+// happens today: Finn asks only what this specific idea needs clarifying
+// (here, one thing each), then delivers the finished, paste-ready prompt,
+// tailored to the named target assistant. This mirrors src/prompts/system.ts's
+// CHAT_SYSTEM_PROMPT (a bundled question covering only what applies, not a
+// fixed checklist), not an invented pipeline.
 const DEMOS = [
   {
     idea: "Airbnb für Hundesitter",
