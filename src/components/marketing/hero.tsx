@@ -54,26 +54,55 @@ export function Hero() {
           </motion.div>
 
           <div className="max-w-2xl">
-            {/* His opening line lives in a real speech bubble, Finn is speaking,
-                with a tail pointing back at him (up on mobile, left on desktop). */}
+            {/* Finn is speaking, in a real cartoon speech balloon (not the old
+                rounded chat box). The distinctive comic tail is a curved SVG
+                that points back at him, up on mobile (he's above), down-left on
+                desktop (he's beside, below the balloon). Each tail sits behind
+                the body, which is opaque and covers the base seam so the outline
+                reads as one continuous balloon. */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="relative mb-5 inline-block rounded-2xl border border-border bg-surface px-5 py-3 md:py-3.5 text-left shadow-card"
+              className="relative mb-9 inline-block max-w-[21rem] text-left md:mb-14"
             >
-              <span
+              {/* mobile tail, points up toward Finn */}
+              <svg
                 aria-hidden
-                className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-r border-t border-border bg-surface md:hidden"
-              />
-              <span
+                viewBox="0 0 40 34"
+                className="absolute left-9 top-0 z-0 h-[30px] w-[34px] -translate-y-[86%] md:hidden"
+                fill="none"
+              >
+                <path
+                  d="M7 32 C 3 20, 5 9, 13 2 C 15 13, 22 24, 33 32 Z"
+                  fill="hsl(var(--surface))"
+                  stroke="hsl(var(--border))"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {/* desktop tail, points down-left toward Finn */}
+              <svg
                 aria-hidden
-                className="absolute left-0 top-8 hidden h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-border bg-surface md:block"
-              />
-              <p className="text-[15px] md:text-[16px] leading-snug text-foreground/90">
-                Schön, dass du da bist. Ich bin{" "}
-                <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
-              </p>
+                viewBox="0 0 40 48"
+                className="absolute bottom-0 left-7 z-0 hidden h-[42px] w-[34px] translate-y-[82%] md:block"
+                fill="none"
+              >
+                <path
+                  d="M31 6 C 16 14, 7 30, 5 45 C 3 32, 4 18, 8 6 Z"
+                  fill="hsl(var(--surface))"
+                  stroke="hsl(var(--border))"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {/* balloon body, an oval cartoon shape, not a chat box */}
+              <div className="relative z-10 rounded-[30px] border-[1.5px] border-border bg-surface px-6 py-4 shadow-card">
+                <p className="text-[15px] md:text-[16px] leading-snug text-foreground/90">
+                  Schön, dass du da bist. Ich bin{" "}
+                  <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
+                </p>
+              </div>
             </motion.div>
 
             <motion.h1
