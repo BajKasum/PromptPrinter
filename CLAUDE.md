@@ -370,6 +370,32 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Tippen in Lovable/Cursor/Claude Code nach Datenmodell/Auth/Design, das
 > spart Credits und Nachbesserungs-Runden. Beide Commits Gate-grün
 > (typecheck/lint/build/222 Tests).
+>
+> **App-Chrome verschlankt (2026-07-22, `74ee9f1`):** Auf Nutzer-Feedback
+> zu Screenshots die Topbar komplett entfernt (`topbar.tsx` gelöscht):
+> Suchfeld, Benachrichtigungs-Stub (war nur ein leerer Platzhalter) und
+> Konto-Dropdown wirkten als unnötiges Chrome oben auf der Seite. Konto
+> (Avatar, Name, Plan/Admin-Badge, Einstellungen, Abrechnung, Abmelden)
+> sitzt jetzt unten in der Sidebar, in beiden Zuständen (Popover öffnet
+> aufwärts ausgeklappt, nach rechts eingeklappt). Die globale ⌘K-
+> Befehlspalette bleibt als reine Tastatur-Funktion erhalten (kein
+> sichtbarer Button mehr, aber ein echtes, in der Erst-Login-Tour gelehrtes
+> Feature, keine tote Funktion), zieht mit in die Sidebar um. Mobile:
+> `MobileNav`s Hamburger-Trigger wandert direkt in `layout.tsx`
+> (schmale sticky Leiste, nur der Button), „Abmelden" im Drawer ergänzt
+> (hatte vorher nur in der Topbar gelebt). Onboarding-Tour (`tour-steps.ts`)
+> nachgezogen: der „search"-Schritt zeigt jetzt eine zentrierte Karte statt
+> ein nicht mehr existierendes Element anzuvisieren, der „account"-Schritt
+> zielt auf den neuen `data-tour="account-menu"`-Anker. Composer
+> (`chat-composer.tsx`): Eingabefeld startet einzeilig (48px), wächst mit
+> Inhalt bis 200px, scrollt danach intern, wie bei Claude/ChatGPT statt der
+> vorherigen festen 2-Zeilen-Box; Senden-Button ist jetzt ein kleiner
+> runder Icon-Button (36×36) statt des breiten Text+Icon-Buttons. Verifiziert
+> im Dev-Server mit echter eingeloggter Session (Kontomenü-Position in
+> beiden Sidebar-Zuständen, Composer-Auto-Resize per DOM-Messung bestätigt).
+> Gate grün (typecheck/lint/build/222 Tests, `next/navigation`-Mocks in
+> `sidebar.test.tsx`/`mobile-nav.test.tsx` um `useRouter` ergänzt, neu durch
+> die Abmelden-Funktion).
 
 ## Was ist PromptPrinter?
 
