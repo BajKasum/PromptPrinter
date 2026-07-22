@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "Was bringt mir das, statt Claude einfach selbst zu fragen?",
-    a: "Ich stelle dir erst die richtigen Fragen und schneide dann alles auf deine Tools zu. Lovable bekommt etwas anderes als Cursor. Und alles bleibt gespeichert, sodass du später weiterarbeitest, statt jeden Chat neu zu erklären.",
+    a: "Bevor du in Lovable, Cursor oder Claude Code überhaupt tippst, frag ich dich genau das, was dein Bau-Tool selbst nicht abfragt, Datenmodell, Auth, wie's aussehen soll. Das spart dir die Credits und Nachbesserungs-Runden, die ein zu vager erster Prompt sonst kostet. Der Prompt selbst ist ausserdem zugeschnitten, Lovable bekommt etwas anderes als Cursor. Und jedes Gespräch bleibt gespeichert, du erklärst nicht jedes Mal neu, woran du arbeitest.",
   },
   {
     q: "Was, wenn ich die Technik noch gar nicht festgelegt habe?",
