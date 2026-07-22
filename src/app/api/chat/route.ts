@@ -6,7 +6,7 @@ import { chatComplete, llmConfig, type LlmOverride } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
-import { CHAT_SYSTEM_PROMPT, CODE_CHAT_SYSTEM_PROMPT } from "@/prompts";
+import { CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -112,14 +112,14 @@ export async function POST(req: Request) {
     }
   }
 
-  // 5. Build the system instruction.
-  //    - general mode  → the everyday prompt engineer (+ optional target hint)
-  //    - software mode → the code-refinement assistant
-  //    When the chat refines a project (Code mode), append a compact context
-  //    block so the assistant knows the build packet it's working on.
-  let systemInstruction =
-    input.mode === "software" ? CODE_CHAT_SYSTEM_PROMPT : CHAT_SYSTEM_PROMPT;
-  if (input.mode !== "software" && input.target) {
+  // 5. Build the system instruction. One system prompt for every chat now
+  //    (CHAT_SYSTEM_PROMPT already asks about the target tool itself when it
+  //    isn't known); `mode` on the request/stored conversation is legacy data
+  //    only, kept for old rows, no longer branches behavior. When the chat
+  //    refines a project, append a compact context block so the assistant
+  //    knows what the project already carries.
+  let systemInstruction = CHAT_SYSTEM_PROMPT;
+  if (input.target) {
     systemInstruction += `\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`;
   }
   if (input.projectId && userId && supabase) {
