@@ -321,18 +321,61 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > sind weg. Quality-Gate grün (222 Tests, +12 für die neuen Helfer). Der
 > interaktive Speichern-Flow wurde nicht per Browser verifiziert (braucht
 > Login), die reine Logik ist unit-getestet, DB-Migration per SQL geprüft.
+>
+> **Finn-Umbau zum Build-Spezialisten (2026-07-22, `79755a9` + `2a2f811`):**
+> Nach einer Grill-me-Session zur Produktrichtung stand fest: die Zielgruppe
+> ist Vibe-Coder, die Prompts in Bau-Tools füttern, nicht ein allgemeines
+> Alltags-Prompt-Tool. Der tatsächliche Code widersprach dem: jeder neue
+> Chat lief auf `mode="general"` → `CHAT_SYSTEM_PROMPT`, der explizit
+> „everyday goals … not just software" sagte und nur „ONE short clarifying
+> question" stellte, keine Vollständigkeits-Fragen zu Datenmodell/Auth/
+> Screens. `CODE_CHAT_SYSTEM_PROMPT` (der eigentliche Build-Prompt) war
+> nur über `project.type === "software"` erreichbar, aber `POST /api/projects`
+> setzt hart `type: "general"`, kein UI-Pfad setzt je „software" (0 von 1
+> Projekten in der Prod-DB), also war er faktisch toter Code.
+>
+> Schritt 1 (`79755a9`): `CHAT_SYSTEM_PROMPT` neu geschrieben. Kernwert
+> jetzt explizit „nicht Credits verbrennen" — eine **gebündelte** Rückfrage
+> (nicht mehr „ONE question") stellt nur, was für die konkrete Idee zählt
+> (Ziel-Tool falls unbekannt, Kern-Screens, Datenmodell, Auth, Design-
+> Richtung), dann ein fertiger, aufs Ziel-Tool zugeschnittener Prompt.
+> Kulanter Fallback für Nicht-Bau-Ziele (Finn hilft trotzdem, ohne Bau-Fragen
+> zu erzwingen). Context-Safety-Absatz (Prompt-Injection-Abwehr) unverändert,
+> reine Sicherheitsgrenze, nicht Teil der Positionierung.
+>
+> Schritt 2 (`2a2f811`): `CODE_CHAT_SYSTEM_PROMPT` + die mode-Verzweigung in
+> `api/chat/route.ts` entfernt, eine Systemprompt für jeden Chat. Bewusst
+> **nicht** angefasst: `chatRequestSchema.mode`, `ChatMode`-Typ,
+> `conversations.mode` (4 von 8 Bestandschats tragen „software", per
+> Supabase-Check verifiziert) und `chat-variants.ts` — reine Altdaten-
+> Kompatibilität, keine Verhaltensentscheidung hängt mehr daran. Ein
+> DB-Schnitt (Spalte/Typ entfernen) ist ein separates, grösseres Thema.
+>
+> Beides reine Prompt-/Server-Änderungen ohne UI, im Stub-Modus nicht
+> sichtbar prüfbar (Chat-Antwort dort unabhängig vom System-Prompt generisch),
+> deshalb nur über das Gate abgesichert (typecheck/lint/build/222 Tests,
+> beide Schritte grün). **Noch offen aus derselben Grill-me-Session:** die
+> Landing Page/Marketing (Hero, HowItWorks, FAQ, FeaturesGrid, `/features`,
+> Pricing-Framing) beschreiben weiterhin die alte, breitere Positionierung,
+> wartet auf einen eigenen Rewrite-Durchgang.
 
 ## Was ist PromptPrinter?
 
-SaaS-Tool mit einem **KI-gestützten Chat** (Finn), der beim Formulieren,
-Strukturieren und Verfeinern von Prompts für andere KI-Tools hilft (Claude,
-ChatGPT, Lovable, Cursor & Co.). Zielgruppe: Developer und Vibe-Coder.
-Solo-/Indie-Projekt, ein Gründer.
+SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
+in KI-Bau-Tools füttern (Lovable, Cursor, v0, Claude Code, Bolt, Replit &
+Co.). Kernversprechen: nicht Credits verbrennen — Finn stellt in einer
+gebündelten Rückfrage die Dinge, die das Bau-Tool selbst nicht abfragt
+(Ziel-Tool, Kern-Screens, Datenmodell, Auth, Design-Richtung), bevor der
+fertige, aufs Ziel-Tool zugeschnittene Prompt kommt. Solo-/Indie-Projekt,
+ein Gründer.
 
 > Bis 2026-07-16 lautete die Beschreibung hier „verwandelt Ideen in
 > build-fertige Prompt-Pakete" — das setzte den Chat→Ergebnis-Handoff
-> voraus, der an diesem Tag ersatzlos entfernt wurde (siehe oben). Diese
-> Fassung beschreibt den tatsächlichen, aktuellen Funktionsumfang.
+> voraus, der an diesem Tag ersatzlos entfernt wurde (siehe oben). Am
+> 2026-07-22 die Positionierung nach einer Grill-me-Session bewusst
+> geschärft (vorher „Developer und Vibe-Coder" allgemein + „everyday
+> goals" im System-Prompt, siehe „Finn-Umbau" unten): eine Nische statt
+> zwei Zielgruppen gleichzeitig zu bedienen.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
 (Auth/DB/RLS) · Gemini (`@google/genai`) · Tailwind (HSL-Token-System) ·
