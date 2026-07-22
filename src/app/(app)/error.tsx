@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/brand/mascot";
 
 // Segment boundary for the authed shell. Catches render/data errors thrown by
-// any page below (app)/, the sidebar, topbar and ToastProvider above stay
-// mounted, so the user keeps their navigation while this swaps in.
+// any page below (app)/, the sidebar and ToastProvider above stay mounted, so
+// the user keeps their navigation while this swaps in.
 export default function AppError({
   error,
   reset,

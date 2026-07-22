@@ -2,12 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import { Plus, Star, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Plus,
+  Star,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronDown,
+  LogOut,
+  Loader2,
+} from "lucide-react";
 import { Logo, LogoMark } from "@/components/brand/logo";
 import { NewProjectButton } from "@/components/app/new-project";
+import { CommandPalette } from "@/components/app/command-palette";
 import { primaryNav, secondaryNav, type NavItem } from "@/lib/nav";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { useSidebarCollapse, SIDEBAR_COOKIE } from "@/lib/use-sidebar-collapse";
 import {
@@ -24,6 +34,10 @@ import {
 // beneath them. Collapsed it becomes a quiet icon rail. The collapse/resize
 // interaction logic itself lives in use-sidebar-collapse.ts/use-sidebar-
 // resize.ts, this file only renders and re-exports their public constants.
+// The account menu at the bottom (Einstellungen/Abrechnung/Abmelden) and the
+// global ⌘K command palette also live here now, both used to live in a
+// separate Topbar that was pure chrome (search bar, notification stub, account
+// dropdown) above the page content; removed in favor of this leaner shell.
 
 export type SidebarChat = { id: string; title: string };
 export type SidebarProject = { id: string; name: string; isFavorite: boolean };
@@ -50,11 +64,21 @@ export function Sidebar({
   initialWidth,
   chats,
   projects,
+  email = "",
+  plan = "free",
+  isAdmin = false,
+  displayName,
+  avatarUrl,
 }: {
   initialCollapsed: boolean;
   initialWidth: number;
   chats: SidebarChat[];
   projects: SidebarProject[];
+  email?: string;
+  plan?: string;
+  isAdmin?: boolean;
+  displayName?: string | null;
+  avatarUrl?: string | null;
 }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -64,6 +88,24 @@ export function Sidebar({
   // First paint must match the server exactly; content fades only on toggles.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const [cmdOpen, setCmdOpen] = useState(false);
+
+  // Global ⌘K / Ctrl+K opens the command palette from anywhere in the app
+  // (desktop-only in practice: this component only renders visibly at md+,
+  // but the listener itself doesn't need to be gated on that).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const accountProps = { email, plan, isAdmin, displayName, avatarUrl };
 
   return (
     <aside
@@ -118,9 +160,9 @@ export function Sidebar({
         className="flex min-h-0 flex-1 flex-col"
       >
         {collapsed ? (
-          <Rail pathname={pathname} />
+          <Rail pathname={pathname} {...accountProps} />
         ) : (
-          <Full pathname={pathname} chats={chats} projects={projects} />
+          <Full pathname={pathname} chats={chats} projects={projects} {...accountProps} />
         )}
       </motion.div>
 
@@ -155,21 +197,32 @@ export function Sidebar({
           />
         </div>
       )}
+
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </aside>
   );
 }
 
 // ─── Expanded: sections ARE the navigation, recents are the content ─────────
 
+type AccountProps = {
+  email: string;
+  plan: string;
+  isAdmin: boolean;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
+
 function Full({
   pathname,
   chats,
   projects,
+  ...account
 }: {
   pathname: string;
   chats: SidebarChat[];
   projects: SidebarProject[];
-}) {
+} & AccountProps) {
   // Which list is on screen, driven by the route, not separate client state,
   // so a direct link into /projects/[id] lands on the right tab for free and
   // back/forward navigation can't drift out of sync with what's shown. Any
@@ -259,10 +312,8 @@ function Full({
         </div>
       </div>
 
-      <div className="space-y-0.5 border-t border-border px-3 py-3">
-        {secondaryNav.map((item) => (
-          <FooterLink key={item.href} nav={item} pathname={pathname} />
-        ))}
+      <div className="border-t border-border p-3">
+        <AccountMenu collapsed={false} {...account} />
       </div>
     </>
   );
@@ -321,27 +372,9 @@ function TabPill({
   );
 }
 
-function FooterLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
-  const { label, href, Icon } = nav;
-  const active = pathname === href || pathname.startsWith(href + "/");
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex h-9 items-center gap-3 rounded-md pl-3.5 pr-3 text-[13px] transition-colors",
-        active ? ACTIVE_ROW : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
-      )}
-    >
-      <Icon className="h-4 w-4" strokeWidth={1.8} />
-      <span>{label}</span>
-    </Link>
-  );
-}
-
 // ─── Collapsed: a quiet icon rail with the same destinations ────────────────
 
-function Rail({ pathname }: { pathname: string }) {
+function Rail({ pathname, ...account }: { pathname: string } & AccountProps) {
   return (
     <>
       <div data-tour="nav-main" className="flex flex-1 flex-col items-center gap-1.5 px-2">
@@ -359,9 +392,7 @@ function Rail({ pathname }: { pathname: string }) {
         ))}
       </div>
       <div className="flex flex-col items-center gap-1.5 border-t border-border px-2 py-3">
-        {secondaryNav.map((item) => (
-          <RailLink key={item.href} nav={item} pathname={pathname} />
-        ))}
+        <AccountMenu collapsed {...account} />
       </div>
     </>
   );
@@ -385,5 +416,162 @@ function RailLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
     >
       <Icon className="h-4 w-4" strokeWidth={1.8} />
     </Link>
+  );
+}
+
+// ─── Account menu: identity + Einstellungen/Abrechnung/Abmelden ─────────────
+// Lives at the bottom of the sidebar in both states (was previously a
+// top-right dropdown in the now-removed Topbar). Expanded opens upward
+// (there's no room below it); collapsed opens to the right of the icon rail.
+
+function AccountMenu({
+  collapsed,
+  email,
+  plan,
+  isAdmin,
+  displayName,
+  avatarUrl,
+}: { collapsed: boolean } & AccountProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
+
+  const label = displayName || email.split("@")[0] || "Konto";
+  const initial = (label[0] ?? "?").toUpperCase();
+  const showAvatar = Boolean(avatarUrl) && !avatarBroken;
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setSigningOut(false);
+    }
+  }
+
+  const avatar = showAvatar ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={avatarUrl as string}
+      alt=""
+      className="h-7 w-7 shrink-0 rounded-full object-cover"
+      onError={() => setAvatarBroken(true)}
+    />
+  ) : (
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-semibold text-accent-foreground">
+      {initial}
+    </div>
+  );
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        data-tour="account-menu"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Kontomenü"
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={cn(
+          "flex items-center rounded-lg text-foreground/85 transition-colors hover:bg-surface-hover",
+          collapsed ? "h-10 w-10 justify-center" : "w-full gap-2.5 px-2 py-2"
+        )}
+      >
+        {avatar}
+        {!collapsed && (
+          <>
+            <span className="min-w-0 flex-1 truncate text-left text-[13px]">{label}</span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </>
+        )}
+      </button>
+
+      {open && (
+        <>
+          {/* click-away backdrop */}
+          <button
+            aria-label="Menü schliessen"
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className={cn(
+              "absolute z-50 w-64 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated",
+              collapsed ? "bottom-0 left-full ml-2" : "bottom-full left-0 mb-2"
+            )}
+          >
+            <div className="border-b border-border px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                {showAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl as string}
+                    alt=""
+                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-accent-foreground">
+                    {initial}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-medium text-foreground">{label}</div>
+                  <div className="truncate text-[12px] text-muted-foreground">{email}</div>
+                </div>
+              </div>
+              {isAdmin ? (
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-amber-300">
+                  Admin
+                </span>
+              ) : (
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-subtle px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-accent-text">
+                  {plan} Plan
+                </span>
+              )}
+            </div>
+            <div className="p-1.5">
+              {secondaryNav.map(({ label: navLabel, href, Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+                >
+                  <Icon className="h-4 w-4" strokeWidth={1.8} />
+                  {navLabel}
+                </Link>
+              ))}
+            </div>
+            <div className="border-t border-border p-1.5">
+              <button
+                onClick={() => void handleSignOut()}
+                disabled={signingOut}
+                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+              >
+                {signingOut ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="h-4 w-4" strokeWidth={1.8} />
+                )}
+                Abmelden
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

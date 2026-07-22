@@ -4,9 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { MobileNav } from "./mobile-nav";
 
 let pathname = "/chats";
+const push = vi.fn();
+const refresh = vi.fn();
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname,
+  useRouter: () => ({ push, refresh }),
 }));
 
 vi.mock("@/components/app/new-project", () => ({

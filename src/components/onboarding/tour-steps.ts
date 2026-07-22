@@ -58,17 +58,19 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "search",
-    selectors: ['[data-tour="search"]'],
+    // No visible search field anymore, this shortcut is the only entry
+    // point, so the step explains it as a centered card instead of
+    // spotlighting an element that doesn't exist.
     mascot: "researching",
     title: "Schneller ans Ziel",
     body: "Strg + K (⌘K am Mac), und ich bring dich sofort zu jeder Seite oder jedem Projekt, ganz ohne zu klicken.",
   },
   {
     id: "account",
-    selectors: ['[data-tour="topbar-actions"]'],
+    selectors: ['[data-tour="account-menu"]'],
     mascot: "helping",
     title: "Dein Konto",
-    body: "Hier siehst du Benachrichtigungen und erreichst dein Konto, Einstellungen, Abrechnung, Logout.",
+    body: "Hier unten erreichst du dein Konto, Einstellungen, Abrechnung, Logout.",
   },
   {
     id: "done",

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { Sidebar, type SidebarChat, type SidebarProject } from "@/components/app/sidebar";
-import { Topbar } from "@/components/app/topbar";
+import { MobileNav } from "@/components/app/mobile-nav";
 import { ToastProvider } from "@/components/ui/toast";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +10,8 @@ type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
 
 // Auth-gated shell. The middleware already guards these routes; fetching the
-// user here is both the defense-in-depth check and the source for the topbar.
+// user here is both the defense-in-depth check and the source for the
+// sidebar's account menu.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
@@ -78,17 +79,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           initialWidth={sidebarWidth}
           chats={sidebarChats}
           projects={sidebarProjects}
+          email={user.email ?? ""}
+          plan={profile?.plan ?? "free"}
+          isAdmin={profile?.is_admin ?? false}
+          displayName={profile?.display_name ?? null}
+          avatarUrl={profile?.avatar_url ?? null}
         />
         <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
-          <Topbar
-            email={user.email ?? ""}
-            plan={profile?.plan ?? "free"}
-            isAdmin={profile?.is_admin ?? false}
-            displayName={profile?.display_name ?? null}
-            avatarUrl={profile?.avatar_url ?? null}
-            chats={sidebarChats}
-            projects={sidebarProjects}
-          />
+          {/* Mobile-only nav trigger, the desktop sidebar is hidden below md
+              so this is the sole way to move between sections on a phone.
+              Sticky so it stays reachable while a long chat thread scrolls. */}
+          <div className="sticky top-0 z-30 -mx-6 bg-background/70 px-6 pb-2 pt-3 backdrop-blur-xl md:hidden">
+            <MobileNav chats={sidebarChats} projects={sidebarProjects} />
+          </div>
           <main
             id="main-content"
             tabIndex={-1}

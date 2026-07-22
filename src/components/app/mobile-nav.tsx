@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Star } from "lucide-react";
+import { Menu, X, Plus, Star, LogOut, Loader2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { NewProjectButton } from "@/components/app/new-project";
 import {
@@ -15,6 +15,7 @@ import {
   type SidebarProject,
 } from "@/components/app/sidebar";
 import { secondaryNav } from "@/lib/nav";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 // Mobile-only navigation. The desktop sidebar is hidden below md, so without
@@ -30,7 +31,21 @@ export function MobileNav({
   projects: SidebarProject[];
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setSigningOut(false);
+    }
+  }
 
   // Which list is on screen, same route-derived logic as the desktop
   // sidebar's Full(), so switching devices mid-session never feels different.
@@ -202,6 +217,19 @@ export function MobileNav({
                       </Link>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={() => void handleSignOut()}
+                    disabled={signingOut}
+                    className="flex h-10 w-full items-center gap-3 rounded-md px-3 text-[14px] text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+                  >
+                    {signingOut ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogOut className="h-4 w-4" strokeWidth={1.8} />
+                    )}
+                    <span>Abmelden</span>
+                  </button>
                 </nav>
               </div>
             </motion.aside>
