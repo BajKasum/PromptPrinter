@@ -354,10 +354,22 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Beides reine Prompt-/Server-Änderungen ohne UI, im Stub-Modus nicht
 > sichtbar prüfbar (Chat-Antwort dort unabhängig vom System-Prompt generisch),
 > deshalb nur über das Gate abgesichert (typecheck/lint/build/222 Tests,
-> beide Schritte grün). **Noch offen aus derselben Grill-me-Session:** die
-> Landing Page/Marketing (Hero, HowItWorks, FAQ, FeaturesGrid, `/features`,
-> Pricing-Framing) beschreiben weiterhin die alte, breitere Positionierung,
-> wartet auf einen eigenen Rewrite-Durchgang.
+> beide Schritte grün). **Landing-Page/Marketing-Nachzug erledigt (2026-07-22,
+> `a5dfc13` + `56db021`):** Beim Durchgehen von Hero, HowItWorks, FAQ,
+> FeaturesGrid, `/features` und Pricing stellte sich heraus, dass der Umfang
+> deutlich kleiner war als hier zunächst notiert, die frühere U-1-Überarbeitung
+> (`ddded15`, 2026-07-16) hatte die Positionierung schon auf Build-Tools
+> umgestellt (Lovable/Cursor/Claude Code durchgängig genannt, keine
+> "Alltag/everyday"-Reste mehr, per Grep über alle Marketing-Komponenten
+> verifiziert). Tatsächlicher Rest: zwei veraltete Code-Kommentare in
+> `hero.tsx`/`features-grid.tsx` ("Finn asks exactly one clarifying
+> question", stale seit dem Prompt-Umbau, keine UI-Wirkung) und **eine**
+> echte inhaltliche Lücke, die FAQ-Antwort auf "Was bringt mir das, statt
+> Claude einfach selbst zu fragen?" trug den neu gewählten Kernhook "nicht
+> Credits verbrennen" noch nicht. Jetzt nachgezogen: Finn fragt vor dem
+> Tippen in Lovable/Cursor/Claude Code nach Datenmodell/Auth/Design, das
+> spart Credits und Nachbesserungs-Runden. Beide Commits Gate-grün
+> (typecheck/lint/build/222 Tests).
 
 ## Was ist PromptPrinter?
 
