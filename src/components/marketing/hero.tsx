@@ -37,74 +37,38 @@ export function Hero() {
       <div className="container-x relative z-10">
         {/* Finn is here and talking to you, the first guide on the page, not a
             logo in the corner. Asymmetric on purpose: he stands beside his words. */}
-        <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:gap-12 md:text-left">
-          <motion.div
-            initial={{ opacity: 0, x: -16, scale: 0.92 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="shrink-0"
-          >
-            <AnimatedMascot
-              state="welcoming"
-              motion="bob"
-              size={216}
-              priority
-              className="[&_img]:h-[156px] [&_img]:w-[156px] md:[&_img]:h-[216px] md:[&_img]:w-[216px]"
-            />
-          </motion.div>
-
-          <div className="max-w-2xl">
-            {/* Finn is speaking, in a real cartoon speech balloon (not the old
-                rounded chat box). The distinctive comic tail is a curved SVG
-                that points back at him, up on mobile (he's above), down-left on
-                desktop (he's beside, below the balloon). Each tail sits behind
-                the body, which is opaque and covers the base seam so the outline
-                reads as one continuous balloon. */}
+        <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:gap-16 md:text-left">
+          {/* Plain wrapper (not the motion.div itself), so Finn's own entrance
+              scale/x animation never distorts the bubble absolutely positioned
+              against it below. */}
+          <div className="relative shrink-0">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="relative mb-9 inline-block max-w-[21rem] text-left md:mb-14"
+              initial={{ opacity: 0, x: -16, scale: 0.92 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* mobile tail, points up toward Finn */}
-              <svg
-                aria-hidden
-                viewBox="0 0 40 34"
-                className="absolute left-9 top-0 z-0 h-[30px] w-[34px] -translate-y-[86%] md:hidden"
-                fill="none"
-              >
-                <path
-                  d="M7 32 C 3 20, 5 9, 13 2 C 15 13, 22 24, 33 32 Z"
-                  fill="hsl(var(--surface))"
-                  stroke="hsl(var(--border))"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {/* desktop tail, points down-left toward Finn */}
-              <svg
-                aria-hidden
-                viewBox="0 0 40 48"
-                className="absolute bottom-0 left-7 z-0 hidden h-[42px] w-[34px] translate-y-[82%] md:block"
-                fill="none"
-              >
-                <path
-                  d="M31 6 C 16 14, 7 30, 5 45 C 3 32, 4 18, 8 6 Z"
-                  fill="hsl(var(--surface))"
-                  stroke="hsl(var(--border))"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {/* balloon body, an oval cartoon shape, not a chat box */}
-              <div className="relative z-10 rounded-[30px] border-[1.5px] border-border bg-surface px-6 py-4 shadow-card">
-                <p className="text-[15px] md:text-[16px] leading-snug text-foreground/90">
-                  Schön, dass du da bist. Ich bin{" "}
-                  <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
-                </p>
-              </div>
+              <AnimatedMascot
+                state="welcoming"
+                motion="bob"
+                size={216}
+                priority
+                className="[&_img]:h-[156px] [&_img]:w-[156px] md:[&_img]:h-[216px] md:[&_img]:w-[216px]"
+              />
             </motion.div>
 
+            {/* Both balloons are anchored to THIS wrapper (Finn's own box),
+                never independently centered by the outer flex row. Two
+                differently-sized elements centered by the same flex/text-center
+                rule don't reliably share a true center (measured ~85px off in
+                practice), anchoring both to Finn's actual rendered position is
+                what actually keeps the tail landing on him at any width.
+                Desktop floats diagonally above-right of his head; mobile hangs
+                centered directly below, tail pointing straight up at him. */}
+            <BubbleDesktop />
+            <BubbleMobile />
+          </div>
+
+          <div className="max-w-2xl">
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -155,6 +119,101 @@ export function Hero() {
         </motion.div>
       </div>
     </section>
+  );
+}
+
+// ── Speech balloon ─────────────────────────────────────────────────────────
+// An asymmetric, slightly irregular oval via uneven per-corner border-radius
+// (a hand-drawn "blob", not a rounded rectangle) plus a small rotation, so it
+// reads as a cartoon balloon rather than a chat/notification box. A perfectly
+// symmetric oval would still look CAD-drawn, the unevenness is the point.
+
+function BubbleDesktop() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute -top-9 left-[58%] z-20 hidden w-[200px] md:block"
+    >
+      {/* The tilt lives on this plain inner div, not the motion.div above:
+          framer-motion owns the `transform` CSS property for its own
+          animate/initial (opacity/y here), and a Tailwind transform utility
+          (rotate/translate) on the SAME element gets silently overwritten by
+          it. Splitting "entrance animation" from "static tilt" onto two
+          elements is what makes both actually apply. */}
+      <div className="relative -rotate-2 text-left">
+        {/* Short tail, this balloon sits right above Finn's own head, not off
+            to the side, so it only has to bridge a small gap to reach him. */}
+        <svg
+          aria-hidden
+          viewBox="0 0 30 30"
+          className="absolute -bottom-3 left-5 z-0 h-7 w-6"
+          fill="none"
+        >
+          <path
+            d="M23 3 C 12 6, 4 15, 2 28 C 1 18, 3 8, 10 1 Z"
+            fill="hsl(var(--surface))"
+            stroke="hsl(var(--border))"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <div
+          className="relative z-10 border-[1.5px] border-border bg-surface px-5 py-3.5 shadow-card"
+          style={{ borderRadius: "44% 56% 42% 58% / 60% 44% 62% 40%" }}
+        >
+          <p className="text-[16px] leading-snug text-foreground/90">
+            Schön, dass du da bist. Ich bin{" "}
+            <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function BubbleMobile() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute -top-4 left-1/2 z-20 w-[17rem] md:hidden"
+    >
+      {/* Centering (-translate-x-1/2) and tilt live on this plain inner div,
+          not the motion.div above, see BubbleDesktop's comment: framer-motion
+          owns `transform` for its own animation and would silently drop a
+          Tailwind transform utility placed on the same element. */}
+      <div className="relative -translate-x-1/2 rotate-1 text-left">
+        {/* Points straight down into Finn's head (he's directly beneath, this
+            bubble overlaps the top of his own box, anchored to the same Finn
+            wrapper as BubbleDesktop, never independently centered by the row). */}
+        <svg
+          aria-hidden
+          viewBox="0 0 34 30"
+          className="absolute -bottom-3 left-1/2 z-0 h-7 w-8 -translate-x-1/2"
+          fill="none"
+        >
+          <path
+            d="M6 2 C 14 8, 22 16, 26 28 C 18 24, 8 18, 2 8 Z"
+            fill="hsl(var(--surface))"
+            stroke="hsl(var(--border))"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <div
+          className="relative z-10 border-[1.5px] border-border bg-surface px-5 py-3.5 shadow-card"
+          style={{ borderRadius: "42% 58% 40% 60% / 58% 42% 64% 46%" }}
+        >
+          <p className="text-[15px] leading-snug text-foreground/90">
+            Schön, dass du da bist. Ich bin{" "}
+            <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
+          </p>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 

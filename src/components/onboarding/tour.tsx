@@ -273,18 +273,36 @@ export function Tour({ steps: allSteps, onClose }: { steps: TourStep[]; onClose:
               size={64}
               className="shrink-0 [&_img]:h-14 [&_img]:w-14"
             />
-            <div className="relative flex-1 rounded-2xl border border-border bg-surface px-4 py-3 shadow-card">
-              <span
+            {/* Same hand-drawn balloon language as the hero (uneven per-corner
+                border-radius + a curved tail, not a rounded rectangle with a
+                rotated-square notch), scaled down for this compact tooltip. */}
+            <div className="relative flex-1 -rotate-1 text-left">
+              <svg
                 aria-hidden
-                className="absolute left-0 top-6 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-border bg-surface"
-              />
-              <h2
-                id="tour-step-title"
-                className="mb-1 text-[15px] font-semibold tracking-[-0.01em] text-foreground"
+                viewBox="0 0 26 30"
+                className="absolute -left-3 top-4 z-0 h-6 w-5"
+                fill="none"
               >
-                {step.title}
-              </h2>
-              <p className="text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
+                <path
+                  d="M23 3 C 12 6, 4 14, 2 27 C 1 18, 3 8, 9 1 Z"
+                  fill="hsl(var(--surface))"
+                  stroke="hsl(var(--border))"
+                  strokeWidth="1.4"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div
+                className="relative z-10 border-[1.4px] border-border bg-surface px-4 py-3 shadow-card"
+                style={{ borderRadius: "44% 56% 42% 58% / 58% 44% 60% 42%" }}
+              >
+                <h2
+                  id="tour-step-title"
+                  className="mb-1 text-[15px] font-semibold tracking-[-0.01em] text-foreground"
+                >
+                  {step.title}
+                </h2>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
+              </div>
             </div>
           </div>
 
