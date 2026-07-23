@@ -28,7 +28,7 @@ export function Hero() {
     <section
       id="main-content"
       tabIndex={-1}
-      className="relative overflow-hidden pt-24 md:pt-36 pb-20 md:pb-32 focus:outline-none"
+      className="relative overflow-hidden pt-36 md:pt-36 pb-20 md:pb-32 focus:outline-none"
     >
       {/* Subtle grid backdrop, restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
@@ -50,9 +50,9 @@ export function Hero() {
               <AnimatedMascot
                 state="welcoming"
                 motion="bob"
-                size={216}
+                size={184}
                 priority
-                className="[&_img]:h-[156px] [&_img]:w-[156px] md:[&_img]:h-[216px] md:[&_img]:w-[216px]"
+                className="[&_img]:h-[132px] [&_img]:w-[132px] md:[&_img]:h-[184px] md:[&_img]:w-[184px]"
               />
             </motion.div>
 
@@ -134,7 +134,7 @@ function BubbleDesktop() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute -top-9 left-[20%] z-20 hidden w-[180px] md:block"
+      className="absolute -top-24 left-[20%] z-20 hidden w-[145px] md:block"
     >
       {/* The tilt lives on this plain inner div, not the motion.div above:
           framer-motion owns the `transform` CSS property for its own
@@ -143,16 +143,17 @@ function BubbleDesktop() {
           it. Splitting "entrance animation" from "static tilt" onto two
           elements is what makes both actually apply. */}
       <div className="relative -rotate-2 text-left">
-        {/* Short tail, this balloon sits right above Finn's own head, not off
-            to the side, so it only has to bridge a small gap to reach him. */}
+        {/* Tail is the thing that reaches down toward Finn's head, the body
+            above stays clear of his face entirely (a bubble sitting low
+            enough to cover his eyes reads as "in the way", not "talking"). */}
         <svg
           aria-hidden
-          viewBox="0 0 30 30"
-          className="absolute -bottom-3 left-5 z-0 h-7 w-6"
+          viewBox="0 0 30 40"
+          className="absolute -bottom-4 left-5 z-0 h-7 w-6"
           fill="none"
         >
           <path
-            d="M23 3 C 12 6, 4 15, 2 28 C 1 18, 3 8, 10 1 Z"
+            d="M23 3 C 12 10, 4 22, 2 38 C 1 24, 3 10, 10 1 Z"
             fill="hsl(var(--surface))"
             stroke="hsl(var(--border))"
             strokeWidth="1.4"
@@ -160,10 +161,10 @@ function BubbleDesktop() {
           />
         </svg>
         <div
-          className="relative z-10 border-[1.5px] border-border bg-surface px-5 py-3.5 shadow-card"
+          className="relative z-10 border-[1.5px] border-border bg-surface px-4 py-3 shadow-card"
           style={{ borderRadius: "44% 56% 42% 58% / 60% 44% 62% 40%" }}
         >
-          <p className="text-[16px] leading-snug text-foreground/90">
+          <p className="text-[13.5px] leading-snug text-foreground/90">
             Schön, dass du da bist. Ich bin{" "}
             <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
           </p>
@@ -179,24 +180,24 @@ function BubbleMobile() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute -top-4 left-1/2 z-20 w-[17rem] md:hidden"
+      className="absolute -top-14 left-1/2 z-20 w-[14rem] md:hidden"
     >
       {/* Centering (-translate-x-1/2) and tilt live on this plain inner div,
           not the motion.div above, see BubbleDesktop's comment: framer-motion
           owns `transform` for its own animation and would silently drop a
           Tailwind transform utility placed on the same element. */}
       <div className="relative -translate-x-1/2 rotate-1 text-left">
-        {/* Points straight down into Finn's head (he's directly beneath, this
-            bubble overlaps the top of his own box, anchored to the same Finn
-            wrapper as BubbleDesktop, never independently centered by the row). */}
+        {/* Tail reaches down toward Finn's head, the body above stays clear
+            of his face (a bubble covering his eyes reads as "in the way",
+            not "talking"). */}
         <svg
           aria-hidden
-          viewBox="0 0 34 30"
-          className="absolute -bottom-3 left-1/2 z-0 h-7 w-8 -translate-x-1/2"
+          viewBox="0 0 34 40"
+          className="absolute -bottom-4 left-1/2 z-0 h-7 w-7 -translate-x-1/2"
           fill="none"
         >
           <path
-            d="M6 2 C 14 8, 22 16, 26 28 C 18 24, 8 18, 2 8 Z"
+            d="M6 2 C 14 10, 22 22, 26 38 C 18 32, 8 24, 2 8 Z"
             fill="hsl(var(--surface))"
             stroke="hsl(var(--border))"
             strokeWidth="1.5"
@@ -204,10 +205,10 @@ function BubbleMobile() {
           />
         </svg>
         <div
-          className="relative z-10 border-[1.5px] border-border bg-surface px-5 py-3.5 shadow-card"
+          className="relative z-10 border-[1.5px] border-border bg-surface px-4 py-3 shadow-card"
           style={{ borderRadius: "42% 58% 40% 60% / 58% 42% 64% 46%" }}
         >
-          <p className="text-[15px] leading-snug text-foreground/90">
+          <p className="text-[13.5px] leading-snug text-foreground/90">
             Schön, dass du da bist. Ich bin{" "}
             <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
           </p>
