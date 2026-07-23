@@ -134,7 +134,7 @@ function BubbleDesktop() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute -top-9 left-[58%] z-20 hidden w-[200px] md:block"
+      className="absolute -top-9 left-[20%] z-20 hidden w-[180px] md:block"
     >
       {/* The tilt lives on this plain inner div, not the motion.div above:
           framer-motion owns the `transform` CSS property for its own
