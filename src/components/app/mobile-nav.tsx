@@ -159,41 +159,48 @@ export function MobileNav({
                     </nav>
                   </>
                 ) : (
-                  <nav aria-label="Projekte" className="space-y-0.5">
-                    {projects.length === 0 ? (
-                      <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
-                        Noch kein Projekt angelegt.
-                      </p>
-                    ) : (
-                      projects.map((p) => {
-                        const active =
-                          pathname === `/projects/${p.id}` ||
-                          pathname.startsWith(`/projects/${p.id}/`);
-                        return (
-                          <Link
-                            key={p.id}
-                            href={`/projects/${p.id}`}
-                            onClick={() => setOpen(false)}
-                            title={p.name}
-                            aria-current={active ? "page" : undefined}
-                            className={cn(
-                              "flex items-center gap-2 rounded-md py-[9px] pl-3.5 pr-3 text-[14px] transition-colors",
-                              active ? ACTIVE_ROW : INACTIVE_ROW
-                            )}
-                          >
-                            <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                            {p.isFavorite && (
-                              <Star
-                                aria-label="Angepinnt"
-                                className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
-                              />
-                            )}
-                          </Link>
-                        );
-                      })
-                    )}
-                    <NewProjectButton variant="row" />
-                  </nav>
+                  <>
+                    {/* Same size/fill/position as "Neuer Chat" above, a
+                        project and a chat are started the same way. */}
+                    <NewProjectButton
+                      variant="bar"
+                      className="flex items-center justify-center gap-2 mb-4 mx-1 h-10 w-[calc(100%-0.5rem)] rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
+                    />
+                    <nav aria-label="Projekte" className="space-y-0.5">
+                      {projects.length === 0 ? (
+                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                          Noch kein Projekt angelegt.
+                        </p>
+                      ) : (
+                        projects.map((p) => {
+                          const active =
+                            pathname === `/projects/${p.id}` ||
+                            pathname.startsWith(`/projects/${p.id}/`);
+                          return (
+                            <Link
+                              key={p.id}
+                              href={`/projects/${p.id}`}
+                              onClick={() => setOpen(false)}
+                              title={p.name}
+                              aria-current={active ? "page" : undefined}
+                              className={cn(
+                                "flex items-center gap-2 rounded-md py-[9px] pl-3.5 pr-3 text-[14px] transition-colors",
+                                active ? ACTIVE_ROW : INACTIVE_ROW
+                              )}
+                            >
+                              <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                              {p.isFavorite && (
+                                <Star
+                                  aria-label="Angepinnt"
+                                  className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
+                                />
+                              )}
+                            </Link>
+                          );
+                        })
+                      )}
+                    </nav>
+                  </>
                 )}
 
                 <div className="my-5 h-px bg-border" />

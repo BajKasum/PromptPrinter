@@ -16,7 +16,9 @@ import {
 import { Logo, LogoMark } from "@/components/brand/logo";
 import { NewProjectButton } from "@/components/app/new-project";
 import { CommandPalette } from "@/components/app/command-palette";
+import { PlanBadge } from "@/components/app/plan-badge";
 import { primaryNav, secondaryNav, type NavItem } from "@/lib/nav";
+import type { PlanKey } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { useSidebarCollapse, SIDEBAR_COOKIE } from "@/lib/use-sidebar-collapse";
@@ -273,41 +275,48 @@ function Full({
               </div>
             </>
           ) : (
-            <div className="space-y-0.5">
-              {projects.length === 0 ? (
-                <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
-                  Noch kein Projekt angelegt.
-                </p>
-              ) : (
-                projects.map((p) => {
-                  // Subrouten (Chats, Ergebnisse) gehören zum selben Raum.
-                  const active =
-                    pathname === `/projects/${p.id}` ||
-                    pathname.startsWith(`/projects/${p.id}/`);
-                  return (
-                    <Link
-                      key={p.id}
-                      href={`/projects/${p.id}`}
-                      title={p.name}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
-                        active ? ACTIVE_ROW : INACTIVE_ROW
-                      )}
-                    >
-                      <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                      {p.isFavorite && (
-                        <Star
-                          aria-label="Angepinnt"
-                          className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
-                        />
-                      )}
-                    </Link>
-                  );
-                })
-              )}
-              <NewProjectButton variant="row" />
-            </div>
+            <>
+              {/* Same border/size/position as "Neuer Chat" above, a project
+                  and a chat are started the same way, they should look it. */}
+              <NewProjectButton
+                variant="bar"
+                className="mx-1 mb-5 flex h-9 w-[calc(100%-0.5rem)] items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
+              />
+              <div className="space-y-0.5">
+                {projects.length === 0 ? (
+                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                    Noch kein Projekt angelegt.
+                  </p>
+                ) : (
+                  projects.map((p) => {
+                    // Subrouten (Chats, Ergebnisse) gehören zum selben Raum.
+                    const active =
+                      pathname === `/projects/${p.id}` ||
+                      pathname.startsWith(`/projects/${p.id}/`);
+                    return (
+                      <Link
+                        key={p.id}
+                        href={`/projects/${p.id}`}
+                        title={p.name}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
+                          active ? ACTIVE_ROW : INACTIVE_ROW
+                        )}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                        {p.isFavorite && (
+                          <Star
+                            aria-label="Angepinnt"
+                            className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
+                          />
+                        )}
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -440,6 +449,10 @@ function AccountMenu({
   const label = displayName || email.split("@")[0] || "Konto";
   const initial = (label[0] ?? "?").toUpperCase();
   const showAvatar = Boolean(avatarUrl) && !avatarBroken;
+  // `plan` arrives as a raw DB string (Sidebar's own prop stays loosely typed),
+  // narrow it the same way billing/settings already do before it reaches the
+  // shared PlanBadge, which needs a real PlanKey.
+  const planKey: PlanKey = plan === "pro" || plan === "team" ? plan : "free";
 
   useEffect(() => {
     if (!open) return;
@@ -494,6 +507,7 @@ function AccountMenu({
         {!collapsed && (
           <>
             <span className="min-w-0 flex-1 truncate text-left text-[13px]">{label}</span>
+            <PlanBadge plan={planKey} isAdmin={isAdmin} />
             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </>
         )}
@@ -532,15 +546,9 @@ function AccountMenu({
                   <div className="truncate text-[12px] text-muted-foreground">{email}</div>
                 </div>
               </div>
-              {isAdmin ? (
-                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-amber-300">
-                  Admin
-                </span>
-              ) : (
-                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-subtle px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-accent-text">
-                  {plan} Plan
-                </span>
-              )}
+              <div className="mt-2">
+                <PlanBadge plan={planKey} isAdmin={isAdmin} />
+              </div>
             </div>
             <div className="p-1.5">
               {secondaryNav.map(({ label: navLabel, href, Icon }) => (

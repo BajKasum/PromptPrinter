@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { FolderPlus, Loader2, Plus } from "lucide-react";
+import { FolderPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +16,14 @@ import { useToast } from "@/components/ui/toast";
 
 export function NewProjectButton({
   variant = "action",
+  className,
 }: {
-  /** "action" = Seiten-Button, "row" = leise Sidebar-Zeile. */
-  variant?: "action" | "row";
+  /** "action" = Seiten-Button (Button-Komponente, primary). "bar" = die
+   * "Neuer Chat"-Leiste in Sidebar/Mobile-Drawer, exakt deren Klassen über
+   * `className` gespiegelt, damit ein Projekt genauso startet wie ein Chat. */
+  variant?: "action" | "bar";
+  /** Nur für variant="bar", die Klassen der Aufrufstelle (spiegelt "Neuer Chat"). */
+  className?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -85,15 +90,9 @@ export function NewProjectButton({
 
   return (
     <>
-      {variant === "row" ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="group mt-1 flex w-full items-center gap-2.5 rounded-md py-[7px] pl-3.5 pr-3 text-left text-[13px] text-foreground/50 transition-colors hover:bg-surface-hover hover:text-foreground"
-        >
-          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-dashed border-border-strong transition-colors group-hover:border-accent-text/60 group-hover:text-accent-text">
-            <Plus className="h-3 w-3" strokeWidth={2} />
-          </span>
+      {variant === "bar" ? (
+        <button type="button" onClick={() => setOpen(true)} className={className}>
+          <FolderPlus className="h-4 w-4" />
           Neues Projekt
         </button>
       ) : (
