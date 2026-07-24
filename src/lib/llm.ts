@@ -171,23 +171,44 @@ export async function chatComplete(opts: {
  * detecting that is left to the caller (checking the accumulated text once
  * the generator completes), same as every provider function below already
  * does for its own non-streaming counterpart.
+ *
+ * `signal`, when given, is threaded into whichever provider call actually
+ * runs (all three SDKs plus plain fetch accept an AbortSignal), so a user
+ * stopping generation client-side stops the upstream provider call too, not
+ * just the delivery to the browser, /api/chat passes its own Request's
+ * signal straight through.
  */
 export async function* chatCompleteStream(opts: {
   system: string;
   messages: LlmMessage[];
   maxOutputTokens?: number;
   override?: LlmOverride;
+  signal?: AbortSignal;
 }): AsyncGenerator<string> {
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
 
   if (opts.override) {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
-      yield* anthropicCompleteStream(ANTHROPIC_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+      yield* anthropicCompleteStream(
+        ANTHROPIC_DEFAULT_MODEL,
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey,
+        opts.signal
+      );
       return;
     }
     if (provider === "openai") {
-      yield* openaiCompleteStream(OPENAI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+      yield* openaiCompleteStream(
+        OPENAI_DEFAULT_MODEL,
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey,
+        opts.signal
+      );
       return;
     }
     if (provider === "custom") {
@@ -197,11 +218,19 @@ export async function* chatCompleteStream(opts: {
         opts.system,
         opts.messages,
         maxOutputTokens,
-        apiKey
+        apiKey,
+        opts.signal
       );
       return;
     }
-    yield* geminiCompleteStream(GEMINI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+    yield* geminiCompleteStream(
+      GEMINI_DEFAULT_MODEL,
+      opts.system,
+      opts.messages,
+      maxOutputTokens,
+      apiKey,
+      opts.signal
+    );
     return;
   }
 
@@ -209,7 +238,7 @@ export async function* chatCompleteStream(opts: {
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {
-    yield* zaiCompleteStream(config.model, opts.system, opts.messages, maxOutputTokens);
+    yield* zaiCompleteStream(config.model, opts.system, opts.messages, maxOutputTokens, opts.signal);
     return;
   }
   yield* geminiCompleteStream(
@@ -217,7 +246,8 @@ export async function* chatCompleteStream(opts: {
     opts.system,
     opts.messages,
     maxOutputTokens,
-    process.env.GEMINI_API_KEY ?? ""
+    process.env.GEMINI_API_KEY ?? "",
+    opts.signal
   );
 }
 
@@ -353,10 +383,12 @@ async function* zaiCompleteStream(
   model: string,
   system: string,
   messages: LlmMessage[],
-  maxOutputTokens: number
+  maxOutputTokens: number,
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   const res = await fetch(ZAI_ENDPOINT, {
     method: "POST",
+    signal,
     headers: {
       authorization: `Bearer ${process.env.ZAI_API_KEY}`,
       "content-type": "application/json",
@@ -515,13 +547,15 @@ async function* customCompleteStream(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   await assertPublicHttpsUrl(endpoint);
 
   const res = await fetch(endpoint, {
     method: "POST",
     redirect: "error",
+    signal,
     headers: {
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
@@ -589,7 +623,8 @@ async function* geminiCompleteStream(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   const ai = new GoogleGenAI({ apiKey });
   const stream = await ai.models.generateContentStream({
@@ -598,7 +633,7 @@ async function* geminiCompleteStream(
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     })),
-    config: { systemInstruction: system, maxOutputTokens },
+    config: { systemInstruction: system, maxOutputTokens, abortSignal: signal },
   });
   for await (const chunk of stream) {
     if (chunk.text) yield chunk.text;
@@ -641,16 +676,20 @@ async function* anthropicCompleteStream(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   const anthropic = new Anthropic({ apiKey });
-  const stream = await anthropic.messages.create({
-    model,
-    system,
-    max_tokens: maxOutputTokens,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    stream: true,
-  });
+  const stream = await anthropic.messages.create(
+    {
+      model,
+      system,
+      max_tokens: maxOutputTokens,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      stream: true,
+    },
+    { signal }
+  );
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       yield event.delta.text;
@@ -689,15 +728,19 @@ async function* openaiCompleteStream(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   const client = new OpenAI({ apiKey });
-  const stream = await client.chat.completions.create({
-    model,
-    messages: [{ role: "system", content: system }, ...messages],
-    max_completion_tokens: maxOutputTokens,
-    stream: true,
-  });
+  const stream = await client.chat.completions.create(
+    {
+      model,
+      messages: [{ role: "system", content: system }, ...messages],
+      max_completion_tokens: maxOutputTokens,
+      stream: true,
+    },
+    { signal }
+  );
   for await (const chunk of stream) {
     const text = chunk.choices[0]?.delta?.content;
     if (text) yield text;

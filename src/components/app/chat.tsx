@@ -67,6 +67,8 @@ export function Chat({
   // lands, so a long result opens at its start, you read a prompt top-down).
   const endRef = useRef<HTMLDivElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  // The in-flight request's controller, so stop() (below) can abort it.
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -80,6 +82,10 @@ export function Chat({
     }
   }, [messages, loading, streamingReply]);
 
+  function stop() {
+    abortControllerRef.current?.abort();
+  }
+
   async function send(textArg?: string) {
     const text = (textArg ?? input).trim();
     if (!text || loading) return;
@@ -90,11 +96,20 @@ export function Chat({
     setPersistWarning(null);
     setStreamingReply(null);
     setLoading(true);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    // The route streams the reply as "delta" events (see /api/chat), a local
+    // accumulator rather than reading `streamingReply` back: state updates
+    // are async, this loop needs the exact running text on every iteration,
+    // not whatever last rendered, and the abort branch below needs whatever
+    // arrived so far too.
+    let accumulated = "";
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ mode, target, conversationId, projectId, messages: next }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}) as Record<string, unknown>);
@@ -102,11 +117,6 @@ export function Chat({
       }
       if (!res.body) throw new Error("Keine Antwort erhalten.");
 
-      // The route streams the reply as "delta" events (see /api/chat), a
-      // local accumulator rather than reading `streamingReply` back: state
-      // updates are async, this loop needs the exact running text on every
-      // iteration, not whatever last rendered.
-      let accumulated = "";
       for await (const { event, data } of parseSseEvents(res.body)) {
         if (event === "delta") {
           const { text: chunk } = JSON.parse(data) as { text: string };
@@ -147,7 +157,17 @@ export function Chat({
         }
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        // User-initiated stop, not a real failure: keep whatever text had
+        // already streamed in as the committed reply instead of discarding
+        // it (the route does the same server-side, best-effort persisting
+        // the same partial text, see /api/chat).
+        if (accumulated.trim()) {
+          setMessages((m) => [...m, { role: "assistant", content: accumulated }]);
+        }
+      } else {
+        setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+      }
     } finally {
       setStreamingReply(null);
       setLoading(false);
@@ -229,6 +249,7 @@ export function Chat({
         placeholder={placeholder}
         loading={loading}
         onSend={() => send()}
+        onStop={stop}
       />
     </div>
   );

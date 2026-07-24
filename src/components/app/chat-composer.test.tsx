@@ -6,6 +6,7 @@ import { ChatComposer } from "./chat-composer";
 function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
   const onInputChange = vi.fn();
   const onSend = vi.fn();
+  const onStop = vi.fn();
   render(
     <ChatComposer
       input=""
@@ -13,10 +14,11 @@ function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {
       placeholder="Schreib etwas..."
       loading={false}
       onSend={onSend}
+      onStop={onStop}
       {...overrides}
     />
   );
-  return { onInputChange, onSend };
+  return { onInputChange, onSend, onStop };
 }
 
 describe("ChatComposer", () => {
@@ -35,9 +37,17 @@ describe("ChatComposer", () => {
     expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
   });
 
-  it("disables send while loading even with input present", () => {
+  it("replaces send with a clickable stop button while loading", () => {
     setup({ input: "hallo", loading: true });
-    expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Senden/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stoppen/ })).not.toBeDisabled();
+  });
+
+  it("calls onStop when the stop button is clicked", async () => {
+    const user = userEvent.setup();
+    const { onStop } = setup({ input: "hallo", loading: true });
+    await user.click(screen.getByRole("button", { name: /stoppen/ }));
+    expect(onStop).toHaveBeenCalledTimes(1);
   });
 
   it("calls onSend when the send button is clicked", async () => {

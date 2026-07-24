@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 
@@ -19,12 +19,15 @@ export function ChatComposer({
   placeholder,
   loading,
   onSend,
+  onStop,
 }: {
   input: string;
   onInputChange: (value: string) => void;
   placeholder: string;
   loading: boolean;
   onSend: () => void;
+  /** Stops an in-flight reply (aborts the fetch), the composer's button switches to this while loading. */
+  onStop: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,15 +62,27 @@ export function ChatComposer({
         {/* No permanent "Enter sendet…" hint here, Enter-to-send is a
             convention every chat app already teaches; repeating it on every
             single message would be chrome, not help. */}
-        <Button
-          onClick={onSend}
-          disabled={loading || !input.trim()}
-          size="icon"
-          aria-label="Senden"
-          className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </Button>
+        {loading ? (
+          <Button
+            onClick={onStop}
+            size="icon"
+            variant="subtle"
+            aria-label="Generierung stoppen"
+            className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
+          >
+            <Square className="h-3.5 w-3.5 fill-current" />
+          </Button>
+        ) : (
+          <Button
+            onClick={onSend}
+            disabled={!input.trim()}
+            size="icon"
+            aria-label="Senden"
+            className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

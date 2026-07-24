@@ -191,7 +191,7 @@ describe("Chat", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("disables the send button while a request is in flight, streaming text in as it grows", async () => {
+  it("swaps send for a stop button while a request is in flight, streaming text in as it grows", async () => {
     let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
@@ -205,17 +205,58 @@ describe("Chat", () => {
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
-    expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Senden/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stoppen/ })).not.toBeDisabled();
 
     const encoder = new TextEncoder();
     controllerRef.enqueue(encoder.encode(sseFrame("delta", { text: "spät" })));
     expect(await screen.findByText("spät")).toBeInTheDocument();
-    // Still in flight (no "done" yet), the button stays disabled while the
+    // Still in flight (no "done" yet), the stop button stays up while the
     // live preview bubble is showing partial text.
-    expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /stoppen/ })).toBeInTheDocument();
 
     controllerRef.enqueue(encoder.encode(sseFrame("done", {})));
     controllerRef.close();
     await screen.findByText("spät");
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+  });
+
+  it("stops generation on click, keeping whatever text had already streamed in", async () => {
+    // Mirrors what really happens on abort: fetch() itself has already
+    // resolved (the response headers arrived), it's the body *read* that
+    // rejects once the connection tears down, so the abort listener errors
+    // the stream's controller rather than rejecting the fetch call.
+    let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const signal = init.signal as AbortSignal;
+        signal.addEventListener("abort", () => {
+          controllerRef.error(new DOMException("aborted", "AbortError"));
+        });
+        return { ok: true, body, json: async () => ({}) };
+      })
+    );
+    render(<Chat mode="general" />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    const encoder = new TextEncoder();
+    controllerRef.enqueue(encoder.encode(sseFrame("delta", { text: "Teilweise da" })));
+    await screen.findByText("Teilweise da");
+
+    await user.click(screen.getByRole("button", { name: /stoppen/ }));
+
+    // The partial reply is kept, not discarded, and no error banner appears
+    // for a stop the user asked for.
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

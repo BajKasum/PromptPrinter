@@ -154,8 +154,23 @@ export async function POST(req: Request) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // Both swallow errors from writing to an already-closed/errored
+      // controller, which happens whenever the client disconnected (it
+      // stopped generation, or just navigated away), nothing is listening
+      // on the other end at that point either way.
       function send(event: string, data: unknown) {
-        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Client already gone.
+        }
+      }
+      function closeQuietly() {
+        try {
+          controller.close();
+        } catch {
+          // Already closed.
+        }
       }
 
       let reply = "";
@@ -172,6 +187,7 @@ export async function POST(req: Request) {
             system: systemInstruction,
             messages: trimHistory(input.messages),
             override: override ?? undefined,
+            signal: req.signal,
           })) {
             reply += chunk;
             send("delta", { text: chunk });
@@ -179,6 +195,23 @@ export async function POST(req: Request) {
           if (!reply.trim()) throw new Error("Der KI-Anbieter hat keine Antwort geliefert.");
         }
       } catch (err) {
+        if (req.signal.aborted) {
+          // The client stopped generation itself (not a provider failure):
+          // the connection is already gone, so there's no "done"/"error"
+          // event left to deliver either way. Best-effort save whatever
+          // partial reply had already streamed, same as a natural
+          // completion would, so stopping early doesn't silently lose it on
+          // the next reload (the client keeps its own local copy of the
+          // same partial text). An empty partial means nothing was actually
+          // generated yet, nothing to persist, and the reservation is
+          // released the same as any other no-op call.
+          if (reply.trim() && userId && supabase) {
+            await persistTurn(supabase, userId, input, reply).catch(() => {});
+          } else if (!reply.trim() && releaseQuota) {
+            await releaseQuota();
+          }
+          return;
+        }
         // The call never produced a (full) reply, so it never actually cost
         // anything, release the reservation instead of burning a slot on
         // nothing. The status line is already committed at this point (200),
@@ -188,7 +221,7 @@ export async function POST(req: Request) {
         send("error", {
           detail: `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`,
         });
-        controller.close();
+        closeQuietly();
         return;
       }
 
@@ -211,7 +244,7 @@ export async function POST(req: Request) {
         ...(conversationId ? { conversationId } : {}),
         ...(persistError ? { persistError } : {}),
       });
-      controller.close();
+      closeQuietly();
     },
   });
 
