@@ -12,7 +12,7 @@ export const metadata = { title: "Projekt-Chat" };
 
 type Params = Promise<{ id: string; cid: string }>;
 
-type DbMessage = { role: "user" | "assistant"; content: string };
+type DbMessage = { id: string; role: "user" | "assistant"; content: string };
 
 // Ein Projekt-Chat auf seiner kanonischen Subroute (REDESIGN.md, Phase 3).
 // Chat-vs-Workspace-Trennung: diese Route liegt bewusst ausserhalb der
@@ -41,7 +41,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   const [{ data: rows }, { count: resultCount }, { data: profile }] = await Promise.all([
     supabase
       .from("messages")
-      .select("role, content")
+      .select("id, role, content")
       .eq("conversation_id", cid)
       .order("created_at", { ascending: true }),
     supabase

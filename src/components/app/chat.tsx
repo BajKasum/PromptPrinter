@@ -10,7 +10,11 @@ import { MarkdownMessage } from "@/components/app/chat-markdown";
 import { resolveVariant, resolveEmptyState, type ChatMode } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
 
-type Msg = { role: "user" | "assistant"; content: string };
+// A stable id per message (real DB id for history loaded from the server,
+// a client-generated one for anything created during this session) is the
+// React key below, an always-appending list would tolerate the array index
+// too, but a stable id survives if the transcript is ever edited/trimmed.
+type Msg = { id: string; role: "user" | "assistant"; content: string };
 
 // Orchestrator only, every UI role that used to live inline here now has its
 // own file (chat-empty-state, chat-result-panel, chat-transcript,
@@ -89,7 +93,7 @@ export function Chat({
   async function send(textArg?: string) {
     const text = (textArg ?? input).trim();
     if (!text || loading) return;
-    const next: Msg[] = [...messages, { role: "user", content: text }];
+    const next: Msg[] = [...messages, { id: crypto.randomUUID(), role: "user", content: text }];
     setMessages(next);
     setInput("");
     setError(null);
@@ -130,7 +134,7 @@ export function Chat({
             conversationId?: string;
             persistError?: string;
           };
-          setMessages((m) => [...m, { role: "assistant", content: accumulated }]);
+          setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: accumulated }]);
           // The route returns the conversation id on the first persisted turn;
           // hold onto it so every following turn appends to the same stored
           // chat. That first turn moves a fresh chat onto its canonical URL,
@@ -163,7 +167,7 @@ export function Chat({
         // it (the route does the same server-side, best-effort persisting
         // the same partial text, see /api/chat).
         if (accumulated.trim()) {
-          setMessages((m) => [...m, { role: "assistant", content: accumulated }]);
+          setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: accumulated }]);
         }
       } else {
         setError(e instanceof Error ? e.message : "Unbekannter Fehler");
@@ -199,13 +203,13 @@ export function Chat({
           <div role="log" aria-live="polite" className="flex flex-col gap-6">
             {messages.map((m, i) =>
               m.role === "user" ? (
-                <ChatUserBubble key={i} content={m.content} />
+                <ChatUserBubble key={m.id} content={m.content} />
               ) : i === lastAssistantIndex ? (
-                <div key={i} ref={resultRef} className="scroll-mt-24">
+                <div key={m.id} ref={resultRef} className="scroll-mt-24">
                   <ChatResultPanel content={m.content} projectId={projectId} target={target} />
                 </div>
               ) : (
-                <ChatAssistantBubble key={i} content={m.content} index={i} />
+                <ChatAssistantBubble key={m.id} content={m.content} index={i} />
               )
             )}
             {loading && streamingReply === null && <ChatTyping />}

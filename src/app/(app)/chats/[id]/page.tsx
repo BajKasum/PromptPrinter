@@ -11,7 +11,7 @@ export const metadata = { title: "Chat" };
 
 type Params = Promise<{ id: string }>;
 
-type DbMessage = { role: "user" | "assistant"; content: string };
+type DbMessage = { id: string; role: "user" | "assistant"; content: string };
 
 // The canonical home of one global chat (REDESIGN.md, Phase 2). Chats that
 // belong to a project live in their workspace instead, opening one here
@@ -40,7 +40,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   const [{ data: rows }, { data: profile }] = await Promise.all([
     supabase
       .from("messages")
-      .select("role, content")
+      .select("id, role, content")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true }),
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),

@@ -72,19 +72,17 @@ describe("Chat", () => {
     expect(screen.getByText("Hallo Finn")).toBeInTheDocument();
     expect(await screen.findByText("Hier ist dein Plan.")).toBeInTheDocument();
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/chat",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({
-          mode: "general",
-          target: undefined,
-          conversationId: undefined,
-          projectId: undefined,
-          messages: [{ role: "user", content: "Hallo Finn" }],
-        }),
-      })
-    );
+    // Each outgoing user message carries a client-generated id (React key,
+    // see chat.tsx's Msg type), so the body can't be a fixed JSON string
+    // anymore, parse it and check structurally instead.
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[0]).toBe("/api/chat");
+    expect(call[1].method).toBe("POST");
+    const body = JSON.parse(call[1].body);
+    expect(body.mode).toBe("general");
+    expect(body.messages).toEqual([
+      { id: expect.any(String), role: "user", content: "Hallo Finn" },
+    ]);
   });
 
   it("redirects to the canonical chat URL once a fresh conversationId comes back", async () => {
@@ -107,8 +105,8 @@ describe("Chat", () => {
         mode="general"
         initialConversationId="conv-1"
         initialMessages={[
-          { role: "user", content: "erste Frage" },
-          { role: "assistant", content: "erste Antwort" },
+          { id: "m1", role: "user", content: "erste Frage" },
+          { id: "m2", role: "assistant", content: "erste Antwort" },
         ]}
       />
     );
