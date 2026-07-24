@@ -3,6 +3,7 @@ import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatCompleteStream, llmConfig, type LlmOverride } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
+import { getCachedFileContent } from "@/lib/project-file-cache";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
 import { CHAT_SYSTEM_PROMPT } from "@/prompts";
@@ -446,22 +447,28 @@ async function buildFilesContext(
       skipped.push(f.name);
       continue;
     }
-    try {
-      const { data: blob, error } = await supabase.storage
-        .from("project-files")
-        .download(f.storage_path);
-      if (error || !blob) {
-        skipped.push(f.name);
-        continue;
+    // storage_path is immutable once uploaded (see project-file-cache.ts),
+    // so the download only actually runs on a cache miss, not on every turn
+    // of a project chat.
+    const text = await getCachedFileContent(f.storage_path, async () => {
+      try {
+        const { data: blob, error } = await supabase.storage
+          .from("project-files")
+          .download(f.storage_path);
+        if (error || !blob) return null;
+        return (await blob.text()).trim();
+      } catch {
+        return null;
       }
-      const text = (await blob.text()).trim();
-      if (!text) continue;
-      const content = truncate(text, Math.min(FILES_PER_FILE_CAP, remaining));
-      blocks.push(`File: ${f.name}\n${content}`);
-      remaining -= content.length;
-    } catch {
+    });
+    if (text === null) {
       skipped.push(f.name);
+      continue;
     }
+    if (!text) continue;
+    const content = truncate(text, Math.min(FILES_PER_FILE_CAP, remaining));
+    blocks.push(`File: ${f.name}\n${content}`);
+    remaining -= content.length;
   }
 
   if (blocks.length === 0) return "";
