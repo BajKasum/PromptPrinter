@@ -284,10 +284,9 @@ const FILES_PER_FILE_CAP = 3000;
 // project's living briefing, not just the original raw idea. Order encodes
 // priority, the user's instructions come first and overrule everything else,
 // then the structure fields, then attached files, then the legacy idea, then
-// the newest saved artifact for reference. Every part is optional (an empty
-// workspace simply yields a shorter block); the artifact is detected by
-// outputs shape (master-Key = build packet, prompt-Key = saved prompt),
-// project.type is legacy data. Returns null when the project isn't found or
+// the newest saved prompt for reference. Every part is optional (an empty
+// workspace simply yields a shorter block); project.type is legacy data.
+// Returns null when the project isn't found or
 // isn't owned by the caller (RLS-scoped read).
 async function buildProjectContext(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
@@ -339,11 +338,8 @@ async function buildProjectContext(
   const idea = typeof project.idea === "string" ? project.idea.trim() : "";
   if (idea) parts.push(`Idea: ${truncate(idea, 1000)}`);
 
-  const master = typeof outputs.master === "string" ? outputs.master : "";
   const prompt = typeof outputs.prompt === "string" ? outputs.prompt : "";
-  if (master) {
-    parts.push(`Current Master-Prompt artifact (for reference):\n${truncate(master, 1500)}`);
-  } else if (prompt) {
+  if (prompt) {
     parts.push(`Current saved prompt (for reference):\n${truncate(prompt, 1500)}`);
   }
 
