@@ -157,6 +157,70 @@ export async function chatComplete(opts: {
   );
 }
 
+/**
+ * Same dispatch as chatComplete, but yields text deltas as they arrive
+ * instead of waiting for the full reply, /api/chat consumes this to stream
+ * the reply to the client turn by turn instead of the client waiting on one
+ * opaque round trip. Only used by the chat route: the settings BYOK
+ * "test this key" call and anything else that just needs the final text
+ * keeps using chatComplete.
+ *
+ * Doesn't itself throw LlmEmptyReplyError, an empty stream (the generator
+ * completing having yielded nothing) is indistinguishable from "the model
+ * legitimately said nothing" until the caller has seen the whole thing, so
+ * detecting that is left to the caller (checking the accumulated text once
+ * the generator completes), same as every provider function below already
+ * does for its own non-streaming counterpart.
+ */
+export async function* chatCompleteStream(opts: {
+  system: string;
+  messages: LlmMessage[];
+  maxOutputTokens?: number;
+  override?: LlmOverride;
+}): AsyncGenerator<string> {
+  const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+
+  if (opts.override) {
+    const { provider, apiKey } = opts.override;
+    if (provider === "anthropic") {
+      yield* anthropicCompleteStream(ANTHROPIC_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+      return;
+    }
+    if (provider === "openai") {
+      yield* openaiCompleteStream(OPENAI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+      return;
+    }
+    if (provider === "custom") {
+      yield* customCompleteStream(
+        opts.override.baseUrl,
+        opts.override.model,
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey
+      );
+      return;
+    }
+    yield* geminiCompleteStream(GEMINI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+    return;
+  }
+
+  const config = llmConfig();
+  if (!config) throw new Error("no LLM provider configured");
+
+  if (config.provider === "zai") {
+    yield* zaiCompleteStream(config.model, opts.system, opts.messages, maxOutputTokens);
+    return;
+  }
+  yield* geminiCompleteStream(
+    config.model,
+    opts.system,
+    opts.messages,
+    maxOutputTokens,
+    process.env.GEMINI_API_KEY ?? ""
+  );
+}
+
 // Z.ai's current plan caps how many requests it'll serve at once, observed:
 // firing 5 in parallel gets ~2 through and 429s the rest (error code 1302,
 // "Rate limit reached for requests"). /api/generate needs up to 10 artifact
@@ -285,6 +349,94 @@ async function zaiComplete(
   return { text, usage };
 }
 
+async function* zaiCompleteStream(
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number
+): AsyncGenerator<string> {
+  const res = await fetch(ZAI_ENDPOINT, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${process.env.ZAI_API_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: maxOutputTokens,
+      stream: true,
+      thinking: { type: "disabled" },
+    }),
+  });
+
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let detail = raw.slice(0, 300);
+    try {
+      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
+      if (parsed.error?.message) detail = parsed.error.message;
+    } catch {
+      // keep the truncated raw text
+    }
+    throw new Error(`Z.ai ${res.status}: ${detail || res.statusText}`);
+  }
+  if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
+
+  yield* readOpenAiCompatibleSse(res.body);
+}
+
+type OpenAiStreamChunk = {
+  choices?: { delta?: { content?: string; reasoning_content?: string } }[];
+};
+
+/**
+ * Shared by zaiCompleteStream and customCompleteStream, both speak the same
+ * OpenAI-compatible chat/completions SSE dialect: newline-delimited
+ * `data: {...}` frames separated by a blank line, terminated by `data:
+ * [DONE]`. Buffers across chunk boundaries since a network read can split a
+ * frame anywhere.
+ */
+async function* readOpenAiCompatibleSse(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep: number;
+      while ((sep = buffer.indexOf("\n\n")) !== -1) {
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        for (const line of frame.split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const data = trimmed.slice(5).trim();
+          if (data === "[DONE]") return;
+          let parsed: OpenAiStreamChunk;
+          try {
+            parsed = JSON.parse(data);
+          } catch {
+            continue;
+          }
+          const delta = parsed.choices?.[0]?.delta;
+          // Same last-resort fallback as the non-streaming reply: content is
+          // the real answer, reasoning_content only stands in when a chunk
+          // carries nothing else (thinking is off for Z.ai, so this should
+          // rarely fire there; a BYOK custom endpoint controls its own
+          // thinking flag, so it's kept here too for parity).
+          const text = delta?.content || delta?.reasoning_content || "";
+          if (text) yield text;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 // ─── Custom (BYOK only), any OpenAI-compatible chat/completions endpoint ───
 // The user supplies their own endpoint + model alongside the key (settings →
 // "Eigene API-Keys" → "Custom"), so this covers Z.ai, DeepSeek, Groq,
@@ -357,6 +509,48 @@ async function customComplete(
   return { text, usage };
 }
 
+async function* customCompleteStream(
+  endpoint: string,
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): AsyncGenerator<string> {
+  await assertPublicHttpsUrl(endpoint);
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    redirect: "error",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: system }, ...messages],
+      max_tokens: maxOutputTokens,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let detail = "";
+    try {
+      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
+      if (parsed.error?.message) detail = parsed.error.message;
+    } catch {
+      // Not the expected shape, nothing safe to surface from the body.
+    }
+    if (!detail) console.error(`[custom-provider] ${res.status} response body:`, raw.slice(0, 500));
+    throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
+  }
+  if (!res.body) throw new Error("Custom-Provider hat keinen Antwort-Stream geliefert.");
+
+  yield* readOpenAiCompatibleSse(res.body);
+}
+
 // ─── Gemini (secondary provider, and a BYOK choice) ─────────────────────────
 
 async function geminiComplete(
@@ -390,6 +584,27 @@ async function geminiComplete(
   return { text, usage };
 }
 
+async function* geminiCompleteStream(
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): AsyncGenerator<string> {
+  const ai = new GoogleGenAI({ apiKey });
+  const stream = await ai.models.generateContentStream({
+    model,
+    contents: messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    })),
+    config: { systemInstruction: system, maxOutputTokens },
+  });
+  for await (const chunk of stream) {
+    if (chunk.text) yield chunk.text;
+  }
+}
+
 // ─── Anthropic (BYOK only, never the server's own provider) ────────────────
 
 async function anthropicComplete(
@@ -421,6 +636,28 @@ async function anthropicComplete(
   return { text, usage };
 }
 
+async function* anthropicCompleteStream(
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): AsyncGenerator<string> {
+  const anthropic = new Anthropic({ apiKey });
+  const stream = await anthropic.messages.create({
+    model,
+    system,
+    max_tokens: maxOutputTokens,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    stream: true,
+  });
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      yield event.delta.text;
+    }
+  }
+}
+
 // ─── OpenAI (BYOK only, never the server's own provider) ───────────────────
 
 async function openaiComplete(
@@ -445,4 +682,24 @@ async function openaiComplete(
     : null;
 
   return { text, usage };
+}
+
+async function* openaiCompleteStream(
+  model: string,
+  system: string,
+  messages: LlmMessage[],
+  maxOutputTokens: number,
+  apiKey: string
+): AsyncGenerator<string> {
+  const client = new OpenAI({ apiKey });
+  const stream = await client.chat.completions.create({
+    model,
+    messages: [{ role: "system", content: system }, ...messages],
+    max_completion_tokens: maxOutputTokens,
+    stream: true,
+  });
+  for await (const chunk of stream) {
+    const text = chunk.choices[0]?.delta?.content;
+    if (text) yield text;
+  }
 }

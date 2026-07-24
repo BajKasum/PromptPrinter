@@ -10,6 +10,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh }),
 }));
 
+// Pre-flight failures (400/401/403/429) still return a plain JSON problem
+// response, unchanged by streaming, see /api/chat.
 function mockFetchOnce(body: unknown, ok = true) {
   vi.stubGlobal(
     "fetch",
@@ -17,6 +19,28 @@ function mockFetchOnce(body: unknown, ok = true) {
       ok,
       json: async () => body,
     })
+  );
+}
+
+function sseFrame(event: string, data: unknown): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+// A successful reply is streamed as the route's own SSE protocol: zero or
+// more "delta" events, then exactly one "done" (or "error"). `events` takes
+// just the deltas' text plus the final "done" payload for brevity.
+function mockStreamingFetch(deltas: string[], done: Record<string, unknown> = {}) {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const text of deltas) controller.enqueue(encoder.encode(sseFrame("delta", { text })));
+      controller.enqueue(encoder.encode(sseFrame("done", done)));
+      controller.close();
+    },
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) })
   );
 }
 
@@ -37,8 +61,8 @@ describe("Chat", () => {
     expect(screen.getByText("Woran arbeiten wir, Kasum?")).toBeInTheDocument();
   });
 
-  it("sends a message, shows it optimistically, and renders the reply", async () => {
-    mockFetchOnce({ reply: "Hier ist dein Plan.", conversationId: "conv-1" });
+  it("sends a message, shows it optimistically, and renders the streamed reply", async () => {
+    mockStreamingFetch(["Hier ", "ist dein Plan."], { conversationId: "conv-1" });
     render(<Chat mode="general" />);
 
     const user = userEvent.setup();
@@ -64,7 +88,7 @@ describe("Chat", () => {
   });
 
   it("redirects to the canonical chat URL once a fresh conversationId comes back", async () => {
-    mockFetchOnce({ reply: "Antwort", conversationId: "conv-42" });
+    mockStreamingFetch(["Antwort"], { conversationId: "conv-42" });
     render(<Chat mode="general" />);
 
     const user = userEvent.setup();
@@ -77,7 +101,7 @@ describe("Chat", () => {
   });
 
   it("does not redirect again once a conversationId is already established", async () => {
-    mockFetchOnce({ reply: "Zweite Antwort", conversationId: "conv-1" });
+    mockStreamingFetch(["Zweite Antwort"], { conversationId: "conv-1" });
     render(
       <Chat
         mode="general"
@@ -111,8 +135,29 @@ describe("Chat", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Server explodiert");
   });
 
+  it("shows an error when the stream fails mid-generation", async () => {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(sseFrame("delta", { text: "Teilweise" })));
+        controller.enqueue(encoder.encode(sseFrame("error", { detail: "Anbieter offline" })));
+        controller.close();
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat mode="general" />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Anbieter offline");
+    // The failed turn was never committed to the transcript.
+    expect(screen.queryByText("Teilweise")).not.toBeInTheDocument();
+  });
+
   it("warns without blocking the composer when the reply couldn't be persisted", async () => {
-    mockFetchOnce({ reply: "Antwort da", persistError: "insert failed" });
+    mockStreamingFetch(["Antwort da"], { persistError: "insert failed" });
     render(<Chat mode="general" />);
 
     const user = userEvent.setup();
@@ -130,7 +175,7 @@ describe("Chat", () => {
   });
 
   it("clears a persist warning once the next turn saves successfully", async () => {
-    mockFetchOnce({ reply: "Erste Antwort", persistError: "insert failed" });
+    mockStreamingFetch(["Erste Antwort"], { persistError: "insert failed" });
     render(<Chat mode="general" />);
 
     const user = userEvent.setup();
@@ -138,7 +183,7 @@ describe("Chat", () => {
     await user.click(screen.getByRole("button", { name: /Senden/ }));
     await screen.findByRole("status");
 
-    mockFetchOnce({ reply: "Zweite Antwort", conversationId: "conv-9" });
+    mockStreamingFetch(["Zweite Antwort"], { conversationId: "conv-9" });
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Nochmal");
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
@@ -146,16 +191,14 @@ describe("Chat", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("disables the send button while a request is in flight", async () => {
-    let resolveFetch!: (v: unknown) => void;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockReturnValue(
-        new Promise((resolve) => {
-          resolveFetch = resolve;
-        })
-      )
-    );
+  it("disables the send button while a request is in flight, streaming text in as it grows", async () => {
+    let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
     render(<Chat mode="general" />);
 
     const user = userEvent.setup();
@@ -163,7 +206,16 @@ describe("Chat", () => {
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
     expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
-    resolveFetch({ ok: true, json: async () => ({ reply: "spät" }) });
+
+    const encoder = new TextEncoder();
+    controllerRef.enqueue(encoder.encode(sseFrame("delta", { text: "spät" })));
     expect(await screen.findByText("spät")).toBeInTheDocument();
+    // Still in flight (no "done" yet), the button stays disabled while the
+    // live preview bubble is showing partial text.
+    expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+
+    controllerRef.enqueue(encoder.encode(sseFrame("done", {})));
+    controllerRef.close();
+    await screen.findByText("spät");
   });
 });

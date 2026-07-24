@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
 import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
 import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { chatComplete, llmConfig, type LlmOverride } from "@/lib/llm";
+import { chatCompleteStream, llmConfig, type LlmOverride } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
@@ -143,54 +142,88 @@ export async function POST(req: Request) {
     if (ctx) systemInstruction += `\n\n${ctx}`;
   }
 
-  // 6. Produce the reply. Without a configured provider (server or BYOK) we
-  //    return a useful stub so the whole flow stays testable; otherwise we
-  //    replay the transcript through the provider module (lib/llm.ts).
-  let reply: string;
-  let mode: "stub" | "generated";
-  if (!llmConfig() && !override) {
-    const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
-    reply = stubReply(lastUser?.content ?? "");
-    mode = "stub";
-  } else {
-    try {
-      const result = await chatComplete({
-        system: systemInstruction,
-        messages: trimHistory(input.messages),
-        override: override ?? undefined,
+  // 6+7. Produce the reply and persist it, streamed to the client as it's
+  //    generated instead of one opaque round trip: everything above this
+  //    point (validation, quota, rate limit, system prompt) still returns a
+  //    plain JSON problem response on failure, only the actual reply becomes
+  //    an SSE stream. Wire protocol (hand-rolled, not the provider's own SSE
+  //    dialect, see readOpenAiCompatibleSse in lib/llm.ts for that one):
+  //      event: delta  data: {"text": "..."}   zero or more, as text arrives
+  //      event: done   data: {conversationId?, persistError?}   exactly one, on success
+  //      event: error  data: {"detail": "..."}                  exactly one, on failure
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      function send(event: string, data: unknown) {
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+      }
+
+      let reply = "";
+      let mode: "stub" | "generated";
+      try {
+        if (!llmConfig() && !override) {
+          const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
+          reply = stubReply(lastUser?.content ?? "");
+          mode = "stub";
+          send("delta", { text: reply });
+        } else {
+          mode = "generated";
+          for await (const chunk of chatCompleteStream({
+            system: systemInstruction,
+            messages: trimHistory(input.messages),
+            override: override ?? undefined,
+          })) {
+            reply += chunk;
+            send("delta", { text: chunk });
+          }
+          if (!reply.trim()) throw new Error("Der KI-Anbieter hat keine Antwort geliefert.");
+        }
+      } catch (err) {
+        // The call never produced a (full) reply, so it never actually cost
+        // anything, release the reservation instead of burning a slot on
+        // nothing. The status line is already committed at this point (200),
+        // so a failure mid-stream can only be conveyed as an "error" event,
+        // not a 502, the client treats the two the same way either way.
+        if (releaseQuota) await releaseQuota();
+        send("error", {
+          detail: `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`,
+        });
+        controller.close();
+        return;
+      }
+
+      // Persist the turn for signed-in users (in both modes), so the chat
+      // shows up in the dashboard and can be reopened/continued. Persistence
+      // failures are surfaced but never block the reply the user is waiting on.
+      let conversationId: string | null = input.conversationId ?? null;
+      let persistError: string | null = null;
+      if (userId && supabase) {
+        try {
+          conversationId = await persistTurn(supabase, userId, input, reply);
+        } catch (err) {
+          persistError = err instanceof Error ? err.message : "persist failed";
+          conversationId = null;
+        }
+      }
+
+      send("done", {
+        mode,
+        ...(conversationId ? { conversationId } : {}),
+        ...(persistError ? { persistError } : {}),
       });
-      reply = result.text;
-      mode = "generated";
-    } catch (err) {
-      // The call never produced a reply, so it never actually cost anything,
-      // release the reservation instead of burning a slot on nothing.
-      if (releaseQuota) await releaseQuota();
-      return problem(
-        502,
-        `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`
-      );
-    }
-  }
+      controller.close();
+    },
+  });
 
-  // 7. Persist the turn for signed-in users (in both modes), so the chat shows
-  //    up in the dashboard and can be reopened/continued. Persistence failures
-  //    are surfaced but never block the reply the user is waiting on.
-  let conversationId: string | null = input.conversationId ?? null;
-  let persistError: string | null = null;
-  if (userId && supabase) {
-    try {
-      conversationId = await persistTurn(supabase, userId, input, reply);
-    } catch (err) {
-      persistError = err instanceof Error ? err.message : "persist failed";
-      conversationId = null;
-    }
-  }
-
-  return NextResponse.json({
-    reply,
-    mode,
-    ...(conversationId ? { conversationId } : {}),
-    ...(persistError ? { persistError } : {}),
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
+      // Disabling proxy buffering (nginx et al.) so deltas actually arrive
+      // incrementally instead of being held until the stream closes.
+      "x-accel-buffering": "no",
+    },
   });
 }
 

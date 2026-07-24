@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { chatComplete, chatCompleteSequential, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
+import { chatComplete, chatCompleteSequential, chatCompleteStream, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
 
 // customComplete (the 'custom' BYOK provider) resolves its endpoint through
 // url-safety.ts's SSRF check before every fetch; stub DNS to a public address
@@ -278,5 +278,138 @@ describe("chatComplete: custom BYOK override", () => {
     }
     expect(caught).toBeInstanceOf(Error);
     expect((caught as Error).message).not.toContain("iam-role-credentials-secret-payload");
+  });
+});
+
+// chatCompleteStream, /api/chat's streaming path. Only the fetch-based Z.ai/
+// custom providers are covered here, mirroring chatComplete's own testing
+// boundary above: the SDK-based providers (Anthropic/OpenAI/Gemini) aren't
+// unit-tested at this layer either way, streaming or not.
+function sseBody(...dataLines: string[]): string {
+  return dataLines.map((d) => `data: ${d}\n\n`).join("");
+}
+
+function streamResponse(status: number, body: string): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(body));
+      controller.close();
+    },
+  });
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: "",
+    body: stream,
+    text: async () => body,
+  } as unknown as Response;
+}
+
+async function collectStream(gen: AsyncGenerator<string>): Promise<string> {
+  let out = "";
+  for await (const chunk of gen) out += chunk;
+  return out;
+}
+
+describe("chatCompleteStream", () => {
+  it("yields delta text chunks from Z.ai and stops at [DONE]", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        streamResponse(
+          200,
+          sseBody(
+            JSON.stringify({ choices: [{ delta: { content: "Hallo " } }] }),
+            JSON.stringify({ choices: [{ delta: { content: "Welt" } }] }),
+            "[DONE]"
+          )
+        )
+      )
+    );
+
+    const text = await collectStream(
+      chatCompleteStream({ system: "sys", messages: [{ role: "user", content: "hi" }] })
+    );
+    expect(text).toBe("Hallo Welt");
+  });
+
+  it("sends stream: true and thinking disabled in the Z.ai request body", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    let capturedBody = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedBody = init.body as string;
+        return streamResponse(200, sseBody("[DONE]"));
+      })
+    );
+
+    await collectStream(
+      chatCompleteStream({ system: "sys", messages: [{ role: "user", content: "hi" }] })
+    );
+    const body = JSON.parse(capturedBody);
+    expect(body.stream).toBe(true);
+    expect(body.thinking).toEqual({ type: "disabled" });
+  });
+
+  it("throws before streaming when Z.ai responds with a non-2xx status", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        streamResponse(401, JSON.stringify({ error: { message: "invalid api key" } }))
+      )
+    );
+
+    await expect(
+      collectStream(chatCompleteStream({ system: "sys", messages: [{ role: "user", content: "hi" }] }))
+    ).rejects.toThrow("invalid api key");
+  });
+
+  it("streams the custom BYOK endpoint the same OpenAI-compatible way", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        streamResponse(200, sseBody(JSON.stringify({ choices: [{ delta: { content: "ok" } }] }), "[DONE]"))
+      )
+    );
+
+    const text = await collectStream(
+      chatCompleteStream({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    );
+    expect(text).toBe("ok");
+  });
+
+  it("still applies the SSRF guard to the custom endpoint when streaming", async () => {
+    lookupMock.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      collectStream(
+        chatCompleteStream({
+          system: "sys",
+          messages: [{ role: "user", content: "hi" }],
+          override: {
+            provider: "custom",
+            apiKey: "user-key",
+            baseUrl: "https://sneaky.example/v1/chat/completions",
+            model: "some-model",
+          },
+        })
+      )
+    ).rejects.toThrow("nicht erlaubt");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
