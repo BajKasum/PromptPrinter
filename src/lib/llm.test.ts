@@ -279,6 +279,62 @@ describe("chatComplete: custom BYOK override", () => {
     expect(caught).toBeInstanceOf(Error);
     expect((caught as Error).message).not.toContain("iam-role-credentials-secret-payload");
   });
+
+  // Outbound-fetch hardening (4.3): an arbitrary user-supplied endpoint gets
+  // a request timeout and a response-size cap Z.ai's own fixed endpoint
+  // doesn't need, see the block comment above customComplete in llm.ts.
+  it("attaches an AbortSignal to the custom provider's fetch call", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedSignal = init.signal as AbortSignal;
+        return mockResponse(200, OK_BODY);
+      })
+    );
+
+    await chatComplete({
+      system: "sys",
+      messages: [{ role: "user", content: "hi" }],
+      override: {
+        provider: "custom",
+        apiKey: "user-key",
+        baseUrl: "https://example.test/v1/chat/completions",
+        model: "some-model",
+      },
+    });
+
+    expect(capturedSignal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("throws once the custom provider's response exceeds the size cap", async () => {
+    // Content doesn't need to be valid JSON, the byte cap is checked on raw
+    // chunks as they arrive, before any parsing.
+    const oversized = new Uint8Array(2_000_001).fill(32);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(oversized);
+        controller.close();
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, statusText: "", body: stream, text: async () => "" }))
+    );
+
+    await expect(
+      chatComplete({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    ).rejects.toThrow("überschreitet das Limit");
+  });
 });
 
 // chatCompleteStream, /api/chat's streaming path. Only the fetch-based Z.ai/
@@ -411,5 +467,66 @@ describe("chatCompleteStream", () => {
       )
     ).rejects.toThrow("nicht erlaubt");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("merges the caller's own abort signal into the custom endpoint's fetch call", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedSignal = init.signal as AbortSignal;
+        return streamResponse(200, sseBody("[DONE]"));
+      })
+    );
+    const controller = new AbortController();
+    controller.abort();
+
+    await collectStream(
+      chatCompleteStream({
+        system: "sys",
+        messages: [{ role: "user", content: "hi" }],
+        signal: controller.signal,
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "some-model",
+        },
+      })
+    );
+
+    // A merged signal (AbortSignal.any) reports aborted once either source
+    // does, confirming the caller's own signal actually made it into the
+    // fetch call, not just the fixed timeout.
+    expect(capturedSignal?.aborted).toBe(true);
+  });
+
+  it("throws once the custom endpoint's streamed response exceeds the size cap", async () => {
+    const oversized = new Uint8Array(2_000_001).fill(32);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(oversized);
+        controller.close();
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, statusText: "", body: stream, text: async () => "" }))
+    );
+
+    await expect(
+      collectStream(
+        chatCompleteStream({
+          system: "sys",
+          messages: [{ role: "user", content: "hi" }],
+          override: {
+            provider: "custom",
+            apiKey: "user-key",
+            baseUrl: "https://example.test/v1/chat/completions",
+            model: "some-model",
+          },
+        })
+      )
+    ).rejects.toThrow("überschreitet das Limit");
   });
 });

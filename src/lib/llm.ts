@@ -427,16 +427,28 @@ type OpenAiStreamChunk = {
  * OpenAI-compatible chat/completions SSE dialect: newline-delimited
  * `data: {...}` frames separated by a blank line, terminated by `data:
  * [DONE]`. Buffers across chunk boundaries since a network read can split a
- * frame anywhere.
+ * frame anywhere. `maxBytes` bounds total bytes read (see MAX_RESPONSE_BYTES
+ * below, defined after this function but only ever read once this one is
+ * actually called, well after module init), harmless for zaiCompleteStream
+ * (Z.ai's own max_tokens already keeps it far under this in practice), a real
+ * bound for customCompleteStream's user-supplied endpoint.
  */
-async function* readOpenAiCompatibleSse(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+async function* readOpenAiCompatibleSse(
+  body: ReadableStream<Uint8Array>,
+  maxBytes: number = MAX_RESPONSE_BYTES
+): AsyncGenerator<string> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let total = 0;
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
+      }
       buffer += decoder.decode(value, { stream: true });
       let sep: number;
       while ((sep = buffer.indexOf("\n\n")) !== -1) {
@@ -475,6 +487,58 @@ async function* readOpenAiCompatibleSse(body: ReadableStream<Uint8Array>): Async
 // OpenRouter, a self-hosted gateway, anything speaking the OpenAI chat/
 // completions shape. No "thinking" flag here unlike zaiComplete, that's a
 // Z.ai-specific quirk, not something to impose on an arbitrary endpoint.
+//
+// Unlike Z.ai's own fixed endpoint, `endpoint` here is a user-supplied URL
+// that already passed the SSRF check (url-safety.ts) but has none of Z.ai's
+// uptime/latency/size guarantees, any signed-in Free user can point it at
+// anything reachable, so both requests get two bounds Z.ai doesn't need:
+//
+// CUSTOM_PROVIDER_TIMEOUT_MS: a hanging endpoint would otherwise tie up the
+// request for as long as the platform allows (/api/chat's maxDuration=300s).
+// One fixed duration for the whole request (headers + body), not a per-chunk
+// idle timeout, simpler, and a genuinely slow-but-steadily-streaming reply
+// near the model's own output-token ceiling should still comfortably fit.
+//
+// MAX_RESPONSE_BYTES: an unbounded read would otherwise let a misbehaving or
+// malicious endpoint force an arbitrarily large response straight into
+// memory just because the connection itself succeeded. Enforced in
+// readCappedText (this file's non-streaming reads) and readOpenAiCompatibleSse
+// above (shared with zaiCompleteStream too, harmless there: Z.ai's own
+// max_tokens already keeps it far under this ceiling in practice).
+const CUSTOM_PROVIDER_TIMEOUT_MS = 60_000;
+const MAX_RESPONSE_BYTES = 2_000_000; // ~2 MB, generous over a real reply's realistic size
+
+/**
+ * Merges the caller's own AbortSignal (propagated from /api/chat so a
+ * client-side stop still cancels the upstream call, see chatCompleteStream)
+ * with the fixed timeout above.
+ */
+function withProviderTimeout(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(CUSTOM_PROVIDER_TIMEOUT_MS);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
+/** Reads a Response's body up to `maxBytes`, throwing instead of buffering past it. */
+async function readCappedText(res: Response, maxBytes: number): Promise<string> {
+  if (!res.body) return res.text();
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
+}
 
 async function customComplete(
   endpoint: string,
@@ -497,6 +561,7 @@ async function customComplete(
     // one would re-point at an unvalidated URL after the check above already
     // passed. Neither is expected from a real chat/completions endpoint.
     redirect: "error",
+    signal: withProviderTimeout(),
     headers: {
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
@@ -510,7 +575,7 @@ async function customComplete(
   });
 
   if (!res.ok) {
-    const raw = await res.text().catch(() => "");
+    const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
     // Only ever surface a *parsed* error in the provider's expected JSON
     // shape, never the raw body: if `endpoint` ever slipped past the check
     // above (or a legitimate custom provider is compromised), an arbitrary
@@ -526,7 +591,8 @@ async function customComplete(
     throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
   }
 
-  const json = (await res.json()) as OpenAiCompatibleResponse;
+  const raw = await readCappedText(res, MAX_RESPONSE_BYTES);
+  const json = JSON.parse(raw) as OpenAiCompatibleResponse;
   const message = json.choices?.[0]?.message;
   const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
   if (!text) throw new LlmEmptyReplyError("Custom-Provider");
@@ -555,7 +621,7 @@ async function* customCompleteStream(
   const res = await fetch(endpoint, {
     method: "POST",
     redirect: "error",
-    signal,
+    signal: withProviderTimeout(signal),
     headers: {
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
@@ -569,7 +635,7 @@ async function* customCompleteStream(
   });
 
   if (!res.ok) {
-    const raw = await res.text().catch(() => "");
+    const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
     let detail = "";
     try {
       const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
