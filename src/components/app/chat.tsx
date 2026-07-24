@@ -193,7 +193,7 @@ export function Chat({
           same height whether it's showing the empty state or a short first
           exchange, otherwise the composer visibly jumps up the moment the
           empty state's own min-height goes away after the first reply. */}
-      <div className="min-h-[58vh]">
+      <div className="min-h-[58dvh]">
         {messages.length === 0 ? (
           <ChatEmptyState heading={heading} />
         ) : (
