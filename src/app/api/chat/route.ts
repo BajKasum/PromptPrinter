@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
-import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
+import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatComplete, llmConfig, type LlmOverride } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
@@ -68,8 +68,13 @@ export async function POST(req: Request) {
   //    too, admin used to only bypass the monthly cap, not the hourly one.
   let override: LlmOverride | null = null;
   let isAdmin = false;
+  // Set when a quota slot was reserved for this request (see reserveMonthlyQuota),
+  // released below if the LLM call itself fails, so a failed turn doesn't burn
+  // the user's monthly allowance.
+  let releaseQuota: (() => Promise<void>) | null = null;
   if (userId && supabase) {
     const now = new Date();
+    const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
     const monthStart = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
     ).toISOString();
@@ -77,7 +82,9 @@ export async function POST(req: Request) {
       supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
       // One row per turn, persistTurn always inserts exactly one assistant
       // reply alongside the user message, so counting only that role avoids
-      // double-counting a turn as two units.
+      // double-counting a turn as two units. Still the number shown in
+      // settings/billing either way; also the enforcement fallback below
+      // when Redis isn't configured.
       supabase
         .from("messages")
         .select("id", { count: "exact", head: true })
@@ -91,12 +98,21 @@ export async function POST(req: Request) {
     const rawPlan = (profile?.plan as string | undefined) ?? "free";
     const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
     const limits = effectiveLimits(plan, isAdmin);
-    if (!override && (chatCount ?? 0) >= limits.chatMessages) {
-      return problem(
-        403,
-        `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
-        { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
+
+    if (!override) {
+      const reservation = await reserveMonthlyQuota(
+        `chat-quota:${userId}:${monthKey}`,
+        limits.chatMessages
       );
+      const overLimit = reservation ? !reservation.allowed : (chatCount ?? 0) >= limits.chatMessages;
+      if (overLimit) {
+        return problem(
+          403,
+          `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
+          { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
+        );
+      }
+      if (reservation) releaseQuota = reservation.release;
     }
   }
 
@@ -146,6 +162,9 @@ export async function POST(req: Request) {
       reply = result.text;
       mode = "generated";
     } catch (err) {
+      // The call never produced a reply, so it never actually cost anything,
+      // release the reservation instead of burning a slot on nothing.
+      if (releaseQuota) await releaseQuota();
       return problem(
         502,
         `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`

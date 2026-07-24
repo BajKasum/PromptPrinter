@@ -104,6 +104,55 @@ export async function rateLimit(
   return memoryRateLimit(key, { limit, windowMs });
 }
 
+// ─── Monthly quota reservation (atomic, Redis-only) ─────────────────────────
+
+/**
+ * Closes a check-then-act race /api/chat's monthly chat-message quota used to
+ * have: it read a DB count, compared to the plan limit, then called the LLM,
+ * then persisted the turn, all as separate steps with the slow LLM call in
+ * between, so concurrent requests could all read the same under-limit count
+ * before any of them persisted. Redis INCR is atomic, so the reservation
+ * itself can't race even when several requests land at the same instant.
+ *
+ * `key` should already encode the calendar month (e.g. "chat-quota:{userId}:
+ * 2026-07"), a fresh key each month is what makes the count reset, the TTL
+ * below is pure cleanup, not the reset mechanism.
+ *
+ * Returns null when Redis isn't configured or errors, callers should degrade
+ * to their previous plain DB-count check in that case, same known limitation
+ * as the in-memory rate-limit fallback elsewhere in this file. Deliberately
+ * fails OPEN here (unlike rateLimit()'s fail-closed-in-production policy for
+ * the hourly ceiling): a transient Redis hiccup briefly leaving the monthly
+ * cost quota unenforced is a far smaller risk than breaking chat outright for
+ * every free user during that same hiccup, and the hourly rate limit still
+ * bounds the damage either way.
+ */
+export async function reserveMonthlyQuota(
+  key: string,
+  limit: number
+): Promise<{ allowed: boolean; release: () => Promise<void> } | null> {
+  if (!redis) return null;
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, 45 * 24 * 60 * 60);
+    }
+    return {
+      allowed: count <= limit,
+      release: async () => {
+        try {
+          await redis!.decr(key);
+        } catch {
+          // Best-effort: a missed release only leaves this slot reserved for
+          // the rest of the month, never an over-grant.
+        }
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function rateLimitKey(req: Request, userId?: string | null): string {
   if (userId) return `u:${userId}`;
   const fwd =
