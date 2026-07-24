@@ -111,6 +111,41 @@ describe("Chat", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Server explodiert");
   });
 
+  it("warns without blocking the composer when the reply couldn't be persisted", async () => {
+    mockFetchOnce({ reply: "Antwort da", persistError: "insert failed" });
+    render(<Chat mode="general" />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    await screen.findByText("Antwort da");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "konnte aber gerade nicht gespeichert werden"
+    );
+    // The warning must not block the composer, the input is only empty
+    // (post-send), not stuck loading, typing re-enables the send button.
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "weiter geht's");
+    expect(screen.getByRole("button", { name: /Senden/ })).not.toBeDisabled();
+  });
+
+  it("clears a persist warning once the next turn saves successfully", async () => {
+    mockFetchOnce({ reply: "Erste Antwort", persistError: "insert failed" });
+    render(<Chat mode="general" />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+    await screen.findByRole("status");
+
+    mockFetchOnce({ reply: "Zweite Antwort", conversationId: "conv-9" });
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Nochmal");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    await screen.findByText("Zweite Antwort");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("disables the send button while a request is in flight", async () => {
     let resolveFetch!: (v: unknown) => void;
     vi.stubGlobal(

@@ -50,6 +50,11 @@ export function Chat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when the route replied but couldn't persist the turn (json.persistError):
+  // the message is shown, but nothing was saved, so a reload loses it. Distinct
+  // from `error` (which means no reply at all) since this must not block the
+  // user from continuing to chat, only warn them the history isn't safe yet.
+  const [persistWarning, setPersistWarning] = useState<string | null>(null);
   // Two scroll anchors: the bottom of the thread (used while a turn is in
   // flight, so the user sees their message + the typing indicator clear the
   // sticky composer) and the top of the latest result (used once the reply
@@ -75,6 +80,7 @@ export function Chat({
     setMessages(next);
     setInput("");
     setError(null);
+    setPersistWarning(null);
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
@@ -102,6 +108,11 @@ export function Chat({
           router.refresh();
         }
         setConversationId(id);
+      }
+      if (json.persistError) {
+        setPersistWarning(
+          "Diese Antwort ist da, konnte aber gerade nicht gespeichert werden, bei einem Neuladen geht sie verloren."
+        );
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unbekannter Fehler");
@@ -156,6 +167,15 @@ export function Chat({
           className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
         >
           {error}
+        </div>
+      )}
+
+      {persistWarning && (
+        <div
+          role="status"
+          className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[13px] text-warning"
+        >
+          {persistWarning}
         </div>
       )}
 
