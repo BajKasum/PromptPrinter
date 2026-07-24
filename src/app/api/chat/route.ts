@@ -63,7 +63,7 @@ export async function POST(req: Request) {
   //    now, only the hourly rate limit below, so a free user with no BYOK
   //    key could otherwise chat all month on the server's own Z.ai key with
   //    no real ceiling (see plans.ts). Checked before the model call, same
-  //    principle as /api/generate's project/generation limits. Runs before
+  //    principle as /api/projects's own project-count cap. Runs before
   //    the rate limit so its isAdmin result can exempt the account from that
   //    too, admin used to only bypass the monthly cap, not the hourly one.
   let override: LlmOverride | null = null;

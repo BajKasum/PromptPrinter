@@ -8,8 +8,8 @@ export const runtime = "nodejs";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): ein Projekt entsteht ab
 // jetzt am Anfang der Arbeit, Name reicht, alles andere wächst im Workspace.
-// Server-seitig, damit das Projekt-Limit des Plans hier genauso greift wie
-// bisher in /api/generate.
+// Server-seitig, damit das Projekt-Limit des Plans hier durchgesetzt wird,
+// nicht nur im Client.
 
 const createProjectSchema = z.object({
   name: z.string().trim().min(2, "Name muss mindestens 2 Zeichen haben").max(80),

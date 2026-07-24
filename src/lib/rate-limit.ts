@@ -53,8 +53,10 @@ const redis =
 const isProduction = process.env.NODE_ENV === "production";
 let warnedMissingRedisInProduction = false;
 
-// One Ratelimit per (limit, windowMs) combo, the route uses two (5/h anonymous,
-// 30/h authed), memoised so we don't rebuild a limiter on every request.
+// One Ratelimit per (limit, windowMs) combo. Several routes call rateLimit()
+// with their own limit/window (chat, projects, settings/api-key, account),
+// each with a different ceiling, so this memoises per combo rather than
+// hardcoding a fixed set, avoiding rebuilding a limiter on every request.
 const limiters = new Map<string, Ratelimit>();
 
 function getLimiter(limit: number, windowMs: number): Ratelimit {

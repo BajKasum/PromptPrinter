@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return problem(401, "Anmeldung erforderlich.");
 
-  // Admin exemption mirrors /api/chat, /api/generate and /api/projects:
+  // Admin exemption mirrors /api/chat, /api/projects and /api/account:
   // a single is_admin lookup gates whether the hourly limit below applies.
   const { data: profile } = await supabase
     .from("profiles")

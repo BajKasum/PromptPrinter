@@ -3,9 +3,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { assertPublicHttpsUrl } from "@/lib/url-safety";
 
-// The one place that talks to a model provider. Both API routes (/api/chat,
-// /api/generate) call chatComplete() and never touch provider SDKs or fetch
-// shapes themselves, so switching or adding a provider is a change here only.
+// The one place that talks to a model provider. /api/chat (chatCompleteStream,
+// the streamed reply itself) and /api/settings/api-key (chatComplete, the
+// one-off "test this key" call before it's ever stored) both go through this
+// module and never touch provider SDKs or fetch shapes themselves, so
+// switching or adding a provider is a change here only.
 //
 // Server-side provider priority (first configured key wins), used whenever
 // the caller has no BYOK override:
