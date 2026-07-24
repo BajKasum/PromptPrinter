@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export const runtime = "nodejs";
 // failure is logged but never blocks the account from actually being deleted,
 // losing a few orphaned objects is far better than a user being stuck unable
 // to delete their account because of a storage hiccup.
-export async function DELETE() {
+export async function DELETE(req: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,6 +24,26 @@ export async function DELETE() {
   // The id comes from the verified session, never from client input.
   if (!user) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
+  }
+
+  // Was the one route of the four that touch rateLimit (chat, projects,
+  // settings/api-key) without any ceiling at all, a destructive one-shot
+  // action doesn't need much headroom, this is only to blunt hammering the
+  // endpoint with retries, not a real usage allowance. Admin exemption
+  // mirrors the other three routes.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!(profile?.is_admin ?? false)) {
+    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Zu viele Anfragen, bitte warte kurz und versuch es erneut." },
+        { status: 429 }
+      );
+    }
   }
 
   try {
