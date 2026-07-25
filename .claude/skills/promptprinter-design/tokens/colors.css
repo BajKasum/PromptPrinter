@@ -1,0 +1,90 @@
+/*
+ * PromptPrinter color tokens — "Refined Dev-Brand" (Linear/Vercel/Raycast):
+ * monochrome chrome + one accent (baby blue), layered with "Finn's World",
+ * an ocean-blue atmosphere. Channels are stored as bare HSL triplets
+ * (`H S% L%`) so any consumer can do hsl(var(--accent) / 0.18) for alpha.
+ * :root = light, .dark = dark. Ground truth: src/app/globals.css.
+ */
+:root {
+  color-scheme: light;
+
+  --background: 205 60% 95%; /* @kind color */
+  --foreground: 216 22% 6%; /* @kind color */
+
+  --surface: 205 42% 91%; /* @kind color */
+  --surface-raised: 205 30% 98%; /* @kind color */
+  --surface-hover: 205 42% 88%; /* @kind color */
+
+  --border: 205 25% 83%; /* @kind color */
+  --border-strong: 205 24% 73%; /* @kind color */
+
+  --muted-foreground: 214 13% 40%; /* @kind color */
+
+  --primary: 216 22% 6%; /* @kind color */
+  --primary-foreground: 0 0% 100%; /* @kind color */
+
+  /* Baby blue — the one accent: links, active nav, focus, selection. */
+  --accent: 203 79% 72%; /* @kind color */
+  --accent-foreground: 216 22% 6%; /* @kind color */
+  --accent-text: 204 76% 35%; /* @kind color */
+  --accent-subtle: 203 80% 94%; /* @kind color */
+  --ring: 203 80% 55%; /* @kind color */
+
+  /* Reserved — Finn's World warm counter-accent (coral). NOT chrome; deploy
+     only at genuine peak moments (celebrations). Never on buttons, links,
+     text, badges, cards, or icons. */
+  --accent-warm: 14 84% 64%; /* @kind color */
+
+  --destructive: 0 72% 51%; /* @kind color */
+  --destructive-foreground: 0 0% 100%; /* @kind color */
+  --success: 142 71% 36%; /* @kind color */
+  --success-foreground: 0 0% 100%; /* @kind color */
+  --warning: 33 92% 44%; /* @kind color */
+  --warning-foreground: 0 0% 100%; /* @kind color */
+
+  --shadow: 205 48% 10%; /* @kind color */
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: 213 42% 6%; /* @kind color */
+  --foreground: 213 20% 92%; /* @kind color */
+
+  --surface: 213 32% 9%; /* @kind color */
+  --surface-raised: 213 28% 13%; /* @kind color */
+  --surface-hover: 213 26% 17%; /* @kind color */
+
+  --border: 214 14% 16%; /* @kind color */
+  --border-strong: 215 13% 23%; /* @kind color */
+
+  --muted-foreground: 215 14% 65%; /* @kind color */
+
+  --primary: 213 24% 96%; /* @kind color */
+  --primary-foreground: 216 22% 6%; /* @kind color */
+
+  --accent: 204 80% 75%; /* @kind color */
+  --accent-foreground: 216 22% 6%; /* @kind color */
+  --accent-text: 204 80% 75%; /* @kind color */
+  --accent-subtle: 204 48% 18%; /* @kind color */
+  --ring: 204 80% 70%; /* @kind color */
+
+  --accent-warm: 12 88% 70%; /* @kind color */
+
+  --destructive: 0 84% 63%; /* @kind color */
+  --destructive-foreground: 0 0% 100%; /* @kind color */
+  --success: 142 64% 55%; /* @kind color */
+  --success-foreground: 216 22% 6%; /* @kind color */
+  --warning: 43 96% 56%; /* @kind color */
+  --warning-foreground: 216 22% 6%; /* @kind color */
+
+  --shadow: 213 50% 3%; /* @kind color */
+}
+
+/* Plan-tier + a few decorative accents used by app surfaces (settings,
+   billing, celebration confetti) that sit outside the core semantic set. */
+:root {
+  --tier-team: 189 94% 68%; /* @kind color */
+  --tier-team-subtle: 189 60% 20%; /* @kind color */
+  --star-fav: 43 96% 68%; /* @kind color */
+}

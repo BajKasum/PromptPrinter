@@ -1,0 +1,93 @@
+<!-- @dsCard group="App" viewport="900x760" name="App — Chat Conversation" subtitle="Transcript, result panel, sticky composer" -->
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<title>PromptPrinter — Chat UI Kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);background:hsl(var(--background));color:hsl(var(--foreground))}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, Logo, Mascot, DolphinLoader, Textarea, Icon } = window.PromptPrinterDesignSystem_dfd779;
+const AB = "../../assets/mascot";
+
+function TopBar(){
+  return (<header style={{position:"sticky",top:0,zIndex:10,display:"flex",alignItems:"center",gap:14,padding:"14px 24px",borderBottom:"1px solid hsl(var(--border))",background:"hsl(var(--background)/0.85)",backdropFilter:"blur(12px)"}}>
+    <Logo size={24} assetsBase={AB} />
+    <div style={{width:1,height:20,background:"hsl(var(--border))"}}/>
+    <span style={{fontSize:13.5,fontWeight:500,color:"hsl(var(--foreground)/0.8)"}}>KI-Habit-Tracker mit Streaks</span>
+    <span style={{marginLeft:"auto",fontSize:11,fontFamily:"var(--font-mono)",color:"hsl(var(--muted-foreground))"}}>Für Claude</span>
+  </header>);
+}
+
+function UserBubble({children}){
+  return (<div style={{display:"flex",justifyContent:"flex-end"}}><div style={{maxWidth:"78%",borderRadius:"16px 16px 4px 16px",border:"1px solid hsl(var(--accent)/0.3)",background:"hsl(var(--accent-subtle))",padding:"10px 16px",fontSize:13.5,lineHeight:1.5}}>{children}</div></div>);
+}
+function AssistantBubble({children}){
+  return (<div style={{display:"flex",justifyContent:"flex-start"}}><div style={{maxWidth:"86%",borderRadius:"16px 16px 16px 4px",border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",padding:"12px 16px",fontSize:13.5,lineHeight:1.6,color:"hsl(var(--foreground)/0.85)"}}>{children}</div></div>);
+}
+
+function ResultPanel({copied,onCopy}){
+  return (<section style={{borderRadius:16,border:"1px solid hsl(var(--border-strong))",background:"hsl(var(--surface-raised))",overflow:"hidden"}}>
+    <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 24px",borderBottom:"1px solid hsl(var(--border))"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><Mascot state="delivering" size={22} assetsBase={AB} /><span style={{fontSize:13,fontWeight:500,color:"hsl(var(--foreground)/0.75)"}}>Dein Ergebnis</span></div>
+      <Button size="sm" variant="ghost"><Icon name="sparkles" size={14}/>Speichern</Button>
+    </header>
+    <div style={{padding:"22px 24px",fontSize:14}}>
+      <p style={{marginTop:0}}>Alles klar — hier ist dein fertiger Prompt für <b>Claude</b>:</p>
+      <div style={{borderRadius:10,border:"1px solid hsl(var(--border))",background:"rgba(0,0,0,.28)",overflow:"hidden",margin:"10px 0"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 14px",borderBottom:"1px solid hsl(var(--border))"}}>
+          <span style={{fontFamily:"var(--font-mono)",fontSize:11,textTransform:"uppercase",letterSpacing:".08em",color:"hsl(var(--foreground)/0.4)"}}>Prompt</span>
+          <button onClick={onCopy} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,background:"none",border:"none",cursor:"pointer",color:copied?"hsl(var(--success))":"hsl(var(--foreground)/0.55)"}}><Icon name={copied?"check":"copy"} size={14}/>{copied?"Kopiert":"Prompt kopieren"}</button>
+        </div>
+        <pre style={{margin:0,padding:"12px 14px",fontFamily:"var(--font-mono)",fontSize:12.5,lineHeight:1.7,whiteSpace:"pre-wrap",color:"hsl(var(--foreground)/0.85)"}}>{"Rolle: Produkt-Coach, locker und ein bisschen witzig im Ton.\nBaue eine Habit-Tracking-App mit Streaks und kurzen\nKI-Anstupsern nach jedem Check-in.\nKernfunktionen: Habits anlegen, tägliche Check-ins,\nStreak-Zähler, Mikro-Belohnungen."}</pre>
+      </div>
+    </div>
+  </section>);
+}
+
+function Composer({value,onChange,onSend,loading,onStop}){
+  return (<div style={{position:"sticky",bottom:0,paddingTop:16,paddingBottom:20,background:"linear-gradient(to top, hsl(var(--background)) 60%, transparent)"}}>
+    <div style={{position:"relative",borderRadius:16,border:"1px solid hsl(var(--border-strong))",background:"hsl(var(--surface-raised))"}}>
+      <textarea value={value} onChange={e=>onChange(e.target.value)} rows={1} placeholder="Antworte Finn…" style={{width:"100%",minHeight:48,maxHeight:200,resize:"none",border:"none",background:"transparent",outline:"none",padding:"14px 56px 14px 16px",fontSize:14,fontFamily:"var(--font-sans)",color:"hsl(var(--foreground))"}}/>
+      {loading ? (
+        <Button size="icon" variant="subtle" onClick={onStop} aria-label="Stoppen" style={{position:"absolute",right:8,bottom:8,borderRadius:99}}><Icon name="square" size={14}/></Button>
+      ) : (
+        <Button size="icon" onClick={onSend} disabled={!value.trim()} aria-label="Senden" style={{position:"absolute",right:8,bottom:8,borderRadius:99}}><Icon name="send" size={16}/></Button>
+      )}
+    </div>
+  </div>);
+}
+
+function App(){
+  const [value,setValue] = React.useState("");
+  const [copied,setCopied] = React.useState(false);
+  const [loading,setLoading] = React.useState(false);
+  const [sent,setSent] = React.useState(false);
+
+  function send(){
+    if(!value.trim()) return;
+    setLoading(true);
+    window.setTimeout(()=>{ setLoading(false); setSent(true); }, 900);
+    setValue("");
+  }
+
+  return (<div style={{maxWidth:760,margin:"0 auto",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+    <TopBar/>
+    <div style={{flex:1,padding:"28px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
+      <UserBubble>Ich will eine App bauen, die Gewohnheiten trackt, mit Streaks.</UserBubble>
+      <AssistantBubble>Klingt gut! Sollen die KI-Anstupser eher locker-witzig oder ernsthaft-coachig klingen?</AssistantBubble>
+      <UserBubble>Locker und ein bisschen witzig.</UserBubble>
+      {loading && <div style={{display:"flex",justifyContent:"flex-start"}}><div style={{borderRadius:"16px 16px 16px 4px",border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",padding:"10px 16px"}}><DolphinLoader size={26} label="Schreibt…" assetsBase={AB} /></div></div>}
+      {sent && <ResultPanel copied={copied} onCopy={()=>setCopied(true)} />}
+      <div style={{height:4}}/>
+    </div>
+    <div style={{padding:"0 24px"}}><Composer value={value} onChange={setValue} onSend={send} loading={loading} onStop={()=>setLoading(false)} /></div>
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body></html>

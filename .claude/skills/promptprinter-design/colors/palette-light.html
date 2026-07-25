@@ -1,0 +1,64 @@
+<!-- @dsCard group="Colors" viewport="700x420" name="Palette — Light" subtitle="Ocean-blue chrome + baby-blue accent (Finn's World)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: hsl(var(--background)); color: hsl(var(--foreground)); padding: 32px; }
+  h1 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(var(--muted-foreground)); margin-bottom: 24px; }
+  .group { margin-bottom: 28px; }
+  .group-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); margin-bottom: 10px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch { display: flex; flex-direction: column; align-items: flex-start; width: 100px; }
+  .swatch-color { width: 100%; height: 48px; border-radius: 8px; border: 1px solid hsl(var(--border)); margin-bottom: 6px; }
+  .swatch-name { font-size: 11px; font-weight: 500; color: hsl(var(--foreground)); }
+  .swatch-val  { font-size: 10px; color: hsl(var(--muted-foreground)); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+  <h1>Light Mode — Ocean-Blue Chrome</h1>
+
+  <div class="group">
+    <div class="group-label">Chrome (Finn's World: hue 205 throughout)</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(205 60% 95%)"></div><span class="swatch-name">background</span><span class="swatch-val">205 60% 95%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(216 22% 6%)"></div><span class="swatch-name">foreground</span><span class="swatch-val">216 22% 6%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(205 42% 91%)"></div><span class="swatch-name">surface</span><span class="swatch-val">205 42% 91%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(205 30% 98%)"></div><span class="swatch-name">surface-raised</span><span class="swatch-val">205 30% 98%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(205 42% 88%)"></div><span class="swatch-name">surface-hover</span><span class="swatch-val">205 42% 88%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(205 25% 83%)"></div><span class="swatch-name">border</span><span class="swatch-val">205 25% 83%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(205 24% 73%)"></div><span class="swatch-name">border-strong</span><span class="swatch-val">205 24% 73%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(214 13% 40%)"></div><span class="swatch-name">muted-fg</span><span class="swatch-val">214 13% 40%</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Primary (monochrome CTA)</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(216 22% 6%)"></div><span class="swatch-name">primary</span><span class="swatch-val">216 22% 6%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(0 0% 100%); border-color:hsl(var(--border))"></div><span class="swatch-name">primary-fg</span><span class="swatch-val">0 0% 100%</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Accent — Baby Blue (the one accent)</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(203 79% 72%)"></div><span class="swatch-name">accent</span><span class="swatch-val">203 79% 72%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(204 76% 35%)"></div><span class="swatch-name">accent-text</span><span class="swatch-val">204 76% 35%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(203 80% 94%)"></div><span class="swatch-name">accent-subtle</span><span class="swatch-val">203 80% 94%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(203 80% 55%)"></div><span class="swatch-name">ring</span><span class="swatch-val">203 80% 55%</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Semantic</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(0 72% 51%)"></div><span class="swatch-name">destructive</span><span class="swatch-val">0 72% 51%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(142 71% 36%)"></div><span class="swatch-name">success</span><span class="swatch-val">142 71% 36%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(33 92% 44%)"></div><span class="swatch-name">warning</span><span class="swatch-val">33 92% 44%</span></div>
+    </div>
+  </div>
+</body>
+</html>

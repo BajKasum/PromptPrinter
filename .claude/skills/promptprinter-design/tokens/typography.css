@@ -1,0 +1,43 @@
+/*
+ * Type system — Geist Sans (UI & body) / Geist Mono (labels, caps, code,
+ * tabular numbers). Both ship on Google Fonts under their Vercel names; the
+ * product self-hosts via next/font, this @import is the closest browser-CDN
+ * equivalent for a static consumer. Scale mirrors tailwind.config.ts exactly.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap");
+
+:root {
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --text-display-2xl-size: 72px; --text-display-2xl-lh: 1.05; --text-display-2xl-ls: -0.04em; --text-display-2xl-weight: 700;
+  --text-display-xl-size: 60px;  --text-display-xl-lh: 1.05;  --text-display-xl-ls: -0.04em;  --text-display-xl-weight: 700;
+  --text-display-lg-size: 48px;  --text-display-lg-lh: 1.1;   --text-display-lg-ls: -0.03em;  --text-display-lg-weight: 700;
+  --text-display-md-size: 36px;  --text-display-md-lh: 1.15;  --text-display-md-ls: -0.02em;  --text-display-md-weight: 700;
+
+  --text-headline-lg-size: 32px; --text-headline-lg-lh: 1.2;  --text-headline-lg-ls: -0.02em; --text-headline-lg-weight: 600;
+  --text-headline-md-size: 24px; --text-headline-md-lh: 1.3;  --text-headline-md-ls: -0.02em; --text-headline-md-weight: 600;
+  --text-headline-sm-size: 20px; --text-headline-sm-lh: 1.3;  --text-headline-sm-ls: -0.01em; --text-headline-sm-weight: 600;
+
+  --text-body-lg-size: 18px; --text-body-lg-lh: 1.6; --text-body-lg-weight: 400;
+  --text-body-md-size: 16px; --text-body-md-lh: 1.6; --text-body-md-weight: 400;
+  --text-body-sm-size: 14px; --text-body-sm-lh: 1.5; --text-body-sm-weight: 400;
+
+  --text-label-size: 13px; --text-label-lh: 1.4; --text-label-weight: 500;
+  --text-label-caps-size: 12px; --text-label-caps-lh: 1; --text-label-caps-ls: 0.08em; --text-label-caps-weight: 500;
+  --text-code-size: 13.5px; --text-code-lh: 1.6; --text-code-weight: 400;
+}
+
+.text-display-2xl { font-family: var(--font-sans); font-size: var(--text-display-2xl-size); line-height: var(--text-display-2xl-lh); letter-spacing: var(--text-display-2xl-ls); font-weight: var(--text-display-2xl-weight); }
+.text-display-xl  { font-family: var(--font-sans); font-size: var(--text-display-xl-size);  line-height: var(--text-display-xl-lh);  letter-spacing: var(--text-display-xl-ls);  font-weight: var(--text-display-xl-weight); }
+.text-display-lg  { font-family: var(--font-sans); font-size: var(--text-display-lg-size);  line-height: var(--text-display-lg-lh);  letter-spacing: var(--text-display-lg-ls);  font-weight: var(--text-display-lg-weight); }
+.text-display-md  { font-family: var(--font-sans); font-size: var(--text-display-md-size);  line-height: var(--text-display-md-lh);  letter-spacing: var(--text-display-md-ls);  font-weight: var(--text-display-md-weight); }
+.text-headline-lg { font-family: var(--font-sans); font-size: var(--text-headline-lg-size); line-height: var(--text-headline-lg-lh); letter-spacing: var(--text-headline-lg-ls); font-weight: var(--text-headline-lg-weight); }
+.text-headline-md { font-family: var(--font-sans); font-size: var(--text-headline-md-size); line-height: var(--text-headline-md-lh); letter-spacing: var(--text-headline-md-ls); font-weight: var(--text-headline-md-weight); }
+.text-headline-sm { font-family: var(--font-sans); font-size: var(--text-headline-sm-size); line-height: var(--text-headline-sm-lh); letter-spacing: var(--text-headline-sm-ls); font-weight: var(--text-headline-sm-weight); }
+.text-body-lg { font-family: var(--font-sans); font-size: var(--text-body-lg-size); line-height: var(--text-body-lg-lh); font-weight: var(--text-body-lg-weight); }
+.text-body-md { font-family: var(--font-sans); font-size: var(--text-body-md-size); line-height: var(--text-body-md-lh); font-weight: var(--text-body-md-weight); }
+.text-body-sm { font-family: var(--font-sans); font-size: var(--text-body-sm-size); line-height: var(--text-body-sm-lh); font-weight: var(--text-body-sm-weight); }
+.text-label { font-family: var(--font-sans); font-size: var(--text-label-size); line-height: var(--text-label-lh); font-weight: var(--text-label-weight); }
+.text-label-caps { font-family: var(--font-mono); font-size: var(--text-label-caps-size); line-height: var(--text-label-caps-lh); letter-spacing: var(--text-label-caps-ls); font-weight: var(--text-label-caps-weight); text-transform: uppercase; }
+.text-code { font-family: var(--font-mono); font-size: var(--text-code-size); line-height: var(--text-code-lh); font-weight: var(--text-code-weight); }

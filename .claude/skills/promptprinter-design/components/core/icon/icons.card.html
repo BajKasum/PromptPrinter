@@ -1,0 +1,28 @@
+<!-- @dsCard group="Components" viewport="420x160" name="Icons" subtitle="Dependency-free line-icon set" -->
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../../_ds_bundle.js"></script>
+<style>body{margin:0;background:hsl(var(--background));color:hsl(var(--foreground));padding:16px;box-sizing:border-box;}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { Icon, ICON_NAMES } = window.PromptPrinterDesignSystem_dfd779;
+function Demo(){
+  return (<div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+    {ICON_NAMES.map(n => (
+      <div key={n} title={n} style={{width:52,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+        <div style={{height:32,width:32,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))"}}>
+          <Icon name={n} size={16}/>
+        </div>
+        <span style={{fontSize:8,color:"hsl(var(--muted-foreground))",textAlign:"center",lineHeight:1.2}}>{n}</span>
+      </div>
+    ))}
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body></html>

@@ -1,0 +1,124 @@
+<!-- @dsCard group="App" viewport="1280x760" name="App — Dashboard (Sidebar + Chats/Projekte)" subtitle="Collapsible sidebar shell, command palette, chats & projects" -->
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<title>PromptPrinter — App Dashboard UI Kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);background:hsl(var(--background));color:hsl(var(--foreground))}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, Logo, LogoMark, AnimatedMascot, Icon, PlanBadge, Input } = window.PromptPrinterDesignSystem_dfd779;
+const AB = "../../assets/mascot";
+
+const CHATS=[{id:1,title:"KI-Habit-Tracker mit Streaks"},{id:2,title:"Bewerbungsschreiben für UX-Rolle"},{id:3,title:"Rezept-App für Resteverwertung"}];
+const PROJECTS=[{id:1,name:"Streak Coach",fav:true},{id:2,name:"Hundesitter-Markt",fav:false},{id:3,name:"Artlokal",fav:false}];
+const NAV_ITEMS=[{label:"Chats",icon:"message-square"},{label:"Projekte",icon:"folder-kanban"},{label:"Abrechnung",icon:"gauge"},{label:"Einstellungen",icon:"key-round"}];
+
+function CommandPalette({open,onClose}){
+  const [q,setQ]=React.useState("");
+  if(!open) return null;
+  const items=[...NAV_ITEMS.map(n=>({label:n.label,icon:n.icon,group:"Seiten"})),...CHATS.map(c=>({label:c.title,icon:"message-square",group:"Chats"})),...PROJECTS.map(p=>({label:p.name,icon:"folder-kanban",group:"Projekte"}))];
+  const filtered=items.filter(i=>i.label.toLowerCase().includes(q.toLowerCase()));
+  return (<div onClick={onClose} style={{position:"fixed",inset:0,zIndex:90,display:"flex",justifyContent:"center",paddingTop:"12vh",background:"rgba(0,0,0,.6)",backdropFilter:"blur(4px)"}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:520,height:"fit-content",borderRadius:12,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface-raised))",boxShadow:"var(--shadow-elevated)",overflow:"hidden"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid hsl(var(--border))",padding:"0 16px"}}>
+        <Icon name="search" size={16} style={{color:"hsl(var(--muted-foreground))"}}/>
+        <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Wonach suchst du?" style={{height:48,flex:1,border:"none",background:"transparent",fontSize:14,color:"hsl(var(--foreground))",outline:"none"}}/>
+      </div>
+      <div style={{maxHeight:300,overflowY:"auto",padding:6}}>
+        {filtered.length===0 ? <div style={{padding:"28px 0",textAlign:"center",fontSize:13,color:"hsl(var(--muted-foreground))"}}>Keine Treffer</div> :
+          filtered.map((it,i)=>(<button key={i} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",borderRadius:8,border:"none",background:"none",textAlign:"left",fontSize:13.5,color:"hsl(var(--foreground)/0.75)",cursor:"pointer"}}>
+            <Icon name={it.icon} size={15}/>{it.label}
+          </button>))}
+      </div>
+    </div>
+  </div>);
+}
+
+function Sidebar({collapsed,onToggle,tab,onTab,onSearch}){
+  const W = collapsed ? 68 : 264;
+  return (<aside style={{width:W,flexShrink:0,height:"100vh",position:"sticky",top:0,display:"flex",flexDirection:"column",borderRight:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",transition:"width .3s var(--ease-out-expo)",overflow:"hidden"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",padding:collapsed?"20px 0 16px":"20px 12px 16px 20px"}}>
+      {collapsed ? <LogoMark size={26} assetsBase={AB}/> : <Logo accentWordmark assetsBase={AB}/>}
+      {!collapsed && <button onClick={onToggle} aria-label="Seitenleiste einklappen" style={{height:32,width:32,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8,border:"none",background:"none",color:"hsl(var(--muted-foreground))",cursor:"pointer"}}><Icon name="panel-left-close" size={16}/></button>}
+    </div>
+    {collapsed && <button onClick={onToggle} aria-label="Seitenleiste ausklappen" style={{margin:"0 auto 12px",height:32,width:32,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8,border:"none",background:"none",color:"hsl(var(--muted-foreground))",cursor:"pointer"}}><Icon name="panel-left-open" size={16}/></button>}
+
+    <div style={{flex:1,overflowY:"auto",padding:collapsed?"0 8px":"0 12px"}}>
+      {collapsed ? (<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        <button title="Neuer Chat" style={{height:40,width:40,borderRadius:10,border:"1px solid hsl(var(--border))",background:"none",color:"hsl(var(--foreground)/0.8)",cursor:"pointer",marginBottom:8}}><Icon name="plus" size={16}/></button>
+        {NAV_ITEMS.slice(0,2).map(n=>(<button key={n.label} title={n.label} onClick={()=>onTab(n.label==="Chats"?"chats":"projects")} style={{height:40,width:40,borderRadius:10,border:"none",cursor:"pointer",background:(tab==="chats"?"Chats":"Projekte")===n.label?"hsl(var(--accent-subtle))":"none",color:(tab==="chats"?"Chats":"Projekte")===n.label?"hsl(var(--accent-text))":"hsl(var(--muted-foreground))"}}><Icon name={n.icon} size={16}/></button>))}
+      </div>) : (<React.Fragment>
+        <div style={{display:"flex",gap:4,borderRadius:8,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",padding:4,marginBottom:16}}>
+          {["chats","projects"].map(t=>(<button key={t} onClick={()=>onTab(t)} style={{flex:1,padding:"6px 0",borderRadius:6,fontSize:12.5,fontWeight:500,border:"none",cursor:"pointer",background:tab===t?"hsl(var(--surface-raised))":"transparent",color:tab===t?"hsl(var(--foreground))":"hsl(var(--muted-foreground))"}}>{t==="chats"?"Chat":"Projekt"}</button>))}
+        </div>
+        <button style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",height:36,marginBottom:20,borderRadius:8,border:"1px solid hsl(var(--border))",background:"none",fontSize:13,fontWeight:500,color:"hsl(var(--foreground)/0.9)",cursor:"pointer"}}><Icon name="plus" size={15}/>{tab==="chats"?"Neuer Chat":"Neues Projekt"}</button>
+        <div style={{display:"flex",flexDirection:"column",gap:2}}>
+          {tab==="chats" ? CHATS.map((c,i)=>(<a key={c.id} style={{display:"block",padding:"7px 14px",borderRadius:6,fontSize:13,textDecoration:"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",background:i===0?"hsl(var(--accent-subtle))":"transparent",color:i===0?"hsl(var(--foreground))":"hsl(var(--foreground)/0.7)",fontWeight:i===0?500:400}}>{c.title}</a>))
+          : PROJECTS.map((p,i)=>(<a key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderRadius:6,fontSize:13,textDecoration:"none",background:i===0?"hsl(var(--accent-subtle))":"transparent",color:i===0?"hsl(var(--foreground))":"hsl(var(--foreground)/0.7)",fontWeight:i===0?500:400}}><span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>{p.fav && <Icon name="star" size={12} style={{color:"hsl(var(--accent-text)/0.7)"}}/>}</a>)}
+        </div>
+      </React.Fragment>)}
+    </div>
+
+    <div style={{borderTop:"1px solid hsl(var(--border))",padding:collapsed?"12px 0":12,display:"flex",justifyContent:collapsed?"center":"flex-start"}}>
+      <button onClick={onSearch} style={{display:"flex",alignItems:"center",gap:collapsed?0:10,width:collapsed?36:"100%",height:36,borderRadius:8,border:"none",background:"none",padding:collapsed?0:"0 8px",cursor:"pointer",justifyContent:collapsed?"center":"flex-start"}}>
+        <span style={{height:28,width:28,flexShrink:0,borderRadius:99,background:"hsl(var(--accent))",color:"hsl(var(--accent-foreground))",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center"}}>K</span>
+        {!collapsed && <React.Fragment><span style={{fontSize:13,flex:1,textAlign:"left",color:"hsl(var(--foreground)/0.85)"}}>Kasum</span><PlanBadge plan="pro"/></React.Fragment>}
+      </button>
+    </div>
+  </aside>);
+}
+
+function ChatsView(){
+  return (<div style={{display:"flex",flexDirection:"column",gap:10}}>
+    {CHATS.map(c=>(<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,borderRadius:12,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface-raised))",padding:16,boxShadow:"var(--shadow-card)"}}>
+      <span style={{height:36,width:36,flexShrink:0,borderRadius:10,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="message-square" size={16}/></span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:14,fontWeight:500}}>{c.title}</div>
+        <div style={{fontSize:12,color:"hsl(var(--muted-foreground))",marginTop:2}}>vor 2 Std. · 8 Nachrichten</div>
+      </div>
+      <Icon name="arrow-right" size={15} style={{color:"hsl(var(--foreground)/0.35)"}}/>
+    </div>))}
+  </div>);
+}
+function ProjectsView(){
+  return (<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+    {PROJECTS.map(p=>(<div key={p.id} style={{borderRadius:14,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface-raised))",padding:18,boxShadow:"var(--shadow-card)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}>
+        <span style={{height:36,width:36,borderRadius:10,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="folder-kanban" size={16}/></span>
+        <Icon name="star" size={15} style={{color:p.fav?"hsl(var(--star-fav))":"hsl(var(--foreground)/0.25)"}}/>
+      </div>
+      <div style={{fontSize:16,fontWeight:600,marginBottom:16}}>{p.name}</div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:"hsl(var(--muted-foreground))",borderTop:"1px solid hsl(var(--border))",paddingTop:10}}>
+        <span>2 Chats</span><span>vor 1 Tag</span>
+      </div>
+    </div>))}
+  </div>);
+}
+
+function App(){
+  const [collapsed,setCollapsed] = React.useState(false);
+  const [tab,setTab] = React.useState("chats");
+  const [cmdOpen,setCmdOpen] = React.useState(false);
+  return (<div style={{display:"flex",minHeight:"100vh"}}>
+    <Sidebar collapsed={collapsed} onToggle={()=>setCollapsed(v=>!v)} tab={tab} onTab={setTab} onSearch={()=>setCmdOpen(true)} />
+    <main style={{flex:1,minWidth:0,padding:"32px 40px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:32}}>
+        <AnimatedMascot state={tab==="chats"?"listening":"organizing"} size={56} assetsBase={AB} />
+        <div>
+          <div style={{fontFamily:"var(--font-mono)",fontSize:11,textTransform:"uppercase",letterSpacing:".09em",color:"hsl(var(--accent-text))",marginBottom:4}}>{tab==="chats"?"Workspace":"Workspace"}</div>
+          <h1 style={{fontSize:30,fontWeight:600,letterSpacing:"-0.025em",margin:0}}>{tab==="chats"?"Deine Chats":"Deine Projekte"}</h1>
+        </div>
+      </div>
+      {tab==="chats" ? <ChatsView/> : <ProjectsView/>}
+    </main>
+    <CommandPalette open={cmdOpen} onClose={()=>setCmdOpen(false)} />
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body></html>

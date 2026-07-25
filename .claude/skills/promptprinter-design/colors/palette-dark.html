@@ -1,0 +1,65 @@
+<!-- @dsCard group="Colors" viewport="700x420" name="Palette — Dark" subtitle="Ocean-blue chrome + baby-blue accent (Finn's World, dark default)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: hsl(213 42% 6%); color: hsl(213 20% 92%); padding: 32px; }
+  h1 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(215 14% 65%); margin-bottom: 24px; }
+  .group { margin-bottom: 28px; }
+  .group-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(215 14% 65%); margin-bottom: 10px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch { display: flex; flex-direction: column; align-items: flex-start; width: 100px; }
+  .swatch-color { width: 100%; height: 48px; border-radius: 8px; border: 1px solid hsl(214 14% 16%); margin-bottom: 6px; }
+  .swatch-name { font-size: 11px; font-weight: 500; color: hsl(213 20% 92%); }
+  .swatch-val  { font-size: 10px; color: hsl(215 14% 65%); font-family: var(--font-mono); }
+  .note { font-size: 11px; color: hsl(215 14% 65%); background: hsl(213 32% 9%); border: 1px solid hsl(214 14% 16%); border-radius: 8px; padding: 10px 12px; margin-top: 4px; line-height: 1.5; }
+  .note strong { color: hsl(12 88% 70%); }
+</style>
+</head>
+<body>
+  <h1>Dark Mode — Ocean-Blue Chrome (product default)</h1>
+
+  <div class="group">
+    <div class="group-label">Chrome (Finn's World: hue 213, deeper/more saturated than light)</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(213 42% 6%)"></div><span class="swatch-name">background</span><span class="swatch-val">213 42% 6%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(213 20% 92%)"></div><span class="swatch-name">foreground</span><span class="swatch-val">213 20% 92%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(213 32% 9%)"></div><span class="swatch-name">surface</span><span class="swatch-val">213 32% 9%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(213 28% 13%)"></div><span class="swatch-name">surface-raised</span><span class="swatch-val">213 28% 13%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(213 26% 17%)"></div><span class="swatch-name">surface-hover</span><span class="swatch-val">213 26% 17%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(214 14% 16%)"></div><span class="swatch-name">border</span><span class="swatch-val">214 14% 16%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(215 13% 23%)"></div><span class="swatch-name">border-strong</span><span class="swatch-val">215 13% 23%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(215 14% 65%)"></div><span class="swatch-name">muted-fg</span><span class="swatch-val">215 14% 65%</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Accent — Baby Blue</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(204 80% 75%)"></div><span class="swatch-name">accent / accent-text</span><span class="swatch-val">204 80% 75%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(204 48% 18%)"></div><span class="swatch-name">accent-subtle</span><span class="swatch-val">204 48% 18%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(204 80% 70%)"></div><span class="swatch-name">ring</span><span class="swatch-val">204 80% 70%</span></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Warm Accent — Finn's Coral (Reserved)</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(12 88% 70%)"></div><span class="swatch-name">accent-warm</span><span class="swatch-val">12 88% 70%</span></div>
+    </div>
+    <p class="note"><strong>Reserved token.</strong> Deploy only at genuine peak moments (celebrations, milestones). Never on buttons, links, text, badges, cards, or icons.</p>
+  </div>
+
+  <div class="group">
+    <div class="group-label">Semantic</div>
+    <div class="swatches">
+      <div class="swatch"><div class="swatch-color" style="background:hsl(0 84% 63%)"></div><span class="swatch-name">destructive</span><span class="swatch-val">0 84% 63%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(142 64% 55%)"></div><span class="swatch-name">success</span><span class="swatch-val">142 64% 55%</span></div>
+      <div class="swatch"><div class="swatch-color" style="background:hsl(43 96% 56%)"></div><span class="swatch-name">warning</span><span class="swatch-val">43 96% 56%</span></div>
+    </div>
+  </div>
+</body>
+</html>

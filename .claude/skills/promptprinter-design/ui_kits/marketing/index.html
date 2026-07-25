@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<title>PromptPrinter — Landing Page</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="../../doc-page.js"></script>
+<style>
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+*{animation-delay:-99s!important;animation-duration:.001s!important;animation-iteration-count:1!important;animation-fill-mode:both!important;animation-play-state:running!important;transition-duration:0s!important}
+doc-page:not(:defined){visibility:hidden}
+body{margin:0;font-family:var(--font-sans);color:hsl(var(--foreground))}
+a{color:hsl(var(--accent-text))}
+.lead{color:hsl(var(--foreground)/0.6)}
+.section{break-inside:avoid;margin-bottom:44px}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--accent-text));margin-bottom:8px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:10px;background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-weight:500;font-size:14px}
+.card{border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--surface-raised));padding:22px;break-inside:avoid}
+.grid2{display:flex;gap:16px}
+.grid2>div{flex:1}
+.step{display:flex;gap:16px;margin-bottom:22px;break-inside:avoid}
+.step-num{width:36px;height:36px;border-radius:99px;border:1px solid hsl(var(--accent)/0.4);background:hsl(var(--surface));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px;color:hsl(var(--accent-text));flex-shrink:0}
+.faq{border-bottom:1px solid hsl(var(--border));padding:14px 0;break-inside:avoid}
+ul.feat{margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:hsl(var(--foreground)/0.8)}
+</style>
+</head><body>
+<doc-page margin="0.75in">
+
+<header style="display:flex;align-items:center;gap:10px;margin-bottom:52px">
+<img src="../../assets/mascot/dolphin.png" width="32" height="32" alt="">
+<span style="font-size:19px;font-weight:600;letter-spacing:-0.02em"><span style="color:hsl(var(--accent-text))">Prompt</span>Printer</span>
+</header>
+
+<section class="section" style="text-align:center">
+<img src="../../assets/mascot/dolphin-welcoming.png" width="120" height="120" alt="Finn winkt dir zur Begrüßung zu" style="margin-bottom:20px">
+<h1 style="font-size:40px;line-height:1.12;letter-spacing:-0.03em;font-weight:600;margin:0 0 16px">Erzähl mir deine Idee. <span style="color:hsl(var(--accent-text))">Ich bau den Plan mit dir.</span></h1>
+<p class="lead" style="font-size:17px;max-width:520px;margin:0 auto 24px">Erzähl mir, was du bauen willst. Ich bereite dir den fertigen Prompt auf.</p>
+<span class="btn">Leg mit Finn los →</span>
+</section>
+
+<section class="section">
+<div class="tag">So funktioniert's</div>
+<h2 style="font-size:26px;font-weight:600;letter-spacing:-0.02em;margin:0 0 22px">In drei Schritten von der Idee zum fertigen Prompt.</h2>
+<div class="step"><div class="step-num">01</div><div><h3 style="margin:0 0 4px;font-size:16px">Erzähl mir deine Idee</h3><p class="lead" style="margin:0;font-size:14px">Sag mir in einem Satz, was du bauen willst, egal wie grob. Ich hol dich da ab, wo du gerade stehst.</p></div></div>
+<div class="step"><div class="step-num">02</div><div><h3 style="margin:0 0 4px;font-size:16px">Wir klären es kurz</h3><p class="lead" style="margin:0;font-size:14px">Ich stell dir ein paar einfache Fragen und helf dir auch, wenn du Zielgruppe oder Technik noch gar nicht kennst.</p></div></div>
+<div class="step"><div class="step-num">03</div><div><h3 style="margin:0 0 4px;font-size:16px">Du bekommst deinen Prompt, startklar</h3><p class="lead" style="margin:0;font-size:14px">Fertig formuliert, zugeschnitten auf dein Tool, direkt im Chat. Ein Klick, kopiert, und du legst los.</p></div></div>
+</section>
+
+<section class="section">
+<div class="tag">Nicht nur ein Ergebnis</div>
+<h2 style="font-size:26px;font-weight:600;letter-spacing:-0.02em;margin:0 0 10px">Dein ganzer Arbeitsplatz.</h2>
+<p class="lead" style="font-size:14px;max-width:560px;margin:0">Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Für alles, was zusammengehört, legst du dir ein Projekt an — mehrere Chats, eigene Dateien, durchsuchbar und griffbereit.</p>
+</section>
+
+<section class="section">
+<div class="tag">Preise</div>
+<h2 style="font-size:26px;font-weight:600;letter-spacing:-0.02em;margin:0 0 22px">Fang kostenlos an. Zahl erst, wenn du mehr brauchst.</h2>
+<div class="grid2">
+<div class="card">
+<h3 style="margin:0;font-size:16px">Free</h3>
+<p class="lead" style="font-size:13px;margin:6px 0 16px">Zum Lernen und Bauen mit deinen eigenen API-Keys.</p>
+<div style="font-size:32px;font-weight:600;letter-spacing:-0.02em;margin-bottom:16px">0 € <span style="font-size:12px;color:hsl(var(--foreground)/0.45);font-weight:400">/ für immer</span></div>
+<ul class="feat"><li>Eigene API-Keys (Claude, ChatGPT, Gemini)</li><li>Für jede Ziel-KI</li><li>Chats & Projekte</li><li>Markdown-Export</li></ul>
+</div>
+<div class="card" style="border-color:hsl(var(--border-strong))">
+<h3 style="margin:0;font-size:16px">Pro</h3>
+<p class="lead" style="font-size:13px;margin:6px 0 16px">Wenn du keine eigenen Keys einrichten willst oder mehr Spielraum brauchst.</p>
+<div style="font-size:32px;font-weight:600;letter-spacing:-0.02em;margin-bottom:16px">7 € <span style="font-size:12px;color:hsl(var(--foreground)/0.45);font-weight:400">/ Monat</span></div>
+<ul class="feat"><li>Alles aus Free</li><li>Meine API inklusive, kein eigener Key nötig</li><li>Höhere Limits, auch mit eigenem Key</li><li>PDF- &amp; Markdown-Export</li></ul>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="tag">Fragen, beantwortet</div>
+<div class="faq"><h3 style="margin:0 0 6px;font-size:14.5px;font-weight:500">Muss ich programmieren können?</h3><p class="lead" style="margin:0;font-size:13.5px">Nein. Du beschreibst deine Idee in ganz normaler Sprache, den technischen Teil übernehme ich. Was du bekommst, bringt dich auch ohne tiefes Vorwissen voran.</p></div>
+<div class="faq"><h3 style="margin:0 0 6px;font-size:14.5px;font-weight:500">Was, wenn der Prompt nicht passt?</h3><p class="lead" style="margin:0;font-size:13.5px">Dann sagst du mir einfach im Chat, was anders sein soll — kürzer, ausführlicher, ein anderer Ton. Ich schreib dir den ganzen Prompt neu, so oft wie nötig.</p></div>
+<div class="faq"><h3 style="margin:0 0 6px;font-size:14.5px;font-weight:500">Was bringt mir das, statt Claude einfach selbst zu fragen?</h3><p class="lead" style="margin:0;font-size:13.5px">Ich frag dich genau das, was dein Bau-Tool selbst nicht abfragt — Datenmodell, Auth, wie's aussehen soll. Der Prompt ist zugeschnitten: Lovable bekommt etwas anderes als Cursor.</p></div>
+<div class="faq"><h3 style="margin:0 0 6px;font-size:14.5px;font-weight:500">Ist meine Idee bei dir sicher?</h3><p class="lead" style="margin:0;font-size:13.5px">Ja. Deine Projekte gehören nur dir und sind fest an dein Konto gebunden. Löschst du ein Projekt, ist es endgültig weg.</p></div>
+<div class="faq" style="border-bottom:none"><h3 style="margin:0 0 6px;font-size:14.5px;font-weight:500">Gehört mir, was dabei rauskommt?</h3><p class="lead" style="margin:0;font-size:13.5px">Ja. Was du erstellst, gehört dir. Du kopierst es raus und baust damit weiter, wo du willst.</p></div>
+</section>
+
+<section class="section" style="text-align:center;border-radius:16px;background:hsl(var(--accent)/0.08);padding:40px 24px">
+<img src="../../assets/mascot/dolphin-celebrating.png" width="88" height="88" alt="" style="margin-bottom:16px">
+<h2 style="font-size:26px;font-weight:600;letter-spacing:-0.02em;margin:0 0 12px">Die Idee ist der schwere Teil. <span style="color:hsl(var(--accent-text))">Den Rest mach ich mit dir.</span></h2>
+<p class="lead" style="font-size:14px;max-width:400px;margin:0 auto 20px">Fang kostenlos an, ohne Kreditkarte. Erzähl mir einfach, was du bauen willst.</p>
+<span class="btn">Leg mit Finn los →</span>
+</section>
+
+<footer style="border-top:1px solid hsl(var(--border));padding-top:20px;font-size:12px;color:hsl(var(--foreground)/0.4);text-align:center">
+© 2026 PromptPrinter · promptprinter.app
+</footer>
+
+</doc-page>
+</body></html>

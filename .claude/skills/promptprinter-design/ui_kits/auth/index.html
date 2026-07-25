@@ -1,0 +1,93 @@
+<!-- @dsCard group="App" viewport="1200x720" name="Auth — Login / Signup" subtitle="Two-column Finn panel + form, OAuth, success celebration" -->
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<title>PromptPrinter — Auth UI Kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);background:hsl(var(--background));color:hsl(var(--foreground))}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { Logo, AnimatedMascot, Floaters, FLOATER_PRESETS, Input, PasswordInput, Label, Button, SuccessCelebration, Icon } = window.PromptPrinterDesignSystem_dfd779;
+const AB = "../../assets/mascot";
+
+function GoogleMark(){ return (<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v2.98h3.89c2.26-2.09 3.53-5.17 3.53-8.8z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.89-2.98c-1.08.72-2.45 1.16-4.04 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.31A7.16 7.16 0 0 1 4.89 12c0-.8.14-1.58.38-2.31V6.6H1.29a11.99 11.99 0 0 0 0 10.8l3.98-3.09z"/><path fill="#EA4335" d="M12 4.73c1.77 0 3.35.61 4.6 1.8l3.45-3.45A11.51 11.51 0 0 0 12 0 11.99 11.99 0 0 0 1.29 6.6l3.98 3.09C6.22 6.84 8.87 4.73 12 4.73z"/></svg>); }
+function GitHubMark(){ return (<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>); }
+
+const oauthBtn={display:"flex",alignItems:"center",justifyContent:"center",gap:10,height:44,width:"100%",borderRadius:12,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface-raised))",fontSize:14,fontWeight:500,color:"hsl(var(--foreground))",cursor:"pointer"};
+
+function Shell({mode,setMode,children}){
+  const title = mode==="login" ? "Schön, dass du wieder da bist." : "Schön, dass du da bist.";
+  const sub = mode==="login" ? "Deine Ideen warten schon, tauchen wir wieder ein." : "Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Plan draus.";
+  return (<div style={{display:"flex",minHeight:"100vh"}}>
+    <aside style={{position:"relative",width:"50%",overflow:"hidden",background:"hsl(var(--accent-subtle))",display:"flex",flexDirection:"column"}}>
+      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at top, hsl(var(--background)/0.55) 0%, transparent 65%)"}}/>
+      <Floaters items={FLOATER_PRESETS.section} />
+      <div style={{position:"relative",zIndex:1,padding:"28px 40px"}}><Logo assetsBase={AB} /></div>
+      <div style={{position:"relative",zIndex:1,flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:32,padding:"0 40px 96px",textAlign:"center"}}>
+        <AnimatedMascot state="welcoming" motion="bob" size={220} assetsBase={AB} />
+        <div style={{maxWidth:340}}>
+          <h2 style={{fontSize:26,fontWeight:600,letterSpacing:"-0.02em",lineHeight:1.15,margin:0}}>{title}</h2>
+          <p style={{marginTop:10,fontSize:14.5,lineHeight:1.6,color:"hsl(var(--foreground)/0.6)"}}>{sub}</p>
+        </div>
+      </div>
+    </aside>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"32px"}}>
+      <div style={{width:"100%",maxWidth:380,display:"flex",flexDirection:"column",gap:22}}>{children}</div>
+    </div>
+  </div>);
+}
+
+function LoginForm({onSubmit}){
+  return (<React.Fragment>
+    <div><h1 style={{fontSize:30,fontWeight:700,letterSpacing:"-0.01em",margin:0}}>Willkommen zurück</h1><p style={{marginTop:6,fontSize:14.5,fontWeight:300,color:"hsl(var(--foreground)/0.6)"}}>Melde dich in deinem PromptPrinter-Workspace an.</p></div>
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <button style={oauthBtn}><GoogleMark/>Weiter mit Google</button>
+      <button style={oauthBtn}><GitHubMark/>Weiter mit GitHub</button>
+      <div style={{display:"flex",alignItems:"center",gap:12,fontSize:12,color:"hsl(var(--foreground)/0.4)"}}><span style={{flex:1,height:1,background:"hsl(var(--border))"}}/>oder mit Email<span style={{flex:1,height:1,background:"hsl(var(--border))"}}/></div>
+    </div>
+    <form onSubmit={e=>{e.preventDefault();onSubmit();}} style={{display:"flex",flexDirection:"column",gap:16}}>
+      <div><Label>Email</Label><Input type="email" placeholder="du@example.com" defaultValue="finn@promptprinter.dev" /></div>
+      <div><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><Label style={{marginBottom:0}}>Passwort</Label><a href="#" style={{fontSize:12.5,color:"hsl(var(--foreground)/0.5)"}}>Passwort vergessen?</a></div><PasswordInput defaultValue="geheim1234" /></div>
+      <Button type="submit" size="lg" variant="primary" style={{width:"100%"}}>Einloggen<Icon name="arrow-right" size={16}/></Button>
+    </form>
+    <p style={{textAlign:"center",fontSize:13,color:"hsl(var(--foreground)/0.55)"}}>Noch kein Konto? <a href="#" onClick={e=>{e.preventDefault();}} style={{color:"hsl(var(--accent-text))"}} data-switch>Registrieren</a></p>
+  </React.Fragment>);
+}
+
+function SignupForm({onSubmit}){
+  return (<React.Fragment>
+    <div><h1 style={{fontSize:30,fontWeight:700,letterSpacing:"-0.01em",margin:0}}>Konto erstellen</h1><p style={{marginTop:6,fontSize:14.5,fontWeight:300,color:"hsl(var(--foreground)/0.6)"}}>Kostenlos starten, keine Kreditkarte nötig.</p></div>
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <button style={oauthBtn}><GoogleMark/>Weiter mit Google</button>
+      <button style={oauthBtn}><GitHubMark/>Weiter mit GitHub</button>
+      <div style={{display:"flex",alignItems:"center",gap:12,fontSize:12,color:"hsl(var(--foreground)/0.4)"}}><span style={{flex:1,height:1,background:"hsl(var(--border))"}}/>oder mit Email<span style={{flex:1,height:1,background:"hsl(var(--border))"}}/></div>
+    </div>
+    <form onSubmit={e=>{e.preventDefault();onSubmit();}} style={{display:"flex",flexDirection:"column",gap:16}}>
+      <div><Label>Email</Label><Input type="email" placeholder="du@example.com" /></div>
+      <div><Label>Passwort</Label><PasswordInput placeholder="Mindestens 8 Zeichen" /></div>
+      <Button type="submit" size="lg" variant="primary" style={{width:"100%"}}>Kostenlos starten<Icon name="arrow-right" size={16}/></Button>
+    </form>
+    <p style={{textAlign:"center",fontSize:13,color:"hsl(var(--foreground)/0.55)"}}>Schon ein Konto? <a href="#" style={{color:"hsl(var(--accent-text))"}}>Einloggen</a></p>
+  </React.Fragment>);
+}
+
+function App(){
+  const [mode,setMode] = React.useState("login");
+  const [celebrate,setCelebrate] = React.useState(false);
+  return (<React.Fragment>
+    <Shell mode={mode} setMode={setMode}>
+      <div style={{display:"flex",gap:6,alignSelf:"center",borderRadius:8,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",padding:4,marginBottom:-6}}>
+        {["login","signup"].map(m=>(<button key={m} onClick={()=>setMode(m)} style={{padding:"5px 14px",borderRadius:6,fontSize:12.5,fontWeight:500,border:"none",cursor:"pointer",background:mode===m?"hsl(var(--surface-raised))":"transparent",color:mode===m?"hsl(var(--foreground))":"hsl(var(--muted-foreground))"}}>{m==="login"?"Login":"Signup"}</button>))}
+      </div>
+      {mode==="login" ? <LoginForm onSubmit={()=>setCelebrate(true)} /> : <SignupForm onSubmit={()=>setCelebrate(true)} />}
+    </Shell>
+    {celebrate && <SuccessCelebration message={mode==="login"?"Erfolgreich eingeloggt":"Konto erstellt"} description="Schön, dass du da bist." assetsBase={AB} durationMs={2000} onDone={()=>setCelebrate(false)} />}
+  </React.Fragment>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body></html>

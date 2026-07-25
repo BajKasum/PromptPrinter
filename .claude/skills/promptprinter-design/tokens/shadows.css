@@ -1,0 +1,7 @@
+/* Elevation — flat surfaces + hairline borders instead of glassmorphism;
+   shadows stay very subtle. Both reference the theme-tinted --shadow color
+   (cool-tinted, not neutral black) so dark mode doesn't look muddy. */
+:root {
+  --shadow-card: 0 1px 2px hsl(var(--shadow) / 0.04), 0 4px 16px -12px hsl(var(--shadow) / 0.16);
+  --shadow-elevated: 0 1px 2px hsl(var(--shadow) / 0.06), 0 12px 32px -16px hsl(var(--shadow) / 0.24);
+}

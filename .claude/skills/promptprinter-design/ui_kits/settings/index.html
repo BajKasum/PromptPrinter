@@ -1,0 +1,139 @@
+<!-- @dsCard group="App" viewport="1200x800" name="App — Settings" subtitle="Profile, workspace, appearance, usage, tools, security" -->
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8">
+<title>PromptPrinter — Settings UI Kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);background:hsl(var(--background));color:hsl(var(--foreground));transition:background .2s,color .2s}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel">
+const { Input, Label, Button, PlanBadge, UsageMeter, ToolLogo, TOOL_VISUAL, Icon } = window.PromptPrinterDesignSystem_dfd779;
+
+function SettingsCard({icon,title,description,headerRight,children}){
+  return (<section style={{position:"relative",overflow:"hidden",borderRadius:16,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface-raised))",padding:26}}>
+    <div style={{position:"absolute",inset:"0 0 auto 0",height:1,background:"linear-gradient(90deg,transparent,hsl(var(--border-strong)),transparent)"}}/>
+    <div style={{position:"absolute",right:-80,top:-80,height:176,width:176,borderRadius:"50%",opacity:.1,filter:"blur(48px)",background:"#8FCDF2"}}/>
+    <header style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:20}}>
+      <span style={{height:40,width:40,flexShrink:0,borderRadius:12,border:"1px solid #8FCDF240",background:"linear-gradient(160deg,#8FCDF233,#8FCDF20d)",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name={icon} size={18} style={{color:"#8FCDF2"}}/></span>
+      <div style={{flex:1,minWidth:0}}><h2 style={{fontSize:16,fontWeight:600,margin:0,letterSpacing:"-0.01em"}}>{title}</h2><p style={{margin:"3px 0 0",fontSize:13,color:"hsl(var(--foreground)/0.55)"}}>{description}</p></div>
+      {headerRight}
+    </header>
+    {children}
+  </section>);
+}
+
+function ThemePreference({theme,setTheme}){
+  const opts=[["light","sun","Hell"],["dark","moon","Dunkel"],["system","monitor","System"]];
+  return (<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+    {opts.map(([v,icon,label])=>(<button key={v} onClick={()=>setTheme(v)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,borderRadius:12,border:"1px solid "+(theme===v?"hsl(var(--accent)/0.5)":"hsl(var(--border))"),background:theme===v?"hsl(var(--accent-subtle))":"hsl(var(--surface))",color:theme===v?"hsl(var(--accent-text))":"hsl(var(--foreground)/0.7)",padding:"14px 12px",fontSize:13,cursor:"pointer"}}>
+      <Icon name={icon} size={18}/>{label}
+    </button>))}
+  </div>);
+}
+
+function ToolPicker({label,hint,icon,options,value,onChange}){
+  return (<div style={{borderRadius:16,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",padding:16}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+      <span style={{height:32,width:32,borderRadius:8,border:"1px solid #8FCDF240",background:"#8FCDF21f",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name={icon} size={16} style={{color:"#8FCDF2"}}/></span>
+      <div><div style={{fontSize:13.5,fontWeight:600}}>{label}</div><div style={{fontSize:11,color:"hsl(var(--foreground)/0.45)"}}>{hint}</div></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      {options.map(opt=>{ const active=opt===value; const {color,blurb}=TOOL_VISUAL[opt]||{color:"#8FCDF2",blurb:""};
+        return (<button key={opt} onClick={()=>onChange(opt)} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,borderRadius:10,border:"1px solid "+(active?"hsl(var(--accent))":"hsl(var(--border))"),background:active?"hsl(var(--accent-subtle))":"hsl(var(--surface))",padding:10,cursor:"pointer",textAlign:"left"}}>
+          <span style={{height:30,width:30,borderRadius:8,border:"1px solid hsl(var(--border))",display:"flex",alignItems:"center",justifyContent:"center",background:color+"1a"}}><ToolLogo name={opt} size={15}/></span>
+          <span><span style={{display:"block",fontSize:12.5,fontWeight:500}}>{opt}</span><span style={{display:"block",fontSize:10.5,color:"hsl(var(--foreground)/0.45)"}}>{blurb}</span></span>
+          {active && <span style={{position:"absolute",top:8,right:8,height:16,width:16,borderRadius:99,background:"hsl(var(--accent))",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="check" size={10} style={{color:"hsl(var(--accent-foreground))"}}/></span>}
+        </button>);
+      })}
+    </div>
+  </div>);
+}
+
+function App(){
+  const [theme,setTheme] = React.useState("dark");
+  const [name,setName] = React.useState("Kasum");
+  const [dirty,setDirty] = React.useState(false);
+  const [master,setMaster] = React.useState("Claude");
+
+  function changeName(v){ setName(v); setDirty(v!=="Kasum"); }
+
+  return (<div className={theme==="dark"?"dark":""} style={{minHeight:"100vh",background:"hsl(var(--background))",color:"hsl(var(--foreground))"}}>
+    <div style={{maxWidth:920,margin:"0 auto",padding:"40px 32px 100px",display:"flex",flexDirection:"column",gap:16}}>
+      <div style={{marginBottom:8}}>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:11,textTransform:"uppercase",letterSpacing:".09em",color:"hsl(var(--accent-text))",marginBottom:6}}>Workspace</div>
+        <h1 style={{fontSize:30,fontWeight:600,letterSpacing:"-0.025em",margin:0}}>Einstellungen</h1>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        <SettingsCard icon="user" title="Profil" description="Wie du in deinem Workspace erscheinst.">
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div><Label>Anzeigename</Label><Input value={name} onChange={e=>changeName(e.target.value)} /></div>
+            <div><Label>Email</Label><div style={{height:44,display:"flex",alignItems:"center",borderRadius:8,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",padding:"0 14px",fontSize:14,color:"hsl(var(--foreground)/0.55)"}}>kasum@promptprinter.dev</div></div>
+          </div>
+        </SettingsCard>
+        <SettingsCard icon="building2" title="Workspace" description="Konto- und Plan-Übersicht." headerRight={<PlanBadge plan="pro"/>}>
+          <div style={{display:"flex",flexDirection:"column"}}>
+            <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid hsl(var(--border))",fontSize:13}}><span style={{color:"hsl(var(--foreground)/0.5)"}}>Rolle</span><span>Eigentümer</span></div>
+            <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",fontSize:13}}><span style={{color:"hsl(var(--foreground)/0.5)"}}>Mitglied seit</span><span>Juli 2026</span></div>
+          </div>
+          <a href="#" style={{marginTop:14,display:"inline-flex",alignItems:"center",gap:5,fontSize:13,fontWeight:500,color:"hsl(var(--accent-text))"}}>Plan verwalten<Icon name="arrow-up-right" size={14}/></a>
+        </SettingsCard>
+      </div>
+
+      <SettingsCard icon="sun-moon" title="Erscheinungsbild" description="Hell, dunkel oder automatisch nach Systemeinstellung — nur hier im Workspace.">
+        <ThemePreference theme={theme} setTheme={setTheme} />
+      </SettingsCard>
+
+      <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:16}}>
+        <SettingsCard icon="gauge" title="Nutzung" description="Dein Verbrauch im aktuellen Abrechnungszeitraum.">
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+            <UsageMeter label="Projekte" used={2} limit={5} />
+            <UsageMeter label="Chat-Nachrichten (Monat)" used={165} limit={200} />
+          </div>
+        </SettingsCard>
+        <SettingsCard icon="key-round" title="Eigene API-Keys" description="Nutze dein eigenes Kontingent statt unserer Limits.">
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {["Anthropic","OpenAI","Gemini"].map(p=>(<div key={p} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface))",fontSize:13}}>
+              <span>{p}</span><Button size="sm" variant="ghost">{p==="Anthropic"?"Verwalten":"Hinzufügen"}</Button>
+            </div>))}
+          </div>
+        </SettingsCard>
+      </div>
+
+      <SettingsCard icon="sparkles" title="Standard-Tools" description="Vorbelegung fürs Software-Paket, solange dein Projekt noch keine eigene Struktur hat.">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <ToolPicker label="KI-Assistent" hint="Master-Prompt-Ziel" icon="sparkles" options={["Claude","ChatGPT","Gemini"]} value={master} onChange={setMaster} />
+          <ToolPicker label="Frontend-Builder" hint="UI-Generierung" icon="layout-template" options={["Lovable","Stitch","Figma"]} value="Lovable" onChange={()=>{}} />
+          <ToolPicker label="Backend-Agent" hint="Code-Assistent" icon="terminal-square" options={["Claude Code","Cursor","Windsurf"]} value="Claude Code" onChange={()=>{}} />
+          <ToolPicker label="Datenbank" hint="Daten-Layer" icon="database" options={["PostgreSQL","MySQL","Supabase"]} value="Supabase" onChange={()=>{}} />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon="lock" title="Sicherheit" description="Ändere dein Passwort.">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,maxWidth:520}}>
+          <div><Label>Neues Passwort</Label><Input type="password" placeholder="Mindestens 8 Zeichen" /></div>
+          <div><Label>Wiederholen</Label><Input type="password" placeholder="Wiederholen" /></div>
+        </div>
+        <Button variant="ghost" size="sm" style={{marginTop:14}}>Passwort ändern</Button>
+      </SettingsCard>
+
+      <SettingsCard icon="shield-alert" title="Gefahrenzone" description="Unwiderrufliche Aktionen.">
+        <Button variant="destructive" size="sm">Konto löschen</Button>
+      </SettingsCard>
+    </div>
+
+    {dirty && (<div style={{position:"fixed",insetInline:0,bottom:20,display:"flex",justifyContent:"center",padding:"0 24px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,width:"100%",maxWidth:680,borderRadius:16,border:"1px solid hsl(var(--border))",background:"hsl(var(--surface-raised)/0.95)",backdropFilter:"blur(16px)",boxShadow:"0 24px 70px -24px rgba(0,0,0,.85)",padding:"12px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,fontSize:13.5,fontWeight:500}}><span style={{height:8,width:8,borderRadius:99,background:"hsl(var(--warning))"}}/>Ungespeicherte Änderungen</div>
+        <div style={{display:"flex",gap:8}}><Button variant="ghost" size="sm" onClick={()=>{setName("Kasum");setDirty(false);}}>Verwerfen</Button><Button size="sm" onClick={()=>setDirty(false)}><Icon name="check" size={14}/>Speichern</Button></div>
+      </div>
+    </div>)}
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body></html>

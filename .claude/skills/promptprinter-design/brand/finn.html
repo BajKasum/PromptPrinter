@@ -1,0 +1,180 @@
+<!-- @dsCard group="Brand" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand — Finn & Voice</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'Geist', system-ui, sans-serif;
+    background: hsl(0 0% 100%);
+    color: hsl(216 22% 6%);
+    padding: 32px;
+  }
+  h1 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(214 13% 40%); margin-bottom: 28px; }
+  .section { margin-bottom: 32px; }
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(214 13% 40%); margin-bottom: 14px; }
+
+  /* Finn's palette */
+  .palette { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .swatch { display: flex; flex-direction: column; width: 90px; }
+  .swatch-color { height: 52px; border-radius: 10px; border: 1px solid hsl(214 22% 91%); margin-bottom: 6px; }
+  .swatch-name { font-size: 11px; font-weight: 500; }
+  .swatch-val { font-size: 10px; color: hsl(214 13% 40%); font-family: monospace; }
+
+  /* States */
+  .states-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .state-pill {
+    background: hsl(210 24% 97%);
+    border: 1px solid hsl(214 22% 91%);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px; font-weight: 500; font-family: monospace;
+    color: hsl(216 22% 6%);
+  }
+  .state-pill img { width: 22px; height: 22px; display: block; margin-bottom: 4px; }
+
+  /* Voice rules */
+  .rule {
+    border-left: 3px solid hsl(203 79% 72%);
+    padding: 8px 14px;
+    margin-bottom: 8px;
+    background: hsl(203 80% 94%);
+    border-radius: 0 6px 6px 0;
+  }
+  .rule-title { font-size: 12px; font-weight: 600; color: hsl(204 76% 35%); margin-bottom: 2px; }
+  .rule-text { font-size: 12px; color: hsl(216 22% 6%); line-height: 1.5; }
+
+  /* Journey */
+  .journey { display: flex; align-items: center; gap: 0; overflow-x: auto; }
+  .stop {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 80px;
+  }
+  .stop-dot {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: hsl(203 80% 94%);
+    border: 2px solid hsl(203 79% 72%);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; margin-bottom: 6px;
+  }
+  .stop-dot img { width: 26px; height: 26px; object-fit: contain; }
+  .stop-name { font-size: 10px; font-weight: 600; color: hsl(216 22% 6%); text-align: center; }
+  .stop-state { font-size: 9px; color: hsl(214 13% 40%); font-family: monospace; text-align: center; }
+  .arrow { color: hsl(214 22% 91%); font-size: 18px; margin: 0 -4px; flex-shrink: 0; align-self: flex-start; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>Brand — Finn the Dolphin</h1>
+
+  <div class="section">
+    <div class="section-label">Finn's Palette</div>
+    <div class="palette">
+      <div class="swatch">
+        <div class="swatch-color" style="background:hsl(213 42% 6%)"></div>
+        <span class="swatch-name">Oceanic Night</span>
+        <span class="swatch-val">213 42% 6%</span>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:hsl(203 79% 72%)"></div>
+        <span class="swatch-name">Baby Blue</span>
+        <span class="swatch-val">203 79% 72%</span>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:hsl(12 88% 70%)"></div>
+        <span class="swatch-name">Coral ✦</span>
+        <span class="swatch-val">12 88% 70%</span>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:hsl(205 60% 95%)"></div>
+        <span class="swatch-name">Himmelblau (Light BG)</span>
+        <span class="swatch-val">205 60% 95%</span>
+      </div>
+    </div>
+    <div style="font-size:10px;color:hsl(214 13% 40%);font-family:monospace;">✦ Coral (accent-warm) = peak moments only. Never on buttons/links/badges.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Finn's Journey — Landing Page States</div>
+    <div class="journey">
+      <div class="stop">
+        <div class="stop-dot"><img src="../assets/mascot/dolphin-welcoming.png" alt=""></div>
+        <div class="stop-name">Hero</div>
+        <div class="stop-state">welcoming</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stop">
+        <div class="stop-dot"><img src="../assets/mascot/dolphin-sad.png" alt=""></div>
+        <div class="stop-name">Problem</div>
+        <div class="stop-state">sad</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stop">
+        <div class="stop-dot"><img src="../assets/mascot/dolphin-delivering.png" alt=""></div>
+        <div class="stop-name">Output</div>
+        <div class="stop-state">delivering</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stop">
+        <div class="stop-dot"><img src="../assets/mascot/dolphin-helping.png" alt=""></div>
+        <div class="stop-name">Pricing</div>
+        <div class="stop-state">helping</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stop">
+        <div class="stop-dot"><img src="../assets/mascot/dolphin-celebrating.png" alt=""></div>
+        <div class="stop-name">CTA</div>
+        <div class="stop-state">celebrating</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stop">
+        <div class="stop-dot"><img src="../assets/mascot/dolphin.png" alt=""></div>
+        <div class="stop-name">Footer</div>
+        <div class="stop-state">idle</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Finn's 14 States</div>
+    <div class="states-grid">
+      <div class="state-pill"><img src="../assets/mascot/dolphin.png" alt="">idle</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-welcoming.png" alt="">welcoming</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-curious.png" alt="">curious</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-listening.png" alt="">listening</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-thinking.png" alt="">thinking</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-researching.png" alt="">researching</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-building.png" alt="">building</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-organizing.png" alt="">organizing</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-explaining.png" alt="">explaining</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-delivering.png" alt="">delivering</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-celebrating.png" alt="">celebrating</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-helping.png" alt="">helping</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-waiting.png" alt="">waiting</div>
+      <div class="state-pill"><img src="../assets/mascot/dolphin-sad.png" alt="">sad</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Brand Voice Rules</div>
+    <div class="rule">
+      <div class="rule-title">Ich-Form</div>
+      <div class="rule-text">Alle Marketing-Copy spricht aus Finn's Perspektive. "Ich wandle deine Ideen um." Nicht: "PromptPrinter wandelt Ideen um."</div>
+    </div>
+    <div class="rule">
+      <div class="rule-title">Kein Jargon</div>
+      <div class="rule-text">PRD, Blueprint, Schema, Long-Context, Artefakt, RLS — gestrichen aus Landing-Page-Texten. Erlaubt: im App-UI + FAQ.</div>
+    </div>
+    <div class="rule">
+      <div class="rule-title">Keine SaaS-Template-Muster</div>
+      <div class="rule-text">Kein Feature-Grid, keine nummerierten Karten, keine Corporate-Footer-Spalten, keine Status-Pulse-Indikatoren.</div>
+    </div>
+    <div class="rule">
+      <div class="rule-title">Whitespace = Absicht</div>
+      <div class="rule-text">Litany-Prinzip: weniger Struktur = mehr emotionaler Impact. Engerer Rhythmus = mehr Emotion.</div>
+    </div>
+  </div>
+</body>
+</html>

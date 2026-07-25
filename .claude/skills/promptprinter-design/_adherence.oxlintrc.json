@@ -1,0 +1,205 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/brand/floaters/**",
+              "components/brand/logo/**",
+              "components/brand/mascot/**",
+              "components/brand/tool-logos/**",
+              "components/core/badge/**",
+              "components/core/button/**",
+              "components/core/card/**",
+              "components/core/icon/**",
+              "components/core/input/**",
+              "components/core/skeleton/**",
+              "components/feedback/toast/**",
+              "components/feedback/usage-meter/**",
+              "components/navigation/menu-toggle-icon/**",
+              "doc-page.js"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Geist|Geist Mono))/i]",
+        "message": "Font not provided by the design system. Available: Geist, Geist Mono."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Badge'] > JSXAttribute > JSXIdentifier[name!=/^(?:accent|key|ref|className|style|children)$/]",
+        "message": "<Badge> doesn't accept that prop. Declared props: accent."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|size|asChild|children|key|ref|className|style|children)$/]",
+        "message": "<Button> doesn't accept that prop. Declared props: variant, size, asChild, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|key|ref|className|style|children)$/]",
+        "message": "<Card> doesn't accept that prop. Declared props: children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DolphinLoader'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|label|assetsBase|className|key|ref|className|style|children)$/]",
+        "message": "<DolphinLoader> doesn't accept that prop. Declared props: size, label, assetsBase, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='FloaterSpec'] > JSXAttribute > JSXIdentifier[name!=/^(?:kind|top|left|size|delay|duration|key|ref|className|style|children)$/]",
+        "message": "<FloaterSpec> doesn't accept that prop. Declared props: kind, top, left, size, delay, duration."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='FloaterSpec'] > JSXAttribute[name.name='kind'] > Literal[value!=/^(?:star|bubble)$/]",
+        "message": "<FloaterSpec> kind must be one of 'star' | 'bubble'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Icon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|strokeWidth|className|style|title|key|ref|className|style|children)$/]",
+        "message": "<Icon> doesn't accept that prop. Declared props: name, size, strokeWidth, className, style, title."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute > JSXIdentifier[name!=/^(?:error|key|ref|className|style|children)$/]",
+        "message": "<Input> doesn't accept that prop. Declared props: error."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Logo'] > JSXAttribute > JSXIdentifier[name!=/^(?:className|size|iconOnly|accentWordmark|collapsed|assetsBase|style|key|ref|className|style|children)$/]",
+        "message": "<Logo> doesn't accept that prop. Declared props: className, size, iconOnly, accentWordmark, collapsed, assetsBase, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Mascot'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|state|src|assetsBase|priority|key|ref|className|style|children)$/]",
+        "message": "<Mascot> doesn't accept that prop. Declared props: size, state, src, assetsBase, priority."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MenuToggleIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|duration|key|ref|className|style|children)$/]",
+        "message": "<MenuToggleIcon> doesn't accept that prop. Declared props: open, duration."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SuccessCelebration'] > JSXAttribute > JSXIdentifier[name!=/^(?:message|description|onDone|durationMs|assetsBase|className|key|ref|className|style|children)$/]",
+        "message": "<SuccessCelebration> doesn't accept that prop. Declared props: message, description, onDone, durationMs, assetsBase, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ToastInput'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|description|variant|key|ref|className|style|children)$/]",
+        "message": "<ToastInput> doesn't accept that prop. Declared props: title, description, variant."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ToolVisual'] > JSXAttribute > JSXIdentifier[name!=/^(?:color|blurb|key|ref|className|style|children)$/]",
+        "message": "<ToolVisual> doesn't accept that prop. Declared props: color, blurb."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='UsageMeter'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|used|limit|key|ref|className|style|children)$/]",
+        "message": "<UsageMeter> doesn't accept that prop. Declared props: label, used, limit."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "Badge": { "replaces": [] },
+      "Button": { "replaces": [] },
+      "Card": { "replaces": [] },
+      "DolphinLoader": { "replaces": [] },
+      "FloaterSpec": { "replaces": [] },
+      "Icon": { "replaces": [] },
+      "Input": { "replaces": [] },
+      "Label": { "replaces": [] },
+      "Logo": { "replaces": [] },
+      "Mascot": { "replaces": [] },
+      "MenuToggleIcon": { "replaces": [] },
+      "PasswordInput": { "replaces": [] },
+      "Skeleton": { "replaces": [] },
+      "SuccessCelebration": { "replaces": [] },
+      "ToastInput": { "replaces": [] },
+      "ToolVisual": { "replaces": [] },
+      "UsageMeter": { "replaces": [] }
+    },
+    "tokens": [
+      "--accent", "--accent-foreground", "--accent-subtle", "--accent-text", "--accent-warm",
+      "--background", "--border", "--border-strong", "--container-max",
+      "--destructive", "--destructive-foreground",
+      "--duration-entrance", "--duration-micro", "--ease-out-expo",
+      "--font-mono", "--font-sans", "--foreground", "--gutter",
+      "--muted-foreground", "--primary", "--primary-foreground",
+      "--radius-2xl", "--radius-3xl", "--radius-full", "--radius-lg", "--radius-md", "--radius-sm", "--radius-xl",
+      "--ring", "--shadow", "--shadow-card", "--shadow-elevated",
+      "--space-1", "--space-10", "--space-12", "--space-16", "--space-2", "--space-20", "--space-24",
+      "--space-3", "--space-32", "--space-4", "--space-5", "--space-6", "--space-8",
+      "--star-fav", "--success", "--success-foreground", "--surface", "--surface-hover", "--surface-raised",
+      "--text-body-lg-lh", "--text-body-lg-size", "--text-body-lg-weight",
+      "--text-body-md-lh", "--text-body-md-size", "--text-body-md-weight",
+      "--text-body-sm-lh", "--text-body-sm-size", "--text-body-sm-weight",
+      "--text-code-lh", "--text-code-size", "--text-code-weight",
+      "--text-display-2xl-lh", "--text-display-2xl-ls", "--text-display-2xl-size", "--text-display-2xl-weight",
+      "--text-display-lg-lh", "--text-display-lg-ls", "--text-display-lg-size", "--text-display-lg-weight",
+      "--text-display-md-lh", "--text-display-md-ls", "--text-display-md-size", "--text-display-md-weight",
+      "--text-display-xl-lh", "--text-display-xl-ls", "--text-display-xl-size", "--text-display-xl-weight",
+      "--text-headline-lg-lh", "--text-headline-lg-ls", "--text-headline-lg-size", "--text-headline-lg-weight",
+      "--text-headline-md-lh", "--text-headline-md-ls", "--text-headline-md-size", "--text-headline-md-weight",
+      "--text-headline-sm-lh", "--text-headline-sm-ls", "--text-headline-sm-size", "--text-headline-sm-weight",
+      "--text-label-caps-lh", "--text-label-caps-ls", "--text-label-caps-size", "--text-label-caps-weight",
+      "--text-label-lh", "--text-label-size", "--text-label-weight",
+      "--tier-team", "--tier-team-subtle", "--warning", "--warning-foreground"
+    ],
+    "tokenKinds": {
+      "--background": "color", "--foreground": "color", "--surface": "color", "--surface-raised": "color",
+      "--surface-hover": "color", "--border": "color", "--border-strong": "color", "--muted-foreground": "color",
+      "--primary": "color", "--primary-foreground": "color", "--accent": "color", "--accent-foreground": "color",
+      "--accent-text": "color", "--accent-subtle": "color", "--ring": "color", "--accent-warm": "color",
+      "--destructive": "color", "--destructive-foreground": "color", "--success": "color", "--success-foreground": "color",
+      "--warning": "color", "--warning-foreground": "color", "--shadow": "color", "--tier-team": "color",
+      "--tier-team-subtle": "color", "--star-fav": "color",
+      "--font-sans": "font", "--font-mono": "font",
+      "--text-display-2xl-size": "font", "--text-display-2xl-lh": "font", "--text-display-2xl-ls": "font", "--text-display-2xl-weight": "font",
+      "--text-display-xl-size": "font", "--text-display-xl-lh": "font", "--text-display-xl-ls": "font", "--text-display-xl-weight": "font",
+      "--text-display-lg-size": "font", "--text-display-lg-lh": "font", "--text-display-lg-ls": "font", "--text-display-lg-weight": "font",
+      "--text-display-md-size": "font", "--text-display-md-lh": "font", "--text-display-md-ls": "font", "--text-display-md-weight": "font",
+      "--text-headline-lg-size": "font", "--text-headline-lg-lh": "font", "--text-headline-lg-ls": "font", "--text-headline-lg-weight": "font",
+      "--text-headline-md-size": "font", "--text-headline-md-lh": "font", "--text-headline-md-ls": "font", "--text-headline-md-weight": "font",
+      "--text-headline-sm-size": "font", "--text-headline-sm-lh": "font", "--text-headline-sm-ls": "font", "--text-headline-sm-weight": "font",
+      "--text-body-lg-size": "font", "--text-body-lg-lh": "font", "--text-body-lg-weight": "font",
+      "--text-body-md-size": "font", "--text-body-md-lh": "font", "--text-body-md-weight": "font",
+      "--text-body-sm-size": "font", "--text-body-sm-lh": "font", "--text-body-sm-weight": "font",
+      "--text-label-size": "font", "--text-label-lh": "font", "--text-label-weight": "font",
+      "--text-label-caps-size": "font", "--text-label-caps-lh": "font", "--text-label-caps-ls": "font", "--text-label-caps-weight": "font",
+      "--text-code-size": "font", "--text-code-lh": "font", "--text-code-weight": "font",
+      "--space-1": "spacing", "--space-2": "spacing", "--space-3": "spacing", "--space-4": "spacing",
+      "--space-5": "spacing", "--space-6": "spacing", "--space-8": "spacing", "--space-10": "spacing",
+      "--space-12": "spacing", "--space-16": "spacing", "--space-20": "spacing", "--space-24": "spacing", "--space-32": "spacing",
+      "--container-max": "spacing", "--gutter": "spacing",
+      "--radius-sm": "radius", "--radius-md": "radius", "--radius-lg": "radius", "--radius-xl": "radius",
+      "--radius-2xl": "radius", "--radius-3xl": "radius", "--radius-full": "radius",
+      "--shadow-card": "shadow", "--shadow-elevated": "shadow",
+      "--ease-out-expo": "other", "--duration-micro": "other", "--duration-entrance": "other"
+    },
+    "fontFamilies": ["Geist", "Geist Mono"]
+  }
+}

@@ -1,0 +1,33 @@
+/*
+ * Motion system — "Finn-Physik": calm spring easing, 150-300ms
+ * micro-interactions, 0.6-0.8s entrances, never hectic, never looping fast.
+ * prefers-reduced-motion disables every non-essential animation globally.
+ */
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --duration-micro: 200ms; /* @kind other */
+  --duration-entrance: 700ms; /* @kind other */
+}
+
+@keyframes pp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pp-fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pp-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+/* Mascot idle-motion presets (see components/brand/mascot). */
+@keyframes pp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes pp-lean   { 0%, 100% { transform: rotate(-2.5deg) translateY(0); } 50% { transform: rotate(2.5deg) translateY(-3px); } }
+@keyframes pp-nod     { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes pp-think   { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-4px) rotate(1.5deg); } }
+@keyframes pp-bob      { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+@keyframes pp-cheer   { 0%, 100% { transform: translateY(0) rotate(-4deg) scale(1); } 50% { transform: translateY(-10px) rotate(4deg) scale(1.04); } }
+@keyframes pp-peek     { 0%, 100% { transform: translateX(0) rotate(-2deg); } 50% { transform: translateX(4px) rotate(2deg); } }
+@keyframes pp-sigh     { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
