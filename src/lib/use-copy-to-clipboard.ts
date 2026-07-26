@@ -10,12 +10,17 @@ import { useState } from "react";
  */
 export function useCopyToClipboard(resetDelayMs = 1500) {
   const [copied, setCopied] = useState(false);
+  // Bumped on every copy() call regardless of current state, so a caller
+  // animating the "copied" flourish (see CopyMoment) can restart it on a
+  // rapid re-click, even while `copied` is already true.
+  const [copyCount, setCopyCount] = useState(0);
 
   async function copy(text: string) {
     await navigator.clipboard.writeText(text);
     setCopied(true);
+    setCopyCount((n) => n + 1);
     setTimeout(() => setCopied(false), resetDelayMs);
   }
 
-  return { copied, copy };
+  return { copied, copy, copyCount };
 }

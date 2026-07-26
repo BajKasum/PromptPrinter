@@ -1,9 +1,9 @@
 "use client";
 
-import { Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useCopyToClipboard } from "@/lib/use-copy-to-clipboard";
+import { CopyMoment } from "@/components/app/copy-moment";
 
 // Render an assistant reply as real Markdown, headings, lists, bold, tables,
 // instead of raw text. Any fenced block becomes a CodeBlock with its own copy
@@ -78,7 +78,7 @@ export function MarkdownMessage({ content }: { content: string }) {
 
 // The paste-ready prompt, in a bordered box with its own copy button.
 function CodeBlock({ text }: { text: string }) {
-  const { copied, copy } = useCopyToClipboard();
+  const { copied, copy, copyCount } = useCopyToClipboard();
 
   return (
     <div className="my-2 overflow-hidden rounded-lg border border-border bg-black/30">
@@ -91,12 +91,7 @@ function CodeBlock({ text }: { text: string }) {
           onClick={() => copy(text)}
           className="inline-flex items-center gap-1 text-[12px] text-foreground/55 transition-colors hover:text-foreground"
         >
-          {copied ? (
-            <Check className="h-3.5 w-3.5 text-success" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-          {copied ? "Kopiert" : "Prompt kopieren"}
+          <CopyMoment copied={copied} copyCount={copyCount} idleLabel="Prompt kopieren" />
         </button>
       </div>
       <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
