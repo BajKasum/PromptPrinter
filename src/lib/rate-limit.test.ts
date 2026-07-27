@@ -16,10 +16,36 @@ describe("rateLimitKey", () => {
     expect(rateLimitKey(req({ "x-forwarded-for": "1.2.3.4" }), null)).toBe("ip:1.2.3.4");
   });
 
-  it("takes the first x-forwarded-for entry and trims it", () => {
+  // The security-relevant one. x-forwarded-for is a chain and every proxy
+  // APPENDS what it saw, so the caller's own value lands FIRST and the edge's
+  // observation lands LAST. Reading [0] — which this code did, and which an
+  // earlier version of this very test asserted as the correct behavior — let
+  // any caller mint unlimited fresh rate-limit buckets by varying a header,
+  // so the limit was effectively absent for unauthenticated requests.
+  it("ignores a caller-prepended x-forwarded-for entry and uses the last one", () => {
     expect(rateLimitKey(req({ "x-forwarded-for": "  9.9.9.9 , 8.8.8.8 " }))).toBe(
-      "ip:9.9.9.9"
+      "ip:8.8.8.8"
     );
+  });
+
+  it("ignores a forged chain however many entries the caller prepends", () => {
+    expect(
+      rateLimitKey(req({ "x-forwarded-for": "10.0.0.1, 10.0.0.2, 10.0.0.3, 8.8.8.8" }))
+    ).toBe("ip:8.8.8.8");
+  });
+
+  it("prefers cf-connecting-ip over the x-forwarded-for chain", () => {
+    expect(
+      rateLimitKey(
+        req({ "cf-connecting-ip": "5.5.5.5", "x-forwarded-for": "9.9.9.9, 1.1.1.1" })
+      )
+    ).toBe("ip:5.5.5.5");
+  });
+
+  it("prefers x-real-ip over the x-forwarded-for chain", () => {
+    expect(
+      rateLimitKey(req({ "x-real-ip": "6.6.6.6", "x-forwarded-for": "9.9.9.9, 1.1.1.1" }))
+    ).toBe("ip:6.6.6.6");
   });
 
   it("uses cf-connecting-ip when there is no x-forwarded-for", () => {
@@ -28,6 +54,10 @@ describe("rateLimitKey", () => {
 
   it('falls back to "unknown" without any ip headers', () => {
     expect(rateLimitKey(req())).toBe("ip:unknown");
+  });
+
+  it('falls back to "unknown" rather than an empty bucket on a blank header', () => {
+    expect(rateLimitKey(req({ "x-forwarded-for": "   " }))).toBe("ip:unknown");
   });
 });
 

@@ -155,11 +155,49 @@ export async function reserveMonthlyQuota(
   }
 }
 
+/**
+ * The bucket a request counts against: the signed-in user, or the caller's IP
+ * when there is none.
+ *
+ * The IP branch used to read `x-forwarded-for.split(",")[0]`, which is the one
+ * entry in that header a caller can freely choose. XFF is a *chain*, and every
+ * proxy in front of us APPENDS what it saw to whatever the client already sent,
+ * so the client's own value ends up first and the address the edge actually
+ * observed ends up last. Reading the first entry therefore let anyone mint an
+ * unlimited number of fresh rate-limit buckets by varying a header — the limit
+ * was effectively absent for unauthenticated callers.
+ *
+ * Order below is by trustworthiness: headers a real edge *overwrites*
+ * (cf-connecting-ip, x-real-ip) beat the chain, and the chain is only ever read
+ * from its last entry. A caller can of course send any of these headers too —
+ * the guarantee comes from the proxy overwriting them, not from the name. So
+ * once hosting is settled, narrow this to the single header that deployment's
+ * edge is known to set and drop the rest; trying several is a portability
+ * compromise, not a security property.
+ *
+ * Note that every route now requires a session (see /api/chat, /api/projects,
+ * /api/settings/api-key, /api/account), so the IP branch is currently
+ * unreachable in practice. It stays correct for whatever anonymous endpoint
+ * comes next — that is exactly how the old bug survived unnoticed.
+ */
 export function rateLimitKey(req: Request, userId?: string | null): string {
   if (userId) return `u:${userId}`;
-  const fwd =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("cf-connecting-ip") ||
-    "unknown";
-  return `ip:${fwd}`;
+  return `ip:${clientIp(req)}`;
+}
+
+function clientIp(req: Request): string {
+  const cloudflare = req.headers.get("cf-connecting-ip")?.trim();
+  if (cloudflare) return cloudflare;
+
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+
+  // Last entry only: everything before it was supplied by the caller.
+  const chain = req.headers.get("x-forwarded-for");
+  if (chain) {
+    const last = chain.split(",").at(-1)?.trim();
+    if (last) return last;
+  }
+
+  return "unknown";
 }

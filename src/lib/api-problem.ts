@@ -11,6 +11,7 @@ const STATUS_TITLES: Record<number, string> = {
   404: "Not Found",
   429: "Too Many Requests",
   502: "Bad Gateway",
+  503: "Service Unavailable",
 };
 
 export function problem(status: number, detail: string, extra: Record<string, unknown> = {}) {

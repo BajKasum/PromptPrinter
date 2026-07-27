@@ -1,7 +1,7 @@
 import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
 import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { chatCompleteStream, llmConfig, type LlmOverride } from "@/lib/llm";
+import { chatCompleteStream, llmConfig } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
 import { getCachedFileContent } from "@/lib/project-file-cache";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
@@ -41,86 +41,101 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  // 2. Identify the user (optional, anonymous is allowed but rate-limited harder).
-  let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
+  // 2. Require a session. This route used to allow anonymous callers ("allowed
+  //    but rate-limited harder"), which made it the only cost-incurring route
+  //    without an auth gate — /api/projects, /api/settings/api-key and
+  //    /api/account all 401 first. Two things compounded that: the entire
+  //    monthly-quota block below hangs off `userId`, so an anonymous request
+  //    skipped it and ran straight against the server's own provider key; and
+  //    the only remaining ceiling was an hourly limit keyed on a header the
+  //    caller controlled (see rateLimitKey, fixed alongside this). No UI ever
+  //    reached the anonymous path — <Chat> renders exclusively inside the
+  //    auth-gated (app) segment — so it had no legitimate callers at all.
+  let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
     supabase = await createClient();
   } catch {
-    // No Supabase configured, continue anonymously.
-  }
-  let userId: string | null = null;
-  if (supabase) {
-    try {
-      const { data } = await supabase.auth.getUser();
-      userId = data.user?.id ?? null;
-    } catch {
-      // Auth lookup failed, treat as anonymous.
-    }
+    // Supabase isn't reachable/configured at all. Signing in is required from
+    // here on, so there is nothing this route can still do — say so plainly
+    // instead of silently continuing on the server's key.
+    return problem(503, "Der Chat ist gerade nicht erreichbar, bitte versuch es später erneut.");
   }
 
-  // 3. Enforce the monthly chat allowance for signed-in users, unless
-  //    they've configured their own BYOK key. Chat had no monthly cap until
-  //    now, only the hourly rate limit below, so a free user with no BYOK
-  //    key could otherwise chat all month on the server's own Z.ai key with
-  //    no real ceiling (see plans.ts). Checked before the model call, same
-  //    principle as /api/projects's own project-count cap. Runs before
-  //    the rate limit so its isAdmin result can exempt the account from that
-  //    too, admin used to only bypass the monthly cap, not the hourly one.
-  let override: LlmOverride | null = null;
-  let isAdmin = false;
+  let sessionUserId: string | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    sessionUserId = data.user?.id ?? null;
+  } catch {
+    // Auth lookup failed — treat as "not signed in", never as "anonymous, go ahead".
+  }
+  if (!sessionUserId) {
+    return problem(401, "Bitte melde dich an, um mit Finn zu chatten.");
+  }
+  // Re-bound as a const so the narrowing survives into the stream closure below
+  // (TypeScript widens a `let` back to `string | null` inside a callback, since
+  // it can't prove nothing reassigns it in between).
+  const userId = sessionUserId;
+
+  // 3. Enforce the monthly chat allowance, unless the caller configured their
+  //    own BYOK key. Chat had no monthly cap for a long time, only the hourly
+  //    rate limit below, so a free user with no BYOK key could otherwise chat
+  //    all month on the server's own Z.ai key with no real ceiling (see
+  //    plans.ts). Checked before the model call, same principle as
+  //    /api/projects's own project-count cap. Runs before the rate limit so its
+  //    isAdmin result can exempt the account from that too, admin used to only
+  //    bypass the monthly cap, not the hourly one. No longer conditional on
+  //    there being a user: there always is one now (step 2), which is precisely
+  //    what an anonymous request used to skip.
+  const now = new Date();
+  const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  ).toISOString();
+  const [{ data: profile }, { count: chatCount }, override] = await Promise.all([
+    supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
+    // One row per turn, persistTurn always inserts exactly one assistant
+    // reply alongside the user message, so counting only that role avoids
+    // double-counting a turn as two units. Still the number shown in
+    // settings/billing either way; also the enforcement fallback below
+    // when Redis isn't configured.
+    supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("role", "assistant")
+      .gte("created_at", monthStart),
+    getUserOverride(supabase, userId),
+  ]);
+  const isAdmin = profile?.is_admin ?? false;
+  const rawPlan = (profile?.plan as string | undefined) ?? "free";
+  const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
+  const limits = effectiveLimits(plan, isAdmin);
+
   // Set when a quota slot was reserved for this request (see reserveMonthlyQuota),
   // released below if the LLM call itself fails, so a failed turn doesn't burn
   // the user's monthly allowance.
   let releaseQuota: (() => Promise<void>) | null = null;
-  if (userId && supabase) {
-    const now = new Date();
-    const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const monthStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
-    ).toISOString();
-    const [{ data: profile }, { count: chatCount }, userOverride] = await Promise.all([
-      supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
-      // One row per turn, persistTurn always inserts exactly one assistant
-      // reply alongside the user message, so counting only that role avoids
-      // double-counting a turn as two units. Still the number shown in
-      // settings/billing either way; also the enforcement fallback below
-      // when Redis isn't configured.
-      supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("role", "assistant")
-        .gte("created_at", monthStart),
-      getUserOverride(supabase, userId),
-    ]);
-    override = userOverride;
-    isAdmin = profile?.is_admin ?? false;
-    const rawPlan = (profile?.plan as string | undefined) ?? "free";
-    const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-    const limits = effectiveLimits(plan, isAdmin);
-
-    if (!override) {
-      const reservation = await reserveMonthlyQuota(
-        `chat-quota:${userId}:${monthKey}`,
-        limits.chatMessages
+  if (!override) {
+    const reservation = await reserveMonthlyQuota(
+      `chat-quota:${userId}:${monthKey}`,
+      limits.chatMessages
+    );
+    const overLimit = reservation ? !reservation.allowed : (chatCount ?? 0) >= limits.chatMessages;
+    if (overLimit) {
+      return problem(
+        403,
+        `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
+        { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
       );
-      const overLimit = reservation ? !reservation.allowed : (chatCount ?? 0) >= limits.chatMessages;
-      if (overLimit) {
-        return problem(
-          403,
-          `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
-          { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
-        );
-      }
-      if (reservation) releaseQuota = reservation.release;
     }
+    if (reservation) releaseQuota = reservation.release;
   }
 
-  // 4. Hourly rate limit, skipped for admins. Chat is chattier than one-shot
-  //    generation, so the ceiling is higher (anonymous: 20/hr, authed: 120/hr).
+  // 4. Hourly rate limit, skipped for admins. Chat is chattier than a one-shot
+  //    call, so the ceiling is generous. There is no separate anonymous tier any
+  //    more (it was 20/hr) — anonymous callers never get this far.
   if (!isAdmin) {
-    const limit = userId ? 120 : 20;
-    const rl = await rateLimit(rateLimitKey(req, userId), { limit, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, userId), { limit: 120, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
@@ -138,7 +153,7 @@ export async function POST(req: Request) {
   if (input.target) {
     systemInstruction += `\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`;
   }
-  if (input.projectId && userId && supabase) {
+  if (input.projectId) {
     const ctx = await buildProjectContext(supabase, userId, input.projectId);
     if (ctx) systemInstruction += `\n\n${ctx}`;
   }
@@ -206,7 +221,7 @@ export async function POST(req: Request) {
           // same partial text). An empty partial means nothing was actually
           // generated yet, nothing to persist, and the reservation is
           // released the same as any other no-op call.
-          if (reply.trim() && userId && supabase) {
+          if (reply.trim()) {
             await persistTurn(supabase, userId, input, reply).catch(() => {});
           } else if (!reply.trim() && releaseQuota) {
             await releaseQuota();
@@ -226,18 +241,16 @@ export async function POST(req: Request) {
         return;
       }
 
-      // Persist the turn for signed-in users (in both modes), so the chat
-      // shows up in the dashboard and can be reopened/continued. Persistence
-      // failures are surfaced but never block the reply the user is waiting on.
+      // Persist the turn (in both modes), so the chat shows up in the sidebar
+      // and can be reopened/continued. Persistence failures are surfaced but
+      // never block the reply the user is waiting on.
       let conversationId: string | null = input.conversationId ?? null;
       let persistError: string | null = null;
-      if (userId && supabase) {
-        try {
-          conversationId = await persistTurn(supabase, userId, input, reply);
-        } catch (err) {
-          persistError = err instanceof Error ? err.message : "persist failed";
-          conversationId = null;
-        }
+      try {
+        conversationId = await persistTurn(supabase, userId, input, reply);
+      } catch (err) {
+        persistError = err instanceof Error ? err.message : "persist failed";
+        conversationId = null;
       }
 
       send("done", {
