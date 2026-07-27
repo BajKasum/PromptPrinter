@@ -70,7 +70,13 @@ describe("Chat", () => {
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
     expect(screen.getByText("Hallo Finn")).toBeInTheDocument();
-    expect(await screen.findByText("Hier ist dein Plan.")).toBeInTheDocument();
+    // A reply is written out in the live preview bubble first and only moves
+    // into the result panel once it's fully revealed (see chat.tsx), so the
+    // node carrying the text is replaced mid-turn. Wait for the turn to settle
+    // (send button back) and query the DOM again, rather than holding on to a
+    // node captured during the transition.
+    await screen.findByRole("button", { name: /Senden/ });
+    expect(screen.getByText("Hier ist dein Plan.")).toBeInTheDocument();
 
     // Each outgoing user message carries a client-generated id (React key,
     // see chat.tsx's Msg type), so the body can't be a fixed JSON string
@@ -162,7 +168,10 @@ describe("Chat", () => {
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
-    await screen.findByText("Antwort da");
+    // Settle the turn first: while the reply is still being written the
+    // preview bubble carries its own role="status" ("Schreibt…"), so querying
+    // by that role mid-stream would match the wrong element.
+    await screen.findByRole("button", { name: /Senden/ });
     expect(await screen.findByRole("status")).toHaveTextContent(
       "konnte aber gerade nicht gespeichert werden"
     );
@@ -185,7 +194,9 @@ describe("Chat", () => {
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Nochmal");
     await user.click(screen.getByRole("button", { name: /Senden/ }));
 
-    await screen.findByText("Zweite Antwort");
+    // Again, only meaningful once the turn has settled: the live "Schreibt…"
+    // indicator is itself a role="status", so this must not run mid-stream.
+    await screen.findByRole("button", { name: /Senden/ });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 

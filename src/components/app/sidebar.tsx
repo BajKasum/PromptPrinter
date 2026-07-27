@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -433,6 +433,15 @@ function RailLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
 // top-right dropdown in the now-removed Topbar). Expanded opens upward
 // (there's no room below it); collapsed opens to the right of the icon rail.
 
+// The panel's natural width. It is anchored to the viewport rather than to the
+// sidebar because the sidebar clips its own overflow (it has to: the collapse
+// animates `width`, and without clipping the full-width content would spill
+// out of the rail mid-transition). An absolutely-positioned panel inside that
+// box gets cut off in both states, off the right edge of a narrow expanded
+// sidebar, and completely when collapsed, where it opens beside the rail.
+const ACCOUNT_MENU_WIDTH = 256;
+const VIEWPORT_GUTTER = 8;
+
 function AccountMenu({
   collapsed,
   email,
@@ -445,6 +454,43 @@ function AccountMenu({
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  // Viewport coordinates for the open panel; null until measured, so it never
+  // paints for a frame in the top-left corner before being positioned.
+  const [anchor, setAnchor] = useState<{
+    left: number;
+    bottom: number;
+    width: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setAnchor(null);
+      return;
+    }
+    function measure() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(ACCOUNT_MENU_WIDTH, window.innerWidth - VIEWPORT_GUTTER * 2);
+      // Collapsed the panel sits beside the rail, expanded it rises from the
+      // trigger's own left edge. Either way it is then pushed back inside the
+      // viewport, which is what keeps a narrow sidebar (or a narrow window)
+      // from pushing it off-screen.
+      const preferredLeft = collapsed ? rect.right + VIEWPORT_GUTTER : rect.left;
+      const left = Math.max(
+        VIEWPORT_GUTTER,
+        Math.min(preferredLeft, window.innerWidth - width - VIEWPORT_GUTTER)
+      );
+      const bottom = collapsed
+        ? Math.max(VIEWPORT_GUTTER, window.innerHeight - rect.bottom)
+        : window.innerHeight - rect.top + VIEWPORT_GUTTER;
+      setAnchor({ left, bottom, width });
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [open, collapsed]);
 
   const label = displayName || email.split("@")[0] || "Konto";
   const initial = (label[0] ?? "?").toUpperCase();
@@ -492,6 +538,7 @@ function AccountMenu({
   return (
     <div className="relative w-full">
       <button
+        ref={triggerRef}
         type="button"
         data-tour="account-menu"
         onClick={() => setOpen((v) => !v)}
@@ -522,9 +569,14 @@ function AccountMenu({
             onClick={() => setOpen(false)}
           />
           <div
+            style={
+              anchor
+                ? { left: anchor.left, bottom: anchor.bottom, width: anchor.width }
+                : undefined
+            }
             className={cn(
-              "absolute z-50 w-64 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated",
-              collapsed ? "bottom-0 left-full ml-2" : "bottom-full left-0 mb-2"
+              "fixed z-50 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated",
+              !anchor && "invisible"
             )}
           >
             <div className="border-b border-border px-4 py-3">

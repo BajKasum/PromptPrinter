@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChatEmptyState } from "@/components/app/chat-empty-state";
 import { ChatResultPanel } from "@/components/app/chat-result-panel";
-import { ChatUserBubble, ChatAssistantBubble, ChatTyping } from "@/components/app/chat-transcript";
+import {
+  ChatUserBubble,
+  ChatAssistantBubble,
+  ChatTyping,
+  ChatStreamingReply,
+  ChatFinishedMarker,
+} from "@/components/app/chat-transcript";
 import { ChatComposer } from "@/components/app/chat-composer";
-import { MarkdownMessage } from "@/components/app/chat-markdown";
 import { resolveVariant, resolveEmptyState, type ChatMode } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
 
@@ -61,10 +66,25 @@ export function Chat({
   // from `error` (which means no reply at all) since this must not block the
   // user from continuing to chat, only warn them the history isn't safe yet.
   const [persistWarning, setPersistWarning] = useState<string | null>(null);
-  // The reply currently arriving via SSE, null when nothing is streaming.
-  // Once the "done" event lands, its accumulated text is committed into
-  // `messages` and this resets to null, see send() below.
-  const [streamingReply, setStreamingReply] = useState<string | null>(null);
+  // The reply currently arriving via SSE (raw accumulated text), plus whether
+  // the stream has closed. It is deliberately NOT committed into `messages`
+  // the moment "done" lands: ChatStreamingReply writes the text out at a
+  // readable pace and calls back when it has caught up, and only then does the
+  // turn become a real message. Committing on "done" instead made the tail of
+  // a long prompt appear in one block exactly when the user was watching for
+  // it to finish.
+  const [pending, setPending] = useState<{ text: string; complete: boolean } | null>(null);
+  // Mirrors `pending` for event handlers (stop()) and for the commit guard;
+  // synced in an effect rather than assigned during render.
+  const pendingRef = useRef<{ text: string; complete: boolean } | null>(null);
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+  // True from the moment a reply finished writing until the next turn starts,
+  // drives the celebrating end-of-turn marker. Starts false on a reloaded
+  // chat: the marker celebrates a reply you just watched arrive, not every
+  // page view of an old one.
+  const [justFinished, setJustFinished] = useState(false);
   // Two scroll anchors: the bottom of the thread (used while a turn is in
   // flight, so the user sees their message + the typing indicator clear the
   // sticky composer) and the top of the latest result (used once the reply
@@ -74,9 +94,15 @@ export function Chat({
   // The in-flight request's controller, so stop() (below) can abort it.
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Busy covers both halves of a turn: the request itself, and the stretch
+  // afterwards where the text is still being written out. The composer stays
+  // in "stop" mode for both, so a reply can't be interrupted by a new one
+  // halfway through appearing.
+  const busy = loading || pending !== null;
+
   useEffect(() => {
     const last = messages[messages.length - 1];
-    if (loading || streamingReply !== null || last?.role === "user") {
+    if (busy || last?.role === "user") {
       // Awaiting/receiving a reply, keep the newest turn + typing indicator
       // (or the reply as it grows) in view.
       endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -84,21 +110,42 @@ export function Chat({
       // Reply landed, bring the top of the fresh result into view.
       resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [messages, loading, streamingReply]);
+  }, [messages, busy, pending]);
+
+  // Turn the in-flight reply into a real message. Idempotent via pendingRef:
+  // the reveal's own callback and a stop() click can both reach here for the
+  // same reply, and the second one must not append it twice. The text comes in
+  // as an argument rather than off the ref, since child effects run before the
+  // parent's ref-sync effect and the ref can be one commit stale.
+  const commitReply = useCallback((text: string, celebrate = true) => {
+    if (pendingRef.current === null) return;
+    pendingRef.current = null;
+    setPending(null);
+    if (!text.trim()) return;
+    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: text }]);
+    if (celebrate) setJustFinished(true);
+  }, []);
 
   function stop() {
     abortControllerRef.current?.abort();
+    // The request may already be done and only the writing still running (the
+    // stop button stays up for that too). Nothing left to abort in that case,
+    // so show the rest at once instead. No celebration: the user cut it short.
+    const p = pendingRef.current;
+    if (p?.complete) commitReply(p.text, false);
   }
 
   async function send(textArg?: string) {
     const text = (textArg ?? input).trim();
-    if (!text || loading) return;
+    if (!text || busy) return;
     const next: Msg[] = [...messages, { id: crypto.randomUUID(), role: "user", content: text }];
     setMessages(next);
     setInput("");
     setError(null);
     setPersistWarning(null);
-    setStreamingReply(null);
+    setPending(null);
+    pendingRef.current = null;
+    setJustFinished(false);
     setLoading(true);
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -125,7 +172,7 @@ export function Chat({
         if (event === "delta") {
           const { text: chunk } = JSON.parse(data) as { text: string };
           accumulated += chunk;
-          setStreamingReply(accumulated);
+          setPending({ text: accumulated, complete: false });
         } else if (event === "error") {
           const { detail } = JSON.parse(data) as { detail: string };
           throw new Error(detail);
@@ -134,7 +181,9 @@ export function Chat({
             conversationId?: string;
             persistError?: string;
           };
-          setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: accumulated }]);
+          // No text is coming any more; the reveal finishes writing what's
+          // left and commits the message from its own callback.
+          setPending({ text: accumulated, complete: true });
           // The route returns the conversation id on the first persisted turn;
           // hold onto it so every following turn appends to the same stored
           // chat. That first turn moves a fresh chat onto its canonical URL,
@@ -165,15 +214,17 @@ export function Chat({
         // User-initiated stop, not a real failure: keep whatever text had
         // already streamed in as the committed reply instead of discarding
         // it (the route does the same server-side, best-effort persisting
-        // the same partial text, see /api/chat).
-        if (accumulated.trim()) {
-          setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: accumulated }]);
-        }
+        // the same partial text, see /api/chat). No celebration for a reply
+        // the user cut short; a no-op if stop() already committed it.
+        commitReply(accumulated, false);
       } else {
+        pendingRef.current = null;
+        setPending(null);
         setError(e instanceof Error ? e.message : "Unbekannter Fehler");
       }
     } finally {
-      setStreamingReply(null);
+      // Only the request is over here. A completed reply that is still being
+      // written out keeps `busy` true through `pending` until it commits.
       setLoading(false);
     }
   }
@@ -212,18 +263,17 @@ export function Chat({
                 <ChatAssistantBubble key={m.id} content={m.content} index={i} />
               )
             )}
-            {loading && streamingReply === null && <ChatTyping />}
-            {streamingReply !== null && (
-              // Plain preview bubble, not the featured ChatResultPanel: while
-              // text is still arriving there's nothing sensible to copy/save
-              // yet. Once "done" commits it into `messages`, the very same
-              // content re-renders through the real ChatResultPanel above.
-              <div className="flex justify-start">
-                <div className="max-w-[88%] w-full rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
-                  <MarkdownMessage content={streamingReply} />
-                </div>
-              </div>
+            {loading && pending === null && <ChatTyping />}
+            {pending !== null && (
+              <ChatStreamingReply
+                text={pending.text}
+                complete={pending.complete}
+                onRevealed={commitReply}
+              />
             )}
+            {/* Only after the last character is written: the answer to "is it
+                done, can I copy it now?". */}
+            {justFinished && pending === null && <ChatFinishedMarker />}
             <div ref={endRef} className="h-0 scroll-mb-32" />
           </div>
         )}
@@ -251,7 +301,7 @@ export function Chat({
         input={input}
         onInputChange={setInput}
         placeholder={placeholder}
-        loading={loading}
+        loading={busy}
         onSend={() => send()}
         onStop={stop}
       />
