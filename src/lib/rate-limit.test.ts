@@ -96,6 +96,130 @@ describe("rateLimit, Upstash-missing behavior differs by environment", () => {
   });
 });
 
+// QA finding P-5: the fallback map only ever overwrote expired entries, never
+// deleted them, so any caller cycling through distinct keys grew it forever —
+// most obviously an attacker varying x-forwarded-for before that was fixed,
+// but any legitimate churn of unique keys had the same effect.
+describe("in-memory fallback bucket sweep (QA finding P-5)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("sweeps expired entries out after enough writes, instead of growing forever", async () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit, SWEEP_EVERY_N_WRITES, __unsafeFallbackBucketCountForTests } = await import(
+      "@/lib/rate-limit"
+    );
+
+    // Already-expired on arrival (negative window), so every one of these is
+    // sweep-eligible. The Nth write is itself what triggers the sweep, and by
+    // then every entry so far — including the one this exact call just
+    // inserted, also already "expired" under a negative window — qualifies,
+    // so the map is back to empty right at the threshold, not still holding
+    // all N of them.
+    for (let i = 0; i < SWEEP_EVERY_N_WRITES; i++) {
+      await rateLimit(`ip:sweep-test-${i}`, { limit: 5, windowMs: -1 });
+    }
+    expect(__unsafeFallbackBucketCountForTests()).toBe(0);
+
+    // A fresh, non-expired write afterwards is unaffected: the sweep counter
+    // only just reset, so this one just lands in the (now-empty) map.
+    await rateLimit("ip:sweep-trigger", { limit: 5, windowMs: 60_000 });
+    expect(__unsafeFallbackBucketCountForTests()).toBe(1);
+  });
+
+  it("never sweeps a still-live entry", async () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit, SWEEP_EVERY_N_WRITES, __unsafeFallbackBucketCountForTests } = await import(
+      "@/lib/rate-limit"
+    );
+
+    // The live write is #1 of the sweep-trigger count, so exactly
+    // SWEEP_EVERY_N_WRITES - 1 more (all pre-expired) land the Nth write —
+    // the one that actually triggers the sweep — on the last of THIS loop,
+    // clearing every one of them (all already expired by then) while the
+    // live entry, written first and never expired, is untouched.
+    await rateLimit("ip:still-live", { limit: 5, windowMs: 60_000 });
+    for (let i = 0; i < SWEEP_EVERY_N_WRITES - 1; i++) {
+      await rateLimit(`ip:sweep-test-${i}`, { limit: 5, windowMs: -1 });
+    }
+    // Directly: exactly the one live entry survived the sweep, nothing else
+    // lingered and nothing got swept that shouldn't have been.
+    expect(__unsafeFallbackBucketCountForTests()).toBe(1);
+    // And behaviourally: the second call against it sees an existing bucket
+    // (remaining drops from 4, not reset to 4 again as a fresh one would).
+    const result = await rateLimit("ip:still-live", { limit: 5, windowMs: 60_000 });
+    expect(result.remaining).toBe(3);
+  });
+});
+
+// QA finding P-7: a Redis outage used to degrade to the FULL configured
+// limit per instance. With N warm serverless instances each enforcing that
+// independently, the real ceiling across the deployment is N times higher
+// than `limit` says — worst exactly when an attack is likely already
+// underway.
+describe("rateLimit degrades to a stricter fallback on a Redis call failure (QA finding P-7)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.doUnmock("@upstash/redis");
+    vi.doUnmock("@upstash/ratelimit");
+    vi.resetModules();
+  });
+
+  it("enforces a tenth of the configured limit, not the full limit, once Redis itself errors", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({}) } }));
+    vi.doMock("@upstash/ratelimit", () => ({
+      Ratelimit: Object.assign(
+        vi.fn().mockImplementation(() => ({
+          limit: vi.fn().mockRejectedValue(new Error("upstash unreachable")),
+        })),
+        { fixedWindow: vi.fn() }
+      ),
+    }));
+    vi.resetModules();
+    const { rateLimit } = await import("@/lib/rate-limit");
+
+    // limit: 20 degrades to ceil(20/10) = 2, not the full 20.
+    const first = await rateLimit("ip:outage-test", { limit: 20, windowMs: 60_000 });
+    const second = await rateLimit("ip:outage-test", { limit: 20, windowMs: 60_000 });
+    const third = await rateLimit("ip:outage-test", { limit: 20, windowMs: 60_000 });
+
+    expect(first.allowed).toBe(true);
+    expect(second.allowed).toBe(true);
+    expect(third.allowed).toBe(false);
+  });
+
+  it("never lets the degraded limit round down to zero", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({}) } }));
+    vi.doMock("@upstash/ratelimit", () => ({
+      Ratelimit: Object.assign(
+        vi.fn().mockImplementation(() => ({
+          limit: vi.fn().mockRejectedValue(new Error("upstash unreachable")),
+        })),
+        { fixedWindow: vi.fn() }
+      ),
+    }));
+    vi.resetModules();
+    const { rateLimit } = await import("@/lib/rate-limit");
+
+    // limit: 5 would floor-divide to 0 without the Math.max(1, …) guard,
+    // which would refuse every request rather than degrading gracefully.
+    const result = await rateLimit("ip:tiny-limit", { limit: 5, windowMs: 60_000 });
+    expect(result.allowed).toBe(true);
+  });
+});
+
 // reserveMonthlyQuota is the atomic (Redis INCR) close for /api/chat's
 // check-then-act monthly-quota race; same fresh-module-per-test pattern as
 // above since it reads the module-level `redis` singleton at import time.

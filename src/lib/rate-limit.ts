@@ -24,6 +24,35 @@ type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
 
+// Every key that ever hits the fallback gets an entry that only ever
+// OVERWRITES on expiry, never deletes (QA finding P-5): a single caller
+// cycling through many keys (any IP, and before rateLimitKey's own fix, any
+// value a caller could put in x-forwarded-for) grew this map forever. A
+// counter that sweeps expired entries out every Nth write bounds it without
+// a size-limited cache dependency for what is already only a fallback path
+// (Upstash is the real limiter; this only runs when it's unset, or once per
+// key in dev). 1000 is arbitrary, just infrequent enough that the sweep
+// itself is never the hot path.
+let writesSinceSweep = 0;
+// Exported so the test can drive exactly this many writes rather than
+// hardcoding a copy of the threshold that could silently drift from it.
+export const SWEEP_EVERY_N_WRITES = 1000;
+
+function sweepExpiredBuckets(now: number) {
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt < now) buckets.delete(key);
+  }
+}
+
+/**
+ * Test-only introspection into the fallback map's size, so the sweep can be
+ * verified without 1000 real calls per test. Not used by any runtime code
+ * path — the map itself stays module-private everywhere else.
+ */
+export function __unsafeFallbackBucketCountForTests(): number {
+  return buckets.size;
+}
+
 function memoryRateLimit(
   key: string,
   { limit, windowMs }: { limit: number; windowMs: number }
@@ -34,6 +63,10 @@ function memoryRateLimit(
   if (!bucket || bucket.resetAt < now) {
     const resetAt = now + windowMs;
     buckets.set(key, { count: 1, resetAt });
+    if (++writesSinceSweep >= SWEEP_EVERY_N_WRITES) {
+      writesSinceSweep = 0;
+      sweepExpiredBuckets(now);
+    }
     return { allowed: true, remaining: limit - 1, resetAt };
   }
 
@@ -83,10 +116,23 @@ export async function rateLimit(
     try {
       const { success, remaining, reset } = await getLimiter(limit, windowMs).limit(key);
       return { allowed: success, remaining, resetAt: reset };
-    } catch {
+    } catch (err) {
       // Redis unreachable, degrade to the in-memory limiter instead of failing
-      // the request outright. Limiting stays on (per-instance) during an outage.
-      return memoryRateLimit(key, { limit, windowMs });
+      // the request outright. Limiting stays on, but only per-instance now: N
+      // warm serverless instances each enforce this independently, so the real
+      // ceiling across the deployment is N times higher than `limit` says.
+      // Feeding the same `limit` through here would silently multiply the
+      // configured ceiling for as long as the outage lasts — precisely the
+      // moment an actual attack is most likely underway (QA finding P-7),
+      // rather than degrading. A tenth of the real limit per instance is a
+      // deliberately blunt compromise: still lets legitimate traffic through
+      // during a brief hiccup, without handing out N times the real ceiling.
+      logWarning("rate_limit.redis_call_failed", {
+        error: err instanceof Error ? err.message : String(err),
+        degradedLimit: Math.max(1, Math.ceil(limit / 10)),
+        originalLimit: limit,
+      });
+      return memoryRateLimit(key, { limit: Math.max(1, Math.ceil(limit / 10)), windowMs });
     }
   }
 
@@ -130,6 +176,17 @@ export async function rateLimit(
  * cost quota unenforced is a far smaller risk than breaking chat outright for
  * every free user during that same hiccup, and the hourly rate limit still
  * bounds the damage either way.
+ *
+ * The DB-count fallback this leaves callers to is soft in a way this reservation
+ * isn't (QA finding F-9): it counts a user's own `messages` rows, which the
+ * user can delete (conversations cascade), so the counter measures a
+ * *deletable* balance rather than a *monotonic* one — deleting old chats
+ * resets it. That is a real gap in principle, but Upstash is a hard
+ * requirement in production (src/lib/env.ts's boot check refuses to start
+ * without it, see QA finding S-2), so the DB-count path only ever runs in
+ * dev/self-hosting, where it is an accepted, documented soft spot rather than
+ * something worth a new `usage_counters` table and its own RLS/grants for.
+ * Revisit if self-hosting without Redis ever becomes a real deployment target.
  */
 export async function reserveMonthlyQuota(
   key: string,

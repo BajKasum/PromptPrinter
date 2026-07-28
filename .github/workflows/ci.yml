@@ -21,7 +21,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Matches the Docker image (node:22-alpine, see Dockerfile) and
+          # .nvmrc, so CI, prod, and local dev all run the same major (QA
+          # finding K-3). Was 20 while the image and package.json's `engines`
+          # both say >=20.3/22 — three unpinned targets that happened to agree
+          # by coincidence, not by anything enforcing it.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies

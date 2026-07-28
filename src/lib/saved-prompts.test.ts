@@ -7,14 +7,30 @@ describe("extractPrompt", () => {
     expect(extractPrompt(md)).toBe("Du bist ein Tutor.");
   });
 
-  it("joins multiple fenced blocks with a blank line", () => {
-    const md = "```text\nErster Prompt.\n```\nund\n```text\nZweiter Prompt.\n```";
-    expect(extractPrompt(md)).toBe("Erster Prompt.\n\nZweiter Prompt.");
-  });
-
   it("handles a language tag on the fence", () => {
     const md = "```sql\nselect 1;\n```";
     expect(extractPrompt(md)).toBe("select 1;");
+  });
+
+  // QA finding F-5: multiple fenced blocks used to get joined into one saved
+  // "prompt", so an incidental second block (an example payload, a schema
+  // sketch) silently became part of what got saved. These pin the selection
+  // rule that replaced the join.
+  describe("multiple fenced blocks (QA finding F-5)", () => {
+    it("prefers the last ```text block over an earlier one, not joining them", () => {
+      const md = "```text\nErste Fassung.\n```\nkuerzer bitte\n```text\nZweite, kuerzere Fassung.\n```";
+      expect(extractPrompt(md)).toBe("Zweite, kuerzere Fassung.");
+    });
+
+    it("prefers a ```text block over an untagged incidental block, regardless of order", () => {
+      const md = '```json\n{ "example": true }\n```\n\n```text\nDu bist ein hilfreicher Assistent.\n```';
+      expect(extractPrompt(md)).toBe("Du bist ein hilfreicher Assistent.");
+    });
+
+    it("falls back to the longest block when nothing is tagged text", () => {
+      const md = "```json\n{ \"a\": 1 }\n```\n\n```\nDies ist der eigentliche, deutlich laengere Prompt-Text.\n```";
+      expect(extractPrompt(md)).toBe("Dies ist der eigentliche, deutlich laengere Prompt-Text.");
+    });
   });
 
   it("returns null when there is no fenced block (e.g. a clarifying question)", () => {

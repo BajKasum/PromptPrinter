@@ -23,6 +23,12 @@ const llmConfig = vi.fn();
 // resolve to the same object, and each call site destructures the field it
 // wants (data / error / count).
 const tableResults: Record<string, { data?: unknown; error?: unknown; count?: number }> = {};
+// Every .from(table) call gets a fresh builder (see supabaseStub below), so a
+// plain vi.fn() on the chain can't accumulate calls across them. Recorded
+// here instead, keyed by table, for the one thing route.ts actually writes
+// content into (QA finding F-8's own regression target: what project_id
+// ends up in the conversations insert).
+const insertCalls: Record<string, unknown[]> = {};
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null, count: 0 };
@@ -31,9 +37,13 @@ function builder(table: string) {
     single: vi.fn(async () => result()),
     then: (resolve: (v: unknown) => unknown) => resolve(result()),
   };
-  for (const method of ["select", "eq", "gte", "is", "order", "limit", "insert", "update"]) {
+  for (const method of ["select", "eq", "gte", "is", "order", "limit", "update"]) {
     chain[method] = vi.fn(() => chain);
   }
+  chain.insert = vi.fn((row: unknown) => {
+    (insertCalls[table] ??= []).push(row);
+    return chain;
+  });
   return chain;
 }
 
@@ -73,6 +83,7 @@ async function readSse(res: Response): Promise<string> {
 describe("POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    for (const table of Object.keys(insertCalls)) delete insertCalls[table];
     createClient.mockResolvedValue(supabaseStub);
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 });
@@ -454,6 +465,46 @@ describe("POST /api/chat", () => {
 
       const sent = chatCompleteStream.mock.calls[0][0] as { messages: { content: string }[] };
       expect(sent.messages.map((m) => m.content)).toEqual(["a", "b", "c"]);
+    });
+  });
+
+  // QA finding F-8: the route only checked projectId was a UUID, never that
+  // the caller actually owns that project, and wrote it straight into
+  // conversations.project_id regardless. A chat could end up filed under a
+  // project its owner can never see (the workspace route 404s them out) and
+  // invisible in the global chat list too (that filters project_id IS NULL).
+  describe("projectId ownership (QA finding F-8)", () => {
+    const FOREIGN_PROJECT_ID = "11111111-1111-4111-8111-111111111111";
+
+    it("writes project_id: null when the project does not exist or is not owned", async () => {
+      // Default fixture: tableResults.projects has no row, matching both
+      // "no such project" and "belongs to someone else" (RLS makes those
+      // indistinguishable to the caller, by design).
+      await readSse(await POST(req({ mode: "general", projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+
+      expect(insertCalls.conversations?.[0]).toMatchObject({ project_id: null });
+    });
+
+    it("writes the real project_id once ownership is confirmed", async () => {
+      tableResults.projects = {
+        data: { name: "Mein Projekt", idea: null, instructions: null, context: {}, tools: null },
+        error: null,
+      };
+
+      await readSse(await POST(req({ mode: "general", projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+
+      expect(insertCalls.conversations?.[0]).toMatchObject({ project_id: FOREIGN_PROJECT_ID });
+    });
+
+    it("does not inject project context for an unowned project either", async () => {
+      await readSse(await POST(req({ mode: "general", projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+
+      // CHAT_SYSTEM_PROMPT's own "context safety" paragraph mentions the
+      // phrase "PROJECT CONTEXT" in every chat, project or not — the actual
+      // injected block (buildProjectContext's own output) opens with this
+      // exact delimiter line, which only appears when a context was built.
+      const sent = chatCompleteStream.mock.calls[0][0] as { system: string };
+      expect(sent.system).not.toContain("--- PROJECT CONTEXT (the user is working inside");
     });
   });
 

@@ -108,7 +108,15 @@ function CodeBlock({ text }: { text: string }) {
   const { copied, copy, copyCount } = useCopyToClipboard();
 
   return (
-    <div className="my-2 overflow-hidden rounded-lg border border-border bg-black/30">
+    // bg-surface, not a fixed bg-black/30 (QA finding U-5): a flat black
+    // overlay reads as a subtle deepening on the dark theme it was tuned
+    // against, but the same 30% black over the light theme's near-white
+    // background produced a flat, off-palette grey box — the one element
+    // every visitor is actually here for. --surface is already calibrated
+    // per theme (light: a soft light recess, dark: a soft dark one), so this
+    // is the same "make it darker/lighter than its surroundings" intent,
+    // just through the token that already knows which direction that means.
+    <div className="my-2 overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-tertiary">
           Prompt

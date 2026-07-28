@@ -44,11 +44,17 @@ export function CopyMoment({
 }) {
   const reduceMotion = useReducedMotion() ?? false;
 
+  // The label sits in its own aria-live region in every branch (QA finding
+  // A-3): the visual "Kopiert" swap was silent for a screen reader, no
+  // confirmation that the click actually did anything. A plain wrapping span
+  // rather than anything on the button itself, so the caller's own layout
+  // (flex, gap, hover styles, the two-node shape the module comment above
+  // promises) stays untouched.
   if (!copied) {
     return (
       <>
         <Copy className={iconClassName} />
-        {idleLabel}
+        <span aria-live="polite">{idleLabel}</span>
       </>
     );
   }
@@ -57,7 +63,7 @@ export function CopyMoment({
     return (
       <>
         <Check className={`${iconClassName} text-success`} />
-        {copiedLabel}
+        <span aria-live="polite">{copiedLabel}</span>
       </>
     );
   }
@@ -104,7 +110,9 @@ export function CopyMoment({
           />
         ))}
       </span>
-      <span className="text-success">{copiedLabel}</span>
+      <span aria-live="polite" className="text-success">
+        {copiedLabel}
+      </span>
     </>
   );
 }

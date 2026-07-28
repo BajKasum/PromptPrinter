@@ -316,9 +316,28 @@ export async function POST(req: Request) {
   if (input.target) {
     systemInstruction += `\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`;
   }
+  // Ownership-verified project id, never the raw input.projectId (QA finding
+  // F-8). The request only checked the value was a UUID, not that this caller
+  // owns it, and persistTurn wrote it straight into conversations.project_id
+  // regardless — a chat could end up filed under a project its owner can't
+  // see (the workspace route 404s them out) and not in the global chat list
+  // either (that filters project_id IS NULL), invisibly orphaned. No data
+  // leaked (buildProjectContext's own read is RLS-scoped and already
+  // returned null for a foreign project), but a real integrity bug: deleting
+  // that foreign project would cascade-delete a chat that isn't even yours.
+  //
+  // buildProjectContext already runs exactly this ownership read as part of
+  // building the context block — its null return IS "not found or not
+  // owned" (every other exit path returns a non-empty string, starting with
+  // the project's own name) — so this reuses that result instead of a second
+  // query, per query cost, per turn.
+  let verifiedProjectId: string | null = null;
   if (input.projectId) {
     const ctx = await buildProjectContext(supabase, userId, input.projectId);
-    if (ctx) systemInstruction += `\n\n${ctx}`;
+    if (ctx) {
+      systemInstruction += `\n\n${ctx}`;
+      verifiedProjectId = input.projectId;
+    }
   }
 
   // 6+7. Produce the reply and persist it, streamed to the client as it's
@@ -395,7 +414,7 @@ export async function POST(req: Request) {
           // generated yet, nothing to persist, and the reservation is
           // released the same as any other no-op call.
           if (reply.trim()) {
-            await persistTurn(supabase, userId, input, reply).catch(() => {});
+            await persistTurn(supabase, userId, input, reply, verifiedProjectId).catch(() => {});
           } else if (!reply.trim()) {
             await releaseReservations();
           }
@@ -428,11 +447,11 @@ export async function POST(req: Request) {
       let conversationId: string | null = input.conversationId ?? null;
       let persistError: string | null = null;
       try {
-        conversationId = await persistTurn(supabase, userId, input, reply);
+        conversationId = await persistTurn(supabase, userId, input, reply, verifiedProjectId);
       } catch (err) {
         persistError = err instanceof Error ? err.message : "persist failed";
         conversationId = null;
-        captureError("chat.persist_failed", err, { userId, projectId: input.projectId });
+        captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });
       }
 
       logEvent("chat.turn", {
@@ -440,7 +459,7 @@ export async function POST(req: Request) {
         mode,
         byok: Boolean(override),
         provider: override?.provider ?? llmConfig()?.provider,
-        inProject: Boolean(input.projectId),
+        inProject: Boolean(verifiedProjectId),
         turns: input.messages.length,
         promptChars,
         replyChars: reply.length,
@@ -476,7 +495,13 @@ async function persistTurn(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
   input: ChatRequest,
-  reply: string
+  reply: string,
+  // Explicit, ownership-verified project id (QA finding F-8) — never read
+  // input.projectId directly here, that's the unverified value straight off
+  // the wire. Callers pass the value buildProjectContext already confirmed
+  // exists and belongs to this user (or null, for a global chat / an
+  // unowned-or-missing project, which persistTurn treats identically).
+  verifiedProjectId: string | null
 ): Promise<string> {
   let conversationId = input.conversationId ?? null;
 
@@ -500,7 +525,7 @@ async function persistTurn(
         mode: input.mode,
         target: input.target ?? null,
         title,
-        project_id: input.projectId ?? null,
+        project_id: verifiedProjectId,
       })
       .select("id")
       .single();

@@ -4,6 +4,7 @@ import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatComplete, type LlmOverride } from "@/lib/llm";
 import { encrypt } from "@/lib/crypto";
+import { problem } from "@/lib/api-problem";
 
 export const runtime = "nodejs";
 
@@ -154,24 +155,4 @@ export async function DELETE(req: Request) {
   }
 
   return NextResponse.json({ ok: true });
-}
-
-function problem(status: number, detail: string, extra: Record<string, unknown> = {}) {
-  return NextResponse.json(
-    {
-      type: "about:blank",
-      title:
-        status === 400
-          ? "Bad Request"
-          : status === 401
-            ? "Unauthorized"
-            : status === 429
-              ? "Too Many Requests"
-              : "Error",
-      status,
-      detail,
-      ...extra,
-    },
-    { status, headers: { "content-type": "application/problem+json" } }
-  );
 }

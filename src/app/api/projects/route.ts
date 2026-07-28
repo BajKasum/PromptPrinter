@@ -3,6 +3,7 @@ import { z } from "zod";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
+import { problem } from "@/lib/api-problem";
 
 export const runtime = "nodejs";
 
@@ -85,26 +86,4 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ projectId: project.id as string });
-}
-
-function problem(status: number, detail: string, extra: Record<string, unknown> = {}) {
-  return NextResponse.json(
-    {
-      type: "about:blank",
-      title:
-        status === 400
-          ? "Bad Request"
-          : status === 401
-            ? "Unauthorized"
-            : status === 403
-              ? "Forbidden"
-              : status === 429
-                ? "Too Many Requests"
-                : "Error",
-      status,
-      detail,
-      ...extra,
-    },
-    { status, headers: { "content-type": "application/problem+json" } }
-  );
 }
