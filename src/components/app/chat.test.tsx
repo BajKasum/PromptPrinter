@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Chat } from "./chat";
 
@@ -358,15 +358,17 @@ describe("Chat", () => {
       await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
       // The reply lands in the live preview bubble first and only moves into
-      // the result panel once fully revealed, so the result-scroll happens
-      // after the turn settles — waiting on the text alone is too early.
-      await screen.findByRole("button", { name: /Senden/ });
-
-      const toResult = scrollIntoView.mock.calls.filter(
-        (call) => (call[0] as ScrollIntoViewOptions)?.block === "start"
-      );
-      expect(toResult.length).toBeGreaterThan(0);
-      expect((toResult.at(-1)![0] as ScrollIntoViewOptions).behavior).toBe("smooth");
+      // the result panel once fully revealed, and the scroll to it happens in
+      // an effect after that commit. Waiting on the send button coming back is
+      // one step too early and made this flaky (~1 run in 3), so wait for the
+      // observable end state itself.
+      await waitFor(() => {
+        const toResult = scrollIntoView.mock.calls.filter(
+          (call) => (call[0] as ScrollIntoViewOptions)?.block === "start"
+        );
+        expect(toResult.length).toBeGreaterThan(0);
+        expect((toResult.at(-1)![0] as ScrollIntoViewOptions).behavior).toBe("smooth");
+      });
     });
   });
   // QA finding A-1: aria-live sat on the whole transcript including the
