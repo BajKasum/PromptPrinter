@@ -416,8 +416,8 @@ ein Gründer.
 > zwei Zielgruppen gleichzeitig zu bedienen.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
-(Auth/DB/RLS) · Gemini (`@google/genai`) · Tailwind (HSL-Token-System) ·
-Framer Motion · next-themes · Vitest · Docker.
+(Auth/DB/RLS) · Z.ai/GLM (primär) + Gemini (`@google/genai`, sekundär) ·
+Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
 
 ## ⚠️ Wichtig zu wissen, bevor du loslegst
 

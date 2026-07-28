@@ -29,7 +29,7 @@ export default function AppError({
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md text-center">
         <Mascot state="sad" size={112} priority className="mx-auto mb-5" />
-        <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-red-300">
+        <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-destructive">
           Fehler
         </div>
         <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">

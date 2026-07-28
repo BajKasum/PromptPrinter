@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractPrompt, derivePromptTitle } from "@/lib/saved-prompts";
+import { extractPrompt, derivePromptTitle, extractSavedPromptContents } from "@/lib/saved-prompts";
 
 describe("extractPrompt", () => {
   it("returns the body of a single fenced block, trimmed", () => {
@@ -71,5 +71,31 @@ describe("derivePromptTitle", () => {
 
   it("falls back to a generic label when there is no usable line", () => {
     expect(derivePromptTitle("   \n  \n")).toBe("Gespeicherter Prompt");
+  });
+});
+
+// QA finding F-7: SavePromptButton used to allow saving the same prompt
+// arbitrarily often. This helper feeds it the set of already-saved contents
+// so it can start disabled instead, without a DB migration or unique index.
+describe("extractSavedPromptContents", () => {
+  it("pulls the prompt string out of each row's outputs", () => {
+    const rows = [
+      { outputs: { prompt: "Erster Prompt.", title: "A" } },
+      { outputs: { prompt: "Zweiter Prompt.", title: "B" } },
+    ];
+    expect(extractSavedPromptContents(rows)).toEqual(["Erster Prompt.", "Zweiter Prompt."]);
+  });
+
+  it("skips rows without a string prompt", () => {
+    const rows = [
+      { outputs: { title: "Kein Prompt-Feld" } },
+      { outputs: null },
+      { outputs: { prompt: 42 } },
+    ];
+    expect(extractSavedPromptContents(rows)).toEqual([]);
+  });
+
+  it("returns an empty array for no rows", () => {
+    expect(extractSavedPromptContents([])).toEqual([]);
   });
 });

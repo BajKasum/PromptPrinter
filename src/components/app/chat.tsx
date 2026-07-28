@@ -26,6 +26,14 @@ import { randomId } from "@/lib/utils";
 // too, but a stable id survives if the transcript is ever edited/trimmed.
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
+// Distinguishes an explicit "error" SSE event (the route/provider reporting a
+// real, actionable failure — rate-limited, model unavailable) from any other
+// exception the catch block sees (a network drop, a rejected body read). Both
+// can happen after text already accumulated, but only the former means the
+// reply itself is bad; the latter (QA finding E-2) means the connection died
+// while a perfectly good reply was in flight, and should be kept, not discarded.
+class StreamProtocolError extends Error {}
+
 // "in 2 Minuten" reads better than "in 118 Sekunden"; below a minute the exact
 // number is the useful part.
 function formatRetryDelay(seconds: number): string {
@@ -48,6 +56,7 @@ export function Chat({
   initialMessages,
   initialConversationId,
   hasResults = false,
+  savedPrompts,
   name,
 }: {
   /** Internal system-prompt selector; legacy conversations may carry "software". */
@@ -58,6 +67,8 @@ export function Chat({
   initialConversationId?: string;
   /** For project chats: whether saved results exist (drives the empty-state copy). */
   hasResults?: boolean;
+  /** Prompt text of every result already saved in this project (QA F-7: dedup without a migration). */
+  savedPrompts?: string[];
   /** The user's display name, personalizes the unified empty-state greeting. */
   name?: string | null;
 }) {
@@ -240,7 +251,7 @@ export function Chat({
           setPending({ text: accumulated, complete: false });
         } else if (event === "error") {
           const { detail } = JSON.parse(data) as { detail: string };
-          throw new Error(detail);
+          throw new StreamProtocolError(detail);
         } else if (event === "done") {
           const { conversationId: newId, persistError } = JSON.parse(data) as {
             conversationId?: string;
@@ -282,6 +293,21 @@ export function Chat({
         // the same partial text, see /api/chat). No celebration for a reply
         // the user cut short; a no-op if stop() already committed it.
         commitReply(accumulated, false);
+      } else if (!(e instanceof StreamProtocolError) && accumulated.trim().length > 0) {
+        // QA finding E-2: the connection dropped mid-stream on its own (not a
+        // user-initiated stop, and not the route reporting a real failure —
+        // that's StreamProtocolError, handled below) after real text had
+        // already arrived. The route does its own best-effort persist for
+        // whatever it managed to generate before the client vanished, so the
+        // reply may already be sitting in the DB — throwing the on-screen
+        // text away here would lose what's visible without undoing what's
+        // stored, leaving the user with neither. Keep it, exactly like a
+        // user-initiated stop, and warn instead of erroring: nothing failed
+        // to *send*, the connection just didn't survive to see "done".
+        commitReply(accumulated, false);
+        setPersistWarning(
+          "Die Verbindung ist mitten in der Antwort abgebrochen. Lade die Seite neu, die Antwort ist eventuell schon gespeichert."
+        );
       } else {
         pendingRef.current = null;
         setPending(null);
@@ -352,7 +378,12 @@ export function Chat({
                 <ChatUserBubble key={m.id} content={m.content} />
               ) : i === lastAssistantIndex ? (
                 <div key={m.id} ref={resultRef} className="scroll-mt-24">
-                  <ChatResultPanel content={m.content} projectId={projectId} target={target} />
+                  <ChatResultPanel
+                    content={m.content}
+                    projectId={projectId}
+                    target={target}
+                    savedPrompts={savedPrompts}
+                  />
                 </div>
               ) : (
                 <ChatAssistantBubble key={m.id} content={m.content} index={i} />

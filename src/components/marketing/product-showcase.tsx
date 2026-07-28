@@ -240,7 +240,7 @@ function ProjectsView() {
                 <FolderKanban className="h-4 w-4 text-foreground" strokeWidth={1.8} />
               </div>
               <Star
-                className={cn("h-4 w-4", p.fav ? "fill-amber-300 text-amber-300" : "text-tertiary")}
+                className={cn("h-4 w-4", p.fav ? "fill-warning text-warning" : "text-tertiary")}
                 strokeWidth={1.8}
               />
             </div>

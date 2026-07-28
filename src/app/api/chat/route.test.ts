@@ -62,11 +62,17 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 vi.mock("@/lib/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
 // Mocked so the test never pulls in the three provider SDKs, and so "did the
-// model get called" is directly assertable.
-vi.mock("@/lib/llm", () => ({
-  chatCompleteStream: (...a: unknown[]) => chatCompleteStream(...a),
-  llmConfig: () => llmConfig(),
-}));
+// model get called" is directly assertable. classifyLlmFailure/LlmEmptyReplyError
+// stay real (importOriginal) — route.ts's U-4 mapping (raw provider errors →
+// German text) is worth exercising against the actual classifier, not a stub.
+vi.mock("@/lib/llm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/llm")>();
+  return {
+    ...actual,
+    chatCompleteStream: (...a: unknown[]) => chatCompleteStream(...a),
+    llmConfig: () => llmConfig(),
+  };
+});
 
 function req(body: unknown = { mode: "general", messages: [{ role: "user", content: "Hi" }] }) {
   return new Request("https://promptprinter.app/api/chat", {
@@ -327,6 +333,46 @@ describe("POST /api/chat", () => {
       const res = await POST(req());
 
       expect(res.status).toBe(200);
+    });
+  });
+
+  // QA finding U-4: a failed model call used to embed err.message straight
+  // into the client-visible detail — raw English provider text carrying the
+  // model/provider name and HTTP status. classifyLlmFailure now buckets it
+  // and the route sends only a German, non-leaking message.
+  describe("provider failure text (QA finding U-4)", () => {
+    it("maps a rate-limit style provider error to German, without the raw text", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("Z.ai 429: Rate limit exceeded for model glm-4.5-air");
+      });
+
+      const body = await readSse(await POST(req()));
+
+      expect(body).toContain("überlastet");
+      expect(body).not.toContain("glm-4.5-air");
+      expect(body).not.toContain("Z.ai 429");
+    });
+
+    it("maps an empty reply to German", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        yield "";
+      });
+
+      const body = await readSse(await POST(req()));
+
+      expect(body).toContain("event: error");
+      expect(body).toContain("keine Antwort geliefert");
+    });
+
+    it("falls back to a generic German message for an unrecognized failure", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("something odd happened");
+      });
+
+      const body = await readSse(await POST(req()));
+
+      expect(body).toContain("schiefgelaufen");
+      expect(body).not.toContain("something odd happened");
     });
   });
 

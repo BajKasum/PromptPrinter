@@ -42,9 +42,9 @@ export function UsageMeter({
   const displayUsed = compactNumber(used);
   const tone =
     !unlimited && pct >= 100
-      ? "from-red-500 to-red-400"
+      ? "from-destructive to-destructive/80"
       : !unlimited && pct >= 80
-        ? "from-amber-500 to-amber-400"
+        ? "from-warning to-warning/80"
         : "from-accent to-accent-text";
 
   return (

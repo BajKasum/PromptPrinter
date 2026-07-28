@@ -79,6 +79,14 @@ export async function POST(req: Request) {
 
   // Test the key against its real provider before it's ever persisted, a
   // bad key should fail loudly right here, not silently at generation time.
+  //
+  // QA finding U-4: /api/chat stopped surfacing raw provider error text to
+  // the client (see classifyLlmFailure/describeLlmFailure in llm.ts / that
+  // route). This is the one deliberate exception: the person reading this
+  // message is the key's own owner, mid-setup, deciding whether the key they
+  // just typed is good — "invalid_api_key" or "model not found" is exactly
+  // the actionable detail they need, and there's no different user it could
+  // leak to. Nothing else in the app reuses this path.
   try {
     await chatComplete({
       system: "Antworte ausschliesslich mit dem einen Wort OK.",

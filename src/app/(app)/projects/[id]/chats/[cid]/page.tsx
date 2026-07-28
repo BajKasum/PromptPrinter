@@ -6,6 +6,8 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
 import { normalizeTarget } from "@/lib/target-tools";
 import { createClient } from "@/lib/supabase/server";
+import { extractSavedPromptContents } from "@/lib/saved-prompts";
+import { MESSAGE_LOAD_LIMIT } from "@/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -39,24 +41,32 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [{ data: rows }, { count: resultCount }, { data: profile }] = await Promise.all([
-    supabase
-      .from("messages")
-      .select("id, role, content")
-      .eq("conversation_id", cid)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("generations")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", id),
-    // getProject already redirected to /login if unauthenticated, user.id is
-    // safe here; the "" fallback just matches no row instead of throwing.
-    supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
-  ]);
+  const [{ data: rows }, { data: generationRows, count: resultCount }, { data: profile }] =
+    await Promise.all([
+      // Newest first + limit, then reversed below (QA finding P-1): an
+      // ascending query + limit would keep the OLDEST rows on a long chat,
+      // cutting off exactly the turns the user is mid-conversation with.
+      supabase
+        .from("messages")
+        .select("id, role, content")
+        .eq("conversation_id", cid)
+        .order("created_at", { ascending: false })
+        .limit(MESSAGE_LOAD_LIMIT),
+      // Selecting `outputs` (not just a head-count) also gives the save
+      // button the already-saved prompt texts, so it can start disabled for a
+      // prompt that's already in the project's Ergebnisse (F-7).
+      supabase.from("generations").select("outputs", { count: "exact" }).eq("project_id", id),
+      // getProject already redirected to /login if unauthenticated, user.id is
+      // safe here; the "" fallback just matches no row instead of throwing.
+      supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
+    ]);
 
-  const initialMessages = (rows as DbMessage[] | null) ?? [];
+  const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
+  const savedPrompts = extractSavedPromptContents(
+    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+  );
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -85,6 +95,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}
         hasResults={(resultCount ?? 0) > 0}
+        savedPrompts={savedPrompts}
         name={name}
       />
     </div>

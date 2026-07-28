@@ -48,3 +48,33 @@ export const MAX_USER_MESSAGE_CHARS = 8000;
  * move with it.
  */
 export const MAX_ASSISTANT_MESSAGE_CHARS = 40000;
+
+/**
+ * How many stored messages a chat page loads on initial render.
+ *
+ * Distinct from MAX_TRANSCRIPT_MESSAGES above: that one bounds what a single
+ * *request* replays to the model, this one bounds what a *page view* reads
+ * from the DB to show the transcript at all. Both queries used to be
+ * unbounded — every message a conversation ever had, on every page view, cost
+ * that grows with a single chat's lifetime rather than with request size (QA
+ * finding P-1). No "load earlier messages" UI exists yet to page past this,
+ * so it is a real (if today mostly theoretical) cap on visible scrollback,
+ * not just a performance tweak.
+ */
+export const MESSAGE_LOAD_LIMIT = 300;
+
+/**
+ * Caps `s` at `max` characters *including* the ellipsis. The ellipsis used to
+ * be appended after slicing to `max`, making the result max + 1 — irrelevant
+ * for most callers, but off by exactly the one character that would push a
+ * clamped chat reply back over the schema limit it is being clamped to.
+ *
+ * Shared by project-context.ts (workspace context budgets) and
+ * chat-persistence.ts (clamping an over-long stored reply), which is why it
+ * lives here rather than in either — a small, dependency-free string helper,
+ * not conceptually owned by either the context-builder or the persistence
+ * layer (QA finding C-1).
+ */
+export function truncate(s: string, max: number): string {
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}

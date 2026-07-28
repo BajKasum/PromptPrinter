@@ -37,7 +37,7 @@ import type { CustomProviderMeta } from "@/lib/byok";
 import type { PlanKey } from "@/lib/plans";
 import { TOOL_OPTIONS, type ProjectTools } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, hslVar } from "@/lib/utils";
 type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
 type Usage = {
@@ -168,7 +168,7 @@ export function SettingsWorkspace({
         <div className="grid gap-4 md:grid-cols-2">
           <SettingsCard
             Icon={User}
-            accent="#8FCDF2"
+            accent="--accent"
             title="Profil"
             description="Wie du in deinem Workspace erscheinst."
           >
@@ -191,11 +191,11 @@ export function SettingsWorkspace({
                   maxLength={60}
                   autoComplete="name"
                   className={cn(
-                    nameDirty && !nameValid && "border-red-500/55 focus:border-red-500/70 focus:ring-red-500/20"
+                    nameDirty && !nameValid && "border-destructive/55 focus:border-destructive/70 focus:ring-destructive/20"
                   )}
                 />
                 {nameDirty && !nameValid && (
-                  <p className="text-[12px] text-red-300/90">Der Name darf nicht leer sein.</p>
+                  <p className="text-[12px] text-destructive/90">Der Name darf nicht leer sein.</p>
                 )}
               </Field>
 
@@ -212,7 +212,7 @@ export function SettingsWorkspace({
 
           <SettingsCard
             Icon={Building2}
-            accent="#8FCDF2"
+            accent="--accent"
             title="Workspace"
             description="Konto- und Plan-Übersicht."
             headerRight={<PlanBadge plan={plan} isAdmin={isAdmin} />}
@@ -234,7 +234,7 @@ export function SettingsWorkspace({
         {/* Appearance, a deliberate workspace preference, not a header toggle. */}
         <SettingsCard
           Icon={SunMoon}
-          accent="#8FCDF2"
+          accent="--accent"
           title="Erscheinungsbild"
           description="Hell, dunkel oder automatisch nach Systemeinstellung, nur hier im Workspace."
         >
@@ -246,7 +246,7 @@ export function SettingsWorkspace({
           <SettingsCard
             className="md:col-span-3"
             Icon={Gauge}
-            accent="#8FCDF2"
+            accent="--accent"
             title="Nutzung"
             description="Dein Verbrauch im aktuellen Abrechnungszeitraum."
           >
@@ -267,7 +267,7 @@ export function SettingsWorkspace({
           <SettingsCard
             className="md:col-span-2"
             Icon={KeyRound}
-            accent="#8FCDF2"
+            accent="--accent"
             title="Eigene API-Keys"
             description="Nutze dein eigenes Kontingent statt unserer Limits."
           >
@@ -282,7 +282,7 @@ export function SettingsWorkspace({
         {/* Default tools, the centerpiece */}
         <SettingsCard
           Icon={Sparkles}
-          accent="#8FCDF2"
+          accent="--accent"
           title="Standard-Tools"
           description="Vorbelegung fürs Software-Paket, solange dein Projekt noch keine eigene Struktur hat."
         >
@@ -291,7 +291,7 @@ export function SettingsWorkspace({
               label="KI-Assistent"
               hint="Master-Prompt-Ziel"
               Icon={Sparkles}
-              accent="#8FCDF2"
+              accent="--accent"
               options={TOOL_OPTIONS.master}
               value={tools.master}
               onChange={(v) => setTools({ ...tools, master: v })}
@@ -300,7 +300,7 @@ export function SettingsWorkspace({
               label="Frontend-Builder"
               hint="UI-Generierung"
               Icon={LayoutTemplate}
-              accent="#8FCDF2"
+              accent="--accent"
               options={TOOL_OPTIONS.frontend}
               value={tools.frontend}
               onChange={(v) => setTools({ ...tools, frontend: v })}
@@ -309,7 +309,7 @@ export function SettingsWorkspace({
               label="Backend-Agent"
               hint="Code-Assistent"
               Icon={TerminalSquare}
-              accent="#8FCDF2"
+              accent="--accent"
               options={TOOL_OPTIONS.backend}
               value={tools.backend}
               onChange={(v) => setTools({ ...tools, backend: v })}
@@ -318,7 +318,7 @@ export function SettingsWorkspace({
               label="Datenbank"
               hint="Daten-Layer"
               Icon={Database}
-              accent="#8FCDF2"
+              accent="--accent"
               options={TOOL_OPTIONS.database}
               value={tools.database}
               onChange={(v) => setTools({ ...tools, database: v })}
@@ -329,7 +329,7 @@ export function SettingsWorkspace({
         {/* Security */}
         <SettingsCard
           Icon={Lock}
-          accent="#8FCDF2"
+          accent="--accent"
           title="Sicherheit"
           description="Ändere dein Passwort."
         >
@@ -339,7 +339,7 @@ export function SettingsWorkspace({
         {/* Help & onboarding */}
         <SettingsCard
           Icon={Compass}
-          accent="#8FCDF2"
+          accent="--accent"
           title="Hilfe & Onboarding"
           description="Lern die Oberfläche in einer geführten Tour kennen."
         >
@@ -362,7 +362,7 @@ export function SettingsWorkspace({
         {/* Danger zone */}
         <SettingsCard
           Icon={ShieldAlert}
-          accent="#EF4444"
+          accent="--destructive"
           title="Gefahrenzone"
           description="Unwiderrufliche Aktionen."
         >
@@ -383,8 +383,8 @@ export function SettingsWorkspace({
             <div className="pointer-events-auto flex max-w-[1080px] items-center justify-between gap-4 rounded-2xl border border-border glass-strong px-4 py-3 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.85)]">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-70" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-70" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-warning" />
                 </span>
                 <span className="text-[13.5px] font-medium text-foreground">
                   Ungespeicherte Änderungen
@@ -429,6 +429,7 @@ function SettingsCard({
   children,
 }: {
   Icon: LucideIcon;
+  /** A design-token CSS variable name (e.g. "--accent"), not a literal color — see hslVar. */
   accent: string;
   title: string;
   description: string;
@@ -449,18 +450,18 @@ function SettingsCard({
       {/* soft accent glow in the corner */}
       <div
         className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full opacity-[0.10] blur-3xl"
-        style={{ background: accent }}
+        style={{ background: hslVar(accent) }}
       />
 
       <header className="mb-5 flex items-start gap-3.5">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
           style={{
-            background: `linear-gradient(160deg, ${accent}33, ${accent}0d)`,
-            borderColor: `${accent}40`,
+            background: `linear-gradient(160deg, ${hslVar(accent, 0.2)}, ${hslVar(accent, 0.05)})`,
+            borderColor: hslVar(accent, 0.25),
           }}
         >
-          <Icon className="h-[18px] w-[18px]" style={{ color: accent }} strokeWidth={2} />
+          <Icon className="h-[18px] w-[18px]" style={{ color: hslVar(accent) }} strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>

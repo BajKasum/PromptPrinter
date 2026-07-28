@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -34,6 +35,11 @@ export function ProjectFiles({
   const [files, setFiles] = useState(initialFiles);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // QA finding A-2: a Tab-reachable, irreversible delete with no confirmation
+  // step, unlike project and account deletion. The file pending confirmation,
+  // not yet the one actually being deleted (that's deletingId, set once the
+  // dialog's own "Löschen" is clicked).
+  const [pendingDelete, setPendingDelete] = useState<ProjectFile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const atLimit = files.length >= MAX_FILES_PER_PROJECT;
@@ -140,6 +146,7 @@ export function ProjectFiles({
       });
     } finally {
       setDeletingId(null);
+      setPendingDelete(null);
     }
   }
 
@@ -173,13 +180,13 @@ export function ProjectFiles({
               </span>
               <button
                 type="button"
-                onClick={() => void handleDelete(f)}
+                onClick={() => setPendingDelete(f)}
                 disabled={deletingId === f.id}
                 aria-label={`${f.name} löschen`}
                 // Permanently visible below md (QA finding K-2), same reasoning
                 // as chat-list.tsx's row actions: a hover-only reveal leaves
                 // touch devices with no dependable way to see this button.
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-red-400 focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-destructive focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
               >
                 {deletingId === f.id ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -230,6 +237,23 @@ export function ProjectFiles({
           </p>
         )
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Datei löschen?"
+        description={
+          pendingDelete
+            ? `„${pendingDelete.name}“ wird aus dem Projekt entfernt und steht Finn danach nicht mehr als Kontext zur Verfügung. Das kann nicht rückgängig gemacht werden.`
+            : ""
+        }
+        confirmLabel="Datei löschen"
+        busyLabel="Wird gelöscht…"
+        busy={pendingDelete !== null && deletingId === pendingDelete.id}
+        onConfirm={() => {
+          if (pendingDelete) void handleDelete(pendingDelete);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }

@@ -16,14 +16,18 @@ export function ChatResultPanel({
   content,
   projectId,
   target,
+  savedPrompts,
 }: {
   content: string;
   /** Present only for project chats, gates the save affordance. */
   projectId?: string;
   /** The chat's target AI, stored alongside a saved prompt. */
   target?: string | null;
+  /** Prompt text of every result already saved in this project (QA F-7: dedup without a migration). */
+  savedPrompts?: string[];
 }) {
   const savablePrompt = projectId ? extractPrompt(content) : null;
+  const alreadySaved = savablePrompt ? (savedPrompts?.includes(savablePrompt) ?? false) : false;
 
   return (
     <section
@@ -38,7 +42,12 @@ export function ChatResultPanel({
           <span className="text-[13px] font-medium text-foreground/75">Dein Ergebnis</span>
         </div>
         {projectId && savablePrompt && (
-          <SavePromptButton projectId={projectId} prompt={savablePrompt} target={target} />
+          <SavePromptButton
+            projectId={projectId}
+            prompt={savablePrompt}
+            target={target}
+            initiallySaved={alreadySaved}
+          />
         )}
       </header>
 

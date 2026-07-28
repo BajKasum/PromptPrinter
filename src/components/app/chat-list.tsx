@@ -199,7 +199,7 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
           type="button"
           onClick={() => setMode("confirm-delete")}
           aria-label={`Chat „${chat.title}“ löschen`}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/[0.08] hover:text-red-400"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/[0.08] hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>

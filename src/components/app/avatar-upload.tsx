@@ -164,7 +164,7 @@ export function AvatarUpload({
               size="sm"
               onClick={() => void handleRemove()}
               disabled={busy}
-              className="text-secondary hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/[0.06]"
+              className="text-secondary hover:text-destructive hover:border-destructive/30 hover:bg-destructive/[0.06]"
             >
               <Trash2 className="h-4 w-4" />
               Entfernen
@@ -172,7 +172,7 @@ export function AvatarUpload({
           )}
         </div>
         {error ? (
-          <p className="mt-1.5 text-[12px] text-red-300/90">{error}</p>
+          <p className="mt-1.5 text-[12px] text-destructive/90">{error}</p>
         ) : (
           <p className="mt-1.5 text-[12px] text-tertiary">JPG, PNG, WebP oder GIF, höchstens 2 MB.</p>
         )}

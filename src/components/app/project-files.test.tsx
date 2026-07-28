@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProjectFiles } from "./project-files";
 import type { ProjectFile } from "@/lib/project-files";
@@ -144,7 +144,15 @@ describe("ProjectFiles", () => {
     expect(screen.queryByText("notes.md")).not.toBeInTheDocument();
   });
 
-  it("deletes a file from the list and storage", async () => {
+  // QA finding A-2: the row's own delete button now only opens a confirm
+  // dialog (ConfirmDialog, shared with DeleteProjectButton); the actual
+  // delete only fires once "Datei löschen" inside it is clicked.
+  async function deleteViaDialog(user: ReturnType<typeof userEvent.setup>, fileName: string) {
+    await user.click(screen.getByRole("button", { name: `${fileName} löschen` }));
+    await user.click(await screen.findByRole("button", { name: "Datei löschen" }));
+  }
+
+  it("does not delete on the row button alone, only opens a confirmation dialog", async () => {
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
     ];
@@ -152,6 +160,36 @@ describe("ProjectFiles", () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
+
+    expect(await screen.findByRole("dialog", { name: "Datei löschen?" })).toBeInTheDocument();
+    expect(filesDelete).not.toHaveBeenCalled();
+    expect(storageRemove).not.toHaveBeenCalled();
+  });
+
+  it("cancelling the dialog leaves the file untouched", async () => {
+    const initialFiles: ProjectFile[] = [
+      { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
+    ];
+    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
+    await user.click(await screen.findByRole("button", { name: "Abbrechen" }));
+
+    // AnimatePresence fades the dialog out rather than removing it instantly.
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByText("notes.md")).toBeInTheDocument();
+    expect(filesDelete).not.toHaveBeenCalled();
+  });
+
+  it("deletes a file from the list and storage once confirmed", async () => {
+    const initialFiles: ProjectFile[] = [
+      { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
+    ];
+    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+
+    const user = userEvent.setup();
+    await deleteViaDialog(user, "notes.md");
 
     expect(await screen.findByText("0/10")).toBeInTheDocument();
     expect(storageRemove).toHaveBeenCalledWith(["user-1/p1/f1-notes.md"]);
@@ -171,7 +209,7 @@ describe("ProjectFiles", () => {
     render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
+    await deleteViaDialog(user, "notes.md");
     await screen.findByText("0/10");
 
     expect(filesDelete.mock.invocationCallOrder[0]).toBeLessThan(
@@ -187,7 +225,7 @@ describe("ProjectFiles", () => {
     render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
+    await deleteViaDialog(user, "notes.md");
 
     expect(toast).toHaveBeenCalledWith(
       expect.objectContaining({ variant: "error" })

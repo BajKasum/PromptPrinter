@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { chatComplete, chatCompleteStream, llmConfig, LlmEmptyReplyError } from "@/lib/llm";
+import {
+  chatComplete,
+  chatCompleteStream,
+  llmConfig,
+  LlmEmptyReplyError,
+  classifyLlmFailure,
+} from "@/lib/llm";
 
 // customComplete (the 'custom' BYOK provider) resolves its endpoint through
 // url-safety.ts's SSRF check before every fetch; stub DNS to a public address
@@ -450,5 +456,44 @@ describe("chatCompleteStream", () => {
         })
       )
     ).rejects.toThrow("überschreitet das Limit");
+  });
+});
+
+// QA finding U-4: /api/chat used to embed err.message straight into the
+// client-visible detail, leaking raw provider text ("Z.ai 429: Rate limit
+// exceeded for model glm-4.5-air"). classifyLlmFailure buckets whatever was
+// thrown so the route can map it to German text instead, without the model/
+// provider ever reaching the client.
+describe("classifyLlmFailure", () => {
+  it("buckets an empty reply as 'empty'", () => {
+    expect(classifyLlmFailure(new LlmEmptyReplyError("Z.ai"))).toBe("empty");
+  });
+
+  it("buckets this file's own '<Provider> 429: ...' shape as rate_limited", () => {
+    expect(classifyLlmFailure(new Error("Z.ai 429: Rate limit exceeded for model glm-4.5-air"))).toBe(
+      "rate_limited"
+    );
+  });
+
+  it("buckets 401/403 as auth", () => {
+    expect(classifyLlmFailure(new Error("Custom-Provider 401: invalid_api_key"))).toBe("auth");
+    expect(classifyLlmFailure(new Error("Custom-Provider 403: forbidden"))).toBe("auth");
+  });
+
+  it("buckets a 5xx status as unavailable", () => {
+    expect(classifyLlmFailure(new Error("Z.ai 503: upstream overloaded"))).toBe("unavailable");
+  });
+
+  it("reads a numeric .status off an SDK-style error object (Anthropic/OpenAI shape)", () => {
+    expect(classifyLlmFailure({ status: 429, message: "rate limited" })).toBe("rate_limited");
+  });
+
+  it("buckets a timeout message as unavailable", () => {
+    expect(classifyLlmFailure(new Error("The operation timed out"))).toBe("unavailable");
+  });
+
+  it("falls back to unknown for anything unrecognized, rather than guessing", () => {
+    expect(classifyLlmFailure(new Error("something odd happened"))).toBe("unknown");
+    expect(classifyLlmFailure("not even an Error")).toBe("unknown");
   });
 });

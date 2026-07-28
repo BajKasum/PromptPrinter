@@ -4,6 +4,14 @@
  * `size` prop. `TOOL_VISUAL` carries the brand accent color and a one-line
  * blurb so the picker can tint each tile and describe the choice. Keys match
  * the strings in `TOOL_OPTIONS` exactly, so the picker can look them up 1:1.
+ *
+ * The raw hex values throughout this file are a deliberate, blanket exception
+ * to CLAUDE.md's "no raw hex, only semantic tokens" rule (QA finding C-3):
+ * these are third-party brand colors (Claude's terracotta, ChatGPT's green,
+ * Figma's gradient, …), fixed identity marks that must render the same
+ * regardless of the app's own light/dark theme — a design token would be the
+ * wrong tool here, not a missed one. auth/oauth-buttons.tsx is the only other
+ * file with the same exception, for the same reason (Google/GitHub brand marks).
  */
 
 export type ToolVisual = { color: string; blurb: string };

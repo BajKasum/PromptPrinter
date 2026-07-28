@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/components/app/chat";
 import { FadeIn } from "@/components/motion/fade-in";
 import { createClient } from "@/lib/supabase/server";
+import { MESSAGE_LOAD_LIMIT } from "@/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -38,15 +39,19 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
   const [{ data: rows }, { data: profile }] = await Promise.all([
+    // Newest first + limit, then reversed below: with an unbounded chat, an
+    // ascending query + limit would keep the OLDEST rows and cut off exactly
+    // the turns the user is mid-conversation with.
     supabase
       .from("messages")
       .select("id, role, content")
       .eq("conversation_id", id)
-      .order("created_at", { ascending: true }),
+      .order("created_at", { ascending: false })
+      .limit(MESSAGE_LOAD_LIMIT),
     supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
   ]);
 
-  const initialMessages = (rows as DbMessage[] | null) ?? [];
+  const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
   const target = (convo.target as string | null) ?? undefined;

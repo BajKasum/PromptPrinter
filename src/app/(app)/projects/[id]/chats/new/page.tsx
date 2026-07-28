@@ -5,6 +5,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
 import { normalizeTarget } from "@/lib/target-tools";
 import { createClient } from "@/lib/supabase/server";
+import { extractSavedPromptContents } from "@/lib/saved-prompts";
 
 export const dynamic = "force-dynamic";
 
@@ -25,16 +26,19 @@ export default async function NewProjectChatPage({ params }: { params: Params })
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const [{ count }, { data: profile }] = await Promise.all([
-    supabase
-      .from("generations")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", id),
+  const [{ data: generationRows, count }, { data: profile }] = await Promise.all([
+    // Selecting `outputs` (not just a head-count) also gives the save button
+    // the already-saved prompt texts, so it can start disabled for a prompt
+    // that's already in the project's Ergebnisse (F-7).
+    supabase.from("generations").select("outputs", { count: "exact" }).eq("project_id", id),
     // getProject already redirected to /login if unauthenticated, user.id is
     // safe here; the "" fallback just matches no row instead of throwing.
     supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
   ]);
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
+  const savedPrompts = extractSavedPromptContents(
+    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+  );
 
   const mode = project.type === "software" ? ("software" as const) : ("general" as const);
 
@@ -60,6 +64,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
         target={normalizeTarget(project.context.target)}
         projectId={project.id}
         hasResults={(count ?? 0) > 0}
+        savedPrompts={savedPrompts}
         name={name}
       />
     </div>

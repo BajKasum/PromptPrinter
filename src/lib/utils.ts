@@ -73,6 +73,25 @@ export function randomId(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/**
+ * Builds an `hsl(var(--x) / alpha)` string from a design-token CSS variable
+ * name (globals.css defines each as a bare "H S% L%" triplet, this file's own
+ * convention — see e.g. `--accent`).
+ *
+ * QA finding C-3: a few components (settings-workspace.tsx, tool-picker.tsx)
+ * used to build their "soft glow" accent colors by string-concatenating a
+ * hex alpha suffix onto a *hardcoded* hex color (`` `${accent}33` ``). That
+ * meant a literal, always-light-mode value ("#8FCDF2") had to be passed in
+ * and baked into the component's own props — a real theme bug, not just a
+ * lint violation: the Dark-Mode `--accent` is a different value
+ * (`204 80% 75%`), so the settings page showed the wrong accent whenever the
+ * user was in dark mode. `hslVar` takes the *token name* instead, so the
+ * value itself stays theme-aware.
+ */
+export function hslVar(cssVar: string, alpha?: number): string {
+  return alpha === undefined ? `hsl(var(${cssVar}))` : `hsl(var(${cssVar}) / ${alpha})`;
+}
+
 export function slugify(input: string) {
   return input
     .toLowerCase()

@@ -155,11 +155,11 @@ export function ToolPickerGroup({
                 maxLength={40}
                 className={cn(
                   "h-10",
-                  customEmpty && "border-red-500/55 focus:border-red-500/70 focus:ring-red-500/20"
+                  customEmpty && "border-destructive/55 focus:border-destructive/70 focus:ring-destructive/20"
                 )}
               />
               {customEmpty && (
-                <p className="mt-1 text-[11px] text-red-300/90">Gib einen Tool-Namen ein.</p>
+                <p className="mt-1 text-[11px] text-destructive/90">Gib einen Tool-Namen ein.</p>
               )}
             </div>
           </motion.div>

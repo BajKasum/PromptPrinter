@@ -52,8 +52,8 @@ export type LlmResult = {
 /**
  * The provider answered, but with nothing usable (blocked, consumed by
  * thinking, …). Distinct from transport/API errors so callers can degrade
- * differently, the generate route falls back to the unfilled template
- * instead of showing a failure note.
+ * differently: classifyLlmFailure below buckets it as "empty" so /api/chat
+ * can show a specific, actionable message instead of a generic failure note.
  */
 export class LlmEmptyReplyError extends Error {
   constructor(provider: string) {
@@ -62,14 +62,55 @@ export class LlmEmptyReplyError extends Error {
   }
 }
 
+/**
+ * A small, user-facing bucket for whatever chatComplete/chatCompleteStream
+ * threw. QA finding U-4: /api/chat used to embed `err.message` straight into
+ * the client-visible detail — raw English provider text carrying the model
+ * name and an HTTP status ("Z.ai 429: Rate limit exceeded for model
+ * glm-4.5-air"), a broken-language moment plus a small information leak about
+ * what's running underneath. The route maps this to a German, non-leaking
+ * message; the original error still goes to captureError for the logs.
+ */
+export type LlmFailure = "rate_limited" | "auth" | "unavailable" | "empty" | "unknown";
+
+// Covers both shapes actually thrown here: an SDK error object (Anthropic/
+// OpenAI both expose a numeric `.status`) and this file's own hand-thrown
+// transport errors, always formatted "<Provider> <status>: <detail>" (see
+// zaiComplete*/customComplete* above) — a Gemini call throws whatever
+// @google/genai throws, which doesn't reliably expose a status either way,
+// falling through to "unknown" is the honest answer for that case.
+function extractStatusCode(err: unknown): number | null {
+  if (err && typeof err === "object") {
+    const withStatus = err as { status?: unknown; statusCode?: unknown };
+    if (typeof withStatus.status === "number") return withStatus.status;
+    if (typeof withStatus.statusCode === "number") return withStatus.statusCode;
+  }
+  if (err instanceof Error) {
+    const match = err.message.match(/^\S+\s(\d{3}):/);
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
+export function classifyLlmFailure(err: unknown): LlmFailure {
+  if (err instanceof LlmEmptyReplyError) return "empty";
+  const status = extractStatusCode(err);
+  if (status === 429) return "rate_limited";
+  if (status === 401 || status === 403) return "auth";
+  if (status !== null && status >= 500) return "unavailable";
+  if (err instanceof DOMException && err.name === "TimeoutError") return "unavailable";
+  if (err instanceof Error && /timeout|timed out/i.test(err.message)) return "unavailable";
+  return "unknown";
+}
+
 // GLM-4.5-Air, cost-tier default (verified against the live Z.ai account,
 // 2026-07): $0.20/$1.10 per M input/output tokens vs. glm-5-turbo's
 // $1.20/$4.00, 6x/3.6x cheaper, and a quick quality check against a real
-// product prompt came back coherent and well-structured. Every artifact call
-// (up to 10 per software-pack run) and every chat turn goes through this, so
-// the model choice is the single biggest cost lever in the whole pipeline.
-// Overridable via ZAI_MODEL without a code change if quality needs dialing
-// back up for a given deployment.
+// product prompt came back coherent and well-structured. Every chat turn goes
+// through this (the only thing this app generates since the standalone
+// generate pipeline was removed, 2026-07-17), so the model choice is the
+// single biggest cost lever in the app. Overridable via ZAI_MODEL without a
+// code change if quality needs dialing back up for a given deployment.
 const ZAI_DEFAULT_MODEL = "glm-4.5-air";
 const ZAI_ENDPOINT = "https://api.z.ai/api/paas/v4/chat/completions";
 
@@ -84,10 +125,12 @@ const OPENAI_DEFAULT_MODEL = "gpt-5.1";
 
 // Thinking is disabled on the Z.ai path (below), so this is a hard ceiling on
 // the visible reply, not a budget shared with invisible reasoning tokens.
-// 6144 leaves real headroom over the largest artifact observed in practice
-// (the database-schema artifact, ~3.5k tokens) while capping the cost/latency
-// tail if a model ever rambles, the previous 8192 was ~2.3x oversized against
-// that real-world ceiling.
+// 6144 tokens is roughly 20-25k characters, comfortably above what a finished,
+// paste-ready prompt from a chat turn needs while capping the cost/latency
+// tail if a model ever rambles; the previous 8192 was found oversized against
+// real replies observed in practice. MAX_ASSISTANT_MESSAGE_CHARS
+// (chat-limits.ts) is sized to sit above this ceiling — raise one and check
+// the other, see that file's own comment (QA finding F-2).
 const DEFAULT_MAX_OUTPUT_TOKENS = 6144;
 
 /** Which provider is configured, if any, also the display name for storage. */
@@ -107,8 +150,11 @@ export function llmConfig(): LlmConfig | null {
  * enters the picture, so this works even with no server key at all. Without
  * an override, uses the server's configured provider (llmConfig()) and must
  * not be called when that's null. Throws on transport errors, non-2xx
- * responses and empty replies, callers decide how to degrade (the chat
- * route surfaces a 502, the generate route falls back per artifact).
+ * responses and empty replies. The only caller left is /api/settings/api-key's
+ * "test this key" call, which surfaces the error message as-is (deliberately
+ * the one place raw provider text stays user-visible, see that route's own
+ * comment); /api/chat uses chatCompleteStream below and classifyLlmFailure
+ * to turn a failure into a German, non-leaking message instead (QA finding U-4).
  */
 export async function chatComplete(opts: {
   system: string;
@@ -281,9 +327,9 @@ async function zaiComplete(
       messages: [{ role: "system", content: system }, ...messages],
       max_tokens: maxOutputTokens,
       stream: false,
-      // GLM models decide on their own whether to "think"; for prompt-artifact
-      // generation that only adds latency and burns output budget, 11 calls
-      // run in parallel per software packet. Explicitly off.
+      // GLM models decide on their own whether to "think"; for a chat turn
+      // the user is actively waiting on, that only adds latency and burns
+      // output budget for no visible benefit. Explicitly off.
       thinking: { type: "disabled" },
     }),
   });

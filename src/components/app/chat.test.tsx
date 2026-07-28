@@ -160,6 +160,41 @@ describe("Chat", () => {
     expect(screen.queryByText("Teilweise")).not.toBeInTheDocument();
   });
 
+  // QA finding E-2: a network drop mid-stream (not the provider reporting a
+  // real failure, and not a user-initiated stop) used to discard whatever text
+  // had already streamed in. The route may have already persisted it server-
+  // side, so losing the on-screen text too left the user with neither.
+  it("keeps the partial reply and warns, instead of erroring, when the connection drops mid-stream", async () => {
+    let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat mode="general" />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    const encoder = new TextEncoder();
+    controllerRef.enqueue(encoder.encode(sseFrame("delta", { text: "Halb fertiger Text" })));
+    await screen.findByText("Halb fertiger Text");
+
+    // Not an AbortError (that's a user-initiated stop) and not an "error"
+    // event (that's the route reporting a real failure) — a plain connection
+    // failure, the shape a dropped network connection actually throws as.
+    controllerRef.error(new TypeError("Failed to fetch"));
+
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("Halb fertiger Text")).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Verbindung ist mitten in der Antwort abgebrochen"
+    );
+  });
+
   it("warns without blocking the composer when the reply couldn't be persisted", async () => {
     mockStreamingFetch(["Antwort da"], { persistError: "insert failed" });
     render(<Chat mode="general" />);

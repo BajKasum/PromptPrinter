@@ -8,6 +8,14 @@ import { getProject } from "@/lib/project";
 import { createClient } from "@/lib/supabase/server";
 import type { SavedPrompt } from "@/lib/saved-prompts";
 
+// QA finding P-1: this query used to load every saved prompt a project ever
+// had, full `outputs` JSONB included, unbounded — the single most expensive
+// query the finding flagged (200 saved prompts × ~4 KB = 800 KB over the
+// wire, on every visit, for a list that mostly just shows title + date).
+// Capped to the newest N; no "load more" UI exists yet for a project past
+// this, that's a real follow-up, not built here.
+const RESULTS_LOAD_LIMIT = 200;
+
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Ergebnisse" };
@@ -42,7 +50,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .from("generations")
       .select("id, created_at, outputs")
       .eq("project_id", id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(RESULTS_LOAD_LIMIT),
     supabase
       .from("conversations")
       .select("id", { count: "exact", head: true })

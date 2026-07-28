@@ -62,6 +62,21 @@ export function extractPrompt(markdown: string): string | null {
   return chosen.body.length > 0 ? chosen.body : null;
 }
 
+/**
+ * Pull the saved prompt text out of a batch of `generations` rows (each row's
+ * `outputs` is `{ prompt, title, target }`, see save-prompt-button.tsx). Used
+ * by the chat pages to know which prompts are already saved for a project, so
+ * SavePromptButton can start disabled instead of allowing a duplicate
+ * (QA finding F-7).
+ */
+export function extractSavedPromptContents(
+  rows: { outputs: Record<string, unknown> | null }[]
+): string[] {
+  return rows
+    .map((row) => (row.outputs && typeof row.outputs.prompt === "string" ? row.outputs.prompt : null))
+    .filter((prompt): prompt is string => prompt !== null);
+}
+
 const TITLE_MAX = 72;
 
 /**
