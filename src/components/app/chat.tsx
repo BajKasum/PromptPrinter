@@ -14,6 +14,7 @@ import {
 import { ChatComposer } from "@/components/app/chat-composer";
 import { resolveVariant, resolveEmptyState, type ChatMode } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
+import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 
 // A stable id per message (real DB id for history loaded from the server,
 // a client-generated one for anything created during this session) is the
@@ -155,11 +156,18 @@ export function Chat({
     // not whatever last rendered, and the abort branch below needs whatever
     // arrived so far too.
     let accumulated = "";
+    // `messages` stays complete for the transcript on screen; only the newest
+    // turns go over the wire. The route forwards just the last 12 to the model
+    // and clamps anything longer than this itself, so replaying the full
+    // history was pure payload — a long chat sent hundreds of KB per turn to
+    // have most of it discarded server-side.
+    const wireMessages =
+      next.length > MAX_TRANSCRIPT_MESSAGES ? next.slice(-MAX_TRANSCRIPT_MESSAGES) : next;
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode, target, conversationId, projectId, messages: next }),
+        body: JSON.stringify({ mode, target, conversationId, projectId, messages: wireMessages }),
         signal: controller.signal,
       });
       if (!res.ok) {

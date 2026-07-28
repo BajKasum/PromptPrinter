@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 
 // Chat pack: a multi-turn conversation. `messages` is the running transcript
 // the client replays on every turn (the route itself stays stateless).
@@ -27,7 +28,11 @@ export const chatRequestSchema = z.object({
   // Present when the chat refines a specific project's build packet (Code mode).
   // The route loads that project's context and links the conversation to it.
   projectId: z.string().uuid().optional(),
-  messages: z.array(chatMessageSchema).min(1).max(50),
+  // Not a wall: /api/chat clamps an over-long transcript down to the newest
+  // MAX_TRANSCRIPT_MESSAGES entries before it ever gets here, so exceeding this
+  // is normalized away rather than rejected. See chat-limits.ts for why that
+  // matters (a chat past the old cap of 50 was permanently unusable).
+  messages: z.array(chatMessageSchema).min(1).max(MAX_TRANSCRIPT_MESSAGES),
 });
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

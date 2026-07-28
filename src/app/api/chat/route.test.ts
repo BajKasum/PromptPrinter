@@ -196,6 +196,35 @@ describe("POST /api/chat", () => {
     });
   });
 
+  describe("long-running transcripts (QA finding F-1)", () => {
+    // Alternating roles, ending on a user turn — the shape the client actually
+    // posts. 81 entries is far past the old hard cap of 50.
+    const longTranscript = Array.from({ length: 81 }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: `Nachricht ${i}`,
+    }));
+
+    it("accepts a transcript far past the cap instead of 400ing forever", async () => {
+      const res = await POST(req({ mode: "general", messages: longTranscript }));
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalled();
+    });
+
+    it("forwards only the newest turns to the model, keeping the current one last", async () => {
+      await POST(req({ mode: "general", messages: longTranscript }));
+
+      const sent = chatCompleteStream.mock.calls[0][0] as { messages: { content: string }[] };
+      expect(sent.messages).toHaveLength(12); // CHAT_HISTORY_LIMIT
+      expect(sent.messages.at(-1)?.content).toBe("Nachricht 80");
+    });
+
+    it("still rejects an empty transcript", async () => {
+      const res = await POST(req({ mode: "general", messages: [] }));
+      expect(res.status).toBe(400);
+    });
+  });
+
   describe("input validation", () => {
     it("rejects a malformed body with 400 before touching auth", async () => {
       const res = await POST(

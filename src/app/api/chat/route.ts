@@ -1,4 +1,5 @@
 import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
+import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatCompleteStream, llmConfig } from "@/lib/llm";
@@ -24,6 +25,33 @@ function trimHistory(messages: ChatMessage[]): ChatMessage[] {
   return messages.length > CHAT_HISTORY_LIMIT ? messages.slice(-CHAT_HISTORY_LIMIT) : messages;
 }
 
+// Makes any stored transcript replayable, whatever it grew into.
+//
+// QA finding F-1: the transcript cap used to be enforced by the schema alone,
+// which turned it into a permanent wall rather than a limit. The client replays
+// the whole running transcript each turn and loads it back in full on every
+// page view, so once a chat passed the cap, every further turn failed
+// validation with a 400 — forever, and with no way out in the UI, because the
+// history that broke it is exactly what's persisted. trimHistory (above) did
+// not help: it runs on the *parsed* request, long after validation rejected it.
+//
+// Clamping here, before the schema sees the body, turns that dead end into
+// "older turns simply aren't replayed". It also covers clients this deploy
+// doesn't control: a tab left open from before the fix, or a direct POST.
+function normalizeTranscript(body: unknown): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  const withMessages = body as { messages?: unknown };
+  if (
+    !Array.isArray(withMessages.messages) ||
+    withMessages.messages.length <= MAX_TRANSCRIPT_MESSAGES
+  ) {
+    return body;
+  }
+  // Newest entries win: the tail carries the current turn plus the context that
+  // still matters, and persistTurn only ever reads the last entry anyway.
+  return { ...withMessages, messages: withMessages.messages.slice(-MAX_TRANSCRIPT_MESSAGES) };
+}
+
 export async function POST(req: Request) {
   // 1. Parse + validate the transcript the client replays each turn.
   let body: unknown;
@@ -33,7 +61,7 @@ export async function POST(req: Request) {
     return problem(400, "Invalid JSON body");
   }
 
-  const parsed = chatRequestSchema.safeParse(body);
+  const parsed = chatRequestSchema.safeParse(normalizeTranscript(body));
   if (!parsed.success) {
     return problem(400, "Invalid request", {
       issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
