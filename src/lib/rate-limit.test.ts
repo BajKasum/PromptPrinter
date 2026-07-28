@@ -174,3 +174,82 @@ describe("reserveMonthlyQuota", () => {
     expect(await reserveMonthlyQuota("chat-quota:u1:2026-07", 200)).toBeNull();
   });
 });
+
+// reserveServerKeyCall is the global circuit breaker from QA finding S-1,
+// step 4: a ceiling on the operator's own provider key per UTC day, whoever
+// runs it up. Same fresh-module-per-test pattern as above.
+describe("reserveServerKeyCall", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.doUnmock("@upstash/redis");
+    vi.resetModules();
+  });
+
+  async function withRedis(incr: ReturnType<typeof vi.fn>, decr = vi.fn(), expire = vi.fn()) {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ incr, decr, expire }) } }));
+    vi.resetModules();
+    return await import("@/lib/rate-limit");
+  }
+
+  it("returns null without Redis, so the guard never blocks chat on its own absence", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { reserveServerKeyCall } = await import("@/lib/rate-limit");
+
+    expect(await reserveServerKeyCall()).toBeNull();
+  });
+
+  it("allows a call well under the default budget", async () => {
+    const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(12));
+    expect((await reserveServerKeyCall())?.allowed).toBe(true);
+  });
+
+  it("refuses once the default daily budget is exceeded", async () => {
+    const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(1001));
+    expect((await reserveServerKeyCall())?.allowed).toBe(false);
+  });
+
+  it("honours LLM_DAILY_CALL_BUDGET over the default", async () => {
+    vi.stubEnv("LLM_DAILY_CALL_BUDGET", "5");
+    const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(6));
+    expect((await reserveServerKeyCall())?.allowed).toBe(false);
+  });
+
+  it("ignores a nonsense budget value and falls back to the default", async () => {
+    vi.stubEnv("LLM_DAILY_CALL_BUDGET", "keine-zahl");
+    const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(999));
+    expect((await reserveServerKeyCall())?.allowed).toBe(true);
+  });
+
+  it("keys by UTC day and sets a cleanup expiry on the first call of that day", async () => {
+    const incr = vi.fn().mockResolvedValue(1);
+    const expire = vi.fn().mockResolvedValue(1);
+    const { reserveServerKeyCall } = await withRedis(incr, vi.fn(), expire);
+
+    await reserveServerKeyCall();
+
+    const day = new Date().toISOString().slice(0, 10);
+    expect(incr).toHaveBeenCalledWith(`llm-daily-calls:${day}`);
+    expect(expire).toHaveBeenCalledWith(`llm-daily-calls:${day}`, 2 * 24 * 60 * 60);
+  });
+
+  it("release() gives the slot back, so a failed turn costs no budget", async () => {
+    const decr = vi.fn().mockResolvedValue(11);
+    const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(12), decr);
+
+    await (await reserveServerKeyCall())?.release();
+
+    const day = new Date().toISOString().slice(0, 10);
+    expect(decr).toHaveBeenCalledWith(`llm-daily-calls:${day}`);
+  });
+
+  it("fails open when Redis errors, matching reserveMonthlyQuota", async () => {
+    const { reserveServerKeyCall } = await withRedis(
+      vi.fn().mockRejectedValue(new Error("down"))
+    );
+    expect(await reserveServerKeyCall()).toBeNull();
+  });
+});

@@ -12,6 +12,7 @@ const createClient = vi.fn();
 const rateLimit = vi.fn();
 const rateLimitKey = vi.fn();
 const reserveMonthlyQuota = vi.fn();
+const reserveServerKeyCall = vi.fn();
 const getUserOverride = vi.fn();
 const chatCompleteStream = vi.fn();
 const llmConfig = vi.fn();
@@ -47,6 +48,7 @@ vi.mock("@/lib/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
   rateLimitKey: (...a: unknown[]) => rateLimitKey(...a),
   reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
+  reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
 }));
 vi.mock("@/lib/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
 // Mocked so the test never pulls in the three provider SDKs, and so "did the
@@ -76,6 +78,7 @@ describe("POST /api/chat", () => {
     rateLimit.mockResolvedValue({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 });
     rateLimitKey.mockReturnValue("u:user-1");
     reserveMonthlyQuota.mockResolvedValue(null);
+    reserveServerKeyCall.mockResolvedValue(null);
     getUserOverride.mockResolvedValue(null);
     llmConfig.mockReturnValue({ provider: "zai", model: "glm-4.5-air" });
     chatCompleteStream.mockImplementation(async function* () {
@@ -192,6 +195,71 @@ describe("POST /api/chat", () => {
       const res = await POST(req());
 
       expect(rateLimit).not.toHaveBeenCalled();
+      expect(res.status).toBe(200);
+    });
+  });
+
+  // QA finding S-1, step 4: a global ceiling on the operator's own key, so the
+  // next hole nobody has found yet is bounded by one day's budget instead of
+  // by nothing at all.
+  describe("global daily server-key budget", () => {
+    const release = vi.fn().mockResolvedValue(undefined);
+
+    it("refuses with 503 once the daily budget is spent, without calling the model", async () => {
+      reserveServerKeyCall.mockResolvedValue({ allowed: false, release });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(503);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+
+    it("hands the slot back when it refuses, so denied requests can't drain the budget", async () => {
+      release.mockClear();
+      reserveServerKeyCall.mockResolvedValue({ allowed: false, release });
+
+      await POST(req());
+
+      expect(release).toHaveBeenCalled();
+    });
+
+    it("never charges the budget for a BYOK call, which spends the user's own key", async () => {
+      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
+      reserveServerKeyCall.mockResolvedValue({ allowed: false, release });
+
+      const res = await POST(req());
+
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
+      expect(res.status).toBe(200);
+    });
+
+    it("applies to admins too, since it caps spend rather than rationing users", async () => {
+      tableResults.profiles = { data: { plan: "free", is_admin: true } };
+      reserveServerKeyCall.mockResolvedValue({ allowed: false, release });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(503);
+    });
+
+    it("hands the slot back when the model call fails, so a failed turn costs nothing", async () => {
+      release.mockClear();
+      reserveServerKeyCall.mockResolvedValue({ allowed: true, release });
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("provider down");
+      });
+
+      const body = await readSse(await POST(req()));
+
+      expect(body).toContain("event: error");
+      expect(release).toHaveBeenCalled();
+    });
+
+    it("proceeds normally when Redis is unavailable, rather than blocking chat", async () => {
+      reserveServerKeyCall.mockResolvedValue(null);
+
+      const res = await POST(req());
+
       expect(res.status).toBe(200);
     });
   });

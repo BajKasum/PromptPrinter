@@ -180,6 +180,85 @@ export async function reserveMonthlyQuota(
  * unreachable in practice. It stays correct for whatever anonymous endpoint
  * comes next — that is exactly how the old bug survived unnoticed.
  */
+// ─── Global daily budget for the server's own provider key ──────────────────
+
+/**
+ * Default ceiling on calls per UTC day that run on the SERVER's provider key.
+ *
+ * Roughly $0.012 per call at the observed worst case (24k input + 6144 output
+ * tokens on glm-4.5-air), so 1000 bounds a bad day at about $12 rather than at
+ * "whatever the internet felt like". Generous against real use: Free allows 200
+ * messages a month, so this is ~150 fully-exhausted free accounts per day.
+ *
+ * Override with LLM_DAILY_CALL_BUDGET once real traffic says otherwise — that
+ * is a business decision, not a code change.
+ */
+const DEFAULT_DAILY_SERVER_KEY_CALLS = 1000;
+
+function dailyServerKeyBudget(): number {
+  const raw = Number(process.env.LLM_DAILY_CALL_BUDGET);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_DAILY_SERVER_KEY_CALLS;
+}
+
+let warnedBudgetExhausted = false;
+
+/**
+ * The circuit breaker behind QA finding S-1's per-route fixes: a global ceiling
+ * on how much the server's own key can be spent in one day, regardless of who
+ * is calling or through which route.
+ *
+ * The per-user quotas and the hourly limit both assume the attacker is a user.
+ * This one does not — it is the backstop for the *next* leak, the one nobody
+ * has found yet, and it is the only control that would have bounded the damage
+ * of the anonymous-chat hole while it was open.
+ *
+ * Deliberately NOT exempt for admins: this is a spend ceiling on one shared
+ * resource (the operator's own provider account), not a fairness quota, so
+ * "who is asking" is the wrong axis. BYOK calls never reach here at all — they
+ * run on the user's own key and cost the operator nothing, which is also what
+ * makes tripping this survivable: a BYOK user keeps working.
+ *
+ * Fails OPEN when Redis is unavailable, matching reserveMonthlyQuota: a hiccup
+ * must not take chat down for everyone, and the hourly limit still applies.
+ */
+export async function reserveServerKeyCall(): Promise<{
+  allowed: boolean;
+  release: () => Promise<void>;
+} | null> {
+  if (!redis) return null;
+
+  const day = new Date().toISOString().slice(0, 10); // UTC, YYYY-MM-DD
+  const key = `llm-daily-calls:${day}`;
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, 2 * 24 * 60 * 60);
+    }
+    const budget = dailyServerKeyBudget();
+    if (count > budget && !warnedBudgetExhausted) {
+      warnedBudgetExhausted = true;
+      console.error(
+        `[spend-guard] Tagesbudget für den Server-Key erschöpft (${count}/${budget} Aufrufe am ${day}). ` +
+          "Server-Key-Aufrufe sind gesperrt, BYOK-Nutzer laufen weiter. " +
+          "LLM_DAILY_CALL_BUDGET anheben, wenn das echter Traffic ist."
+      );
+    }
+    return {
+      allowed: count <= budget,
+      release: async () => {
+        try {
+          await redis!.decr(key);
+        } catch {
+          // Best-effort, same as reserveMonthlyQuota: a missed release only
+          // holds one slot for the rest of the day, never over-grants.
+        }
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function rateLimitKey(req: Request, userId?: string | null): string {
   if (userId) return `u:${userId}`;
   return `ip:${clientIp(req)}`;

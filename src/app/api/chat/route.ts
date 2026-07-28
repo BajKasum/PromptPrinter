@@ -4,7 +4,12 @@ import {
   MAX_TRANSCRIPT_MESSAGES,
   MAX_USER_MESSAGE_CHARS,
 } from "@/lib/chat-limits";
-import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
+import {
+  rateLimit,
+  rateLimitKey,
+  reserveMonthlyQuota,
+  reserveServerKeyCall,
+} from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatCompleteStream, llmConfig } from "@/lib/llm";
 import { getUserOverride } from "@/lib/byok";
@@ -193,10 +198,16 @@ export async function POST(req: Request) {
   const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
   const limits = effectiveLimits(plan, isAdmin);
 
-  // Set when a quota slot was reserved for this request (see reserveMonthlyQuota),
-  // released below if the LLM call itself fails, so a failed turn doesn't burn
-  // the user's monthly allowance.
-  let releaseQuota: (() => Promise<void>) | null = null;
+  // Slots reserved for this request (monthly allowance, global daily budget),
+  // handed back below if the LLM call itself fails so a failed turn doesn't
+  // burn anyone's allowance. Collected together because there are two of them
+  // now and both have to be released on every failure path.
+  const reservations: (() => Promise<void>)[] = [];
+  const releaseReservations = async () => {
+    for (const release of reservations) await release();
+    reservations.length = 0;
+  };
+
   if (!override) {
     const reservation = await reserveMonthlyQuota(
       `chat-quota:${userId}:${monthKey}`,
@@ -204,13 +215,14 @@ export async function POST(req: Request) {
     );
     const overLimit = reservation ? !reservation.allowed : (chatCount ?? 0) >= limits.chatMessages;
     if (overLimit) {
+      if (reservation) await reservation.release();
       return problem(
         403,
         `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
         { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
       );
     }
-    if (reservation) releaseQuota = reservation.release;
+    if (reservation) reservations.push(reservation.release);
   }
 
   // 4. Hourly rate limit, skipped for admins. Chat is chattier than a one-shot
@@ -219,10 +231,35 @@ export async function POST(req: Request) {
   if (!isAdmin) {
     const rl = await rateLimit(rateLimitKey(req, userId), { limit: 120, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
+      await releaseReservations();
       return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
+  }
+
+  // 4b. Global daily ceiling on the server's own provider key (QA finding S-1,
+  //     step 4). Every control above it assumes the attacker is a user and
+  //     bounds them individually; this one bounds the *bill*, whoever runs it
+  //     up and through whichever hole. It is the backstop for the next leak
+  //     nobody has found yet — the anonymous-chat hole would have been capped
+  //     at one day's budget instead of unbounded had this existed.
+  //
+  //     Only for calls that actually spend the server's key: a BYOK user runs
+  //     on their own account, costs the operator nothing, and keeps working
+  //     even while this is tripped. Last check before the model call, so a
+  //     request rejected earlier never consumes budget.
+  if (!override) {
+    const budget = await reserveServerKeyCall();
+    if (budget && !budget.allowed) {
+      await budget.release();
+      await releaseReservations();
+      return problem(
+        503,
+        "Der Chat ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen, dann läuft er sofort weiter."
+      );
+    }
+    if (budget) reservations.push(budget.release);
   }
 
   // 5. Build the system instruction. One system prompt for every chat now
@@ -305,8 +342,8 @@ export async function POST(req: Request) {
           // released the same as any other no-op call.
           if (reply.trim()) {
             await persistTurn(supabase, userId, input, reply).catch(() => {});
-          } else if (!reply.trim() && releaseQuota) {
-            await releaseQuota();
+          } else if (!reply.trim()) {
+            await releaseReservations();
           }
           return;
         }
@@ -315,7 +352,7 @@ export async function POST(req: Request) {
         // nothing. The status line is already committed at this point (200),
         // so a failure mid-stream can only be conveyed as an "error" event,
         // not a 502, the client treats the two the same way either way.
-        if (releaseQuota) await releaseQuota();
+        await releaseReservations();
         send("error", {
           detail: `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`,
         });
