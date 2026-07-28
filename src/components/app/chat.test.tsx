@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Chat } from "./chat";
@@ -318,6 +318,55 @@ describe("Chat", () => {
     it("offers no retry while rate-limited, since it would only 429 again", async () => {
       await failWith({ detail: "Zu viele Anfragen.", retryAfter: 120 });
       expect(screen.queryByRole("button", { name: /Erneut senden/ })).not.toBeInTheDocument();
+    });
+  });
+  // QA finding U-3: `pending` was replaced on every delta and sat in the
+  // scroll effect's dependencies, so an animated scroll fired per token. The
+  // page fought the user for control at the exact moment they were waiting.
+  describe("scroll behaviour while streaming (QA finding U-3)", () => {
+    // Restored afterwards: this replaces the prototype stub vitest.setup.ts
+    // installs globally, and leaving a spy behind would leak into other files.
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    afterEach(() => {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    });
+
+    it("never animates the scroll while text is still arriving", async () => {
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+      mockStreamingFetch(["Hier ", "ist ", "dein ", "Prompt"], { conversationId: "conv-1" });
+
+      render(<Chat mode="general" />);
+      await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+
+      const duringStream = scrollIntoView.mock.calls.filter(
+        (call) => (call[0] as ScrollIntoViewOptions)?.block === "end"
+      );
+      expect(duringStream.length).toBeGreaterThan(0);
+      for (const call of duringStream) {
+        expect((call[0] as ScrollIntoViewOptions).behavior).toBe("auto");
+      }
+    });
+
+    it("animates once at the end, when the finished result comes into view", async () => {
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+      mockStreamingFetch(["Fertig"], { conversationId: "conv-1" });
+
+      render(<Chat mode="general" />);
+      await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+      // The reply lands in the live preview bubble first and only moves into
+      // the result panel once fully revealed, so the result-scroll happens
+      // after the turn settles — waiting on the text alone is too early.
+      await screen.findByRole("button", { name: /Senden/ });
+
+      const toResult = scrollIntoView.mock.calls.filter(
+        (call) => (call[0] as ScrollIntoViewOptions)?.block === "start"
+      );
+      expect(toResult.length).toBeGreaterThan(0);
+      expect((toResult.at(-1)![0] as ScrollIntoViewOptions).behavior).toBe("smooth");
     });
   });
 });

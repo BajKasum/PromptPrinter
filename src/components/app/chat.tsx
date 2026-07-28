@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 import { ChatEmptyState } from "@/components/app/chat-empty-state";
 import { ChatResultPanel } from "@/components/app/chat-result-panel";
 import {
@@ -104,6 +105,11 @@ export function Chat({
   // lands, so a long result opens at its start, you read a prompt top-down).
   const endRef = useRef<HTMLDivElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  // Continuous auto-scroll is a concrete accessibility complaint for people
+  // with vestibular disorders. Same hook the rest of the app already uses
+  // (chat-transcript, sidebar, animated-mascot) rather than a second,
+  // hand-rolled matchMedia listener alongside it.
+  const reducedMotion = useReducedMotion() ?? false;
   // The in-flight request's controller, so stop() (below) can abort it.
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -113,17 +119,43 @@ export function Chat({
   // halfway through appearing.
   const busy = loading || pending !== null;
 
+  // Whether the user is currently parked at the bottom of the page. Scrolling
+  // up during a reply is a deliberate act ("let me re-read that") and has to
+  // win over the auto-follow, so this is what gates it.
+  const stickToBottom = useRef(true);
+  useEffect(() => {
+    function onScroll() {
+      const distanceFromBottom =
+        document.documentElement.scrollHeight - (window.innerHeight + window.scrollY);
+      stickToBottom.current = distanceFromBottom < 80;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Only the *length* of the streaming text, not the object: `pending` is
+  // replaced on every delta, so depending on it re-ran this effect for every
+  // token. With `behavior: "smooth"` that queued hundreds of mutually
+  // cancelling animated scrolls a second — jank, and the user could not scroll
+  // up while a reply streamed because they were dragged straight back down.
+  const streamedChars = pending?.text.length ?? 0;
   useEffect(() => {
     const last = messages[messages.length - 1];
+    // An animated scroll makes sense as a one-off ("something new arrived"),
+    // never as a per-token follow. Reduced-motion users get no animation at all.
+    const smooth = !reducedMotion && !busy ? ("smooth" as const) : ("auto" as const);
+
     if (busy || last?.role === "user") {
-      // Awaiting/receiving a reply, keep the newest turn + typing indicator
-      // (or the reply as it grows) in view.
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      if (!stickToBottom.current) return; // The user scrolled away, leave them there.
+      endRef.current?.scrollIntoView({ behavior: smooth, block: "end" });
     } else if (last?.role === "assistant") {
-      // Reply landed, bring the top of the fresh result into view.
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Reply landed and finished writing: bring the top of the fresh result
+      // into view so a long prompt opens at its start. Worth overriding the
+      // stick-to-bottom check, it is the one moment the user is waiting for.
+      stickToBottom.current = true;
+      resultRef.current?.scrollIntoView({ behavior: smooth, block: "start" });
     }
-  }, [messages, busy, pending]);
+  }, [messages, busy, streamedChars, reducedMotion]);
 
   // Turn the in-flight reply into a real message. Idempotent via pendingRef:
   // the reveal's own callback and a stop() click can both reach here for the
