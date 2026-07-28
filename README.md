@@ -65,6 +65,31 @@ Vorlage: [`.env.example`](.env.example). Welche Datei wo gelesen wird:
 Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`,
 `STRIPE_*`) bleiben ohne Prefix.
 
+### Deploy-Checkliste
+
+Diese sieben Variablen sind in Produktion **Pflicht**, nicht optional. Fehlt eine,
+bricht der Start mit einer Meldung ab, die sie benennt (`src/lib/env.ts`, geprüft
+beim Boot über `src/instrumentation.ts`):
+
+| Variable | Warum sie load-bearing ist |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Ohne Supabase keine Anmeldung, keine Daten |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | dito |
+| `SUPABASE_SERVICE_ROLE_KEY` | Kontolöschung (`/api/account`) braucht Admin-Rechte |
+| `NEXT_PUBLIC_APP_URL` | Sonst verlinken Bestätigungs- und Reset-Mails auf `localhost:3000` |
+| `API_KEY_ENCRYPTION_SECRET` | BYOK wirft beim Speichern eines eigenen Keys |
+| `UPSTASH_REDIS_REST_URL` | **Ohne Upstash antworten ALLE API-Routen mit 429** |
+| `UPSTASH_REDIS_REST_TOKEN` | dito |
+
+Der Upstash-Punkt ist der unangenehmste: `src/lib/rate-limit.ts` scheitert in
+Produktion bewusst geschlossen, statt auf einen Limiter zurückzufallen, der über
+mehrere Instanzen hinweg gar nichts mehr begrenzt. Der resultierende 429 sieht
+nach Rate-Limit aus, nicht nach fehlender Konfiguration — deshalb der
+Start-Abbruch statt einer stillen Fehlfunktion.
+
+Ohne `ZAI_API_KEY`/`GEMINI_API_KEY` startet die App, warnt aber: der Chat läuft
+dann im Stub-Modus und liefert eine Demo-Antwort statt einer echten.
+
 ## Docker
 
 Siehe [`DOCKER.md`](DOCKER.md), Dev (Hot-Reload, Port 3000) und Prod (standalone,
