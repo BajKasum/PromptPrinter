@@ -13,7 +13,7 @@ import {
   hasAllowedExtension,
   type ProjectFile,
 } from "@/lib/project-files";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, randomId } from "@/lib/utils";
 
 // Workspace-Dateien (REDESIGN.md, Phase 4): kleine Text-Kontextdateien, die
 // buildProjectContext direkt in jeden Projekt-Chat injiziert. Bewusst eng,
@@ -66,7 +66,7 @@ export function ProjectFiles({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("no user");
 
-      const fileId = crypto.randomUUID();
+      const fileId = randomId();
       const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-120);
       const path = `${user.id}/${projectId}/${fileId}-${safeName}`;
 
@@ -176,7 +176,10 @@ export function ProjectFiles({
                 onClick={() => void handleDelete(f)}
                 disabled={deletingId === f.id}
                 aria-label={`${f.name} löschen`}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:text-red-400 focus-visible:opacity-100 disabled:opacity-50 group-hover:opacity-100"
+                // Permanently visible below md (QA finding K-2), same reasoning
+                // as chat-list.tsx's row actions: a hover-only reveal leaves
+                // touch devices with no dependable way to see this button.
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-red-400 focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
               >
                 {deletingId === f.id ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -18,6 +18,7 @@ import { resolveVariant, resolveEmptyState, type ChatMode } from "@/lib/chat-var
 import { parseSseEvents } from "@/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 import { normalizeTarget } from "@/lib/target-tools";
+import { randomId } from "@/lib/utils";
 
 // A stable id per message (real DB id for history loaded from the server,
 // a client-generated one for anything created during this session) is the
@@ -174,7 +175,7 @@ export function Chat({
     pendingRef.current = null;
     setPending(null);
     if (!text.trim()) return;
-    setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", content: text }]);
+    setMessages((m) => [...m, { id: randomId(), role: "assistant", content: text }]);
     if (celebrate) setJustFinished(true);
   }, []);
 
@@ -190,7 +191,7 @@ export function Chat({
   async function send(textArg?: string) {
     const text = (textArg ?? input).trim();
     if (!text || busy) return;
-    const next: Msg[] = [...messages, { id: crypto.randomUUID(), role: "user", content: text }];
+    const next: Msg[] = [...messages, { id: randomId(), role: "user", content: text }];
     setMessages(next);
     setInput("");
     setError(null);

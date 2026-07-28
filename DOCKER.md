@@ -14,8 +14,14 @@ Wenn das einen Fehler gibt → Docker Desktop öffnen und warten, bis es gestart
 ## Entwicklung, der Ersatz für `npm run dev` (mit Hot-Reload)
 
 ```powershell
-docker compose -f docker-compose.dev.yml up
+npm run docker:dev
 ```
+
+Prüft zuerst, ob `.env.local` alle Pflichtvariablen trägt (`scripts/check-env.mjs`,
+sieht das Kommando davor), und startet erst danach den Container. Ohne den Check
+kam der Fehler bisher erst nach dem Start, als 429 auf jede API-Route (siehe
+`src/lib/env.ts`s Boot-Check für dieselbe Prüfung im Next-Prozess selbst).
+Direkt ohne Prüfung: `docker compose -f docker-compose.dev.yml up`
 
 - App läuft auf **http://localhost:3000**
 - Code-Änderungen laden **automatisch neu** (Hot-Reload, der Quellcode ist in den Container gemountet)
@@ -35,12 +41,18 @@ Im Hintergrund starten: `... up -d` · Logs ansehen: `docker compose -f docker-c
 ## Produktion, gebautes Image (wie es deployed würde)
 
 ```powershell
-docker compose --env-file .env.local up --build -d
+npm run docker:prod
 ```
 
 - App läuft auf **http://localhost:3001**
 - Baut das optimierte **Standalone-Image** und startet `node server.js` als Non-Root-User
 - `--env-file .env.local` sorgt dafür, dass die `NEXT_PUBLIC_*`-Werte beim Build mit eingebacken werden (sie landen im Client-Bundle)
+- Prüft vorher **beide** Dateien (`.env` für die Container-Laufzeit über `env_file`,
+  `.env.local` für die `NEXT_PUBLIC_*`-Build-Args), das ist die Falle aus
+  CLAUDE.md: zwei verschiedene Dateien für zwei verschiedene Mechanismen, eine
+  davon zu vergessen fiel bisher erst nach dem Start auf.
+
+Direkt ohne Prüfung: `docker compose --env-file .env.local up --build -d`
 
 **Stoppen:**
 
@@ -56,10 +68,11 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 
 | Was | Befehl |
 |---|---|
-| Dev starten | `docker compose -f docker-compose.dev.yml up` |
+| Dev starten (mit Env-Check) | `npm run docker:dev` |
 | Dev stoppen | `Strg + C`, dann `docker compose -f docker-compose.dev.yml down` |
-| Prod starten | `docker compose --env-file .env.local up --build -d` |
+| Prod starten (mit Env-Check) | `npm run docker:prod` |
 | Prod stoppen | `docker compose down` |
+| Env-Dateien allein prüfen | `node scripts/check-env.mjs dev` bzw. `... prod` |
 | Laufende Container | `docker ps` |
 | Logs (Dev) | `docker compose -f docker-compose.dev.yml logs -f` |
 | Container + Volumes löschen | `docker compose -f docker-compose.dev.yml down -v` |

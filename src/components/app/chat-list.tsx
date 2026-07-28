@@ -177,7 +177,11 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
         <p className="truncate text-[13.5px] font-medium text-foreground">{chat.title}</p>
         <p className="mt-0.5 truncate text-[12px] text-secondary">{meta}</p>
       </Link>
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      {/* Permanently visible below md (QA finding K-2): opacity-0 gated purely
+          on :hover leaves touch devices with no reliable way to reveal these
+          actions at all, Safari's hover-simulation-on-first-tap is not
+          something to depend on. Desktop keeps the hover/focus reveal. */}
+      <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100">
         {/* Only global chats can be moved, a project chat already belongs
             to one, and moving between projects isn't a thing here. */}
         {basePath === "/chats" && (

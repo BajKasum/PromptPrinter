@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { slugify, relativeTime, formatDate } from "@/lib/utils";
+import { formatDate, randomId, relativeTime, slugify } from "@/lib/utils";
 
 describe("slugify", () => {
   it("lowercases and hyphenates words", () => {
@@ -62,5 +62,46 @@ describe("relativeTime", () => {
     freezeAt("2026-06-07T12:00:00Z");
     const old = "2026-01-01T12:00:00Z";
     expect(relativeTime(old)).toBe(formatDate(old));
+  });
+});
+
+// QA finding K-4: crypto.randomUUID() requires a Secure Context and is
+// undefined over plain http on a LAN IP — the standard way to test on a real
+// phone during dev. project-files.tsx inserts the result into a uuid primary
+// key column, so the fallback has to produce a real UUID shape, not just any
+// unique string.
+describe("randomId", () => {
+  const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const originalRandomUUID = crypto.randomUUID;
+
+  // Deleting the method (rather than spreading `crypto` into a plain object,
+  // which loses getRandomValues too — it lives on the prototype, not as an
+  // own property) is what actually reproduces the unsupported-browser shape:
+  // getRandomValues has no Secure Context restriction and must keep working,
+  // only randomUUID is unavailable.
+  function withoutRandomUUID() {
+    Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
+  }
+  afterEach(() => {
+    Object.defineProperty(crypto, "randomUUID", { value: originalRandomUUID, configurable: true });
+  });
+
+  it("uses crypto.randomUUID() when available", () => {
+    const spy = vi
+      .spyOn(crypto, "randomUUID")
+      .mockReturnValue("11111111-1111-4111-8111-111111111111");
+    expect(randomId()).toBe("11111111-1111-4111-8111-111111111111");
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it("falls back to a real v4 UUID built from getRandomValues when randomUUID is unavailable", () => {
+    withoutRandomUUID();
+    expect(randomId()).toMatch(UUID_V4);
+  });
+
+  it("never repeats across calls in the fallback path", () => {
+    withoutRandomUUID();
+    const ids = new Set(Array.from({ length: 50 }, () => randomId()));
+    expect(ids.size).toBe(50);
   });
 });
