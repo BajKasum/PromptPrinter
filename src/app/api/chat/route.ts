@@ -35,6 +35,31 @@ function trimHistory(messages: ChatMessage[]): ChatMessage[] {
   return messages.length > CHAT_HISTORY_LIMIT ? messages.slice(-CHAT_HISTORY_LIMIT) : messages;
 }
 
+// Merges consecutive same-role turns before the transcript reaches a provider
+// (QA finding F-4).
+//
+// Anthropic's Messages API requires strictly alternating roles and rejects
+// anything else outright, so a transcript carrying two user turns in a row
+// fails hard for every BYOK-Anthropic user. Z.ai and OpenAI happen to tolerate
+// it, which is exactly why it went unnoticed on the default provider. The
+// client no longer produces that shape (a failed turn is rolled back rather
+// than left in the thread), but "no current client does" is not a guarantee —
+// an open tab from before that fix, or stored history from one, still can.
+//
+// Applied to the model-facing copy only: persistence keeps whatever actually
+// happened, this just makes it something every provider accepts.
+function collapseConsecutiveRoles(messages: ChatMessage[]): ChatMessage[] {
+  return messages.reduce<ChatMessage[]>((acc, message) => {
+    const previous = acc[acc.length - 1];
+    if (previous && previous.role === message.role) {
+      acc[acc.length - 1] = { ...previous, content: `${previous.content}\n\n${message.content}` };
+      return acc;
+    }
+    acc.push(message);
+    return acc;
+  }, []);
+}
+
 // Makes any stored transcript replayable, whatever it grew into.
 //
 // QA finding F-1: the transcript cap used to be enforced by the schema alone,
@@ -331,7 +356,7 @@ export async function POST(req: Request) {
           mode = "generated";
           for await (const chunk of chatCompleteStream({
             system: systemInstruction,
-            messages: trimHistory(input.messages),
+            messages: collapseConsecutiveRoles(trimHistory(input.messages)),
             override: override ?? undefined,
             signal: req.signal,
           })) {

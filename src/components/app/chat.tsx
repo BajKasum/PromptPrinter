@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { RotateCcw } from "lucide-react";
 import { ChatEmptyState } from "@/components/app/chat-empty-state";
 import { ChatResultPanel } from "@/components/app/chat-result-panel";
 import {
@@ -21,6 +22,14 @@ import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 // React key below, an always-appending list would tolerate the array index
 // too, but a stable id survives if the transcript is ever edited/trimmed.
 type Msg = { id: string; role: "user" | "assistant"; content: string };
+
+// "in 2 Minuten" reads better than "in 118 Sekunden"; below a minute the exact
+// number is the useful part.
+function formatRetryDelay(seconds: number): string {
+  if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))} Sekunden`;
+  const minutes = Math.ceil(seconds / 60);
+  return minutes === 1 ? "einer Minute" : `${minutes} Minuten`;
+}
 
 // Orchestrator only, every UI role that used to live inline here now has its
 // own file (chat-empty-state, chat-result-panel, chat-transcript,
@@ -62,6 +71,9 @@ export function Chat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Seconds until a rate-limited request may be retried, straight from the
+  // route's own `retryAfter`. Null for every other kind of failure.
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
   // Set when the route replied but couldn't persist the turn (json.persistError):
   // the message is shown, but nothing was saved, so a reload loses it. Distinct
   // from `error` (which means no reply at all) since this must not block the
@@ -143,6 +155,7 @@ export function Chat({
     setMessages(next);
     setInput("");
     setError(null);
+    setRetryAfter(null);
     setPersistWarning(null);
     setPending(null);
     pendingRef.current = null;
@@ -156,6 +169,7 @@ export function Chat({
     // not whatever last rendered, and the abort branch below needs whatever
     // arrived so far too.
     let accumulated = "";
+    let retryAfterSeconds: number | null = null;
     // `messages` stays complete for the transcript on screen; only the newest
     // turns go over the wire. The route forwards just the last 12 to the model
     // and clamps anything longer than this itself, so replaying the full
@@ -172,6 +186,9 @@ export function Chat({
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}) as Record<string, unknown>);
+        // The route already tells us how long a 429 lasts; showing it beats
+        // making the user guess when they may try again.
+        retryAfterSeconds = typeof json.retryAfter === "number" ? json.retryAfter : null;
         throw new Error((json.detail as string | undefined) ?? "Chat fehlgeschlagen");
       }
       if (!res.body) throw new Error("Keine Antwort erhalten.");
@@ -228,7 +245,17 @@ export function Chat({
       } else {
         pendingRef.current = null;
         setPending(null);
+        // Roll the optimistic message back out of the transcript and put the
+        // text back in the composer. It used to stay in the thread with no
+        // reply and the composer cleared, which cost the user their input and
+        // left two consecutive user turns behind once they typed again — a
+        // shape BYOK-Anthropic rejects outright (it requires alternating
+        // roles), so one network blip turned into every following turn
+        // failing. Nothing unsent stays in the transcript now.
+        setMessages((m) => m.slice(0, -1));
+        setInput(text);
         setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+        setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);
       }
     } finally {
       // Only the request is over here. A completed reply that is still being
@@ -290,9 +317,27 @@ export function Chat({
       {error && (
         <div
           role="alert"
-          className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+          className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
         >
-          {error}
+          <span>
+            {error}
+            {retryAfter !== null && ` Versuch es in ${formatRetryDelay(retryAfter)} nochmal.`}
+          </span>
+          {/* The failed message is back in the composer, so this just sends it
+              again — the banner used to be a dead end with the input already
+              cleared. Hidden while rate-limited: retrying then only produces
+              the same 429. */}
+          {retryAfter === null && input.trim() && (
+            <button
+              type="button"
+              onClick={() => void send()}
+              disabled={busy}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 py-1 text-[12.5px] font-medium transition-colors hover:bg-destructive/10 disabled:opacity-60"
+            >
+              <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+              Erneut senden
+            </button>
+          )}
         </div>
       )}
 

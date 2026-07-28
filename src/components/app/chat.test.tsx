@@ -268,4 +268,56 @@ describe("Chat", () => {
     expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
+  // QA finding F-4: a failed turn used to leave the user's message in the
+  // thread with no reply AND clear the composer, so the text was gone and the
+  // transcript carried two consecutive user turns as soon as they typed again
+  // — a shape BYOK-Anthropic rejects outright.
+  describe("a failed turn (QA finding F-4)", () => {
+    async function failWith(body: Record<string, unknown>) {
+      mockFetchOnce(body, false);
+      render(<Chat mode="general" />);
+      await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+    }
+
+    it("takes the unsent message back out of the transcript", async () => {
+      await failWith({ detail: "Chat fehlgeschlagen" });
+      // The thread is rendered as role="log"; with the optimistic message rolled
+      // back the chat is empty again and the greeting takes its place. Asserting
+      // on the absence of the text alone would pass trivially, since the same
+      // string is now sitting in the composer.
+      expect(screen.queryByRole("log")).not.toBeInTheDocument();
+      expect(screen.getByText("Woran arbeiten wir?")).toBeInTheDocument();
+    });
+
+    it("puts the text back in the composer instead of losing it", async () => {
+      await failWith({ detail: "Chat fehlgeschlagen" });
+      expect(screen.getByRole("textbox")).toHaveValue("Baue mir eine Todo-App");
+    });
+
+    it("shows the failure with a way to act on it", async () => {
+      await failWith({ detail: "Chat fehlgeschlagen" });
+      expect(screen.getByRole("alert")).toHaveTextContent("Chat fehlgeschlagen");
+      expect(screen.getByRole("button", { name: /Erneut senden/ })).toBeInTheDocument();
+    });
+
+    it("retries the same text on demand", async () => {
+      await failWith({ detail: "Chat fehlgeschlagen" });
+      mockStreamingFetch(["Klar,"], { conversationId: "conv-1" });
+
+      await userEvent.click(screen.getByRole("button", { name: /Erneut senden/ }));
+
+      expect(await screen.findByText("Baue mir eine Todo-App")).toBeInTheDocument();
+    });
+
+    it("says how long a rate limit lasts rather than leaving the user guessing", async () => {
+      await failWith({ detail: "Zu viele Anfragen.", retryAfter: 120 });
+      expect(screen.getByRole("alert")).toHaveTextContent("in 2 Minuten");
+    });
+
+    it("offers no retry while rate-limited, since it would only 429 again", async () => {
+      await failWith({ detail: "Zu viele Anfragen.", retryAfter: 120 });
+      expect(screen.queryByRole("button", { name: /Erneut senden/ })).not.toBeInTheDocument();
+    });
+  });
 });

@@ -343,6 +343,65 @@ describe("POST /api/chat", () => {
     });
   });
 
+  // QA finding F-4: Anthropic rejects a transcript with two user turns in a
+  // row outright, so one network blip used to make every following turn fail
+  // for BYOK-Anthropic users. Z.ai and OpenAI tolerate it, which is why it
+  // stayed invisible on the default provider.
+  describe("consecutive same-role turns (QA finding F-4)", () => {
+    it("merges consecutive user turns before they reach the provider", async () => {
+      await POST(
+        req({
+          mode: "general",
+          messages: [
+            { role: "user", content: "Erste Nachricht" },
+            { role: "user", content: "Zweite Nachricht" },
+          ],
+        })
+      );
+
+      const sent = chatCompleteStream.mock.calls[0][0] as {
+        messages: { role: string; content: string }[];
+      };
+      expect(sent.messages).toHaveLength(1);
+      expect(sent.messages[0].content).toBe("Erste Nachricht\n\nZweite Nachricht");
+    });
+
+    it("hands every provider a strictly alternating transcript", async () => {
+      await POST(
+        req({
+          mode: "general",
+          messages: [
+            { role: "user", content: "a" },
+            { role: "user", content: "b" },
+            { role: "assistant", content: "c" },
+            { role: "assistant", content: "d" },
+            { role: "user", content: "e" },
+          ],
+        })
+      );
+
+      const sent = chatCompleteStream.mock.calls[0][0] as { messages: { role: string }[] };
+      const roles = sent.messages.map((m) => m.role);
+      expect(roles).toEqual(["user", "assistant", "user"]);
+    });
+
+    it("leaves an already-alternating transcript untouched", async () => {
+      await POST(
+        req({
+          mode: "general",
+          messages: [
+            { role: "user", content: "a" },
+            { role: "assistant", content: "b" },
+            { role: "user", content: "c" },
+          ],
+        })
+      );
+
+      const sent = chatCompleteStream.mock.calls[0][0] as { messages: { content: string }[] };
+      expect(sent.messages.map((m) => m.content)).toEqual(["a", "b", "c"]);
+    });
+  });
+
   describe("input validation", () => {
     it("rejects a malformed body with 400 before touching auth", async () => {
       const res = await POST(
