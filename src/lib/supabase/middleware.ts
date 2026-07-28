@@ -32,7 +32,8 @@ export async function updateSession(request: NextRequest, requestHeaders: Header
     pathname.startsWith("/chats") ||
     pathname.startsWith("/projects") ||
     pathname.startsWith("/settings") ||
-    pathname.startsWith("/billing");
+    pathname.startsWith("/billing") ||
+    pathname.startsWith("/admin");
 
   if (!user && isProtected) {
     const redirect = request.nextUrl.clone();

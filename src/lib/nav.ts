@@ -3,6 +3,7 @@ import {
   FolderKanban,
   Settings,
   CreditCard,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,3 +24,9 @@ export const secondaryNav: NavItem[] = [
   { label: "Einstellungen", href: "/settings", Icon: Settings },
   { label: "Abrechnung", href: "/billing", Icon: CreditCard },
 ];
+
+// Only rendered for profiles.is_admin (the page itself 404s for everyone else,
+// this just keeps it out of the menu). Kept separate from secondaryNav so the
+// command palette and mobile drawer don't have to learn about roles — they
+// render secondaryNav and stay unaware this exists.
+export const adminNav: NavItem[] = [{ label: "Betrieb", href: "/admin", Icon: Gauge }];

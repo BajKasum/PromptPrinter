@@ -11,6 +11,7 @@
  */
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { logWarning } from "@/lib/observability";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -95,10 +96,11 @@ export async function rateLimit(
     // that isn't a real ceiling anymore (see the module comment above).
     if (!warnedMissingRedisInProduction) {
       warnedMissingRedisInProduction = true;
-      console.error(
-        "[rate-limit] UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN missing in production, " +
-          "refusing requests instead of silently falling back to a per-instance limiter."
-      );
+      logWarning("rate_limit.redis_missing_in_production", {
+        note:
+          "UPSTASH_REDIS_REST_URL/_TOKEN fehlen, Requests werden abgelehnt statt auf einen " +
+          "Per-Instanz-Limiter zurueckzufallen, der nichts mehr begrenzt.",
+      });
     }
     return { allowed: false, remaining: 0, resetAt: Date.now() + windowMs };
   }
@@ -200,6 +202,27 @@ function dailyServerKeyBudget(): number {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_DAILY_SERVER_KEY_CALLS;
 }
 
+/**
+ * Today's server-key call count and its ceiling, without consuming a slot.
+ * Feeds the admin ops view (QA finding C-7) — the counter is the one number
+ * that would have made the anonymous-chat hole visible while it was open, so
+ * it needs to be readable somewhere other than a log line.
+ */
+export async function readDailyServerKeyUsage(): Promise<{
+  used: number;
+  budget: number;
+} | null> {
+  const budget = dailyServerKeyBudget();
+  if (!redis) return null;
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const used = await redis.get<number>(`llm-daily-calls:${day}`);
+    return { used: Number(used ?? 0), budget };
+  } catch {
+    return null;
+  }
+}
+
 let warnedBudgetExhausted = false;
 
 /**
@@ -237,11 +260,12 @@ export async function reserveServerKeyCall(): Promise<{
     const budget = dailyServerKeyBudget();
     if (count > budget && !warnedBudgetExhausted) {
       warnedBudgetExhausted = true;
-      console.error(
-        `[spend-guard] Tagesbudget für den Server-Key erschöpft (${count}/${budget} Aufrufe am ${day}). ` +
-          "Server-Key-Aufrufe sind gesperrt, BYOK-Nutzer laufen weiter. " +
-          "LLM_DAILY_CALL_BUDGET anheben, wenn das echter Traffic ist."
-      );
+      logWarning("spend_guard.budget_exhausted", {
+        day,
+        used: count,
+        budget,
+        note: "Server-Key gesperrt, BYOK laeuft weiter. LLM_DAILY_CALL_BUDGET pruefen.",
+      });
     }
     return {
       allowed: count <= budget,

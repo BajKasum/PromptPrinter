@@ -17,7 +17,7 @@ import { Logo, LogoMark } from "@/components/brand/logo";
 import { NewProjectButton } from "@/components/app/new-project";
 import { CommandPalette } from "@/components/app/command-palette";
 import { PlanBadge } from "@/components/app/plan-badge";
-import { primaryNav, secondaryNav, type NavItem } from "@/lib/nav";
+import { adminNav, primaryNav, secondaryNav, type NavItem } from "@/lib/nav";
 import type { PlanKey } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -603,7 +603,7 @@ function AccountMenu({
               </div>
             </div>
             <div className="p-1.5">
-              {secondaryNav.map(({ label: navLabel, href, Icon }) => (
+              {[...secondaryNav, ...(isAdmin ? adminNav : [])].map(({ label: navLabel, href, Icon }) => (
                 <Link
                   key={href}
                   href={href}

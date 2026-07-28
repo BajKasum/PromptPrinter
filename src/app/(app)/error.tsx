@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RotateCcw, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/brand/mascot";
+import { captureError } from "@/lib/observability";
 
 // Segment boundary for the authed shell. Catches render/data errors thrown by
 // any page below (app)/, the sidebar and ToastProvider above stay mounted, so
@@ -17,9 +18,11 @@ export default function AppError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Surface to the console for debugging; a reporter (Sentry o.ä.) would hook
-    // in here in production.
-    console.error(error);
+    // Routed through the shared seam (lib/observability.ts) rather than a bare
+    // console.error, so client-side crashes carry the same structure and
+    // redaction as server-side ones and a reporter only has to be wired up in
+    // one place. `digest` is Next's own id for the matching server-side entry.
+    captureError("app.render_error", error, { digest: error.digest });
   }, [error]);
 
   return (

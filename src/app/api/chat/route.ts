@@ -16,6 +16,7 @@ import { getUserOverride } from "@/lib/byok";
 import { getCachedFileContent } from "@/lib/project-file-cache";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
+import { captureError, logEvent } from "@/lib/observability";
 import { CHAT_SYSTEM_PROMPT } from "@/prompts";
 
 export const runtime = "nodejs";
@@ -308,6 +309,16 @@ export async function POST(req: Request) {
         }
       }
 
+      // Cost/latency telemetry (QA finding C-7). Character counts stand in for
+      // tokens: the streaming path never sees the provider's own usage numbers
+      // (they arrive in a final chunk the shared SSE reader doesn't surface),
+      // and ~4 chars per token is close enough to spot a trend or a spike.
+      // Never the text itself, see observability.ts.
+      const startedAt = Date.now();
+      const promptChars =
+        systemInstruction.length +
+        trimHistory(input.messages).reduce((sum, m) => sum + m.content.length, 0);
+
       let reply = "";
       let mode: "stub" | "generated";
       try {
@@ -353,6 +364,14 @@ export async function POST(req: Request) {
         // so a failure mid-stream can only be conveyed as an "error" event,
         // not a 502, the client treats the two the same way either way.
         await releaseReservations();
+        captureError("chat.turn_failed", err, {
+          userId,
+          byok: Boolean(override),
+          provider: override?.provider ?? llmConfig()?.provider,
+          latencyMs: Date.now() - startedAt,
+          promptChars,
+          partialReplyChars: reply.length,
+        });
         send("error", {
           detail: `Chat fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`,
         });
@@ -370,7 +389,21 @@ export async function POST(req: Request) {
       } catch (err) {
         persistError = err instanceof Error ? err.message : "persist failed";
         conversationId = null;
+        captureError("chat.persist_failed", err, { userId, projectId: input.projectId });
       }
+
+      logEvent("chat.turn", {
+        userId,
+        mode,
+        byok: Boolean(override),
+        provider: override?.provider ?? llmConfig()?.provider,
+        inProject: Boolean(input.projectId),
+        turns: input.messages.length,
+        promptChars,
+        replyChars: reply.length,
+        latencyMs: Date.now() - startedAt,
+        persisted: !persistError,
+      });
 
       send("done", {
         mode,

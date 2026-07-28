@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
+import { captureError } from "@/lib/observability";
 
 export const runtime = "nodejs";
 
@@ -60,7 +61,7 @@ export async function DELETE(req: Request) {
     // place), removing a path that was never uploaded is a harmless no-op.
     await supabase.storage.from("avatars").remove([`${user.id}/avatar`]);
   } catch (err) {
-    console.error("[account-delete] storage cleanup failed:", err);
+    captureError("account.storage_cleanup_failed", err, { userId: user.id });
   }
 
   try {

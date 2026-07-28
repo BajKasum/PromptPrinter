@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { assertPublicHttpsUrl } from "@/lib/url-safety";
+import { captureError } from "@/lib/observability";
 
 // The one place that talks to a model provider. /api/chat (chatCompleteStream,
 // the streamed reply itself) and /api/settings/api-key (chatComplete, the
@@ -526,7 +527,12 @@ async function customComplete(
     } catch {
       // Not the expected shape, nothing safe to surface from the body.
     }
-    if (!detail) console.error(`[custom-provider] ${res.status} response body:`, raw.slice(0, 500));
+    if (!detail) {
+      captureError("llm.custom_provider_unparsable_error", new Error(`HTTP ${res.status}`), {
+        status: res.status,
+        bodyChars: raw.length,
+      });
+    }
     throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
   }
 
@@ -582,7 +588,12 @@ async function* customCompleteStream(
     } catch {
       // Not the expected shape, nothing safe to surface from the body.
     }
-    if (!detail) console.error(`[custom-provider] ${res.status} response body:`, raw.slice(0, 500));
+    if (!detail) {
+      captureError("llm.custom_provider_unparsable_error", new Error(`HTTP ${res.status}`), {
+        status: res.status,
+        bodyChars: raw.length,
+      });
+    }
     throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
   }
   if (!res.body) throw new Error("Custom-Provider hat keinen Antwort-Stream geliefert.");
