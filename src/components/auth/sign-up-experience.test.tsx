@@ -14,8 +14,18 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParams,
 }));
 
+const getUser = vi.fn();
+const profileUpdate = vi.fn();
+const profileSelect = vi.fn();
+
 vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { signUp, resend } }),
+  createClient: () => ({
+    auth: { signUp, resend, getUser },
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: () => profileSelect() }) }),
+      update: (patch: unknown) => ({ eq: () => profileUpdate(patch) }),
+    }),
+  }),
 }));
 
 vi.mock("@/lib/site-url", async (importOriginal) => ({
@@ -161,5 +171,54 @@ describe("SignUpExperience", () => {
     await fillAndSubmit("user@example.com", "password123");
     await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
     expect(push).toHaveBeenCalledWith("/chats/new");
+  });
+  // QA finding U-2: the pricing page's Pro button linked here with ?plan=pro
+  // and nobody read it. The visitor clicked a paid plan, landed on Free, and
+  // only learned that payment isn't live once past the login.
+  describe("arriving through the Pro button", () => {
+    beforeEach(() => {
+      getUser.mockReset();
+      profileSelect.mockReset();
+      profileUpdate.mockReset();
+      getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+      profileSelect.mockResolvedValue({ data: { settings: { onboarding_done: true } } });
+      profileUpdate.mockResolvedValue({ error: null });
+    });
+
+    it("says plainly that payment is not live yet", () => {
+      searchParams = new URLSearchParams("plan=pro");
+      render(<SignUpExperience />);
+      expect(screen.getByText(/Bezahlung ist noch nicht freigeschaltet/)).toBeInTheDocument();
+    });
+
+    it("stays quiet for a plain signup", () => {
+      searchParams = new URLSearchParams();
+      render(<SignUpExperience />);
+      expect(screen.queryByText(/Bezahlung ist noch nicht freigeschaltet/)).not.toBeInTheDocument();
+    });
+
+    it("records the interest without discarding the existing settings", async () => {
+      searchParams = new URLSearchParams("plan=pro");
+      signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
+      render(<SignUpExperience />);
+
+      await fillAndSubmit("neu@example.com", "sicheres-passwort");
+      await screen.findByRole("status");
+
+      expect(profileUpdate).toHaveBeenCalledWith({
+        settings: { onboarding_done: true, interested_in: "pro" },
+      });
+    });
+
+    it("never records anything for a plain signup", async () => {
+      searchParams = new URLSearchParams();
+      signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
+      render(<SignUpExperience />);
+
+      await fillAndSubmit("neu@example.com", "sicheres-passwort");
+      await screen.findByRole("status");
+
+      expect(profileUpdate).not.toHaveBeenCalled();
+    });
   });
 });

@@ -31,6 +31,12 @@ export function SignUpExperience() {
   const router = useRouter();
   const search = useSearchParams();
   const next = safeNextPath(search.get("next"));
+  // The pricing page's Pro button links here with ?plan=pro. That parameter
+  // used to be read by nobody: the visitor clicked a paid plan, signed up, got
+  // Free, and only found out that payment isn't live at all once they were past
+  // the login and on the billing page (QA finding U-2). Acknowledged here
+  // instead, and recorded as interest where a session allows it.
+  const wantsPro = search.get("plan") === "pro";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,12 +97,47 @@ export function SignUpExperience() {
         setSignupSent(true);
         return;
       }
+      // A session exists at this point, so the interest can be recorded right
+      // away. When email confirmation is required the branch above returns
+      // first and there is no session to write with — the notice on screen is
+      // then all there is, which is still better than the parameter vanishing.
+      if (wantsPro) await notePlanInterest();
       setCelebrateMsg("Konto erstellt");
     } catch (err) {
       setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
       refreshCaptcha();
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Records "this account came in through the Pro button" on the profile, so
+  // the interest survives as something to act on when payment goes live rather
+  // than as a lost click. profiles.settings is one of the three columns the
+  // owner may write (migration 0014), best-effort: a failure here must never
+  // cost someone their freshly created account.
+  async function notePlanInterest() {
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("settings")
+        .eq("id", user.id)
+        .maybeSingle();
+      const current =
+        profile?.settings && typeof profile.settings === "object" && !Array.isArray(profile.settings)
+          ? (profile.settings as Record<string, unknown>)
+          : {};
+      await supabase
+        .from("profiles")
+        .update({ settings: { ...current, interested_in: "pro" } })
+        .eq("id", user.id);
+    } catch {
+      // Interest is a nice-to-have, the account is not.
     }
   }
 
@@ -213,6 +254,14 @@ export function SignUpExperience() {
           Kostenlos, keine Kreditkarte, jederzeit kündbar.
         </p>
       </div>
+
+      {wantsPro && (
+        <div className="rounded-lg border border-accent/30 bg-accent-subtle px-3.5 py-3 text-[13px] leading-relaxed text-accent-text">
+          Du kommst über Pro. Bezahlung ist noch nicht freigeschaltet, dein Konto
+          startet also auf Free, mit vollem Funktionsumfang über deinen eigenen
+          API-Key. Ich merke dir Pro vor und melde mich, sobald es so weit ist.
+        </div>
+      )}
 
       <OAuthButtons next={next} />
 

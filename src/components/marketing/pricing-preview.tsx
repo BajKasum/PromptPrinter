@@ -35,8 +35,14 @@ export const PLANS = [
     price: "7 €",
     cadence: "Monat",
     description: "Wenn du keine eigenen Keys einrichten willst oder mehr Spielraum brauchst.",
-    cta: "Pro starten",
+    // "Pro starten" versprach einen Kauf, den es nicht gibt: der Klick führte
+    // auf eine gewöhnliche Registrierung, das Konto landete auf Free, und dass
+    // Bezahlung noch gar nicht freigeschaltet ist, stand nur hinter dem Login
+    // auf der Abrechnungsseite (QA-Befund U-2). Jetzt sagt der Button, was er
+    // tut, und die Notiz darunter sagt, warum.
+    cta: "Für Pro vormerken",
     href: "/signup?plan=pro",
+    note: "Bezahlung ist noch nicht freigeschaltet. Du startest auf Free, ich melde mich, sobald Pro buchbar ist.",
     highlight: true,
     features: [
       "Alles aus Free",
@@ -115,6 +121,9 @@ export function PricingGrid() {
             >
               <Link href={p.href}>{p.cta}</Link>
             </Button>
+            {p.note && (
+              <p className="mt-2.5 text-[12px] leading-relaxed text-foreground/55">{p.note}</p>
+            )}
             <ul className="mt-7 space-y-2.5">
               {p.features.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-[14px] text-foreground/75">
