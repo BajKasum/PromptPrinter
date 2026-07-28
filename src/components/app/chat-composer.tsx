@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { MAX_USER_MESSAGE_CHARS } from "@/lib/chat-limits";
 
 // Caps how tall the composer can grow before it scrolls internally instead,
 // matches the Claude/ChatGPT feel: starts at one line, grows with content,
@@ -31,6 +32,14 @@ export function ChatComposer({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // The server rejects anything above this, and pasting a long spec or log into
+  // the composer is exactly what this audience does. Without the cap that came
+  // back as a bare "Invalid request" with no hint what went wrong, so the limit
+  // is enforced where it can still be seen — and only announced once it's close
+  // enough to matter, rather than sitting there as permanent chrome.
+  const remaining = MAX_USER_MESSAGE_CHARS - input.length;
+  const showRemaining = remaining <= MAX_USER_MESSAGE_CHARS * 0.1;
+
   // Auto-grow with content, one line at rest, up to MAX_TEXTAREA_HEIGHT, then
   // it scrolls internally. Re-measuring against "auto" first (rather than
   // just reading scrollHeight) is what lets it shrink back down too, e.g.
@@ -50,6 +59,7 @@ export function ChatComposer({
           rows={1}
           value={input}
           placeholder={placeholder}
+          maxLength={MAX_USER_MESSAGE_CHARS}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -62,6 +72,18 @@ export function ChatComposer({
         {/* No permanent "Enter sendet…" hint here, Enter-to-send is a
             convention every chat app already teaches; repeating it on every
             single message would be chrome, not help. */}
+        {showRemaining && (
+          <span
+            aria-live="polite"
+            className={
+              remaining === 0
+                ? "pointer-events-none absolute bottom-3 right-14 text-[11px] tabular-nums text-destructive"
+                : "pointer-events-none absolute bottom-3 right-14 text-[11px] tabular-nums text-muted-foreground"
+            }
+          >
+            {remaining === 0 ? "Maximale Länge erreicht" : `noch ${remaining} Zeichen`}
+          </span>
+        )}
         {loading ? (
           <Button
             onClick={onStop}

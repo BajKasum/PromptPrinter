@@ -1,5 +1,9 @@
 import { chatRequestSchema, type ChatRequest, type ChatMessage } from "@/lib/schemas";
-import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
+import {
+  MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_TRANSCRIPT_MESSAGES,
+  MAX_USER_MESSAGE_CHARS,
+} from "@/lib/chat-limits";
 import { rateLimit, rateLimitKey, reserveMonthlyQuota } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { chatCompleteStream, llmConfig } from "@/lib/llm";
@@ -52,18 +56,68 @@ function normalizeTranscript(body: unknown): unknown {
   return { ...withMessages, messages: withMessages.messages.slice(-MAX_TRANSCRIPT_MESSAGES) };
 }
 
+// Same idea as normalizeTranscript, for message *length* (QA finding F-2):
+// an assistant reply stored before this fix — or produced by a BYOK custom
+// endpoint that ignores the max_tokens we send — can exceed what the schema
+// accepts, and replaying it would fail validation forever. Clamping it here
+// makes any historically stored reply replayable.
+//
+// Deliberately only assistant messages: user content has always been bounded by
+// the same ceiling it is validated against, so nothing stored can exceed it,
+// and silently truncating what somebody just typed would be worse than telling
+// them (the composer caps the input, and an over-long direct POST gets a clear
+// 400 — see describeValidationFailure).
+function clampStoredReplies(body: unknown): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  const withMessages = body as { messages?: unknown };
+  if (!Array.isArray(withMessages.messages)) return body;
+
+  let changed = false;
+  const messages = withMessages.messages.map((entry) => {
+    if (!entry || typeof entry !== "object") return entry;
+    const message = entry as { role?: unknown; content?: unknown };
+    if (
+      message.role !== "assistant" ||
+      typeof message.content !== "string" ||
+      message.content.length <= MAX_ASSISTANT_MESSAGE_CHARS
+    ) {
+      return entry;
+    }
+    changed = true;
+    return { ...message, content: truncate(message.content, MAX_ASSISTANT_MESSAGE_CHARS) };
+  });
+
+  return changed ? { ...withMessages, messages } : body;
+}
+
+// A German, actionable detail for the validation failures a real client can
+// actually produce. Everything else stays generic — the full pass over raw
+// English/provider error text is a separate cleanup (QA finding U-4).
+function describeValidationFailure(
+  issues: { code: string; path: (string | number)[] }[]
+): string {
+  const overlongMessage = issues.some(
+    (issue) =>
+      issue.code === "too_big" && issue.path[0] === "messages" && issue.path.at(-1) === "content"
+  );
+  if (overlongMessage) {
+    return `Deine Nachricht ist zu lang, höchstens ${MAX_USER_MESSAGE_CHARS.toLocaleString("de-CH")} Zeichen pro Nachricht.`;
+  }
+  return "Die Anfrage konnte nicht verarbeitet werden. Lade die Seite neu und versuch es erneut.";
+}
+
 export async function POST(req: Request) {
   // 1. Parse + validate the transcript the client replays each turn.
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return problem(400, "Invalid JSON body");
+    return problem(400, "Die Anfrage konnte nicht gelesen werden. Lade die Seite neu.");
   }
 
-  const parsed = chatRequestSchema.safeParse(normalizeTranscript(body));
+  const parsed = chatRequestSchema.safeParse(clampStoredReplies(normalizeTranscript(body)));
   if (!parsed.success) {
-    return problem(400, "Invalid request", {
+    return problem(400, describeValidationFailure(parsed.error.issues), {
       issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
     });
   }
@@ -352,6 +406,13 @@ async function persistTurn(
   // The client appends the user message before posting, so the last entry is
   // always the new user turn. Store it alongside the assistant reply.
   const newUser = input.messages[input.messages.length - 1];
+  // Never store a reply the request contract couldn't accept back: it would be
+  // replayed on the next turn and fail validation, which is exactly how a chat
+  // used to die permanently (QA finding F-2). The provider's own max_tokens
+  // keeps real replies far below this, so it only ever fires for a BYOK custom
+  // endpoint that ignores it — in which case a truncated stored reply beats an
+  // unusable chat. The client keeps the untruncated text it already rendered.
+  const storedReply = truncate(reply, MAX_ASSISTANT_MESSAGE_CHARS);
   const { error: msgErr } = await supabase.from("messages").insert([
     {
       conversation_id: conversationId,
@@ -363,7 +424,7 @@ async function persistTurn(
       conversation_id: conversationId,
       user_id: userId,
       role: "assistant",
-      content: reply,
+      content: storedReply,
     },
   ]);
   if (msgErr) throw msgErr;
@@ -520,8 +581,12 @@ async function buildFilesContext(
   return block;
 }
 
+// Caps `s` at `max` characters *including* the ellipsis. The ellipsis used to be
+// appended after slicing to `max`, making the result max + 1 — irrelevant for the
+// context budgets below, but off by exactly the one character that would push a
+// clamped reply back over the schema limit it is being clamped to.
 function truncate(s: string, max: number): string {
-  return s.length > max ? `${s.slice(0, max)}…` : s;
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
 
 // A placeholder answer that mirrors the real shape (a fenced, paste-ready

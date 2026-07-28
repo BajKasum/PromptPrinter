@@ -1,12 +1,29 @@
 import { z } from "zod";
-import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
+import {
+  MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_TRANSCRIPT_MESSAGES,
+  MAX_USER_MESSAGE_CHARS,
+} from "@/lib/chat-limits";
 
 // Chat pack: a multi-turn conversation. `messages` is the running transcript
 // the client replays on every turn (the route itself stays stateless).
-export const chatMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string().trim().min(1, "Leere Nachricht.").max(8000),
-});
+//
+// Split by role rather than one shared shape: the two directions are bounded by
+// completely different things — a user message by what someone can reasonably
+// type, an assistant message by the model's own output budget, which is several
+// times larger. Sharing one ceiling meant a long (i.e. good) reply failed
+// validation the moment it was replayed, killing the chat for good. See
+// MAX_ASSISTANT_MESSAGE_CHARS for the full story.
+export const chatMessageSchema = z.discriminatedUnion("role", [
+  z.object({
+    role: z.literal("user"),
+    content: z.string().trim().min(1, "Leere Nachricht.").max(MAX_USER_MESSAGE_CHARS),
+  }),
+  z.object({
+    role: z.literal("assistant"),
+    content: z.string().trim().min(1, "Leere Nachricht.").max(MAX_ASSISTANT_MESSAGE_CHARS),
+  }),
+]);
 
 export const chatRequestSchema = z.object({
   // No longer selects behavior, one system prompt for every chat (see

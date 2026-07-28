@@ -225,6 +225,56 @@ describe("POST /api/chat", () => {
     });
   });
 
+  describe("long assistant replies (QA finding F-2)", () => {
+    it("accepts a replayed reply far longer than a user message may be", async () => {
+      // ~24k characters is what DEFAULT_MAX_OUTPUT_TOKENS (6144) actually
+      // produces — the shape of a good, complete prompt, and three times the
+      // user ceiling that used to be applied to it as well.
+      const res = await POST(
+        req({
+          mode: "general",
+          messages: [
+            { role: "user", content: "Baue mir eine Todo-App" },
+            { role: "assistant", content: "P".repeat(24_000) },
+            { role: "user", content: "Mach ihn kürzer" },
+          ],
+        })
+      );
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalled();
+    });
+
+    it("clamps a stored reply that is over even the assistant ceiling instead of 400ing", async () => {
+      const res = await POST(
+        req({
+          mode: "general",
+          messages: [
+            { role: "user", content: "Baue mir eine Todo-App" },
+            { role: "assistant", content: "P".repeat(60_000) },
+            { role: "user", content: "Mach ihn kürzer" },
+          ],
+        })
+      );
+
+      expect(res.status).toBe(200);
+      const sent = chatCompleteStream.mock.calls[0][0] as { messages: { content: string }[] };
+      const replayed = sent.messages.find((m) => m.content.startsWith("P"));
+      expect(replayed?.content.length).toBe(40_000);
+    });
+
+    it("still rejects an over-long user message, with a German detail", async () => {
+      const res = await POST(
+        req({ mode: "general", messages: [{ role: "user", content: "x".repeat(8_001) }] })
+      );
+
+      expect(res.status).toBe(400);
+      const json = (await res.json()) as { detail: string };
+      expect(json.detail).toContain("zu lang");
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+  });
+
   describe("input validation", () => {
     it("rejects a malformed body with 400 before touching auth", async () => {
       const res = await POST(

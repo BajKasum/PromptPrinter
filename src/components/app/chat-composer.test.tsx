@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatComposer } from "./chat-composer";
+import { MAX_USER_MESSAGE_CHARS } from "@/lib/chat-limits";
 
 function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
   const onInputChange = vi.fn();
@@ -22,6 +23,34 @@ function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {
 }
 
 describe("ChatComposer", () => {
+  // QA finding F-2/E-1: the server rejects anything past this, and pasting a
+  // long spec or log is exactly what this audience does. Without the cap that
+  // came back as a bare "Invalid request".
+  describe("length cap", () => {
+    it("caps the textarea at the ceiling the server enforces", () => {
+      setup({ input: "" });
+      expect(screen.getByRole("textbox")).toHaveAttribute(
+        "maxlength",
+        String(MAX_USER_MESSAGE_CHARS)
+      );
+    });
+
+    it("stays quiet while the limit is nowhere near", () => {
+      setup({ input: "kurz" });
+      expect(screen.queryByText(/noch \d+ Zeichen/)).not.toBeInTheDocument();
+    });
+
+    it("counts down once the input gets close to the limit", () => {
+      setup({ input: "x".repeat(MAX_USER_MESSAGE_CHARS - 40) });
+      expect(screen.getByText("noch 40 Zeichen")).toBeInTheDocument();
+    });
+
+    it("says so plainly at the limit instead of showing zero", () => {
+      setup({ input: "x".repeat(MAX_USER_MESSAGE_CHARS) });
+      expect(screen.getByText("Maximale Länge erreicht")).toBeInTheDocument();
+    });
+  });
+
   it("disables send while input is empty", () => {
     setup({ input: "" });
     expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();

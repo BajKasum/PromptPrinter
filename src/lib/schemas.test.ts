@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { chatRequestSchema } from "@/lib/schemas";
-import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
+import {
+  MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_TRANSCRIPT_MESSAGES,
+  MAX_USER_MESSAGE_CHARS,
+} from "@/lib/chat-limits";
 
 // The request contract was the direct cause of two chat-killing bugs (QA
 // findings F-1 and F-2): limits meant for user input were applied to the whole
@@ -65,5 +69,62 @@ describe("chatRequestSchema", () => {
       request({ messages: transcript(MAX_TRANSCRIPT_MESSAGES + 1) })
     );
     expect(parsed.success).toBe(false);
+  });
+
+  // QA finding F-2: the two ceilings must not be the same number. An assistant
+  // reply is bounded by the model's output budget (~20-25k characters at
+  // DEFAULT_MAX_OUTPUT_TOKENS), a user message by what someone types.
+  describe("per-role length ceilings", () => {
+    it("gives assistant replies real headroom over user messages", () => {
+      expect(MAX_ASSISTANT_MESSAGE_CHARS).toBeGreaterThan(MAX_USER_MESSAGE_CHARS);
+      // Must clear what the model can actually emit, or a good reply kills the chat.
+      expect(MAX_ASSISTANT_MESSAGE_CHARS).toBeGreaterThanOrEqual(25_000);
+    });
+
+    it("accepts an assistant reply at the assistant ceiling", () => {
+      const parsed = chatRequestSchema.safeParse(
+        request({
+          messages: [
+            { role: "user", content: "Baue mir eine Todo-App" },
+            { role: "assistant", content: "P".repeat(MAX_ASSISTANT_MESSAGE_CHARS) },
+            { role: "user", content: "Kürzer bitte" },
+          ],
+        })
+      );
+      expect(parsed.success).toBe(true);
+    });
+
+    it("accepts an assistant reply that a user message may not be", () => {
+      const parsed = chatRequestSchema.safeParse(
+        request({
+          messages: [
+            { role: "user", content: "Baue mir eine Todo-App" },
+            { role: "assistant", content: "P".repeat(MAX_USER_MESSAGE_CHARS + 1) },
+            { role: "user", content: "Kürzer bitte" },
+          ],
+        })
+      );
+      expect(parsed.success).toBe(true);
+    });
+
+    it("rejects a user message above the user ceiling", () => {
+      const parsed = chatRequestSchema.safeParse(
+        request({ messages: [{ role: "user", content: "x".repeat(MAX_USER_MESSAGE_CHARS + 1) }] })
+      );
+      expect(parsed.success).toBe(false);
+    });
+
+    it("rejects an assistant reply above the assistant ceiling", () => {
+      const parsed = chatRequestSchema.safeParse(
+        request({
+          messages: [
+            { role: "user", content: "Baue mir eine Todo-App" },
+            { role: "assistant", content: "P".repeat(MAX_ASSISTANT_MESSAGE_CHARS + 1) },
+            { role: "user", content: "Kürzer bitte" },
+          ],
+        })
+      );
+      expect(parsed.success).toBe(false);
+    });
   });
 });

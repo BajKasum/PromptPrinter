@@ -23,3 +23,28 @@
  * touching the client, not context the model actually sees.
  */
 export const MAX_TRANSCRIPT_MESSAGES = 24;
+
+/**
+ * Longest message a user may send. Enforced in the composer (so it can't
+ * normally be hit) and by the schema (so a direct POST can't bypass it).
+ */
+export const MAX_USER_MESSAGE_CHARS = 8000;
+
+/**
+ * Longest assistant reply that may be stored and replayed.
+ *
+ * This used to share the user ceiling above, and that single shared number was
+ * a chat-killer (QA finding F-2): an assistant reply is bounded by the model's
+ * own output budget, not by what someone can type. llm.ts's
+ * DEFAULT_MAX_OUTPUT_TOKENS of 6144 is worth roughly 20-25k characters, so a
+ * genuinely good, complete prompt routinely blew past 8000 — and because the
+ * reply is stored and replayed on the next turn, the chat then failed
+ * validation forever. The better the answer, the surer the chat died.
+ *
+ * 40000 sits comfortably above what that token budget can produce while still
+ * bounding a BYOK custom endpoint that ignores the max_tokens we send (llm.ts
+ * only caps those at MAX_RESPONSE_BYTES, which is about raw memory, not a
+ * sensible message length). Raise DEFAULT_MAX_OUTPUT_TOKENS and this has to
+ * move with it.
+ */
+export const MAX_ASSISTANT_MESSAGE_CHARS = 40000;
