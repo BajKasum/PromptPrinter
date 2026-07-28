@@ -243,7 +243,7 @@ export async function POST(req: Request) {
       .eq("user_id", userId)
       .eq("role", "assistant")
       .gte("created_at", monthStart),
-    getUserOverride(supabase, userId),
+    getUserOverride(userId),
   ]);
   const isAdmin = profile?.is_admin ?? false;
   const rawPlan = (profile?.plan as string | undefined) ?? "free";

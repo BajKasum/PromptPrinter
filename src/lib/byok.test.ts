@@ -7,8 +7,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const decrypt = vi.fn();
 vi.mock("@/lib/crypto", () => ({ decrypt: (blob: string) => decrypt(blob) }));
 
-const { getConfiguredProviders, getCustomProvider, getUserOverride } = await import("@/lib/byok");
-
 type Row = Record<string, unknown> | null;
 
 // Minimal PostgREST-shaped stub: every filter returns the builder, and the
@@ -22,36 +20,46 @@ function supabaseWith(result: { data: Row | Row[] }) {
   return { from: () => chain } as never;
 }
 
+// QA finding S-3: getUserOverride reads encrypted_key through the service-role
+// admin client now (the `authenticated` role lost that column's SELECT grant,
+// see migration 0020), not the request-scoped client the other two exports
+// below still use — so it gets its own stub, swapped in per test via the
+// module-level mock rather than passed as an argument.
+let adminResult: { data: Row } = { data: null };
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => supabaseWith(adminResult),
+}));
+
+const { getConfiguredProviders, getCustomProvider, getUserOverride } = await import("@/lib/byok");
+
 describe("getUserOverride", () => {
   beforeEach(() => {
     decrypt.mockReset();
     decrypt.mockImplementation((blob: string) => `plain:${blob}`);
+    adminResult = { data: null };
   });
 
   it("returns null when the user configured no key", async () => {
-    expect(await getUserOverride(supabaseWith({ data: null }), "user-1")).toBeNull();
+    adminResult = { data: null };
+    expect(await getUserOverride("user-1")).toBeNull();
   });
 
   it("decrypts a named provider's key", async () => {
-    const override = await getUserOverride(
-      supabaseWith({ data: { provider: "anthropic", encrypted_key: "blob" } }),
-      "user-1"
-    );
+    adminResult = { data: { provider: "anthropic", encrypted_key: "blob" } };
+    const override = await getUserOverride("user-1");
     expect(override).toEqual({ provider: "anthropic", apiKey: "plain:blob" });
   });
 
   it("carries endpoint and model for a custom provider", async () => {
-    const override = await getUserOverride(
-      supabaseWith({
-        data: {
-          provider: "custom",
-          encrypted_key: "blob",
-          base_url: "https://api.example.com/v1/chat/completions",
-          model: "some-model",
-        },
-      }),
-      "user-1"
-    );
+    adminResult = {
+      data: {
+        provider: "custom",
+        encrypted_key: "blob",
+        base_url: "https://api.example.com/v1/chat/completions",
+        model: "some-model",
+      },
+    };
+    const override = await getUserOverride("user-1");
     expect(override).toEqual({
       provider: "custom",
       apiKey: "plain:blob",
@@ -67,20 +75,16 @@ describe("getUserOverride", () => {
     decrypt.mockImplementation(() => {
       throw new Error("bad auth tag");
     });
-    const override = await getUserOverride(
-      supabaseWith({ data: { provider: "openai", encrypted_key: "tampered" } }),
-      "user-1"
-    );
+    adminResult = { data: { provider: "openai", encrypted_key: "tampered" } };
+    const override = await getUserOverride("user-1");
     expect(override).toBeNull();
   });
 
   it("degrades to null on an inconsistent custom row rather than crashing", async () => {
-    const override = await getUserOverride(
-      supabaseWith({
-        data: { provider: "custom", encrypted_key: "blob", base_url: null, model: null },
-      }),
-      "user-1"
-    );
+    adminResult = {
+      data: { provider: "custom", encrypted_key: "blob", base_url: null, model: null },
+    };
+    const override = await getUserOverride("user-1");
     expect(override).toBeNull();
   });
 });

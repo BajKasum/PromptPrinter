@@ -1,4 +1,5 @@
 import { decrypt } from "@/lib/crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { createClient } from "@/lib/supabase/server";
 import type { ByokProvider, LlmOverride } from "@/lib/llm";
 
@@ -10,12 +11,21 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
  * fails to decrypt, which degrades to "no override" rather than a hard
  * failure, since /api/chat has a working fallback either way: the server's
  * own configured provider).
+ *
+ * QA finding S-3: `encrypted_key` used to be readable by the `authenticated`
+ * role (a blanket table-level SELECT grant covered every column), which a
+ * request-scoped client runs as — so the same read an ordinary signed-in
+ * browser session could also have made. Migration 0020 revoked that column
+ * from `authenticated`'s grant; this function now reads through the
+ * service-role admin client instead (no request-scoped `supabase` param
+ * anymore, it wouldn't be able to see `encrypted_key` either way), the one
+ * place that legitimately needs the ciphertext. The owner condition stays an
+ * explicit `.eq("user_id", userId)` rather than relying on RLS, since the
+ * admin client bypasses RLS entirely (defense-in-depth, same principle as
+ * every other user-scoped query in this project).
  */
-export async function getUserOverride(
-  supabase: SupabaseServerClient,
-  userId: string
-): Promise<LlmOverride | null> {
-  const { data } = await supabase
+export async function getUserOverride(userId: string): Promise<LlmOverride | null> {
+  const { data } = await createAdminClient()
     .from("user_api_keys")
     .select("provider, encrypted_key, base_url, model")
     .eq("user_id", userId)
