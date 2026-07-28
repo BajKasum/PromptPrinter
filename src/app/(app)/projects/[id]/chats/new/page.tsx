@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/components/app/chat";
 import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
+import { normalizeTarget } from "@/lib/target-tools";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,9 @@ export default async function NewProjectChatPage({ params }: { params: Params })
       </FadeIn>
       <Chat
         mode={mode}
+        // Seeded from the workspace rail's "Ziel-KI" so a project chat starts
+        // knowing what the project already says it builds for.
+        target={normalizeTarget(project.context.target)}
         projectId={project.id}
         hasResults={(count ?? 0) > 0}
         name={name}

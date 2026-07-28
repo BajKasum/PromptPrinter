@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/components/app/chat";
 import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
+import { normalizeTarget } from "@/lib/target-tools";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +76,11 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       </FadeIn>
       <Chat
         mode={mode}
-        target={(convo.target as string | null) ?? undefined}
+        // The chat's own stored target wins; a chat started before the project
+        // had one falls back to the rail's "Ziel-KI" so the two can't disagree.
+        target={
+          normalizeTarget(convo.target as string | null) ?? normalizeTarget(project.context.target)
+        }
         projectId={project.id}
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}

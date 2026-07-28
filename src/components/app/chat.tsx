@@ -17,6 +17,7 @@ import { ChatComposer } from "@/components/app/chat-composer";
 import { resolveVariant, resolveEmptyState, type ChatMode } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
+import { normalizeTarget } from "@/lib/target-tools";
 
 // A stable id per message (real DB id for history loaded from the server,
 // a client-generated one for anything created during this session) is the
@@ -41,7 +42,7 @@ function formatRetryDelay(seconds: number): string {
 // empty-state copy along the way.
 export function Chat({
   mode,
-  target,
+  target: initialTarget,
   projectId,
   initialMessages,
   initialConversationId,
@@ -65,6 +66,12 @@ export function Chat({
   const { heading, placeholder } = resolveEmptyState(variant, hasResults, name);
 
   const router = useRouter();
+  // The tool this prompt is being written for. Was a read-only prop with no
+  // control anywhere, so conversations.target was NULL in every row while the
+  // pricing page advertised "Für jede Ziel-KI" (QA finding F-3). Seeded from
+  // the stored conversation, or from the project's own "Ziel-KI" field for a
+  // fresh project chat, so the rail and the chat can't disagree.
+  const [target, setTarget] = useState<string | undefined>(normalizeTarget(initialTarget));
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
   const [conversationId, setConversationId] = useState<string | undefined>(
     initialConversationId
@@ -409,6 +416,8 @@ export function Chat({
         loading={busy}
         onSend={() => send()}
         onStop={stop}
+        target={target}
+        onTargetChange={setTarget}
       />
     </div>
   );

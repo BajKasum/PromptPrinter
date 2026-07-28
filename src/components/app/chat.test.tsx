@@ -397,4 +397,65 @@ describe("Chat", () => {
       expect(live).not.toHaveTextContent("Hier ist dein Prompt");
     });
   });
+  // QA finding F-3: `target` was threaded through schema, route, system prompt,
+  // DB column and three display sites, with no control to set it anywhere —
+  // conversations.target was NULL in every row while the pricing page sold
+  // "Für jede Ziel-KI" as a Free feature.
+  describe("target tool (QA finding F-3)", () => {
+    it("offers a picker and sends nothing until one is chosen", async () => {
+      mockStreamingFetch(["ok"], { conversationId: "conv-1" });
+      render(<Chat mode="general" />);
+
+      expect(screen.getByRole("button", { name: /Ziel-Tool wählen/ })).toBeInTheDocument();
+      await userEvent.type(screen.getByRole("textbox"), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+
+      const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+      expect(body.target).toBeUndefined();
+    });
+
+    it("sends the chosen tool with the turn", async () => {
+      mockStreamingFetch(["ok"], { conversationId: "conv-1" });
+      render(<Chat mode="general" />);
+
+      await userEvent.click(screen.getByRole("button", { name: /Ziel-Tool wählen/ }));
+      await userEvent.click(screen.getByRole("option", { name: "Cursor" }));
+      await userEvent.type(screen.getByRole("textbox"), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+
+      const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+      expect(body.target).toBe("Cursor");
+    });
+
+    it("shows the current target on the trigger", async () => {
+      render(<Chat mode="general" target="Lovable" />);
+      expect(screen.getByRole("button", { name: /Für Lovable/ })).toBeInTheDocument();
+    });
+
+    it("accepts a tool that is not on the list, since new ones keep appearing", async () => {
+      mockStreamingFetch(["ok"], { conversationId: "conv-1" });
+      render(<Chat mode="general" />);
+
+      await userEvent.click(screen.getByRole("button", { name: /Ziel-Tool wählen/ }));
+      await userEvent.type(screen.getByLabelText("Anderes Ziel-Tool"), "Firebase Studio{Enter}");
+      await userEvent.type(screen.getByRole("textbox"), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+
+      const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+      expect(body.target).toBe("Firebase Studio");
+    });
+
+    it("can be cleared back to no particular tool", async () => {
+      mockStreamingFetch(["ok"], { conversationId: "conv-1" });
+      render(<Chat mode="general" target="Lovable" />);
+
+      await userEvent.click(screen.getByRole("button", { name: /Für Lovable/ }));
+      await userEvent.click(screen.getByRole("button", { name: /Kein bestimmtes Tool/ }));
+      await userEvent.type(screen.getByRole("textbox"), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+
+      const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+      expect(body.target).toBeUndefined();
+    });
+  });
 });

@@ -5,6 +5,7 @@ import { Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { MAX_USER_MESSAGE_CHARS } from "@/lib/chat-limits";
+import { TargetPicker } from "@/components/app/target-picker";
 
 // Caps how tall the composer can grow before it scrolls internally instead,
 // matches the Claude/ChatGPT feel: starts at one line, grows with content,
@@ -21,6 +22,8 @@ export function ChatComposer({
   loading,
   onSend,
   onStop,
+  target,
+  onTargetChange,
 }: {
   input: string;
   onInputChange: (value: string) => void;
@@ -29,6 +32,9 @@ export function ChatComposer({
   onSend: () => void;
   /** Stops an in-flight reply (aborts the fetch), the composer's button switches to this while loading. */
   onStop: () => void;
+  /** The build tool the prompt is tailored for; undefined means "not specified". */
+  target?: string;
+  onTargetChange?: (next: string | undefined) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -53,6 +59,14 @@ export function ChatComposer({
 
   return (
     <div className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5">
+      {/* Above the input, not inside it: it qualifies what gets written, so it
+          belongs next to the writing, and it stays reachable in a chat that
+          already has turns (an empty-state-only control would strand those). */}
+      {onTargetChange && (
+        <div className="mb-2">
+          <TargetPicker value={target} onChange={onTargetChange} disabled={loading} />
+        </div>
+      )}
       <div className="relative rounded-2xl border border-border-strong bg-surface-raised">
         <Textarea
           ref={textareaRef}
