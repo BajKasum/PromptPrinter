@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Send } from "lucide-react";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { ChatList, type ChatListItem } from "@/components/app/chat-list";
 import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
@@ -26,9 +26,24 @@ type ConversationQueryRow = {
 // Ergebnisse leben unter ./results, jeder Chat unter ./chats/[cid].
 export default async function ProjectOverviewPage({ params }: { params: Params }) {
   const { id } = await params;
-  const project = await getProject(id);
+  // Resolves + ownership-scopes the project (404s otherwise); the name/fields
+  // aren't needed on this page, unlike results/page.tsx's own call to this.
+  await getProject(id);
 
   const supabase = await createClient();
+
+  // A workspace with no chats yet had nothing on this page besides a card
+  // whose entire content was "click here to start one" — the same action the
+  // link right above it already offers, so reaching it cost an extra
+  // navigation for no reason (QA finding N-2). Skip straight to the composer
+  // instead. The rail (Anweisungen/Struktur/Dateien) is unaffected either
+  // way, it lives in the shared workspace layout, not this page.
+  const { count: chatCount } = await supabase
+    .from("conversations")
+    .select("id", { count: "exact", head: true })
+    .eq("project_id", id);
+  if (!chatCount) redirect(`/projects/${id}/chats/new`);
+
   const { data: raw } = await supabase
     .from("conversations")
     .select("id, title, target, updated_at, messages(count)")
@@ -57,25 +72,12 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
         </Link>
       </FadeIn>
 
+      {/* chats is never empty here, the redirect above already sent a
+          zero-chat project straight to the composer. */}
       <div className="mt-4">
-        {chats.length === 0 ? (
-          <FadeIn>
-            <div className="card-surface p-8 text-center">
-              <AnimatedMascot state="curious" size={72} priority className="mx-auto mb-3" />
-              <p className="text-[14px] font-semibold text-foreground">
-                Noch kein Chat in „{project.name}“
-              </p>
-              <p className="mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-                Starte oben den ersten, ich kenne dein Briefing und deine Struktur
-                aus der Seitenleiste automatisch.
-              </p>
-            </div>
-          </FadeIn>
-        ) : (
-          <FadeIn>
-            <ChatList chats={chats} basePath={`/projects/${id}/chats`} />
-          </FadeIn>
-        )}
+        <FadeIn>
+          <ChatList chats={chats} basePath={`/projects/${id}/chats`} />
+        </FadeIn>
       </div>
     </div>
   );

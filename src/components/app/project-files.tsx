@@ -114,12 +114,22 @@ export function ProjectFiles({
     setError(null);
     try {
       const supabase = createClient();
-      await supabase.storage.from("project-files").remove([f.storagePath]);
+      // DB row first, storage object second (QA finding F-10). The old order
+      // was the wrong way round: if the storage.remove() succeeded but the
+      // delete() below failed, the row stayed behind pointing at an object
+      // that no longer existed — the file kept showing in the rail, silently
+      // empty, and buildFilesContext could only guess why by listing it under
+      // "not shown". A row without a storage object is a real, visible bug; an
+      // orphaned storage object without a row is invisible and harmless (see
+      // P-6), so that is the direction any failure here should fail toward.
       const { error: deleteError } = await supabase
         .from("project_files")
         .delete()
         .eq("id", f.id);
       if (deleteError) throw deleteError;
+      // Best-effort: the row is already gone, so a failure here can only ever
+      // leave the harmless kind of orphan, not the visible one above.
+      await supabase.storage.from("project-files").remove([f.storagePath]);
       setFiles((prev) => prev.filter((x) => x.id !== f.id));
       router.refresh();
     } catch {

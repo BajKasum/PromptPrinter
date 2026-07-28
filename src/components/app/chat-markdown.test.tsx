@@ -27,10 +27,31 @@ describe("MarkdownMessage", () => {
         content={"# Title\n\n- one\n- two\n\n**bold** and *em*"}
       />
     );
-    expect(screen.getByRole("heading", { level: 2, name: "Title" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Title" })).toBeInTheDocument();
     expect(screen.getByText("one")).toBeInTheDocument();
     expect(screen.getByText("two")).toBeInTheDocument();
     expect(screen.getByText("bold")).toBeInTheDocument();
+  });
+
+  // QA finding A-4: every markdown heading level used to shift one DOM level
+  // deeper (h1→h2, h2→h3, h3→h4), so a reply opening straight with ### landed
+  // on h4 and skipped past whatever h2/h3 the surrounding page already had.
+  // All levels render on the same h3 now, distinguished only visually.
+  it("renders every markdown heading level on the same DOM heading level", () => {
+    render(
+      <MarkdownMessage
+        content={"# One\n\n## Two\n\n### Three\n\n#### Four\n\n##### Five\n\n###### Six"}
+      />
+    );
+    for (const name of ["One", "Two", "Three", "Four", "Five", "Six"]) {
+      expect(screen.getByRole("heading", { level: 3, name })).toBeInTheDocument();
+    }
+  });
+
+  it("does not skip straight to a deep level when a reply opens with ###", () => {
+    render(<MarkdownMessage content={"### Section"} />);
+    expect(screen.getByRole("heading", { level: 3, name: "Section" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 4 })).not.toBeInTheDocument();
   });
 
   it("opens links in a new tab safely", () => {

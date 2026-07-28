@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 // Guards the fix for QA finding S-1: /api/chat used to serve anonymous callers,
@@ -155,6 +155,61 @@ describe("POST /api/chat", () => {
 
       expect(chatCompleteStream).not.toHaveBeenCalled();
       expect(body).toContain("Demo-Antwort");
+    });
+  });
+
+  // QA finding C-8: an unconfigured production deploy used to answer every
+  // user with the stub template — a plausible-looking placeholder — instead
+  // of failing visibly. NODE_ENV defaults to "test" for the rest of this file,
+  // so these are the only cases that exercise the production branch.
+  describe("unconfigured in production (QA finding C-8)", () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    afterEach(() => {
+      vi.stubEnv("NODE_ENV", originalNodeEnv ?? "test");
+    });
+
+    it("refuses with 503 instead of answering with the stub template", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      llmConfig.mockReturnValue(null);
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(503);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+      const json = (await res.json()) as { detail: string };
+      expect(json.detail).not.toContain("Demo-Antwort");
+    });
+
+    it("releases any held reservation when refusing", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      llmConfig.mockReturnValue(null);
+      const release = vi.fn().mockResolvedValue(undefined);
+      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
+
+      await POST(req());
+
+      expect(release).toHaveBeenCalled();
+    });
+
+    it("still answers for real once a provider is configured", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      // llmConfig already returns a real provider via the shared beforeEach.
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalled();
+    });
+
+    it("still answers for real on a BYOK override, even with no server provider", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      llmConfig.mockReturnValue(null);
+      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalled();
     });
   });
 

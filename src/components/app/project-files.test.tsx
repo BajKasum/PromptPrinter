@@ -158,7 +158,28 @@ describe("ProjectFiles", () => {
     expect(filesDelete).toHaveBeenCalledTimes(1);
   });
 
-  it("toasts an error when delete fails and keeps the file listed", async () => {
+  // QA finding F-10: the DB row must go first. The old order (storage, then
+  // row) meant a failed row-delete left a row pointing at an object that no
+  // longer existed — a file that stayed listed but was silently empty. A row
+  // without a storage object is visible and wrong; the reverse (an orphaned
+  // object with no row, see P-6) is invisible and harmless, which is the
+  // direction any partial failure here should fail toward.
+  it("deletes the DB row before the storage object", async () => {
+    const initialFiles: ProjectFile[] = [
+      { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
+    ];
+    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
+    await screen.findByText("0/10");
+
+    expect(filesDelete.mock.invocationCallOrder[0]).toBeLessThan(
+      storageRemove.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("toasts an error when the row delete fails, keeps the file listed, and never touches storage", async () => {
     filesDelete.mockResolvedValue({ error: { message: "nope" } });
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "path", sizeBytes: 42, createdAt: new Date().toISOString() },
@@ -172,5 +193,8 @@ describe("ProjectFiles", () => {
       expect.objectContaining({ variant: "error" })
     );
     expect(screen.getByText("notes.md")).toBeInTheDocument();
+    // The row-delete failed, so the file object it would have pointed to must
+    // stay untouched rather than becoming an orphan of the other kind.
+    expect(storageRemove).not.toHaveBeenCalled();
   });
 });

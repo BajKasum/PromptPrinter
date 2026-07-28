@@ -288,6 +288,24 @@ export async function POST(req: Request) {
     if (budget) reservations.push(budget.release);
   }
 
+  // 4c. Refuse in production rather than silently answering with the stub
+  //     template (QA finding C-8). Stub mode is a deliberate feature for
+  //     development and tests — the whole flow stays testable without any
+  //     provider key — but if it were ever reached in production (a missing
+  //     ZAI_API_KEY/GEMINI_API_KEY, only warned about at boot, see
+  //     assertEnv() in lib/env.ts) it would be a silent total outage of the
+  //     one thing this product does: every user gets a plausible-looking
+  //     placeholder instead of a real answer, with nothing anywhere signaling
+  //     that anything is wrong. A BYOK override always bypasses this, it
+  //     never touches the server's own configuration.
+  if (!llmConfig() && !override && process.env.NODE_ENV === "production") {
+    await releaseReservations();
+    return problem(
+      503,
+      "Der Chat ist gerade nicht richtig eingerichtet. Das liegt nicht an dir, bitte versuch es später erneut."
+    );
+  }
+
   // 5. Build the system instruction. One system prompt for every chat now
   //    (CHAT_SYSTEM_PROMPT already asks about the target tool itself when it
   //    isn't known); `mode` on the request/stored conversation is legacy data

@@ -16,14 +16,41 @@ export function MarkdownMessage({ content }: { content: string }) {
         remarkPlugins={[remarkGfm]}
         components={{
           p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+          // Every markdown level renders on the same <h3> DOM level, not a
+          // level-for-level shift (QA finding A-4). The old mapping (h1→h2,
+          // h2→h3, h3→h4) compounded whatever depth the model happened to
+          // pick: a reply opening straight with ### — a common model habit,
+          // treating it as "the" section header — landed on h4, skipping
+          // both h2 and h3 in the surrounding page (a project chat already
+          // has h1 the project name and h2 the chat title before any reply
+          // content starts). One fixed level can't erase every skip in every
+          // context (a standalone chat has only its own h1 above the reply,
+          // so h3 alone still skips h2 there), but it removes the
+          // compounding, and it's a straightforward mapping that doesn't need
+          // the page context threaded down into a markdown renderer that
+          // otherwise has none of it.
+          //
+          // The three sizes are kept as a purely visual cue for a reply with
+          // real nested structure (# Overview / ## Requirements / ###
+          // Details) — same semantic level, still visually distinguishable —
+          // rather than collapsing to one indistinguishable size.
           h1: ({ children }) => (
-            <h2 className="mt-1 text-[16px] font-semibold text-foreground">{children}</h2>
+            <h3 className="mt-1 text-[16px] font-semibold text-foreground">{children}</h3>
           ),
           h2: ({ children }) => (
             <h3 className="mt-1 text-[15px] font-semibold text-foreground">{children}</h3>
           ),
           h3: ({ children }) => (
-            <h4 className="mt-1 text-[14px] font-semibold text-foreground">{children}</h4>
+            <h3 className="mt-1 text-[14px] font-semibold text-foreground">{children}</h3>
+          ),
+          h4: ({ children }) => (
+            <h3 className="mt-1 text-[14px] font-semibold text-foreground">{children}</h3>
+          ),
+          h5: ({ children }) => (
+            <h3 className="mt-1 text-[14px] font-semibold text-foreground">{children}</h3>
+          ),
+          h6: ({ children }) => (
+            <h3 className="mt-1 text-[14px] font-semibold text-foreground">{children}</h3>
           ),
           ul: ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal space-y-1 pl-5">{children}</ol>,

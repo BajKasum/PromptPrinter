@@ -57,15 +57,6 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Hier dahinter findest du alles: neuen Chat starten, deine Chats, Projekte und Einstellungen.",
   },
   {
-    id: "search",
-    // No visible search field anymore, this shortcut is the only entry
-    // point, so the step explains it as a centered card instead of
-    // spotlighting an element that doesn't exist.
-    mascot: "researching",
-    title: "Schneller ans Ziel",
-    body: "Strg + K (⌘K am Mac), und ich bring dich sofort zu jeder Seite oder jedem Projekt, ganz ohne zu klicken.",
-  },
-  {
     id: "account",
     selectors: ['[data-tour="account-menu"]'],
     mascot: "helping",
