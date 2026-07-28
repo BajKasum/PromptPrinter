@@ -72,6 +72,22 @@ export function ProjectFiles({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("no user");
 
+      // QA finding F-6: `atLimit` above reads local state, which two open
+      // tabs each track independently — both can see "9 of 10" and both
+      // upload, landing at 11 (the trigger from migration 0022 still catches
+      // it at insert time, but only after the storage write already
+      // happened). A fresh, server-side count right before that write closes
+      // the race a step earlier instead of relying solely on the rollback.
+      const { count: currentCount } = await supabase
+        .from("project_files")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId);
+      if ((currentCount ?? 0) >= MAX_FILES_PER_PROJECT) {
+        setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
+        setUploading(false);
+        return;
+      }
+
       const fileId = randomId();
       const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-120);
       const path = `${user.id}/${projectId}/${fileId}-${safeName}`;
@@ -108,8 +124,24 @@ export function ProjectFiles({
         },
       ]);
       router.refresh();
-    } catch {
-      setError("Upload fehlgeschlagen. Bitte versuch es erneut.");
+    } catch (err) {
+      // The trigger's own raise messages (migration 0022) are already the
+      // exact German text the client-side checks above show for the same
+      // two conditions — surfaced only for those two known, authored
+      // messages, never any other Postgres error raw (QA finding U-4's same
+      // principle: only ever forward text written for a user to read).
+      // Supabase/PostgREST errors are plain objects with a `.message`, not
+      // native Error instances, so this can't just check `instanceof Error`.
+      const rawMessage =
+        err instanceof Error ? err.message : (err as { message?: unknown } | null)?.message;
+      const message = typeof rawMessage === "string" ? rawMessage : "";
+      if (message.includes("Projekt-Dateilimit erreicht")) {
+        setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
+      } else if (message.includes("Dateityp nicht erlaubt")) {
+        setError(`Nur ${ALLOWED_FILE_EXTENSIONS.join(", ")}.`);
+      } else {
+        setError("Upload fehlgeschlagen. Bitte versuch es erneut.");
+      }
     } finally {
       setUploading(false);
     }

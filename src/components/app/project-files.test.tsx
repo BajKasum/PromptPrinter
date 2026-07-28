@@ -10,6 +10,10 @@ const storageUpload = vi.fn();
 const storageRemove = vi.fn();
 const filesInsert = vi.fn();
 const filesDelete = vi.fn();
+// QA finding F-6: handleFile re-counts server-side (RLS-scoped) right before
+// the upload, instead of trusting local `files.length` state, since two open
+// tabs each track that state independently.
+const filesCount = vi.fn();
 const toast = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -27,6 +31,7 @@ vi.mock("@/lib/supabase/client", () => ({
       from: () => ({ upload: storageUpload, remove: storageRemove }),
     },
     from: () => ({
+      select: () => ({ eq: () => filesCount() }),
       insert: filesInsert,
       delete: () => ({ eq: filesDelete }),
     }),
@@ -60,6 +65,7 @@ describe("ProjectFiles", () => {
     storageRemove.mockReset().mockResolvedValue({ error: null });
     filesInsert.mockReset().mockResolvedValue({ error: null });
     filesDelete.mockReset().mockResolvedValue({ error: null });
+    filesCount.mockReset().mockResolvedValue({ count: 0, error: null });
     toast.mockReset();
   });
 
@@ -142,6 +148,40 @@ describe("ProjectFiles", () => {
     expect(await screen.findByText(/Upload fehlgeschlagen/)).toBeInTheDocument();
     expect(storageRemove).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("notes.md")).not.toBeInTheDocument();
+  });
+
+  // QA finding F-6: local `files.length` state is what gates the button, but
+  // two open tabs each track that independently. A fresh server-side count
+  // right before the upload closes that race a step earlier than the DB
+  // trigger (migration 0022) alone would.
+  it("refuses to upload when a fresh server-side count already shows the limit reached", async () => {
+    filesCount.mockResolvedValue({ count: 10, error: null });
+    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    await uploadFile(makeFile("notes.md", 100));
+
+    expect(await screen.findByText(/Höchstens 10 Dateien pro Projekt/)).toBeInTheDocument();
+    expect(storageUpload).not.toHaveBeenCalled();
+    expect(filesInsert).not.toHaveBeenCalled();
+  });
+
+  // The DB trigger's own raise messages (migration 0022) are the real
+  // enforcement; the client-side checks above are only a fast pre-check.
+  // Their exact text must map back to the same German messages, never leak
+  // the raw Postgres error (same principle as U-4).
+  it("shows the limit message when the DB trigger rejects the insert", async () => {
+    filesInsert.mockResolvedValue({ error: { message: "Projekt-Dateilimit erreicht (10)" } });
+    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    await uploadFile(makeFile("notes.md", 100));
+
+    expect(await screen.findByText("Höchstens 10 Dateien pro Projekt.")).toBeInTheDocument();
+  });
+
+  it("shows the file-type message when the DB trigger rejects the insert", async () => {
+    filesInsert.mockResolvedValue({ error: { message: "Dateityp nicht erlaubt" } });
+    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    await uploadFile(makeFile("notes.md", 100));
+
+    expect(await screen.findByText(/Nur \.md, \.txt, \.json, \.csv/)).toBeInTheDocument();
   });
 
   // QA finding A-2: the row's own delete button now only opens a confirm
