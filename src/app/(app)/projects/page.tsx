@@ -20,15 +20,18 @@ type ProjectQueryRow = {
   is_favorite: boolean;
 };
 
-// One row per project, see supabase/migrations/0016_project_summaries.sql.
-// We use it here only for the per-project chat count (its indexed LATERAL join
-// beats pulling every conversation row into JS); the saved-prompt count comes
-// from a separate tally below. The RPC still returns latest_outputs, unused
-// since the Ergebnisse-Neubau (2026-07) moved projects off the old artifact
-// packet, kept only to avoid a DB round-trip just to drop a column.
+// One row per project, see supabase/migrations/0016_project_summaries.sql
+// (+ 0023, which added saved_count and dropped the unused latest_outputs/
+// latest_generation_at columns). Both counts come from this one indexed
+// LATERAL-join RPC now — QA finding P-2: saved_count used to be a separate
+// `select project_id from generations where user_id = ?` loading every saved
+// prompt the user has ever made, tallied in JS, exactly the O(all-time
+// generations) pattern 0016 was built to eliminate for chat_count, just not
+// applied to this column.
 type ProjectSummaryRow = {
   project_id: string;
   chat_count: number;
+  saved_count: number;
 };
 
 // Deduplicated tool names across the chosen AI assistant + builders.
@@ -51,34 +54,27 @@ export default async function ProjectsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: rawProjects }, { data: rawSummaries }, { data: rawSaved }] = await Promise.all([
+  const [{ data: rawProjects }, { data: rawSummaries }] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, tools, updated_at, is_favorite")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false }),
     supabase.rpc("project_summaries"),
-    // One id per saved prompt, tallied per project below. Owner filter is
-    // explicit on top of RLS (defense in depth), same as every other count.
-    supabase.from("generations").select("project_id").eq("user_id", user.id),
   ]);
 
   const projects = (rawProjects as ProjectQueryRow[] | null) ?? [];
-  const chatByProject = new Map<string, number>();
+  const summaryByProject = new Map<string, ProjectSummaryRow>();
   for (const s of (rawSummaries as ProjectSummaryRow[] | null) ?? []) {
-    chatByProject.set(s.project_id, s.chat_count);
-  }
-  const savedByProject = new Map<string, number>();
-  for (const g of (rawSaved as { project_id: string }[] | null) ?? []) {
-    savedByProject.set(g.project_id, (savedByProject.get(g.project_id) ?? 0) + 1);
+    summaryByProject.set(s.project_id, s);
   }
 
   const items: LibraryItem[] = projects.map((p) => ({
     id: p.id,
     name: p.name,
     updatedAt: p.updated_at,
-    savedPromptCount: savedByProject.get(p.id) ?? 0,
-    chatCount: chatByProject.get(p.id) ?? 0,
+    savedPromptCount: summaryByProject.get(p.id)?.saved_count ?? 0,
+    chatCount: summaryByProject.get(p.id)?.chat_count ?? 0,
     toolList: toolListOf(p.tools),
     isFavorite: p.is_favorite,
   }));
