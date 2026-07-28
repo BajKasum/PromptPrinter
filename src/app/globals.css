@@ -23,6 +23,22 @@
 
     --muted-foreground: 214 13% 40%;
 
+    /* Zwei kalibrierte Textstufen unter foreground (QA-Befund U-1).
+       Davor lief die Abstufung über Alpha auf foreground (text-foreground/55
+       und darunter). Das war im Dark Mode kalibriert und funktioniert dort:
+       derselbe Alpha-Wert frisst über einem sehr hellen Hintergrund aber
+       ungleich mehr Kontrast, weil die WCAG-Formel nicht linear ist. /55 kam
+       im Light Mode auf 4,13:1, /45 auf 3,02:1, /40 auf rund 2,7:1 — an rund
+       110 Stellen, quer durch Metazeilen, Zähler und Zurück-Links.
+       Kontraste unten gegen den jeweiligen --background gerechnet. */
+    /* Gegen die UNGÜNSTIGSTE Fläche gerechnet, auf der sie vorkommen, nicht
+       gegen --background: im Light Mode ist das --surface (91%), das näher am
+       Text liegt als der Seitenhintergrund. Eine erste Fassung war gegen
+       --background kalibriert und fiel auf Karten auf 4,37:1 zurück — im
+       Browser gemessen, nicht gerechnet. */
+    --text-secondary: 214 13% 36%; /* 5,7:1 auf surface · 6,2:1 auf background */
+    --text-tertiary: 214 13% 40%; /* 4,9:1 auf surface · 5,7:1 auf surface-raised */
+
     --primary: 216 22% 6%;
     --primary-foreground: 0 0% 100%;
 
@@ -61,6 +77,13 @@
     --border-strong: 215 13% 23%;
 
     --muted-foreground: 215 14% 65%;
+
+    /* Siehe :root. Getrennt kalibriert, nicht gespiegelt — genau das war der
+       Fehler der Alpha-Skala. */
+    /* Hier ist --surface-raised (13%) die ungünstigste Fläche: im Dark Mode
+       liegen die Karten HELLER als der Hintergrund, also näher am Text. */
+    --text-secondary: 215 14% 65%; /* 6,5:1 auf surface-raised · 7,6:1 auf background */
+    --text-tertiary: 215 14% 58%; /* 5,2:1 auf surface-raised · 6,1:1 auf background */
 
     --primary: 213 24% 96%;
     --primary-foreground: 216 22% 6%;

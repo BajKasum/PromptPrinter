@@ -200,10 +200,10 @@ export function SettingsWorkspace({
               </Field>
 
               <Field label="Email">
-                <div className="flex h-11 items-center rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground/55">
+                <div className="flex h-11 items-center rounded-lg border border-border bg-surface px-3.5 text-sm text-secondary">
                   {email}
                 </div>
-                <p className="text-[12px] text-foreground/40">
+                <p className="text-[12px] text-tertiary">
                   Mit deinem Login verknüpft, hier nicht änderbar.
                 </p>
               </Field>
@@ -272,7 +272,7 @@ export function SettingsWorkspace({
             description="Nutze dein eigenes Kontingent statt unserer Limits."
           >
             <ApiKeys configured={configuredProviders} customProvider={customProvider} />
-            <p className="mt-3 text-[12px] text-foreground/45">
+            <p className="mt-3 text-[12px] text-tertiary">
               Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit
               bleibt bestehen.
             </p>
@@ -344,7 +344,7 @@ export function SettingsWorkspace({
           description="Lern die Oberfläche in einer geführten Tour kennen."
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[13px] text-foreground/55">
+            <p className="text-[13px] text-secondary">
               Die Tour führt dich Schritt für Schritt durch Chats, Projekte und
               Navigation, genau wie beim ersten Login.
             </p>
@@ -464,10 +464,10 @@ function SettingsCard({
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
-          <p className="mt-0.5 text-[13px] text-foreground/55">{description}</p>
+          <p className="mt-0.5 text-[13px] text-secondary">{description}</p>
         </div>
         {badge ? (
-          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-foreground/45">
+          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-tertiary">
             {badge}
           </span>
         ) : (
@@ -492,7 +492,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2.5">
-      <span className="text-[13px] text-foreground/50">{label}</span>
+      <span className="text-[13px] text-tertiary">{label}</span>
       <span className={cn("text-[13px] text-foreground/85", mono && "font-mono text-foreground/70")}>
         {value}
       </span>

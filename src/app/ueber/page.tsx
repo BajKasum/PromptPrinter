@@ -116,7 +116,7 @@ export default function UeberPage() {
                   <h3 className="text-[15px] font-semibold text-foreground">
                     {p.title}
                   </h3>
-                  <p className="mt-2 text-[14px] leading-[1.6] text-foreground/60">
+                  <p className="mt-2 text-[14px] leading-[1.6] text-secondary">
                     {p.body}
                   </p>
                 </div>

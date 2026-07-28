@@ -64,7 +64,7 @@ export function ToolPickerGroup({
         </span>
         <div className="leading-tight">
           <div className="text-[13.5px] font-semibold text-foreground">{label}</div>
-          <div className="text-[11px] text-foreground/45">{hint}</div>
+          <div className="text-[11px] text-tertiary">{hint}</div>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export function ToolPickerGroup({
 
               <span className="w-full min-w-0">
                 <span className="block truncate text-[13px] font-medium text-foreground">{opt}</span>
-                <span className="block truncate text-[11px] text-foreground/45">{blurb}</span>
+                <span className="block truncate text-[11px] text-tertiary">{blurb}</span>
               </span>
 
               <AnimatePresence>{active && <SelectedTick />}</AnimatePresence>
@@ -128,7 +128,7 @@ export function ToolPickerGroup({
 
           <span className="w-full min-w-0">
             <span className="block truncate text-[13px] font-medium text-foreground">Eigenes</span>
-            <span className="block truncate text-[11px] text-foreground/45">Tool selbst angeben</span>
+            <span className="block truncate text-[11px] text-tertiary">Tool selbst angeben</span>
           </span>
 
           <AnimatePresence>{isCustom && <SelectedTick />}</AnimatePresence>

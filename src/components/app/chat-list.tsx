@@ -175,7 +175,7 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
     <div className="group flex items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 hover:bg-surface-hover">
       <Link href={`${basePath}/${chat.id}`} className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-medium text-foreground">{chat.title}</p>
-        <p className="mt-0.5 truncate text-[12px] text-foreground/60">{meta}</p>
+        <p className="mt-0.5 truncate text-[12px] text-secondary">{meta}</p>
       </Link>
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
         {/* Only global chats can be moved, a project chat already belongs

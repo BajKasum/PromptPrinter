@@ -26,11 +26,11 @@ export default async function UpdatePasswordPage() {
           <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
             Link ungültig oder abgelaufen
           </h1>
-          <p className="text-[15px] font-light text-foreground/60">
+          <p className="text-[15px] font-light text-secondary">
             Dieser Link funktioniert nicht mehr. Fordere bitte einen neuen an.
           </p>
         </div>
-        <p className="text-[13px] text-foreground/55">
+        <p className="text-[13px] text-secondary">
           <Link href="/reset-password" className="text-foreground hover:underline">
             Neuen Link anfordern
           </Link>

@@ -127,7 +127,7 @@ export function NewProjectButton({
                 >
                   <div className="border-b border-border p-5">
                     <h2 className="text-[15px] font-semibold text-foreground">Neues Projekt</h2>
-                    <p className="mt-1 text-[13px] text-foreground/55">
+                    <p className="mt-1 text-[13px] text-secondary">
                       Gib ihm einen Namen, Briefing, Struktur und Chats wachsen danach im
                       Workspace.
                     </p>

@@ -41,7 +41,7 @@ export function MarkdownMessage({ content }: { content: string }) {
             </a>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-border pl-3 text-foreground/65">
+            <blockquote className="border-l-2 border-border pl-3 text-secondary">
               {children}
             </blockquote>
           ),
@@ -83,13 +83,13 @@ function CodeBlock({ text }: { text: string }) {
   return (
     <div className="my-2 overflow-hidden rounded-lg border border-border bg-black/30">
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-foreground/40">
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-tertiary">
           Prompt
         </span>
         <button
           type="button"
           onClick={() => copy(text)}
-          className="inline-flex items-center gap-1 text-[12px] text-foreground/55 transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
         >
           <CopyMoment copied={copied} copyCount={copyCount} idleLabel="Prompt kopieren" />
         </button>

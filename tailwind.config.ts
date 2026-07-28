@@ -33,6 +33,12 @@ const config: Config = {
           DEFAULT: "hsl(var(--surface) / <alpha-value>)",
           foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
         },
+        // Die zwei Textstufen unter `foreground` (QA-Befund U-1). Nutze
+        // `text-secondary` / `text-tertiary` statt `text-foreground/<50`:
+        // eine Alpha-Abstufung, die im Dark Mode passt, fällt im Light Mode
+        // unter WCAG AA durch, weil der Kontrast nicht linear mit Alpha läuft.
+        secondary: "hsl(var(--text-secondary) / <alpha-value>)",
+        tertiary: "hsl(var(--text-tertiary) / <alpha-value>)",
         primary: {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground) / <alpha-value>)",

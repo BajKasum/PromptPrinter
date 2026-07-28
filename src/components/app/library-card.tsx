@@ -50,7 +50,7 @@ export function LibraryCard({
           }}
           aria-pressed={isFavorite}
           aria-label={isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
-          className="relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-foreground/40 hover:text-amber-300 hover:bg-surface-hover transition-colors active:scale-90"
+          className="relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-tertiary hover:text-amber-300 hover:bg-surface-hover transition-colors active:scale-90"
         >
           <Star
             className={cn(

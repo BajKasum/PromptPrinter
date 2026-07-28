@@ -68,7 +68,7 @@ export function ToolGroup({
             "h-10 px-3 rounded-lg text-[13px] font-medium transition-all border",
             isCustom
               ? "border-accent bg-accent-subtle text-accent-text"
-              : "border-dashed border-border bg-surface text-foreground/55 hover:text-foreground hover:bg-surface-hover"
+              : "border-dashed border-border bg-surface text-secondary hover:text-foreground hover:bg-surface-hover"
           )}
         >
           Eigenes

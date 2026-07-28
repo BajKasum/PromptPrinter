@@ -107,7 +107,7 @@ export function SignInExperience() {
         <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
           Willkommen zurück
         </h1>
-        <p className="text-[15px] font-light text-foreground/60">
+        <p className="text-[15px] font-light text-secondary">
           Melde dich in deinem PromptPrinter-Workspace an.
         </p>
       </div>
@@ -137,7 +137,7 @@ export function SignInExperience() {
             </label>
             <Link
               href="/reset-password"
-              className="text-[12.5px] text-foreground/50 transition-colors hover:text-foreground/80"
+              className="text-[12.5px] text-tertiary transition-colors hover:text-foreground/80"
             >
               Passwort vergessen?
             </Link>
@@ -179,7 +179,7 @@ export function SignInExperience() {
         </button>
       </form>
 
-      <p className="text-center text-[13px] text-foreground/55">
+      <p className="text-center text-[13px] text-secondary">
         Noch kein Konto?{" "}
         <Link href="/signup" className="text-accent-text hover:underline">
           Registrieren

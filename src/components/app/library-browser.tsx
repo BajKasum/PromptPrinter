@@ -19,7 +19,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
   return (
     <div>
       <div className="relative max-w-md mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/40" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary" />
         <input
           type="text"
           value={query}
@@ -40,7 +40,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
                 "text-[12.5px] px-3 py-1.5 rounded-full border transition-colors active:scale-[0.97]",
                 active
                   ? "border-accent/40 bg-accent-subtle text-accent-text"
-                  : "border-border bg-surface text-foreground/60 hover:text-foreground hover:bg-surface-hover"
+                  : "border-border bg-surface text-secondary hover:text-foreground hover:bg-surface-hover"
               )}
             >
               {f.label}
@@ -55,7 +55,7 @@ export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
             <Library className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
           </div>
           <p className="text-[15px] text-foreground/80">Keine Treffer</p>
-          <p className="mt-1.5 text-[13px] text-foreground/45 max-w-sm mx-auto">
+          <p className="mt-1.5 text-[13px] text-tertiary max-w-sm mx-auto">
             {filter === "favorites"
               ? "Du hast noch keine Favoriten markiert. Tippe auf den Stern einer Karte."
               : "Keine Projekte passen zu dieser Auswahl. Passe Suche oder Filter an."}

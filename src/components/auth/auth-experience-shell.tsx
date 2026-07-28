@@ -69,7 +69,7 @@ export function AuthExperienceShell({
             <h2 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">
               {panelTitle}
             </h2>
-            <p className="text-[15px] leading-relaxed text-foreground/60">{panelSub}</p>
+            <p className="text-[15px] leading-relaxed text-secondary">{panelSub}</p>
           </div>
         </div>
       </aside>

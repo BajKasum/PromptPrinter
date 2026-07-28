@@ -27,7 +27,7 @@ export default function PricingPage() {
           <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-3xl mx-auto">
             Einfache, <span className="text-accent-text">ehrliche Preise.</span>
           </h1>
-          <p className="mt-6 text-[17px] text-foreground/55 max-w-2xl mx-auto">
+          <p className="mt-6 text-[17px] text-secondary max-w-2xl mx-auto">
             Starte kostenlos mit deinen eigenen API-Keys. Wechsel zu Pro, wenn du
             keine eigenen Keys einrichten willst oder höhere Limits brauchst.
           </p>

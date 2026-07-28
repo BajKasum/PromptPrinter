@@ -39,7 +39,7 @@ export function ProductShowcase() {
               <h2 className="text-balance text-[26px] md:text-[32px] leading-[1.15] tracking-[-0.03em] font-semibold text-foreground">
                 Nicht nur ein Ergebnis. Dein ganzer Arbeitsplatz.
               </h2>
-              <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-foreground/55">
+              <p className="mt-3 text-[15px] md:text-[16px] leading-[1.6] text-secondary">
                 Jedes Gespräch bleibt gespeichert und jederzeit fortsetzbar. Für
                 alles, was zusammengehört, legst du dir ein Projekt an, mehrere
                 Chats, eigene Dateien, durchsuchbar und griffbereit.
@@ -140,7 +140,7 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="mb-5">
       <h3 className="text-[20px] font-semibold tracking-[-0.01em] text-foreground">{title}</h3>
-      <p className="mt-0.5 text-[13px] text-foreground/50">{sub}</p>
+      <p className="mt-0.5 text-[13px] text-tertiary">{sub}</p>
     </div>
   );
 }
@@ -174,7 +174,7 @@ function ChatsView() {
               <span className="block truncate text-[14px] font-medium text-foreground">
                 {c.title}
               </span>
-              <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-foreground/45">
+              <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-tertiary">
                 <Clock className="h-3 w-3 shrink-0" />
                 <span className="truncate">
                   {c.target ? `Für ${c.target} · ` : ""}
@@ -182,7 +182,7 @@ function ChatsView() {
                 </span>
               </div>
             </div>
-            <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-foreground/40 sm:flex">
+            <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-tertiary sm:flex">
               Weiterführen
               <ArrowRight className="h-3.5 w-3.5" />
             </span>
@@ -212,8 +212,8 @@ function ProjectsView() {
     <div>
       <ViewHeader title="Deine Projekte" sub="3 Projekte, jederzeit weiter dran." />
       <div className="relative max-w-xs mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/40" />
-        <div className="h-9 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13px] text-foreground/40 flex items-center">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary" />
+        <div className="h-9 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13px] text-tertiary flex items-center">
           Projekte durchsuchen…
         </div>
       </div>
@@ -225,7 +225,7 @@ function ProjectsView() {
               "text-[12px] px-3 py-1.5 rounded-full border",
               i === 0
                 ? "border-accent/40 bg-accent-subtle text-accent-text"
-                : "border-border bg-surface text-foreground/60"
+                : "border-border bg-surface text-secondary"
             )}
           >
             {f}
@@ -240,7 +240,7 @@ function ProjectsView() {
                 <FolderKanban className="h-4 w-4 text-foreground" strokeWidth={1.8} />
               </div>
               <Star
-                className={cn("h-4 w-4", p.fav ? "fill-amber-300 text-amber-300" : "text-foreground/30")}
+                className={cn("h-4 w-4", p.fav ? "fill-amber-300 text-amber-300" : "text-tertiary")}
                 strokeWidth={1.8}
               />
             </div>

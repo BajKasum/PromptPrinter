@@ -69,7 +69,7 @@ export function DeleteAccount({ email }: { email: string }) {
       <div className="flex flex-col gap-3 rounded-lg border border-red-500/25 bg-red-500/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[14px] font-medium text-foreground">Konto löschen</div>
-          <div className="text-[12.5px] text-foreground/55">
+          <div className="text-[12.5px] text-secondary">
             Entfernt dein Konto und alle Projekte und Generierungen unwiderruflich.
           </div>
         </div>
@@ -113,7 +113,7 @@ export function DeleteAccount({ email }: { email: string }) {
                       <h2 className="text-[15px] font-semibold text-foreground">
                         Konto endgültig löschen?
                       </h2>
-                      <p className="mt-1 text-[13px] text-foreground/55">
+                      <p className="mt-1 text-[13px] text-secondary">
                         Diese Aktion ist unwiderruflich. Alle deine Projekte und Generierungen
                         werden dauerhaft entfernt.
                       </p>

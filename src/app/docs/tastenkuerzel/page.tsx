@@ -48,10 +48,10 @@ export default function Page() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-border bg-surface">
-              <th className="px-4 py-2.5 text-[12px] font-mono uppercase tracking-[0.08em] text-foreground/45">
+              <th className="px-4 py-2.5 text-[12px] font-mono uppercase tracking-[0.08em] text-tertiary">
                 Kürzel
               </th>
-              <th className="px-4 py-2.5 text-[12px] font-mono uppercase tracking-[0.08em] text-foreground/45">
+              <th className="px-4 py-2.5 text-[12px] font-mono uppercase tracking-[0.08em] text-tertiary">
                 Funktion
               </th>
             </tr>
@@ -68,7 +68,7 @@ export default function Page() {
                   <span className="block text-[14px] font-medium text-foreground">
                     {s.what}
                   </span>
-                  <span className="mt-0.5 block text-[13px] leading-[1.55] text-foreground/55">
+                  <span className="mt-0.5 block text-[13px] leading-[1.55] text-secondary">
                     {s.detail}
                   </span>
                 </td>

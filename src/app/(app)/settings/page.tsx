@@ -75,7 +75,7 @@ export default async function SettingsPage() {
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
           Einstellungen
         </h1>
-        <p className="mt-1.5 text-[14px] text-foreground/55 mb-8">
+        <p className="mt-1.5 text-[14px] text-secondary mb-8">
           Profil, Workspace und Standardwerte an einem Ort.
         </p>
       </FadeIn>

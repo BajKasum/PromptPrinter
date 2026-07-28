@@ -35,12 +35,12 @@ export default function AppError({
         <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
           Da ist etwas schiefgelaufen
         </h1>
-        <p className="text-[13.5px] text-foreground/55">
+        <p className="text-[13.5px] text-secondary">
           Dieser Bereich konnte nicht geladen werden. Versuch es erneut, wenn es
           weiter klemmt, lade die Seite neu.
         </p>
         {error.digest && (
-          <p className="mt-3 font-mono text-[11px] text-foreground/30">
+          <p className="mt-3 font-mono text-[11px] text-tertiary">
             Fehler-ID: {error.digest}
           </p>
         )}

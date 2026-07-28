@@ -83,7 +83,7 @@ function SavedPromptCard({
       <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
           <h3 className="truncate text-[13.5px] font-medium text-foreground">{prompt.title}</h3>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-foreground/50">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-tertiary">
             {prompt.target && (
               <span className="rounded-full border border-accent/30 bg-accent-subtle px-2 py-0.5 text-accent-text">
                 Für {prompt.target}
@@ -96,7 +96,7 @@ function SavedPromptCard({
           <button
             type="button"
             onClick={() => copy(prompt.content)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-foreground/60 transition-colors hover:bg-surface-hover hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground"
           >
             {copied ? (
               <Check className="h-3.5 w-3.5 text-success" />
@@ -110,7 +110,7 @@ function SavedPromptCard({
               type="button"
               onClick={() => void exportPdf()}
               aria-label="Als PDF exportieren"
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground/50 transition-colors hover:bg-surface-hover hover:text-foreground"
+              className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
             >
               <FileDown className="h-3.5 w-3.5" />
             </button>
@@ -120,7 +120,7 @@ function SavedPromptCard({
             onClick={() => void remove()}
             disabled={deleting}
             aria-label="Prompt löschen"
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground/50 transition-colors hover:bg-surface-hover hover:text-destructive disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive disabled:opacity-60"
           >
             {deleting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

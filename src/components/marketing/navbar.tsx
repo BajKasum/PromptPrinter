@@ -86,7 +86,7 @@ export function Navbar() {
               <a
                 key={item.label}
                 href={item.href}
-                className="rounded-md px-3 py-1.5 text-[13.5px] text-foreground/60 transition-colors hover:text-foreground"
+                className="rounded-md px-3 py-1.5 text-[13.5px] text-secondary transition-colors hover:text-foreground"
               >
                 {item.label}
               </a>

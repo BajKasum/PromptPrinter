@@ -58,7 +58,7 @@ export function FeaturesGrid() {
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               Eine Idee rein. Ein fertiger Prompt raus.
             </h2>
-            <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
+            <p className="mt-4 text-[17px] text-secondary max-w-xl">
               Kein Rätselraten mehr, was du der KI sagen sollst. Ich frag nach,
               bis ich es genau weiss, dann schreib ich es für dich auf.
             </p>
@@ -86,7 +86,7 @@ export function FeaturesGrid() {
               <h3 className="text-[16px] font-semibold tracking-tight text-foreground mb-1.5">
                 {title}
               </h3>
-              <p className="text-[14px] leading-[1.6] text-foreground/55">{body}</p>
+              <p className="text-[14px] leading-[1.6] text-secondary">{body}</p>
             </div>
           </StaggerItem>
         ))}

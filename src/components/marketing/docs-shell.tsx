@@ -28,7 +28,7 @@ function SidebarNav({ slug }: { slug?: string }) {
       <ul className="space-y-7">
         {DOCS_GROUPS.map((group) => (
           <li key={group.title}>
-            <h2 className="mb-2.5 text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/40">
+            <h2 className="mb-2.5 text-[11px] font-mono uppercase tracking-[0.08em] text-tertiary">
               {group.title}
             </h2>
             <ul className="space-y-0.5 border-l border-border">
@@ -43,7 +43,7 @@ function SidebarNav({ slug }: { slug?: string }) {
                         "-ml-px flex border-l-2 py-1.5 pl-4 text-[13.5px] leading-snug transition-colors",
                         active
                           ? "border-accent font-medium text-foreground"
-                          : "border-transparent text-foreground/60 hover:border-border-strong hover:text-foreground"
+                          : "border-transparent text-secondary hover:border-border-strong hover:text-foreground"
                       )}
                     >
                       {article.title}
@@ -86,7 +86,7 @@ export function DocsShell({
             <div className="sticky top-28">
               <Link
                 href="/docs"
-                className="mb-7 inline-block text-[13px] text-foreground/50 transition-colors hover:text-foreground"
+                className="mb-7 inline-block text-[13px] text-tertiary transition-colors hover:text-foreground"
               >
                 ← Alle Themen
               </Link>
@@ -99,7 +99,7 @@ export function DocsShell({
             <summary className="cursor-pointer list-none text-[14px] font-medium text-foreground marker:hidden">
               <span className="flex items-center justify-between">
                 Alle Themen
-                <span className="text-[12px] text-foreground/45 transition-transform group-open:rotate-180">
+                <span className="text-[12px] text-tertiary transition-transform group-open:rotate-180">
                   ▾
                 </span>
               </span>
@@ -124,14 +124,14 @@ export function DocsShell({
                 {title}
               </h1>
               {intro && (
-                <p className="mt-5 max-w-2xl text-[16px] leading-[1.65] text-foreground/55">
+                <p className="mt-5 max-w-2xl text-[16px] leading-[1.65] text-secondary">
                   {intro}
                 </p>
               )}
             </FadeIn>
 
             <FadeIn>
-              <div className="mt-10 max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_code]:rounded [&_code]:border [&_code]:border-border [&_code]:bg-surface [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[13px] [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:text-foreground/90 [&_li]:marker:text-foreground/30 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-5 [&_p]:mb-4 [&_strong]:font-medium [&_strong]:text-foreground/90 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
+              <div className="mt-10 max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_code]:rounded [&_code]:border [&_code]:border-border [&_code]:bg-surface [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[13px] [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:text-foreground/90 [&_li]:marker:text-tertiary [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-5 [&_p]:mb-4 [&_strong]:font-medium [&_strong]:text-foreground/90 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
                 {children}
               </div>
             </FadeIn>
@@ -146,7 +146,7 @@ export function DocsShell({
                     href={docHref(prev.slug)}
                     className="card-surface group p-4 transition-colors"
                   >
-                    <span className="flex items-center gap-1.5 text-[12px] text-foreground/45">
+                    <span className="flex items-center gap-1.5 text-[12px] text-tertiary">
                       <ArrowLeft className="h-3.5 w-3.5" />
                       Vorher
                     </span>
@@ -162,7 +162,7 @@ export function DocsShell({
                     href={docHref(next.slug)}
                     className="card-surface group p-4 text-right transition-colors sm:col-start-2"
                   >
-                    <span className="flex items-center justify-end gap-1.5 text-[12px] text-foreground/45">
+                    <span className="flex items-center justify-end gap-1.5 text-[12px] text-tertiary">
                       Als Nächstes
                       <ArrowRight className="h-3.5 w-3.5" />
                     </span>

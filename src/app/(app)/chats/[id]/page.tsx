@@ -57,7 +57,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
         <div className="mb-5">
           <Link
             href="/chats"
-            className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-foreground/55 transition-colors hover:text-foreground"
+            className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Zurück zu deinen Chats
@@ -65,7 +65,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
           <h1 className="truncate text-[22px] md:text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">
             {convo.title as string}
           </h1>
-          {target && <p className="mt-1 text-[13px] text-foreground/55">Für {target}</p>}
+          {target && <p className="mt-1 text-[13px] text-secondary">Für {target}</p>}
         </div>
       </FadeIn>
       <Chat

@@ -29,17 +29,17 @@ export function Footer() {
           {/* Finn's sign-off: the page opens with him, it closes with him. */}
           <div className="flex items-center gap-4">
             <Mascot size={44} state="idle" alt="Finn" />
-            <p className="text-[15px] leading-snug text-foreground/60">
+            <p className="text-[15px] leading-snug text-secondary">
               Schön, dass du da warst.
               <br />
-              <span className="text-foreground/40">· Finn</span>
+              <span className="text-tertiary">· Finn</span>
             </p>
           </div>
 
           <div className="flex flex-col gap-3 md:items-end">
             <nav
               aria-label="Seiten"
-              className="flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-foreground/65 md:justify-end"
+              className="flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-secondary md:justify-end"
             >
               {PRODUCT_LINKS.map((l) => (
                 <Link
@@ -53,7 +53,7 @@ export function Footer() {
             </nav>
             <nav
               aria-label="Rechtliches"
-              className="flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-foreground/45 md:justify-end"
+              className="flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-tertiary md:justify-end"
             >
               {LEGAL_LINKS.map((l) => (
                 <Link
@@ -69,7 +69,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 border-t border-border pt-6">
-          <p className="text-[12px] text-foreground/35">
+          <p className="text-[12px] text-tertiary">
             © {new Date().getFullYear()} PromptPrinter
           </p>
         </div>

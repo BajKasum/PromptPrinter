@@ -71,7 +71,7 @@ function FAQItem({ index, q, a }: { index: number; q: string; a: string }) {
         <span className="text-[15.5px] font-medium text-foreground pr-4">{q}</span>
         <Plus
           className={cn(
-            "h-5 w-5 text-foreground/45 shrink-0 mt-0.5 transition-transform duration-300",
+            "h-5 w-5 text-tertiary shrink-0 mt-0.5 transition-transform duration-300",
             open && "rotate-45 text-foreground"
           )}
           strokeWidth={1.8}
@@ -89,7 +89,7 @@ function FAQItem({ index, q, a }: { index: number; q: string; a: string }) {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="px-6 pb-5 text-[14.5px] leading-[1.65] text-foreground/65">
+            <div className="px-6 pb-5 text-[14.5px] leading-[1.65] text-secondary">
               {a}
             </div>
           </motion.div>

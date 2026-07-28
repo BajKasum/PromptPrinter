@@ -18,7 +18,7 @@ export default function NotFound() {
         <h1 className="mb-3 text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
           Seite nicht gefunden
         </h1>
-        <p className="mb-7 text-[14px] text-foreground/55">
+        <p className="mb-7 text-[14px] text-secondary">
           Die Adresse führt ins Leere. Vielleicht wurde die Seite verschoben oder
           existiert nicht mehr.
         </p>

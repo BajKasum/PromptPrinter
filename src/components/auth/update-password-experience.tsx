@@ -84,7 +84,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
         <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
           Neues Passwort setzen
         </h1>
-        <p className="text-[15px] font-light text-foreground/60">
+        <p className="text-[15px] font-light text-secondary">
           Wähle ein neues Passwort für <span className="text-foreground">{email}</span>.
         </p>
       </div>

@@ -81,12 +81,12 @@ export function RequestPasswordResetExperience() {
             <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
               Email unterwegs
             </h1>
-            <p className="text-[15px] font-light text-foreground/60">
+            <p className="text-[15px] font-light text-secondary">
               Falls ein Konto mit <span className="text-foreground">{email}</span> existiert, haben
               wir einen Link zum Zurücksetzen gesendet. Prüfe auch deinen Spam-Ordner.
             </p>
           </div>
-          <p className="text-[13px] text-foreground/55">
+          <p className="text-[13px] text-secondary">
             <Link href="/login" className="text-accent-text hover:underline">
               Zurück zum Login
             </Link>
@@ -105,7 +105,7 @@ export function RequestPasswordResetExperience() {
         <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
           Passwort vergessen?
         </h1>
-        <p className="text-[15px] font-light text-foreground/60">
+        <p className="text-[15px] font-light text-secondary">
           Gib deine Email ein, wir senden dir einen Link zum Zurücksetzen.
         </p>
       </div>
@@ -153,7 +153,7 @@ export function RequestPasswordResetExperience() {
         </button>
       </form>
 
-      <p className="text-center text-[13px] text-foreground/55">
+      <p className="text-center text-[13px] text-secondary">
         Doch erinnert?{" "}
         <Link href="/login" className="text-accent-text hover:underline">
           Einloggen

@@ -63,7 +63,7 @@ export default function KontaktPage() {
               <h1 className="text-balance text-[40px] md:text-[58px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground">
                 Schreib mir einfach.
               </h1>
-              <p className="mt-6 text-[17px] leading-[1.6] text-foreground/55">
+              <p className="mt-6 text-[17px] leading-[1.6] text-secondary">
                 Kein Ticket-System, keine Warteschlange, keine
                 Chatbot-Schleife. Deine Mail landet direkt bei mir.
               </p>
@@ -104,7 +104,7 @@ export default function KontaktPage() {
                     <h2 className="mt-3 text-[15px] font-semibold text-foreground">
                       {t.title}
                     </h2>
-                    <p className="mt-1.5 text-[14px] leading-[1.6] text-foreground/60">
+                    <p className="mt-1.5 text-[14px] leading-[1.6] text-secondary">
                       {t.body}
                     </p>
                   </a>
@@ -117,7 +117,7 @@ export default function KontaktPage() {
 
       <section className="container-x pb-24">
         <FadeIn>
-          <div className="max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_li]:marker:text-foreground/30 [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
+          <div className="max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_li]:marker:text-tertiary [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
             <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.01em] text-foreground">
               Bei einem Fehler hilft mir das
             </h2>

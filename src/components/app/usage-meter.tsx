@@ -30,15 +30,15 @@ export function UsageMeter({
     <div>
       <div className="mb-2 flex items-baseline justify-between">
         <span className="text-[13px] font-medium text-foreground/80">{label}</span>
-        <span className="text-[13px] tabular-nums text-foreground/55">
+        <span className="text-[13px] tabular-nums text-secondary">
           {unlimited ? (
             <>
-              {used} <span className="text-foreground/35">· Unbegrenzt</span>
+              {used} <span className="text-tertiary">· Unbegrenzt</span>
             </>
           ) : (
             <>
               <span className="text-foreground/85">{used}</span>
-              <span className="text-foreground/35"> / {limit}</span>
+              <span className="text-tertiary"> / {limit}</span>
             </>
           )}
         </span>

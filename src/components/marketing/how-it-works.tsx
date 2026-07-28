@@ -67,7 +67,7 @@ export function HowItWorks() {
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               In drei Schritten von der Idee zum fertigen Prompt.
             </h2>
-            <p className="mt-4 text-[17px] text-foreground/55 max-w-xl">
+            <p className="mt-4 text-[17px] text-secondary max-w-xl">
               Kein Formular, kein Fachchinesisch. Du redest ganz normal, um den
               Rest kümmere ich mich.
             </p>
@@ -131,13 +131,13 @@ export function HowItWorks() {
                     transition={{ type: "spring", stiffness: 300, damping: 24 }}
                     className="flex-1 rounded-2xl border border-border bg-surface-raised p-5 shadow-card transition-shadow duration-300 hover:border-accent/40 hover:shadow-elevated md:p-6"
                   >
-                    <div className="mb-1.5 font-mono text-[11px] tracking-[0.12em] text-foreground/35">
+                    <div className="mb-1.5 font-mono text-[11px] tracking-[0.12em] text-tertiary">
                       Schritt {n}
                     </div>
                     <h3 className="mb-2 text-[18px] font-semibold tracking-tight text-foreground">
                       {title}
                     </h3>
-                    <p className="max-w-xl text-[14.5px] leading-[1.6] text-foreground/55">{body}</p>
+                    <p className="max-w-xl text-[14.5px] leading-[1.6] text-secondary">{body}</p>
 
                     {/* Step 2 shows the real conversational feel, same baby-blue
                         user bubble as the app. */}

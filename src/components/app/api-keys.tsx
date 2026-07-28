@@ -124,7 +124,7 @@ function ProviderRow({
         </span>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-[13px] font-medium text-foreground">{provider.name}</div>
-          <div className="truncate text-[11px] text-foreground/40">{provider.sub}</div>
+          <div className="truncate text-[11px] text-tertiary">{provider.sub}</div>
         </div>
 
         {connected ? (
@@ -136,7 +136,7 @@ function ProviderRow({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-foreground/40 hover:text-destructive"
+              className="h-7 w-7 text-tertiary hover:text-destructive"
               onClick={() => void remove()}
               disabled={busy}
               aria-label={`${provider.name}-Key entfernen`}
@@ -174,7 +174,7 @@ function ProviderRow({
               type="button"
               onClick={() => setShowKey((v) => !v)}
               aria-label={showKey ? "Key verbergen" : "Key anzeigen"}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/35 transition-colors hover:text-foreground/70"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary transition-colors hover:text-foreground/70"
             >
               {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
@@ -288,13 +288,13 @@ function CustomProviderRow({ connected }: { connected: CustomProviderMeta | null
     >
       <div className="flex items-center gap-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface">
-          <Plug className="h-4 w-4 text-foreground/50" strokeWidth={1.8} />
+          <Plug className="h-4 w-4 text-tertiary" strokeWidth={1.8} />
         </span>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-[13px] font-medium text-foreground">
             {connected ? connected.label : "Custom"}
           </div>
-          <div className="truncate text-[11px] text-foreground/40">
+          <div className="truncate text-[11px] text-tertiary">
             {connected ? connected.model : "Jeder OpenAI-kompatible Endpoint, z. B. Z.ai"}
           </div>
         </div>
@@ -308,7 +308,7 @@ function CustomProviderRow({ connected }: { connected: CustomProviderMeta | null
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-foreground/40 hover:text-destructive"
+              className="h-7 w-7 text-tertiary hover:text-destructive"
               onClick={() => void remove()}
               disabled={busy}
               aria-label="Custom-Key entfernen"
@@ -364,7 +364,7 @@ function CustomProviderRow({ connected }: { connected: CustomProviderMeta | null
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
                 aria-label={showKey ? "Key verbergen" : "Key anzeigen"}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/35 transition-colors hover:text-foreground/70"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary transition-colors hover:text-foreground/70"
               >
                 {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </button>

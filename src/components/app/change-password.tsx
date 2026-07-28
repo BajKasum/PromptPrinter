@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 export function ChangePassword() {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-[13px] leading-relaxed text-foreground/55">
+      <p className="text-[13px] leading-relaxed text-secondary">
         Aus Sicherheitsgründen änderst du dein Passwort über einen Link, den wir dir
         per Email schicken, nicht direkt hier.
       </p>

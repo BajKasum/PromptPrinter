@@ -64,7 +64,7 @@ export function PricingPreview() {
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               Fang kostenlos an. Zahl erst, wenn du mehr brauchst.
             </h2>
-            <p className="mt-4 max-w-xl text-[16px] md:text-[17px] text-foreground/55">
+            <p className="mt-4 max-w-xl text-[16px] md:text-[17px] text-secondary">
               Kein Druck, keine Kreditkarte. Du wechselst erst, wenn du gemerkt
               hast, dass du das hier regelmäßig nutzt.
             </p>
@@ -105,14 +105,14 @@ export function PricingGrid() {
               </div>
             )}
             <h3 className="text-[17px] font-semibold text-foreground">{p.name}</h3>
-            <p className="mt-1.5 text-[13.5px] leading-[1.5] text-foreground/55">
+            <p className="mt-1.5 text-[13.5px] leading-[1.5] text-secondary">
               {p.description}
             </p>
             <div className="mt-7 flex items-baseline gap-1.5">
               <span className="text-[44px] font-semibold tracking-[-0.03em] text-foreground">
                 {p.price}
               </span>
-              <span className="text-[13px] text-foreground/45">/ {p.cadence}</span>
+              <span className="text-[13px] text-tertiary">/ {p.cadence}</span>
             </div>
             <Button
               asChild
@@ -122,7 +122,7 @@ export function PricingGrid() {
               <Link href={p.href}>{p.cta}</Link>
             </Button>
             {p.note && (
-              <p className="mt-2.5 text-[12px] leading-relaxed text-foreground/55">{p.note}</p>
+              <p className="mt-2.5 text-[12px] leading-relaxed text-secondary">{p.note}</p>
             )}
             <ul className="mt-7 space-y-2.5">
               {p.features.map((f) => (

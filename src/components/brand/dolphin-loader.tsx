@@ -64,7 +64,7 @@ export function DolphinLoader({ size = 36, label, className }: DolphinLoaderProp
           <Mascot state="waiting" size={size} />
         </motion.span>
       </span>
-      {label && <span className="text-[13px] text-foreground/55">{label}</span>}
+      {label && <span className="text-[13px] text-secondary">{label}</span>}
     </span>
   );
 }

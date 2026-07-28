@@ -106,7 +106,7 @@ export function OAuthButtons({ next }: { next: string }) {
         </div>
       )}
 
-      <div className="flex items-center gap-3 pt-1 text-[12px] text-foreground/40">
+      <div className="flex items-center gap-3 pt-1 text-[12px] text-tertiary">
         <span className="h-px flex-1 bg-border" />
         oder mit Email
         <span className="h-px flex-1 bg-border" />

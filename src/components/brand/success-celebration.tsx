@@ -116,7 +116,7 @@ export function SuccessCelebration({
       </motion.p>
       {description && (
         <motion.p
-          className="mt-1.5 text-[13.5px] text-foreground/60"
+          className="mt-1.5 text-[13.5px] text-secondary"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.28, duration: 0.3 }}

@@ -36,7 +36,7 @@ export default function DocsIndexPage() {
               <h1 className="text-balance text-[40px] md:text-[56px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground">
                 Wie du das hier <span className="gradient-text">wirklich nutzt.</span>
               </h1>
-              <p className="mt-6 text-[17px] leading-[1.6] text-foreground/55">
+              <p className="mt-6 text-[17px] leading-[1.6] text-secondary">
                 {DOCS_ORDER.length} kurze Kapitel, von der ersten Anmeldung bis zu
                 eigenen API-Keys. Lies sie der Reihe nach durch, oder spring direkt
                 zu dem, was gerade klemmt.
@@ -58,7 +58,7 @@ export default function DocsIndexPage() {
           {DOCS_GROUPS.map((group, gi) => (
             <FadeIn key={group.title} delay={gi * 0.05}>
               <section>
-                <h2 className="mb-4 text-[11px] font-mono uppercase tracking-[0.08em] text-foreground/40">
+                <h2 className="mb-4 text-[11px] font-mono uppercase tracking-[0.08em] text-tertiary">
                   {group.title}
                 </h2>
                 <ul className="border-t border-border">
@@ -71,14 +71,14 @@ export default function DocsIndexPage() {
                           href={docHref(article.slug)}
                           className="group flex gap-5 py-5 transition-colors hover:bg-surface/60"
                         >
-                          <span className="mt-0.5 w-6 shrink-0 text-[12px] font-mono tabular-nums text-foreground/30 transition-colors group-hover:text-accent-text">
+                          <span className="mt-0.5 w-6 shrink-0 text-[12px] font-mono tabular-nums text-tertiary transition-colors group-hover:text-accent-text">
                             {String(n).padStart(2, "0")}
                           </span>
                           <span className="min-w-0">
                             <span className="block text-[16px] font-medium text-foreground">
                               {article.title}
                             </span>
-                            <span className="mt-1 block text-[14px] leading-[1.6] text-foreground/55">
+                            <span className="mt-1 block text-[14px] leading-[1.6] text-secondary">
                               {article.summary}
                             </span>
                           </span>
@@ -92,7 +92,7 @@ export default function DocsIndexPage() {
           ))}
 
           <FadeIn>
-            <p className="text-[14px] text-foreground/55">
+            <p className="text-[14px] text-secondary">
               Etwas nicht gefunden oder etwas stimmt nicht?{" "}
               <Link
                 href="/kontakt"

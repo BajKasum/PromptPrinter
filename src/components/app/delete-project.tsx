@@ -90,7 +90,7 @@ export function DeleteProjectButton({
         variant="ghost"
         size="sm"
         onClick={() => setOpen(true)}
-        className="shrink-0 text-foreground/55 hover:border-red-500/30 hover:bg-red-500/[0.06] hover:text-red-300"
+        className="shrink-0 text-secondary hover:border-red-500/30 hover:bg-red-500/[0.06] hover:text-red-300"
       >
         <Trash2 className="h-3.5 w-3.5" />
         Löschen
@@ -127,7 +127,7 @@ export function DeleteProjectButton({
                       <h2 className="text-[15px] font-semibold text-foreground">
                         Projekt löschen?
                       </h2>
-                      <p className="mt-1 text-[13px] text-foreground/55">
+                      <p className="mt-1 text-[13px] text-secondary">
                         „{projectName}“ wird mit allen Chats, Dateien und Ergebnissen
                         dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.
                       </p>

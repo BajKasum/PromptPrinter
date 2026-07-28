@@ -146,7 +146,7 @@ export function ChatFinishedMarker() {
       className="flex items-center justify-center gap-2.5 pt-1"
     >
       <AnimatedMascot state="celebrating" size={40} motion="float" />
-      <span className="text-[13px] text-foreground/60">Fertig, dein Prompt ist startklar.</span>
+      <span className="text-[13px] text-secondary">Fertig, dein Prompt ist startklar.</span>
     </motion.div>
   );
 }

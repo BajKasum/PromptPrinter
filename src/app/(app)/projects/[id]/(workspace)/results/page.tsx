@@ -68,7 +68,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const backLink = (
     <Link
       href={`/projects/${id}`}
-      className="mb-2 inline-flex items-center gap-1.5 text-[13px] text-foreground/55 transition-colors hover:text-foreground"
+      className="mb-2 inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
     >
       <ArrowLeft className="h-3.5 w-3.5" />
       Zurück zur Übersicht

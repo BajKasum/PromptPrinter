@@ -184,7 +184,7 @@ export function SignUpExperience() {
             <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
               Email unterwegs
             </h1>
-            <p className="text-[15px] font-light text-foreground/60">
+            <p className="text-[15px] font-light text-secondary">
               Wir haben einen Bestätigungs-Link an <span className="text-foreground">{email}</span>{" "}
               geschickt. Klick darauf, um dein Konto zu aktivieren.
             </p>
@@ -218,7 +218,7 @@ export function SignUpExperience() {
             Email erneut senden
           </button>
 
-          <p className="text-[13px] text-foreground/55">
+          <p className="text-[13px] text-secondary">
             Schon bestätigt?{" "}
             <Link href="/login" className="text-accent-text hover:underline">
               Einloggen
@@ -250,7 +250,7 @@ export function SignUpExperience() {
         <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight text-foreground">
           Konto erstellen
         </h1>
-        <p className="text-[15px] font-light text-foreground/60">
+        <p className="text-[15px] font-light text-secondary">
           Kostenlos, keine Kreditkarte, jederzeit kündbar.
         </p>
       </div>
@@ -346,7 +346,7 @@ export function SignUpExperience() {
         </button>
       </form>
 
-      <p className="text-center text-[13px] text-foreground/55">
+      <p className="text-center text-[13px] text-secondary">
         Schon ein Konto?{" "}
         <Link href="/login" className="text-accent-text hover:underline">
           Einloggen

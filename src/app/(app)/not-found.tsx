@@ -17,7 +17,7 @@ export default function AppNotFound() {
         <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
           Nicht gefunden
         </h1>
-        <p className="text-[13.5px] text-foreground/55">
+        <p className="text-[13.5px] text-secondary">
           Diese Seite oder dieses Projekt existiert nicht, oder gehört nicht zu
           deinem Konto.
         </p>

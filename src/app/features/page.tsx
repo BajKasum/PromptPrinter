@@ -29,7 +29,7 @@ export default function FeaturesPage() {
           <h1 className="text-balance text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.04em] font-semibold text-foreground max-w-3xl mx-auto">
             Von der rohen Idee <span className="gradient-text">zum fertigen Prompt.</span>
           </h1>
-          <p className="mt-6 text-[17px] text-foreground/55 max-w-2xl mx-auto">
+          <p className="mt-6 text-[17px] text-secondary max-w-2xl mx-auto">
             Ein Gespräch, eine klärende Rückfrage, dein passender Prompt, zugeschnitten
             auf das Tool, mit dem du weiterbaust.
           </p>

@@ -78,7 +78,7 @@ export default async function ProjectWorkspaceLayout({
           <div className="mb-4 flex items-center justify-between gap-3">
             <Link
               href="/projects"
-              className="inline-flex items-center gap-1.5 text-[13px] text-foreground/55 transition-colors hover:text-foreground"
+              className="inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Zurück zu Projekten
@@ -97,7 +97,7 @@ export default async function ProjectWorkspaceLayout({
               <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
                 {project.name}
               </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-foreground/55">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-secondary">
                 <span className="inline-flex items-center gap-1.5">
                   <MessageSquare className="h-3.5 w-3.5" />
                   {chats} {chats === 1 ? "Chat" : "Chats"}

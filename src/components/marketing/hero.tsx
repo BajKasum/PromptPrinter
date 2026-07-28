@@ -83,7 +83,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-foreground/60"
+              className="mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-secondary"
             >
               Erzähl mir, was du bauen willst. Ich bereite dir den fertigen
               Prompt auf.
@@ -367,7 +367,7 @@ function HeroDemo() {
                 kopiert
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-foreground/45">
+              <span className="inline-flex items-center gap-1.5 text-tertiary">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
                 Schritt {stage + 1}/3
               </span>
@@ -390,7 +390,7 @@ function HeroDemo() {
                         ? "border-accent/40 bg-accent text-accent-foreground"
                         : active
                           ? "border-accent/50 bg-accent-subtle text-accent-text"
-                          : "border-border bg-surface text-foreground/40"
+                          : "border-border bg-surface text-tertiary"
                     )}
                   >
                     {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
@@ -398,7 +398,7 @@ function HeroDemo() {
                   <span
                     className={cn(
                       "text-[12px] md:text-[13px] font-medium transition-colors duration-300",
-                      active || done ? "text-foreground" : "text-foreground/40"
+                      active || done ? "text-foreground" : "text-tertiary"
                     )}
                   >
                     {s.label}
@@ -446,7 +446,7 @@ function HeroDemo() {
           </div>
 
           {/* The idea stays pinned at the top, it's the thread through every stage. */}
-          <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-foreground/40 mb-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-tertiary mb-2">
             Deine Idee
           </div>
           <div className="flex select-none items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
@@ -501,10 +501,10 @@ function HeroDemo() {
 function StageHint() {
   return (
     <div className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border text-center">
-      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-foreground/40">
+      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-tertiary">
         wird zu
       </span>
-      <span className="text-[13px] text-foreground/55">Eine Rückfrage → dein fertiger Prompt</span>
+      <span className="text-[13px] text-secondary">Eine Rückfrage → dein fertiger Prompt</span>
     </div>
   );
 }
@@ -558,7 +558,7 @@ function PromptStage({
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-3.5 py-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-foreground/45">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-tertiary">
             Prompt
           </span>
           <span className="rounded-full border border-accent/25 bg-accent-subtle px-2 py-0.5 text-[10.5px] text-accent-text">
@@ -568,7 +568,7 @@ function PromptStage({
         <span
           className={cn(
             "inline-flex items-center gap-1 text-[11.5px] transition-colors duration-300",
-            copied ? "text-success" : "text-foreground/40"
+            copied ? "text-success" : "text-tertiary"
           )}
         >
           {copied ? (

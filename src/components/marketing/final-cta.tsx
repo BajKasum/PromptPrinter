@@ -32,7 +32,7 @@ export function FinalCTA() {
               Die Idee ist der schwere Teil.{" "}
               <span className="text-accent-text">Den Rest mach ich mit dir.</span>
             </h2>
-            <p className="mt-6 text-[17px] text-foreground/65 max-w-xl mx-auto">
+            <p className="mt-6 text-[17px] text-secondary max-w-xl mx-auto">
               Fang kostenlos an, ohne Kreditkarte. Erzähl mir einfach, was du
               bauen willst. Den Rest gehen wir zusammen durch.
             </p>

@@ -80,13 +80,13 @@ export default async function BillingPage() {
             <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
               Abrechnung
             </h1>
-            <p className="mt-1.5 text-[14px] text-foreground/55">
+            <p className="mt-1.5 text-[14px] text-secondary">
               Dein Plan und deine Nutzung im aktuellen Monat.
             </p>
           </div>
           <div className="flex items-center gap-2.5 pb-0.5">
             <PlanBadge plan={planKey} isAdmin={isAdmin} />
-            <span className="text-[12.5px] text-foreground/45">API-Zugang: {apiAccessLabel}</span>
+            <span className="text-[12.5px] text-tertiary">API-Zugang: {apiAccessLabel}</span>
           </div>
         </div>
       </FadeIn>
@@ -94,7 +94,7 @@ export default async function BillingPage() {
       <FadeIn delay={0.06}>
         <section className={isFree && !isAdmin ? "mb-12" : ""}>
           <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">Nutzung diesen Monat</h2>
-          <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-foreground/55">{usageNote}</p>
+          <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-secondary">{usageNote}</p>
           <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
             <UsageMeter label="Projekte" used={projectsCount ?? 0} limit={limits.projects} />
             <UsageMeter
@@ -115,14 +115,14 @@ export default async function BillingPage() {
             <div className="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
               <div className="max-w-sm">
                 <h2 className="text-[17px] font-semibold text-foreground">Mehr Spielraum mit Pro</h2>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/55">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">
                   {pro.description}
                 </p>
                 <div className="mt-4 flex items-baseline gap-1.5">
                   <span className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">
                     {pro.price}
                   </span>
-                  <span className="text-[12.5px] text-foreground/45">/ {pro.cadence}</span>
+                  <span className="text-[12.5px] text-tertiary">/ {pro.cadence}</span>
                 </div>
               </div>
               <ul className="space-y-2.5 md:min-w-[260px]">
@@ -134,7 +134,7 @@ export default async function BillingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[12.5px] text-foreground/45">
+            <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[12.5px] text-tertiary">
               <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
               Bezahlung ist noch nicht freigeschaltet, sobald es so weit ist, meld ich mich.
             </div>
