@@ -305,8 +305,23 @@ export function Chat({
     -1
   );
 
+  // What a screen reader actually needs to hear: that a reply started, and that
+  // it finished — two discrete events, not the reply streaming in character by
+  // character. The text itself stays readable at the user's own pace in the log
+  // above (QA finding A-1).
+  const liveStatus = loading
+    ? "Finn schreibt…"
+    : pending !== null
+      ? "Antwort wird geschrieben…"
+      : justFinished
+        ? "Antwort fertig."
+        : "";
+
   return (
     <div className="flex flex-col gap-5">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveStatus}
+      </div>
       {/* min-h keeps this area (and the composer right below it) roughly the
           same height whether it's showing the empty state or a short first
           exchange, otherwise the composer visibly jumps up the moment the
@@ -315,10 +330,15 @@ export function Chat({
         {messages.length === 0 ? (
           <ChatEmptyState heading={heading} />
         ) : (
-          // role="log" + aria-live: screen readers announce new replies as they
-          // arrive without moving focus out of the input. The whole page scrolls;
-          // there is no inner scroller anymore.
-          <div role="log" aria-live="polite" className="flex flex-col gap-6">
+          // role="log" WITHOUT a live region. It used to carry
+          // aria-live="polite", which meant every text delta changed the
+          // contents of a live region and screen readers re-announced the
+          // growing reply token by token — unusable noise, on the one surface
+          // that matters most here. Live regions are for finished status
+          // messages, not for continuously growing text, so the announcements
+          // moved to the dedicated status line below and this is just a
+          // navigable log now.
+          <div role="log" className="flex flex-col gap-6">
             {messages.map((m, i) =>
               m.role === "user" ? (
                 <ChatUserBubble key={m.id} content={m.content} />

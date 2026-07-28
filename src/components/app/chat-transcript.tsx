@@ -134,10 +134,11 @@ export function ChatFinishedMarker() {
   const reduce = useReducedMotion() ?? false;
 
   return (
-    // Deliberately no role="status": the transcript around it is already a
-    // role="log" aria-live region, so the line is announced on insert anyway,
-    // and a second live region here would compete with the one the persist
-    // warning uses.
+    // Deliberately no role="status". This used to rely on the transcript being
+    // a live region itself, which it no longer is (QA finding A-1: announcing a
+    // reply as it streamed in was unusable noise). The "done" announcement now
+    // comes from the single dedicated status line in chat.tsx, so a live region
+    // here would only duplicate it — and compete with the persist warning's.
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 12, scale: 0.85 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}

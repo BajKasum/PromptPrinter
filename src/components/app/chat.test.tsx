@@ -369,4 +369,32 @@ describe("Chat", () => {
       expect((toResult.at(-1)![0] as ScrollIntoViewOptions).behavior).toBe("smooth");
     });
   });
+  // QA finding A-1: aria-live sat on the whole transcript including the
+  // streaming reply, so every delta changed a live region and screen readers
+  // re-read the growing text token by token.
+  describe("screen reader announcements (QA finding A-1)", () => {
+    it("does not make the transcript itself a live region", async () => {
+      mockStreamingFetch(["Fertig"], { conversationId: "conv-1" });
+      render(<Chat mode="general" />);
+      await userEvent.type(screen.getByRole("textbox"), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+      await screen.findByRole("button", { name: /Senden/ });
+
+      expect(screen.getByRole("log")).not.toHaveAttribute("aria-live");
+    });
+
+    it("announces that the answer is finished, once, rather than as it arrives", async () => {
+      mockStreamingFetch(["Hier ", "ist ", "dein ", "Prompt"], { conversationId: "conv-1" });
+      const { container } = render(<Chat mode="general" />);
+      await userEvent.type(screen.getByRole("textbox"), "Hi");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+      await screen.findByRole("button", { name: /Senden/ });
+
+      const live = container.querySelector("[aria-live='polite'][aria-atomic='true']");
+      expect(live).toBeInTheDocument();
+      expect(live).toHaveTextContent("Antwort fertig.");
+      // The reply text itself must never be what a live region carries.
+      expect(live).not.toHaveTextContent("Hier ist dein Prompt");
+    });
+  });
 });
