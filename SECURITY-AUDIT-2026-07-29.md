@@ -19,13 +19,21 @@
 >
 > Final gate: typecheck ✅ · lint ✅ · **584 tests** ✅ (from 508) · build ✅ · `npm audit` **0 vulnerabilities** ✅
 >
-> **Two things still need the operator, and neither is reachable from code:**
-> 1. **Enable Leaked Password Protection** (Supabase → Authentication → Policies) and set the
->    server-side minimum length to 10. The app now enforces 10 in its own forms, but a caller
->    talking to the Supabase auth API directly is bound only by the dashboard setting. The
->    security advisor still reports this as open — verified after all fixes.
-> 2. **Set `ALERT_WEBHOOK_URL`**, otherwise the alerting built for M-4 stays inert and errors
->    go to stdout only. `/admin` now shows a visible warning while it is unset.
+> **One item is a deliberate, cost-based accepted risk (decided 2026-07-29):** Leaked Password
+> Protection (Supabase → Authentication → Policies, HaveIBeenPwned check + server-side minimum
+> length) sits behind Supabase's paid tier on this project — confirmed against the actual
+> dashboard, not assumed. The operator explicitly chose not to upgrade for this alone. The
+> compensating control from M-5 stays in place either way: the app's own forms already enforce
+> a 10-character minimum (NIST SP 800-63B's own stated rationale for accepting a bare length
+> minimum without a breach check). Residual gap: a caller talking to the Supabase auth API
+> directly, bypassing the app's forms entirely, is bound only by whatever the dashboard's own
+> minimum is set to (Supabase's default, unchanged). The security advisor will keep reporting
+> this as open — that reflects the decision, not an oversight.
+>
+> **One item is still a plain env var, free either way, not gated by any Supabase plan:**
+> **Set `ALERT_WEBHOOK_URL`** (any Slack/Discord incoming webhook, both free to create) — otherwise
+> the alerting built for M-4 stays inert and errors go to stdout only. `/admin` shows a visible
+> warning while it is unset.
 >
 > Deliberately not done, with reasons recorded in the relevant commits: no APM vendor was
 > chosen (that decision is the operator's, and `captureError` remains the single seam), and
@@ -363,7 +371,9 @@ export function captureError(event: string, error: unknown, context: LogContext 
 
 **Why it matters.** 8 characters with no HaveIBeenPwned check accepts `password` and `12345678`. This is a credential-stuffing target, and it is a dashboard toggle, not code.
 
-**Recommended fix.** Supabase Dashboard → Authentication → Policies → enable **Leaked Password Protection**; consider raising the minimum to 10. Remediation: https://supabase.com/docs/guides/auth/password-security
+**Recommended fix.** Supabase Dashboard → Authentication → Policies → enable **Leaked Password Protection**. Remediation: https://supabase.com/docs/guides/auth/password-security
+
+**Status (2026-07-29): partially fixed, remainder accepted as risk.** The length half is done — `MIN_PASSWORD_LENGTH = 10` (`src/lib/password.ts`), applied to signup and password reset, with the reasoning spelled out in that file (NIST SP 800-63B's own justification for accepting a bare length minimum: it's conditioned on pairing it with a breach check). The breach-check half turned out to be gated behind Supabase's paid tier on this project, confirmed against the actual dashboard rather than assumed from the docs. The operator declined to upgrade for this alone — a reasonable call for a solo project's threat model, and one this report defers to rather than second-guesses. The gap left standing: a caller hitting the Supabase auth API directly, bypassing the app's own forms, is bound only by whatever minimum the dashboard itself enforces (unchanged from Supabase's default). The security advisor will keep flagging `auth_leaked_password_protection` — that's the decision showing up as expected, not a fix that silently failed.
 
 **Credit where due:** the app deliberately removed in-place password change (`change-password.tsx:6-11`) in favour of an email-verified reset flow, which is the *more* secure design. That reasoning is sound.
 
