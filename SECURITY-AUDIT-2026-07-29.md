@@ -1,5 +1,40 @@
 # Production Readiness & Security Audit — PromptPrinter
 
+> ## Remediation status (2026-07-29, same day)
+>
+> All ten prioritised findings are fixed, each as its own commit, gate green before every one.
+>
+> | # | Finding | Commit | Note |
+> |---|---|---|---|
+> | 1 | H-1 avatars bucket | `383fb27` | Migration 0027, live |
+> | 2 | H-2 dependencies | `90d2722` | **11 → 0** advisories |
+> | 3 | H-3 body before auth | `c8bbb09` | + `npm audit` CI gate |
+> | 4 | M-5 password policy | `04c9270` | also fixed a latent login lockout |
+> | 5 | M-1 raw DB errors | `7e134d3` | |
+> | 6 | M-4 telemetry | `6389a32` | webhook + `/api/health` |
+> | 7 | M-3 TRUNCATE grants | `ddaab77` | Migration 0028, live |
+> | 8 | M-2 storage limits | `d8be851` | Migration 0029, live |
+> | 9 | M-7 middleware | `9a44af6` | inverted to an allowlist |
+> | 10 | M-6 BYOK selection | `9dfcc72` | Migration 0030, live |
+>
+> Final gate: typecheck ✅ · lint ✅ · **584 tests** ✅ (from 508) · build ✅ · `npm audit` **0 vulnerabilities** ✅
+>
+> **Two things still need the operator, and neither is reachable from code:**
+> 1. **Enable Leaked Password Protection** (Supabase → Authentication → Policies) and set the
+>    server-side minimum length to 10. The app now enforces 10 in its own forms, but a caller
+>    talking to the Supabase auth API directly is bound only by the dashboard setting. The
+>    security advisor still reports this as open — verified after all fixes.
+> 2. **Set `ALERT_WEBHOOK_URL`**, otherwise the alerting built for M-4 stays inert and errors
+>    go to stdout only. `/admin` now shows a visible warning while it is unset.
+>
+> Deliberately not done, with reasons recorded in the relevant commits: no APM vendor was
+> chosen (that decision is the operator's, and `captureError` remains the single seam), and
+> no MIME allowlist was added to `project-files` (migration 0012 already rejected that on
+> reliability grounds, which still holds).
+>
+> The Low findings (L-1 … L-7) are untouched and remain open.
+
+
 **Date:** 2026-07-29
 **Commit audited:** `755a759` (branch `main`, clean tree)
 **Method:** static review of all 402 tracked files + **live verification against the production Supabase project** (`ykcdbtmiuvntvysynhkx`) via SQL, plus `npm audit`.
