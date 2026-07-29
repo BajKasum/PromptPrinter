@@ -32,6 +32,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Security-Audit finding H-2: the tree had 11 advisories (one critical)
+      # that nothing was watching for. Gating on `high` keeps this actionable —
+      # moderate findings in dev-only tooling shouldn't block a release, but
+      # anything high or critical should be a decision, not a surprise.
+      # Failures are fixed by bumping, or by an explicit `overrides` entry in
+      # package.json with a comment saying why.
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
       - name: Typecheck
         run: npm run typecheck
 

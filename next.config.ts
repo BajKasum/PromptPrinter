@@ -25,12 +25,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "lh3.googleusercontent.com" },
-      { protocol: "https", hostname: "avatars.githubusercontent.com" },
-    ],
-  },
+  // No `images.remotePatterns` on purpose (Security-Audit finding H-2). It used
+  // to allowlist the two OAuth avatar hosts, but nothing ever routed a remote
+  // URL through next/image: <Mascot> is the only next/image call site and it
+  // only ever loads first-party PNGs from /public/mascot, while every avatar
+  // (sidebar, settings) renders through a plain <img>. Keeping the patterns
+  // meant next/image's optimizer — i.e. sharp, a native libvips binding with a
+  // history of CVEs — stayed reachable for third-party bytes for no benefit.
+  // Without them, sharp only ever processes our own bundled artwork.
+  // The CSP still allows those hosts in img-src (src/lib/csp.ts), which is what
+  // the plain <img> tags actually need.
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -5,6 +5,23 @@
   "engines": {
     "node": ">=20.3.0"
   },
+  "//overrides": [
+    "Security-Audit finding H-2. Each entry is the MINIMAL in-range bump that",
+    "clears a published advisory for a transitive dependency whose own parent",
+    "still pins a vulnerable version. No majors, no downgrades — npm's own",
+    "`audit fix` proposal for this tree was `next@9.3.3`, i.e. a five-year",
+    "downgrade, which is why these are pinned by hand instead.",
+    "Re-check on every dependency bump: an override that outlives its advisory",
+    "is just an unexplained version pin. `npm audit` in CI is what catches that."
+  ],
+  "overrides": {
+    "brace-expansion": "^5.0.8",
+    "js-yaml": "^4.3.0",
+    "postcss": "^8.5.24",
+    "protobufjs": "^7.6.5",
+    "sharp": "^0.35.3",
+    "vite": "^8.1.5"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -31,7 +48,7 @@
     "gsap": "^3.15.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.474.0",
-    "next": "^15.5.21",
+    "next": "^15.5.22",
     "next-themes": "^0.4.6",
     "openai": "^6.46.0",
     "react": "19.0.0",
@@ -49,15 +66,15 @@
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.5.21",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.1",
+    "postcss": "^8.5.24",
     "puppeteer-core": "^25.1.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.10"
   }
 }
