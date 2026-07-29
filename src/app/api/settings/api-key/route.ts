@@ -201,6 +201,26 @@ export async function PATCH(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return problem(401, "Anmeldung erforderlich.");
 
+  // Security-Audit finding L-7: PATCH and DELETE on this route were the only
+  // authenticated mutations in the project with no ceiling at all — POST
+  // (saving a key) already rate-limits, switching/removing one didn't. Same
+  // admin exemption and limit shape as POST; higher than POST's 30/hr since
+  // neither of these calls out to a provider, but still bounded rather than
+  // open.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!(profile?.is_admin ?? false)) {
+    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
+  }
+
   let body: unknown;
   try {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
@@ -248,6 +268,23 @@ export async function DELETE(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return problem(401, "Anmeldung erforderlich.");
+
+  // Security-Audit finding L-7: the one unlimited authenticated mutation in
+  // this route (and, before this, in the project) — see the same block on
+  // PATCH above for the full reasoning.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!(profile?.is_admin ?? false)) {
+    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
+  }
 
   const { error } = await supabase
     .from("user_api_keys")

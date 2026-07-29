@@ -215,6 +215,27 @@ describe("DELETE /api/settings/api-key", () => {
     vi.clearAllMocks();
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     deleteRow.mockResolvedValue({ error: null });
+    rateLimit.mockResolvedValue({ allowed: true, remaining: 59, resetAt: Date.now() + 1000 });
+    tableResults.profiles = { data: { is_admin: false } };
+  });
+
+  // Security-Audit finding L-7: DELETE (and PATCH, tested below) had no
+  // ceiling at all — the one unrated authenticated mutation in the project.
+  it("rejects once the hourly rate limit is exceeded", async () => {
+    rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
+    const res = await DELETE(del("anthropic"));
+    expect(res.status).toBe(429);
+    expect(deleteRow).not.toHaveBeenCalled();
+  });
+
+  it("exempts an admin from the hourly rate limit", async () => {
+    tableResults.profiles = { data: { is_admin: true } };
+    rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
+
+    const res = await DELETE(del("anthropic"));
+
+    expect(res.status).toBe(200);
+    expect(rateLimit).not.toHaveBeenCalled();
   });
 
   it("removes the stored key for a known provider", async () => {
@@ -330,5 +351,27 @@ describe("BYOK active-provider selection (M-6)", () => {
 
     expect(res.status).toBe(500);
     expect(body.detail).not.toContain("permission denied");
+  });
+
+  // Security-Audit finding L-7: PATCH had no rate limit at all before.
+  it("rejects once the hourly rate limit is exceeded", async () => {
+    tableResults.user_api_keys = { data: { provider: "openai" } };
+    rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
+
+    const res = await PATCH(patch({ provider: "openai" }));
+
+    expect(res.status).toBe(429);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("exempts an admin from the hourly rate limit", async () => {
+    tableResults.user_api_keys = { data: { provider: "openai" } };
+    tableResults.profiles = { data: { is_admin: true } };
+    rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
+
+    const res = await PATCH(patch({ provider: "openai" }));
+
+    expect(res.status).toBe(200);
+    expect(rateLimit).not.toHaveBeenCalled();
   });
 });
