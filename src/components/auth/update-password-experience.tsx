@@ -6,12 +6,18 @@ import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { SuccessCelebration } from "@/components/brand/success-celebration";
+import {
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_TOO_SHORT_MESSAGE,
+  isPasswordLongEnough,
+} from "@/lib/password";
 
 function translatePasswordError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("different from the old") || m.includes("should be different"))
     return "Das neue Passwort muss sich vom alten unterscheiden.";
-  if (m.includes("password should be")) return "Passwort zu schwach (mindestens 8 Zeichen).";
+  if (m.includes("password should be"))
+    return `Passwort zu schwach (mindestens ${MIN_PASSWORD_LENGTH} Zeichen).`;
   if (m.includes("rate limit")) return "Zu viele Versuche, bitte kurz warten.";
   if (m.includes("session") || m.includes("expired") || m.includes("jwt"))
     return "Die Sitzung ist abgelaufen. Fordere den Link bitte erneut an.";
@@ -36,8 +42,8 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
     e.preventDefault();
     setError(null);
 
-    if (next.length < 8) {
-      setError("Das neue Passwort braucht mindestens 8 Zeichen.");
+    if (!isPasswordLongEnough(next)) {
+      setError(PASSWORD_TOO_SHORT_MESSAGE);
       return;
     }
     if (next !== confirm) {
@@ -100,10 +106,11 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
             <input
               id="new-password"
               type={showPassword ? "text" : "password"}
-              placeholder="Neues Passwort (mind. 8 Zeichen)"
+              placeholder={`Neues Passwort (mind. ${MIN_PASSWORD_LENGTH} Zeichen)`}
               value={next}
               onChange={(e) => setNext(e.target.value)}
               autoComplete="new-password"
+              minLength={MIN_PASSWORD_LENGTH}
               required
               className={inputClasses}
             />
@@ -132,6 +139,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"
+            minLength={MIN_PASSWORD_LENGTH}
             required
             className={inputClasses}
           />

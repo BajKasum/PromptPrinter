@@ -15,9 +15,20 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SuccessCelebration } from "@/components/brand/success-celebration";
 
+// Login validates an EXISTING password, so it deliberately checks only that
+// something was typed — no length rule (Security-Audit finding M-5).
+//
+// It used to require 8 characters here, which is a client-side lockout waiting
+// to happen: Supabase's own default minimum is 6, so an account created under a
+// looser policy could already be refused by this form while its password was
+// still perfectly valid at the auth server. Raising the signup/reset minimum to
+// MIN_PASSWORD_LENGTH would have widened that gap to every account with an
+// 8- or 9-character password. A length rule on a login form protects nothing
+// anyway — the credential either matches or it doesn't, and only Supabase can
+// say which.
 const schema = z.object({
   email: z.string().email("Bitte eine gültige Email eingeben"),
-  password: z.string().min(8, "Mindestens 8 Zeichen"),
+  password: z.string().min(1, "Bitte Passwort eingeben"),
 });
 
 /**

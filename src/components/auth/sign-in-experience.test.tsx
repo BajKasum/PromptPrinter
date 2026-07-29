@@ -74,11 +74,24 @@ describe("SignInExperience", () => {
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("rejects a password shorter than 8 characters", async () => {
+  it("rejects an empty password without calling Supabase", async () => {
+    render(<SignInExperience />);
+    await fillAndSubmit("user@example.com", "");
+    expect(screen.getByRole("alert")).toHaveTextContent("Bitte Passwort eingeben");
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  // Inverted by Security-Audit finding M-5: this used to assert that login
+  // refused anything under 8 characters. A length rule on a LOGIN form only
+  // locks out accounts whose (valid) password predates the current policy —
+  // Supabase's own default minimum is 6. Short-but-real credentials must reach
+  // the auth server, which is the only thing that can judge them.
+  it("sends a short existing password through to Supabase instead of blocking it", async () => {
     render(<SignInExperience />);
     await fillAndSubmit("user@example.com", "short");
-    expect(screen.getByRole("alert")).toHaveTextContent("Mindestens 8 Zeichen");
-    expect(signInWithPassword).not.toHaveBeenCalled();
+    expect(signInWithPassword).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "user@example.com", password: "short" })
+    );
   });
 
   it("maps a Supabase auth error to friendly German copy", async () => {

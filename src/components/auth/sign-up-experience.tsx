@@ -14,10 +14,11 @@ import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SuccessCelebration } from "@/components/brand/success-celebration";
+import { MIN_PASSWORD_LENGTH, PASSWORD_RULE_HINT } from "@/lib/password";
 
 const schema = z.object({
   email: z.string().email("Bitte eine gültige Email eingeben"),
-  password: z.string().min(8, "Mindestens 8 Zeichen"),
+  password: z.string().min(MIN_PASSWORD_LENGTH, PASSWORD_RULE_HINT),
 });
 
 /**
@@ -290,12 +291,12 @@ export function SignUpExperience() {
           </label>
           <PasswordInput
             id="signup-password"
-            placeholder="Passwort (mind. 8 Zeichen)"
+            placeholder={`Passwort (mind. ${MIN_PASSWORD_LENGTH} Zeichen)`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             required
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
           />
         </div>
 

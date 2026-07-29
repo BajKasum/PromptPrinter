@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UpdatePasswordExperience } from "./update-password-experience";
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/lib/password";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -41,7 +42,7 @@ vi.mock("@/components/brand/success-celebration", () => ({
 
 async function fillAndSubmit(next: string, confirm: string) {
   const user = userEvent.setup();
-  const nextInput = screen.getByPlaceholderText("Neues Passwort (mind. 8 Zeichen)");
+  const nextInput = screen.getByPlaceholderText(`Neues Passwort (mind. ${MIN_PASSWORD_LENGTH} Zeichen)`);
   const confirmInput = screen.getByPlaceholderText("Passwort wiederholen");
   if (next) await user.type(nextInput, next);
   if (confirm) await user.type(confirmInput, confirm);
@@ -59,7 +60,7 @@ describe("UpdatePasswordExperience", () => {
   it("rejects a password shorter than 8 characters", async () => {
     render(<UpdatePasswordExperience email="user@example.com" />);
     await fillAndSubmit("short", "short");
-    expect(screen.getByRole("alert")).toHaveTextContent("mindestens 8 Zeichen");
+    expect(screen.getByRole("alert")).toHaveTextContent(PASSWORD_TOO_SHORT_MESSAGE);
     expect(updateUser).not.toHaveBeenCalled();
   });
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SignUpExperience } from "./sign-up-experience";
+import { PASSWORD_RULE_HINT } from "@/lib/password";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -95,7 +96,7 @@ describe("SignUpExperience", () => {
   it("rejects a password shorter than 8 characters", async () => {
     render(<SignUpExperience />);
     await fillAndSubmit("user@example.com", "short");
-    expect(screen.getByRole("alert")).toHaveTextContent("Mindestens 8 Zeichen");
+    expect(screen.getByRole("alert")).toHaveTextContent(PASSWORD_RULE_HINT);
     expect(signUp).not.toHaveBeenCalled();
   });
 
