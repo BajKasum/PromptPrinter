@@ -1,12 +1,22 @@
 import type { MetadataRoute } from "next";
 import { DOCS_ORDER, docHref } from "@/lib/docs-nav";
-
-const BASE = "https://promptprinter.app";
+import { siteUrl } from "@/lib/site-url";
 
 // Public, indexable routes only, the app pages live behind auth. The docs
 // articles are pulled from the same nav source the section itself renders
 // from, so a new article shows up here without a second edit.
+//
+// BASE used to be the literal string "https://promptprinter.app" — a domain
+// that isn't actually assigned yet (CLAUDE.md: appHost in legal.ts is still a
+// placeholder pending the hosting decision), so a real crawler following this
+// sitemap would have hit a domain nobody serves this app from, or someone
+// else's. siteUrl() is the project's own canonical-origin helper (already
+// used for auth-redirect links); reusing it here closes the gap between what
+// the sitemap claims and where the app actually lives (Security-Audit finding
+// L-6). NEXT_PUBLIC_APP_URL is required in production (env.ts's boot check),
+// so this always resolves correctly once deployed.
 export default function sitemap(): MetadataRoute.Sitemap {
+  const BASE = siteUrl();
   const now = new Date();
 
   const marketing: MetadataRoute.Sitemap = [
