@@ -77,6 +77,29 @@ export function extractSavedPromptContents(
     .filter((prompt): prompt is string => prompt !== null);
 }
 
+/**
+ * Turns raw `generations` rows into the `SavedPrompt` shape the UI reads
+ * (`saved-prompt-list.tsx`). Shared by every page that lists saved prompts —
+ * originally only results/page.tsx's own inline version; extracted (QA
+ * finding N-1) once /prompts (the project-independent library) needed the
+ * exact same mapping. Rows with no usable prompt text are dropped rather
+ * than shown as an empty card (defensive: outputs is untyped JSONB, a
+ * malformed row shouldn't render as broken UI).
+ */
+export function mapGenerationRowsToSavedPrompts(
+  rows: { id: string; created_at: string; outputs: Record<string, unknown> | null }[]
+): SavedPrompt[] {
+  return rows
+    .map((row) => {
+      const outputs = (row.outputs ?? {}) as Record<string, unknown>;
+      const content = typeof outputs.prompt === "string" ? outputs.prompt : "";
+      const title = typeof outputs.title === "string" ? outputs.title : "Gespeicherter Prompt";
+      const target = typeof outputs.target === "string" ? outputs.target : null;
+      return { id: row.id, title, content, target, createdAt: row.created_at };
+    })
+    .filter((p) => p.content.trim().length > 0);
+}
+
 const TITLE_MAX = 72;
 
 /**

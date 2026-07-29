@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { Chat } from "@/components/app/chat";
 import { FadeIn } from "@/components/motion/fade-in";
 import { createClient } from "@/lib/supabase/server";
+import { extractSavedPromptContents } from "@/lib/saved-prompts";
+import { SAVED_PROMPTS_LOAD_LIMIT } from "@/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -18,17 +20,28 @@ export default async function NewChatPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: generationRows }] = await Promise.all([
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    // QA finding N-1: saving is project-independent now, a global chat's
+    // dedup (F-7) checks against every one of this user's saved prompts, not
+    // a project-scoped subset. Explicit user_id on top of RLS, same
+    // defense-in-depth as every other user-scoped query here.
+    supabase
+      .from("generations")
+      .select("outputs")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(SAVED_PROMPTS_LOAD_LIMIT),
+  ]);
   const name = profile?.display_name || user.email?.split("@")[0] || null;
+  const savedPrompts = extractSavedPromptContents(
+    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+  );
 
   return (
     <div className="mx-auto max-w-[900px]">
       <FadeIn>
-        <Chat name={name} />
+        <Chat name={name} savedPrompts={savedPrompts} />
       </FadeIn>
     </div>
   );

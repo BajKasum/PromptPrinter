@@ -1,6 +1,7 @@
 import {
   MessageSquare,
   FolderKanban,
+  Bookmark,
   Settings,
   CreditCard,
   Gauge,
@@ -20,7 +21,13 @@ export const primaryNav: NavItem[] = [
   { label: "Projekte", href: "/projects", Icon: FolderKanban },
 ];
 
+// "Gespeicherte Prompts" (QA finding N-1) is deliberately here, not a third
+// primaryNav pill — the two-destinations decision above (Chats/Projekte)
+// stays a chat vs. workspace choice; a saved-prompt library is neither, it's
+// reachable the same way Einstellungen/Abrechnung already are: account menu,
+// ⌘K, and the URL directly.
 export const secondaryNav: NavItem[] = [
+  { label: "Gespeicherte Prompts", href: "/prompts", Icon: Bookmark },
   { label: "Einstellungen", href: "/settings", Icon: Settings },
   { label: "Abrechnung", href: "/billing", Icon: CreditCard },
 ];

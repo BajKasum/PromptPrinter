@@ -6,7 +6,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { SavedPromptList } from "@/components/app/saved-prompt-list";
 import { getProject } from "@/lib/project";
 import { createClient } from "@/lib/supabase/server";
-import type { SavedPrompt } from "@/lib/saved-prompts";
+import { mapGenerationRowsToSavedPrompts } from "@/lib/saved-prompts";
 
 // QA finding P-1: this query used to load every saved prompt a project ever
 // had, full `outputs` JSONB included, unbounded — the single most expensive
@@ -64,15 +64,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const canExportPdf =
     profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";
 
-  const prompts: SavedPrompt[] = ((rowsRaw as GenerationRow[] | null) ?? [])
-    .map((row) => {
-      const outputs = (row.outputs ?? {}) as Record<string, unknown>;
-      const content = typeof outputs.prompt === "string" ? outputs.prompt : "";
-      const title = typeof outputs.title === "string" ? outputs.title : "Gespeicherter Prompt";
-      const target = typeof outputs.target === "string" ? outputs.target : null;
-      return { id: row.id, title, content, target, createdAt: row.created_at };
-    })
-    .filter((p) => p.content.trim().length > 0);
+  const prompts = mapGenerationRowsToSavedPrompts((rowsRaw as GenerationRow[] | null) ?? []);
 
   const backLink = (
     <Link

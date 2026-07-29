@@ -64,6 +64,16 @@ export const MAX_ASSISTANT_MESSAGE_CHARS = 40000;
 export const MESSAGE_LOAD_LIMIT = 300;
 
 /**
+ * How many of a user's saved prompts a global chat page loads for the F-7
+ * dedup check (QA finding N-1: saving is project-independent now, so a
+ * global chat's dedup runs against every saved prompt this user has, not a
+ * project-scoped subset — see chats/new/page.tsx and chats/[id]/page.tsx).
+ * Same reasoning as MESSAGE_LOAD_LIMIT above: bounds a query that would
+ * otherwise scale with the account's entire saved-prompt history.
+ */
+export const SAVED_PROMPTS_LOAD_LIMIT = 200;
+
+/**
  * Caps `s` at `max` characters *including* the ellipsis. The ellipsis used to
  * be appended after slicing to `max`, making the result max + 1 — irrelevant
  * for most callers, but off by exactly the one character that would push a

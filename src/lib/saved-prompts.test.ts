@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { extractPrompt, derivePromptTitle, extractSavedPromptContents } from "@/lib/saved-prompts";
+import {
+  extractPrompt,
+  derivePromptTitle,
+  extractSavedPromptContents,
+  mapGenerationRowsToSavedPrompts,
+} from "@/lib/saved-prompts";
 
 describe("extractPrompt", () => {
   it("returns the body of a single fenced block, trimmed", () => {
@@ -97,5 +102,51 @@ describe("extractSavedPromptContents", () => {
 
   it("returns an empty array for no rows", () => {
     expect(extractSavedPromptContents([])).toEqual([]);
+  });
+});
+
+// QA finding N-1: extracted out of results/page.tsx once /prompts (the
+// project-independent library) needed the exact same GenerationRow ->
+// SavedPrompt mapping.
+describe("mapGenerationRowsToSavedPrompts", () => {
+  it("maps a full row", () => {
+    const rows = [
+      {
+        id: "g1",
+        created_at: "2026-07-01T00:00:00Z",
+        outputs: { prompt: "Du bist ein Tutor.", title: "sessionStartPrompt", target: "Cursor" },
+      },
+    ];
+    expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([
+      {
+        id: "g1",
+        title: "sessionStartPrompt",
+        content: "Du bist ein Tutor.",
+        target: "Cursor",
+        createdAt: "2026-07-01T00:00:00Z",
+      },
+    ]);
+  });
+
+  it("falls back to a generic title and null target when either is missing", () => {
+    const rows = [{ id: "g1", created_at: "2026-07-01T00:00:00Z", outputs: { prompt: "Text." } }];
+    expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([
+      {
+        id: "g1",
+        title: "Gespeicherter Prompt",
+        content: "Text.",
+        target: null,
+        createdAt: "2026-07-01T00:00:00Z",
+      },
+    ]);
+  });
+
+  it("drops a row with no usable prompt text", () => {
+    const rows = [
+      { id: "g1", created_at: "2026-07-01T00:00:00Z", outputs: { title: "Kein Prompt" } },
+      { id: "g2", created_at: "2026-07-01T00:00:00Z", outputs: null },
+      { id: "g3", created_at: "2026-07-01T00:00:00Z", outputs: { prompt: "   " } },
+    ];
+    expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([]);
   });
 });

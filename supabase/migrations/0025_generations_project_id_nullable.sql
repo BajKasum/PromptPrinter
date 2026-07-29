@@ -1,0 +1,14 @@
+-- PromptPrinter — allow a saved prompt without a project (QA finding N-1,
+-- reworked per explicit product direction, see commit message)
+-- Run AFTER 0024_drop_conversation_mode.sql.
+--
+-- The QA finding's own two proposed fixes both kept saving tied to a
+-- project (either a "save into a project" picker from the global chat, or
+-- just documenting the limitation). The actual product decision taken
+-- instead: prompts become their own first-class, nameable library —
+-- "sessionStartPrompt" saved once, found later on its own page, independent
+-- of which chat or project it came from. That needs generations.project_id
+-- to accept NULL: a global chat (no project at all) has nothing to point it
+-- at, and RLS/grants here are already scoped by user_id, not project_id
+-- (verified live), so this is a pure nullability change, nothing else moves.
+alter table public.generations alter column project_id drop not null;

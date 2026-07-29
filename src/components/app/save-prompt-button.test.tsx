@@ -67,6 +67,19 @@ describe("SavePromptButton", () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
+  // QA finding N-1: saving is project-independent now — a global chat has
+  // no projectId at all, not even an empty string, and must still save.
+  it("saves with project_id: null when projectId is omitted (a global chat)", async () => {
+    render(<SavePromptButton prompt="Du bist ein Tutor." />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Speichern" }));
+
+    expect(await screen.findByRole("button", { name: "Gespeichert" })).toBeDisabled();
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({ project_id: null, user_id: "user-1" })
+    );
+  });
+
   it("shows an error toast and stays saveable when the insert fails", async () => {
     insert.mockResolvedValue({ error: { message: "db down" } });
     render(<SavePromptButton projectId="p1" prompt="Du bist ein Tutor." />);

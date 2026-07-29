@@ -50,4 +50,14 @@ describe("ChatResultPanel", () => {
     );
     expect(screen.getByRole("button", { name: "Speichern" })).not.toBeDisabled();
   });
+
+  // QA finding N-1: saving used to require a project — a global chat (no
+  // projectId at all) had nowhere to save into. Saved prompts are their own,
+  // project-independent library now (see save-prompt-button.tsx), so the
+  // button must show up here too.
+  it("offers the save button in a global chat, with no projectId at all", () => {
+    const content = "```text\nEin globaler Prompt.\n```";
+    render(<ChatResultPanel content={content} />);
+    expect(screen.getByRole("button", { name: "Speichern" })).toBeInTheDocument();
+  });
 });

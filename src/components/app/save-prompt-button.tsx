@@ -9,28 +9,38 @@ import { derivePromptTitle } from "@/lib/saved-prompts";
 
 type SaveState = "idle" | "saving" | "saved";
 
-// The "Prompt speichern" affordance in a project chat's result panel: persists
-// the current prompt into the project's Ergebnisse (a `generations` row with
-// outputs = { prompt, title, target }). Zero extra model calls, it just keeps
-// text the user already has. The insert goes through the RLS-scoped browser
-// client (owner-only insert policy, 0001), the same pattern the project rail
-// uses for its own writes, so no API route is needed. Only ever rendered for a
-// project chat with an actual prompt to save (see chat-result-panel.tsx).
+// The "Prompt speichern" affordance in a chat's result panel: persists the
+// current prompt into the user's saved-prompt library (a `generations` row
+// with outputs = { prompt, title, target }). Zero extra model calls, it just
+// keeps text the user already has. The insert goes through the RLS-scoped
+// browser client (owner-only insert policy, 0001), the same pattern the
+// project rail uses for its own writes, so no API route is needed. Only ever
+// rendered for a chat with an actual prompt to save (see chat-result-panel.tsx).
+//
+// QA finding N-1 (reworked per explicit product direction, not the audit's
+// own two proposed fixes — see migration 0025's comment): saving used to
+// require a project. `projectId` is optional now — omitted (or null) for a
+// global chat, migration 0025 made generations.project_id nullable for
+// exactly this. A saved prompt is a first-class, project-independent thing
+// now, found later on /prompts (saved-prompt-list.tsx), named and renamed
+// there, not scoped to wherever it happened to be written.
 //
 // QA finding F-7: without any dedup check, the same prompt could be saved
 // arbitrarily often (the button re-arms itself after 2.5s). Fixed without a
 // migration (option 3 in the finding): the page already knows which prompts
-// are already saved for this project (see results/page.tsx's callers), so
+// are already saved (project-scoped or, for a global chat, all of this
+// user's saved prompts — see the various page.tsx callers), so
 // `initiallySaved` lets the button start — and stay — in the "saved" state
-// for a prompt that's already in the project's Ergebnisse, disabling re-saves
-// entirely instead of just delaying them.
+// for a prompt that's already saved, disabling re-saves entirely instead of
+// just delaying them.
 export function SavePromptButton({
   projectId,
   prompt,
   target,
   initiallySaved = false,
 }: {
-  projectId: string;
+  /** Omit (or null) for a global chat — the saved prompt isn't tied to a project. */
+  projectId?: string | null;
   prompt: string;
   target?: string | null;
   initiallySaved?: boolean;
@@ -58,7 +68,7 @@ export function SavePromptButton({
     }
 
     const { error } = await supabase.from("generations").insert({
-      project_id: projectId,
+      project_id: projectId ?? null,
       user_id: user.id,
       outputs: {
         prompt,
@@ -79,8 +89,8 @@ export function SavePromptButton({
     }
 
     setState("saved");
-    toast({ title: "In Ergebnissen gespeichert", variant: "success" });
-    // Refresh so the project's result counter (header + rail) picks it up.
+    toast({ title: "Prompt gespeichert", variant: "success" });
+    // Refresh so any visible counter (project header/rail) picks it up.
     router.refresh();
     // Stays "saved" for good (no re-arm timer): this exact prompt is now in
     // the project's Ergebnisse, saving it again would just create a duplicate.
