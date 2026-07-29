@@ -229,6 +229,23 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
+  // The schema allows either role in any position (it validates each message
+  // shape independently), but persistTurn (chat-persistence.ts) treats the
+  // LAST entry as inherently "the new user message" — it stores it verbatim
+  // as `role: newUser.role`. The client always appends a user message before
+  // posting, so this never fires in the real UI, but a crafted direct POST
+  // ending in an assistant-role entry would otherwise get persisted as two
+  // consecutive assistant rows (Security-Audit finding L-5). Reject here
+  // instead, the same principle F-4 already applies elsewhere in this route:
+  // a request that doesn't fit the shape a turn requires is refused, never
+  // silently stored mislabeled.
+  if (input.messages[input.messages.length - 1].role !== "user") {
+    return problem(
+      400,
+      "Die Anfrage konnte nicht verarbeitet werden. Lade die Seite neu und versuch es erneut."
+    );
+  }
+
   // 3. Enforce the monthly chat allowance, unless the caller configured their
   //    own BYOK key. Chat had no monthly cap for a long time, only the hourly
   //    rate limit below, so a free user with no BYOK key could otherwise chat

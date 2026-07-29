@@ -62,8 +62,16 @@ export async function persistTurn(
   }
 
   // The client appends the user message before posting, so the last entry is
-  // always the new user turn. Store it alongside the assistant reply.
+  // always the new user turn. route.ts enforces this as a real validation
+  // step before calling persistTurn (Security-Audit finding L-5) — this was
+  // previously an unchecked assumption, storing whatever role the wire
+  // carried in that position. Asserted again here, not just documented,
+  // since persistTurn's own contract depends on it regardless of what its
+  // one current caller happens to guarantee.
   const newUser = input.messages[input.messages.length - 1];
+  if (newUser.role !== "user") {
+    throw new Error("persistTurn: last message must be role 'user'");
+  }
   // Never store a reply the request contract couldn't accept back: it would be
   // replayed on the next turn and fail validation, which is exactly how a chat
   // used to die permanently (QA finding F-2). The provider's own max_tokens

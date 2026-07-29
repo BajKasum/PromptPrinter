@@ -608,5 +608,26 @@ describe("POST /api/chat", () => {
       expect(res.status).toBe(400);
       expect(chatCompleteStream).not.toHaveBeenCalled();
     });
+
+    // Security-Audit finding L-5: persistTurn (chat-persistence.ts) stores the
+    // transcript's LAST entry verbatim as the new "user" turn — `role:
+    // newUser.role`, not a hardcoded "user". The real UI always appends a user
+    // message before posting, but a crafted direct POST ending in an
+    // assistant-role entry would otherwise have been persisted as two
+    // consecutive assistant rows. Schema-valid (each message shape is checked
+    // independently of position), so only this explicit check catches it.
+    it("rejects a transcript that doesn't end on a user turn", async () => {
+      const res = await POST(
+        req({
+          messages: [
+            { role: "user", content: "a" },
+            { role: "assistant", content: "b" },
+          ],
+        })
+      );
+
+      expect(res.status).toBe(400);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
   });
 });
