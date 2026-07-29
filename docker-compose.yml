@@ -23,12 +23,15 @@ services:
     env_file:
       - .env
     healthcheck:
-      # No external curl in alpine — use node's http to ping the root.
+      # No external curl in alpine — use node's http to ping /api/health.
+      # Was "/" (the marketing page), which renders from static output even when
+      # Supabase and Upstash are unreachable, so the container reported healthy
+      # while nothing a signed-in user does worked (Security-Audit finding M-4).
       test:
         - CMD
         - node
         - -e
-        - "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+        - "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 3

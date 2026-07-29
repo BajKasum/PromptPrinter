@@ -14,6 +14,10 @@
 // business decision, not a code one, so it is left open on purpose rather than
 // guessed at.
 //
+// Events also go to an alert webhook when ALERT_WEBHOOK_URL is set, so a
+// production incident reaches a human instead of only a log file — see
+// lib/alerting.ts for why that is a webhook rather than a vendor SDK.
+//
 // PRIVACY: message content NEVER goes into a log line. Not the user's prompt,
 // not the model's reply, not the contents of an attached file. Those are the
 // most sensitive thing this product touches, they would end up in a third-party
@@ -21,6 +25,8 @@
 // them — lengths and counts answer "what happened" without carrying "what was
 // said". redactContext below enforces that on the way through, so a careless
 // call site can't leak it either.
+
+import { dispatchAlert } from "@/lib/alerting";
 
 /** Keys whose values are never safe to log, whatever the call site intended. */
 const FORBIDDEN_KEYS = [
@@ -82,16 +88,21 @@ export function redactContext(context: LogContext, depth = 0): LogContext {
 
 type Level = "info" | "warn" | "error";
 
-function emit(level: Level, event: string, context: LogContext): void {
+/** Writes the log line and returns the redacted context, so callers that also
+ *  ship the event onward (dispatchAlert) reuse the same sanitized object rather
+ *  than redacting twice or, worse, forwarding the raw one. */
+function emit(level: Level, event: string, context: LogContext): LogContext {
+  const safe = redactContext(context);
   const line = JSON.stringify({
     ts: new Date().toISOString(),
     level,
     event,
-    ...redactContext(context),
+    ...safe,
   });
   if (level === "error") console.error(line);
   else if (level === "warn") console.warn(line);
   else console.log(line);
+  return safe;
 }
 
 /** A normal operational event worth counting (a chat turn, a tripped guard). */
@@ -99,26 +110,41 @@ export function logEvent(event: string, context: LogContext = {}): void {
   emit("info", event, context);
 }
 
-/** Something went wrong but the request survived it. */
+/**
+ * Something went wrong but the request survived it.
+ *
+ * Also alerted on: every current caller is a degradation someone needs to know
+ * about within minutes, not at the next log review — Redis unreachable, Upstash
+ * missing in production, the daily spend budget exhausted (rate-limit.ts).
+ */
 export function logWarning(event: string, context: LogContext = {}): void {
-  emit("warn", event, context);
+  const safe = emit("warn", event, context);
+  void dispatchAlert("warning", event, safe);
 }
 
 /**
  * The single place an error leaves the application.
  *
- * Wire an error-reporting SDK in HERE and nowhere else — every call site
- * already routes through it, so adding one is a change to this function alone.
- * Whatever gets wired in must keep the redaction above: an SDK's default
+ * Two sinks, both fed from the same redacted object: the structured stdout line
+ * (for whatever drain the platform provides) and the alert webhook, when one is
+ * configured (lib/alerting.ts, Security-Audit finding M-4). Until that webhook
+ * existed this function only wrote to stdout, which on an unattended deployment
+ * is indistinguishable from having no error reporting at all.
+ *
+ * Still the one seam: if a real APM SDK is ever chosen, it is wired in HERE and
+ * nowhere else, because every call site already routes through this function.
+ * Whatever gets wired in must keep the redaction above — an SDK's default
  * behaviour of attaching request bodies would put user prompts into a
  * third-party service.
  */
 export function captureError(event: string, error: unknown, context: LogContext = {}): void {
-  emit("error", event, {
+  const safe = emit("error", event, {
     ...context,
     error: error instanceof Error ? error.message : String(error),
     errorType: error instanceof Error ? error.name : typeof error,
     // Stack frames are file paths and function names, never user data.
     stack: error instanceof Error ? error.stack?.split("\n").slice(0, 5).join(" | ") : undefined,
   });
+  // Not awaited: callers are on request paths and alerting is best-effort.
+  void dispatchAlert("error", event, safe);
 }

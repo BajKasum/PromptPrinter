@@ -6,6 +6,7 @@ import { UsageMeter } from "@/components/app/usage-meter";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readDailyServerKeyUsage } from "@/lib/rate-limit";
+import { alertingConfigured } from "@/lib/alerting";
 import { llmConfig } from "@/lib/llm";
 
 export const dynamic = "force-dynamic";
@@ -126,6 +127,18 @@ export default async function AdminPage() {
       </FadeIn>
 
       <FadeIn delay={0.12}>
+        {/* Whether anyone would actually hear about an incident. This page is
+            pull-based — it only helps someone who already suspects a problem
+            and logs in to look. The webhook is the push half. */}
+        {!alertingConfigured() && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-3 text-[13px] text-warning">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
+            <span>
+              Kein Alert-Webhook konfiguriert (<code>ALERT_WEBHOOK_URL</code>). Fehler
+              und Warnungen landen nur im Log, niemand wird aktiv benachrichtigt.
+            </span>
+          </div>
+        )}
         <p className="mt-6 text-[12.5px] leading-relaxed text-muted-foreground">
           Kostenschätzung ist eine Grössenordnung, keine Abrechnung: der Streaming-Pfad
           sieht die Token-Zahlen des Anbieters nicht, gerechnet wird mit dem gemessenen
