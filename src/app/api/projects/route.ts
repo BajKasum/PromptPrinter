@@ -4,6 +4,11 @@ import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
+import {
+  MAX_SMALL_BODY_BYTES,
+  RequestBodyTooLargeError,
+  readJsonBody,
+} from "@/lib/request-body";
 
 export const runtime = "nodejs";
 
@@ -17,10 +22,22 @@ const createProjectSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Session first, body second (Security-Audit finding H-3): parsing before
+  // authenticating let an unauthenticated caller make the server read and parse
+  // an unbounded payload just to be told 401. readJsonBody caps the read too.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return problem(401, "Anmeldung erforderlich.");
+
   let body: unknown;
   try {
-    body = await req.json();
-  } catch {
+    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof RequestBodyTooLargeError) {
+      return problem(413, "Die Anfrage ist zu gross.");
+    }
     return problem(400, "Invalid JSON body");
   }
 
@@ -30,12 +47,6 @@ export async function POST(req: Request) {
       issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
     });
   }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
 
   // Plan allowance, the project cap now gates workspace creation. Filter by
   // owner explicitly even though RLS already scopes the count (defense in

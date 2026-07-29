@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
+import { MAX_CHAT_BODY_BYTES } from "@/lib/request-body";
 
 // Guards the fix for QA finding S-1: /api/chat used to serve anonymous callers,
 // which skipped the whole monthly-quota block (it hung off `userId`) and ran
@@ -550,7 +551,28 @@ describe("POST /api/chat", () => {
   });
 
   describe("input validation", () => {
-    it("rejects a malformed body with 400 before touching auth", async () => {
+    // Inverted by Security-Audit finding H-3. This used to assert the opposite
+    // ("400 before touching auth") and so pinned the vulnerable ordering in
+    // place: parsing the body first meant an anonymous caller could make the
+    // server buffer and JSON-parse an arbitrarily large payload and only then
+    // be told 401. Authentication now runs first, so a malformed body from an
+    // unauthenticated caller is a 401 — the body is never read at all.
+    it("authenticates before reading the body, so an anonymous malformed body is 401", async () => {
+      getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+
+      const request = new Request("https://promptprinter.app/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "not json",
+      });
+      const res = await POST(request);
+
+      expect(res.status).toBe(401);
+      expect(getUser).toHaveBeenCalled();
+      expect(request.bodyUsed).toBe(false);
+    });
+
+    it("rejects a malformed body with 400 once the caller is signed in", async () => {
       const res = await POST(
         new Request("https://promptprinter.app/api/chat", {
           method: "POST",
@@ -560,7 +582,24 @@ describe("POST /api/chat", () => {
       );
 
       expect(res.status).toBe(400);
-      expect(getUser).not.toHaveBeenCalled();
+    });
+
+    // The ceiling is enforced by streaming byte count, but an honest
+    // content-length short-circuits before the body is touched at all.
+    it("rejects an oversized body with 413 without reading it", async () => {
+      const request = new Request("https://promptprinter.app/api/chat", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "content-length": String(MAX_CHAT_BODY_BYTES + 1),
+        },
+        body: JSON.stringify({ messages: [{ role: "user", content: "Hi" }] }),
+      });
+      const res = await POST(request);
+
+      expect(res.status).toBe(413);
+      expect(request.bodyUsed).toBe(false);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
     });
 
     it("rejects a request that fails the schema with 400", async () => {

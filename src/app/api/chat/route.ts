@@ -16,6 +16,11 @@ import { chatCompleteStream, llmConfig, classifyLlmFailure, LlmEmptyReplyError }
 import { getUserOverride } from "@/lib/byok";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
+import {
+  MAX_CHAT_BODY_BYTES,
+  RequestBodyTooLargeError,
+  readJsonBody,
+} from "@/lib/request-body";
 import { captureError, logEvent } from "@/lib/observability";
 import { CHAT_SYSTEM_PROMPT } from "@/prompts";
 import { buildProjectContext } from "@/lib/project-context";
@@ -164,24 +169,14 @@ function describeLlmFailure(kind: ReturnType<typeof classifyLlmFailure>): string
 }
 
 export async function POST(req: Request) {
-  // 1. Parse + validate the transcript the client replays each turn.
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return problem(400, "Die Anfrage konnte nicht gelesen werden. Lade die Seite neu.");
-  }
-
-  const parsed = chatRequestSchema.safeParse(clampStoredReplies(normalizeTranscript(body)));
-  if (!parsed.success) {
-    return problem(400, describeValidationFailure(parsed.error.issues), {
-      issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
-    });
-  }
-  const input = parsed.data;
-
-  // 2. Require a session. This route used to allow anonymous callers ("allowed
-  //    but rate-limited harder"), which made it the only cost-incurring route
+  // 1. Require a session BEFORE touching the body (Security-Audit finding
+  //    H-3). Reading and JSON-parsing first meant an unauthenticated caller
+  //    could make the server buffer and parse an arbitrarily large payload and
+  //    only then receive a 401 — Next's route handlers have no built-in body
+  //    limit, and the rate limiter runs later still, so nothing bounded it.
+  //
+  //    This route also used to allow anonymous callers outright ("allowed but
+  //    rate-limited harder"), which made it the only cost-incurring route
   //    without an auth gate — /api/projects, /api/settings/api-key and
   //    /api/account all 401 first. Two things compounded that: the entire
   //    monthly-quota block below hangs off `userId`, so an anonymous request
@@ -214,6 +209,25 @@ export async function POST(req: Request) {
   // (TypeScript widens a `let` back to `string | null` inside a callback, since
   // it can't prove nothing reassigns it in between).
   const userId = sessionUserId;
+
+  // 2. Read + validate the transcript the client replays each turn, bounded.
+  let body: unknown;
+  try {
+    body = await readJsonBody(req, MAX_CHAT_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof RequestBodyTooLargeError) {
+      return problem(413, "Die Anfrage ist zu gross. Starte einen neuen Chat.");
+    }
+    return problem(400, "Die Anfrage konnte nicht gelesen werden. Lade die Seite neu.");
+  }
+
+  const parsed = chatRequestSchema.safeParse(clampStoredReplies(normalizeTranscript(body)));
+  if (!parsed.success) {
+    return problem(400, describeValidationFailure(parsed.error.issues), {
+      issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
+    });
+  }
+  const input = parsed.data;
 
   // 3. Enforce the monthly chat allowance, unless the caller configured their
   //    own BYOK key. Chat had no monthly cap for a long time, only the hourly

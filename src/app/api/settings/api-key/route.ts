@@ -5,6 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { chatComplete, type LlmOverride } from "@/lib/llm";
 import { encrypt } from "@/lib/crypto";
 import { problem } from "@/lib/api-problem";
+import {
+  MAX_SMALL_BODY_BYTES,
+  RequestBodyTooLargeError,
+  readJsonBody,
+} from "@/lib/request-body";
 
 export const runtime = "nodejs";
 
@@ -35,10 +40,24 @@ const saveSchema = z.discriminatedUnion("provider", [
 ]);
 
 export async function POST(req: Request) {
+  // Session first, body second (Security-Audit finding H-3): parsing before
+  // authenticating let an unauthenticated caller make the server read and parse
+  // an unbounded payload just to be told 401. Doubly worth it here — the body
+  // carries a plaintext API key, so the less that happens with it before the
+  // caller is known, the better.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return problem(401, "Anmeldung erforderlich.");
+
   let body: unknown;
   try {
-    body = await req.json();
-  } catch {
+    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof RequestBodyTooLargeError) {
+      return problem(413, "Die Anfrage ist zu gross.");
+    }
     return problem(400, "Invalid JSON body");
   }
 
@@ -49,12 +68,6 @@ export async function POST(req: Request) {
     });
   }
   const { provider, apiKey } = parsed.data;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
 
   // Admin exemption mirrors /api/chat, /api/projects and /api/account:
   // a single is_admin lookup gates whether the hourly limit below applies.
