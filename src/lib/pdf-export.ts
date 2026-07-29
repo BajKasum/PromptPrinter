@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 
-// Pro-only export (pricing-preview.tsx → "PDF- & Markdown-Export"). Renders
+// Pro-only export (lib/pricing.ts → "PDF- & Markdown-Export"). Renders
 // the artifact's markdown as real, selectable text, not a rasterized
 // screenshot (jsPDF's `.html()`/html2canvas path), so the output stays
 // small, crisp at any zoom, and searchable/copyable. Markdown support is

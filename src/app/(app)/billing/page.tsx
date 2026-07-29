@@ -3,7 +3,7 @@ import { Check, Clock } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PlanBadge } from "@/components/app/plan-badge";
 import { UsageMeter } from "@/components/app/usage-meter";
-import { PLANS } from "@/components/marketing/pricing-preview";
+import { PLANS } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { getConfiguredProviders } from "@/lib/byok";

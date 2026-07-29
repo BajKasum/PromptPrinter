@@ -43,7 +43,7 @@ export default async function SavedPromptsPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
-    // PDF export is Pro/Team (pricing-preview.tsx), Free only gets copy/markdown.
+    // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
   ]);
   const canExportPdf =

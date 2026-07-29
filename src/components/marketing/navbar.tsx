@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import { cn } from "@/lib/utils";
 
-// In-page section links. Native <a> (not next/link) so the browser handles the
-// hash jump, next/link is for route changes and scrolls unreliably to a bare
-// hash in the App Router. Smooth scroll + the targets' scroll-mt do the rest.
+// Real routes, not in-page anchors. Both used to point at sections of the
+// landing page (#produkt / #preise), so "Funktionen" and "Preise" only ever
+// scrolled you further down one long page and were unreachable from anywhere
+// else on the site. They're their own destinations now, which is also why
+// these are next/link again — the hash-jump workaround that anchors needed
+// doesn't apply to route changes.
 const nav = [
-  { label: "Funktionen", href: "#produkt" },
-  { label: "Preise", href: "#preise" },
+  { label: "Funktionen", href: "/features" },
+  { label: "Preise", href: "/pricing" },
 ];
 
 export function Navbar() {
@@ -83,13 +86,13 @@ export function Navbar() {
           </Link>
           <div className="hidden items-center gap-1 md:flex">
             {nav.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 className="rounded-md px-3 py-1.5 text-[13.5px] text-secondary transition-colors hover:text-foreground"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -140,14 +143,14 @@ export function Navbar() {
         <div className="flex h-full flex-col justify-between gap-y-2 p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2">
           <nav aria-label="Mobile Navigation" className="grid gap-y-1">
             {nav.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 text-base text-foreground/80 transition-colors hover:bg-surface-hover hover:text-foreground"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <div className="flex flex-col gap-2">

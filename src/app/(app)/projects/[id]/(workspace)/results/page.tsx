@@ -60,7 +60,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .select("id", { count: "exact", head: true })
       .eq("project_id", id)
       .eq("user_id", userId),
-    // PDF export is Pro/Team (pricing-preview.tsx), Free only gets copy/markdown.
+    // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
     user
       ? supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle()
       : Promise.resolve({ data: null }),
