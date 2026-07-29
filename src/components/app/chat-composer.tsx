@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { MAX_USER_MESSAGE_CHARS } from "@/lib/chat-limits";
 import { TargetPicker } from "@/components/app/target-picker";
+import { useVisualViewportInset } from "@/lib/use-visual-viewport-inset";
 
 // Caps how tall the composer can grow before it scrolls internally instead,
 // matches the Claude/ChatGPT feel: starts at one line, grows with content,
@@ -37,6 +38,10 @@ export function ChatComposer({
   onTargetChange?: (next: string | undefined) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // QA finding K-1: keeps the sticky composer pinned above an on-screen
+  // keyboard on iOS Safari instead of floating mid-screen or hiding behind
+  // it. 0 everywhere else (no keyboard open, no VisualViewport support).
+  const keyboardInset = useVisualViewportInset();
 
   // The server rejects anything above this, and pasting a long spec or log into
   // the composer is exactly what this audience does. Without the cap that came
@@ -58,7 +63,9 @@ export function ChatComposer({
   }, [input]);
 
   return (
-    <div className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5">
+    <div
+      style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
+      className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5">
       {/* Above the input, not inside it: it qualifies what gets written, so it
           belongs next to the writing, and it stays reachable in a chat that
           already has turns (an empty-state-only control would strand those). */}

@@ -51,6 +51,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // QA finding K-1: asks Chrome/Android to resize the layout viewport itself
+  // when the on-screen keyboard opens, instead of leaving it full-height and
+  // just shrinking the visual viewport underneath — the mismatch that lets a
+  // `sticky bottom-0` composer end up hidden behind the keyboard. iOS Safari
+  // doesn't fully honor this the same way, that half is handled in
+  // chat-composer.tsx via lib/use-visual-viewport-inset.ts instead.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0c0e12" },

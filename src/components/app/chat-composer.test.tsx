@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatComposer } from "./chat-composer";
 import { MAX_USER_MESSAGE_CHARS } from "@/lib/chat-limits";
@@ -8,7 +8,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {
   const onInputChange = vi.fn();
   const onSend = vi.fn();
   const onStop = vi.fn();
-  render(
+  const utils = render(
     <ChatComposer
       input=""
       onInputChange={onInputChange}
@@ -19,7 +19,25 @@ function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {
       {...overrides}
     />
   );
-  return { onInputChange, onSend, onStop };
+  return { onInputChange, onSend, onStop, ...utils };
+}
+
+// jsdom doesn't implement the VisualViewport API (window.visualViewport is
+// undefined by default), so the "keyboard open" tests below stub a minimal
+// EventTarget-based fake and swap it in.
+class FakeVisualViewport extends EventTarget {
+  height: number;
+  offsetTop: number;
+  constructor(height: number, offsetTop = 0) {
+    super();
+    this.height = height;
+    this.offsetTop = offsetTop;
+  }
+  resize(height: number, offsetTop = 0) {
+    this.height = height;
+    this.offsetTop = offsetTop;
+    this.dispatchEvent(new Event("resize"));
+  }
 }
 
 describe("ChatComposer", () => {
@@ -109,5 +127,63 @@ describe("ChatComposer", () => {
     const { onInputChange } = setup({ input: "" });
     await user.type(screen.getByPlaceholderText("Schreib etwas..."), "x");
     expect(onInputChange).toHaveBeenCalledWith("x");
+  });
+
+  // QA finding K-1: `sticky bottom-0` alone leaves the composer stranded
+  // behind (or floating above) an iOS on-screen keyboard, since it only
+  // reacts to the layout viewport, not the visual one the keyboard shrinks.
+  // The composer's own wrapper gets an inline `bottom` push once
+  // useVisualViewportInset reports a non-zero inset.
+  describe("keyboard inset (QA finding K-1)", () => {
+    const originalVisualViewport = window.visualViewport;
+    const originalInnerHeight = window.innerHeight;
+
+    afterEach(() => {
+      Object.defineProperty(window, "visualViewport", {
+        value: originalVisualViewport,
+        configurable: true,
+      });
+      Object.defineProperty(window, "innerHeight", {
+        value: originalInnerHeight,
+        configurable: true,
+      });
+    });
+
+    function stickyWrapper(container: HTMLElement) {
+      return container.querySelector(".sticky") as HTMLElement | null;
+    }
+
+    it("applies no bottom offset when no keyboard is open", () => {
+      Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+      Object.defineProperty(window, "visualViewport", {
+        value: new FakeVisualViewport(800),
+        configurable: true,
+      });
+      const { container } = setup();
+      expect(stickyWrapper(container)?.style.bottom).toBe("");
+    });
+
+    it("pushes the composer up by exactly the keyboard's height once the visual viewport shrinks", () => {
+      Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+      const vv = new FakeVisualViewport(800);
+      Object.defineProperty(window, "visualViewport", { value: vv, configurable: true });
+      const { container } = setup();
+
+      act(() => vv.resize(500));
+
+      expect(stickyWrapper(container)?.style.bottom).toBe("300px");
+    });
+
+    it("returns to no offset once the keyboard closes again", () => {
+      Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+      const vv = new FakeVisualViewport(800);
+      Object.defineProperty(window, "visualViewport", { value: vv, configurable: true });
+      const { container } = setup();
+
+      act(() => vv.resize(500));
+      expect(stickyWrapper(container)?.style.bottom).toBe("300px");
+      act(() => vv.resize(800));
+      expect(stickyWrapper(container)?.style.bottom).toBe("");
+    });
   });
 });
