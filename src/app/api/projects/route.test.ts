@@ -114,4 +114,21 @@ describe("POST /api/projects", () => {
     const res = await POST(req());
     expect(res.status).toBe(500);
   });
+
+  // Security-Audit finding M-1: the detail used to interpolate error.message,
+  // handing a caller the database's own vocabulary (constraints, columns,
+  // policy names).
+  it("never surfaces the database's own error text", async () => {
+    insert.mockResolvedValue({
+      data: null,
+      error: { message: 'new row violates row-level security policy for table "projects"' },
+    });
+    const res = await POST(req());
+    const body = (await res.json()) as { detail: string };
+
+    expect(res.status).toBe(500);
+    expect(body.detail).not.toContain("row-level security");
+    expect(body.detail).not.toContain("projects");
+    expect(body.detail).toBe("Projekt konnte nicht angelegt werden. Bitte versuch es erneut.");
+  });
 });

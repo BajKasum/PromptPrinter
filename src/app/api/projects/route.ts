@@ -4,6 +4,7 @@ import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
 import { problem } from "@/lib/api-problem";
+import { captureError } from "@/lib/observability";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
@@ -93,7 +94,13 @@ export async function POST(req: Request) {
     .single();
 
   if (error || !project?.id) {
-    return problem(500, `Projekt konnte nicht angelegt werden: ${error?.message ?? "unbekannt"}`);
+    // Generic to the client, detailed to the logs (Security-Audit finding
+    // M-1): a PostgREST/Postgres message names constraints, columns and
+    // policies, which is schema disclosure for anyone who can POST here.
+    captureError("projects.create_failed", error ?? new Error("insert returned no id"), {
+      userId: user.id,
+    });
+    return problem(500, "Projekt konnte nicht angelegt werden. Bitte versuch es erneut.");
   }
 
   return NextResponse.json({ projectId: project.id as string });

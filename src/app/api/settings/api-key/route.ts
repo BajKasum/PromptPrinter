@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { chatComplete, type LlmOverride } from "@/lib/llm";
 import { encrypt } from "@/lib/crypto";
 import { problem } from "@/lib/api-problem";
+import { captureError } from "@/lib/observability";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
@@ -148,7 +149,14 @@ export async function POST(req: Request) {
     .from("user_api_keys")
     .upsert(row, { onConflict: "user_id,provider" });
   if (error) {
-    return problem(500, `Key konnte nicht gespeichert werden: ${error.message}`);
+    // Generic to the client, detailed to the logs (Security-Audit finding
+    // M-1). Note the contrast with the test-call above: that one deliberately
+    // surfaces the provider's own message because it is the key owner's only
+    // way to tell a typo from a revoked key. This one is OUR database talking,
+    // and its message names constraints and columns — nothing the user can act
+    // on, everything an attacker would like to know.
+    captureError("api_key.save_failed", error, { userId: user.id, provider });
+    return problem(500, "Key konnte nicht gespeichert werden. Bitte versuch es erneut.");
   }
 
   return NextResponse.json({ ok: true });
@@ -172,7 +180,8 @@ export async function DELETE(req: Request) {
     .eq("user_id", user.id)
     .eq("provider", provider);
   if (error) {
-    return problem(500, `Key konnte nicht entfernt werden: ${error.message}`);
+    captureError("api_key.delete_failed", error, { userId: user.id, provider });
+    return problem(500, "Key konnte nicht entfernt werden. Bitte versuch es erneut.");
   }
 
   return NextResponse.json({ ok: true });

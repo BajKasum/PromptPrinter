@@ -388,6 +388,8 @@ export async function POST(req: Request) {
   //    dialect, see readOpenAiCompatibleSse in lib/llm.ts for that one):
   //      event: delta  data: {"text": "..."}   zero or more, as text arrives
   //      event: done   data: {conversationId?, persistError?}   exactly one, on success
+  //        persistError is a stable CODE ("persist_failed"), never a message —
+  //        see the catch below (Security-Audit finding M-1).
   //      event: error  data: {"detail": "..."}                  exactly one, on failure
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -470,11 +472,18 @@ export async function POST(req: Request) {
       // and can be reopened/continued. Persistence failures are surfaced but
       // never block the reply the user is waiting on.
       let conversationId: string | null = input.conversationId ?? null;
+      // A stable CODE, never the underlying message (Security-Audit finding
+      // M-1). This used to carry err.message straight to the browser, i.e.
+      // PostgREST/Postgres text naming constraints, columns and policies —
+      // free schema disclosure. The client only ever tested this for
+      // truthiness to show its own fixed German warning (chat.tsx), so the
+      // text was never read by anyone but an attacker. captureError below
+      // still gets the original for the logs.
       let persistError: string | null = null;
       try {
         conversationId = await persistTurn(supabase, userId, input, reply, verifiedProjectId);
       } catch (err) {
-        persistError = err instanceof Error ? err.message : "persist failed";
+        persistError = "persist_failed";
         conversationId = null;
         captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });
       }

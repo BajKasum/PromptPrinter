@@ -161,6 +161,37 @@ describe("POST /api/settings/api-key", () => {
     const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
     expect(res.status).toBe(500);
   });
+
+  // Security-Audit finding M-1: this used to interpolate error.message into
+  // the response, i.e. PostgREST/Postgres text naming constraints, columns and
+  // policies — schema disclosure to anyone who can POST here.
+  it("never surfaces the database's own error text", async () => {
+    upsert.mockResolvedValue({
+      error: {
+        message:
+          'duplicate key value violates unique constraint "user_api_keys_user_id_provider_key"',
+      },
+    });
+    const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
+    const body = (await res.json()) as { detail: string };
+
+    expect(res.status).toBe(500);
+    expect(body.detail).not.toContain("constraint");
+    expect(body.detail).not.toContain("user_api_keys");
+    expect(body.detail).toBe("Key konnte nicht gespeichert werden. Bitte versuch es erneut.");
+  });
+
+  // The one deliberate exception, kept on purpose: the provider's own message
+  // during the pre-save test call is the key owner's only way to tell a typo
+  // from a revoked key, and it is THEIR provider talking, not our database.
+  it("still surfaces the provider's own message when the key test fails", async () => {
+    chatComplete.mockRejectedValueOnce(new Error("invalid_api_key"));
+    const res = await POST(post({ provider: "anthropic", apiKey: "bad" }));
+    const body = (await res.json()) as { detail: string };
+
+    expect(res.status).toBe(400);
+    expect(body.detail).toContain("invalid_api_key");
+  });
 });
 
 describe("DELETE /api/settings/api-key", () => {
@@ -189,5 +220,17 @@ describe("DELETE /api/settings/api-key", () => {
     getUser.mockResolvedValue({ data: { user: null } });
     const res = await DELETE(del("anthropic"));
     expect(res.status).toBe(401);
+  });
+
+  it("never surfaces the database's own error text (QA finding M-1)", async () => {
+    deleteRow.mockResolvedValue({
+      error: { message: 'permission denied for table "user_api_keys"' },
+    });
+    const res = await DELETE(del("anthropic"));
+    const body = (await res.json()) as { detail: string };
+
+    expect(res.status).toBe(500);
+    expect(body.detail).not.toContain("permission denied");
+    expect(body.detail).not.toContain("user_api_keys");
   });
 });
