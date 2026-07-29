@@ -23,12 +23,22 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
  * explicit `.eq("user_id", userId)` rather than relying on RLS, since the
  * admin client bypasses RLS entirely (defense-in-depth, same principle as
  * every other user-scoped query in this project).
+ *
+ * Security-Audit finding M-6: this used to take whichever key was created
+ * FIRST (`order("created_at").limit(1)`), while the settings UI listed every
+ * configured provider as connected — so a user with two keys had one silently
+ * ignored, with no way to tell which. `is_active` (migration 0030) makes that
+ * an explicit, user-owned choice, and a partial unique index guarantees at most
+ * one per user. The created_at tiebreak is kept purely as a safety net for a
+ * row set that somehow has none active; it can only be reached if the
+ * migration's backfill and the delete-promotion trigger both failed to apply.
  */
 export async function getUserOverride(userId: string): Promise<LlmOverride | null> {
   const { data } = await createAdminClient()
     .from("user_api_keys")
     .select("provider, encrypted_key, base_url, model")
     .eq("user_id", userId)
+    .order("is_active", { ascending: false })
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -59,6 +69,28 @@ export async function getConfiguredProviders(
 ): Promise<ByokProvider[]> {
   const { data } = await supabase.from("user_api_keys").select("provider").eq("user_id", userId);
   return ((data ?? []) as { provider: ByokProvider }[]).map((r) => r.provider);
+}
+
+/**
+ * The provider whose key actually runs this user's chats, or null when they
+ * have none configured (Security-Audit finding M-6).
+ *
+ * Exists so the settings UI can state which of several connected keys is in
+ * use, instead of showing all of them as equally "connected" while one silently
+ * wins. Reads `is_active` through the request-scoped client — that column is in
+ * `authenticated`'s SELECT allowlist (0020/0030), unlike `encrypted_key`.
+ */
+export async function getActiveProvider(
+  supabase: SupabaseServerClient,
+  userId: string
+): Promise<ByokProvider | null> {
+  const { data } = await supabase
+    .from("user_api_keys")
+    .select("provider")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return (data?.provider as ByokProvider | undefined) ?? null;
 }
 
 export type CustomProviderMeta = { label: string; baseUrl: string; model: string };

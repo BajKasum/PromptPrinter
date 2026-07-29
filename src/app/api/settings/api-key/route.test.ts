@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DELETE, POST } from "./route";
+import { DELETE, PATCH, POST } from "./route";
 
 // QA finding C-6. This route is where a user's own provider key enters the
 // system: it decides what gets encrypted, what gets stored, and whether a bad
@@ -11,6 +11,7 @@ const chatComplete = vi.fn();
 const encrypt = vi.fn();
 const upsert = vi.fn();
 const deleteRow = vi.fn();
+const rpc = vi.fn();
 
 const tableResults: Record<string, { data?: unknown; error?: unknown }> = {};
 
@@ -27,7 +28,11 @@ function builder(table: string) {
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser }, from: (t: string) => builder(t) }),
+  createClient: async () => ({
+    auth: { getUser },
+    from: (t: string) => builder(t),
+    rpc: (fn: string, args: unknown) => rpc(fn, args),
+  }),
 }));
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
@@ -41,6 +46,14 @@ function post(body: unknown) {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
+  });
+}
+
+function patch(body: unknown) {
+  return new Request("https://promptprinter.app/api/settings/api-key", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
   });
 }
 
@@ -61,7 +74,10 @@ describe("POST /api/settings/api-key", () => {
     // assertion below pass for the wrong reason.
     encrypt.mockReturnValue("ENCRYPTED_BLOB");
     upsert.mockResolvedValue({ error: null });
+    rpc.mockResolvedValue({ error: null });
     tableResults.profiles = { data: { is_admin: false } };
+    // No active key yet, so a first save activates itself (Security-Audit M-6).
+    tableResults.user_api_keys = { data: null };
   });
 
   it("stores a named provider's key encrypted, never in plaintext", async () => {
@@ -232,5 +248,87 @@ describe("DELETE /api/settings/api-key", () => {
     expect(res.status).toBe(500);
     expect(body.detail).not.toContain("permission denied");
     expect(body.detail).not.toContain("user_api_keys");
+  });
+});
+
+// Security-Audit finding M-6: getUserOverride used to take whichever key was
+// created FIRST, silently, while the settings UI listed every configured
+// provider as connected. Which key is billed is now stored state.
+describe("BYOK active-provider selection (M-6)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    rateLimit.mockResolvedValue({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 });
+    chatComplete.mockResolvedValue({ text: "OK", usage: null });
+    encrypt.mockReturnValue("ENCRYPTED_BLOB");
+    upsert.mockResolvedValue({ error: null });
+    rpc.mockResolvedValue({ error: null });
+    tableResults.profiles = { data: { is_admin: false } };
+    tableResults.user_api_keys = { data: null };
+  });
+
+  it("activates the first key, or it would be stored and then ignored", async () => {
+    tableResults.user_api_keys = { data: null }; // nothing active yet
+
+    await POST(post({ provider: "anthropic", apiKey: "k" }));
+
+    expect(rpc).toHaveBeenCalledWith("set_active_byok_provider", {
+      target_provider: "anthropic",
+    });
+  });
+
+  // Connecting a second provider must not silently move which account gets
+  // billed — that is the user's decision, made through PATCH.
+  it("does not steal the active slot when one is already set", async () => {
+    tableResults.user_api_keys = { data: { provider: "anthropic" } };
+
+    await POST(post({ provider: "openai", apiKey: "k" }));
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("switches the active provider through the atomic RPC", async () => {
+    tableResults.user_api_keys = { data: { provider: "openai" } };
+
+    const res = await PATCH(patch({ provider: "openai" }));
+
+    expect(res.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("set_active_byok_provider", { target_provider: "openai" });
+  });
+
+  // Without this guard the RPC would set every row to is_active = false
+  // (nothing matches the provider), silently dropping the user back onto the
+  // server's key and its plan limits.
+  it("refuses to activate a provider the user has no key for", async () => {
+    tableResults.user_api_keys = { data: null };
+
+    const res = await PATCH(patch({ provider: "gemini" }));
+
+    expect(res.status).toBe(404);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown provider", async () => {
+    const res = await PATCH(patch({ provider: "hackerman" }));
+    expect(res.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("requires authentication", async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+    const res = await PATCH(patch({ provider: "openai" }));
+    expect(res.status).toBe(401);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("never surfaces the database's own error text when activation fails", async () => {
+    tableResults.user_api_keys = { data: { provider: "openai" } };
+    rpc.mockResolvedValue({ error: { message: 'permission denied for table "user_api_keys"' } });
+
+    const res = await PATCH(patch({ provider: "openai" }));
+    const body = (await res.json()) as { detail: string };
+
+    expect(res.status).toBe(500);
+    expect(body.detail).not.toContain("permission denied");
   });
 });

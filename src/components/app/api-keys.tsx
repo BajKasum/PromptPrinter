@@ -31,15 +31,25 @@ const PROVIDERS: { id: Provider; logo: string; name: string; sub: string }[] = [
  */
 export function ApiKeys({
   configured,
+  active,
   customProvider,
 }: {
   configured: AnyProvider[];
+  /** Which stored key actually runs this user's chats (Security-Audit M-6). */
+  active: AnyProvider | null;
   customProvider: CustomProviderMeta | null;
 }) {
   return (
     <div className="space-y-2">
       {PROVIDERS.map((p) => (
-        <ProviderRow key={p.id} provider={p} connected={configured.includes(p.id)} />
+        <ProviderRow
+          key={p.id}
+          provider={p}
+          connected={configured.includes(p.id)}
+          isActive={active === p.id}
+          // Only worth offering a switch when there is something to switch to.
+          canActivate={configured.length > 1}
+        />
       ))}
       <CustomProviderRow connected={customProvider} />
     </div>
@@ -49,8 +59,12 @@ export function ApiKeys({
 function ProviderRow({
   provider,
   connected,
+  isActive,
+  canActivate,
 }: {
   provider: { id: Provider; logo: string; name: string; sub: string };
+  isActive: boolean;
+  canActivate: boolean;
   connected: boolean;
 }) {
   const router = useRouter();
@@ -79,6 +93,35 @@ function ProviderRow({
     } catch (err) {
       toast({
         title: "Konnte nicht gespeichert werden",
+        description: err instanceof Error ? err.message : "Unbekannter Fehler.",
+        variant: "error",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Switching which stored key is billed (Security-Audit finding M-6). The
+  // server does the swap in one statement (set_active_byok_provider), so there
+  // is never a moment with two active keys or none.
+  async function activate() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/settings/api-key", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: provider.id }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.detail ?? "Key konnte nicht aktiviert werden.");
+      }
+      toast({ title: `${provider.name} ist jetzt aktiv`, variant: "success" });
+      router.refresh();
+    } catch (err) {
+      toast({
+        title: "Konnte nicht aktiviert werden",
         description: err instanceof Error ? err.message : "Unbekannter Fehler.",
         variant: "error",
       });
@@ -129,10 +172,27 @@ function ProviderRow({
 
         {connected ? (
           <div className="flex shrink-0 items-center gap-2">
-            <span className="flex items-center gap-1 text-[11px] font-medium text-success">
-              <Check className="h-3 w-3" />
-              Verbunden
-            </span>
+            {/* Security-Audit finding M-6: every connected provider used to read
+                "Verbunden" while exactly one of them was actually in use. Which
+                one is the thing worth saying. */}
+            {isActive ? (
+              <span className="flex items-center gap-1 text-[11px] font-medium text-success">
+                <Check className="h-3 w-3" />
+                Aktiv
+              </span>
+            ) : canActivate ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 shrink-0 text-[11px]"
+                onClick={() => void activate()}
+                disabled={busy}
+              >
+                Aktivieren
+              </Button>
+            ) : (
+              <span className="text-[11px] font-medium text-tertiary">Verbunden</span>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -140,6 +200,7 @@ function ProviderRow({
               onClick={() => void remove()}
               disabled={busy}
               aria-label={`${provider.name}-Key entfernen`}
+              data-testid={`remove-${provider.id}`}
             >
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             </Button>

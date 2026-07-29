@@ -40,6 +40,8 @@ const saveSchema = z.discriminatedUnion("provider", [
   }),
 ]);
 
+const activateSchema = z.object({ provider: z.enum(PROVIDERS) });
+
 export async function POST(req: Request) {
   // Session first, body second (Security-Audit finding H-3): parsing before
   // authenticating let an unauthenticated caller make the server read and parse
@@ -157,6 +159,79 @@ export async function POST(req: Request) {
     // on, everything an attacker would like to know.
     captureError("api_key.save_failed", error, { userId: user.id, provider });
     return problem(500, "Key konnte nicht gespeichert werden. Bitte versuch es erneut.");
+  }
+
+  // A first key has to become the active one, or it would be stored and then
+  // ignored — the exact silence Security-Audit finding M-6 is about. Later keys
+  // deliberately do NOT steal the slot: switching is the user's call (PATCH
+  // below), so connecting a second provider never changes which key is billed
+  // without them asking for it.
+  const { data: active } = await supabase
+    .from("user_api_keys")
+    .select("provider")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!active) {
+    const { error: activateError } = await supabase.rpc("set_active_byok_provider", {
+      target_provider: provider,
+    });
+    if (activateError) {
+      captureError("api_key.activate_failed", activateError, { userId: user.id, provider });
+    }
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * Switch which stored key actually runs this user's chats (Security-Audit
+ * finding M-6).
+ *
+ * Goes through the set_active_byok_provider RPC rather than two client updates:
+ * clearing the old flag and setting the new one has to be one statement, or a
+ * partial failure leaves the user with either no active key (silently back on
+ * the server's provider and its plan limits) or two, which the partial unique
+ * index rejects.
+ */
+export async function PATCH(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return problem(401, "Anmeldung erforderlich.");
+
+  let body: unknown;
+  try {
+    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof RequestBodyTooLargeError) {
+      return problem(413, "Die Anfrage ist zu gross.");
+    }
+    return problem(400, "Invalid JSON body");
+  }
+
+  const parsed = activateSchema.safeParse(body);
+  if (!parsed.success) return problem(400, "Unbekannter Provider.");
+  const { provider } = parsed.data;
+
+  // Only a provider the user has actually stored may be activated. Without this
+  // the RPC would happily set every row to is_active = false (nothing matches),
+  // silently dropping them back to the server key.
+  const { data: existing } = await supabase
+    .from("user_api_keys")
+    .select("provider")
+    .eq("user_id", user.id)
+    .eq("provider", provider)
+    .maybeSingle();
+  if (!existing) return problem(404, "Für diesen Anbieter ist kein Key hinterlegt.");
+
+  const { error } = await supabase.rpc("set_active_byok_provider", {
+    target_provider: provider,
+  });
+  if (error) {
+    captureError("api_key.activate_failed", error, { userId: user.id, provider });
+    return problem(500, "Key konnte nicht aktiviert werden. Bitte versuch es erneut.");
   }
 
   return NextResponse.json({ ok: true });

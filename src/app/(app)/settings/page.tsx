@@ -4,7 +4,7 @@ import { SettingsWorkspace } from "@/components/app/settings-workspace";
 import { parseToolDefaults } from "@/lib/tools";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/lib/plans";
-import { getConfiguredProviders, getCustomProvider } from "@/lib/byok";
+import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/lib/byok";
 
 export const metadata = { title: "Einstellungen" };
 
@@ -28,6 +28,7 @@ export default async function SettingsPage() {
     { count: chatCount },
     configuredProviders,
     customProvider,
+    activeProvider,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -49,6 +50,7 @@ export default async function SettingsPage() {
       .gte("created_at", monthStart),
     getConfiguredProviders(supabase, user.id),
     getCustomProvider(supabase, user.id),
+    getActiveProvider(supabase, user.id),
   ]);
 
   const email = user.email ?? "";
@@ -97,6 +99,7 @@ export default async function SettingsPage() {
         }}
         memberSince={user.created_at ?? null}
         configuredProviders={configuredProviders}
+        activeProvider={activeProvider}
         customProvider={customProvider}
       />
     </div>

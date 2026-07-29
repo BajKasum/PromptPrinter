@@ -59,6 +59,7 @@ export function SettingsWorkspace({
   usage,
   memberSince,
   configuredProviders,
+  activeProvider,
   customProvider,
 }: {
   userId: string;
@@ -75,6 +76,8 @@ export function SettingsWorkspace({
   memberSince: string | null;
   /** Which BYOK providers this user already has a key stored for. */
   configuredProviders: ByokProvider[];
+  /** Which stored key actually runs this user's chats (Security-Audit M-6). */
+  activeProvider: ByokProvider | null;
   /** The user's custom-endpoint BYOK config (no key), if any. */
   customProvider: CustomProviderMeta | null;
 }) {
@@ -271,7 +274,11 @@ export function SettingsWorkspace({
             title="Eigene API-Keys"
             description="Nutze dein eigenes Kontingent statt unserer Limits."
           >
-            <ApiKeys configured={configuredProviders} customProvider={customProvider} />
+            <ApiKeys
+              configured={configuredProviders}
+              active={activeProvider}
+              customProvider={customProvider}
+            />
             <p className="mt-3 text-[12px] text-tertiary">
               Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit
               bleibt bestehen.
