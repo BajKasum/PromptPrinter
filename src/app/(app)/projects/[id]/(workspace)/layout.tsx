@@ -39,22 +39,32 @@ export default async function ProjectWorkspaceLayout({
   const project = await getProject(id);
 
   const supabase = await createClient();
+  // Explicit .eq("user_id", …) alongside RLS on all three (Security-Audit
+  // finding L-3, CLAUDE.md's own defense-in-depth standard) — these were
+  // scoped by project_id alone before. getProject() above already verified
+  // the caller owns `id`, so this can't change what any of the three actually
+  // return today; it's the same belt-and-suspenders the project applies at
+  // every other user-scoped read, kept in sync here rather than left as the
+  // one place that quietly relied on the caller above having checked already.
   const [{ count: chatCount }, { data: latestGen, count: resultCount }, { data: filesRaw }] =
     await Promise.all([
       supabase
         .from("conversations")
         .select("id", { count: "exact", head: true })
-        .eq("project_id", id),
+        .eq("project_id", id)
+        .eq("user_id", project.userId),
       supabase
         .from("generations")
         .select("created_at", { count: "exact" })
         .eq("project_id", id)
+        .eq("user_id", project.userId)
         .order("created_at", { ascending: false })
         .limit(1),
       supabase
         .from("project_files")
         .select("id, name, storage_path, size_bytes, created_at")
         .eq("project_id", id)
+        .eq("user_id", project.userId)
         .order("created_at", { ascending: true }),
     ]);
 

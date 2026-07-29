@@ -24,14 +24,29 @@ export function DeleteProjectButton({
     if (deleting) return;
     setDeleting(true);
     const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setDeleting(false);
+      toast({
+        title: "Nicht angemeldet",
+        description: "Bitte melde dich erneut an.",
+        variant: "error",
+      });
+      return;
+    }
 
     // Storage objects don't cascade with the DB row, clean them up first
     // while the project_files rows (and their storage_path) still exist,
     // otherwise every deleted project leaks its files in the bucket forever.
+    // Explicit user_id alongside project_id: RLS-only before (Security-Audit
+    // finding L-3).
     const { data: files } = await supabase
       .from("project_files")
       .select("storage_path")
-      .eq("project_id", projectId);
+      .eq("project_id", projectId)
+      .eq("user_id", user.id);
     if (files && files.length > 0) {
       await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
     }

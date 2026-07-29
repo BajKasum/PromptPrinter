@@ -9,6 +9,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export type WorkspaceProject = {
   id: string;
+  /** The signed-in owner. Exposed so callers (the workspace layout's own
+   *  chat/result/file counts) can add the same explicit `.eq("user_id", …)`
+   *  defense-in-depth this project applies everywhere else, without a second
+   *  auth round trip — getProject() already paid for this call
+   *  (Security-Audit finding L-3). */
+  userId: string;
   name: string;
   instructions: string | null;
   context: Record<string, string>;
@@ -42,19 +48,26 @@ export const getProject = cache(async (id: string): Promise<WorkspaceProject> =>
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS scopes the read to the owner, a malformed or foreign id yields no row.
+  // RLS scopes the read to the owner; the explicit .eq("user_id", …) is
+  // defense-in-depth on top of it (CLAUDE.md's own standard for user-scoped
+  // queries, Security-Audit finding L-3 — this read was RLS-only before).
+  // Either a foreign owner or a malformed/missing id yields no row, so both
+  // cases 404 identically below rather than distinguishing "not yours" from
+  // "doesn't exist", which would leak which ids are in use.
   const { data } = await supabase
     .from("projects")
     .select(
       "id, name, instructions, context, audience, idea, tools, type, status, is_favorite, updated_at"
     )
     .eq("id", id)
+    .eq("user_id", user.id)
     .maybeSingle<ProjectRow>();
 
   if (!data) notFound();
 
   return {
     ...data,
+    userId: user.id,
     context: asStringRecord(data.context),
     tools: data.tools ? asStringRecord(data.tools) : null,
   };

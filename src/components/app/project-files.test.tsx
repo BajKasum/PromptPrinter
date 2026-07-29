@@ -31,7 +31,15 @@ vi.mock("@/lib/supabase/client", () => ({
       from: () => ({ upload: storageUpload, remove: storageRemove }),
     },
     from: () => ({
-      select: () => ({ eq: () => filesCount() }),
+      // Security-Audit finding L-3 added a second .eq("user_id", …) after the
+      // existing .eq("project_id", …), so this needs to stay chainable rather
+      // than resolving on the first call — same shape supabase-js's real
+      // builder has (each .eq() returns the builder, which is itself
+      // thenable).
+      select: () => {
+        const chain = { eq: () => chain, then: (resolve: (v: unknown) => unknown) => resolve(filesCount()) };
+        return chain;
+      },
       insert: filesInsert,
       delete: () => ({ eq: filesDelete }),
     }),

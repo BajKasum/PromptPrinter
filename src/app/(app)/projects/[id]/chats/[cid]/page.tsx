@@ -30,10 +30,15 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  // Explicit user_id alongside the id lookup: RLS-only defense-in-depth
+  // before (Security-Audit finding L-3) — project.userId is guaranteed
+  // non-null here since getProject() above already redirected an
+  // unauthenticated caller to /login.
   const { data: convo } = await supabase
     .from("conversations")
     .select("id, title, target, project_id")
     .eq("id", cid)
+    .eq("user_id", project.userId)
     .maybeSingle();
 
   if (!convo) notFound();
@@ -50,12 +55,19 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         .from("messages")
         .select("id, role, content")
         .eq("conversation_id", cid)
+        .eq("user_id", project.userId)
         .order("created_at", { ascending: false })
         .limit(MESSAGE_LOAD_LIMIT),
       // Selecting `outputs` (not just a head-count) also gives the save
       // button the already-saved prompt texts, so it can start disabled for a
-      // prompt that's already in the project's Ergebnisse (F-7).
-      supabase.from("generations").select("outputs", { count: "exact" }).eq("project_id", id),
+      // prompt that's already in the project's Ergebnisse (F-7). Explicit
+      // user_id alongside project_id: RLS-only defense-in-depth before
+      // (Security-Audit L-3).
+      supabase
+        .from("generations")
+        .select("outputs", { count: "exact" })
+        .eq("project_id", id)
+        .eq("user_id", project.userId),
       // getProject already redirected to /login if unauthenticated, user.id is
       // safe here; the "" fallback just matches no row instead of throwing.
       supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),

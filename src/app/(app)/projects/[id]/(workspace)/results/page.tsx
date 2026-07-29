@@ -38,8 +38,10 @@ type GenerationRow = {
 export default async function ProjectResultsPage({ params }: { params: Params }) {
   const { id } = await params;
   // Resolves + ownership-scopes the project (404s otherwise), shared request
-  // cache with the workspace layout so it costs no extra query.
-  await getProject(id);
+  // cache with the workspace layout so it costs no extra query. Also the
+  // source of `userId` for the explicit defense-in-depth below (Security-Audit
+  // finding L-3).
+  const { userId } = await getProject(id);
 
   const supabase = await createClient();
   const {
@@ -50,12 +52,14 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .from("generations")
       .select("id, created_at, outputs")
       .eq("project_id", id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(RESULTS_LOAD_LIMIT),
     supabase
       .from("conversations")
       .select("id", { count: "exact", head: true })
-      .eq("project_id", id),
+      .eq("project_id", id)
+      .eq("user_id", userId),
     // PDF export is Pro/Team (pricing-preview.tsx), Free only gets copy/markdown.
     user
       ? supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle()

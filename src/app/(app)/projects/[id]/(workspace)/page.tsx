@@ -26,9 +26,11 @@ type ConversationQueryRow = {
 // Ergebnisse leben unter ./results, jeder Chat unter ./chats/[cid].
 export default async function ProjectOverviewPage({ params }: { params: Params }) {
   const { id } = await params;
-  // Resolves + ownership-scopes the project (404s otherwise); the name/fields
-  // aren't needed on this page, unlike results/page.tsx's own call to this.
-  await getProject(id);
+  // Resolves + ownership-scopes the project (404s otherwise). Also the source
+  // of `userId` for the explicit defense-in-depth below (Security-Audit
+  // finding L-3) — the fields aren't otherwise needed on this page, unlike
+  // results/page.tsx's own call to this.
+  const { userId } = await getProject(id);
 
   const supabase = await createClient();
 
@@ -41,13 +43,15 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
   const { count: chatCount } = await supabase
     .from("conversations")
     .select("id", { count: "exact", head: true })
-    .eq("project_id", id);
+    .eq("project_id", id)
+    .eq("user_id", userId);
   if (!chatCount) redirect(`/projects/${id}/chats/new`);
 
   const { data: raw } = await supabase
     .from("conversations")
     .select("id, title, target, updated_at, messages(count)")
     .eq("project_id", id)
+    .eq("user_id", userId)
     .order("updated_at", { ascending: false });
 
   const chats: ChatListItem[] = ((raw as ConversationQueryRow[] | null) ?? []).map((c) => ({

@@ -78,10 +78,13 @@ export function ProjectFiles({
       // it at insert time, but only after the storage write already
       // happened). A fresh, server-side count right before that write closes
       // the race a step earlier instead of relying solely on the rollback.
+      // Explicit user_id alongside project_id: RLS-only before (Security-Audit
+      // finding L-3), and `user.id` is already in hand for the storage path.
       const { count: currentCount } = await supabase
         .from("project_files")
         .select("id", { count: "exact", head: true })
-        .eq("project_id", projectId);
+        .eq("project_id", projectId)
+        .eq("user_id", user.id);
       if ((currentCount ?? 0) >= MAX_FILES_PER_PROJECT) {
         setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
         setUploading(false);

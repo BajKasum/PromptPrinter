@@ -29,10 +29,16 @@ export async function buildProjectContext(
   userId: string,
   projectId: string
 ): Promise<string | null> {
+  // Explicit user_id alongside RLS on both reads below (Security-Audit finding
+  // L-3): `userId` was already a parameter here specifically to verify
+  // ownership (see the caller in api/chat/route.ts and this function's own
+  // "null return IS not found or not owned" contract), but wasn't actually
+  // applied to either query — RLS alone was doing that job.
   const { data: project } = await supabase
     .from("projects")
     .select("name, idea, instructions, context, tools")
     .eq("id", projectId)
+    .eq("user_id", userId)
     .maybeSingle();
   if (!project) return null;
 
@@ -40,6 +46,7 @@ export async function buildProjectContext(
     .from("generations")
     .select("outputs")
     .eq("project_id", projectId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -68,7 +75,7 @@ export async function buildProjectContext(
     parts.push(`Structure:\n${structureLines.join("\n")}`);
   }
 
-  const filesBlock = await buildFilesContext(supabase, projectId);
+  const filesBlock = await buildFilesContext(supabase, userId, projectId);
   if (filesBlock) parts.push(filesBlock);
 
   const idea = typeof project.idea === "string" ? project.idea.trim() : "";
@@ -92,12 +99,16 @@ ${parts.join("\n\n")}
 // applies exactly as for the signed-in owner, no service-role needed.
 async function buildFilesContext(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
   projectId: string
 ): Promise<string> {
+  // Explicit user_id alongside project_id (Security-Audit finding L-3): was
+  // RLS-only before, same as the two reads in the caller above.
   const { data: filesRaw } = await supabase
     .from("project_files")
     .select("name, storage_path")
     .eq("project_id", projectId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
   const files = (filesRaw as { name: string; storage_path: string }[] | null) ?? [];
   if (files.length === 0) return "";
