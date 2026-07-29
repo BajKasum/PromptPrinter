@@ -6,10 +6,20 @@ import { Loader2, Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
+import {
+  ALLOWED_AVATAR_MIME_TYPES,
+  MAX_AVATAR_BYTES,
+  avatarStoragePath,
+  hasAllowedAvatarMimeType,
+} from "@/lib/avatar";
 
 // One file per user at a fixed path; upsert replaces it in place so storage
 // never accumulates orphans. A ?v= cache-buster forces browsers/CDN to refetch.
-const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+//
+// The checks below are instant feedback only — the bucket's own
+// allowed_mime_types/file_size_limit and the path-pinned insert policy
+// (migration 0027, Security-Audit finding H-1) are what actually enforce this.
+// Both sides read the same constants from lib/avatar.ts so they can't drift.
 
 export function AvatarUpload({
   userId,
@@ -41,11 +51,15 @@ export function AvatarUpload({
     if (!file) return;
 
     setError(null);
-    if (!file.type.startsWith("image/")) {
+    // Exact allowlist, not `image/*`: the bucket rejects anything outside it, so
+    // matching here keeps the message specific instead of a generic upload
+    // failure. SVG is excluded on purpose — it can carry script and the bucket
+    // is public.
+    if (!hasAllowedAvatarMimeType(file.type)) {
       setError("Bitte eine Bilddatei wählen (JPG, PNG, WebP oder GIF).");
       return;
     }
-    if (file.size > MAX_BYTES) {
+    if (file.size > MAX_AVATAR_BYTES) {
       setError("Das Bild ist zu gross, höchstens 2 MB.");
       return;
     }
@@ -53,7 +67,7 @@ export function AvatarUpload({
     setBusy(true);
     try {
       const supabase = createClient();
-      const path = `${userId}/avatar`;
+      const path = avatarStoragePath(userId);
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
@@ -93,7 +107,7 @@ export function AvatarUpload({
     setBusy(true);
     try {
       const supabase = createClient();
-      await supabase.storage.from("avatars").remove([`${userId}/avatar`]);
+      await supabase.storage.from("avatars").remove([avatarStoragePath(userId)]);
 
       const { error: updateError } = await supabase
         .from("profiles")
@@ -145,7 +159,7 @@ export function AvatarUpload({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept={ALLOWED_AVATAR_MIME_TYPES.join(",")}
             className="hidden"
             onChange={(e) => void handleFile(e)}
           />

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { captureError } from "@/lib/observability";
+import { avatarStoragePath } from "@/lib/avatar";
 
 export const runtime = "nodejs";
 
@@ -57,9 +58,10 @@ export async function DELETE(req: Request) {
     if (files && files.length > 0) {
       await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
     }
-    // Always a fixed "{uid}/avatar" path (avatar-upload.tsx upserts in
-    // place), removing a path that was never uploaded is a harmless no-op.
-    await supabase.storage.from("avatars").remove([`${user.id}/avatar`]);
+    // Always a fixed "{uid}/avatar" path (avatar-upload.tsx upserts in place,
+    // and migration 0027 pins the insert policy to exactly that name), removing
+    // a path that was never uploaded is a harmless no-op.
+    await supabase.storage.from("avatars").remove([avatarStoragePath(user.id)]);
   } catch (err) {
     captureError("account.storage_cleanup_failed", err, { userId: user.id });
   }
