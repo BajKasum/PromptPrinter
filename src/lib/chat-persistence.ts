@@ -40,7 +40,6 @@ export async function persistTurn(
       .from("conversations")
       .insert({
         user_id: userId,
-        mode: input.mode,
         target: input.target ?? null,
         title,
         project_id: verifiedProjectId,

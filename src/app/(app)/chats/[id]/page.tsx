@@ -30,7 +30,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // RLS scopes the read to the owner, a foreign or malformed id yields no row.
   const { data: convo } = await supabase
     .from("conversations")
-    .select("id, title, mode, target, project_id")
+    .select("id, title, target, project_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -53,7 +53,6 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const name = profile?.display_name || user.email?.split("@")[0] || null;
-  const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
   const target = (convo.target as string | null) ?? undefined;
 
   return (
@@ -74,7 +73,6 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
         </div>
       </FadeIn>
       <Chat
-        mode={mode}
         target={target}
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}

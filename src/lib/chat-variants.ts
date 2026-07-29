@@ -1,10 +1,12 @@
-export type ChatMode = "general" | "software";
-
-// There is one chat (REDESIGN.md, Phase 2), no mode choice at the start. The
-// `mode` prop survives as an internal value (legacy conversations carry it, and
-// the API picks its system prompt from it), but the empty state is identical
-// for both stored modes. Only refining a project's packet is its own context.
-export type Variant = "general" | "software" | "refine";
+// There is one chat (REDESIGN.md, Phase 2), no mode choice at the start.
+// Only refining a project's packet is its own context.
+//
+// QA finding C-2: this used to also carry a "software" value, mirroring the
+// legacy conversations.mode column (dropped in migration 0024) — but it
+// mapped to the exact same EmptyConfig as "general" below, so it never
+// changed anything this function returned. Removed along with the column
+// and the `mode`/`ChatMode` parameter that only ever fed it.
+export type Variant = "general" | "refine";
 
 type EmptyConfig = { heading: string };
 
@@ -15,8 +17,6 @@ const UNIFIED_EMPTY: EmptyConfig = { heading: "Woran arbeiten wir" };
 
 const VARIANTS: Record<Variant, EmptyConfig> = {
   general: UNIFIED_EMPTY,
-  // Legacy mode value on old conversations; the chat experience is one.
-  software: UNIFIED_EMPTY,
   refine: { heading: "Pass deine Prompts an" },
 };
 
@@ -26,8 +26,8 @@ const PROJECT_FRESH: EmptyConfig = { heading: "Woran arbeiten wir hier?" };
 
 // A project chat is its own context; every standalone chat is the one
 // unified chat.
-export function resolveVariant(mode: ChatMode, projectId: string | undefined): Variant {
-  return projectId ? "refine" : mode;
+export function resolveVariant(projectId: string | undefined): Variant {
+  return projectId ? "refine" : "general";
 }
 
 export type ResolvedEmptyState = { heading: string; placeholder: string };

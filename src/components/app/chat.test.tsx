@@ -52,18 +52,18 @@ describe("Chat", () => {
   });
 
   it("shows just Finn's greeting when there are no messages", () => {
-    render(<Chat mode="general" />);
+    render(<Chat />);
     expect(screen.getByText("Woran arbeiten wir?")).toBeInTheDocument();
   });
 
   it("personalizes the greeting with the user's name when given", () => {
-    render(<Chat mode="general" name="Kasum" />);
+    render(<Chat name="Kasum" />);
     expect(screen.getByText("Woran arbeiten wir, Kasum?")).toBeInTheDocument();
   });
 
   it("sends a message, shows it optimistically, and renders the streamed reply", async () => {
     mockStreamingFetch(["Hier ", "ist dein Plan."], { conversationId: "conv-1" });
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hallo Finn");
@@ -85,7 +85,6 @@ describe("Chat", () => {
     expect(call[0]).toBe("/api/chat");
     expect(call[1].method).toBe("POST");
     const body = JSON.parse(call[1].body);
-    expect(body.mode).toBe("general");
     expect(body.messages).toEqual([
       { id: expect.any(String), role: "user", content: "Hallo Finn" },
     ]);
@@ -93,7 +92,7 @@ describe("Chat", () => {
 
   it("redirects to the canonical chat URL once a fresh conversationId comes back", async () => {
     mockStreamingFetch(["Antwort"], { conversationId: "conv-42" });
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -108,7 +107,6 @@ describe("Chat", () => {
     mockStreamingFetch(["Zweite Antwort"], { conversationId: "conv-1" });
     render(
       <Chat
-        mode="general"
         initialConversationId="conv-1"
         initialMessages={[
           { id: "m1", role: "user", content: "erste Frage" },
@@ -130,7 +128,7 @@ describe("Chat", () => {
 
   it("shows an error and keeps the composer usable when the request fails", async () => {
     mockFetchOnce({ detail: "Server explodiert" }, false);
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -149,7 +147,7 @@ describe("Chat", () => {
       },
     });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -172,7 +170,7 @@ describe("Chat", () => {
       },
     });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -197,7 +195,7 @@ describe("Chat", () => {
 
   it("warns without blocking the composer when the reply couldn't be persisted", async () => {
     mockStreamingFetch(["Antwort da"], { persistError: "insert failed" });
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -218,7 +216,7 @@ describe("Chat", () => {
 
   it("clears a persist warning once the next turn saves successfully", async () => {
     mockStreamingFetch(["Erste Antwort"], { persistError: "insert failed" });
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -243,7 +241,7 @@ describe("Chat", () => {
       },
     });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -286,7 +284,7 @@ describe("Chat", () => {
         return { ok: true, body, json: async () => ({}) };
       })
     );
-    render(<Chat mode="general" />);
+    render(<Chat />);
 
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
@@ -310,7 +308,7 @@ describe("Chat", () => {
   describe("a failed turn (QA finding F-4)", () => {
     async function failWith(body: Record<string, unknown>) {
       mockFetchOnce(body, false);
-      render(<Chat mode="general" />);
+      render(<Chat />);
       await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
     }
@@ -371,7 +369,7 @@ describe("Chat", () => {
       Element.prototype.scrollIntoView = scrollIntoView;
       mockStreamingFetch(["Hier ", "ist ", "dein ", "Prompt"], { conversationId: "conv-1" });
 
-      render(<Chat mode="general" />);
+      render(<Chat />);
       await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
 
@@ -389,7 +387,7 @@ describe("Chat", () => {
       Element.prototype.scrollIntoView = scrollIntoView;
       mockStreamingFetch(["Fertig"], { conversationId: "conv-1" });
 
-      render(<Chat mode="general" />);
+      render(<Chat />);
       await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
       // The reply lands in the live preview bubble first and only moves into
@@ -412,7 +410,7 @@ describe("Chat", () => {
   describe("screen reader announcements (QA finding A-1)", () => {
     it("does not make the transcript itself a live region", async () => {
       mockStreamingFetch(["Fertig"], { conversationId: "conv-1" });
-      render(<Chat mode="general" />);
+      render(<Chat />);
       await userEvent.type(screen.getByRole("textbox"), "Hi");
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
       await screen.findByRole("button", { name: /Senden/ });
@@ -422,7 +420,7 @@ describe("Chat", () => {
 
     it("announces that the answer is finished, once, rather than as it arrives", async () => {
       mockStreamingFetch(["Hier ", "ist ", "dein ", "Prompt"], { conversationId: "conv-1" });
-      const { container } = render(<Chat mode="general" />);
+      const { container } = render(<Chat />);
       await userEvent.type(screen.getByRole("textbox"), "Hi");
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
       await screen.findByRole("button", { name: /Senden/ });
@@ -441,7 +439,7 @@ describe("Chat", () => {
   describe("target tool (QA finding F-3)", () => {
     it("offers a picker and sends nothing until one is chosen", async () => {
       mockStreamingFetch(["ok"], { conversationId: "conv-1" });
-      render(<Chat mode="general" />);
+      render(<Chat />);
 
       expect(screen.getByRole("button", { name: /Ziel-Tool wählen/ })).toBeInTheDocument();
       await userEvent.type(screen.getByRole("textbox"), "Hi");
@@ -453,7 +451,7 @@ describe("Chat", () => {
 
     it("sends the chosen tool with the turn", async () => {
       mockStreamingFetch(["ok"], { conversationId: "conv-1" });
-      render(<Chat mode="general" />);
+      render(<Chat />);
 
       await userEvent.click(screen.getByRole("button", { name: /Ziel-Tool wählen/ }));
       await userEvent.click(screen.getByRole("option", { name: "Cursor" }));
@@ -465,13 +463,13 @@ describe("Chat", () => {
     });
 
     it("shows the current target on the trigger", async () => {
-      render(<Chat mode="general" target="Lovable" />);
+      render(<Chat target="Lovable" />);
       expect(screen.getByRole("button", { name: /Für Lovable/ })).toBeInTheDocument();
     });
 
     it("accepts a tool that is not on the list, since new ones keep appearing", async () => {
       mockStreamingFetch(["ok"], { conversationId: "conv-1" });
-      render(<Chat mode="general" />);
+      render(<Chat />);
 
       await userEvent.click(screen.getByRole("button", { name: /Ziel-Tool wählen/ }));
       await userEvent.type(screen.getByLabelText("Anderes Ziel-Tool"), "Firebase Studio{Enter}");
@@ -484,7 +482,7 @@ describe("Chat", () => {
 
     it("can be cleared back to no particular tool", async () => {
       mockStreamingFetch(["ok"], { conversationId: "conv-1" });
-      render(<Chat mode="general" target="Lovable" />);
+      render(<Chat target="Lovable" />);
 
       await userEvent.click(screen.getByRole("button", { name: /Für Lovable/ }));
       await userEvent.click(screen.getByRole("button", { name: /Kein bestimmtes Tool/ }));

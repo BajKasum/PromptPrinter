@@ -28,7 +28,7 @@ export default async function NewChatPage() {
   return (
     <div className="mx-auto max-w-[900px]">
       <FadeIn>
-        <Chat mode="general" name={name} />
+        <Chat name={name} />
       </FadeIn>
     </div>
   );

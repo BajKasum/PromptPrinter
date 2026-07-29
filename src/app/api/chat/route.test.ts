@@ -74,7 +74,7 @@ vi.mock("@/lib/llm", async (importOriginal) => {
   };
 });
 
-function req(body: unknown = { mode: "general", messages: [{ role: "user", content: "Hi" }] }) {
+function req(body: unknown = { messages: [{ role: "user", content: "Hi" }] }) {
   return new Request("https://promptprinter.app/api/chat", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -385,14 +385,14 @@ describe("POST /api/chat", () => {
     }));
 
     it("accepts a transcript far past the cap instead of 400ing forever", async () => {
-      const res = await POST(req({ mode: "general", messages: longTranscript }));
+      const res = await POST(req({ messages: longTranscript }));
 
       expect(res.status).toBe(200);
       expect(chatCompleteStream).toHaveBeenCalled();
     });
 
     it("forwards only the newest turns to the model, keeping the current one last", async () => {
-      await POST(req({ mode: "general", messages: longTranscript }));
+      await POST(req({ messages: longTranscript }));
 
       const sent = chatCompleteStream.mock.calls[0][0] as { messages: { content: string }[] };
       expect(sent.messages).toHaveLength(12); // CHAT_HISTORY_LIMIT
@@ -400,7 +400,7 @@ describe("POST /api/chat", () => {
     });
 
     it("still rejects an empty transcript", async () => {
-      const res = await POST(req({ mode: "general", messages: [] }));
+      const res = await POST(req({ messages: [] }));
       expect(res.status).toBe(400);
     });
   });
@@ -412,7 +412,6 @@ describe("POST /api/chat", () => {
       // user ceiling that used to be applied to it as well.
       const res = await POST(
         req({
-          mode: "general",
           messages: [
             { role: "user", content: "Baue mir eine Todo-App" },
             { role: "assistant", content: "P".repeat(24_000) },
@@ -428,7 +427,6 @@ describe("POST /api/chat", () => {
     it("clamps a stored reply that is over even the assistant ceiling instead of 400ing", async () => {
       const res = await POST(
         req({
-          mode: "general",
           messages: [
             { role: "user", content: "Baue mir eine Todo-App" },
             { role: "assistant", content: "P".repeat(60_000) },
@@ -445,7 +443,7 @@ describe("POST /api/chat", () => {
 
     it("still rejects an over-long user message, with a German detail", async () => {
       const res = await POST(
-        req({ mode: "general", messages: [{ role: "user", content: "x".repeat(8_001) }] })
+        req({ messages: [{ role: "user", content: "x".repeat(8_001) }] })
       );
 
       expect(res.status).toBe(400);
@@ -463,7 +461,6 @@ describe("POST /api/chat", () => {
     it("merges consecutive user turns before they reach the provider", async () => {
       await POST(
         req({
-          mode: "general",
           messages: [
             { role: "user", content: "Erste Nachricht" },
             { role: "user", content: "Zweite Nachricht" },
@@ -481,7 +478,6 @@ describe("POST /api/chat", () => {
     it("hands every provider a strictly alternating transcript", async () => {
       await POST(
         req({
-          mode: "general",
           messages: [
             { role: "user", content: "a" },
             { role: "user", content: "b" },
@@ -500,7 +496,6 @@ describe("POST /api/chat", () => {
     it("leaves an already-alternating transcript untouched", async () => {
       await POST(
         req({
-          mode: "general",
           messages: [
             { role: "user", content: "a" },
             { role: "assistant", content: "b" },
@@ -526,7 +521,7 @@ describe("POST /api/chat", () => {
       // Default fixture: tableResults.projects has no row, matching both
       // "no such project" and "belongs to someone else" (RLS makes those
       // indistinguishable to the caller, by design).
-      await readSse(await POST(req({ mode: "general", projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+      await readSse(await POST(req({ projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
 
       expect(insertCalls.conversations?.[0]).toMatchObject({ project_id: null });
     });
@@ -537,13 +532,13 @@ describe("POST /api/chat", () => {
         error: null,
       };
 
-      await readSse(await POST(req({ mode: "general", projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+      await readSse(await POST(req({ projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
 
       expect(insertCalls.conversations?.[0]).toMatchObject({ project_id: FOREIGN_PROJECT_ID });
     });
 
     it("does not inject project context for an unowned project either", async () => {
-      await readSse(await POST(req({ mode: "general", projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+      await readSse(await POST(req({ projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
 
       // CHAT_SYSTEM_PROMPT's own "context safety" paragraph mentions the
       // phrase "PROJECT CONTEXT" in every chat, project or not — the actual
@@ -569,7 +564,7 @@ describe("POST /api/chat", () => {
     });
 
     it("rejects a request that fails the schema with 400", async () => {
-      const res = await POST(req({ mode: "general", messages: [] }));
+      const res = await POST(req({ messages: [] }));
 
       expect(res.status).toBe(400);
       expect(chatCompleteStream).not.toHaveBeenCalled();

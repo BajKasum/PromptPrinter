@@ -2,22 +2,18 @@ import { describe, expect, it } from "vitest";
 import { resolveVariant, resolveEmptyState } from "@/lib/chat-variants";
 
 describe("resolveVariant", () => {
-  it("is 'refine' whenever a projectId is present, regardless of mode", () => {
-    expect(resolveVariant("general", "proj-1")).toBe("refine");
-    expect(resolveVariant("software", "proj-1")).toBe("refine");
+  it("is 'refine' whenever a projectId is present", () => {
+    expect(resolveVariant("proj-1")).toBe("refine");
   });
 
-  it("falls back to the raw mode for a standalone chat", () => {
-    expect(resolveVariant("general", undefined)).toBe("general");
-    expect(resolveVariant("software", undefined)).toBe("software");
+  it("is 'general' for a standalone chat", () => {
+    expect(resolveVariant(undefined)).toBe("general");
   });
 });
 
 describe("resolveEmptyState", () => {
-  it("uses the same unified heading for general and software outside a project", () => {
+  it("uses the unified heading outside a project", () => {
     const general = resolveEmptyState("general", false);
-    const software = resolveEmptyState("software", false);
-    expect(general.heading).toBe(software.heading);
     expect(general.heading).toBe("Woran arbeiten wir?");
   });
 

@@ -334,10 +334,10 @@ export async function POST(req: Request) {
 
   // 5. Build the system instruction. One system prompt for every chat now
   //    (CHAT_SYSTEM_PROMPT already asks about the target tool itself when it
-  //    isn't known); `mode` on the request/stored conversation is legacy data
-  //    only, kept for old rows, no longer branches behavior. When the chat
-  //    refines a project, append a compact context block so the assistant
-  //    knows what the project already carries.
+  //    isn't known); the request/stored conversation no longer carries a
+  //    `mode` at all (QA finding C-2 dropped the last-legacy field + column,
+  //    migration 0024). When the chat refines a project, append a compact
+  //    context block so the assistant knows what the project already carries.
   let systemInstruction = CHAT_SYSTEM_PROMPT;
   if (input.target) {
     systemInstruction += `\n\nThe user will paste the resulting prompt into: ${input.target}. Tailor wording to that assistant where it helps.`;

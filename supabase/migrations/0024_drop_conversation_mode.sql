@@ -1,0 +1,17 @@
+-- PromptPrinter — drop the legacy conversations.mode column (QA finding C-2)
+-- Run AFTER 0023_project_summaries_saved_count.sql.
+--
+-- `mode` stopped affecting behavior with the Finn-Umbau (2026-07-22): one
+-- system prompt for every chat now (CHAT_SYSTEM_PROMPT), the mode-based
+-- branching in /api/chat was removed the same day. What was left was pure
+-- wiring with no effect: a required Zod field, a <Chat> prop, a
+-- resolveVariant() parameter, this column with its CHECK constraint, and
+-- four pages threading a value through that nothing downstream read
+-- differently for 'general' vs 'software' (chat-variants.ts's VARIANTS map
+-- sent both to the identical empty-state config). schemas.ts's own comment
+-- named this exact migration as the deferred follow-up.
+--
+-- Dropping the column also drops its dependent CHECK constraint
+-- (conversations_mode_check) and column-level grants automatically —
+-- nothing else references it (verified live: no view, no other function).
+alter table public.conversations drop column mode;

@@ -32,7 +32,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   } = await supabase.auth.getUser();
   const { data: convo } = await supabase
     .from("conversations")
-    .select("id, title, mode, target, project_id")
+    .select("id, title, target, project_id")
     .eq("id", cid)
     .maybeSingle();
 
@@ -62,7 +62,6 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
     ]);
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
-  const mode = convo.mode === "software" ? ("software" as const) : ("general" as const);
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
     (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
@@ -85,7 +84,6 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         </div>
       </FadeIn>
       <Chat
-        mode={mode}
         // The chat's own stored target wins; a chat started before the project
         // had one falls back to the rail's "Ziel-KI" so the two can't disagree.
         target={

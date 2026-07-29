@@ -40,8 +40,6 @@ export default async function NewProjectChatPage({ params }: { params: Params })
     (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
   );
 
-  const mode = project.type === "software" ? ("software" as const) : ("general" as const);
-
   // A chat room, not a workspace panel (Chat-vs-Workspace-Trennung): no rail,
   // no project meta here, same narrow reading column the standalone chats
   // use, so a project chat feels like any other chat, just aware of its
@@ -58,7 +56,6 @@ export default async function NewProjectChatPage({ params }: { params: Params })
         </Link>
       </FadeIn>
       <Chat
-        mode={mode}
         // Seeded from the workspace rail's "Ziel-KI" so a project chat starts
         // knowing what the project already says it builds for.
         target={normalizeTarget(project.context.target)}

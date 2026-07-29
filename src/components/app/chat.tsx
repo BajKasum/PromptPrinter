@@ -14,7 +14,7 @@ import {
   ChatFinishedMarker,
 } from "@/components/app/chat-transcript";
 import { ChatComposer } from "@/components/app/chat-composer";
-import { resolveVariant, resolveEmptyState, type ChatMode } from "@/lib/chat-variants";
+import { resolveVariant, resolveEmptyState } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 import { normalizeTarget } from "@/lib/target-tools";
@@ -50,7 +50,6 @@ function formatRetryDelay(seconds: number): string {
 // the composer no longer risks touching markdown rendering or the
 // empty-state copy along the way.
 export function Chat({
-  mode,
   target: initialTarget,
   projectId,
   initialMessages,
@@ -59,8 +58,6 @@ export function Chat({
   savedPrompts,
   name,
 }: {
-  /** Internal system-prompt selector; legacy conversations may carry "software". */
-  mode: ChatMode;
   target?: string;
   projectId?: string;
   initialMessages?: Msg[];
@@ -74,7 +71,7 @@ export function Chat({
 }) {
   // A project chat is its own context; every standalone chat is the one
   // unified chat. See lib/chat-variants.ts for what each variant means.
-  const variant = resolveVariant(mode, projectId);
+  const variant = resolveVariant(projectId);
   const { heading, placeholder } = resolveEmptyState(variant, hasResults, name);
 
   const router = useRouter();
@@ -232,7 +229,7 @@ export function Chat({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode, target, conversationId, projectId, messages: wireMessages }),
+        body: JSON.stringify({ target, conversationId, projectId, messages: wireMessages }),
         signal: controller.signal,
       });
       if (!res.ok) {
