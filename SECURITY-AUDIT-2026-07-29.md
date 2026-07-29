@@ -32,7 +32,22 @@
 > no MIME allowlist was added to `project-files` (migration 0012 already rejected that on
 > reliability grounds, which still holds).
 >
-> The Low findings (L-1 … L-7) are untouched and remain open.
+> **Low findings — all seven closed the same day, each its own commit:**
+>
+> | # | Finding | Commit | Note |
+> |---|---|---|---|
+> | L-1 | `project_id` ownership on `generations` insert | `2ae2d06` | RLS `WITH CHECK`, live-verified |
+> | L-2 | `project_summaries()` executable by `anon` | `4b7981d` | revoked from PUBLIC, live-verified |
+> | L-3 | missing explicit `user_id` defense-in-depth | `18435a8` | extended to 10 files, not just the 2 originally named |
+> | L-4 | avatar retrieval by known UUID | — | **no code change** — verified there is no surface in this product that ever exposes another user's UUID to begin with (no public profiles, no sharing); building a fix would be speculative hardening against an unreachable scenario |
+> | L-5 | `persistTurn`'s unchecked last-message-is-user assumption | `83bbebf` | rejected at the validation boundary + asserted again in the function itself |
+> | L-6 | hardcoded domain in `robots.ts`/`sitemap.ts` | `e50daff` | now derives from `siteUrl()`, new tests (none existed) |
+> | L-7 | no rate limit on `DELETE`/`PATCH` `/api/settings/api-key` | `a33af23` | also caught `PATCH`, introduced earlier the same day for M-6 |
+>
+> Final gate after all seventeen fixes: typecheck ✅ · lint ✅ · **595 tests** ✅ (from 508 at the start) ·
+> build ✅ · `npm audit` **0 vulnerabilities** ✅. Every fix requiring a database change was applied live
+> against production and verified with real queries (RLS policy tests run as `authenticated` with real
+> JWT claims inside rolled-back transactions), not just read back from `pg_policies`.
 
 
 **Date:** 2026-07-29
