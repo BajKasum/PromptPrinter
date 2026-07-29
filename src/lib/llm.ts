@@ -704,6 +704,29 @@ async function* geminiCompleteStream(
 
 // ─── Anthropic (BYOK only, never the server's own provider) ────────────────
 
+// QA finding P-3: the system instruction (CHAT_SYSTEM_PROMPT + a project
+// chat's context block, see route.ts) is already sent first and stays
+// identical across every turn of a conversation — only the message history
+// after it grows. Marking it as an ephemeral cache breakpoint lets Anthropic
+// serve it from cache on every turn after the first instead of billing full
+// input price for the same text again, typically ~90% cheaper for the cached
+// portion. Silently a no-op below Anthropic's per-model minimum cacheable
+// size (1024-2048 tokens depending on model) — a short global chat with no
+// project context just doesn't benefit, it doesn't error.
+//
+// Z.ai/GLM (the server's own default provider, so where this actually
+// matters most) already reports a cached_tokens field in its usage response,
+// implying automatic prefix caching that needs no request-side flag — the
+// same system-prompt-first ordering this file already uses should already
+// benefit from it server-side. Not verified against a live account (no key
+// available in this environment); Z.ai's own docs don't document the
+// streaming-response shape closely enough to build a measurement path with
+// real confidence, so that stays a follow-up rather than guessed at here
+// (see the finding's own step 3: measure before optimizing further).
+function anthropicSystemBlocks(system: string): Anthropic.TextBlockParam[] {
+  return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+}
+
 async function anthropicComplete(
   model: string,
   system: string,
@@ -714,7 +737,7 @@ async function anthropicComplete(
   const anthropic = new Anthropic({ apiKey });
   const res = await anthropic.messages.create({
     model,
-    system,
+    system: anthropicSystemBlocks(system),
     max_tokens: maxOutputTokens,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
   });
@@ -745,7 +768,7 @@ async function* anthropicCompleteStream(
   const stream = await anthropic.messages.create(
     {
       model,
-      system,
+      system: anthropicSystemBlocks(system),
       max_tokens: maxOutputTokens,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true,
