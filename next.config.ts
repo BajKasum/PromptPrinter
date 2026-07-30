@@ -16,9 +16,17 @@ const securityHeaders = [
   // Send the origin (not the full path) on cross-origin navigations.
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Drop powerful features the app never uses, and opt out of Topics.
+  //
+  // `microphone=(self)` rather than `()`: voice mode (voice-overlay.tsx) calls
+  // getUserMedia, and an empty allowlist denies the feature to EVERY origin
+  // including this one — the promise rejects with NotAllowedError before the
+  // browser ever shows a permission prompt, which looks exactly like the user
+  // having blocked the mic and can't be recovered from in the UI. `(self)`
+  // keeps it available to this origin only; embedded third-party frames still
+  // can't reach it, which is what the header was protecting against.
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+    value: "camera=(), microphone=(self), geolocation=(), browsing-topics=()",
   },
 ];
 

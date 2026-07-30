@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Send, Square } from "lucide-react";
+import { AudioLines, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { MAX_USER_MESSAGE_CHARS } from "@/lib/chat-limits";
@@ -23,6 +23,7 @@ export function ChatComposer({
   loading,
   onSend,
   onStop,
+  onVoice,
   target,
   onTargetChange,
 }: {
@@ -33,6 +34,8 @@ export function ChatComposer({
   onSend: () => void;
   /** Stops an in-flight reply (aborts the fetch), the composer's button switches to this while loading. */
   onStop: () => void;
+  /** Opens voice mode. Omitted where there's no chat to talk to. */
+  onVoice?: () => void;
   /** The build tool the prompt is tailored for; undefined means "not specified". */
   target?: string;
   onTargetChange?: (next: string | undefined) => void;
@@ -88,7 +91,7 @@ export function ChatComposer({
               onSend();
             }
           }}
-          className="min-h-[48px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent py-3 pl-4 pr-14 transition-[height] duration-100 ease-out focus:ring-0"
+          className="min-h-[48px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent py-3 pl-4 pr-[5.5rem] transition-[height] duration-100 ease-out focus:ring-0"
         />
         {/* No permanent "Enter sendet…" hint here, Enter-to-send is a
             convention every chat app already teaches; repeating it on every
@@ -98,12 +101,28 @@ export function ChatComposer({
             aria-live="polite"
             className={
               remaining === 0
-                ? "pointer-events-none absolute bottom-3 right-14 text-[11px] tabular-nums text-destructive"
-                : "pointer-events-none absolute bottom-3 right-14 text-[11px] tabular-nums text-muted-foreground"
+                ? "pointer-events-none absolute bottom-3 right-24 text-[11px] tabular-nums text-destructive"
+                : "pointer-events-none absolute bottom-3 right-24 text-[11px] tabular-nums text-muted-foreground"
             }
           >
             {remaining === 0 ? "Maximale Länge erreicht" : `noch ${remaining} Zeichen`}
           </span>
+        )}
+        {/* Voice mode. Sits beside the send button rather than replacing it:
+            both are ways to say the same thing and which one you want depends
+            on where you are, not on what you've typed. Hidden while a reply is
+            in flight, since voice mode drives that same request itself. */}
+        {onVoice && !loading && (
+          <Button
+            onClick={onVoice}
+            size="icon"
+            variant="subtle"
+            aria-label="Sprachmodus öffnen"
+            title="Sprachmodus"
+            className="absolute bottom-2 right-12 h-9 w-9 shrink-0 rounded-full"
+          >
+            <AudioLines className="h-4 w-4" strokeWidth={1.8} />
+          </Button>
         )}
         {loading ? (
           <Button

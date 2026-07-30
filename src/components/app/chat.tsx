@@ -14,6 +14,7 @@ import {
   ChatFinishedMarker,
 } from "@/components/app/chat-transcript";
 import { ChatComposer } from "@/components/app/chat-composer";
+import { VoiceOverlay } from "@/components/app/voice-overlay";
 import { resolveVariant, resolveEmptyState } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
@@ -87,6 +88,7 @@ export function Chat({
   );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Seconds until a rate-limited request may be retried, straight from the
   // route's own `retryAfter`. Null for every other kind of failure.
@@ -196,9 +198,13 @@ export function Chat({
     if (p?.complete) commitReply(p.text, false);
   }
 
-  async function send(textArg?: string) {
+  // Resolves with the reply text once the stream closes, or null if the turn
+  // failed outright. Typed callers (the composer) ignore it; voice mode needs
+  // it, because it has to read the answer aloud and the reply otherwise only
+  // exists inside `pending` until the on-screen reveal finishes writing it.
+  async function send(textArg?: string): Promise<string | null> {
     const text = (textArg ?? input).trim();
-    if (!text || busy) return;
+    if (!text || busy) return null;
     const next: Msg[] = [...messages, { id: randomId(), role: "user", content: text }];
     setMessages(next);
     setInput("");
@@ -282,6 +288,7 @@ export function Chat({
           }
         }
       }
+      return accumulated;
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
         // User-initiated stop, not a real failure: keep whatever text had
@@ -290,6 +297,7 @@ export function Chat({
         // the same partial text, see /api/chat). No celebration for a reply
         // the user cut short; a no-op if stop() already committed it.
         commitReply(accumulated, false);
+        return accumulated;
       } else if (!(e instanceof StreamProtocolError) && accumulated.trim().length > 0) {
         // QA finding E-2: the connection dropped mid-stream on its own (not a
         // user-initiated stop, and not the route reporting a real failure —
@@ -305,6 +313,7 @@ export function Chat({
         setPersistWarning(
           "Die Verbindung ist mitten in der Antwort abgebrochen. Lade die Seite neu, die Antwort ist eventuell schon gespeichert."
         );
+        return accumulated;
       } else {
         pendingRef.current = null;
         setPending(null);
@@ -320,6 +329,7 @@ export function Chat({
         setError(e instanceof Error ? e.message : "Unbekannter Fehler");
         setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);
       }
+      return null;
     } finally {
       // Only the request is over here. A completed reply that is still being
       // written out keeps `busy` true through `pending` until it commits.
@@ -445,8 +455,19 @@ export function Chat({
         loading={busy}
         onSend={() => send()}
         onStop={stop}
+        onVoice={() => setVoiceOpen(true)}
         target={target}
         onTargetChange={setTarget}
+      />
+
+      {/* Voice mode runs the same turn through the same `send`, so a spoken
+          conversation lands in this transcript and is persisted exactly like a
+          typed one — closing the overlay leaves the chat where it should be,
+          not with a gap where the spoken turns were. */}
+      <VoiceOverlay
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        onSubmit={send}
       />
     </div>
   );
