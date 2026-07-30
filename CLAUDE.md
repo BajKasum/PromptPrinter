@@ -535,16 +535,27 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 
 ## Landing Page, Aktueller Zustand
 
+> ⚠️ **Die öffentliche Website hat seit 2026-07-30 genau zwei Seiten**
+> (`a72c3ba`): die Landing Page und `/pricing`. `/features` existierte einen
+> Tag (`cd639c6`, 2026-07-29) und ist wieder aufgelöst, die Seite verteilte
+> ein Argument auf zwei Orte, die es unterschiedlich erzählten (Landing
+> pitchte Finn und hörte auf, `/features` begrüsste ihn ein zweites Mal und
+> trug die eigentliche Erklärung, wer nie auf „Funktionen" klickte, sah nur
+> den Pitch). `next.config.ts` leitet `/features` dauerhaft auf
+> `/#funktionen` um; Navbar und Footer verlinken direkt den Anker.
+
 **Aktuelle Seiten-Reihenfolge** (`src/app/page.tsx`):
 ```
-Navbar → Hero → HowItWorks → ProductShowcase → PricingPreview →
-FAQ → FinalCTA → Footer
+Navbar → Hero → HowItWorks → FeaturesGrid → ProductShowcase →
+PricingBridge → FAQ → FinalCTA → Footer
 ```
+`HowItWorks` trägt `id="funktionen"` (das Ziel des Navbar-Links, bewusst dort
+und nicht auf `FeaturesGrid`, sonst überspringt der Sprung die drei Schritte,
+die die Feature-Liste erst verständlich machen). `PricingBridge` ist der eine
+Ort auf der Landing Page, der einen Preis nennt, die Pläne selbst bleiben auf
+`/pricing`.
 
 **Entfernte Sektionen** (bewusst gelöscht, nicht wiederherstellen):
-- `FeaturesGrid`, wiederholte dieselben 4 Outputs wie ExampleOutput. Unique Content
-  (Sicherheit, Marketing, Deployment) wurde als neue ExampleOutput-Tabs bewahrt
-  (lebt noch auf `/features`, siehe unten).
 - `Capabilities`, früh entfernt (war Jargon-lastig)
 - `Problem` (Litany + trauriger Finn), auf Nutzerwunsch entfernt (2026-07-16,
   `df538a1`), Komponente gelöscht. War zuvor als „nicht anfassen" markiert.
@@ -555,27 +566,43 @@ FAQ → FinalCTA → Footer
   Hero-CTA „Erst mal zuschauen"), zeigen jetzt auf `#produkt`
   (ProductShowcase), sonst wären sie ins Leere gelaufen.
 
-> **Update:** `HowItWorks` folgt jetzt direkt auf `Hero`, `ProductShowcase`
-> direkt danach auf `PricingPreview`. Schließt den Story-Flow (so gehen wir
-> vor → dein Arbeitsplatz → Preis). Flache `card-surface`-Karten +
-> `building`-Finn heben `HowItWorks` klar von der glänzenden Hero-Demo ab.
+> **Update (2026-07-30):** `HowItWorks` folgt direkt auf `Hero`, danach
+> `FeaturesGrid`, `ProductShowcase` und `PricingBridge`. Schließt den
+> Story-Flow (so gehen wir vor → das bekommst du → dein Arbeitsplatz →
+> Preis). Flache `card-surface`-Karten + `building`-Finn heben `HowItWorks`
+> klar von der glänzenden Hero-Demo ab. `pricing-preview.tsx` existiert nicht
+> mehr, die Pläne stehen seit `cd639c6` auf `/pricing` (`pricing-grid.tsx`).
 
 **Sektion-Dateien:**
 | Datei | Zustand | Finn |
 |---|---|---|
 | `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt`. Subtext auf einen kurzen Zweizeiler gekürzt + vergrößert (18/21px statt 16/18px), Demo-Fensterchrome ohne „PromptPrinter · Demo"-Label (2026-07-16). | `welcoming` + Stage-States |
-| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase. | `building` |
+| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor FeaturesGrid. Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
-| `pricing-preview.tsx` | 2 Tiers: Free/0€ (BYOK) · Pro/7€/Monat | `helping` |
+| `features-grid.tsx` | 6 Karten, was ein Chat tatsächlich liefert. Lebte auf `/features`, seit 2026-07-30 wieder auf der Landing Page, dabei Mono-Eyebrow entfernt (alle anderen Sektionen hatten ihre längst verloren). | `organizing` |
+| `pricing-bridge.tsx` | „Und was kostet das?" + Link auf `/pricing`. Der einzige Ort auf der Landing Page, der einen Preis nennt. | Kein Finn |
 | `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst., Finn" + 5 echte Links | `idle` |
-| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: "Funktionen" (#produkt), "Preise" (#preise) |, |
+| `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst., Finn" + 5 echte Links. Links hovern auf `accent-text` (DESIGN.mds Link-Regel), nicht mehr auf `foreground`. | `idle` |
+| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
 
-**`/features`-Seite** (`src/app/features/page.tsx`, live via Footer-Link +
-Sitemap): Navbar → Intro-Header → HowItWorks → FeaturesGrid → FinalCTA →
-Footer. `ExampleOutput`/`Integrations` waren hier ebenfalls eingebunden,
-mit der Landing-Page-Löschung (2026-07-16) auch hier entfernt.
+**`/pricing`** (`src/app/pricing/page.tsx`): `PageHeader` (nur Headline) →
+`PricingGrid` → 3 Beruhigungs-Karten je mit Finn → `FAQ` → `Footer`. Der
+begrüssende Finn samt Sprechblase und Subline über der Headline ist auf
+Nutzerwunsch weg (2026-07-30), `FinnGreeting` hatte danach keinen Aufrufer
+mehr und ist gelöscht; `page-header.tsx` behält nur Grid + Floaters. Die
+Finns auf den Plan- und Beruhigungs-Karten sind ausdrücklich geblieben, das
+ist weiterhin die Seite, auf der er überall sein soll.
+
+> **Spannung, bewusst eingegangen (2026-07-30):** Die Brand-Prinzipien unten
+> sagen „kein Feature-Grid". `FeaturesGrid` steht trotzdem wieder auf der
+> Landing Page, weil der Nutzer die Funktionen-Seite ausdrücklich mit der
+> Homepage zusammengelegt haben wollte und der Inhalt sonst ersatzlos
+> verschwunden wäre. Das Prinzip stammt aus der Zeit, als das Grid dieselben
+> vier Outputs wie `ExampleOutput` wiederholte (beide gibt es nicht mehr), es
+> ist also nicht mehr dieselbe Sektion, gegen die das Prinzip formuliert
+> wurde. Wenn die Landing Page nochmal überarbeitet wird: das ist die Stelle,
+> an der Prinzip und Ist-Zustand auseinanderliegen.
 
 ---
 
