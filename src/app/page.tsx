@@ -2,7 +2,6 @@ import { FinnAtmosphere } from "@/components/marketing/finn-atmosphere";
 import { Navbar } from "@/components/marketing/navbar";
 import { Hero } from "@/components/marketing/hero";
 import { HowItWorks } from "@/components/marketing/how-it-works";
-import { FeaturesGrid } from "@/components/marketing/features-grid";
 import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { PricingBridge } from "@/components/marketing/pricing-bridge";
 import { FAQ } from "@/components/marketing/faq";
@@ -23,9 +22,14 @@ import { Footer } from "@/components/marketing/footer";
 // it's the one page people arrive at directly, link to, and come back to.
 //
 // The order is the argument, in the order the questions come up: Finn shows the
-// flow (Hero), how it goes (HowItWorks), what you actually get (FeaturesGrid),
-// where you'd work (ProductShowcase), what it costs (PricingBridge), the usual
-// doubts (FAQ), then the ask (FinalCTA).
+// flow (Hero), how it goes (HowItWorks), where you'd work (ProductShowcase),
+// what it costs (PricingBridge), the usual doubts (FAQ), then the ask (FinalCTA).
+//
+// FeaturesGrid (the 6-card "was du bekommst" grid, features-grid.tsx) sat
+// between HowItWorks and ProductShowcase until 2026-07-30 — removed again on
+// request, it repeated ground HowItWorks and ProductShowcase already cover and
+// read as exactly the generic SaaS feature-grid the brand principles below
+// reject. Component deleted (unused, restorable from git history).
 export default function HomePage() {
   return (
     <main className="relative">
@@ -33,7 +37,6 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       <HowItWorks />
-      <FeaturesGrid />
       <ProductShowcase />
       <PricingBridge />
       <FAQ />

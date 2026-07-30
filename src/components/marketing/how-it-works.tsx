@@ -58,9 +58,8 @@ export function HowItWorks() {
   const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   return (
-    // The navbar's "Funktionen" lands here rather than on FeaturesGrid below:
-    // this is where the product explanation starts, and dropping someone into
-    // the feature list skips the three steps that make the list make sense.
+    // The navbar's "Funktionen" lands here: this is where the product
+    // explanation on the landing page starts.
     <section
       id="funktionen"
       className="container-x relative scroll-mt-24 overflow-hidden pt-16 pb-24 md:pt-20 md:pb-32"
