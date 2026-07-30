@@ -61,7 +61,6 @@ describe("updateSession", () => {
     it.each([
       "/",
       "/pricing",
-      "/features",
       "/docs",
       "/docs/erste-schritte",
       "/login",

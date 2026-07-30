@@ -48,13 +48,16 @@ const features = [
 
 export function FeaturesGrid() {
   return (
-    <section id="funktionen" className="scroll-mt-24 container-x py-24 md:py-32">
+    // No id/scroll-mt here: "Funktionen" anchors to HowItWorks, one section up,
+    // so this section is reached by scrolling and doesn't need its own target.
+    // The mono eyebrow ("Das bekommst du von mir") went with the move — every
+    // other landing section lost its eyebrow in the earlier brand passes
+    // (CLAUDE.md, Brand-Audit #4), and this section only still had one because
+    // it used to live on /features.
+    <section className="container-x py-24 md:py-32">
       <FadeIn>
         <div className="mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
-            <div className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text mb-4">
-              Das bekommst du von mir
-            </div>
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
               Eine Idee rein. Ein fertiger Prompt raus.
             </h2>

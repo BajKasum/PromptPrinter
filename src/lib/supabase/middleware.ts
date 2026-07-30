@@ -18,7 +18,9 @@ const PUBLIC_PREFIXES = [
   "/signup",
   "/reset-password",
   "/auth", // the OAuth/email callback completes the session, so it can't need one
-  "/features",
+  // No "/features": next.config.ts redirects it to /#funktionen, and
+  // next.config redirects resolve before middleware runs, so the path never
+  // reaches this check.
   "/pricing",
   "/docs",
   "/agb",

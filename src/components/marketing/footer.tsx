@@ -7,7 +7,10 @@ import { Mascot } from "@/components/brand/mascot";
 // so the hierarchy is visible without turning the footer into a sitemap wall.
 
 const PRODUCT_LINKS = [
-  { href: "/features", label: "Funktionen" },
+  // Anchor, not a route: "Wie es funktioniert" is a section of the landing page
+  // again (see src/app/page.tsx). The leading "/" matters — this footer is on
+  // /pricing too, where a bare "#funktionen" would scroll nowhere.
+  { href: "/#funktionen", label: "Funktionen" },
   { href: "/pricing", label: "Preise" },
   { href: "/docs", label: "Hilfe" },
   { href: "/ueber", label: "Über" },
@@ -41,11 +44,15 @@ export function Footer() {
               aria-label="Seiten"
               className="flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-secondary md:justify-end"
             >
+              {/* Accent on hover, not `foreground`: these are links, and
+                  DESIGN.md's accent rules put links on `accent-text`. Darkening
+                  to the body-text colour made hovering look like nothing much
+                  happened, the same complaint the navbar had. */}
               {PRODUCT_LINKS.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="transition-colors hover:text-foreground"
+                  className="focus-glow rounded-sm underline-offset-4 transition-colors duration-200 hover:text-accent-text hover:underline"
                 >
                   {l.label}
                 </Link>
@@ -59,7 +66,7 @@ export function Footer() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="transition-colors hover:text-foreground"
+                  className="focus-glow rounded-sm underline-offset-4 transition-colors duration-200 hover:text-accent-text hover:underline"
                 >
                   {l.label}
                 </Link>

@@ -1,26 +1,70 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import { cn } from "@/lib/utils";
 
-// Real routes, not in-page anchors. Both used to point at sections of the
-// landing page (#produkt / #preise), so "Funktionen" and "Preise" only ever
-// scrolled you further down one long page and were unreachable from anywhere
-// else on the site. They're their own destinations now, which is also why
-// these are next/link again — the hash-jump workaround that anchors needed
-// doesn't apply to route changes.
+// "Preise" is a real route: its own page, worth linking to directly from
+// anywhere on the site. "Funktionen" is back to an in-page anchor (#funktionen
+// on HowItWorks) now that the landing page carries the explanation inline
+// again (page.tsx's own comment has the full history) — next.config.ts keeps
+// a redirect from the old /features URL for anyone who bookmarked it, but the
+// navbar itself should link straight to the anchor, not round-trip through
+// that redirect on every click.
+//
+// `route` is the pathname this item counts as "the page you're on", and only
+// the real route has one. Funktionen is deliberately never marked active:
+// highlighting it while you sit at the top of the landing page would claim
+// you're in a section you haven't scrolled to yet.
 const nav = [
-  { label: "Funktionen", href: "/features" },
-  { label: "Preise", href: "/pricing" },
-];
+  { label: "Funktionen", href: "/#funktionen", route: null },
+  { label: "Preise", href: "/pricing", route: "/pricing" },
+] as const;
+
+/**
+ * The wave that swims in under a hovered or current nav link — the design
+ * system's water/bioluminescence motif (DESIGN.md, Manifesto #4 and #9) doing
+ * the job a plain colour change was doing badly.
+ *
+ * The reveal, the glow's timing and the reduced-motion fallback all live in
+ * globals.css under `.nav-wave`; this only draws the shape and says whether
+ * this link is the current page.
+ *
+ * The stroke is `accent-text`, not `accent`: the public site is always light,
+ * and `--accent` is the light fill tone — measured at ~1.7:1 against both the
+ * page and the pill behind it, i.e. a line you can barely see. DESIGN.md makes
+ * the same call for accent text. The bloom around it still comes from
+ * `--accent`, which is what makes it read as water-light rather than a hard
+ * rule (Manifesto #9).
+ */
+function NavWave({ active }: { active: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 36 8"
+      fill="none"
+      data-active={active}
+      className="nav-wave pointer-events-none absolute bottom-[3px] left-1/2 h-2 w-9 -translate-x-1/2 text-accent-text drop-shadow-[0_0_3px_hsl(var(--accent)/0.75)]"
+    >
+      <path
+        d="M1 5 Q 5.4 1.7, 9.7 5 T 18.3 5 T 26.8 5 T 35 5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   // Shrink/blur the bar into a floating pill once the user leaves the top.
   // The logo collapse rides the same `scrolled` flag, so both land in the
@@ -84,16 +128,41 @@ export function Navbar() {
           >
             <Logo accentWordmark collapsed={scrolled} />
           </Link>
+          {/* Section links. Hovering used to only darken the label to
+              `foreground`: no feedback on the hit area, nothing to distinguish
+              hover from the page you're actually on, and the one colour it
+              reached for was the plain text colour rather than anything from
+              the brand. Now each link carries a water pill that settles in
+              behind it and a wave that swims in underneath (both in
+              globals.css), and the current page keeps them on. */}
           <div className="hidden items-center gap-1 md:flex">
-            {nav.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="rounded-md px-3 py-1.5 text-[13.5px] text-secondary transition-colors hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {nav.map((item) => {
+              const active = item.route !== null && pathname === item.route;
+              // The anchor item is a native <a> on purpose (see `nav` above),
+              // so the two link kinds can't share one element type.
+              const Tag = item.route === null ? "a" : Link;
+              return (
+                <Tag
+                  key={item.label}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group focus-glow relative isolate rounded-full px-3.5 py-2 text-[13.5px] transition-colors duration-200",
+                    active
+                      ? "font-medium text-accent-text"
+                      : "text-secondary hover:text-accent-text"
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    data-active={active}
+                    className="nav-pill absolute inset-0 -z-10 rounded-full bg-accent-subtle"
+                  />
+                  {item.label}
+                  <NavWave active={active} />
+                </Tag>
+              );
+            })}
           </div>
         </div>
 
@@ -141,17 +210,40 @@ export function Navbar() {
         )}
       >
         <div className="flex h-full flex-col justify-between gap-y-2 p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2">
+          {/* Same idea as the desktop links, adapted to a full-width row: the
+              tint is the whole row instead of a pill, and a chevron fades in
+              where the desktop wave would be (a centred wave under a
+              left-aligned label reads as a stray mark). Opacity only, so
+              nothing here needs a reduced-motion carve-out. */}
           <nav aria-label="Mobile Navigation" className="grid gap-y-1">
-            {nav.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-3 text-base text-foreground/80 transition-colors hover:bg-surface-hover hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {nav.map((item) => {
+              const active = item.route !== null && pathname === item.route;
+              const Tag = item.route === null ? "a" : Link;
+              return (
+                <Tag
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group flex items-center rounded-lg px-3 py-3 text-base transition-colors duration-200",
+                    active
+                      ? "bg-accent-subtle font-medium text-accent-text"
+                      : "text-foreground/80 hover:bg-accent-subtle hover:text-accent-text"
+                  )}
+                >
+                  {item.label}
+                  <ArrowRight
+                    aria-hidden
+                    strokeWidth={1.8}
+                    className={cn(
+                      "ml-auto h-4 w-4 text-accent-text transition-opacity duration-200",
+                      active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    )}
+                  />
+                </Tag>
+              );
+            })}
           </nav>
           <div className="flex flex-col gap-2">
             <Button asChild variant="ghost" className="w-full">

@@ -32,7 +32,15 @@ describe("sitemap", () => {
     const paths = sitemap().map((e) => e.url.replace("https://staging.example.com", ""));
 
     expect(paths).toEqual(
-      expect.arrayContaining(["/", "/features", "/pricing", "/docs", "/datenschutz", "/impressum"])
+      expect.arrayContaining(["/", "/pricing", "/docs", "/datenschutz", "/impressum"])
     );
+  });
+
+  // /features redirects to /#funktionen (next.config.ts) since its content
+  // moved back onto the landing page. arrayContaining above can't catch a
+  // stale entry, so this asserts the absence directly.
+  it("does not list the retired /features redirect", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
+    expect(sitemap().some((e) => e.url.endsWith("/features"))).toBe(false);
   });
 });

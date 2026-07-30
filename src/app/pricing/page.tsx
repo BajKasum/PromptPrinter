@@ -1,7 +1,7 @@
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
 import { PricingGrid } from "@/components/marketing/pricing-grid";
-import { FinnGreeting } from "@/components/marketing/finn-greeting";
+import { PageHeader } from "@/components/marketing/page-header";
 import { FAQ } from "@/components/marketing/faq";
 import { FadeIn } from "@/components/motion/fade-in";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
@@ -49,16 +49,17 @@ export default function PricingPage() {
     <main>
       <Navbar />
 
-      <FinnGreeting
-        state="helping"
-        greeting="Ich helf dir, den passenden Plan zu finden."
+      {/* Headline only. The greeting Finn and the subline that used to sit here
+          are gone (see page-header.tsx): the difference between the two plans is
+          exactly what the two cards underneath spell out, so saying it in prose
+          first just delayed them. */}
+      <PageHeader
         headline={
           <>
             Bring deinen eigenen Key mit.{" "}
             <span className="text-accent-text">Oder ich übernehme das für dich.</span>
           </>
         }
-        sub="Zwei Pläne, ein Unterschied: Free läuft mit deinem eigenen KI-Key komplett gratis. Willst du dich um keinen Key kümmern, macht Pro das für dich."
       />
 
       <section className="container-x pb-20 md:pb-24">

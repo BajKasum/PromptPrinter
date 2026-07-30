@@ -21,7 +21,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const marketing: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${BASE}/features`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    // No /features entry: that route is a redirect to /#funktionen now
+    // (next.config.ts), and listing a redirect in a sitemap is a crawl error.
     { url: `${BASE}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/docs`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/ueber`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },

@@ -38,6 +38,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // /features was a page for one day (2026-07-29 → 2026-07-30) before its
+  // content moved back into the landing page. Nothing outside this repo should
+  // be holding that URL yet — the app isn't hosted — but the route also existed
+  // in the sitemap, so this keeps the address answering instead of 404ing, and
+  // costs one config entry. next.config redirects run before middleware, so
+  // this resolves before the auth check ever sees the path (which is why
+  // /features could be dropped from the middleware's public prefixes).
+  async redirects() {
+    return [{ source: "/features", destination: "/#funktionen", permanent: true }];
+  },
 };
 
 export default nextConfig;
