@@ -7,27 +7,38 @@ export type PlanLimits = { projects: number; chatMessages: number };
 // `Infinity` means "no cap" (paid plans have unlimited projects).
 //
 // chatMessages counts assistant replies (one per turn) in the current calendar
-// month; chat had no monthly cap at all until it was added, only an hourly rate
-// limit (120/hr authed), so a free user with no BYOK key could chat all month
-// on the server's own Z.ai key with no real ceiling. A user's own BYOK key
-// (settings) bypasses this entirely, see /api/chat's override check.
+// month, ONLY on the server's own provider key — a user's own BYOK key
+// (settings) bypasses this entirely, see /api/chat's override check. That
+// distinction is now the whole point of Free, see below.
 //
-// ─── Re-costed 2026-07-29, re-priced 2026-07-30 ──────────────────────────
+// ─── Re-costed 2026-07-29, re-priced 2026-07-30, re-modelled 2026-07-30 ──
 // 2026-07-29: the original numbers (Free 200, Pro/Team 2000 at 7 €) were
 // picked as "generous, and far below the previous worst case" without ever
 // being checked against what a turn actually costs. They didn't survive that
 // check — see git history for the full math. First correction landed on
 // Free 50 / Pro 400 at 5 €, the smallest price that still broke even on a
-// worst-case month.
+// worst-case month. A same-day follow-up moved to Free 25 / Pro 350 at 5,90 €
+// on product grounds (keep Free's per-signup cost minimal, make Pro a clear
+// step up) — still charging the operator's own key for every Free account.
 //
-// 2026-07-30: moved to Free 25 / Pro 350 at 5,90 € — a product decision on
-// top of the cost floor, not a further cost correction. Every Free signup is
-// a cost with no revenue behind it (most never convert), so it's kept as
-// small as the free tier can be while still being worth trying; Pro is priced
-// to be a clearly worthwhile step up rather than a marginal one. This
-// combination is the first to stay profitable even in the code's own
-// worst-case scenario, not just on average — see lib/pricing.ts for the full
-// per-plan math (Pro: ~80% margin typical, still +$1.51 at the ceiling).
+// 2026-07-30 (second pass, same day): a solo, self-funded operator can't
+// carry ANY structural per-signup cost right now, however small. `free.
+// chatMessages = 0` is not a rounding-down of the free allowance, it is the
+// removal of Free's access to the server's own key entirely — Free now
+// requires a BYOK key to chat at all (see api/chat/route.ts's dedicated
+// early-return for this exact state, and lib/pricing.ts's marketed copy,
+// which leads with the BYOK requirement rather than a message count).
+// This isn't a workaround for `chatMessages: 0`, it's the intended state: a
+// signed-up account with no BYOK key and plan "free" is correctly, permanently
+// unable to spend the operator's model budget, by construction, not by a
+// limit that merely happens to be small.
+//
+// Pro moves 350 → 400: with Free now contributing zero server-key cost,
+// there's no structural cost pressure pushing Pro's allowance down, so it
+// goes to the roundest generous number the same 5,90 €/month price still
+// covers comfortably — see lib/pricing.ts for the per-plan margin math
+// (still solidly profitable even in the code's own worst-case scenario, not
+// just on average).
 //
 // Saving prompts to a project's Ergebnisse ("Prompt speichern") is deliberately
 // unmetered: it makes no model call, it just keeps text the user already has,
@@ -35,9 +46,9 @@ export type PlanLimits = { projects: number; chatMessages: number };
 // bind. (The old per-month "Generierungen" allowance died with the automatic
 // generation pipeline, 2026-07.)
 export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
-  free: { projects: 3, chatMessages: 25 },
-  pro: { projects: Infinity, chatMessages: 350 },
-  team: { projects: Infinity, chatMessages: 350 },
+  free: { projects: 3, chatMessages: 0 },
+  pro: { projects: Infinity, chatMessages: 400 },
+  team: { projects: Infinity, chatMessages: 400 },
 };
 
 // Admin is a role (profiles.is_admin), not a plan, it never changes what

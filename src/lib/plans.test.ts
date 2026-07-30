@@ -17,9 +17,9 @@ describe("effectiveLimits", () => {
   // Snapshotted rather than compared against literals: this asserts that
   // effectiveLimits doesn't MUTATE the table, which is true whatever the
   // numbers happen to be. Hardcoding them made a deliberate re-pricing
-  // (2026-07-29: free 200→50, pro 2000→400; 2026-07-30: free 50→25,
-  // pro 400→350) look like a regression in a test that was never about the
-  // values.
+  // (2026-07-29: free 200→50, pro 2000→400; 2026-07-30: free 50→25→0,
+  // pro 400→350→400) look like a regression in a test that was never about
+  // the values.
   it("never mutates PLAN_LIMITS itself, admin is a role, not a plan", () => {
     const before = structuredClone(PLAN_LIMITS);
     effectiveLimits("free", true);
@@ -32,14 +32,25 @@ describe("effectiveLimits", () => {
 // enforces — they lived in two unconnected places until lib/pricing.ts derived
 // one from the other.
 describe("marketed plans match enforced limits", () => {
-  it("quotes the enforced monthly prompt allowance on both plan cards", async () => {
+  // Re-modelled 2026-07-30: Free's allowance is 0 by design (BYOK-only, see
+  // plans.ts and pricing.ts's own top comments), so advertising "0 prompts"
+  // would read as a broken free tier rather than the intended gate. The copy
+  // has to say "bring your own key" instead of quoting the number.
+  it("free's copy states the BYOK requirement instead of quoting its zero allowance", async () => {
     const { PLANS } = await import("@/lib/pricing");
     const free = PLANS.find((p) => p.name === "Free");
+
+    expect(PLAN_LIMITS.free.chatMessages).toBe(0);
+    expect(free?.features.some((f) => f.includes(String(PLAN_LIMITS.free.chatMessages)))).toBe(
+      false
+    );
+    expect(free?.features.some((f) => /eigene\w*\s*KI-Key/i.test(f))).toBe(true);
+  });
+
+  it("pro's copy quotes the enforced monthly prompt allowance", async () => {
+    const { PLANS } = await import("@/lib/pricing");
     const pro = PLANS.find((p) => p.name === "Pro");
 
-    expect(free?.features.some((f) => f.includes(String(PLAN_LIMITS.free.chatMessages)))).toBe(
-      true
-    );
     expect(pro?.features.some((f) => f.includes(String(PLAN_LIMITS.pro.chatMessages)))).toBe(true);
   });
 
@@ -49,17 +60,16 @@ describe("marketed plans match enforced limits", () => {
     expect(PLANS.find((p) => p.name === "Pro")?.price).toBe(PRO_PRICE_LABEL);
   });
 
-  // 350 / 25 = 14×. The Pro card's badge deliberately says "10× mehr Nutzung"
-  // — a round number that must stay an UNDERSTATEMENT of the real ratio, never
-  // an overstatement, however either limit moves later.
-  it("never overstates the Pro/Free usage multiplier in the marketing badge", async () => {
+  // The old badge claimed a Pro/Free usage multiplier ("10× mehr Nutzung").
+  // That comparison no longer has a basis: Free has zero server-key usage to
+  // multiply from. Pro's badge now states the actual differentiator instead
+  // — asserted literally, so a future edit can't quietly reintroduce a
+  // numeric claim with nothing to back it.
+  it("pro's badge states the real differentiator, not a stale usage multiplier", async () => {
     const { PLANS } = await import("@/lib/pricing");
     const pro = PLANS.find((p) => p.name === "Pro");
-    const claimed = Number(pro?.badge?.match(/(\d+)×/)?.[1]);
 
-    expect(Number.isFinite(claimed)).toBe(true);
-    expect(PLAN_LIMITS.pro.chatMessages / PLAN_LIMITS.free.chatMessages).toBeGreaterThanOrEqual(
-      claimed
-    );
+    expect(pro?.badge).toBe("Kein eigener Key nötig");
+    expect(pro?.badge).not.toMatch(/\d+\s*×/);
   });
 });

@@ -24,25 +24,37 @@ export default function Page() {
       intro="Zwei Pläne, zwei Grenzen, die wirklich zählen. Hier steht, was gemessen wird und was nicht."
     >
       <h2>Free</h2>
+      <p>
+        Free hat <strong>keinen eigenen Zugang zu meinem Modell</strong>. Du
+        brauchst zwingend einen{" "}
+        <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>{" "}
+        (Anthropic, OpenAI oder Gemini), um mit mir zu chatten, dafür läuft
+        dann alles über deinen eigenen Zugang und kostet mich nichts, also
+        dich auch nichts extra.
+      </p>
       <ul>
         <li>
           <strong>{free.projects} Projekte</strong>
         </li>
         <li>
-          <strong>{free.chatMessages} Chat-Antworten pro Monat</strong> über
-          meinen Modellzugang
+          <strong>Eigener API-Key erforderlich</strong>, mit ihm kein
+          Nachrichtenlimit
         </li>
         <li>Kopieren und Markdown-Export</li>
-        <li>Eigene API-Keys, und damit kein Nachrichtenlimit</li>
       </ul>
 
       <h2>Pro</h2>
+      <p>
+        Pro läuft <strong>ohne eigenen Key</strong>, ich stelle meinen
+        Modellzugang bereit.
+      </p>
       <ul>
         <li>
           <strong>Unbegrenzt Projekte</strong>
         </li>
         <li>
-          <strong>{pro.chatMessages} Chat-Antworten pro Monat</strong>
+          <strong>{pro.chatMessages} Chat-Antworten pro Monat</strong> über
+          meinen Modellzugang
         </li>
         <li>Zusätzlich PDF-Export</li>
         <li>Kein eigener API-Key nötig</li>
@@ -79,7 +91,8 @@ export default function Page() {
         Hinterlegst du einen{" "}
         <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>, entfällt das
         monatliche Nachrichtenlimit vollständig, in jedem Plan. Du zahlst die
-        Modellnutzung dann direkt bei deinem Anbieter.
+        Modellnutzung dann direkt bei deinem Anbieter. Auf Free ist das kein
+        Bonus, sondern die Voraussetzung, ohne Key läuft dort kein Chat.
       </p>
 
       <h2>Der Schutz pro Stunde</h2>

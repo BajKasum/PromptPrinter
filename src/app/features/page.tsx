@@ -48,8 +48,9 @@ export default function FeaturesPage() {
               Und was kostet das?
             </h2>
             <p className="max-w-xl text-balance text-[15px] leading-relaxed text-secondary">
-              Kostenlos ausprobieren, und mit deinem eigenen KI-Key bleibt es dauerhaft
-              gratis. Pro gibt&apos;s ab {PRO_PRICE_LABEL} im Monat.
+              Bring deinen eigenen KI-Key mit, dann ist die App komplett kostenlos für
+              dich. Willst du dich um keinen Key kümmern, gibt&apos;s Pro ab{" "}
+              {PRO_PRICE_LABEL} im Monat.
             </p>
             <Button asChild size="lg">
               <Link href="/pricing">Preise ansehen</Link>

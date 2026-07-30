@@ -247,10 +247,7 @@ export async function POST(req: Request) {
   }
 
   // 3. Enforce the monthly chat allowance, unless the caller configured their
-  //    own BYOK key. Chat had no monthly cap for a long time, only the hourly
-  //    rate limit below, so a free user with no BYOK key could otherwise chat
-  //    all month on the server's own Z.ai key with no real ceiling (see
-  //    plans.ts). Checked before the model call, same principle as
+  //    own BYOK key. Checked before the model call, same principle as
   //    /api/projects's own project-count cap. Runs before the rate limit so its
   //    isAdmin result can exempt the account from that too, admin used to only
   //    bypass the monthly cap, not the hourly one. No longer conditional on
@@ -292,6 +289,21 @@ export async function POST(req: Request) {
   };
 
   if (!override) {
+    // Free's allowance is exactly zero by design (plans.ts): the plan has no
+    // access to the server's own key at all, BYOK is required to chat on Free.
+    // This is a distinct state from "limit reached" (which implies the account
+    // HAD an allowance and used it up) and gets its own message rather than
+    // routing through reserveMonthlyQuota — there is nothing to reserve
+    // against, and no reason to spend a Redis round trip finding that out on
+    // every single attempt.
+    if (limits.chatMessages <= 0) {
+      return problem(
+        403,
+        "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
+        { kind: "byokRequired", plan }
+      );
+    }
+
     const reservation = await reserveMonthlyQuota(
       `chat-quota:${userId}:${monthKey}`,
       limits.chatMessages
@@ -301,7 +313,7 @@ export async function POST(req: Request) {
       if (reservation) await reservation.release();
       return problem(
         403,
-        `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Upgrade für mehr, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
+        `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Nächsten Monat geht's weiter, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
         { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
       );
     }

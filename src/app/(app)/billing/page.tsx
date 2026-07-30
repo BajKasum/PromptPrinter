@@ -59,12 +59,20 @@ export default async function BillingPage() {
   const chatLimit = hasByok ? Infinity : limits.chatMessages;
   const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
 
+  // Free-without-a-key needs its own branch, both of its numbers behave
+  // differently from the generic "voll, nächsten Monat" copy below: chat is 0
+  // by design (plans.ts) and never resets, adding a key or moving to Pro are
+  // the only ways past it; the project cap (3, same as every plan's original
+  // cap) was never monthly either, it's a standing total, freed only by
+  // deleting one or upgrading. The plain "nächsten Monat" branch further down
+  // still fits Pro/Team as-is: their project cap is Infinity, so the only bar
+  // that can ever fill for them is chat, which genuinely does reset monthly.
   const usageNote = isAdmin
     ? "Admin-Konto, die Balken unten sind nur zur Orientierung, sie greifen für dich nicht."
     : hasByok
       ? "Mit deinem eigenen Key entfällt das Chat-Limit. Das Projekt-Limit bleibt bestehen."
       : isFree
-        ? "Ist ein Balken voll, geht's erst im nächsten Monat weiter, oder sofort mit Pro oder deinem eigenen Key."
+        ? "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen oder Pro."
         : "Ist ein Balken voll, geht's erst im nächsten Monat weiter.";
 
   const pro = PLANS.find((p) => p.name === "Pro");
@@ -101,6 +109,7 @@ export default async function BillingPage() {
               label="Chat-Nachrichten"
               used={monthlyChatMessages ?? 0}
               limit={chatLimit}
+              zeroLabel="Ohne eigenen Key nicht verfügbar auf Free"
             />
           </div>
         </section>

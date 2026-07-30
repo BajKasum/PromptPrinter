@@ -33,8 +33,8 @@ export function FinalCTA() {
               <span className="text-accent-text">Den Rest mach ich mit dir.</span>
             </h2>
             <p className="mt-6 text-[17px] text-secondary max-w-xl mx-auto">
-              Fang kostenlos an, ohne Kreditkarte. Erzähl mir einfach, was du
-              bauen willst. Den Rest gehen wir zusammen durch.
+              Fang kostenlos an, ohne Kreditkarte. Bring deinen eigenen KI-Key
+              mit, dann leg ich direkt los.
             </p>
             <div className="mt-9 flex justify-center">
               <Button asChild size="lg" variant="primary">

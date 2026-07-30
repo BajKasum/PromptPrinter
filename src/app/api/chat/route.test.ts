@@ -102,7 +102,15 @@ describe("POST /api/chat", () => {
     chatCompleteStream.mockImplementation(async function* () {
       yield "Hallo";
     });
-    tableResults.profiles = { data: { plan: "free", is_admin: false } };
+    // "pro" (not "free"), deliberately: Free has zero server-key allowance by
+    // design (plans.ts, Security-Audit-adjacent re-model 2026-07-30) and no
+    // access to the model at all without a BYOK key, so a "free" ambient
+    // default would 403 every single test in this file before it reached
+    // chatCompleteStream. Almost none of these tests are actually about plan
+    // tiers — they need SOME plan with a real allowance to get past step 3.
+    // The plan-limit behavior itself (including Free's own dedicated path) is
+    // exercised explicitly in describe("limits") below.
+    tableResults.profiles = { data: { plan: "pro", is_admin: false } };
     tableResults.messages = { data: null, error: null, count: 3 };
     tableResults.conversations = { data: { id: "conv-1" }, error: null };
     tableResults.projects = { data: null, error: null };
@@ -232,10 +240,41 @@ describe("POST /api/chat", () => {
   });
 
   describe("limits", () => {
-    it("rejects with 403 once the monthly chat allowance is used up", async () => {
-      // Free plan allows 200; the DB-count fallback applies because
-      // reserveMonthlyQuota returns null (no Redis).
-      tableResults.messages = { data: null, error: null, count: 200 };
+    // Re-modelled 2026-07-30: Free has zero server-key allowance, by design,
+    // not as a very small limit — see plans.ts. A Free account without a BYOK
+    // key must be turned away immediately, before ever touching the
+    // reservation machinery, with a message that says "bring your own key" —
+    // not "limit reached", which would wrongly imply it once had one.
+    it("blocks Free without a BYOK key immediately, without touching the monthly-quota machinery", async () => {
+      tableResults.profiles = { data: { plan: "free", is_admin: false } };
+
+      const res = await POST(req());
+      const json = (await res.json()) as { detail: string };
+
+      expect(res.status).toBe(403);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(json.detail).toContain("eigenen KI-Key");
+    });
+
+    // The core promise of the new model: Free plus a BYOK key is not merely
+    // "also allowed", it is the ONLY way Free ever reaches the model at all.
+    it("lets Free through when a BYOK key is configured, same as any other plan", async () => {
+      tableResults.profiles = { data: { plan: "free", is_admin: false } };
+      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalled();
+      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+    });
+
+    it("rejects with 403 once Pro's monthly chat allowance is used up", async () => {
+      // Pro/Team allow 400 (plans.ts); the DB-count fallback applies because
+      // reserveMonthlyQuota returns null (no Redis) in this test's setup.
+      tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+      tableResults.messages = { data: null, error: null, count: 400 };
 
       const res = await POST(req());
 
@@ -243,7 +282,7 @@ describe("POST /api/chat", () => {
       expect(chatCompleteStream).not.toHaveBeenCalled();
     });
 
-    it("skips the monthly allowance entirely for a BYOK user", async () => {
+    it("skips the monthly allowance entirely for a BYOK user on a paid plan too", async () => {
       tableResults.messages = { data: null, error: null, count: 5000 };
       getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
 

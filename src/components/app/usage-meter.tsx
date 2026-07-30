@@ -25,12 +25,32 @@ export function UsageMeter({
   label,
   used,
   limit,
+  zeroLabel,
 }: {
   label: string;
   used: number;
   limit: number;
+  /**
+   * Shown instead of a numeric bar when `limit` is exactly 0 — a real,
+   * intentional state now (Free's server-key chat allowance, plans.ts), not
+   * an edge case to leave as a confusing "0 / 0". Omit to keep the plain
+   * numeric bar (e.g. for a meter that could never legitimately hit zero).
+   */
+  zeroLabel?: string;
 }) {
   const unlimited = !Number.isFinite(limit);
+  if (limit === 0 && zeroLabel) {
+    return (
+      <div>
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="text-[13px] font-medium text-foreground/80">{label}</span>
+        </div>
+        <div className="rounded-lg border border-dashed border-border px-3 py-2 text-[12.5px] text-tertiary">
+          {zeroLabel}
+        </div>
+      </div>
+    );
+  }
   const pct = unlimited ? 6 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
   // An admin account is exempt from the cap (plans.ts's effectiveLimits), so
   // `used` can grow to whatever it grows to over the account's lifetime —

@@ -263,6 +263,7 @@ export function SettingsWorkspace({
                 label="Chat-Nachrichten (Monat)"
                 used={usage.chatMessages}
                 limit={usage.chatMessageLimit}
+                zeroLabel="Ohne eigenen Key nicht verfügbar auf Free"
               />
             </div>
           </SettingsCard>

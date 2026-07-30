@@ -246,8 +246,17 @@ export async function reserveMonthlyQuota(
  *
  * Roughly $0.012 per call at the observed worst case (24k input + 6144 output
  * tokens on glm-4.5-air), so 1000 bounds a bad day at about $12 rather than at
- * "whatever the internet felt like". Generous against real use: Free allows 200
- * messages a month, so this is ~150 fully-exhausted free accounts per day.
+ * "whatever the internet felt like".
+ *
+ * Re-modelled 2026-07-30: Free has zero allowance on the server's key (plans.ts,
+ * pricing.ts) — a Free account without a BYOK key can't reach chatCompleteStream
+ * at all, and one WITH a key never calls this either, since BYOK bypasses it
+ * (the whole point of bringing your own key). So this budget's only possible
+ * spenders, structurally, are Pro/Team accounts that haven't configured a key
+ * of their own: 1000/day is roughly 2-3 fully-maxed Pro accounts (400/month
+ * each) hammering it on the same day, comfortably generous for how few paying
+ * accounts this project has today, and no longer exposed to Free at any volume
+ * — the population this backstop has to survive shrank on its own.
  *
  * Override with LLM_DAILY_CALL_BUDGET once real traffic says otherwise — that
  * is a business decision, not a code change.
