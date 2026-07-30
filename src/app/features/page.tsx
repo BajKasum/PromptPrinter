@@ -7,7 +7,7 @@ import { FinnGreeting } from "@/components/marketing/finn-greeting";
 import { FinalCTA } from "@/components/marketing/final-cta";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
-import { PRO_PRICE_EUR } from "@/lib/pricing";
+import { PRO_PRICE_LABEL } from "@/lib/pricing";
 
 export const metadata = {
   title: "Wie es funktioniert",
@@ -49,7 +49,7 @@ export default function FeaturesPage() {
             </h2>
             <p className="max-w-xl text-balance text-[15px] leading-relaxed text-secondary">
               Kostenlos ausprobieren, und mit deinem eigenen KI-Key bleibt es dauerhaft
-              gratis. Pro gibt&apos;s ab {PRO_PRICE_EUR} € im Monat.
+              gratis. Pro gibt&apos;s ab {PRO_PRICE_LABEL} im Monat.
             </p>
             <Button asChild size="lg">
               <Link href="/pricing">Preise ansehen</Link>

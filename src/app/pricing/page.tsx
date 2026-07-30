@@ -7,11 +7,11 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { KeyRound, Wallet, RefreshCw } from "lucide-react";
 import { PLAN_LIMITS } from "@/lib/plans";
-import { PRO_PRICE_EUR } from "@/lib/pricing";
+import { PRO_PRICE_LABEL } from "@/lib/pricing";
 
 export const metadata = {
   title: "Preise",
-  description: `Kostenlos starten, mit eigenem KI-Key dauerhaft gratis. Pro ab ${PRO_PRICE_EUR} € im Monat.`,
+  description: `Kostenlos starten, mit eigenem KI-Key dauerhaft gratis. Pro ab ${PRO_PRICE_LABEL} im Monat.`,
 };
 
 // Three worries people actually have on a pricing page, answered before they

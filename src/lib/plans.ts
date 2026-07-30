@@ -12,20 +12,22 @@ export type PlanLimits = { projects: number; chatMessages: number };
 // on the server's own Z.ai key with no real ceiling. A user's own BYOK key
 // (settings) bypasses this entirely, see /api/chat's override check.
 //
-// ─── Re-costed 2026-07-29 (Free 200→50, Pro/Team 2000→400) ───────────────
-// The old numbers were picked as "generous, and far below the previous worst
-// case" without ever being checked against what a turn actually costs. They
-// don't survive that check: on glm-4.5-air (llm.ts's server default,
-// $0.20/$1.10 per 1M in/out) a typical turn is ~$0.0032 and the worst case the
-// code itself budgets for is ~$0.0116. So the old Pro plan promised 2000
-// prompts — $6.40 of model spend at typical usage, $23 at the ceiling — for
-// 7 €, i.e. 4 % margin at best and a $16 loss per user at worst. Free's 200
-// was up to $2.31/month for every signup that never pays.
+// ─── Re-costed 2026-07-29, re-priced 2026-07-30 ──────────────────────────
+// 2026-07-29: the original numbers (Free 200, Pro/Team 2000 at 7 €) were
+// picked as "generous, and far below the previous worst case" without ever
+// being checked against what a turn actually costs. They didn't survive that
+// check — see git history for the full math. First correction landed on
+// Free 50 / Pro 400 at 5 €, the smallest price that still broke even on a
+// worst-case month.
 //
-// 400 (Pro) and 50 (Free) are what the price can actually carry: Pro costs
-// ~$1.28 typical / $4.62 worst against ~$4.63 net revenue at 5 €, so it stays
-// profitable even if every turn maxes out. See lib/pricing.ts for the full
-// derivation and the marketed copy that has to agree with these numbers.
+// 2026-07-30: moved to Free 25 / Pro 350 at 5,90 € — a product decision on
+// top of the cost floor, not a further cost correction. Every Free signup is
+// a cost with no revenue behind it (most never convert), so it's kept as
+// small as the free tier can be while still being worth trying; Pro is priced
+// to be a clearly worthwhile step up rather than a marginal one. This
+// combination is the first to stay profitable even in the code's own
+// worst-case scenario, not just on average — see lib/pricing.ts for the full
+// per-plan math (Pro: ~80% margin typical, still +$1.51 at the ceiling).
 //
 // Saving prompts to a project's Ergebnisse ("Prompt speichern") is deliberately
 // unmetered: it makes no model call, it just keeps text the user already has,
@@ -33,9 +35,9 @@ export type PlanLimits = { projects: number; chatMessages: number };
 // bind. (The old per-month "Generierungen" allowance died with the automatic
 // generation pipeline, 2026-07.)
 export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
-  free: { projects: 3, chatMessages: 50 },
-  pro: { projects: Infinity, chatMessages: 400 },
-  team: { projects: Infinity, chatMessages: 400 },
+  free: { projects: 3, chatMessages: 25 },
+  pro: { projects: Infinity, chatMessages: 350 },
+  team: { projects: Infinity, chatMessages: 350 },
 };
 
 // Admin is a role (profiles.is_admin), not a plan, it never changes what
