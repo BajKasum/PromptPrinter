@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { secureCookieOptions } from "@/lib/supabase/cookie-options";
 
 type CookieSet = { name: string; value: string; options: CookieOptions };
 
@@ -14,7 +15,7 @@ export async function createClient() {
         setAll: (toSet: CookieSet[]) => {
           try {
             toSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, secureCookieOptions(options))
             );
           } catch {
             // Called from a Server Component, middleware refresh handles it.
