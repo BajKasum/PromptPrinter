@@ -28,6 +28,21 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(self), geolocation=(), browsing-topics=()",
   },
+  // Sever the opener relationship with any cross-origin window, which closes
+  // the window-reference side channels (XS-Leaks, and the popup half of
+  // tabnabbing) that X-Frame-Options does not cover — that one only handles
+  // being framed, not being opened by or opening someone.
+  //
+  // `same-origin` is safe here specifically because nothing in this app uses a
+  // popup: OAuth is a full-page redirect (oauth-buttons.tsx passes `redirectTo`
+  // and never skipBrowserRedirect), there is no window.open or postMessage
+  // anywhere in src/, and the one target="_blank" (external links inside a
+  // chat reply) already carries rel="noreferrer". Turnstile is unaffected —
+  // it renders in an iframe, and COOP governs openers, not frames.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Adobe's cross-domain policy files are a legacy surface this app has no use
+  // for; the header stops a crossdomain.xml from ever being honoured.
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
 ];
 
 const nextConfig: NextConfig = {
