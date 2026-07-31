@@ -26,6 +26,33 @@ describe("redactContext", () => {
     }
   );
 
+  // The whole-key comparison this replaced matched only the bare names above.
+  // Every one of these carries a credential or user content and passed straight
+  // through — `encrypted_key` is a real column name in user_api_keys.
+  it.each([
+    "encrypted_key",
+    "accessToken",
+    "refresh_token",
+    "clientSecret",
+    "userPassword",
+    "promptText",
+    "messageContent",
+    "API_KEY",
+    "sessionCookie",
+    "webhookSignature",
+  ])("redacts the compound key %s", (key) => {
+    expect(redactContext({ [key]: "sk-live-123" })[key]).toBe("[redacted]");
+  });
+
+  // Over-redaction is the other failure mode: a plain substring match would
+  // catch `context` (it contains "text") and gut the most common log field.
+  it.each(["context", "latencyMs", "projectId", "messageCount", "keyCount", "tokenCount"])(
+    "keeps the operational field %s",
+    (key) => {
+      expect(redactContext({ [key]: "value" })[key]).toBe("value");
+    }
+  );
+
   it("keeps the operational fields that make a log line useful", () => {
     const safe = redactContext({
       userId: "user-1",

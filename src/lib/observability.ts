@@ -28,15 +28,20 @@
 
 import { dispatchAlert } from "@/lib/alerting";
 
-/** Keys whose values are never safe to log, whatever the call site intended. */
-const FORBIDDEN_KEYS = [
+/**
+ * Words whose presence in a key name means the value is never safe to log.
+ *
+ * Matched per WORD, not against the whole key (see isForbidden). The list is
+ * therefore singular-ish word stems as they appear inside compound names —
+ * `accessToken`, `encrypted_key`, `clientSecret` all reduce to a word in here.
+ */
+const FORBIDDEN_WORDS = [
   "content",
   "messages",
   "prompt",
   "reply",
   "text",
   "apikey",
-  "api_key",
   "key",
   "token",
   "password",
@@ -44,13 +49,59 @@ const FORBIDDEN_KEYS = [
   "authorization",
   "instructions",
   "idea",
+  "cookie",
+  "credential",
+  "credentials",
+  "jwt",
+  "bearer",
+  "signature",
 ];
 
 const REDACTED = "[redacted]";
 
+/**
+ * Splits a key into its words: camelCase, snake_case and SCREAMING_CASE all
+ * reduce to the same lowercase word list.
+ *   accessToken   -> ["access", "token"]
+ *   encrypted_key -> ["encrypted", "key"]
+ *   API_KEY       -> ["api", "key"]
+ */
+function keyWords(key: string): string[] {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^a-zA-Z]+/)
+    .filter(Boolean)
+    .map((w) => w.toLowerCase());
+}
+
+/**
+ * Trailing words that make a field a measurement of the thing rather than the
+ * thing. `tokenCount` and `keyCount` are numbers by construction — exactly the
+ * kind of operational metric this logging exists to carry — so redacting them
+ * would only make cost and usage logs useless without protecting anything.
+ */
+const QUANTITY_SUFFIXES = ["count", "length", "size", "total", "bytes", "chars"];
+
+/**
+ * Word-level match, deliberately neither of the two obvious alternatives.
+ *
+ * Exact whole-key comparison (what this did before) only caught a key named
+ * exactly `token` or `apiKey` — `accessToken`, `refresh_token`, `clientSecret`,
+ * `userPassword`, `messageContent` and `encrypted_key` (a real column name in
+ * user_api_keys) all passed straight through. That defeats the point of this
+ * function, which exists precisely so a careless call site cannot leak.
+ *
+ * Plain substring matching over-corrects: `context` contains "text", so the
+ * single most common operational field would be redacted into uselessness.
+ *
+ * Splitting on word boundaries catches every compound above while leaving
+ * `context`, `latencyMs`, `projectId` and `messageCount` intact.
+ */
 function isForbidden(key: string): boolean {
-  const normalized = key.toLowerCase().replace(/[^a-z_]/g, "");
-  return FORBIDDEN_KEYS.some((forbidden) => normalized === forbidden.replace(/[^a-z_]/g, ""));
+  const words = keyWords(key);
+  if (words.length === 0) return false;
+  if (QUANTITY_SUFFIXES.includes(words[words.length - 1])) return false;
+  return words.some((word) => FORBIDDEN_WORDS.includes(word));
 }
 
 export type LogContext = Record<string, unknown>;
