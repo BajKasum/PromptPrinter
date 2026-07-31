@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { captureError } from "@/lib/observability";
 import { avatarStoragePath } from "@/lib/avatar";
+import { removeAllPaths } from "@/lib/storage-cleanup";
 
 export const runtime = "nodejs";
 
@@ -56,7 +57,23 @@ export async function DELETE(req: Request) {
       .select("storage_path")
       .eq("user_id", user.id);
     if (files && files.length > 0) {
-      await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
+      // Batched: this is the one cleanup path with no upper bound on file
+      // count (Pro has no project cap, and each project holds up to 10 files),
+      // so a single remove() call here can carry thousands of paths in one
+      // request body. Batches fail independently, since leaving some objects
+      // behind is harmless (migration 0029) but stranding all of them because
+      // one oversized request failed is not.
+      const { failed } = await removeAllPaths(
+        (paths) => supabase.storage.from("project-files").remove(paths),
+        files.map((f) => f.storage_path)
+      );
+      if (failed > 0) {
+        captureError(
+          "account.storage_cleanup_partial",
+          new Error(`${failed} project file(s) could not be removed`),
+          { userId: user.id }
+        );
+      }
     }
     // Always a fixed "{uid}/avatar" path (avatar-upload.tsx upserts in place,
     // and migration 0027 pins the insert policy to exactly that name), removing
