@@ -13,12 +13,50 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // GCM's recommended nonce length
 const SALT = "promptprinter-byok"; // fixed, non-secret, scrypt still needs *a* salt
 
+// Resolved once at module load, same convention as rate-limit.ts's own
+// isProduction — tests exercise a change via vi.resetModules() + a dynamic
+// re-import (see crypto.test.ts), not a per-call env read.
+const isProduction = process.env.NODE_ENV === "production";
+
+// DEV-ONLY fallback key material, reached only when isProduction is false (see
+// getKey() below) — production keeps throwing exactly as before. A FIXED
+// string, not something generated at process start: a random per-boot secret
+// would make a BYOK key saved before a dev-server restart undecryptable after
+// one, trading a missing-config error for a silent-corruption one. Anyone with
+// read access to this repository already has this value, which is precisely
+// why it must never be reachable once real user data exists — the throw below
+// is what guarantees that, not obscurity.
+const DEV_FALLBACK_SECRET =
+  "promptprinter-dev-only-insecure-fallback-do-not-use-in-production";
+
+let warnedDevFallback = false;
+
 function getKey(): Buffer {
   const secret = process.env.API_KEY_ENCRYPTION_SECRET;
-  if (!secret) throw new Error("API_KEY_ENCRYPTION_SECRET is not configured");
   // scrypt derives a proper 32-byte key regardless of the secret's own length/
   // shape, so the env var can be any reasonably long random string.
-  return scryptSync(secret, SALT, 32);
+  if (secret) return scryptSync(secret, SALT, 32);
+
+  if (isProduction) {
+    throw new Error("API_KEY_ENCRYPTION_SECRET is not configured");
+  }
+
+  // Development/test only. env.ts's own boot check already warns about a
+  // missing secret at startup ("In der Entwicklung nur ein Hinweis"); this is
+  // the functional half of that promise — without it, the warning was
+  // survivable right up until someone actually opened Settings -> "Eigene
+  // API-Keys" locally, where it turned into an unhandled throw. Every dev
+  // process derives the SAME key from this fixed string, so a value encrypted
+  // before a restart still decrypts after one.
+  if (!warnedDevFallback) {
+    warnedDevFallback = true;
+    console.warn(
+      "[crypto] API_KEY_ENCRYPTION_SECRET ist nicht gesetzt, nutze einen unsicheren " +
+        "Dev-Fallback-Schluessel. In Produktion nicht moeglich: env.ts verweigert dort " +
+        "den Start ohne einen echten Wert."
+    );
+  }
+  return scryptSync(DEV_FALLBACK_SECRET, SALT, 32);
 }
 
 /**

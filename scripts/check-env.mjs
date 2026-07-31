@@ -16,7 +16,23 @@
  *
  * Mirrors src/lib/env.ts's own required-variable list (kept in sync by hand:
  * that file is a TS module meant for the Next.js runtime, not something this
- * plain Node script can import without a build step).
+ * plain Node script can import without a build step) — with one deliberate
+ * difference: `dev` only requires what dev genuinely cannot run without.
+ * `prod` requires everything env.ts's boot check would refuse to start
+ * without, unchanged.
+ *
+ * `API_KEY_ENCRYPTION_SECRET` and the two UPSTASH_* vars are NOT in
+ * DEV_RUNTIME_REQUIRED on purpose: crypto.ts now derives a fixed, insecure
+ * dev-only key when the secret is absent and NODE_ENV isn't "production",
+ * and rate-limit.ts already fell back to an in-memory limiter outside
+ * production before this script existed. Neither ever needed Upstash or a
+ * real secret to run locally — this script was simply stricter than the
+ * runtime it was gating, forcing every `npm run docker:dev` to have
+ * production-grade secrets configured for a container that never actually
+ * required them. `SUPABASE_SERVICE_ROLE_KEY` and the Supabase/App-URL vars
+ * stay required in both modes: there is no local fallback for an entire
+ * auth+database backend, unlike Upstash and the encryption secret, which
+ * this codebase already has real dev-safe substitutes for.
  *
  * Usage: node scripts/check-env.mjs dev | prod
  * Wired into `npm run docker:dev` / `npm run docker:prod` (package.json).
@@ -28,14 +44,23 @@ import { fileURLToPath } from "url";
 
 const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
 
-// Same set src/lib/env.ts requires in production, minus the two BYOK/model
-// variables that don't gate whether the container can come up at all
-// (missing ZAI_API_KEY only degrades to stub mode, see assertEnv there).
-const RUNTIME_REQUIRED = [
+// What a LOCAL dev container genuinely cannot run without. Supabase is a
+// hosted backend with no in-process substitute in this codebase; everything
+// else either has a working dev-safe fallback already (Upstash, the BYOK
+// encryption secret) or only degrades a specific feature (ZAI_API_KEY ->
+// stub-mode chat replies, handled by assertEnv's warning, not this gate).
+const DEV_RUNTIME_REQUIRED = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "NEXT_PUBLIC_APP_URL",
+];
+
+// Full production set — UNCHANGED. Every one of these is a hard boot-time
+// requirement in env.ts's assertEnv() when NODE_ENV=production, and stays
+// exactly that strict here.
+const PROD_RUNTIME_REQUIRED = [
+  ...DEV_RUNTIME_REQUIRED,
   "API_KEY_ENCRYPTION_SECRET",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
@@ -87,7 +112,7 @@ if (mode === "dev") {
   if (!vars) {
     fail(".env.local fehlt. docker-compose.dev.yml liest Runtime-Variablen von dort.");
   } else {
-    const gaps = missing(vars, RUNTIME_REQUIRED);
+    const gaps = missing(vars, DEV_RUNTIME_REQUIRED);
     if (gaps.length > 0) {
       fail(`.env.local: ${gaps.length} Variable(n) fehlen oder sind leer:\n  - ${gaps.join("\n  - ")}`);
     }
@@ -99,7 +124,7 @@ if (mode === "dev") {
   if (!runtimeVars) {
     fail(".env fehlt. docker-compose.yml liest die Container-Runtime-Variablen von dort (env_file).");
   } else {
-    const gaps = missing(runtimeVars, RUNTIME_REQUIRED);
+    const gaps = missing(runtimeVars, PROD_RUNTIME_REQUIRED);
     if (gaps.length > 0) {
       fail(`.env: ${gaps.length} Runtime-Variable(n) fehlen oder sind leer:\n  - ${gaps.join("\n  - ")}`);
     }
