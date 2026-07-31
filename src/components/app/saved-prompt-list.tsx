@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, X, Trash2, FileDown, Loader2, Pencil } from "lucide-react";
+import { Copy, Check, X, Trash2, FileDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 import { useCopyToClipboard } from "@/lib/use-copy-to-clipboard";
@@ -27,6 +27,46 @@ export function SavedPromptList({
 }) {
   const [items, setItems] = useState(prompts);
 
+  // Both mutations apply to this list immediately and undo themselves if the
+  // write fails, the same optimistic-with-rollback shape useLibraryFavorites
+  // already uses for the favourite toggle. Restoring a delete puts the row
+  // back where it was rather than appending it, otherwise a failed delete
+  // silently reorders the list (it is sorted newest-first by the server).
+  const removeAt = (id: string) => {
+    let removed: { item: SavedPrompt; index: number } | null = null;
+    setItems((list) => {
+      const index = list.findIndex((it) => it.id === id);
+      if (index === -1) return list;
+      removed = { item: list[index], index };
+      return list.filter((it) => it.id !== id);
+    });
+    return () => {
+      const r = removed as { item: SavedPrompt; index: number } | null;
+      if (!r) return;
+      setItems((list) => {
+        const next = list.slice();
+        next.splice(Math.min(r.index, next.length), 0, r.item);
+        return next;
+      });
+    };
+  };
+
+  const renameTo = (id: string, title: string) => {
+    let previous: string | null = null;
+    setItems((list) =>
+      list.map((it) => {
+        if (it.id !== id) return it;
+        previous = it.title;
+        return { ...it, title };
+      })
+    );
+    return () => {
+      const p = previous as string | null;
+      if (p === null) return;
+      setItems((list) => list.map((it) => (it.id === id ? { ...it, title: p } : it)));
+    };
+  };
+
   return (
     <div className="space-y-3">
       {items.map((p) => (
@@ -34,10 +74,8 @@ export function SavedPromptList({
           key={p.id}
           prompt={p}
           canExportPdf={canExportPdf}
-          onDeleted={() => setItems((list) => list.filter((it) => it.id !== p.id))}
-          onRenamed={(title) =>
-            setItems((list) => list.map((it) => (it.id === p.id ? { ...it, title } : it)))
-          }
+          onDelete={() => removeAt(p.id)}
+          onRename={(title) => renameTo(p.id, title)}
         />
       ))}
     </div>
@@ -47,20 +85,20 @@ export function SavedPromptList({
 function SavedPromptCard({
   prompt,
   canExportPdf,
-  onDeleted,
-  onRenamed,
+  onDelete,
+  onRename,
 }: {
   prompt: SavedPrompt;
   canExportPdf: boolean;
-  onDeleted: () => void;
-  onRenamed: (title: string) => void;
+  /** Applies the removal immediately and returns the undo for a failed write. */
+  onDelete: () => () => void;
+  /** Applies the new title immediately and returns the undo for a failed write. */
+  onRename: (title: string) => () => void;
 }) {
   const router = useRouter();
   const { toast } = useToast();
   const { copied, copy } = useCopyToClipboard();
-  const [deleting, setDeleting] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState(prompt.title);
 
   async function exportPdf() {
@@ -73,13 +111,21 @@ function SavedPromptCard({
     setRenaming(false);
   }
 
+  // Both writes are optimistic: the list updates first, the row goes to the
+  // server after, and a failure undoes the change and says so. Renaming and
+  // deleting your own saved prompt are owner-scoped single-row writes that
+  // essentially only fail if the network does — making the user watch a
+  // spinner for the round trip (what both of these did before) spent the
+  // common case's latency to handle the rare one.
   async function rename() {
     const next = title.trim().slice(0, 80);
     if (!next || next === prompt.title) {
       cancelRename();
       return;
     }
-    setBusy(true);
+    setRenaming(false);
+    const undo = onRename(next);
+
     const supabase = createClient();
     // outputs is one JSONB column (prompt, title, target), so renaming writes
     // it back whole — the card already holds the other two fields in memory,
@@ -94,8 +140,15 @@ function SavedPromptCard({
         },
       })
       .eq("id", prompt.id);
-    setBusy(false);
     if (error) {
+      // Roll the title back, but reopen the editor holding what the user
+      // actually typed. Closing it and dropping their text would make a failed
+      // rename cost them the edit — the reason this stayed in rename mode
+      // before it became optimistic, and worth keeping now that the close
+      // happens up front.
+      undo();
+      setTitle(next);
+      setRenaming(true);
       toast({
         title: "Umbenennen fehlgeschlagen",
         description: "Bitte versuch es erneut.",
@@ -103,18 +156,15 @@ function SavedPromptCard({
       });
       return;
     }
-    setRenaming(false);
-    onRenamed(next);
     router.refresh();
   }
 
   async function remove() {
-    if (deleting) return;
-    setDeleting(true);
+    const undo = onDelete();
     const supabase = createClient();
     const { error } = await supabase.from("generations").delete().eq("id", prompt.id);
     if (error) {
-      setDeleting(false);
+      undo();
       toast({
         title: "Löschen fehlgeschlagen",
         description: "Der Prompt konnte nicht entfernt werden.",
@@ -122,7 +172,6 @@ function SavedPromptCard({
       });
       return;
     }
-    onDeleted();
     toast({ title: "Prompt gelöscht", variant: "success" });
     router.refresh();
   }
@@ -149,21 +198,22 @@ function SavedPromptCard({
                 }}
                 className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
               />
+              {/* No pending/disabled state on either button any more: the
+                  rename closes the editor and updates the title on click,
+                  there is no in-flight window left to guard. */}
               <button
                 type="button"
                 onClick={() => void rename()}
-                disabled={busy}
                 aria-label="Namen speichern"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
               >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                <Check className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
                 onClick={cancelRename}
-                disabled={busy}
                 aria-label="Umbenennen abbrechen"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -211,18 +261,15 @@ function SavedPromptCard({
               <FileDown className="h-3.5 w-3.5" />
             </button>
           )}
+          {/* No spinner: the card is gone from the list the moment this is
+              clicked, so there is nothing left on screen to spin. */}
           <button
             type="button"
             onClick={() => void remove()}
-            disabled={deleting}
             aria-label="Prompt löschen"
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive"
           >
-            {deleting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </header>

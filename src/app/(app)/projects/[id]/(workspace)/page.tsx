@@ -5,6 +5,7 @@ import { ChatList, type ChatListItem } from "@/components/app/chat-list";
 import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
 import { createClient } from "@/lib/supabase/server";
+import { LIST_LOAD_LIMIT, splitAtLimit } from "@/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -34,27 +35,35 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
 
   const supabase = await createClient();
 
+  // One round trip, not two. This used to run a `count: exact, head: true`
+  // query purely to decide the redirect below, then immediately run a second
+  // query selecting the same rows — the list itself already answers "are there
+  // any", so the count was a serial round trip on the critical path of every
+  // workspace visit for information the next query returns anyway.
+  //
+  // Capped + over-fetched by one (see LIST_LOAD_LIMIT); the select was
+  // unbounded before, same class of problem as /chats.
+  const { data: raw } = await supabase
+    .from("conversations")
+    .select("id, title, target, updated_at, messages(count)")
+    .eq("project_id", id)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .range(0, LIST_LOAD_LIMIT);
+
+  const { items: rows, hasMore } = splitAtLimit(
+    (raw as ConversationQueryRow[] | null) ?? []
+  );
+
   // A workspace with no chats yet had nothing on this page besides a card
   // whose entire content was "click here to start one" — the same action the
   // link right above it already offers, so reaching it cost an extra
   // navigation for no reason (QA finding N-2). Skip straight to the composer
   // instead. The rail (Anweisungen/Struktur/Dateien) is unaffected either
   // way, it lives in the shared workspace layout, not this page.
-  const { count: chatCount } = await supabase
-    .from("conversations")
-    .select("id", { count: "exact", head: true })
-    .eq("project_id", id)
-    .eq("user_id", userId);
-  if (!chatCount) redirect(`/projects/${id}/chats/new`);
+  if (rows.length === 0) redirect(`/projects/${id}/chats/new`);
 
-  const { data: raw } = await supabase
-    .from("conversations")
-    .select("id, title, target, updated_at, messages(count)")
-    .eq("project_id", id)
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
-
-  const chats: ChatListItem[] = ((raw as ConversationQueryRow[] | null) ?? []).map((c) => ({
+  const chats: ChatListItem[] = rows.map((c) => ({
     id: c.id,
     title: c.title,
     target: c.target,
@@ -81,6 +90,11 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
       <div className="mt-4">
         <FadeIn>
           <ChatList chats={chats} basePath={`/projects/${id}/chats`} />
+          {hasMore && (
+            <p className="mt-4 text-center text-[12.5px] text-tertiary">
+              Die neuesten {LIST_LOAD_LIMIT} Chats dieses Projekts.
+            </p>
+          )}
         </FadeIn>
       </div>
     </div>

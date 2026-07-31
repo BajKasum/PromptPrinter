@@ -29,27 +29,43 @@ export async function buildProjectContext(
   userId: string,
   projectId: string
 ): Promise<string | null> {
-  // Explicit user_id alongside RLS on both reads below (Security-Audit finding
+  // Explicit user_id alongside RLS on all three reads (Security-Audit finding
   // L-3): `userId` was already a parameter here specifically to verify
   // ownership (see the caller in api/chat/route.ts and this function's own
   // "null return IS not found or not owned" contract), but wasn't actually
-  // applied to either query — RLS alone was doing that job.
-  const { data: project } = await supabase
-    .from("projects")
-    .select("name, idea, instructions, context, tools")
-    .eq("id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  // applied — RLS alone was doing that job.
+  //
+  // All three run in parallel. They used to be three serial awaits (project,
+  // then generation, then the whole file block), which put three sequential
+  // round trips on the critical path of EVERY turn of a project chat, before
+  // the model call can even start. None of them depends on another's result:
+  // each is scoped by the same (projectId, userId) pair that was already known
+  // on entry.
+  //
+  // The cost of parallelising is that a not-owned project also issues the
+  // other two reads instead of short-circuiting at the ownership check. That's
+  // acceptable and not a leak: both carry the same explicit user_id filter and
+  // sit behind the same RLS policies, so for a foreign project they return
+  // nothing, and the function still returns null below before using anything.
+  const [{ data: project }, { data: generation }, filesBlock] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("name, idea, instructions, context, tools")
+      .eq("id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("generations")
+      .select("outputs")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    buildFilesContext(supabase, userId, projectId),
+  ]);
   if (!project) return null;
 
-  const { data: generation } = await supabase
-    .from("generations")
-    .select("outputs")
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
   const outputs = (generation?.outputs ?? {}) as Record<string, string>;
 
   const parts: string[] = [`Name: ${project.name}`];
@@ -75,7 +91,7 @@ export async function buildProjectContext(
     parts.push(`Structure:\n${structureLines.join("\n")}`);
   }
 
-  const filesBlock = await buildFilesContext(supabase, userId, projectId);
+  // Already resolved above, in parallel with the two row reads.
   if (filesBlock) parts.push(filesBlock);
 
   const idea = typeof project.idea === "string" ? project.idea.trim() : "";
@@ -118,29 +134,49 @@ async function buildFilesContext(
     ...files.filter((f) => !f.name.toLowerCase().endsWith(".md")),
   ];
 
+  // Fetch every file at once, then apply the budget in order.
+  //
+  // This used to be one loop doing both: `await` the download, then spend the
+  // budget, then move to the next file. That made up to MAX_FILES_PER_PROJECT
+  // (10) storage downloads strictly serial on a cold cache — on the critical
+  // path of a project chat turn, so their latencies added up instead of
+  // overlapping.
+  //
+  // The two halves are separated rather than the whole loop parallelised,
+  // because the budget is inherently sequential: how much of a file is
+  // included depends on what earlier files already consumed. Downloading is
+  // the slow, independent part; spending the budget is the fast, ordered part.
+  // Fetching a file whose content the budget later has no room for is the
+  // deliberate trade — it's a cache fill that the next turn reuses anyway
+  // (storage_path is immutable, see project-file-cache.ts), and at 10 files
+  // max the ceiling is small and known.
+  const contents = await Promise.all(
+    ordered.map((f) =>
+      getCachedFileContent(f.storage_path, async () => {
+        try {
+          const { data: blob, error } = await supabase.storage
+            .from("project-files")
+            .download(f.storage_path);
+          if (error || !blob) return null;
+          return (await blob.text()).trim();
+        } catch {
+          return null;
+        }
+      })
+    )
+  );
+
   const blocks: string[] = [];
   const skipped: string[] = [];
   let remaining = FILES_TOTAL_BUDGET;
 
-  for (const f of ordered) {
+  for (let i = 0; i < ordered.length; i++) {
+    const f = ordered[i];
     if (remaining <= 0) {
       skipped.push(f.name);
       continue;
     }
-    // storage_path is immutable once uploaded (see project-file-cache.ts),
-    // so the download only actually runs on a cache miss, not on every turn
-    // of a project chat.
-    const text = await getCachedFileContent(f.storage_path, async () => {
-      try {
-        const { data: blob, error } = await supabase.storage
-          .from("project-files")
-          .download(f.storage_path);
-        if (error || !blob) return null;
-        return (await blob.text()).trim();
-      } catch {
-        return null;
-      }
-    });
+    const text = contents[i];
     if (text === null) {
       skipped.push(f.name);
       continue;

@@ -34,11 +34,11 @@ export function ProjectFiles({
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState(initialFiles);
   const [uploading, setUploading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   // QA finding A-2: a Tab-reachable, irreversible delete with no confirmation
-  // step, unlike project and account deletion. The file pending confirmation,
-  // not yet the one actually being deleted (that's deletingId, set once the
-  // dialog's own "Löschen" is clicked).
+  // step, unlike project and account deletion. The file awaiting confirmation
+  // in the dialog. There is no separate "currently deleting" id any more — the
+  // delete is optimistic, so confirming it removes the row and closes the
+  // dialog in the same tick and nothing is ever in an in-flight state on screen.
   const [pendingDelete, setPendingDelete] = useState<ProjectFile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,8 +151,25 @@ export function ProjectFiles({
   }
 
   async function handleDelete(f: ProjectFile) {
-    setDeletingId(f.id);
     setError(null);
+    setPendingDelete(null);
+    // Optimistic: the row leaves the rail on click and comes back if the
+    // delete fails. Same shape as useLibraryFavorites and the saved-prompt
+    // list. Restored at its original index rather than appended, since the
+    // rail is ordered by created_at and re-appending would silently reorder
+    // it. Uploading deliberately stays pessimistic — that one moves real
+    // bytes and can genuinely fail on size/type/quota, so its spinner is
+    // reporting something real.
+    const index = files.findIndex((x) => x.id === f.id);
+    setFiles((prev) => prev.filter((x) => x.id !== f.id));
+    const restore = () =>
+      setFiles((prev) => {
+        if (prev.some((x) => x.id === f.id)) return prev;
+        const next = prev.slice();
+        next.splice(Math.max(0, Math.min(index, next.length)), 0, f);
+        return next;
+      });
+
     try {
       const supabase = createClient();
       // DB row first, storage object second (QA finding F-10). The old order
@@ -171,17 +188,14 @@ export function ProjectFiles({
       // Best-effort: the row is already gone, so a failure here can only ever
       // leave the harmless kind of orphan, not the visible one above.
       await supabase.storage.from("project-files").remove([f.storagePath]);
-      setFiles((prev) => prev.filter((x) => x.id !== f.id));
       router.refresh();
     } catch {
+      restore();
       toast({
         title: "Löschen fehlgeschlagen",
         description: "Bitte versuche es erneut.",
         variant: "error",
       });
-    } finally {
-      setDeletingId(null);
-      setPendingDelete(null);
     }
   }
 
@@ -216,18 +230,13 @@ export function ProjectFiles({
               <button
                 type="button"
                 onClick={() => setPendingDelete(f)}
-                disabled={deletingId === f.id}
                 aria-label={`${f.name} löschen`}
                 // Permanently visible below md (QA finding K-2), same reasoning
                 // as chat-list.tsx's row actions: a hover-only reveal leaves
                 // touch devices with no dependable way to see this button.
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-destructive focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
               >
-                {deletingId === f.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </li>
           ))}
@@ -283,7 +292,9 @@ export function ProjectFiles({
         }
         confirmLabel="Datei löschen"
         busyLabel="Wird gelöscht…"
-        busy={pendingDelete !== null && deletingId === pendingDelete.id}
+        // Never busy: handleDelete closes this dialog and removes the row
+        // synchronously, so there is no in-flight window for it to report.
+        busy={false}
         onConfirm={() => {
           if (pendingDelete) void handleDelete(pendingDelete);
         }}

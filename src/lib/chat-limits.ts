@@ -74,6 +74,37 @@ export const MESSAGE_LOAD_LIMIT = 300;
 export const SAVED_PROMPTS_LOAD_LIMIT = 200;
 
 /**
+ * How many rows the chat and project *list* pages read at once.
+ *
+ * Same class of problem MESSAGE_LOAD_LIMIT and SAVED_PROMPTS_LOAD_LIMIT
+ * already fixed, in the three places the earlier pass didn't reach: /chats,
+ * /projects and a project's own overview all selected every matching row with
+ * no cap. /chats is the worst of the three because each row also carries a
+ * `messages(count)` aggregate, so the cost grew with total messages, not just
+ * with the number of chats.
+ *
+ * Read with `.range(0, LIST_LOAD_LIMIT)` — one row MORE than this — so the
+ * page can tell "exactly at the cap" from "there are more" and say so instead
+ * of silently hiding rows. See hasMoreThanLimit() below.
+ */
+export const LIST_LOAD_LIMIT = 100;
+
+/**
+ * Splits an over-fetched list (LIST_LOAD_LIMIT + 1 rows) into the rows to
+ * render and whether anything was cut off.
+ *
+ * Over-fetching by one is what makes the truncation honest without a second
+ * `count` round trip: a plain `.limit(n)` returning n rows is indistinguishable
+ * from "there are exactly n" and "there are thousands".
+ */
+export function splitAtLimit<T>(rows: T[], limit: number = LIST_LOAD_LIMIT): {
+  items: T[];
+  hasMore: boolean;
+} {
+  return { items: rows.slice(0, limit), hasMore: rows.length > limit };
+}
+
+/**
  * Caps `s` at `max` characters *including* the ellipsis. The ellipsis used to
  * be appended after slicing to `max`, making the result max + 1 — irrelevant
  * for most callers, but off by exactly the one character that would push a

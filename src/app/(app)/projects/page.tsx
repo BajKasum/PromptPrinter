@@ -6,6 +6,7 @@ import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { LibraryBrowser, type LibraryItem } from "@/components/app/library-browser";
 import { NewProjectButton } from "@/components/app/new-project";
 import { createClient } from "@/lib/supabase/server";
+import { LIST_LOAD_LIMIT, splitAtLimit } from "@/lib/chat-limits";
 import type { ProjectTools } from "@/components/app/project-card";
 
 export const metadata = { title: "Projekte" };
@@ -55,15 +56,22 @@ export default async function ProjectsPage() {
   if (!user) redirect("/login");
 
   const [{ data: rawProjects }, { data: rawSummaries }] = await Promise.all([
+    // Capped + over-fetched by one (see LIST_LOAD_LIMIT): this was unbounded.
+    // project_summaries stays uncapped on purpose — it returns one small
+    // counts row per project and is joined by id below, so rows past the cap
+    // are simply never looked up.
     supabase
       .from("projects")
       .select("id, name, tools, updated_at, is_favorite")
       .eq("user_id", user.id)
-      .order("updated_at", { ascending: false }),
+      .order("updated_at", { ascending: false })
+      .range(0, LIST_LOAD_LIMIT),
     supabase.rpc("project_summaries"),
   ]);
 
-  const projects = (rawProjects as ProjectQueryRow[] | null) ?? [];
+  const { items: projects, hasMore } = splitAtLimit(
+    (rawProjects as ProjectQueryRow[] | null) ?? []
+  );
   const summaryByProject = new Map<string, ProjectSummaryRow>();
   for (const s of (rawSummaries as ProjectSummaryRow[] | null) ?? []) {
     summaryByProject.set(s.project_id, s);
@@ -119,6 +127,14 @@ export default async function ProjectsPage() {
       ) : (
         <FadeIn>
           <LibraryBrowser items={items} />
+          {/* LibraryBrowser's search filters what's loaded, so a truncated
+              list would make its "nothing found" quietly wrong. Say it. */}
+          {hasMore && (
+            <p className="mt-4 text-center text-[12.5px] text-tertiary">
+              Die zuletzt bearbeiteten {LIST_LOAD_LIMIT} Projekte. Ältere sind
+              über die Suche (⌘K) erreichbar.
+            </p>
+          )}
         </FadeIn>
       )}
     </div>

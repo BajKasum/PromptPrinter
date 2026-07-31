@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { ChatList, type ChatListItem } from "@/components/app/chat-list";
 import { createClient } from "@/lib/supabase/server";
+import { LIST_LOAD_LIMIT, splitAtLimit } from "@/lib/chat-limits";
 
 export const metadata = { title: "Chats" };
 
@@ -31,13 +32,24 @@ export default async function ChatsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Capped, and over-fetched by one so the note below can be truthful about
+  // whether anything was cut. This read was unbounded: every global chat the
+  // account ever had, each one also carrying a `messages(count)` aggregate, so
+  // the cost scaled with total messages written rather than with what the page
+  // shows. Explicit user_id on top of RLS, this project's standard for
+  // user-scoped reads.
   const { data: raw } = await supabase
     .from("conversations")
     .select("id, title, target, updated_at, messages(count)")
+    .eq("user_id", user.id)
     .is("project_id", null)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .range(0, LIST_LOAD_LIMIT);
 
-  const chats: ChatListItem[] = ((raw as ConversationQueryRow[] | null) ?? []).map((c) => ({
+  const { items: rows, hasMore } = splitAtLimit(
+    (raw as ConversationQueryRow[] | null) ?? []
+  );
+  const chats: ChatListItem[] = rows.map((c) => ({
     id: c.id,
     title: c.title,
     target: c.target,
@@ -88,6 +100,15 @@ export default async function ChatsPage() {
       ) : (
         <FadeIn>
           <ChatList chats={chats} />
+          {/* Say it rather than silently showing a truncated list. There is no
+              "load more" here yet — a real follow-up, same open point the
+              saved-prompt cap carries. */}
+          {hasMore && (
+            <p className="mt-4 text-center text-[12.5px] text-tertiary">
+              Die neuesten {LIST_LOAD_LIMIT} Chats. Ältere sind über die Suche
+              (⌘K) erreichbar.
+            </p>
+          )}
         </FadeIn>
       )}
     </div>
