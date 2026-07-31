@@ -1,38 +1,74 @@
-# Production stack — `docker compose up -d`
+# Development stack — the DEFAULT compose file. `docker compose up --build`,
+# with no `-f` flag, resolves to this file, so that is the command a
+# developer's daily habit actually needs to work — and now does.
 #
-# Liest alle Env-Vars (Build + Runtime) aus `.env`.
-# - Build-Args werden via ${VAR}-Interpolation aus `.env` gezogen (Compose-Default)
-# - Runtime-Vars im Container kommen aus dem gleichen `.env` via env_file
-# Ein einziges File, ein einziger Befehl: `docker compose up -d`
+# ⚠️ This file used to be the PRODUCTION stack (strict, fail-closed, no dev
+# fallbacks). It has been renamed to docker-compose.prod.yml, on purpose: the
+# bare `docker compose up --build` command silently built and ran that
+# production image, which requires secrets (Upstash, the BYOK encryption key)
+# a dev machine has no reason to carry, and refused to boot without them
+# ("[env] ... erforderliche Umgebungsvariable(n) fehlen ... Der Start wird
+# abgebrochen"). Reaching production now requires spelling out
+# `-f docker-compose.prod.yml`, which can't happen from muscle memory —
+# production access is opt-in, dev is the default.
+#
+# Builds the Dockerfile's `dev` target (FROM deps AS dev — reuses the deps
+# stage's own npm-ci'd node_modules, no `COPY . .` at build time) and then
+# bind-mounts the real source tree over it at container start for hot reload.
+# `--build` is a real step now, not ceremony: it (re-)installs dependencies
+# into the image via the SAME BuildKit cache mount the production build
+# already uses, so a dependency change is fast and a no-op change is instant
+# (Docker skips the layer entirely).
+#
+# node_modules and .next live in named volumes rather than the bind mount:
+# node_modules so the image's own Alpine/musl-built modules aren't shadowed by
+# whatever (or nothing) the host's node_modules looks like, .next so the dev
+# server's own build cache survives a container restart instead of starting
+# cold every time.
+#
+# Explicit `name:` below, matching docker-compose.prod.yml's own explicit
+# name — found the hard way that without one, both files default to the same
+# Compose project name (the directory name), and since both declare a `web`
+# service, starting the OTHER stack silently tore this one down as a side
+# effect, despite the two having different container_names. Separate project
+# names make the two fully independent; both can run at once if ever wanted.
+name: promptprinter-dev
 
 services:
   web:
-    image: promptprinter:latest
+    container_name: promptprinter-dev
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # Build-time (inlined into the client bundle).
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3001}
-    container_name: promptprinter
-    restart: unless-stopped
+      target: dev
     ports:
-      - "${HOST_PORT:-3001}:3000"
+      - "${PORT:-3000}:3000"
     env_file:
-      - .env
-    healthcheck:
-      # No external curl in alpine — use node's http to ping /api/health.
-      # Was "/" (the marketing page), which renders from static output even when
-      # Supabase and Upstash are unreachable, so the container reported healthy
-      # while nothing a signed-in user does worked (Security-Audit finding M-4).
-      test:
-        - CMD
-        - node
-        - -e
-        - "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+      - .env.local
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      # The actual fix for hot reload not working over this Windows bind
+      # mount. Turbopack (`npm run dev`, the host's own dev command) was tried
+      # first here and its native watcher never received a single filesystem
+      # event across the bind mount, confirmed by editing a file and finding
+      # the server still served the untouched, fast-cached page — no
+      # recompile, ever. Next's own bundler-agnostic
+      # `watchOptions.pollIntervalMs` (next.config.ts) didn't help either;
+      # Turbopack doesn't act on it. The Dockerfile's `dev` stage now runs
+      # `npm run dev:docker` (plain `next dev`, webpack) specifically because
+      # of this, and these two env vars are what webpack's watcher actually
+      # polls on — verified working with the same edit-then-observe test,
+      # a save now triggers a real recompile within a few seconds.
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - next_cache:/app/.next
+    tty: true
+    stdin_open: true
+
+volumes:
+  node_modules:
+  next_cache:

@@ -57,8 +57,8 @@ Vorlage: [`.env.example`](.env.example). Welche Datei wo gelesen wird:
 
 | Datei | Wird gelesen von |
 |---|---|
-| `.env.local` | `npm run dev`, Dev-Docker (`docker-compose.dev.yml`), Screenshot-Script |
-| `.env` | Prod-Docker (`docker-compose.yml`, via `env_file`) |
+| `.env.local` | `npm run dev`, Dev-Docker (`docker-compose.yml`), Screenshot-Script |
+| `.env` | Prod-Docker (`docker-compose.prod.yml`, via `env_file`) |
 | `.env.example` | nur Vorlage (committed) |
 
 **Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen, die landen sonst im

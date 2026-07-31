@@ -5,14 +5,14 @@
  * API call 429s (QA finding K-5).
  *
  * The trap this exists for (documented at length in CLAUDE.md, and still a
- * trap because it's only documentation): docker-compose.yml's runtime vars
- * come from `.env` via `env_file:`, but the "production" command in
- * DOCKER.md is `docker compose --env-file .env.local up --build -d` — that
- * `--env-file` flag controls Compose's own ${VAR} INTERPOLATION (used for
- * the NEXT_PUBLIC_* build args baked into the client bundle), a completely
- * different mechanism from `env_file:`. A "prod" run therefore depends on
- * TWO files at once, for two different reasons, and it is easy to fill in
- * one and forget the other.
+ * trap because it's only documentation): docker-compose.prod.yml's runtime
+ * vars come from `.env` via `env_file:`, but the "production" command in
+ * DOCKER.md is `docker compose -f docker-compose.prod.yml --env-file
+ * .env.local up --build -d` — that `--env-file` flag controls Compose's own
+ * ${VAR} INTERPOLATION (used for the NEXT_PUBLIC_* build args baked into the
+ * client bundle), a completely different mechanism from `env_file:`. A
+ * "prod" run therefore depends on TWO files at once, for two different
+ * reasons, and it is easy to fill in one and forget the other.
  *
  * Mirrors src/lib/env.ts's own required-variable list (kept in sync by hand:
  * that file is a TS module meant for the Next.js runtime, not something this
@@ -66,9 +66,10 @@ const PROD_RUNTIME_REQUIRED = [
   "UPSTASH_REDIS_REST_TOKEN",
 ];
 
-// docker-compose.yml's build.args block — these get baked into the client
-// bundle at build time, a missing one here isn't a boot-time crash like the
-// list above, but a silently broken build (empty Supabase URL compiled in).
+// docker-compose.prod.yml's build.args block — these get baked into the
+// client bundle at build time, a missing one here isn't a boot-time crash
+// like the list above, but a silently broken build (empty Supabase URL
+// compiled in).
 const BUILD_ARGS_REQUIRED = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
@@ -110,7 +111,7 @@ if (mode !== "dev" && mode !== "prod") {
 if (mode === "dev") {
   const vars = readEnvFile(".env.local");
   if (!vars) {
-    fail(".env.local fehlt. docker-compose.dev.yml liest Runtime-Variablen von dort.");
+    fail(".env.local fehlt. docker-compose.yml (der Dev-Stack) liest Runtime-Variablen von dort.");
   } else {
     const gaps = missing(vars, DEV_RUNTIME_REQUIRED);
     if (gaps.length > 0) {
@@ -118,11 +119,11 @@ if (mode === "dev") {
     }
   }
 } else {
-  // docker-compose.yml's two files, checked against what each is actually
-  // used for — see the module comment above.
+  // docker-compose.prod.yml's two files, checked against what each is
+  // actually used for — see the module comment above.
   const runtimeVars = readEnvFile(".env");
   if (!runtimeVars) {
-    fail(".env fehlt. docker-compose.yml liest die Container-Runtime-Variablen von dort (env_file).");
+    fail(".env fehlt. docker-compose.prod.yml liest die Container-Runtime-Variablen von dort (env_file).");
   } else {
     const gaps = missing(runtimeVars, PROD_RUNTIME_REQUIRED);
     if (gaps.length > 0) {

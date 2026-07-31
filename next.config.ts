@@ -48,6 +48,29 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  // Polling-based file watching, ONLY when WATCHPACK_POLLING is set (the dev
+  // Docker container's own compose file sets it, the host's shell/.env.local
+  // never does — so this is a no-op everywhere except that one container).
+  //
+  // The Docker dev container's file watching over its Windows bind mount was
+  // broken (a host-side edit never triggered a recompile — a real edit
+  // followed by a fresh request kept serving the stale compiled page in
+  // ~400ms, no "Compiling ..." log line, where a genuine recompile takes
+  // 20-30s+ on this project). Root cause was Turbopack itself: its native
+  // watcher (the Rust `notify` crate) never receives filesystem events across
+  // that bind mount, and — confirmed by testing this exact option, not
+  // assumed — Turbopack does not act on `watchOptions.pollIntervalMs` either,
+  // despite it being Next's own documented, bundler-agnostic replacement for
+  // WATCHPACK_POLLING/CHOKIDAR_USEPOLLING (which Turbopack also ignores; both
+  // only ever appear inside Next's bundled webpack/chokidar, confirmed by
+  // searching the compiled package). The actual fix was switching the Docker
+  // dev container to webpack (`npm run dev:docker`, see Dockerfile's `dev`
+  // stage) — the host's `npm run dev` keeps Turbopack, there's no bind-mount
+  // boundary there to work around. `watchOptions` stays set here as
+  // defense-in-depth for that webpack path: it's the modern equivalent of the
+  // env vars below and costs nothing when unset.
+  watchOptions:
+    process.env.WATCHPACK_POLLING === "true" ? { pollIntervalMs: 1000 } : undefined,
   // No `images.remotePatterns` on purpose (Security-Audit finding H-2). It used
   // to allowlist the two OAuth avatar hosts, but nothing ever routed a remote
   // URL through next/image: <Mascot> is the only next/image call site and it

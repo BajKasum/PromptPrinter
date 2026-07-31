@@ -11,30 +11,51 @@ Wenn das einen Fehler gibt → Docker Desktop öffnen und warten, bis es gestart
 
 ---
 
-## Entwicklung, der Ersatz für `npm run dev` (mit Hot-Reload)
+> ⚠️ **`docker-compose.yml` ist seit 2026-08 der Dev-Stack, nicht mehr Prod.**
+> Der blanke Befehl `docker compose up --build` (ohne `-f`) baute vorher
+> stillschweigend das strikte Produktions-Image, das ohne Upstash/
+> Verschlüsselungs-Secret mit `[env] ... erforderliche Umgebungsvariable(n)
+> fehlen` beim Boot abbrach — ein Dev-Rechner trägt diese Secrets normalerweise
+> nicht. Jetzt ist es umgekehrt: der blanke Befehl startet Dev, Produktion
+> braucht zwingend `-f docker-compose.prod.yml`, das kann nicht aus Gewohnheit
+> passieren.
+
+## Entwicklung, der Ersatz für `npm run dev` (mit Hot-Reload + Turbopack)
 
 ```powershell
 npm run docker:dev
 ```
 
-Prüft zuerst, ob `.env.local` alle Pflichtvariablen trägt (`scripts/check-env.mjs`,
-sieht das Kommando davor), und startet erst danach den Container. Ohne den Check
-kam der Fehler bisher erst nach dem Start, als 429 auf jede API-Route (siehe
-`src/lib/env.ts`s Boot-Check für dieselbe Prüfung im Next-Prozess selbst).
-Direkt ohne Prüfung: `docker compose -f docker-compose.dev.yml up`
+Prüft zuerst, ob `.env.local` die Pflichtvariablen für Dev trägt
+(`scripts/check-env.mjs`, sieht das Kommando davor — nur Supabase + App-URL,
+siehe unten warum), und startet erst danach den Container. Ohne den Check
+kam der Fehler bisher erst nach dem Start.
+Direkt ohne Prüfung: `docker compose up --build` (das ist jetzt derselbe
+Befehl, den der blanke `docker compose up --build` sowieso ausführt —
+`docker-compose.yml` ohne `-f` ist der Dev-Stack).
 
 - App läuft auf **http://localhost:3000**
-- Code-Änderungen laden **automatisch neu** (Hot-Reload, der Quellcode ist in den Container gemountet)
+- Code-Änderungen laden **automatisch neu** (Hot-Reload via Turbopack, der
+  Quellcode ist in den Container gemountet)
 - Liest deine **`.env.local`**
-- Erster Start dauert etwas (lädt `node:22` und installiert die Abhängigkeiten im Container, danach gecacht)
+- `--build` baut jetzt wirklich etwas: das Dockerfile hat einen eigenen
+  `dev`-Build-Target (installiert Abhängigkeiten in einer gecachten Schicht,
+  genau wie der Produktions-Build). Erster Start dauert etwas, jeder folgende
+  ist schnell, solange sich `package-lock.json` nicht ändert.
+- Braucht **kein** `UPSTASH_REDIS_REST_URL`/`_TOKEN` und kein
+  `API_KEY_ENCRYPTION_SECRET` mehr: `src/lib/rate-limit.ts` fällt ausserhalb
+  von Produktion auf einen In-Memory-Limiter zurück, `src/lib/crypto.ts` auf
+  einen festen, klar als unsicher markierten Dev-Schlüssel (Konsolen-Warnung
+  macht das sichtbar). Beides nur ausserhalb `NODE_ENV=production` aktiv, in
+  Produktion bleibt es beim strikten Verhalten.
 
 **Stoppen:** im selben Terminal **`Strg + C`**, danach sauber aufräumen:
 
 ```powershell
-docker compose -f docker-compose.dev.yml down
+docker compose down
 ```
 
-Im Hintergrund starten: `... up -d` · Logs ansehen: `docker compose -f docker-compose.dev.yml logs -f`
+Im Hintergrund starten: `... up -d --build` · Logs ansehen: `docker compose logs -f`
 
 ---
 
@@ -45,19 +66,24 @@ npm run docker:prod
 ```
 
 - App läuft auf **http://localhost:3001**
-- Baut das optimierte **Standalone-Image** und startet `node server.js` als Non-Root-User
-- `--env-file .env.local` sorgt dafür, dass die `NEXT_PUBLIC_*`-Werte beim Build mit eingebacken werden (sie landen im Client-Bundle)
-- Prüft vorher **beide** Dateien (`.env` für die Container-Laufzeit über `env_file`,
-  `.env.local` für die `NEXT_PUBLIC_*`-Build-Args), das ist die Falle aus
-  CLAUDE.md: zwei verschiedene Dateien für zwei verschiedene Mechanismen, eine
-  davon zu vergessen fiel bisher erst nach dem Start auf.
+- Baut das optimierte **Standalone-Image** (Dockerfile-Target `runner`) und
+  startet `node server.js` als Non-Root-User
+- `--env-file .env.local` sorgt dafür, dass die `NEXT_PUBLIC_*`-Werte beim Build
+  mit eingebacken werden (sie landen im Client-Bundle)
+- Prüft vorher **beide** Dateien (`.env` für die Container-Laufzeit über
+  `env_file`, `.env.local` für die `NEXT_PUBLIC_*`-Build-Args), das ist die
+  Falle aus CLAUDE.md: zwei verschiedene Dateien für zwei verschiedene
+  Mechanismen, eine davon zu vergessen fiel bisher erst nach dem Start auf.
+- Bleibt **strikt fail-closed**, unveraendert: fehlt eine Pflichtvariable
+  (Supabase, `API_KEY_ENCRYPTION_SECRET`, beide `UPSTASH_*`), bricht der Start
+  ab statt in einem funktional toten Zustand hochzukommen.
 
-Direkt ohne Prüfung: `docker compose --env-file .env.local up --build -d`
+Direkt ohne Prüfung: `docker compose -f docker-compose.prod.yml --env-file .env.local up --build -d`
 
 **Stoppen:**
 
 ```powershell
-docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
 Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
@@ -69,22 +95,24 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 | Was | Befehl |
 |---|---|
 | Dev starten (mit Env-Check) | `npm run docker:dev` |
-| Dev stoppen | `Strg + C`, dann `docker compose -f docker-compose.dev.yml down` |
+| Dev stoppen | `Strg + C`, dann `docker compose down` |
 | Prod starten (mit Env-Check) | `npm run docker:prod` |
-| Prod stoppen | `docker compose down` |
+| Prod stoppen | `docker compose -f docker-compose.prod.yml down` |
 | Env-Dateien allein prüfen | `node scripts/check-env.mjs dev` bzw. `... prod` |
 | Laufende Container | `docker ps` |
-| Logs (Dev) | `docker compose -f docker-compose.dev.yml logs -f` |
-| Container + Volumes löschen | `docker compose -f docker-compose.dev.yml down -v` |
+| Logs (Dev) | `docker compose logs -f` |
+| Container + Volumes löschen (Dev) | `docker compose down -v` |
 
 ---
 
 ## Hinweis zu `npm run dev`
 
-`npm run dev` bleibt vorhanden, der **Dev-Container ruft es intern selbst auf**, deshalb darf es nicht entfernt werden. Dein Workflow ist jetzt aber **ein Docker-Befehl** statt npm direkt:
+`npm run dev` bleibt vorhanden, der **Dev-Container ruft es intern selbst auf**
+(`next dev --turbopack`), deshalb darf es nicht entfernt werden. Dein Workflow
+ist jetzt aber **ein Docker-Befehl** statt npm direkt:
 
 ```powershell
-docker compose -f docker-compose.dev.yml up
+docker compose up --build
 ```
 
 Solange der Container läuft, brauchst du `npm run dev` auf dem Host nicht mehr.

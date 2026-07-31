@@ -24,6 +24,72 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund
 
+# ─── dev ─────────────────────────────────────────────────────────────────────
+# Target for docker-compose.yml (the default dev stack — plain `docker compose
+# up --build` builds and runs THIS stage, not `runner`). Reuses `deps`'
+# already-cache-mounted `npm ci` output as-is: that install has no NODE_ENV set
+# when it runs, so it includes devDependencies (typescript among them, which
+# `next dev` needs), unlike `builder`/`runner` below which are production-only.
+#
+# Deliberately no `COPY . .` here. docker-compose.yml bind-mounts the real
+# source tree over /app at container start for hot reload, so anything copied
+# in at build time would be immediately shadowed — copying it would only slow
+# down every `--build` for no benefit. What IS worth baking in at build time is
+# node_modules, which is what makes `--build` a real, useful step here rather
+# than pure ceremony: a fresh dependency install is cached exactly like the
+# production path's, and the compose file's own `node_modules` named volume
+# (see its comment) keeps this stage's Alpine/musl-built node_modules from
+# being shadowed by whatever the bind mount would otherwise put there.
+FROM deps AS dev
+ENV NODE_ENV=development \
+    NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3000
+# -H 0.0.0.0: the dev server must listen on all interfaces, not just
+# localhost, or the host-side port mapping can't reach it inside the
+# container.
+#
+# `npm run dev:docker` (plain `next dev`, webpack), NOT `npm run dev`
+# (`next dev --turbopack`, what the host uses) — also found the hard way.
+# Turbopack compiles and serves pages fine in the container, but never once
+# picked up a host-side file edit through the bind mount: confirmed the bind
+# mount itself delivers changes correctly (`docker exec ... cat` showed the
+# new content immediately), confirmed WATCHPACK_POLLING/CHOKIDAR_USEPOLLING
+# (webpack/chokidar-only, Turbopack doesn't read them) predictably did
+# nothing, and then confirmed that even Next's own stable, bundler-agnostic
+# `watchOptions.pollIntervalMs` (next.config.ts) made no difference either —
+# a real edit followed by a fresh request still served the stale compiled
+# output in ~400ms with no "Compiling ..." log line, where a genuine
+# recompile takes 20-30s+ on this project. Turbopack's file watching does not
+# currently work over a Windows Docker Desktop bind mount, full stop; this
+# isn't a config gap left to find. Webpack + the same polling env vars is the
+# proven-working mechanism the project's original dev-compose already relied
+# on before Turbopack existed, confirmed working again below with the same
+# edit-then-request test. The host's `npm run dev` keeps Turbopack — no
+# virtualized bind-mount boundary there, nothing to work around.
+#
+# `npm install` before `next dev:docker`, not just the image's own baked-in
+# node_modules from the build above — found the hard way, by actually running
+# this: docker-compose.yml's node_modules NAMED VOLUME only gets seeded from
+# the image on its FIRST-EVER mount. A volume created months ago by an earlier
+# setup (or just an earlier version of this same file) already has content, so
+# Docker never re-populates it from a fresh build, ever — `--build` silently
+# stopped mattering for node_modules the moment that volume was created, and a
+# rebuilt image's dependencies were never actually reaching the running
+# container. Caught by comparing what the container reported at boot
+# (Next.js 15.1.6, from a volume dated back to this project's original setup)
+# against what the image had just been built with (15.5.22, matching
+# package-lock.json exactly).
+#
+# `npm install`, not `npm ci`: unlike `npm ci` (always deletes and reinstalls
+# everything), `npm install` diffs against what's already there and is a fast
+# near no-op on the common path where the volume already matches
+# package-lock.json — it only does real work on the same two occasions a
+# rebuild would anyway: a genuinely stale/empty volume, or an actual
+# dependency change. The build-time `npm ci` above still matters: it's what
+# makes the very first `--build` (empty volume) fast via the cache mount
+# rather than a cold network install inside the running container.
+CMD ["sh", "-c", "npm install --no-audit --no-fund && npm run dev:docker -- -H 0.0.0.0"]
+
 # ─── builder ─────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS builder
 WORKDIR /app

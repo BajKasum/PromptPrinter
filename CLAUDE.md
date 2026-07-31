@@ -437,9 +437,17 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
    gehostet ist**, vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
    (UI, `stripe`-Dep, DB-Spalten `stripe_*`); das wird ersetzt, nicht ausgebaut.
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
-   Prod-Docker-Container liest `.env` (via `env_file` in docker-compose.yml), das `--env-file .env.local` im Compose-Befehl steuert nur die
-   ${VAR}-Interpolation, nicht die Container-Runtime-Vars. Ein API-Key muss
-   also je nach Workflow in der richtigen Datei (oder beiden) stehen.
+   Prod-Docker-Container liest `.env` (via `env_file` in
+   `docker-compose.prod.yml`), das `--env-file .env.local` im Compose-Befehl
+   steuert nur die ${VAR}-Interpolation, nicht die Container-Runtime-Vars. Ein
+   API-Key muss also je nach Workflow in der richtigen Datei (oder beiden)
+   stehen.
+4. **`docker-compose.yml` ist seit 2026-08 der Dev-Stack, nicht Prod** (siehe
+   „Docker-Dev-Stack" weiter unten). Der blanke `docker compose up --build`
+   baute vorher stillschweigend das strikte Produktions-Image und brach ohne
+   Upstash/Verschlüsselungs-Secret beim Boot ab — genau der Fehler, den ein
+   Dev-Rechner ohne Produktions-Secrets immer ausgelöst hätte. Produktion
+   braucht jetzt zwingend `-f docker-compose.prod.yml` (siehe [DOCKER.md](DOCKER.md)).
 
 ## Befehle
 
@@ -476,8 +484,8 @@ Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
 
 | Datei | Wird gelesen von |
 |---|---|
-| `.env.local` | `npm run dev`, Dev-Docker, Screenshot-Script |
-| `.env` | Prod-Docker (`docker-compose.yml`) |
+| `.env.local` | `npm run dev`, Dev-Docker (`docker-compose.yml`), Screenshot-Script |
+| `.env` | Prod-Docker (`docker-compose.prod.yml`) |
 | `.env.example` | Vorlage (committed) |
 
 `.env*` (außer `.example`) sind gitignored. Schema in [.env.example](.env.example).

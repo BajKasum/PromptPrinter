@@ -1,0 +1,61 @@
+# Production stack — `docker compose -f docker-compose.prod.yml --env-file .env.local up --build -d`
+# (or `npm run docker:prod`, which runs exactly that after checking both env
+# files are complete).
+#
+# ⚠️ Renamed from `docker-compose.yml`. The bare, flag-less `docker compose
+# up --build` a developer types out of habit now resolves to the file
+# actually named `docker-compose.yml` — the DEV stack (see that file's own
+# header) — which fixed a real incident: that exact bare command used to
+# silently build and run THIS strict, fail-closed production image, throwing
+# "[env] ... erforderliche Umgebungsvariable(n) fehlen" at boot because dev
+# machines don't carry production secrets. Reaching this file now requires
+# spelling out `-f docker-compose.prod.yml`, which cannot happen by muscle
+# memory — production access is opt-in, not opt-out.
+#
+# Liest alle Env-Vars (Build + Runtime) aus `.env`.
+# - Build-Args werden via ${VAR}-Interpolation aus `.env.local` gezogen (siehe
+#   das --env-file oben, Compose-Default ohne den Flag waere `.env`)
+# - Runtime-Vars im Container kommen aus `.env` via env_file
+#
+# Builds the `runner` target explicitly (Dockerfile now also defines a `dev`
+# target, the last stage in the file is still `runner` and therefore already
+# the default — spelled out anyway so this can never depend on stage order).
+#
+# Explicit `name:` — without one, this and docker-compose.yml both default to
+# the same Compose project name (the directory name), and since both declare
+# a `web` service, running either one silently tore the OTHER'S container
+# down, found by running exactly that. Separate names make them independent.
+name: promptprinter-prod
+
+services:
+  web:
+    image: promptprinter:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        # Build-time (inlined into the client bundle).
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3001}
+    container_name: promptprinter-prod
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3001}:3000"
+    env_file:
+      - .env
+    healthcheck:
+      # No external curl in alpine — use node's http to ping /api/health.
+      # Was "/" (the marketing page), which renders from static output even when
+      # Supabase and Upstash are unreachable, so the container reported healthy
+      # while nothing a signed-in user does worked (Security-Audit finding M-4).
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
