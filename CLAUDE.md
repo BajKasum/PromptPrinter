@@ -396,6 +396,31 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Gate grün (typecheck/lint/build/222 Tests, `next/navigation`-Mocks in
 > `sidebar.test.tsx`/`mobile-nav.test.tsx` um `useRouter` ergänzt, neu durch
 > die Abmelden-Funktion).
+>
+> **Automatischer Redirect aus leeren Projekten entfernt (2026-08-01,
+> `d857da0`):** Auf Bug-Report („Projekt öffnen, nichts tun, nach kurzer
+> Zeit landet man trotzdem im Chat-Composer") die Ursache in
+> `projects/[id]/(workspace)/page.tsx` gefunden: `if (rows.length === 0)
+> redirect(...)` in der Server-Component, bewusst am 23.07. als N-2-Shortcut
+> eingebaut („Skip straight to the composer, damit ein leeres Projekt keinen
+> unnötigen Extra-Klick verlangt"), feuerte aber serverseitig bei **jedem**
+> Besuch eines chatlosen Projekts, ganz ohne Nutzerinteraktion — kein
+> `useEffect`, kein Timeout, ein reiner Server-Redirect während des
+> Renderns. Kein Chat wurde dabei in der DB angelegt (`chats/new/page.tsx`
+> persistiert nichts, das passiert erst mit der ersten gesendeten
+> Nachricht in `/api/chat`), aber der Nutzer wurde trotzdem zwangsweise vom
+> Dashboard weggeschoben. Ersetzt durch einen expliziten Leerzustand
+> (`waiting`-Finn, „Noch keine Chats", Button „Neuen Chat starten"), der
+> Redirect passiert jetzt nur noch durch einen bewussten Klick. Grep über
+> den ganzen `src`-Baum nach `redirect(`/`router.push`/`router.replace`
+> bestätigte, dass das die einzige Auto-Navigation in diesem Flow war;
+> `chat.tsx`s `router.replace` auf die kanonische Chat-URL feuert weiterhin,
+> aber ausschliesslich nach einer vom Nutzer selbst gesendeten ersten
+> Nachricht, das ist beabsichtigtes Verhalten und blieb unangetastet. Gate
+> grün (typecheck/lint/662 Tests/build). Nicht per eingeloggtem Browser-
+> Klicktest verifiziert, dieses Environment hat keinen Test-Login; Dev-
+> Server startete aber sauber, unauthentifizierter Zugriff auf die Route
+> redirectete wie erwartet auf `/login`, keine Server-Fehler im Log.
 
 ## Was ist PromptPrinter?
 
