@@ -34,22 +34,33 @@ describe("rateLimitKey", () => {
     ).toBe("ip:8.8.8.8");
   });
 
-  it("prefers cf-connecting-ip over the x-forwarded-for chain", () => {
+  // Hosting is Vercel: x-vercel-forwarded-for is its own name for the same
+  // value as x-forwarded-for, guaranteed to survive even if a customer-added
+  // proxy in front of Vercel overwrites the generic header, so it wins.
+  it("prefers x-vercel-forwarded-for over the x-forwarded-for chain", () => {
     expect(
       rateLimitKey(
-        req({ "cf-connecting-ip": "5.5.5.5", "x-forwarded-for": "9.9.9.9, 1.1.1.1" })
+        req({
+          "x-vercel-forwarded-for": "5.5.5.5",
+          "x-forwarded-for": "9.9.9.9, 1.1.1.1",
+        })
       )
     ).toBe("ip:5.5.5.5");
   });
 
-  it("prefers x-real-ip over the x-forwarded-for chain", () => {
+  // cf-connecting-ip is never set by Vercel's own edge — trusting it would
+  // let any caller supply their own and mint a fresh bucket at will, exactly
+  // the bug this function exists to close. It must NOT be read as a client IP.
+  it("ignores cf-connecting-ip entirely and falls through to the x-forwarded-for chain", () => {
     expect(
-      rateLimitKey(req({ "x-real-ip": "6.6.6.6", "x-forwarded-for": "9.9.9.9, 1.1.1.1" }))
-    ).toBe("ip:6.6.6.6");
+      rateLimitKey(
+        req({ "cf-connecting-ip": "5.5.5.5", "x-forwarded-for": "9.9.9.9, 1.1.1.1" })
+      )
+    ).toBe("ip:1.1.1.1");
   });
 
-  it("uses cf-connecting-ip when there is no x-forwarded-for", () => {
-    expect(rateLimitKey(req({ "cf-connecting-ip": "5.5.5.5" }))).toBe("ip:5.5.5.5");
+  it("falls back to x-real-ip only when neither forwarded-for header is present", () => {
+    expect(rateLimitKey(req({ "x-real-ip": "6.6.6.6" }))).toBe("ip:6.6.6.6");
   });
 
   it('falls back to "unknown" without any ip headers', () => {

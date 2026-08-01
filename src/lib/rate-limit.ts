@@ -226,13 +226,19 @@ export async function reserveMonthlyQuota(
  * unlimited number of fresh rate-limit buckets by varying a header — the limit
  * was effectively absent for unauthenticated callers.
  *
- * Order below is by trustworthiness: headers a real edge *overwrites*
- * (cf-connecting-ip, x-real-ip) beat the chain, and the chain is only ever read
- * from its last entry. A caller can of course send any of these headers too —
- * the guarantee comes from the proxy overwriting them, not from the name. So
- * once hosting is settled, narrow this to the single header that deployment's
- * edge is known to set and drop the rest; trying several is a portability
- * compromise, not a security property.
+ * Hosting is Vercel: narrowed to the headers its edge is documented to set
+ * itself (https://vercel.com/docs/headers/request-headers), dropping the
+ * earlier generic/Cloudflare-oriented guess (cf-connecting-ip is never set by
+ * Vercel, so a caller could have supplied it themselves — trusting it would
+ * have handed back exactly the spoofable-bucket bug this function exists to
+ * close). x-vercel-forwarded-for is Vercel's own name for the same value,
+ * guaranteed to survive even if a customer-added proxy in front of Vercel
+ * overwrites the generic x-forwarded-for; x-real-ip is documented as
+ * identical to x-forwarded-for there too. Vercel OVERWRITES x-forwarded-for
+ * with the real client IP rather than appending to whatever the client sent,
+ * so it is normally a single value already — the last-entry split below is
+ * just defence in depth for the one Enterprise case (a Trusted Proxy in
+ * front of Vercel) where it could legitimately be a chain again.
  *
  * Note that every route now requires a session (see /api/chat, /api/projects,
  * /api/settings/api-key, /api/account), so the IP branch is currently
@@ -355,18 +361,21 @@ export function rateLimitKey(req: Request, userId?: string | null): string {
 }
 
 function clientIp(req: Request): string {
-  const cloudflare = req.headers.get("cf-connecting-ip")?.trim();
-  if (cloudflare) return cloudflare;
+  // x-vercel-forwarded-for first: identical to x-forwarded-for, but immune to
+  // being overwritten by a proxy the customer places in front of Vercel.
+  for (const header of ["x-vercel-forwarded-for", "x-forwarded-for"]) {
+    const chain = req.headers.get(header);
+    if (chain) {
+      // Last entry only: everything before it was supplied by the caller.
+      // Vercel itself sends a single value (it overwrites, not appends), so
+      // this is a no-op there — it only matters for a Trusted Proxy chain.
+      const last = chain.split(",").at(-1)?.trim();
+      if (last) return last;
+    }
+  }
 
   const real = req.headers.get("x-real-ip")?.trim();
   if (real) return real;
-
-  // Last entry only: everything before it was supplied by the caller.
-  const chain = req.headers.get("x-forwarded-for");
-  if (chain) {
-    const last = chain.split(",").at(-1)?.trim();
-    if (last) return last;
-  }
 
   return "unknown";
 }

@@ -32,6 +32,11 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
+# Vercel CLI's local project-link artifact (`vercel link`/`vercel dev`),
+# machine-specific, not needed by the Vercel platform itself (git-integrated
+# deploys pick up the project from the dashboard link, not this folder).
+.vercel
+
 # Stitch design references — local only, regenerate from MCP if needed
 .stitch-refs/
 

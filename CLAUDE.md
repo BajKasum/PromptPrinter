@@ -421,6 +421,47 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Klicktest verifiziert, dieses Environment hat keinen Test-Login; Dev-
 > Server startete aber sauber, unauthentifizierter Zugriff auf die Route
 > redirectete wie erwartet auf `/login`, keine Server-Fehler im Log.
+>
+> **Vercel-Deployment-Audit (2026-08-01):** Auf Wunsch der komplette Stack
+> gegen Vercel-Kompatibilität durchgegangen (Env-Vars, Build-Konfig, Next-
+> Config, Middleware, API-Routen, Runtime, Docker-Unabhängigkeit, Security-
+> Header, Rate-Limiting, Auth, Logging). Ergebnis: **deploybereit**, zwei
+> echte Findings behoben, alles andere war bereits korrekt.
+> [`next.config.ts`](next.config.ts)s `output: "standalone"` (fürs
+> Docker-Runner-Stage, siehe [Dockerfile](Dockerfile)) ist jetzt
+> `process.env.VERCEL ? undefined : "standalone"` — Vercels eigene Build-
+> Pipeline braucht/nutzt das nicht, lässt es aber unschädlich zu; bewusst
+> trotzdem abgeschaltet, um selbst den seltenen Output-File-Tracing-
+> Edgecase zu vermeiden. Per `VERCEL=1 npm run build` UND per normalem
+> `npm run build` verifiziert: Ersteres erzeugt kein `.next/standalone`
+> mehr, Letzteres weiterhin `server.js`, Docker bleibt unangetastet.
+> [`rate-limit.ts`](src/lib/rate-limit.ts)s `clientIp()` prüfte bisher
+> `cf-connecting-ip` zuerst (ein Header, den nur Cloudflare setzt) — auf
+> Vercel setzt niemand diesen Header, ein Angreifer könnte ihn also selbst
+> mitschicken und sich beliebig viele frische Rate-Limit-Buckets erkaufen
+> (aktuell praktisch unerreichbar, da jede Route eine Session verlangt,
+> aber genau der Fehler, den diese Funktion beheben soll, sobald eine neue
+> anonyme Route dazukommt). Jetzt auf Vercels dokumentierte Header
+> umgestellt (`x-vercel-forwarded-for` → `x-forwarded-for` → `x-real-ip`,
+> https://vercel.com/docs/headers/request-headers), `cf-connecting-ip`
+> komplett entfernt. Drei betroffene Tests in
+> [`rate-limit.test.ts`](src/lib/rate-limit.test.ts) entsprechend
+> umgeschrieben. `.gitignore` um `.vercel` ergänzt (lokales CLI-Artefakt).
+> Alles andere bereits Vercel-tauglich ohne Änderung: alle API-Routen
+> explizit `runtime = "nodejs"`, `/api/chat` trägt bereits
+> `maxDuration = 300` (liegt exakt auf der Hobby-Plan-Obergrenze, unter
+> Fluid Compute Default UND Maximum, geprüft gegen Vercels aktuelle Docs),
+> `env.ts`s Boot-Check wirft in Produktion hart ab (läuft auf Vercel pro
+> Function-Cold-Start, `NODE_ENV=production` gilt dort für Production UND
+> Preview), keine Server Actions, kein `fs`-Schreibzugriff, kein
+> `child_process`, kein Cron, next/image ohne `unoptimized`, Fonts über
+> `next/font/google` (self-hosted im Build). `vercel.json` bewusst nicht
+> angelegt — nichts im Projekt braucht eine Einstellung, die
+> Next.js' eigene Konventionen (`next.config.ts` `headers()`/`redirects()`)
+> nicht schon abdecken. Kein Code-Findings-Posten offen; verbleibende
+> Schritte sind reine Dashboard-Konfiguration (Env-Vars in Vercel setzen,
+> Supabase-Redirect-URLs um die Vercel-Domain ergänzen), keine
+> Repo-Änderung.
 
 ## Was ist PromptPrinter?
 

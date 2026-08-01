@@ -47,7 +47,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  // "standalone" is what the Dockerfile's runner stage copies (.next/standalone
+  // + server.js, see Dockerfile). Vercel's own build pipeline neither needs nor
+  // benefits from it — it always builds its own optimized Function output
+  // regardless of this setting — and skipping it there avoids output file
+  // tracing having to run at all on that path. `VERCEL` is a system env var
+  // Vercel sets on every build (never set locally or in the Docker image), so
+  // this is a no-op everywhere except Vercel's own build.
+  output: process.env.VERCEL ? undefined : "standalone",
   // Polling-based file watching, ONLY when WATCHPACK_POLLING is set (the dev
   // Docker container's own compose file sets it, the host's shell/.env.local
   // never does — so this is a no-op everywhere except that one container).
