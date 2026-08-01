@@ -11,16 +11,17 @@ import type { ComponentProps } from "react";
 // preference that only applies once you're actually inside the app.
 const APP_ROUTE_PREFIXES = [
   "/chats",
-  "/chat",
   "/projects",
+  "/prompts",
   "/settings",
   "/billing",
-  "/generations",
-  "/library",
-  "/dashboard",
+  "/admin",
 ];
 
-function isAppRoute(pathname: string): boolean {
+// Exported for theme-provider.test.ts, which cross-checks this list against
+// the actual directories under src/app/(app) so a new app route can't silently
+// end up forced light the way /prompts and /admin once did.
+export function isAppRoute(pathname: string): boolean {
   return APP_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
