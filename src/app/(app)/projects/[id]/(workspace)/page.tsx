@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Send } from "lucide-react";
+import { MessageSquare, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AnimatedMascot } from "@/components/brand/animated-mascot";
 import { ChatList, type ChatListItem } from "@/components/app/chat-list";
 import { FadeIn } from "@/components/motion/fade-in";
 import { getProject } from "@/lib/project";
@@ -36,10 +37,11 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
   const supabase = await createClient();
 
   // One round trip, not two. This used to run a `count: exact, head: true`
-  // query purely to decide the redirect below, then immediately run a second
-  // query selecting the same rows — the list itself already answers "are there
-  // any", so the count was a serial round trip on the critical path of every
-  // workspace visit for information the next query returns anyway.
+  // query purely to decide the empty-state branch below, then immediately run
+  // a second query selecting the same rows — the list itself already answers
+  // "are there any", so the count was a serial round trip on the critical
+  // path of every workspace visit for information the next query returns
+  // anyway.
   //
   // Capped + over-fetched by one (see LIST_LOAD_LIMIT); the select was
   // unbounded before, same class of problem as /chats.
@@ -55,13 +57,34 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
     (raw as ConversationQueryRow[] | null) ?? []
   );
 
-  // A workspace with no chats yet had nothing on this page besides a card
-  // whose entire content was "click here to start one" — the same action the
-  // link right above it already offers, so reaching it cost an extra
-  // navigation for no reason (QA finding N-2). Skip straight to the composer
-  // instead. The rail (Anweisungen/Struktur/Dateien) is unaffected either
-  // way, it lives in the shared workspace layout, not this page.
-  if (rows.length === 0) redirect(`/projects/${id}/chats/new`);
+  // A workspace with no chats yet must stay put and let the user decide —
+  // no server-side redirect into a chat, no auto-created conversation. The
+  // N-2 "skip straight to the composer" shortcut from 23.07. did exactly
+  // that behind the user's back: it fired on every visit while the query
+  // resolved, on both the very first render AND any later revisit of an
+  // empty project, with no way to just look at the dashboard. Replaced with
+  // an explicit empty state; the "Neuen Chat starten" button is the only
+  // thing that may navigate.
+  if (rows.length === 0) {
+    return (
+      <FadeIn>
+        <div className="card-surface p-8 text-center">
+          <AnimatedMascot state="waiting" size={72} priority className="mx-auto mb-3" />
+          <p className="text-[14px] font-semibold text-foreground">Noch keine Chats</p>
+          <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
+            Starte den ersten Chat in diesem Projekt, Finn kennt dann schon
+            Anweisungen, Struktur und Dateien aus der Rail.
+          </p>
+          <Button asChild size="sm">
+            <Link href={`/projects/${id}/chats/new`}>
+              <MessageSquare className="h-4 w-4" />
+              Neuen Chat starten
+            </Link>
+          </Button>
+        </div>
+      </FadeIn>
+    );
+  }
 
   const chats: ChatListItem[] = rows.map((c) => ({
     id: c.id,
@@ -85,8 +108,8 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
         </Link>
       </FadeIn>
 
-      {/* chats is never empty here, the redirect above already sent a
-          zero-chat project straight to the composer. */}
+      {/* chats is never empty here, the branch above already returned its
+          own empty state for that case. */}
       <div className="mt-4">
         <FadeIn>
           <ChatList chats={chats} basePath={`/projects/${id}/chats`} />
