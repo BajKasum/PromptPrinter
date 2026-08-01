@@ -14,7 +14,7 @@ import {
   ChatFinishedMarker,
 } from "@/components/app/chat-transcript";
 import { ChatComposer } from "@/components/app/chat-composer";
-import { VoiceOverlay } from "@/components/app/voice-overlay";
+import { VoiceBar } from "@/components/app/voice-bar";
 import { resolveVariant, resolveEmptyState } from "@/lib/chat-variants";
 import { parseSseEvents } from "@/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
@@ -448,27 +448,26 @@ export function Chat({
         </div>
       )}
 
-      <ChatComposer
-        input={input}
-        onInputChange={setInput}
-        placeholder={placeholder}
-        loading={busy}
-        onSend={() => send()}
-        onStop={stop}
-        onVoice={() => setVoiceOpen(true)}
-        target={target}
-        onTargetChange={setTarget}
-      />
-
-      {/* Voice mode runs the same turn through the same `send`, so a spoken
-          conversation lands in this transcript and is persisted exactly like a
-          typed one — closing the overlay leaves the chat where it should be,
-          not with a gap where the spoken turns were. */}
-      <VoiceOverlay
-        open={voiceOpen}
-        onClose={() => setVoiceOpen(false)}
-        onSubmit={send}
-      />
+      {/* Voice mode swaps in for the composer rather than covering the page:
+          the transcript above stays visible and scrollable throughout, so
+          talking to Finn never feels like leaving the chat. It runs the same
+          turn through the same `send`, so a spoken conversation lands in this
+          transcript and is persisted exactly like a typed one. */}
+      {voiceOpen ? (
+        <VoiceBar onClose={() => setVoiceOpen(false)} onSubmit={send} />
+      ) : (
+        <ChatComposer
+          input={input}
+          onInputChange={setInput}
+          placeholder={placeholder}
+          loading={busy}
+          onSend={() => send()}
+          onStop={stop}
+          onVoice={() => setVoiceOpen(true)}
+          target={target}
+          onTargetChange={setTarget}
+        />
+      )}
     </div>
   );
 }

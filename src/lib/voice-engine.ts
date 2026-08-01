@@ -182,7 +182,7 @@ export function stepBars(
  * clock and by `energy`, so the row undulates like a voice instead of flickering
  * like static, and the same moment always looks the same. While speaking,
  * `energy` is pushed by real word-boundary events from the speech synthesiser
- * (see voice-overlay.tsx), so the movement tracks actual speech — it just isn't
+ * (see voice-bar.tsx), so the movement tracks actual speech — it just isn't
  * a spectrum of it, because the Web Speech API gives no access to its own
  * output audio.
  */

@@ -80,6 +80,7 @@ export function VoiceWaveform({
   readHalf,
   energyRef,
   reducedMotion = false,
+  heightPx = MAX_BAR_HEIGHT,
   className,
 }: {
   mode: VoiceMode;
@@ -88,6 +89,10 @@ export function VoiceWaveform({
   /** 0..1 drive for the synthetic states, pushed by speech-synthesis events. */
   energyRef: React.RefObject<number>;
   reducedMotion?: boolean;
+  /** Peak bar height in CSS px. Defaults to the full-height row; the inline
+   *  composer bar passes a shorter one so it sits comfortably next to the
+   *  send/cancel controls instead of dwarfing them. */
+  heightPx?: number;
   className?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -98,6 +103,7 @@ export function VoiceWaveform({
   const modeRef = useRef(mode);
   const reducedRef = useRef(reducedMotion);
   const readRef = useRef(readHalf);
+  const heightRef = useRef(heightPx);
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
@@ -107,6 +113,9 @@ export function VoiceWaveform({
   useEffect(() => {
     readRef.current = readHalf;
   }, [readHalf]);
+  useEffect(() => {
+    heightRef.current = heightPx;
+  }, [heightPx]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -214,7 +223,7 @@ export function VoiceWaveform({
         const glow = pass === 0;
         for (let i = 0; i < springs.length; i++) {
           const level = Math.max(MIN_BAR, Math.min(1, springs[i].value));
-          const h = level * MAX_BAR_HEIGHT;
+          const h = level * heightRef.current;
           // Fade towards the ends so the row reads as one object with a centre
           // rather than a flat bar chart that happens to stop.
           const edge = 1 - Math.abs(i - mid) / mid;
@@ -240,10 +249,10 @@ export function VoiceWaveform({
     <div
       ref={wrapRef}
       className={className}
-      style={{ height: MAX_BAR_HEIGHT + 12 }}
+      style={{ height: heightPx + 12 }}
       // The row is decoration for sighted users; the state it represents is
-      // announced in the overlay's own live region, so it stays out of the
-      // accessibility tree rather than being read as an unlabelled image.
+      // announced in the voice bar's own sr-only live region, so it stays out
+      // of the accessibility tree rather than being read as an unlabelled image.
       aria-hidden
     >
       <canvas ref={canvasRef} className="block" />
