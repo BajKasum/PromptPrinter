@@ -97,6 +97,34 @@ export function hasNoModelProvider(env: EnvLike = process.env): boolean {
 }
 
 /**
+ * True when a PRODUCTION deployment carries a non-https NEXT_PUBLIC_APP_URL.
+ *
+ * Being merely *set* is not enough for this one, which is why the presence
+ * check above cannot catch it: the value is load-bearing twice over, and a
+ * plausible-but-wrong value (a leftover http://localhost:3000, say) boots
+ * perfectly and then breaks both silently.
+ *
+ * 1. secureCookieOptions (lib/supabase/cookie-options.ts) decides whether the
+ *    session cookie gets the `Secure` flag by asking whether siteUrl() is
+ *    https. Non-https here means production session cookies are written
+ *    WITHOUT Secure, i.e. a browser will send them over plaintext http.
+ * 2. siteUrl() builds the absolute links in confirmation and password-reset
+ *    mails, so every new signup would be mailed a link into localhost.
+ *
+ * Deliberately a warning rather than a throw: a self-hosted deployment behind
+ * a TLS-terminating reverse proxy is a legitimate setup, and refusing to boot
+ * would break the Docker path for a value that is a strong smell rather than a
+ * certainty. The two consequences are named explicitly so the log line is
+ * actionable instead of decorative.
+ */
+export function hasInsecureAppUrl(env: EnvLike = process.env): boolean {
+  if (env.NODE_ENV !== "production") return false;
+  const url = env.NEXT_PUBLIC_APP_URL;
+  if (isBlank(url)) return false; // already covered as a missing requirement
+  return !url!.trim().toLowerCase().startsWith("https://");
+}
+
+/**
  * Checks the environment once at server startup (wired up in
  * src/instrumentation.ts).
  *
@@ -116,6 +144,16 @@ export function assertEnv(env: EnvLike = process.env): void {
     console.warn(
       "[env] Kein Modell-Provider konfiguriert (ZAI_API_KEY / GEMINI_API_KEY). " +
         "Der Chat antwortet im Stub-Modus mit einer Demo-Antwort."
+    );
+  }
+
+  if (hasInsecureAppUrl(env)) {
+    console.warn(
+      "[env] NEXT_PUBLIC_APP_URL ist in Produktion nicht https " +
+        `(${env.NEXT_PUBLIC_APP_URL}). Folgen: Session-Cookies werden OHNE das ` +
+        "Secure-Flag gesetzt (lib/supabase/cookie-options.ts), und Bestätigungs- " +
+        "sowie Passwort-Reset-Mails verlinken auf diese Adresse. Auf die öffentliche " +
+        "https-Adresse der Deployment setzen."
     );
   }
 

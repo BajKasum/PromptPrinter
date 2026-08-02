@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { assertEnv, hasNoModelProvider, missingProductionEnv } from "@/lib/env";
+import {
+  assertEnv,
+  hasInsecureAppUrl,
+  hasNoModelProvider,
+  missingProductionEnv,
+} from "@/lib/env";
 
 // QA finding S-2: the deploy trap was that these variables read as optional
 // (commented out in .env.example, described as "recommended") while the app is
@@ -120,5 +125,44 @@ describe("assertEnv", () => {
     ).not.toThrow();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("Stub-Modus"));
     warn.mockRestore();
+  });
+});
+
+// A *present* NEXT_PUBLIC_APP_URL is not the same as a *correct* one, and the
+// presence check above cannot tell them apart. This value decides whether
+// production session cookies carry the Secure flag and where confirmation
+// mails point — a leftover http://localhost:3000 boots cleanly and breaks both
+// without a single error.
+describe("hasInsecureAppUrl", () => {
+  const prod = (url: string | undefined) => ({
+    NODE_ENV: "production",
+    NEXT_PUBLIC_APP_URL: url,
+  });
+
+  it("flags a plain-http production URL", () => {
+    expect(hasInsecureAppUrl(prod("http://promptprinter.vercel.app"))).toBe(true);
+  });
+
+  it("flags a leftover localhost URL, the realistic mistake", () => {
+    expect(hasInsecureAppUrl(prod("http://localhost:3000"))).toBe(true);
+  });
+
+  it("accepts a proper https URL", () => {
+    expect(hasInsecureAppUrl(prod("https://promptprinter.vercel.app"))).toBe(false);
+  });
+
+  it("ignores case and surrounding whitespace", () => {
+    expect(hasInsecureAppUrl(prod("  HTTPS://promptprinter.vercel.app  "))).toBe(false);
+  });
+
+  it("stays quiet outside production, where http is the normal case", () => {
+    expect(
+      hasInsecureAppUrl({ NODE_ENV: "development", NEXT_PUBLIC_APP_URL: "http://localhost:3000" })
+    ).toBe(false);
+  });
+
+  it("leaves an absent value to the missing-variable check instead of double-reporting", () => {
+    expect(hasInsecureAppUrl(prod(undefined))).toBe(false);
+    expect(hasInsecureAppUrl(prod("   "))).toBe(false);
   });
 });
