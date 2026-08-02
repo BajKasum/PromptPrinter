@@ -4,8 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { siteUrl } from "@/lib/site-url";
+import { postAuthAction } from "@/lib/auth-client";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile-widget";
 import { Input } from "@/components/ui/input";
@@ -44,24 +43,19 @@ export function RequestPasswordResetExperience() {
 
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
-        ...(captchaToken ? { captchaToken } : {}),
-      });
-      // Only surface rate-limiting; otherwise stay neutral so we never reveal
-      // whether an email is registered.
-      if (resetError && resetError.message.toLowerCase().includes("rate limit")) {
-        setError("Zu viele Versuche, bitte kurz warten.");
+      const result = await postAuthAction({ action: "reset-password", email }, captchaToken);
+      // The route answers ok even for an unknown address — staying neutral
+      // about whether an email is registered is now enforced there rather than
+      // here. What still reaches this branch is throttling and a failed human
+      // check, neither of which reveals anything about the account.
+      if (!result.ok) {
+        setError(result.message);
+        // Tokens are single-use and one was just spent; the retry needs a fresh one.
         setCaptchaToken(null);
         setCaptchaNonce((n) => n + 1);
         return;
       }
       setSent(true);
-    } catch {
-      setError("Unbekannter Fehler. Bitte versuche es erneut.");
-      setCaptchaToken(null);
-      setCaptchaNonce((n) => n + 1);
     } finally {
       setLoading(false);
     }

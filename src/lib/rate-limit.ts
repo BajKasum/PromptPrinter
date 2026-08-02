@@ -360,7 +360,14 @@ export function rateLimitKey(req: Request, userId?: string | null): string {
   return `ip:${clientIp(req)}`;
 }
 
-function clientIp(req: Request): string {
+/**
+ * The caller's IP as the edge reported it. Exported since /api/auth needs the
+ * bare address (not the `ip:`-prefixed bucket key) to pass to Turnstile's
+ * siteverify as `remoteip`. Same header precedence, same reasoning, one
+ * implementation — deriving the address a second time somewhere else is how
+ * the spoofable-bucket bug above would come back.
+ */
+export function clientIp(req: Request): string {
   // x-vercel-forwarded-for first: identical to x-forwarded-for, but immune to
   // being overwritten by a proxy the customer places in front of Vercel.
   for (const header of ["x-vercel-forwarded-for", "x-forwarded-for"]) {

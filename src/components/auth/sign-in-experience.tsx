@@ -5,9 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { safeNextPath } from "@/lib/site-url";
-import { translateAuthError } from "@/lib/auth-errors";
+import { postAuthAction } from "@/lib/auth-client";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile-widget";
@@ -78,21 +77,17 @@ export function SignInExperience() {
 
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-        ...(captchaToken ? { options: { captchaToken } } : {}),
-      });
-      if (signInError) {
-        setError(translateAuthError(signInError.message));
+      // Server-side (see lib/auth-client.ts): the Turnstile token is redeemed
+      // in the same request that signs in, so it cannot be skipped from here.
+      const result = await postAuthAction({ action: "sign-in", email, password }, captchaToken);
+      if (!result.ok) {
+        setError(result.message);
+        // Tokens are single-use and one was just spent, successfully or not —
+        // without a fresh one the retry fails as timeout-or-duplicate.
         refreshCaptcha();
         return;
       }
       setCelebrateMsg("Erfolgreich eingeloggt");
-    } catch (err) {
-      setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
-      refreshCaptcha();
     } finally {
       setLoading(false);
     }

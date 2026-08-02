@@ -38,6 +38,35 @@ describe("missingProductionEnv", () => {
     expect(missingProductionEnv({ ...complete, API_KEY_ENCRYPTION_SECRET: "   " })).toHaveLength(1);
   });
 
+  // The state this catches shipped unnoticed until 2026-08-02: the Turnstile
+  // widget was visible to every visitor while nothing verified what it
+  // produced. Requiring the secret only alongside the site key keeps a
+  // deliberately captcha-free deployment valid while making the decorative
+  // combination impossible to boot in production.
+  describe("Turnstile, required only once the widget is switched on", () => {
+    it("stays silent when no site key is configured", () => {
+      expect(missingProductionEnv(complete)).toEqual([]);
+    });
+
+    it("demands the secret as soon as a site key is present", () => {
+      const missing = missingProductionEnv({
+        ...complete,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "0x4AAAAAAD12iLTpFGNphiju",
+      });
+      expect(missing.map((m) => m.name)).toEqual(["TURNSTILE_SECRET"]);
+    });
+
+    it("is satisfied by both halves together", () => {
+      expect(
+        missingProductionEnv({
+          ...complete,
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "0x4AAAAAAD12iLTpFGNphiju",
+          TURNSTILE_SECRET: "0x-secret",
+        })
+      ).toEqual([]);
+    });
+  });
+
   it("catches the Upstash pair, the one that silently 429s every route", () => {
     const missing = missingProductionEnv({
       ...complete,

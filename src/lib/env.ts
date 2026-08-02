@@ -59,11 +59,36 @@ function isBlank(value: string | undefined): boolean {
   return value === undefined || value.trim() === "";
 }
 
+/**
+ * Requirements that only apply given some other part of the configuration.
+ *
+ * TURNSTILE_SECRET is the one case: unconditionally requiring it would force
+ * Cloudflare setup on every deployment, including ones that deliberately run
+ * without a captcha (site key unset → the widget renders nothing). Requiring it
+ * only alongside the site key targets the state that actually matters — the
+ * widget visible to visitors while nothing on the server redeems what it
+ * produces. That combination is not a degraded captcha, it is a decorative one,
+ * and it is precisely what shipped unnoticed until 2026-08-02.
+ */
+function conditionalRequirements(env: EnvLike): EnvRequirement[] {
+  if (isBlank(env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)) return [];
+  return [
+    {
+      name: "TURNSTILE_SECRET",
+      why:
+        "NEXT_PUBLIC_TURNSTILE_SITE_KEY ist gesetzt, also sieht jeder Besucher die " +
+        "Mensch-Prüfung — ohne das Secret verifiziert sie niemand (siehe lib/turnstile.ts).",
+    },
+  ];
+}
+
 /** Missing required variables for the given environment, in declaration order. */
 export function missingProductionEnv(
   env: EnvLike = process.env
 ): EnvRequirement[] {
-  return REQUIRED_IN_PRODUCTION.filter((requirement) => isBlank(env[requirement.name]));
+  return [...REQUIRED_IN_PRODUCTION, ...conditionalRequirements(env)].filter((requirement) =>
+    isBlank(env[requirement.name])
+  );
 }
 
 /** True when neither server-side model provider is configured (stub mode). */

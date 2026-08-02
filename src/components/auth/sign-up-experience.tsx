@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { siteUrl, safeNextPath } from "@/lib/site-url";
-import { translateAuthError } from "@/lib/auth-errors";
+import { safeNextPath } from "@/lib/site-url";
+import { postAuthAction } from "@/lib/auth-client";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile-widget";
@@ -78,22 +78,19 @@ export function SignUpExperience() {
 
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
-          ...(captchaToken ? { captchaToken } : {}),
-        },
-      });
-      if (signUpError) {
-        setError(translateAuthError(signUpError.message));
+      // Server-side (see lib/auth-client.ts): the Turnstile token is redeemed
+      // in the same request that creates the account, so it cannot be skipped
+      // from here.
+      const result = await postAuthAction({ action: "sign-up", email, password, next }, captchaToken);
+      if (!result.ok) {
+        setError(result.message);
+        // Tokens are single-use and one was just spent, successfully or not —
+        // without a fresh one the retry fails as timeout-or-duplicate.
         refreshCaptcha();
         return;
       }
       // Email-confirmation on → no session yet; tell the user to check their inbox.
-      if (!data.session) {
+      if (!result.session) {
         refreshCaptcha();
         setSignupSent(true);
         return;
@@ -104,9 +101,6 @@ export function SignUpExperience() {
       // then all there is, which is still better than the parameter vanishing.
       if (wantsPro) await notePlanInterest();
       setCelebrateMsg("Konto erstellt");
-    } catch (err) {
-      setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
-      refreshCaptcha();
     } finally {
       setLoading(false);
     }
@@ -151,20 +145,9 @@ export function SignUpExperience() {
     }
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email,
-        options: {
-          emailRedirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
-          ...(captchaToken ? { captchaToken } : {}),
-        },
-      });
-      if (resendError) setError(translateAuthError(resendError.message));
+      const result = await postAuthAction({ action: "resend", email, next }, captchaToken);
+      if (!result.ok) setError(result.message);
       else setInfo("Bestätigungs-Email wurde erneut gesendet.");
-      refreshCaptcha();
-    } catch (err) {
-      setError(err instanceof Error ? translateAuthError(err.message) : "Unbekannter Fehler");
       refreshCaptcha();
     } finally {
       setLoading(false);

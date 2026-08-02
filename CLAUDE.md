@@ -462,6 +462,63 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Schritte sind reine Dashboard-Konfiguration (Env-Vars in Vercel setzen,
 > Supabase-Redirect-URLs um die Vercel-Domain ergänzen), keine
 > Repo-Änderung.
+>
+> **Turnstile wurde nie verifiziert, jetzt schon (2026-08-02):** Das Captcha
+> auf Login/Registrierung/Reset war seit dem Einbau **reine Dekoration**. Der
+> Ablauf war: Widget rendert → Browser bekommt Token → Token reist als
+> `captchaToken` an Supabase Auth → **niemand prüft ihn**. Supabase wertet
+> dieses Feld nur aus, wenn CAPTCHA im eigenen Dashboard eingeschaltet ist,
+> und das war es nie. Nicht vermutet, sondern gemessen: ein
+> `POST /auth/v1/recover` mit dem Token `XXXX.DUMMY.TOKEN.XXXX` gegen das
+> Live-Projekt antwortete **200**, was mit aktivem Setting unmöglich ist. Die
+> alten Kommentare in `turnstile-widget.tsx` und `.env.example` („das SECRET
+> gehört nach Supabase") haben genau diesen Zustand als beabsichtigt
+> beschrieben und damit jahrelang kaschiert.
+>
+> Behoben mit einer echten serverseitigen Prüfung im eigenen Backend:
+> [`src/lib/turnstile.ts`](src/lib/turnstile.ts) löst jeden Token kanonisch
+> bei `challenges.cloudflare.com/turnstile/v0/siteverify` ein (Secret als
+> `TURNSTILE_SECRET`, **niemals inline**), **fail-closed** bei Timeout,
+> Nicht-2xx oder unparsbarer Antwort. Eingelöst wird in der neuen Route
+> [`/api/auth`](src/app/api/auth/route.ts), die die vier anonymen
+> Auth-Aktionen (`sign-in`, `sign-up`, `resend`, `reset-password`) bündelt.
+>
+> **Warum eine neue Route und nicht nur ein Check im Formular:** die Formulare
+> riefen Supabase direkt aus dem Browser. Ein clientseitiges „erst prüfen,
+> dann Supabase rufen" wäre ein Ratschlag, keine Schranke — der Aufrufer
+> entscheidet, ob er sich daran hält. Erst dadurch, dass Token-Einlösung und
+> Auth-Aktion **im selben Server-Request** passieren, ist die Prüfung nicht
+> mehr umgehbar. Bewusst **eine** Route mit `action`-Diskriminante statt vier
+> Geschwisterrouten: das Gate existiert dann an genau einer Stelle, eine
+> fünfte Auth-Aktion kann es später nicht vergessen. OAuth bleibt
+> clientseitig (hatte nie ein Captcha, Google/GitHub haben eigene
+> Bot-Abwehr).
+>
+> ⚠️ **Supabase-CAPTCHA jetzt NICHT nachträglich einschalten.** Ein
+> Turnstile-Token ist genau einmal einlösbar. Mit zwei Prüfern gewinnt der
+> erste und der zweite sieht `timeout-or-duplicate` — das würde jeden Login
+> brechen, nicht eine zweite Schicht ergänzen.
+>
+> Weitere Details: `env.ts` verlangt `TURNSTILE_SECRET` in Produktion **nur
+> dann**, wenn `NEXT_PUBLIC_TURNSTILE_SITE_KEY` gesetzt ist — genau die
+> Kombination „Widget sichtbar, niemand prüft" ist damit nicht mehr
+> startbar, ein Deployment ohne Captcha bleibt erlaubt. `clientIp()` ist aus
+> `rate-limit.ts` exportiert (siteverify bekommt `remoteip`), Ratelimit
+> 30/10 min pro IP **vor** dem Body-Parsen (die Route ist anonym, hat also
+> keinen Session-Check für diese Position). Fehlertexte werden serverseitig
+> mit `translateAuthError` übersetzt (Audit M-1), der Reset-Pfad antwortet
+> weiterhin neutral, damit er nicht verrät, ob eine Adresse registriert ist.
+>
+> **Verifiziert** gegen den echten Cloudflare-Endpunkt mit dessen
+> dokumentierten Dummy-Secrets: `2x0000…AA` (immer ungültig) → 403, Supabase
+> nie erreicht; `1x0000…AA` (immer gültig) → Prüfung passiert, Supabase
+> antwortet „Email oder Passwort falsch". Dazu 698 Tests grün (neu:
+> `turnstile.test.ts`, `api/auth/route.test.ts`). **Nicht** im Browser
+> verifiziert: das Browser-Pane lief in dieser Sitzung wieder im bekannten
+> „hidden"-Zustand (`document.visibilityState === "hidden"`, Body-Höhe 0),
+> React führt dann die Hydration nicht aus, das Widget rendert deshalb
+> nirgends — reproduzierbar **auch mit gestashten Änderungen**, also
+> vorbestehende Umgebungs-Flakiness, kein Effekt dieser Arbeit.
 
 ## Was ist PromptPrinter?
 

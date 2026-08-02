@@ -5,12 +5,26 @@ import { useEffect, useRef } from "react";
 /**
  * Cloudflare Turnstile site key, public by design (NEXT_PUBLIC_). When unset,
  * the widget renders nothing and the auth forms skip their captcha guard, so
- * local dev and tests keep working without any Cloudflare setup. The matching
- * SECRET key never touches this app: it goes into Supabase → Authentication →
- * Attack Protection → CAPTCHA (Turnstile), and Supabase verifies the token
- * server-side on every auth call that carries `captchaToken`.
+ * local dev and tests keep working without any Cloudflare setup.
+ *
+ * The matching SECRET lives in this app's own environment as TURNSTILE_SECRET
+ * and is redeemed by POST /api/auth (see lib/turnstile.ts). It used to be
+ * documented here as belonging in Supabase → Authentication → Attack
+ * Protection → CAPTCHA instead — but that setting was never switched on, so
+ * for as long as that comment stood, nothing verified these tokens at all.
+ *
+ * ⚠️ Enabling the Supabase setting NOW would break logins rather than add a
+ * second layer: a token can be redeemed once, and /api/auth already redeems it.
  */
 export const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+/**
+ * Segments this integration in the Turnstile dashboard's analytics. Not a
+ * security control — the server does not compare it on the way back, since all
+ * four auth surfaces share one action, so a check would reject nothing real
+ * while turning a tab left open across a deploy into a failed human check.
+ */
+const TURNSTILE_ACTION = "turnstile-spin-v2";
 
 type TurnstileApi = {
   render: (container: HTMLElement, params: Record<string, unknown>) => string;
@@ -52,6 +66,7 @@ export function TurnstileWidget({
       if (cancelled || !container || !window.turnstile || widgetIdRef.current) return;
       widgetIdRef.current = window.turnstile.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
+        action: TURNSTILE_ACTION,
         // The public site is forced to the light theme (Theme-Entscheidung).
         theme: "light",
         language: "de",
