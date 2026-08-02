@@ -9,8 +9,18 @@ import { removeAllPaths } from "@/lib/storage-cleanup";
 export const runtime = "nodejs";
 
 // Permanently delete the signed-in user's account. The auth.users row cascades
-// to profiles → projects → generations → subscriptions (all ON DELETE CASCADE),
-// wiping every DB trace in a single step, but storage objects don't cascade
+// to profiles, and profiles cascades to EVERY user-scoped table: projects,
+// conversations, messages, generations, project_files, subscriptions and
+// user_api_keys (all ON DELETE CASCADE, verified against the live schema
+// 2026-08-02 — this list used to name only four of them, which reads like the
+// encrypted BYOK keys outlive a deletion when in fact they do not).
+//
+// That completeness is a promise the privacy policy makes out loud ( Ziffer 8
+// of /datenschutz), so it is a DSGVO/revDSG commitment, not an implementation
+// detail: anything user-scoped added later needs the same cascade, or that
+// paragraph silently becomes false.
+//
+// Storage objects don't cascade
 // with a DB row (same reason delete-project.tsx cleans up "project-files"
 // itself, see 0012_project_files.sql's comment), so every project's attached
 // files plus the avatar are removed here first, while the rows/session that
