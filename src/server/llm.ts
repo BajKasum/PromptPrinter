@@ -833,3 +833,345 @@ async function* openaiCompleteStream(
     if (text) yield text;
   }
 }
+
+// ─── Multimodale Einzelanalyse (Project Brain) ─────────────────────────────
+//
+// Ein einzelner, nicht gestreamter Aufruf mit einem langen Textblock und
+// optional ein paar Bildern. Kein Chat-Verlauf, keine Rollen, genau eine
+// Frage — deshalb eine eigene Funktion und keine dritte Variante von
+// chatComplete: dessen `messages: LlmMessage[]` sind reiner Text, und sie um
+// Bildteile zu erweitern hätte jeden bestehenden Aufrufer mitverbogen.
+//
+// Der einzige Anbieter, der hier ein anderes Modell braucht, ist Z.ai: das
+// Kosten-Standardmodell glm-4.5-air ist textonly. Die drei BYOK-Anbieter
+// fahren ihr normales Modell, alle sind ohnehin multimodal.
+
+export type AnalysisImage = { mediaType: string; base64: string };
+
+export type AnalysisResult = LlmResult & {
+  /** Welches Modell tatsächlich geantwortet hat, wird am Brain mitgespeichert. */
+  model: string;
+};
+
+/**
+ * Z.ais sehendes Modell.
+ *
+ * Gegen den echten Account geprüft (2026-08-03): glm-4.6v und glm-4.5v nehmen
+ * beide die OpenAI-kompatible image_url-Form mit Data-URI an, glm-4v-flash
+ * existiert dort nicht. Überschreibbar ohne Code-Änderung, dieselbe Linie wie
+ * ZAI_MODEL.
+ */
+const ZAI_VISION_DEFAULT_MODEL = "glm-4.6v";
+
+/** OpenAI-kompatibler Inhaltsblock, von Z.ai und dem Custom-Slot geteilt. */
+type OpenAiContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+function openAiParts(text: string, images: AnalysisImage[]): OpenAiContentPart[] | string {
+  // Ohne Bilder die schlichte String-Form: manche OpenAI-kompatiblen Endpunkte
+  // (der Custom-Slot kann alles Mögliche sein) vertragen die Array-Form nur
+  // bei echten Vision-Modellen.
+  if (images.length === 0) return text;
+  return [
+    { type: "text", text },
+    ...images.map((image) => ({
+      type: "image_url" as const,
+      image_url: { url: `data:${image.mediaType};base64,${image.base64}` },
+    })),
+  ];
+}
+
+export async function analyzeComplete(opts: {
+  system: string;
+  text: string;
+  images?: AnalysisImage[];
+  maxOutputTokens?: number;
+  override?: LlmOverride;
+  signal?: AbortSignal;
+}): Promise<AnalysisResult> {
+  const maxOutputTokens = opts.maxOutputTokens ?? 1500;
+  const images = opts.images ?? [];
+
+  if (opts.override) {
+    const { provider, apiKey } = opts.override;
+    if (provider === "anthropic") {
+      return anthropicAnalyze(
+        ANTHROPIC_DEFAULT_MODEL,
+        opts.system,
+        opts.text,
+        images,
+        maxOutputTokens,
+        apiKey,
+        opts.signal
+      );
+    }
+    if (provider === "openai") {
+      return openaiAnalyze(
+        OPENAI_DEFAULT_MODEL,
+        opts.system,
+        opts.text,
+        images,
+        maxOutputTokens,
+        apiKey,
+        opts.signal
+      );
+    }
+    if (provider === "custom") {
+      return openAiCompatibleAnalyze({
+        endpoint: opts.override.baseUrl,
+        model: opts.override.model,
+        label: "Custom-Provider",
+        // Der Endpunkt stammt aus Nutzereingabe, also vor JEDEM Request gegen
+        // SSRF prüfen — dieselbe Regel wie in customComplete (Kritik-Pass S-1).
+        checkUrl: true,
+        apiKey,
+        system: opts.system,
+        text: opts.text,
+        images,
+        maxOutputTokens,
+        signal: opts.signal,
+      });
+    }
+    return geminiAnalyze(
+      GEMINI_DEFAULT_MODEL,
+      opts.system,
+      opts.text,
+      images,
+      maxOutputTokens,
+      apiKey,
+      opts.signal
+    );
+  }
+
+  const config = llmConfig();
+  if (!config) throw new Error("no LLM provider configured");
+
+  if (config.provider === "zai") {
+    // Nur wenn wirklich Bilder dabei sind auf das (teurere) sehende Modell
+    // wechseln. Eine Analyse aus reinen Textquellen — der Normalfall — läuft
+    // weiter auf dem Kosten-Standardmodell.
+    const model =
+      images.length > 0 ? (process.env.ZAI_VISION_MODEL ?? ZAI_VISION_DEFAULT_MODEL) : config.model;
+    return openAiCompatibleAnalyze({
+      endpoint: ZAI_ENDPOINT,
+      model,
+      label: "Z.ai",
+      checkUrl: false,
+      apiKey: process.env.ZAI_API_KEY ?? "",
+      system: opts.system,
+      text: opts.text,
+      images,
+      maxOutputTokens,
+      signal: opts.signal,
+    });
+  }
+
+  return geminiAnalyze(
+    config.model,
+    opts.system,
+    opts.text,
+    images,
+    maxOutputTokens,
+    process.env.GEMINI_API_KEY ?? "",
+    opts.signal
+  );
+}
+
+/** Z.ai und der Custom-Slot sprechen dieselbe API, also auch denselben Code. */
+async function openAiCompatibleAnalyze(args: {
+  endpoint: string;
+  model: string;
+  label: string;
+  checkUrl: boolean;
+  apiKey: string;
+  system: string;
+  text: string;
+  images: AnalysisImage[];
+  maxOutputTokens: number;
+  signal?: AbortSignal;
+}): Promise<AnalysisResult> {
+  if (args.checkUrl) await assertPublicHttpsUrl(args.endpoint);
+
+  const res = await fetch(args.endpoint, {
+    method: "POST",
+    redirect: "error",
+    signal: withProviderTimeout(args.signal),
+    headers: {
+      authorization: `Bearer ${args.apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: args.model,
+      messages: [
+        { role: "system", content: args.system },
+        { role: "user", content: openAiParts(args.text, args.images) },
+      ],
+      max_tokens: args.maxOutputTokens,
+      stream: false,
+      // Wie im Chat: GLM entscheidet sonst selbst, ob es "denkt", verbraucht
+      // das Ausgabebudget für unsichtbare Zwischenschritte und liefert am
+      // Ende ein leeres content-Feld.
+      thinking: { type: "disabled" },
+    }),
+  });
+
+  if (!res.ok) {
+    const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
+    let detail = "";
+    try {
+      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
+      if (parsed.error?.message) detail = parsed.error.message;
+    } catch {
+      // Nicht die erwartete Form — aus dem Body nichts weitergeben (S-1).
+    }
+    throw new Error(`${args.label} ${res.status}: ${detail || res.statusText}`);
+  }
+
+  const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
+  const message = json.choices?.[0]?.message;
+  const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
+  if (!text) throw new LlmEmptyReplyError(args.label);
+
+  const usage =
+    json.usage &&
+    typeof json.usage.prompt_tokens === "number" &&
+    typeof json.usage.completion_tokens === "number"
+      ? { inputTokens: json.usage.prompt_tokens, outputTokens: json.usage.completion_tokens }
+      : null;
+
+  return { text, usage, model: args.model };
+}
+
+async function geminiAnalyze(
+  model: string,
+  system: string,
+  text: string,
+  images: AnalysisImage[],
+  maxOutputTokens: number,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<AnalysisResult> {
+  const ai = new GoogleGenAI({ apiKey });
+  const res = await ai.models.generateContent({
+    model,
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text },
+          ...images.map((image) => ({
+            inlineData: { mimeType: image.mediaType, data: image.base64 },
+          })),
+        ],
+      },
+    ],
+    config: { systemInstruction: system, maxOutputTokens, abortSignal: signal },
+  });
+
+  const reply = res.text?.trim() ?? "";
+  if (!reply) throw new LlmEmptyReplyError("Gemini");
+
+  const meta = res.usageMetadata;
+  const usage =
+    meta && typeof meta.promptTokenCount === "number" && typeof meta.candidatesTokenCount === "number"
+      ? { inputTokens: meta.promptTokenCount, outputTokens: meta.candidatesTokenCount }
+      : null;
+
+  return { text: reply, usage, model };
+}
+
+async function anthropicAnalyze(
+  model: string,
+  system: string,
+  text: string,
+  images: AnalysisImage[],
+  maxOutputTokens: number,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<AnalysisResult> {
+  const anthropic = new Anthropic({ apiKey });
+  const res = await anthropic.messages.create(
+    {
+      model,
+      system: anthropicSystemBlocks(system),
+      max_tokens: maxOutputTokens,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text },
+            ...images.map(
+              (image): Anthropic.ImageBlockParam => ({
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: image.mediaType as Anthropic.Base64ImageSource["media_type"],
+                  data: image.base64,
+                },
+              })
+            ),
+          ],
+        },
+      ],
+    },
+    { signal }
+  );
+
+  const reply = res.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+  if (!reply) throw new LlmEmptyReplyError("Anthropic");
+
+  const usage = res.usage
+    ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
+    : null;
+
+  return { text: reply, usage, model };
+}
+
+async function openaiAnalyze(
+  model: string,
+  system: string,
+  text: string,
+  images: AnalysisImage[],
+  maxOutputTokens: number,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<AnalysisResult> {
+  const client = new OpenAI({ apiKey });
+  const res = await client.chat.completions.create(
+    {
+      model,
+      messages: [
+        { role: "system", content: system },
+        {
+          role: "user",
+          content:
+            images.length === 0
+              ? text
+              : [
+                  { type: "text" as const, text },
+                  ...images.map((image) => ({
+                    type: "image_url" as const,
+                    image_url: { url: `data:${image.mediaType};base64,${image.base64}` },
+                  })),
+                ],
+        },
+      ],
+      max_completion_tokens: maxOutputTokens,
+    },
+    { signal }
+  );
+
+  const reply = res.choices[0]?.message?.content?.trim() ?? "";
+  if (!reply) throw new LlmEmptyReplyError("OpenAI");
+
+  const usage = res.usage
+    ? { inputTokens: res.usage.prompt_tokens, outputTokens: res.usage.completion_tokens }
+    : null;
+
+  return { text: reply, usage, model };
+}
