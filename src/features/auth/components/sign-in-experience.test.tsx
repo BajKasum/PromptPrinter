@@ -22,7 +22,7 @@ vi.mock("@/shared/lib/auth-client", () => ({
   postAuthAction: (...args: unknown[]) => postAuthAction(...args),
 }));
 
-vi.mock("@/components/auth/auth-experience-shell", () => ({
+vi.mock("@/features/auth/components/auth-experience-shell", () => ({
   AuthExperienceShell: ({
     children,
     overlay,

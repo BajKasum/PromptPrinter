@@ -3,8 +3,8 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/shared/supabase/client";
-import { Tour } from "@/components/onboarding/tour";
-import { TOUR_STEPS } from "@/components/onboarding/tour-steps";
+import { Tour } from "@/features/onboarding/components/tour";
+import { TOUR_STEPS } from "@/features/onboarding/components/tour-steps";
 
 /**
  * Mounts the first-login tour. Auto-starts once on /chats/new (the login

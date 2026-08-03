@@ -1,8 +1,8 @@
-import { Navbar } from "@/components/marketing/navbar";
-import { Footer } from "@/components/marketing/footer";
-import { PricingGrid } from "@/components/marketing/pricing-grid";
-import { PageHeader } from "@/components/marketing/page-header";
-import { FAQ } from "@/components/marketing/faq";
+import { Navbar } from "@/features/marketing/components/navbar";
+import { Footer } from "@/features/marketing/components/footer";
+import { PricingGrid } from "@/features/marketing/components/pricing-grid";
+import { PageHeader } from "@/features/marketing/components/page-header";
+import { FAQ } from "@/features/marketing/components/faq";
 import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
 
 export const metadata = {

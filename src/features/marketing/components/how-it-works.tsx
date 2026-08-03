@@ -13,7 +13,7 @@ import { cn } from "@/shared/lib/utils";
 // only client-side and only once mounted, see how-it-works-spine.tsx for
 // why ssr:false is safe here (purely decorative overlay, no content).
 const HowItWorksSpine = dynamic(
-  () => import("@/components/marketing/how-it-works-spine").then((m) => m.HowItWorksSpine),
+  () => import("@/features/marketing/components/how-it-works-spine").then((m) => m.HowItWorksSpine),
   { ssr: false }
 );
 

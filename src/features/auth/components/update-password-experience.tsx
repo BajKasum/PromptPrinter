@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
-import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
+import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
 import {
   MIN_PASSWORD_LENGTH,

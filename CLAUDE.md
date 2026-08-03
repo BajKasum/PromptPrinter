@@ -3,10 +3,10 @@
 Diese Datei wird bei jedem Session-Start automatisch geladen. Sie soll dir
 schnell Orientierung geben: was das Projekt ist, in welchem Zustand es steckt,
 und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](README.md),
-[DESIGN.md](DESIGN.md) und [DOCKER.md](DOCKER.md), hier nur das Wesentliche.
+[DESIGN.md](docs/DESIGN.md) und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 
 > ⚠️ **Workspace-Redesign (2026-07): Phasen 1-4 + Wahrheits-Pass umgesetzt.**
-> [REDESIGN.md](REDESIGN.md) ist das **verbindliche Zielmodell** und bleibt die
+> [REDESIGN.md](docs/REDESIGN.md) ist das **verbindliche Zielmodell** und bleibt die
 > Detailquelle (Datenmodell, Kontext-Injektions-Budget, offene Nachschritte).
 > Kurzfassung des IST-Zustands:
 >
@@ -52,7 +52,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Modell gesendete Historie auf die letzten 12 Nachrichten (gespeichert wird
 > weiterhin die volle Transkript), Projektkontext-Budgets in `buildProjectContext`
 > halbiert (Dateien, Anweisungen, Idee, Artefakt-Referenz). Reine Parameter-
-> optimierung, keine Produktänderung, Details in `src/lib/llm.ts` und
+> optimierung, keine Produktänderung, Details in `src/server/llm.ts` und
 > `src/app/api/chat/route.ts`.
 >
 > **Kritik-Pass + BYOK + Refactoring (2026-07):** Auf Bitte um eine schonungslos
@@ -102,7 +102,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   Entwickler-Jargon (kein „.env.local" mehr Richtung Endnutzer), FAQ
 >   „Ist meine Idee sicher?" nennt jetzt den KI-Anbieter.
 >
-> **Rechtstexte ausgefüllt (2026-07-16):** [`src/lib/legal.ts`](src/lib/legal.ts)
+> **Rechtstexte ausgefüllt (2026-07-16):** [`src/shared/lib/legal.ts`](src/shared/lib/legal.ts)
 > trägt jetzt echte Angaben (Kasum Bajrami, Riehenstrasse 80, 4058 Basel,
 > Gerichtsstand Basel-Stadt, Privatperson ⇒ `companyId` bleibt leer). Vor dem
 > Eintragen wurde der Nutzer explizit gefragt und hingewiesen, dass das Repo
@@ -206,7 +206,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Free-Nutzer konnte den Server damit zu Requests an interne Ziele bringen
 > (Cloud-Metadaten `169.254.169.254`, `localhost`, RFC1918-Bereiche),
 > verschärft durch teilweise Response-Body-Reflektion in der Fehlermeldung
-> (SSRF mit Exfiltration). Neu: [`src/lib/url-safety.ts`](src/lib/url-safety.ts),
+> (SSRF mit Exfiltration). Neu: [`src/server/security/url-safety.ts`](src/server/security/url-safety.ts),
 > `assertPublicHttpsUrl()` erzwingt https, löst den Hostnamen auf und lehnt
 > jede aufgelöste Adresse in privaten/reservierten Bereichen ab (inkl. der
 > von WHATWG-URL normalisierten Hex-Schreibweise für IPv4-mapped IPv6, ein
@@ -226,7 +226,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > nicht liefern kann. react-markdown läuft ohne
 > `rehype-raw`/`dangerouslySetInnerHTML`, hat also keinen bekannten
 > Injection-Pfad, CSP ist trotzdem die übliche zweite Verteidigungslinie.
-> Neu: [`src/lib/csp.ts`](src/lib/csp.ts) baut die Policy aus einem
+> Neu: [`src/server/security/csp.ts`](src/server/security/csp.ts) baut die Policy aus einem
 > Pro-Request-Nonce, [`src/middleware.ts`](src/middleware.ts) erzeugt ihn
 > (`Buffer.from(crypto.randomUUID())`, ein roher UUID-String ist wegen der
 > Bindestriche kein gültiger CSP-Nonce) und reicht ihn per Request-Header
@@ -435,7 +435,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Edgecase zu vermeiden. Per `VERCEL=1 npm run build` UND per normalem
 > `npm run build` verifiziert: Ersteres erzeugt kein `.next/standalone`
 > mehr, Letzteres weiterhin `server.js`, Docker bleibt unangetastet.
-> [`rate-limit.ts`](src/lib/rate-limit.ts)s `clientIp()` prüfte bisher
+> [`rate-limit.ts`](src/server/security/rate-limit.ts)s `clientIp()` prüfte bisher
 > `cf-connecting-ip` zuerst (ein Header, den nur Cloudflare setzt) — auf
 > Vercel setzt niemand diesen Header, ein Angreifer könnte ihn also selbst
 > mitschicken und sich beliebig viele frische Rate-Limit-Buckets erkaufen
@@ -445,7 +445,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > umgestellt (`x-vercel-forwarded-for` → `x-forwarded-for` → `x-real-ip`,
 > https://vercel.com/docs/headers/request-headers), `cf-connecting-ip`
 > komplett entfernt. Drei betroffene Tests in
-> [`rate-limit.test.ts`](src/lib/rate-limit.test.ts) entsprechend
+> [`rate-limit.test.ts`](src/server/security/rate-limit.test.ts) entsprechend
 > umgeschrieben. `.gitignore` um `.vercel` ergänzt (lokales CLI-Artefakt).
 > Alles andere bereits Vercel-tauglich ohne Änderung: alle API-Routen
 > explizit `runtime = "nodejs"`, `/api/chat` trägt bereits
@@ -476,7 +476,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > beschrieben und damit jahrelang kaschiert.
 >
 > Behoben mit einer echten serverseitigen Prüfung im eigenen Backend:
-> [`src/lib/turnstile.ts`](src/lib/turnstile.ts) löst jeden Token kanonisch
+> [`src/server/security/turnstile.ts`](src/server/security/turnstile.ts) löst jeden Token kanonisch
 > bei `challenges.cloudflare.com/turnstile/v0/siteverify` ein (Secret als
 > `TURNSTILE_SECRET`, **niemals inline**), **fail-closed** bei Timeout,
 > Nicht-2xx oder unparsbarer Antwort. Eingelöst wird in der neuen Route
@@ -545,13 +545,13 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
 ## ⚠️ Wichtig zu wissen, bevor du loslegst
 
 1. **Modell-Provider ist Z.ai (GLM), plus BYOK.** Der komplette Modellzugriff
-   ist in [`src/lib/llm.ts`](src/lib/llm.ts) gekapselt, Server-seitig:
+   ist in [`src/server/llm.ts`](src/server/llm.ts) gekapselt, Server-seitig:
    `ZAI_API_KEY` (Z.ai, Default-Modell `glm-4.5-air`, Kosten-Tier, via
    `ZAI_MODEL` überschreibbar) → `GEMINI_API_KEY` (Zweit-Provider) →
    **Stub-Modus** (Templates kommen unverändert zurück, ganzer Flow bleibt
    ohne Key testbar). Zusätzlich kann jeder Nutzer in den Einstellungen einen
    eigenen Anthropic-/OpenAI-/Gemini-Key hinterlegen (BYOK,
-   [`src/lib/byok.ts`](src/lib/byok.ts) + `user_api_keys`-Tabelle,
+   [`src/server/byok.ts`](src/server/byok.ts) + `user_api_keys`-Tabelle,
    verschlüsselt via `API_KEY_ENCRYPTION_SECRET`), der übersteuert den
    Server-Key komplett und hebt Generierungen-/Chat-Nachrichten-Limits auf.
    Routen sprechen nie direkt mit einem Provider-SDK.
@@ -570,7 +570,7 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
    baute vorher stillschweigend das strikte Produktions-Image und brach ohne
    Upstash/Verschlüsselungs-Secret beim Boot ab — genau der Fehler, den ein
    Dev-Rechner ohne Produktions-Secrets immer ausgelöst hätte. Produktion
-   braucht jetzt zwingend `-f docker-compose.prod.yml` (siehe [DOCKER.md](DOCKER.md)).
+   braucht jetzt zwingend `-f docker-compose.prod.yml` (siehe [DOCKER.md](docs/DOCKER.md)).
 
 ## Befehle
 
@@ -599,7 +599,7 @@ Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
 - **Secrets nie mit `NEXT_PUBLIC_*`** prefixen, landen sonst im Client-Bundle.
   Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.
 - **Keine rohen Hex-Farben** in Komponenten, nur semantische Token-Utilities
-  (siehe [DESIGN.md](DESIGN.md)).
+  (siehe [DESIGN.md](docs/DESIGN.md)).
 - **User-scoped Queries:** RLS scope + zusätzlich explizit `.eq("user_id", …)`
   (Defense-in-depth), v.a. wo Counts Limits durchsetzen.
 
@@ -615,13 +615,37 @@ Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
 
 ## Struktur (Kurzform)
 
+> Neu strukturiert am 2026-08-02, siehe
+> [docs/audits/RESTRUCTURE-2026-08-02.md](docs/audits/RESTRUCTURE-2026-08-02.md).
+> `src/lib/` und `src/components/` gibt es nicht mehr.
+
 ```
-src/app/         Routen, (app) = eingeloggt, (auth) = Login/Signup, api/ = Handler
-src/components/  ui / app / marketing / onboarding / brand / motion
-src/lib/         Supabase-Clients, rate-limit, plans, Zod-schemas, utils
-src/prompts/     Prompt-Vorlagen + System-Prompts pro Artefakt
+src/app/       NUR Routing. (marketing) = öffentlich (inkl. (legal)),
+               (app) = eingeloggt, (auth) = Login/Signup, api/ = Handler.
+               auth/callback ist ein ECHTES Segment, nicht verschieben.
+src/features/  Vertikale Schnitte, je components/ hooks/ lib/:
+               auth · chat · marketing · onboarding · projects · prompts · settings
+src/shell/     App-Rahmen (Sidebar, Mobile-Nav, Command-Palette). Darf
+               Features mounten — Features dürfen einander NICHT kennen.
+src/server/    Nie im Browser, jede Datei mit `import "server-only"`.
+               security/ (crypto, csp, rate-limit, turnstile, url-safety),
+               http/, supabase/, llm.ts, env.ts, byok.ts, project.ts
+src/shared/    Von überall nutzbar, kennt niemanden über sich:
+               ui/ brand/ motion/ providers/ lib/ supabase/
+tests/guards/  Repo-weite Invarianten (Kontrast, server-only, Schichtgrenzen)
 supabase/migrations/  SQL, Schema, RLS, Grants, gehärtete Funktionen (0001→)
 ```
+
+**Wohin gehört eine neue Datei?** Berührt sie ein Geheimnis → `src/server/`
+(+ `server-only`). React-Hook → `…/hooks/` (+ `client-only`). Gehört sie zu
+genau einem Feature → `src/features/<f>/`. Brauchen sie zwei Features →
+`src/shared/`. Test immer als `<name>.test.ts(x)` **daneben**.
+
+Die Schichtgrenzen erzwingt [tests/guards/layer-boundaries.test.ts](tests/guards/layer-boundaries.test.ts),
+nicht ESLint: `no-restricted-imports` mit `patterns` läuft über minimatch, und
+das ist hier durch den `brace-expansion`-Security-Override kaputt
+("expand is not a function"). Den Override dafür zu lockern wäre der falsche
+Tausch.
 
 Sicherheits-Header sitzen in [next.config.ts](next.config.ts). Der DB-Layer
 (RLS, Grants, `search_path`-Hardening) ist bewusst sorgfältig, beim Ändern den
@@ -631,7 +655,7 @@ Stil halten und neue Tabellen mit Policy + Grant versehen.
 
 ## Mascot-System, Finn
 
-Finn ist das zentrale Markenmerkmal. Das vollständige Spec steht in [MASCOT.md](MASCOT.md).
+Finn ist das zentrale Markenmerkmal. Das vollständige Spec steht in [MASCOT.md](docs/MASCOT.md).
 
 **14 States:** `idle | welcoming | curious | listening | thinking | researching |
 building | organizing | explaining | delivering | celebrating | helping | waiting | sad`
@@ -754,7 +778,7 @@ ist weiterhin die Seite, auf der er überall sein soll.
 
 ## Offene Punkte / Nächste Schritte
 
-**Priorität 1: Das Workspace-Redesign**, Phasen 1-5 aus [REDESIGN.md](REDESIGN.md)
+**Priorität 1: Das Workspace-Redesign**, Phasen 1-5 aus [REDESIGN.md](docs/REDESIGN.md)
 (Sidebar → Chat-Kanonisierung → Workspace v1 → Dateien → Handoff/Wahrheits-Pass).
 Die Brand-Audit-Punkte unten bleiben gültig, laufen aber danach bzw. werden von
 Phase 5 (Landing-Nachzug) teilweise miterledigt.

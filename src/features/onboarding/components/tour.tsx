@@ -6,7 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { cn } from "@/shared/lib/utils";
-import type { TourStep } from "@/components/onboarding/tour-steps";
+import type { TourStep } from "@/features/onboarding/components/tour-steps";
 
 type Rect = { top: number; left: number; width: number; height: number };
 

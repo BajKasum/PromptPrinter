@@ -36,7 +36,7 @@ npm run dev          # http://localhost:3000
 Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antworten
 `/api/chat` und `/api/generate` im **Stub-Modus** (die Prompt-Vorlagen werden
 unverändert zurückgegeben), der ganze Flow bleibt testbar, ohne API-Quota zu
-verbrauchen. Der Modellzugriff ist in [`src/lib/llm.ts`](src/lib/llm.ts)
+verbrauchen. Der Modellzugriff ist in [`src/server/llm.ts`](src/server/llm.ts)
 gekapselt (Z.ai primär, Gemini sekundär).
 
 ## Scripts
@@ -81,7 +81,7 @@ beim Boot über `src/instrumentation.ts`):
 | `UPSTASH_REDIS_REST_URL` | **Ohne Upstash antworten ALLE API-Routen mit 429** |
 | `UPSTASH_REDIS_REST_TOKEN` | dito |
 
-Der Upstash-Punkt ist der unangenehmste: `src/lib/rate-limit.ts` scheitert in
+Der Upstash-Punkt ist der unangenehmste: `src/server/security/rate-limit.ts` scheitert in
 Produktion bewusst geschlossen, statt auf einen Limiter zurückzufallen, der über
 mehrere Instanzen hinweg gar nichts mehr begrenzt. Der resultierende 429 sieht
 nach Rate-Limit aus, nicht nach fehlender Konfiguration — deshalb der
@@ -92,12 +92,12 @@ dann im Stub-Modus und liefert eine Demo-Antwort statt einer echten.
 
 ## Docker
 
-Siehe [`DOCKER.md`](DOCKER.md), Dev (Hot-Reload, Port 3000) und Prod (standalone,
+Siehe [`DOCKER.md`](docs/DOCKER.md), Dev (Hot-Reload, Port 3000) und Prod (standalone,
 Port 3001) als jeweils ein Befehl.
 
 ## Design
 
-Siehe [`DESIGN.md`](DESIGN.md), Token-System, Theme-Regeln, Komponenten-Status.
+Siehe [`DESIGN.md`](docs/DESIGN.md), Token-System, Theme-Regeln, Komponenten-Status.
 
 ## Qualität
 

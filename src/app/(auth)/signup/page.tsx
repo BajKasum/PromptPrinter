@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { SignUpExperience } from "@/components/auth/sign-up-experience";
+import { SignUpExperience } from "@/features/auth/components/sign-up-experience";
 
 export const metadata = { title: "Konto erstellen" };
 

@@ -1,3 +1,5 @@
+import "server-only";
+
 // Used by the chat experience: a multi-turn assistant for people building
 // things with AI tools (Lovable, Cursor, v0, Claude Code, Bolt, Replit, and
 // similar). Delivers the finished prompt inside a fenced block so the UI can

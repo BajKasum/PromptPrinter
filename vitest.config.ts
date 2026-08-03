@@ -35,7 +35,12 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
-          include: ["src/**/*.test.ts"],
+          // tests/guards/ traegt die repo-weiten Invarianten-Scans (Kontrast,
+          // server-only-Marker). Sie testen kein einzelnes Modul, sondern den
+          // Quellbaum, und haetten unter src/ kein Subjekt, neben dem sie
+          // stehen koennten — die x.test.ts-neben-x.ts-Regel gilt fuer alles
+          // andere weiterhin.
+          include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
           setupFiles,
         },
       },

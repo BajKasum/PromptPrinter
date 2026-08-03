@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
-import { UpdatePasswordExperience } from "@/components/auth/update-password-experience";
+import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
+import { UpdatePasswordExperience } from "@/features/auth/components/update-password-experience";
 import { Mascot } from "@/shared/brand/mascot";
 import { createClient } from "@/server/supabase/server";
 

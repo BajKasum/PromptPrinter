@@ -1,12 +1,12 @@
-import { FinnAtmosphere } from "@/components/marketing/finn-atmosphere";
-import { Navbar } from "@/components/marketing/navbar";
-import { Hero } from "@/components/marketing/hero";
-import { HowItWorks } from "@/components/marketing/how-it-works";
-import { ProductShowcase } from "@/components/marketing/product-showcase";
-import { PricingBridge } from "@/components/marketing/pricing-bridge";
-import { FAQ } from "@/components/marketing/faq";
-import { FinalCTA } from "@/components/marketing/final-cta";
-import { Footer } from "@/components/marketing/footer";
+import { FinnAtmosphere } from "@/features/marketing/components/finn-atmosphere";
+import { Navbar } from "@/features/marketing/components/navbar";
+import { Hero } from "@/features/marketing/components/hero";
+import { HowItWorks } from "@/features/marketing/components/how-it-works";
+import { ProductShowcase } from "@/features/marketing/components/product-showcase";
+import { PricingBridge } from "@/features/marketing/components/pricing-bridge";
+import { FAQ } from "@/features/marketing/components/faq";
+import { FinalCTA } from "@/features/marketing/components/final-cta";
+import { Footer } from "@/features/marketing/components/footer";
 //
 // The public site is two pages: this one and /pricing.
 //

@@ -1,3 +1,5 @@
+import "server-only";
+
 // Gegenstück zu sse-stream.ts's parseSseEvents: writes /api/chat's hand-rolled
 // `event: X\ndata: Y\n\n` wire protocol server-side instead of parsing it
 // client-side. Split out of that route (QA finding C-1) purely to shrink the

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { SignInExperience } from "@/components/auth/sign-in-experience";
+import { SignInExperience } from "@/features/auth/components/sign-in-experience";
 
 export const metadata = { title: "Einloggen" };
 

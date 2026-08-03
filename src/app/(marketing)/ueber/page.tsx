@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Navbar } from "@/components/marketing/navbar";
-import { Footer } from "@/components/marketing/footer";
+import { Navbar } from "@/features/marketing/components/navbar";
+import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";

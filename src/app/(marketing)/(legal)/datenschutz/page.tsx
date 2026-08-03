@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LegalShell } from "@/components/marketing/legal-shell";
+import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { LEGAL } from "@/shared/lib/legal";
 
 export const metadata: Metadata = {

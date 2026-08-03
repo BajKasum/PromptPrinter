@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Navbar } from "@/components/marketing/navbar";
-import { Footer } from "@/components/marketing/footer";
+import { Navbar } from "@/features/marketing/components/navbar";
+import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 import {
   DOCS_GROUPS,

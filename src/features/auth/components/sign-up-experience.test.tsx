@@ -41,7 +41,7 @@ vi.mock("@/shared/lib/site-url", async (importOriginal) => ({
   siteUrl: (path: string) => `https://promptprinter.app${path}`,
 }));
 
-vi.mock("@/components/auth/auth-experience-shell", () => ({
+vi.mock("@/features/auth/components/auth-experience-shell", () => ({
   AuthExperienceShell: ({
     children,
     overlay,

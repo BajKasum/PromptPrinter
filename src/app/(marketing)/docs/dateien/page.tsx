@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DocsShell } from "@/components/marketing/docs-shell";
+import { DocsShell } from "@/features/marketing/components/docs-shell";
 import { docBySlug } from "@/shared/lib/docs-nav";
 import {
   ALLOWED_FILE_EXTENSIONS,

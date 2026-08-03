@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { Sidebar, type SidebarChat, type SidebarProject } from "@/shell/components/sidebar";
 import { MobileNav } from "@/shell/components/mobile-nav";
 import { ToastProvider } from "@/shared/ui/toast";
-import { Onboarding } from "@/components/onboarding/onboarding";
+import { Onboarding } from "@/features/onboarding/components/onboarding";
 import { createClient } from "@/server/supabase/server";
 
 type SidebarChatRow = { id: string; title: string };

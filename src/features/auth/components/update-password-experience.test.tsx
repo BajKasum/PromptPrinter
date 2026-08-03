@@ -16,7 +16,7 @@ vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({ auth: { updateUser } }),
 }));
 
-vi.mock("@/components/auth/auth-experience-shell", () => ({
+vi.mock("@/features/auth/components/auth-experience-shell", () => ({
   AuthExperienceShell: ({
     children,
     overlay,
