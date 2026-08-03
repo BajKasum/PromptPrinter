@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Bug, HelpCircle, Lightbulb, ShieldCheck } from "lucide-react";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
-import { FadeIn } from "@/components/motion/fade-in";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { LEGAL } from "@/lib/legal";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { LEGAL } from "@/shared/lib/legal";
 
 export const metadata: Metadata = {
   title: "Kontakt",

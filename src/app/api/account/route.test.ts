@@ -9,7 +9,7 @@ const storageRemove = vi.fn();
 const deleteUser = vi.fn();
 const rateLimit = vi.fn();
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("@/server/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser, signOut },
     from: (table: string) => {
@@ -22,13 +22,13 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
-vi.mock("@/lib/supabase/admin", () => ({
+vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
     auth: { admin: { deleteUser } },
   })),
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...args: unknown[]) => rateLimit(...args),
   rateLimitKey: () => "u:user-1",
 }));

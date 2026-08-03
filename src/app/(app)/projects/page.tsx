@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FadeIn } from "@/components/motion/fade-in";
-import { AppHeader } from "@/components/app/app-header";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { LibraryBrowser, type LibraryItem } from "@/components/app/library-browser";
-import { NewProjectButton } from "@/components/app/new-project";
-import { createClient } from "@/lib/supabase/server";
-import { LIST_LOAD_LIMIT, splitAtLimit } from "@/lib/chat-limits";
-import type { ProjectTools } from "@/components/app/project-card";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { AppHeader } from "@/shell/components/app-header";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { LibraryBrowser, type LibraryItem } from "@/features/prompts/components/library-browser";
+import { NewProjectButton } from "@/features/projects/components/new-project";
+import { createClient } from "@/server/supabase/server";
+import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
+import type { ProjectTools } from "@/features/projects/types";
 
 export const metadata = { title: "Projekte" };
 

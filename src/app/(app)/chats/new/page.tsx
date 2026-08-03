@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { Chat } from "@/components/app/chat";
-import { FadeIn } from "@/components/motion/fade-in";
-import { createClient } from "@/lib/supabase/server";
-import { extractSavedPromptContents } from "@/lib/saved-prompts";
-import { SAVED_PROMPTS_LOAD_LIMIT } from "@/lib/chat-limits";
+import { Chat } from "@/features/chat/components/chat";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { createClient } from "@/server/supabase/server";
+import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 

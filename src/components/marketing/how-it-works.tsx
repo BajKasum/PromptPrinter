@@ -4,10 +4,10 @@ import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import { Pencil, MessageSquare, Copy } from "lucide-react";
-import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
-import { cn } from "@/lib/utils";
+import { FadeIn, StaggerChildren, StaggerItem } from "@/shared/motion/fade-in";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
+import { cn } from "@/shared/lib/utils";
 
 // GSAP (DrawSVG + MotionPath) lives entirely in this sibling chunk, loaded
 // only client-side and only once mounted, see how-it-works-spine.tsx for

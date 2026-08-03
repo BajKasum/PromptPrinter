@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { MessageSquare, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { ChatList, type ChatListItem } from "@/components/app/chat-list";
-import { FadeIn } from "@/components/motion/fade-in";
-import { getProject } from "@/lib/project";
-import { createClient } from "@/lib/supabase/server";
-import { LIST_LOAD_LIMIT, splitAtLimit } from "@/lib/chat-limits";
+import { Button } from "@/shared/ui/button";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { ChatList, type ChatListItem } from "@/features/chat/components/chat-list";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { getProject } from "@/server/project";
+import { createClient } from "@/server/supabase/server";
+import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 

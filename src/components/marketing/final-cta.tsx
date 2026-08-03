@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { FadeIn } from "@/components/motion/fade-in";
-import { Button } from "@/components/ui/button";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { Button } from "@/shared/ui/button";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 import { ArrowRight } from "lucide-react";
 
 const FINAL_CTA_FLOATERS: FloaterSpec[] = [

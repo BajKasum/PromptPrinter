@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Mascot } from "@/components/brand/mascot";
+import { Button } from "@/shared/ui/button";
+import { Mascot } from "@/shared/brand/mascot";
 
 // Rendered by notFound() inside the authed shell, most often from the project
 // detail page when an id is malformed or the row belongs to another owner (RLS

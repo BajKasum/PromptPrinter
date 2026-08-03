@@ -13,7 +13,7 @@ const rateLimit = vi.fn();
 const verifyTurnstileToken = vi.fn();
 const logWarning = vi.fn();
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
     auth: {
       signInWithPassword: (...a: unknown[]) => signInWithPassword(...a),
@@ -24,18 +24,18 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
   rateLimitKey: () => "ip:203.0.113.7",
   clientIp: () => "203.0.113.7",
 }));
 
-vi.mock("@/lib/turnstile", () => ({
+vi.mock("@/server/security/turnstile", () => ({
   verifyTurnstileToken: (...a: unknown[]) => verifyTurnstileToken(...a),
   MAX_TURNSTILE_TOKEN_CHARS: 4096,
 }));
 
-vi.mock("@/lib/observability", () => ({
+vi.mock("@/shared/lib/observability", () => ({
   logWarning: (...a: unknown[]) => logWarning(...a),
   captureError: vi.fn(),
 }));

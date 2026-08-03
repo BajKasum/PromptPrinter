@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { problem } from "@/lib/api-problem";
-import { createClient } from "@/lib/supabase/server";
-import { rateLimit, rateLimitKey, clientIp } from "@/lib/rate-limit";
-import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/lib/turnstile";
+import { problem } from "@/server/http/api-problem";
+import { createClient } from "@/server/supabase/server";
+import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
+import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
   readJsonBody,
-} from "@/lib/request-body";
-import { translateAuthError } from "@/lib/auth-errors";
-import { siteUrl, safeNextPath } from "@/lib/site-url";
-import { MIN_PASSWORD_LENGTH } from "@/lib/password";
-import { logWarning } from "@/lib/observability";
+} from "@/server/http/request-body";
+import { translateAuthError } from "@/shared/lib/auth-errors";
+import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
+import { MIN_PASSWORD_LENGTH } from "@/shared/lib/password";
+import { logWarning } from "@/shared/lib/observability";
 
 export const runtime = "nodejs";
 

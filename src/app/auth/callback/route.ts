@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
-import { siteUrl } from "@/lib/site-url";
+import { createClient } from "@/server/supabase/server";
+import { siteUrl } from "@/shared/lib/site-url";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

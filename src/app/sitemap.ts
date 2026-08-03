@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { DOCS_ORDER, docHref } from "@/lib/docs-nav";
-import { siteUrl } from "@/lib/site-url";
+import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
+import { siteUrl } from "@/shared/lib/site-url";
 
 // Public, indexable routes only, the app pages live behind auth. The docs
 // articles are pulled from the same nav source the section itself renders

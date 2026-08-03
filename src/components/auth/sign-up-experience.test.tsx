@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SignUpExperience } from "./sign-up-experience";
-import { PASSWORD_RULE_HINT } from "@/lib/password";
+import { PASSWORD_RULE_HINT } from "@/shared/lib/password";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -22,11 +22,11 @@ const profileSelect = vi.fn();
 // redeemed in the same request (app/api/auth/route.ts). The browser Supabase
 // client survives here for one thing only: the best-effort Pro-interest write
 // after an account exists, which is not an auth call.
-vi.mock("@/lib/auth-client", () => ({
+vi.mock("@/shared/lib/auth-client", () => ({
   postAuthAction: (...args: unknown[]) => postAuthAction(...args),
 }));
 
-vi.mock("@/lib/supabase/client", () => ({
+vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({
     auth: { getUser },
     from: () => ({
@@ -36,8 +36,8 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-vi.mock("@/lib/site-url", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/site-url")>()),
+vi.mock("@/shared/lib/site-url", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/site-url")>()),
   siteUrl: (path: string) => `https://promptprinter.app${path}`,
 }));
 
@@ -56,11 +56,11 @@ vi.mock("@/components/auth/auth-experience-shell", () => ({
   ),
 }));
 
-vi.mock("@/components/brand/animated-mascot", () => ({
+vi.mock("@/shared/brand/animated-mascot", () => ({
   AnimatedMascot: () => null,
 }));
 
-vi.mock("@/components/brand/success-celebration", () => ({
+vi.mock("@/shared/brand/success-celebration", () => ({
   SuccessCelebration: ({ message, onDone }: { message: string; onDone: () => void }) => (
     <div role="status">
       {message}

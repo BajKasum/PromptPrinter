@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
-import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
-import { cn } from "@/lib/utils";
+import { Logo } from "@/shared/brand/logo";
+import { Button } from "@/shared/ui/button";
+import { MenuToggleIcon } from "@/shared/ui/menu-toggle-icon";
+import { cn } from "@/shared/lib/utils";
 
 // "Preise" is a real route: its own page, worth linking to directly from
 // anywhere on the site. "Funktionen" is back to an in-page anchor (#funktionen

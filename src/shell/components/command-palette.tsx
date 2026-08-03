@@ -1,0 +1,241 @@
+"use client";
+
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Search,
+  FolderKanban,
+  MessageSquare,
+  CornerDownLeft,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/shared/lib/utils";
+import { createClient } from "@/shared/supabase/client";
+import { primaryNav, secondaryNav } from "@/shell/lib/nav";
+
+type Cmd = { id: string; label: string; group: string; Icon: LucideIcon; perform: () => void };
+
+export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [chats, setChats] = useState<{ id: string; title: string; project_id: string | null }[]>(
+    []
+  );
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const go = useCallback(
+    (href: string) => {
+      onClose();
+      router.push(href);
+    },
+    [onClose, router]
+  );
+
+  // Reset transient state each time the palette opens, and focus the input.
+  useEffect(() => {
+    if (!open) return;
+    setQuery("");
+    setActiveIndex(0);
+    const t = window.setTimeout(() => inputRef.current?.focus(), 20);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  // Lazily load the user's projects + chats the first time the palette opens
+  //, chats are the primary object since the redesign, so they belong here
+  // just as much as projects do.
+  useEffect(() => {
+    if (!open || loaded) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const [{ data: projectRows }, { data: chatRows }] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("id, name")
+          .order("updated_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("conversations")
+          .select("id, title, project_id")
+          .order("updated_at", { ascending: false })
+          .limit(50),
+      ]);
+      if (!cancelled) {
+        setProjects(projectRows ?? []);
+        setChats(chatRows ?? []);
+        setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, loaded]);
+
+  // Derive the page commands from the same nav source the sidebar + mobile drawer
+  // use, so the palette can never drift out of sync (labels, icons, presence).
+  const navCommands = useMemo<Cmd[]>(() => {
+    const pages: Cmd[] = [...primaryNav, ...secondaryNav].map((n) => ({
+      id: n.href,
+      label: n.label,
+      group: "Seiten",
+      Icon: n.Icon,
+      perform: () => go(n.href),
+    }));
+    // One entry point, not two: there is only one chat (REDESIGN.md, Phase 2).
+    const actions: Cmd[] = [
+      { id: "new-chat", label: "Neuer Chat", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chats/new") },
+    ];
+    return [...pages, ...actions];
+  }, [go]);
+
+  const results = useMemo<Cmd[]>(() => {
+    const chatCommands: Cmd[] = chats.map((c) => ({
+      id: `chat-${c.id}`,
+      label: c.title,
+      group: "Chats",
+      Icon: MessageSquare,
+      // A project chat lives at its workspace's own route, not /chats/[id].
+      perform: () =>
+        go(c.project_id ? `/projects/${c.project_id}/chats/${c.id}` : `/chats/${c.id}`),
+    }));
+    const projectCommands: Cmd[] = projects.map((p) => ({
+      id: `project-${p.id}`,
+      label: p.name,
+      group: "Projekte",
+      Icon: FolderKanban,
+      perform: () => go(`/projects/${p.id}`),
+    }));
+    const all = [...navCommands, ...chatCommands, ...projectCommands];
+    const q = query.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter((c) => c.label.toLowerCase().includes(q));
+  }, [navCommands, chats, projects, query, go]);
+
+  // Keep the highlighted row valid as the result set shrinks/grows.
+  useEffect(() => {
+    setActiveIndex((i) => Math.min(i, Math.max(results.length - 1, 0)));
+  }, [results.length]);
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((p) => Math.min(p + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((p) => Math.max(p - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      results[activeIndex]?.perform();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    }
+  }
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[90] flex justify-center bg-black/60 px-4 pt-[12vh] backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onMouseDown={onClose}
+        >
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Suche"
+            initial={{ opacity: 0, scale: 0.98, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -8 }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="h-fit w-full max-w-xl overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
+          >
+            <div className="flex items-center gap-3 border-b border-border px-4">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Wonach suchst du?"
+                aria-label="Suchen"
+                className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+            </div>
+
+            <div className="max-h-[340px] overflow-y-auto p-1.5">
+              {results.length === 0 ? (
+                <div className="px-3 py-8 text-center text-[13px] text-muted-foreground">
+                  Keine Treffer für „{query}“
+                </div>
+              ) : (
+                results.map((c, i) => {
+                  const showHeader = i === 0 || results[i - 1].group !== c.group;
+                  const active = i === activeIndex;
+                  return (
+                    <Fragment key={c.id}>
+                      {showHeader && (
+                        <div className="px-3 pb-1 pt-3 text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+                          {c.group}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onMouseEnter={() => setActiveIndex(i)}
+                        onClick={() => c.perform()}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] transition-colors",
+                          active ? "bg-accent-subtle text-accent-text" : "text-foreground/70 hover:bg-surface-hover"
+                        )}
+                      >
+                        <c.Icon
+                          className={cn("h-4 w-4 shrink-0", active ? "text-accent-text" : "text-foreground/70")}
+                          strokeWidth={1.8}
+                        />
+                        <span className="flex-1 truncate">{c.label}</span>
+                        {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-accent-text" />}
+                      </button>
+                    </Fragment>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↑</kbd>
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↓</kbd>
+                  navigieren
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↵</kbd>
+                  öffnen
+                </span>
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">esc</kbd>
+                schliessen
+              </span>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}

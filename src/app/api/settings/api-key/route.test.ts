@@ -27,19 +27,19 @@ function builder(table: string) {
   return chain;
 }
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser },
     from: (t: string) => builder(t),
     rpc: (fn: string, args: unknown) => rpc(fn, args),
   }),
 }));
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
   rateLimitKey: () => "u:user-1",
 }));
-vi.mock("@/lib/llm", () => ({ chatComplete: (...a: unknown[]) => chatComplete(...a) }));
-vi.mock("@/lib/crypto", () => ({ encrypt: (v: string) => encrypt(v) }));
+vi.mock("@/server/llm", () => ({ chatComplete: (...a: unknown[]) => chatComplete(...a) }));
+vi.mock("@/server/security/crypto", () => ({ encrypt: (v: string) => encrypt(v) }));
 
 function post(body: unknown) {
   return new Request("https://promptprinter.app/api/settings/api-key", {

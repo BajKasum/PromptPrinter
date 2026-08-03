@@ -5,16 +5,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { safeNextPath } from "@/lib/site-url";
-import { postAuthAction } from "@/lib/auth-client";
+import { createClient } from "@/shared/supabase/client";
+import { safeNextPath } from "@/shared/lib/site-url";
+import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/components/auth/turnstile-widget";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
-import { SuccessCelebration } from "@/components/brand/success-celebration";
-import { MIN_PASSWORD_LENGTH, PASSWORD_RULE_HINT } from "@/lib/password";
+import { Input } from "@/shared/ui/input";
+import { PasswordInput } from "@/shared/ui/password-input";
+import { SuccessCelebration } from "@/shared/brand/success-celebration";
+import { MIN_PASSWORD_LENGTH, PASSWORD_RULE_HINT } from "@/shared/lib/password";
 
 const schema = z.object({
   email: z.string().email("Bitte eine gültige Email eingeben"),

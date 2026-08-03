@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/lib/site-url";
+import { siteUrl } from "@/shared/lib/site-url";
 
 // Marketing pages are crawlable; the authenticated app and API are not.
 //

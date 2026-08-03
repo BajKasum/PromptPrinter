@@ -1,4 +1,4 @@
-import type { MascotState } from "@/components/brand/mascot-states";
+import type { MascotState } from "@/shared/brand/mascot-states";
 
 export type TourStep = {
   id: string;

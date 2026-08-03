@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UpdatePasswordExperience } from "./update-password-experience";
-import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/lib/password";
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/shared/lib/password";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, refresh }),
 }));
 
-vi.mock("@/lib/supabase/client", () => ({
+vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({ auth: { updateUser } }),
 }));
 
@@ -31,7 +31,7 @@ vi.mock("@/components/auth/auth-experience-shell", () => ({
   ),
 }));
 
-vi.mock("@/components/brand/success-celebration", () => ({
+vi.mock("@/shared/brand/success-celebration", () => ({
   SuccessCelebration: ({ message, onDone }: { message: string; onDone: () => void }) => (
     <div role="status">
       {message}

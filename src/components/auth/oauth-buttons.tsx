@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { siteUrl } from "@/lib/site-url";
-import { translateAuthError } from "@/lib/auth-errors";
+import { createClient } from "@/shared/supabase/client";
+import { siteUrl } from "@/shared/lib/site-url";
+import { translateAuthError } from "@/shared/lib/auth-errors";
 
 type Provider = "google" | "github";
 

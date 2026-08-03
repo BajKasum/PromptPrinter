@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Mascot } from "@/components/brand/mascot";
+import { Button } from "@/shared/ui/button";
+import { Mascot } from "@/shared/brand/mascot";
 
 export const metadata = { title: "Seite nicht gefunden" };
 

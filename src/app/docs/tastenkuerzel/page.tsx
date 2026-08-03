@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DocsShell } from "@/components/marketing/docs-shell";
-import { docBySlug } from "@/lib/docs-nav";
+import { docBySlug } from "@/shared/lib/docs-nav";
 
 const doc = docBySlug("tastenkuerzel")!;
 

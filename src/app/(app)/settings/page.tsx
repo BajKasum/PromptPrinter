@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { FadeIn } from "@/components/motion/fade-in";
-import { SettingsWorkspace } from "@/components/app/settings-workspace";
-import { parseToolDefaults } from "@/lib/tools";
-import { createClient } from "@/lib/supabase/server";
-import { effectiveLimits, type PlanKey } from "@/lib/plans";
-import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/lib/byok";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { SettingsWorkspace } from "@/features/settings/components/settings-workspace";
+import { parseToolDefaults } from "@/features/settings/lib/tools";
+import { createClient } from "@/server/supabase/server";
+import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
 
 export const metadata = { title: "Einstellungen" };
 

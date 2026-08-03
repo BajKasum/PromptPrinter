@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
-import { FadeIn } from "@/components/motion/fade-in";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { DOCS_GROUPS, DOCS_ORDER, docHref } from "@/lib/docs-nav";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { DOCS_GROUPS, DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 
 export const metadata: Metadata = {
   title: "Hilfe",

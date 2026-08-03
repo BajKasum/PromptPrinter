@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
-import { MAX_CHAT_BODY_BYTES } from "@/lib/request-body";
+import { MAX_CHAT_BODY_BYTES } from "@/server/http/request-body";
 
 // Guards the fix for QA finding S-1: /api/chat used to serve anonymous callers,
 // which skipped the whole monthly-quota block (it hung off `userId`) and ran
@@ -54,20 +54,20 @@ const supabaseStub = {
   storage: { from: () => ({ download: async () => ({ data: null, error: new Error("n/a") }) }) },
 };
 
-vi.mock("@/lib/supabase/server", () => ({ createClient: () => createClient() }));
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock("@/server/supabase/server", () => ({ createClient: () => createClient() }));
+vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
   rateLimitKey: (...a: unknown[]) => rateLimitKey(...a),
   reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
   reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
 }));
-vi.mock("@/lib/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
+vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
 // Mocked so the test never pulls in the three provider SDKs, and so "did the
 // model get called" is directly assertable. classifyLlmFailure/LlmEmptyReplyError
 // stay real (importOriginal) — route.ts's U-4 mapping (raw provider errors →
 // German text) is worth exercising against the actual classifier, not a stub.
-vi.mock("@/lib/llm", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/llm")>();
+vi.mock("@/server/llm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/server/llm")>();
   return {
     ...actual,
     chatCompleteStream: (...a: unknown[]) => chatCompleteStream(...a),

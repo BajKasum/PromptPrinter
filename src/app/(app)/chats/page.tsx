@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FadeIn } from "@/components/motion/fade-in";
-import { AppHeader } from "@/components/app/app-header";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { ChatList, type ChatListItem } from "@/components/app/chat-list";
-import { createClient } from "@/lib/supabase/server";
-import { LIST_LOAD_LIMIT, splitAtLimit } from "@/lib/chat-limits";
+import { Button } from "@/shared/ui/button";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { AppHeader } from "@/shell/components/app-header";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { ChatList, type ChatListItem } from "@/features/chat/components/chat-list";
+import { createClient } from "@/server/supabase/server";
+import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 
 export const metadata = { title: "Chats" };
 

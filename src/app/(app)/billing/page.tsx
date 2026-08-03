@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { Check, Clock } from "lucide-react";
-import { FadeIn } from "@/components/motion/fade-in";
-import { PlanBadge } from "@/components/app/plan-badge";
-import { UsageMeter } from "@/components/app/usage-meter";
-import { PLANS } from "@/lib/pricing";
-import { createClient } from "@/lib/supabase/server";
-import { effectiveLimits, type PlanKey } from "@/lib/plans";
-import { getConfiguredProviders } from "@/lib/byok";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { PlanBadge } from "@/shared/ui/plan-badge";
+import { UsageMeter } from "@/features/settings/components/usage-meter";
+import { PLANS } from "@/shared/lib/pricing";
+import { createClient } from "@/server/supabase/server";
+import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { getConfiguredProviders } from "@/server/byok";
 
 export const metadata = { title: "Abrechnung" };
 

@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { AlertTriangle, Activity, Database, Gauge } from "lucide-react";
-import { AppHeader } from "@/components/app/app-header";
-import { FadeIn } from "@/components/motion/fade-in";
-import { UsageMeter } from "@/components/app/usage-meter";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { readDailyServerKeyUsage } from "@/lib/rate-limit";
-import { alertingConfigured } from "@/lib/alerting";
-import { llmConfig } from "@/lib/llm";
+import { AppHeader } from "@/shell/components/app-header";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { UsageMeter } from "@/features/settings/components/usage-meter";
+import { createClient } from "@/server/supabase/server";
+import { createAdminClient } from "@/server/supabase/admin";
+import { readDailyServerKeyUsage } from "@/server/security/rate-limit";
+import { alertingConfigured } from "@/shared/lib/alerting";
+import { llmConfig } from "@/server/llm";
 
 export const dynamic = "force-dynamic";
 

@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/shared/supabase/client";
 import { Tour } from "@/components/onboarding/tour";
 import { TOUR_STEPS } from "@/components/onboarding/tour-steps";
 

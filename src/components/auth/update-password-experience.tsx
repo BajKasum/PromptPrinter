@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/shared/supabase/client";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
-import { SuccessCelebration } from "@/components/brand/success-celebration";
+import { SuccessCelebration } from "@/shared/brand/success-celebration";
 import {
   MIN_PASSWORD_LENGTH,
   PASSWORD_TOO_SHORT_MESSAGE,
   isPasswordLongEnough,
-} from "@/lib/password";
+} from "@/shared/lib/password";
 
 function translatePasswordError(message: string): string {
   const m = message.toLowerCase();

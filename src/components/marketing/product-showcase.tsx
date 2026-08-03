@@ -10,10 +10,10 @@ import {
   Search,
   ArrowRight,
 } from "lucide-react";
-import { FadeIn } from "@/components/motion/fade-in";
-import { Logo } from "@/components/brand/logo";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { cn } from "@/lib/utils";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { Logo } from "@/shared/brand/logo";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { cn } from "@/shared/lib/utils";
 
 type ViewKey = "chats" | "projects";
 

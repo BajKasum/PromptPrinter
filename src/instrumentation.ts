@@ -6,6 +6,6 @@ export async function register() {
   // The hook also runs on the edge runtime, where process.env is a different,
   // smaller surface and this check would be misleading. Node only.
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { assertEnv } = await import("@/lib/env");
+  const { assertEnv } = await import("@/server/env");
   assertEnv();
 }

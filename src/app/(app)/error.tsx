@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { RotateCcw, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Mascot } from "@/components/brand/mascot";
-import { captureError } from "@/lib/observability";
+import { Button } from "@/shared/ui/button";
+import { Mascot } from "@/shared/brand/mascot";
+import { captureError } from "@/shared/lib/observability";
 
 // Segment boundary for the authed shell. Catches render/data errors thrown by
 // any page below (app)/, the sidebar and ToastProvider above stay mounted, so

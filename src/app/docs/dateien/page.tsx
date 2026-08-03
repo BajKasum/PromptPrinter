@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/components/marketing/docs-shell";
-import { docBySlug } from "@/lib/docs-nav";
+import { docBySlug } from "@/shared/lib/docs-nav";
 import {
   ALLOWED_FILE_EXTENSIONS,
   MAX_FILES_PER_PROJECT,
   MAX_FILE_BYTES,
-} from "@/lib/project-files";
+} from "@/features/projects/lib/project-files";
 
 const doc = docBySlug("dateien")!;
 

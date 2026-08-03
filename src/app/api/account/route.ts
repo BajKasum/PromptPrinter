@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
-import { captureError } from "@/lib/observability";
-import { avatarStoragePath } from "@/lib/avatar";
-import { removeAllPaths } from "@/lib/storage-cleanup";
+import { createClient } from "@/server/supabase/server";
+import { createAdminClient } from "@/server/supabase/admin";
+import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
+import { captureError } from "@/shared/lib/observability";
+import { avatarStoragePath } from "@/features/settings/lib/avatar";
+import { removeAllPaths } from "@/features/projects/lib/storage-cleanup";
 
 export const runtime = "nodejs";
 

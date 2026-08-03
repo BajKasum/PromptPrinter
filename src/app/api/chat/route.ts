@@ -1,32 +1,32 @@
-import { chatRequestSchema, type ChatMessage } from "@/lib/schemas";
+import { chatRequestSchema, type ChatMessage } from "@/shared/lib/schemas";
 import {
   MAX_ASSISTANT_MESSAGE_CHARS,
   MAX_TRANSCRIPT_MESSAGES,
   MAX_USER_MESSAGE_CHARS,
   truncate,
-} from "@/lib/chat-limits";
+} from "@/shared/lib/chat-limits";
 import {
   rateLimit,
   rateLimitKey,
   reserveMonthlyQuota,
   reserveServerKeyCall,
-} from "@/lib/rate-limit";
-import { createClient } from "@/lib/supabase/server";
-import { chatCompleteStream, llmConfig, classifyLlmFailure, LlmEmptyReplyError } from "@/lib/llm";
-import { getUserOverride } from "@/lib/byok";
-import { effectiveLimits, type PlanKey } from "@/lib/plans";
-import { problem } from "@/lib/api-problem";
+} from "@/server/security/rate-limit";
+import { createClient } from "@/server/supabase/server";
+import { chatCompleteStream, llmConfig, classifyLlmFailure, LlmEmptyReplyError } from "@/server/llm";
+import { getUserOverride } from "@/server/byok";
+import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { problem } from "@/server/http/api-problem";
 import {
   MAX_CHAT_BODY_BYTES,
   RequestBodyTooLargeError,
   readJsonBody,
-} from "@/lib/request-body";
-import { captureError, logEvent } from "@/lib/observability";
-import { CHAT_SYSTEM_PROMPT } from "@/prompts";
-import { buildProjectContext } from "@/lib/project-context";
-import { persistTurn } from "@/lib/chat-persistence";
-import { stubReply } from "@/lib/chat-stub";
-import { createSseWriter } from "@/lib/sse-writer";
+} from "@/server/http/request-body";
+import { captureError, logEvent } from "@/shared/lib/observability";
+import { CHAT_SYSTEM_PROMPT } from "@/server/system-prompt";
+import { buildProjectContext } from "@/features/projects/lib/project-context";
+import { persistTurn } from "@/features/chat/lib/chat-persistence";
+import { stubReply } from "@/features/chat/lib/chat-stub";
+import { createSseWriter } from "@/server/http/sse-writer";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;

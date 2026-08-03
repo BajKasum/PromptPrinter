@@ -5,12 +5,12 @@ import { OAuthButtons } from "./oauth-buttons";
 
 const signInWithOAuth = vi.fn();
 
-vi.mock("@/lib/supabase/client", () => ({
+vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({ auth: { signInWithOAuth } }),
 }));
 
-vi.mock("@/lib/site-url", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/site-url")>()),
+vi.mock("@/shared/lib/site-url", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/site-url")>()),
   siteUrl: (path: string) => `https://promptprinter.app${path}`,
 }));
 

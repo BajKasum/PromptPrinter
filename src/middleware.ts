@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
-import { buildCsp } from "@/lib/csp";
+import { updateSession } from "@/server/supabase/middleware";
+import { buildCsp } from "@/server/security/csp";
 
 export async function middleware(request: NextRequest) {
   // Base64-encode the UUID: CSP's nonce-source grammar is base64 alphabet

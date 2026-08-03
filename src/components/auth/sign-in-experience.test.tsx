@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
 // (app/api/auth/route.ts). These tests therefore assert what the form SENDS
 // and how it renders what comes back; the credential handling itself, and the
 // German wording of a failure, belong to the route and are tested there.
-vi.mock("@/lib/auth-client", () => ({
+vi.mock("@/shared/lib/auth-client", () => ({
   postAuthAction: (...args: unknown[]) => postAuthAction(...args),
 }));
 
@@ -37,11 +37,11 @@ vi.mock("@/components/auth/auth-experience-shell", () => ({
   ),
 }));
 
-vi.mock("@/components/brand/animated-mascot", () => ({
+vi.mock("@/shared/brand/animated-mascot", () => ({
   AnimatedMascot: () => null,
 }));
 
-vi.mock("@/components/brand/success-celebration", () => ({
+vi.mock("@/shared/brand/success-celebration", () => ({
   SuccessCelebration: ({ message, onDone }: { message: string; onDone: () => void }) => (
     <div role="status">
       {message}

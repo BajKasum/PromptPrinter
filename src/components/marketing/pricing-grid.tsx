@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { FadeIn } from "@/components/motion/fade-in";
-import { Button } from "@/components/ui/button";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { Button } from "@/shared/ui/button";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Check } from "lucide-react";
-import { PLANS } from "@/lib/pricing";
-import { cn } from "@/lib/utils";
+import { PLANS } from "@/shared/lib/pricing";
+import { cn } from "@/shared/lib/utils";
 
 // Only the plan cards live here now. The surrounding "PricingPreview" section
 // (headline + a Finn + floaters) was the landing page's pricing block; pricing

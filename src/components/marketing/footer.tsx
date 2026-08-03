@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mascot } from "@/components/brand/mascot";
+import { Mascot } from "@/shared/brand/mascot";
 
 // Finn's farewell plus every public page. Deliberately two staggered rows
 // rather than the usual four-column corporate footer (see DESIGN.md): the

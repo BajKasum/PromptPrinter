@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
-import { FadeIn } from "@/components/motion/fade-in";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { Button } from "@/components/ui/button";
-import { LEGAL } from "@/lib/legal";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { Button } from "@/shared/ui/button";
+import { LEGAL } from "@/shared/lib/legal";
 
 export const metadata: Metadata = {
   title: "Über",

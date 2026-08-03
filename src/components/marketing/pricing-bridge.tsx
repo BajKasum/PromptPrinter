@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { FadeIn } from "@/components/motion/fade-in";
-import { Button } from "@/components/ui/button";
-import { PRO_PRICE_LABEL } from "@/lib/pricing";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { Button } from "@/shared/ui/button";
+import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
 
 // The bridge from "here's what it does" to "here's what it costs". It lived
 // inline on /features until that page was folded back into the landing page

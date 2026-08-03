@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { AuthExperienceShell } from "@/components/auth/auth-experience-shell";
 import { UpdatePasswordExperience } from "@/components/auth/update-password-experience";
-import { Mascot } from "@/components/brand/mascot";
-import { createClient } from "@/lib/supabase/server";
+import { Mascot } from "@/shared/brand/mascot";
+import { createClient } from "@/server/supabase/server";
 
 export const metadata = { title: "Neues Passwort" };
 

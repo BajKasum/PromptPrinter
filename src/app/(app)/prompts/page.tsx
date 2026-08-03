@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { FadeIn } from "@/components/motion/fade-in";
-import { SavedPromptList } from "@/components/app/saved-prompt-list";
-import { createClient } from "@/lib/supabase/server";
-import { mapGenerationRowsToSavedPrompts } from "@/lib/saved-prompts";
-import { SAVED_PROMPTS_LOAD_LIMIT } from "@/lib/chat-limits";
+import { Button } from "@/shared/ui/button";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
+import { createClient } from "@/server/supabase/server";
+import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
+import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 

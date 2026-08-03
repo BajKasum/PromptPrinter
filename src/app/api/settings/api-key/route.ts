@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { rateLimit, rateLimitKey } from "@/lib/rate-limit";
-import { createClient } from "@/lib/supabase/server";
-import { chatComplete, type LlmOverride } from "@/lib/llm";
-import { encrypt } from "@/lib/crypto";
-import { problem } from "@/lib/api-problem";
-import { captureError } from "@/lib/observability";
+import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
+import { createClient } from "@/server/supabase/server";
+import { chatComplete, type LlmOverride } from "@/server/llm";
+import { encrypt } from "@/server/security/crypto";
+import { problem } from "@/server/http/api-problem";
+import { captureError } from "@/shared/lib/observability";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
   readJsonBody,
-} from "@/lib/request-body";
+} from "@/server/http/request-body";
 
 export const runtime = "nodejs";
 

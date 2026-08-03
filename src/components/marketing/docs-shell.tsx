@@ -3,15 +3,15 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
-import { FadeIn } from "@/components/motion/fade-in";
+import { FadeIn } from "@/shared/motion/fade-in";
 import {
   DOCS_GROUPS,
   DOCS_ORDER,
   docHref,
   docNeighbours,
   docStep,
-} from "@/lib/docs-nav";
-import { cn } from "@/lib/utils";
+} from "@/shared/lib/docs-nav";
+import { cn } from "@/shared/lib/utils";
 
 // Shared chrome for every docs article. Deliberately a server component: the
 // active entry comes in as `slug` from the page itself, so the sidebar needs

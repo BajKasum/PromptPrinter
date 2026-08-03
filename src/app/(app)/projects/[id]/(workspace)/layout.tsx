@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft, FolderKanban, Clock, FileText, MessageSquare, Sparkles } from "lucide-react";
-import { DeleteProjectButton } from "@/components/app/delete-project";
-import { ProjectRail } from "@/components/app/project-rail";
-import { Mascot } from "@/components/brand/mascot";
-import { FadeIn } from "@/components/motion/fade-in";
-import { getProject } from "@/lib/project";
-import { createClient } from "@/lib/supabase/server";
-import { relativeTime } from "@/lib/utils";
-import type { ProjectFile } from "@/lib/project-files";
+import { DeleteProjectButton } from "@/features/projects/components/delete-project";
+import { ProjectRail } from "@/features/projects/components/project-rail";
+import { Mascot } from "@/shared/brand/mascot";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { getProject } from "@/server/project";
+import { createClient } from "@/server/supabase/server";
+import { relativeTime } from "@/shared/lib/utils";
+import type { ProjectFile } from "@/features/projects/lib/project-files";
 
 // The workspace shell (REDESIGN.md, Phase 3): header + context rail persist
 // across the project's "Arbeitsraum" subroutes, Übersicht and Ergebnisse are

@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Chat } from "@/components/app/chat";
-import { FadeIn } from "@/components/motion/fade-in";
-import { getProject } from "@/lib/project";
-import { normalizeTarget } from "@/lib/target-tools";
-import { createClient } from "@/lib/supabase/server";
-import { extractSavedPromptContents } from "@/lib/saved-prompts";
-import { MESSAGE_LOAD_LIMIT } from "@/lib/chat-limits";
+import { Chat } from "@/features/chat/components/chat";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { getProject } from "@/server/project";
+import { normalizeTarget } from "@/features/chat/lib/target-tools";
+import { createClient } from "@/server/supabase/server";
+import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { MESSAGE_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 

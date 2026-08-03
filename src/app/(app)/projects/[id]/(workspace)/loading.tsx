@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/shared/ui/skeleton";
 
 // Fallback für die Hauptspalte des Workspace, Header + Rail kommen aus dem
 // Layout und stehen bereits, hier lädt nur der jeweilige Raum-Zustand

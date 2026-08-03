@@ -21,10 +21,10 @@ function builder(table: string) {
   return chain;
 }
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser }, from: (t: string) => builder(t) }),
 }));
-vi.mock("@/lib/rate-limit", () => ({
+vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
   rateLimitKey: () => "u:user-1",
 }));

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/components/marketing/legal-shell";
-import { LEGAL } from "@/lib/legal";
+import { LEGAL } from "@/shared/lib/legal";
 
 export const metadata: Metadata = {
   title: "AGB",

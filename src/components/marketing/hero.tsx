@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, Copy, CornerDownLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import type { MascotState } from "@/components/brand/mascot-states";
-import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/ui/button";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import type { MascotState } from "@/shared/brand/mascot-states";
+import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
+import { cn } from "@/shared/lib/utils";
 
 // Spread across the whole hero, top to bottom, so both the intro mascot and
 // the demo card below feel like they share the same drifting water.

@@ -1,4 +1,4 @@
-import { Skeleton, ProjectCardSkeleton } from "@/components/ui/skeleton";
+import { Skeleton, ProjectCardSkeleton } from "@/shared/ui/skeleton";
 
 export default function ProjectsLoading() {
   return (

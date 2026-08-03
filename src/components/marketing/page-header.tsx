@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 
 // Denser and wider than the 4-item set this replaces: with two Finns now
 // flanking the headline (below), the plain gap that used to sit on both sides

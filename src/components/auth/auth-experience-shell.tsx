@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Logo } from "@/components/brand/logo";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { Floaters, type FloaterSpec } from "@/components/brand/floaters";
+import { Logo } from "@/shared/brand/logo";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 
 // Finn's side of the screen, bubbles rising and a few sparks drifting
 // around him, same shared vocabulary as the landing page's sections.

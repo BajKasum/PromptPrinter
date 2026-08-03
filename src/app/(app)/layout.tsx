@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { Sidebar, type SidebarChat, type SidebarProject } from "@/components/app/sidebar";
-import { MobileNav } from "@/components/app/mobile-nav";
-import { ToastProvider } from "@/components/ui/toast";
+import { Sidebar, type SidebarChat, type SidebarProject } from "@/shell/components/sidebar";
+import { MobileNav } from "@/shell/components/mobile-nav";
+import { ToastProvider } from "@/shared/ui/toast";
 import { Onboarding } from "@/components/onboarding/onboarding";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AnimatedMascot } from "@/components/brand/animated-mascot";
-import { FadeIn } from "@/components/motion/fade-in";
-import { SavedPromptList } from "@/components/app/saved-prompt-list";
-import { getProject } from "@/lib/project";
-import { createClient } from "@/lib/supabase/server";
-import { mapGenerationRowsToSavedPrompts } from "@/lib/saved-prompts";
+import { Button } from "@/shared/ui/button";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { FadeIn } from "@/shared/motion/fade-in";
+import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
+import { getProject } from "@/server/project";
+import { createClient } from "@/server/supabase/server";
+import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
 
 // QA finding P-1: this query used to load every saved prompt a project ever
 // had, full `outputs` JSONB included, unbounded — the single most expensive

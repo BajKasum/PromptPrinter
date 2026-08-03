@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/components/marketing/docs-shell";
-import { docBySlug } from "@/lib/docs-nav";
-import { PLAN_LIMITS } from "@/lib/plans";
+import { docBySlug } from "@/shared/lib/docs-nav";
+import { PLAN_LIMITS } from "@/shared/lib/plans";
 
 const doc = docBySlug("plaene-und-limits")!;
 
