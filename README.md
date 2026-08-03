@@ -1,10 +1,46 @@
 # PromptPrinter
 
-> Verwandelt rohe Ideen in build-fertige **Prompt-Pakete**, Master-Prompt, PRD,
-> Schema, API, UI, Tests, optimiert für Claude, ChatGPT, Lovable, Cursor, Stitch & Co.
+> Der KI-Chat, der deinen Stack schon kennt. Finn stellt die Rückfragen, die
+> dein Bau-Tool nie stellt, und liefert dann den fertigen Prompt für Lovable,
+> Cursor, v0, Claude Code, Bolt & Co.
 
-SaaS-Tool für Developer und Vibe-Coder, die eine Idee schnell in ausführbare
-Build-Instruktionen übersetzen wollen.
+SaaS-Tool für Vibe-Coder, die Prompts in KI-Bau-Tools füttern. Kernversprechen:
+keine Credits verbrennen — die Vollständigkeits-Fragen (Ziel-Tool, Kern-Screens,
+Datenmodell, Auth, Design-Richtung) kommen einmal vorher statt als drei
+Nachbesserungs-Runden hinterher.
+
+> **Hinweis (2026-08-03):** Dieser Abschnitt beschrieb bis eben noch
+> „Prompt-Pakete, Master-Prompt, PRD, Schema, API, UI, Tests" — die
+> Generierungs-Pipeline, die am 2026-07-17 ersatzlos entfernt wurde. Aufgefallen
+> ist das ausgerechnet beim ersten echten Lauf des Projekt-Gedächtnisses gegen
+> dieses Repo selbst: die Analyse fasste das Produkt korrekt so zusammen, wie
+> die README es beschrieb, also falsch.
+
+## Projekt-Gedächtnis (AI Project Brain)
+
+Ein Projekt kann Dateien tragen (README, `package.json`, Lockfile, `tsconfig`,
+`next.config`, SQL, API-Dokus, Screenshots) und ein öffentliches
+GitHub-Repository. Einmal analysieren, und PromptPrinter kennt danach
+Framework, Sprache, Architektur, Datenbank, Design-System, Coding-Style und
+Konventionen — jeder Chat des Projekts trägt das automatisch mit, der Stack
+muss nie wieder erklärt werden.
+
+Der Kern ist die Ökonomie dahinter: die Rohdateien wanderten vorher bei *jedem*
+Chat-Zug erneut in den Systemprompt, damit das Modell den Stack jedes Mal aufs
+Neue ableitet. Jetzt passiert das einmal, und was mitreist, ist ein
+2500-Zeichen-Block. Das Datei-Budget sinkt dadurch von 12000 auf 6000 Zeichen —
+unterm Strich weniger Kontext pro Zug bei mehr Wissen.
+
+- Analyse: [`src/server/brain/`](src/server/brain) (GitHub-Import, Destillation)
+- Quellensammlung: [`src/features/projects/lib/brain-sources.ts`](src/features/projects/lib/brain-sources.ts)
+- Injektion: [`src/features/projects/lib/project-context.ts`](src/features/projects/lib/project-context.ts)
+- Route: `POST/DELETE /api/projects/[id]/brain`
+- Tabelle: `project_brains` (Migration 0037), bewusst nur mit `select`-Grant —
+  geschrieben wird ausschliesslich serverseitig, sonst könnte sich jeder sein
+  „analysiertes" Ergebnis aus der Browser-Konsole schreiben.
+
+**Keine Embeddings, bewusst.** Siehe [CLAUDE.md](CLAUDE.md) für die Begründung
+und die Bedingung, unter der sich das ändern würde.
 
 ## Tech-Stack
 
@@ -27,17 +63,21 @@ cp .env.example .env.local
 
 # 3. Datenbank-Migrationen einspielen
 #    Supabase SQL-Editor oder CLI, die Dateien in supabase/migrations/ der
-#    Reihe nach (0001 → 0015).
+#    Reihe nach (0001 → 0038).
 
 # 4. Dev-Server
 npm run dev          # http://localhost:3000
 ```
 
-Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antworten
-`/api/chat` und `/api/generate` im **Stub-Modus** (die Prompt-Vorlagen werden
-unverändert zurückgegeben), der ganze Flow bleibt testbar, ohne API-Quota zu
-verbrauchen. Der Modellzugriff ist in [`src/server/llm.ts`](src/server/llm.ts)
-gekapselt (Z.ai primär, Gemini sekundär).
+Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antwortet
+`/api/chat` im **Stub-Modus** (eine Demo-Antwort), der Flow bleibt testbar, ohne
+API-Quota zu verbrauchen. Der Modellzugriff ist in
+[`src/server/llm.ts`](src/server/llm.ts) gekapselt (Z.ai primär, Gemini
+sekundär).
+
+Die Gedächtnis-Analyse hat bewusst **keinen** Stub: eine erfundene Faktenliste
+wäre schlimmer als gar keine, weil sie danach in jeden Prompt dieses Projekts
+wandert. Ohne Provider-Key sagt sie ab, auch lokal.
 
 ## Scripts
 

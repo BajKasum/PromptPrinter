@@ -520,6 +520,65 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > nirgends — reproduzierbar **auch mit gestashten Änderungen**, also
 > vorbestehende Umgebungs-Flakiness, kein Effekt dieser Arbeit.
 
+> **Projekt-Gedächtnis / AI Project Brain (2026-08-03, `d71a2d6`..`bae80c0`):**
+> Ein Projekt kann jetzt Dateien UND ein öffentliches GitHub-Repo tragen, die
+> einmal analysiert werden; danach kennt jeder Chat dieses Projekts Framework,
+> Sprache, Architektur, Datenbank, Design-System, Coding-Style und
+> Konventionen, ohne dass der Nutzer sie erklärt.
+>
+> - **Datenmodell:** eigene Tabelle `project_brains` (0037), 1:1 zum Projekt.
+>   Bewusst NICHT `projects.context` erweitert — dort steht, was der Nutzer
+>   selbst getippt hat, hier steht Abgeleitetes. Gemischt liesse sich nicht
+>   mehr unterscheiden, wer was gesagt hat, und genau daran hängt die
+>   Reihenfolge im Prompt. Grant nur `select`: geschrieben wird ausschliesslich
+>   in der Route über den Service-Role-Client, sonst könnte sich jeder sein
+>   „analysiertes" Ergebnis aus der Browser-Konsole schreiben — und der einzige
+>   Wert dieser Tabelle ist, dass die Fakten aus echten Quellen stammen.
+> - **Quellen (0038):** Datei-Allowlist von `.md/.txt/.json/.csv` auf Text-,
+>   Code-, Konfig- und Bildformate erweitert, 10 → 20 Dateien, Grössen **pro
+>   Art** (Text 200 KB, Lockfile 1 MB, Bild 2 MB) statt einer Zahl. Neue
+>   Schranke, die den Speicher wirklich bindet: 25 MB Summe pro Projekt.
+> - **GitHub ohne SSRF-Fläche:** die eingegebene URL wird NIE gefetcht, aus ihr
+>   werden nur `owner`/`repo` gezogen und gegen GitHubs Alphabet geprüft
+>   (Owner dürfen keine Punkte führen, daran scheitert `evil.com/owner/repo`);
+>   aufgerufen werden nur selbst zusammengesetzte URLs zweier fester Hosts.
+>   Nur 2 Requests gegen `api.github.com` (60/h pro IP), Dateiinhalte vom
+>   Raw-CDN, das nicht mitzählt. Optional `GITHUB_TOKEN` für 5000/h.
+> - **Multimodal in `llm.ts`** (`analyzeComplete`), damit die Hausregel „genau
+>   eine Stelle spricht mit einem Anbieter" hält. Nur Z.ai braucht ein zweites
+>   Modell (`ZAI_VISION_MODEL`, Default `glm-4.6v`), und nur wenn wirklich
+>   Screenshots dabei sind — Textanalysen bleiben auf `glm-4.5-air`.
+> - **Kosten:** Analyse zählt gegen dasselbe Monatskontingent wie ein Chat-Zug
+>   (derselbe Redis-Schlüssel, kein zweiter Zähler — die Preisseite verspricht
+>   nur eine Zahl), eigenes Stundenlimit von 5 statt 120. Live gemessen ~0,0005 $
+>   pro Analyse. **Kein Stub-Modus**, auch nicht in Entwicklung: eine erfundene
+>   Faktenliste wäre schlimmer als gar keine, weil sie danach in jeden Prompt
+>   wandert.
+> - **Injektion:** Brain-Block nach Instructions/Struktur, vor den Dateien —
+>   Nutzerangaben schlagen Ableitungen. Die gespeicherten Fakten laufen vor dem
+>   Einsetzen erneut durch das Zod-Schema (was aus der DB in einen Systemprompt
+>   wandert, wird geprüft, nicht geglaubt). **Der Kostengewinn ist der Punkt:**
+>   Datei-Budget 12000 → 6000, Brain-Block höchstens 2500, unterm Strich
+>   weniger Kontext pro Zug bei mehr Wissen. Bilder fallen aus dem Chat-Kontext
+>   ganz raus (Analysequelle, kein Chat-Kontext).
+> - **Keine Embeddings, und das ist eine Entscheidung, kein Rückstand.** Das
+>   Brain ist ein ~2 KB grosses, destilliertes Artefakt, das ohnehin bei jedem
+>   Zug vollständig mitreist — es gibt nichts zu *finden*, also nichts
+>   abzurufen. Die Rohquellen sind auf 20 Dateien plus 14 Repo-Dateien
+>   gedeckelt und werden zum Analysezeitpunkt einmal gelesen, nicht pro Zug
+>   durchsucht. pgvector würde eine Extension, einen Embedding-Anbieter (keiner
+>   der vier verdrahteten Provider ist dafür angebunden), eine Chunking-
+>   Pipeline und Retrieval-Latenz pro Zug kosten — für ein Korpus, das
+>   vollständig ins Budget passt. **Erst dann neu bewerten,** wenn ein Projekt
+>   Quellen tragen soll, die *nicht* mehr komplett destillierbar sind (ganze
+>   Codebasen statt Manifeste, oder Chat-Verläufe als durchsuchbares Archiv).
+> - **Beim Dogfooding gefunden:** der erste echte Lauf gegen dieses Repo
+>   verbrannte 5 von 14 Repo-Datei-Plätzen auf verschachtelte `README.md` unter
+>   `.claude/skills` (`bae80c0`, jetzt höchstens 2 pro Dateiname, flachere
+>   Pfade zuerst) — und die Analyse beschrieb das Produkt korrekt so, wie die
+>   README es beschrieb, nämlich als die am 17.07. entfernte
+>   Generierungs-Pipeline. Die README ist entsprechend korrigiert.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -629,6 +688,7 @@ src/shell/     App-Rahmen (Sidebar, Mobile-Nav, Command-Palette). Darf
                Features mounten — Features dürfen einander NICHT kennen.
 src/server/    Nie im Browser, jede Datei mit `import "server-only"`.
                security/ (crypto, csp, rate-limit, turnstile, url-safety),
+               brain/ (github.ts, analyze.ts — Projekt-Gedaechtnis),
                http/, supabase/, llm.ts, env.ts, byok.ts, project.ts
 src/shared/    Von überall nutzbar, kennt niemanden über sich:
                ui/ brand/ motion/ providers/ lib/ supabase/
@@ -640,6 +700,13 @@ supabase/migrations/  SQL, Schema, RLS, Grants, gehärtete Funktionen (0001→)
 (+ `server-only`). React-Hook → `…/hooks/` (+ `client-only`). Gehört sie zu
 genau einem Feature → `src/features/<f>/`. Brauchen sie zwei Features →
 `src/shared/`. Test immer als `<name>.test.ts(x)` **daneben**.
+
+Braucht ein Modul sowohl ein Feature ALS AUCH `src/server/`, gehört es ins
+Feature, nicht nach `server/`: die Richtung `features/ → server/` ist erlaubt,
+die Gegenrichtung nicht. `brain-sources.ts` ist der Fall — es kennt die
+Projektdateien und den GitHub-Import, deshalb liegt es in
+`features/projects/lib/`, und `server/brain/analyze.ts` bekommt fertige Daten
+übergeben statt selbst zu laden.
 
 Die Schichtgrenzen erzwingt [tests/guards/layer-boundaries.test.ts](tests/guards/layer-boundaries.test.ts),
 nicht ESLint: `no-restricted-imports` mit `patterns` läuft über minimatch, und
