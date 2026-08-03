@@ -1,5 +1,3 @@
-import { Navbar } from "@/features/marketing/components/navbar";
-import { Footer } from "@/features/marketing/components/footer";
 import { PricingGrid } from "@/features/marketing/components/pricing-grid";
 import { PageHeader } from "@/features/marketing/components/page-header";
 import { FAQ } from "@/features/marketing/components/faq";
@@ -17,8 +15,7 @@ export const metadata = {
 // before you'd even scrolled past it.
 export default function PricingPage() {
   return (
-    <main>
-      <Navbar />
+    <>
 
       {/* Headline only. The greeting Finn and the subline that used to sit here
           are gone (see page-header.tsx): the difference between the two plans is
@@ -38,7 +35,6 @@ export default function PricingPage() {
       </section>
 
       <FAQ />
-      <Footer />
-    </main>
+    </>
   );
 }

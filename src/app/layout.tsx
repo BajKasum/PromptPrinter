@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
+import { siteUrl } from "@/shared/lib/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,8 +17,24 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+// Aus derselben Quelle wie Sitemap und Auth-Redirects, statt hier ein zweites
+// Mal die Domain zu behaupten. `https://promptprinter.app` stand hier hart
+// verdrahtet, obwohl genau diese Adresse noch niemandem gehört (die
+// Hosting-Entscheidung steht aus, siehe legal.ts' appHost) — der Sitemap ist
+// das schon abgewöhnt worden (Security-Audit L-6), diesem Modul nicht.
+//
+// metadataBase ist der Bezugspunkt, gegen den Next JEDE relative URL in den
+// Metadaten auflöst, allen voran das OG-Bild. Solange er falsch war, zeigte
+// jede geteilte Vorschau — WhatsApp, Slack, LinkedIn — auf eine fremde
+// Domain: kein Bild, und im schlechtesten Fall das Bild von jemand anderem.
+const BASE_URL = siteUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://promptprinter.app"),
+  metadataBase: new URL(BASE_URL),
+  // Ohne Canonical konkurrieren erreichbare Varianten derselben Seite
+  // (Vercel-Preview-Domain, spätere eigene Domain, ?utm_-Parameter) im Index
+  // miteinander. Pro Seite überschreibbar, hier die Wurzel als Standard.
+  alternates: { canonical: "/" },
   title: {
     default: "PromptPrinter, Aus rohen Ideen build-fertige Prompts",
     template: "%s · PromptPrinter",
@@ -37,7 +54,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "PromptPrinter",
     description: "Aus rohen Ideen build-fertige Prompts.",
-    url: "https://promptprinter.app",
+    url: BASE_URL,
     siteName: "PromptPrinter",
     type: "website",
   },

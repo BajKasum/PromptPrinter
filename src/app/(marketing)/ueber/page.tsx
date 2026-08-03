@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Navbar } from "@/features/marketing/components/navbar";
-import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
@@ -35,8 +33,7 @@ const PROMISES = [
 
 export default function UeberPage() {
   return (
-    <main>
-      <Navbar />
+    <>
 
       <section
         id="main-content"
@@ -158,7 +155,6 @@ export default function UeberPage() {
         </FadeIn>
       </section>
 
-      <Footer />
-    </main>
+    </>
   );
 }

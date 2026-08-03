@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { okWrite, failedWrite } from "@tests/support/supabase-query";
+import { okWrite } from "@tests/support/supabase-query";
 import { LibraryBrowser, type LibraryItem } from "./library-browser";
 
 const refresh = vi.fn();

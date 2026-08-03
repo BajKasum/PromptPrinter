@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Navbar } from "@/features/marketing/components/navbar";
-import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { DOCS_GROUPS, DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
@@ -19,8 +17,7 @@ export default function DocsIndexPage() {
   let step = 0;
 
   return (
-    <main>
-      <Navbar />
+    <>
 
       <section
         id="main-content"
@@ -105,8 +102,6 @@ export default function DocsIndexPage() {
           </FadeIn>
         </div>
       </section>
-
-      <Footer />
-    </main>
+    </>
   );
 }

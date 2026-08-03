@@ -1,12 +1,10 @@
 import { FinnAtmosphere } from "@/features/marketing/components/finn-atmosphere";
-import { Navbar } from "@/features/marketing/components/navbar";
 import { Hero } from "@/features/marketing/components/hero";
 import { HowItWorks } from "@/features/marketing/components/how-it-works";
 import { ProductShowcase } from "@/features/marketing/components/product-showcase";
 import { PricingBridge } from "@/features/marketing/components/pricing-bridge";
 import { FAQ } from "@/features/marketing/components/faq";
 import { FinalCTA } from "@/features/marketing/components/final-cta";
-import { Footer } from "@/features/marketing/components/footer";
 //
 // The public site is two pages: this one and /pricing.
 //
@@ -32,16 +30,14 @@ import { Footer } from "@/features/marketing/components/footer";
 // reject. Component deleted (unused, restorable from git history).
 export default function HomePage() {
   return (
-    <main className="relative">
+    <>
       <FinnAtmosphere />
-      <Navbar />
       <Hero />
       <HowItWorks />
       <ProductShowcase />
       <PricingBridge />
       <FAQ />
       <FinalCTA />
-      <Footer />
-    </main>
+    </>
   );
 }

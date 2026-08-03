@@ -14,6 +14,26 @@ export const alt = "PromptPrinter, Aus rohen Ideen build-fertige Prompts";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+/**
+ * Der Hostname unten rechts auf der Karte.
+ *
+ * Stand als Literal `promptprinter.app` im Markup — einer Domain, die diesem
+ * Projekt (noch) nicht gehört. Anders als ein falscher Link im HTML fällt das
+ * niemandem im Code auf: es ist in ein PNG gerendert, das nur außerhalb der
+ * App zu sehen ist, in jeder geteilten Vorschau.
+ *
+ * NEXT_PUBLIC_APP_URL ist in Produktion Pflicht (env.ts' Boot-Check), lokal
+ * bleibt der localhost-Fallback aus siteUrl() stehen — dort schaut ohnehin
+ * niemand auf die Karte. Kein Import von siteUrl(): diese Route läuft auf der
+ * Edge-Runtime, und die eine Zeile hier ist billiger als ein Modul mit
+ * window-Zweig in den Edge-Bundle zu ziehen.
+ */
+function displayHost(): string {
+  const raw = process.env.NEXT_PUBLIC_APP_URL;
+  if (!raw) return "localhost:3000";
+  return raw.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+}
+
 export default function OpengraphImage() {
   return new ImageResponse(
     (
@@ -72,7 +92,7 @@ export default function OpengraphImage() {
           }}
         >
           <div style={{ display: "flex", color: "white", fontWeight: 600 }}>PromptPrinter</div>
-          <div style={{ display: "flex" }}>promptprinter.app</div>
+          <div style={{ display: "flex" }}>{displayHost()}</div>
         </div>
       </div>
     ),

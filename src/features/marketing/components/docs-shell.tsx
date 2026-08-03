@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Navbar } from "@/features/marketing/components/navbar";
-import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 import {
   DOCS_GROUPS,
@@ -77,8 +75,7 @@ export function DocsShell({
   const step = slug ? docStep(slug) : 0;
 
   return (
-    <main>
-      <Navbar />
+    <>
       <div className="container-x pt-28 md:pt-36 pb-24">
         <div className="flex flex-col gap-10 lg:flex-row lg:gap-14">
           {/* Desktop sidebar: sticky, clears the floating navbar pill. */}
@@ -176,7 +173,6 @@ export function DocsShell({
           </article>
         </div>
       </div>
-      <Footer />
-    </main>
+    </>
   );
 }

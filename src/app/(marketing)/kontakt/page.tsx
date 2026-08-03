@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Bug, HelpCircle, Lightbulb, ShieldCheck } from "lucide-react";
-import { Navbar } from "@/features/marketing/components/navbar";
-import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { LEGAL } from "@/shared/lib/legal";
@@ -46,8 +44,7 @@ const TOPICS = [
 
 export default function KontaktPage() {
   return (
-    <main>
-      <Navbar />
+    <>
 
       <section
         id="main-content"
@@ -173,7 +170,6 @@ export default function KontaktPage() {
         </FadeIn>
       </section>
 
-      <Footer />
-    </main>
+    </>
   );
 }

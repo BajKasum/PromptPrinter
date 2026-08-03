@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import { Navbar } from "@/features/marketing/components/navbar";
-import { Footer } from "@/features/marketing/components/footer";
 import { FadeIn } from "@/shared/motion/fade-in";
 
 // Shared chrome + typography for the legal pages (Impressum, Datenschutz, AGB)
@@ -19,8 +17,7 @@ export function LegalShell({
   children: ReactNode;
 }) {
   return (
-    <main>
-      <Navbar />
+    <>
       {/* Skip-link target: the navbar lives inside <main> here, so the anchor
           sits on the first content section instead. */}
       <section
@@ -50,7 +47,6 @@ export function LegalShell({
           </div>
         </FadeIn>
       </section>
-      <Footer />
-    </main>
+    </>
   );
 }
