@@ -8,4 +8,18 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { assertEnv } = await import("@/server/env");
   assertEnv();
+
+  // Hängt den Webhook-Versand an die Logging-Naht (observability.ts).
+  //
+  // Das passiert hier statt per Top-Level-Import in observability.ts, weil
+  // dieses Modul isomorph ist: (app)/error.tsx meldet Client-Abstürze durch
+  // dieselbe Funktion. Ein statischer Import zog @upstash/redis in einen
+  // 71,7-KB-Client-Chunk für Code, der ohne Server-Env ohnehin nichts tut.
+  // Registriert wird deshalb nur dort, wo der Sink auch feuern kann — auf dem
+  // Node-Server, einmal pro Start (bzw. pro Cold Start).
+  const [{ registerAlertSink }, { dispatchAlert }] = await Promise.all([
+    import("@/shared/lib/observability"),
+    import("@/server/observability/alerting"),
+  ]);
+  registerAlertSink((level, event, context) => void dispatchAlert(level, event, context));
 }

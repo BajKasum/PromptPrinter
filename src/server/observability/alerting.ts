@@ -1,3 +1,5 @@
+import "server-only";
+
 import { Redis } from "@upstash/redis";
 
 // Delivery for the events that should wake someone up (Security-Audit finding

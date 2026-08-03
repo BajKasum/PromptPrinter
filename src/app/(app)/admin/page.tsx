@@ -6,7 +6,7 @@ import { UsageMeter } from "@/features/settings/components/usage-meter";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { readDailyServerKeyUsage } from "@/server/security/rate-limit";
-import { alertingConfigured } from "@/shared/lib/alerting";
+import { alertingConfigured } from "@/server/observability/alerting";
 import { llmConfig } from "@/server/llm";
 
 export const dynamic = "force-dynamic";

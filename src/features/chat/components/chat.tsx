@@ -131,6 +131,25 @@ export function Chat({
   // The in-flight request's controller, so stop() (below) can abort it.
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Abort the turn when the chat unmounts — navigating to another chat, into
+  // a project, or out of the app entirely.
+  //
+  // stop() was the only thing that ever aborted, i.e. only a deliberate click.
+  // Leaving mid-reply left the fetch running: the provider kept generating
+  // tokens for a UI that no longer existed, and those tokens are billed. On
+  // the server's own key that is spend for output nobody will ever read,
+  // which is precisely the thing this product sells the opposite of. The
+  // stream loop also kept calling setPending on a dead component, holding its
+  // whole closure — transcript, refs, detached DOM — alive until the model
+  // finished on its own.
+  //
+  // The abort lands in send()'s AbortError branch, whose setState calls are
+  // no-ops after unmount. The route persists whatever text had streamed so
+  // far, so a turn cut short this way still shows up in the reloaded chat.
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, []);
+
   // Busy covers both halves of a turn: the request itself, and the stretch
   // afterwards where the text is still being written out. The composer stays
   // in "stop" mode for both, so a reply can't be interrupted by a new one

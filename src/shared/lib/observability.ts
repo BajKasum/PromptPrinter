@@ -26,7 +26,30 @@
 // said". redactContext below enforces that on the way through, so a careless
 // call site can't leak it either.
 
-import { dispatchAlert } from "@/shared/lib/alerting";
+// ── Alert-Sink ───────────────────────────────────────────────────────────
+//
+// Dieses Modul ist isomorph: (app)/error.tsx meldet Client-Abstürze durch
+// dieselbe Naht wie jede Server-Route, damit Redaktion und Struktur nur an
+// einer Stelle definiert sind. Der Webhook-Versand darf aber NICHT mitkommen
+// — er braucht Upstash Redis (Mute-Fenster) und ALERT_WEBHOOK_URL, beides im
+// Browser sinnlos. Bis hier ein statischer Import stand, zog genau das
+// @upstash/redis in einen 71,7-KB-Client-Chunk, den jeder Besucher der
+// eingeloggten App lud, damit dort eine Funktion existiert, die mangels
+// Server-Env garantiert nichts tut.
+//
+// Statt den Seam zu zerschlagen wird der Sink registriert: instrumentation.ts
+// hängt ihn beim Serverstart ein (nur Node-Runtime), der Browser registriert
+// nie und bekommt einen No-op. captureError bleibt damit der eine Ort, an dem
+// ein Fehler die Anwendung verlässt — genau wie zuvor.
+type AlertLevel = "error" | "warning";
+type AlertSink = (level: AlertLevel, event: string, context: LogContext) => void;
+
+let alertSink: AlertSink | null = null;
+
+/** Vom Server beim Boot aufgerufen (instrumentation.ts). Nie vom Client. */
+export function registerAlertSink(sink: AlertSink): void {
+  alertSink = sink;
+}
 
 /**
  * Words whose presence in a key name means the value is never safe to log.
@@ -170,7 +193,7 @@ export function logEvent(event: string, context: LogContext = {}): void {
  */
 export function logWarning(event: string, context: LogContext = {}): void {
   const safe = emit("warn", event, context);
-  void dispatchAlert("warning", event, safe);
+  alertSink?.("warning", event, safe);
 }
 
 /**
@@ -196,6 +219,9 @@ export function captureError(event: string, error: unknown, context: LogContext 
     // Stack frames are file paths and function names, never user data.
     stack: error instanceof Error ? error.stack?.split("\n").slice(0, 5).join(" | ") : undefined,
   });
-  // Not awaited: callers are on request paths and alerting is best-effort.
-  void dispatchAlert("error", event, safe);
+  // Kein await: Aufrufer hängen an Request-Pfaden, Alerting ist best-effort.
+  // Im Browser ist der Sink nie registriert, dort endet der Fehler in der
+  // strukturierten Konsolenzeile oben — wie vorher, nur ohne den Redis-Client
+  // im Bundle.
+  alertSink?.("error", event, safe);
 }

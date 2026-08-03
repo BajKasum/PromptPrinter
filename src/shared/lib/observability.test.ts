@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { captureError, logEvent, logWarning, redactContext } from "@/shared/lib/observability";
+import {
+  captureError,
+  logEvent,
+  logWarning,
+  redactContext,
+  registerAlertSink,
+} from "@/shared/lib/observability";
 
 // QA finding C-7. The privacy half matters as much as the telemetry half: the
 // moment a log drain is configured, everything these functions emit leaves the
@@ -137,5 +143,39 @@ describe("captureError", () => {
 
     const parsed = JSON.parse(error.mock.calls[0][0] as string);
     expect(parsed).toMatchObject({ error: "irgendwas", errorType: "string" });
+  });
+});
+
+describe("Alert-Sink", () => {
+  // Der Sink wird beim Serverstart registriert (instrumentation.ts) und ist im
+  // Browser absichtlich nie gesetzt: sein Versand braucht Upstash Redis und
+  // ALERT_WEBHOOK_URL. Ohne diese Trennung landete @upstash/redis im
+  // Client-Build, weil (app)/error.tsx dieselbe captureError-Naht benutzt.
+  afterEach(() => registerAlertSink(() => {}));
+
+  it("meldet Fehler an den registrierten Sink, mit redigiertem Kontext", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const sink = vi.fn();
+    registerAlertSink(sink);
+
+    captureError("chat.turn_failed", new Error("boom"), { prompt: "geheim", userId: "u1" });
+
+    expect(sink).toHaveBeenCalledTimes(1);
+    const [level, event, context] = sink.mock.calls[0];
+    expect(level).toBe("error");
+    expect(event).toBe("chat.turn_failed");
+    expect(context.userId).toBe("u1");
+    // Der Sink bekommt dasselbe redigierte Objekt wie die Logzeile, nie das rohe.
+    expect(context.prompt).toBe("[redacted]");
+  });
+
+  it("meldet Warnungen als 'warning'", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const sink = vi.fn();
+    registerAlertSink(sink);
+
+    logWarning("ratelimit.redis_unreachable");
+
+    expect(sink).toHaveBeenCalledWith("warning", "ratelimit.redis_unreachable", expect.anything());
   });
 });
