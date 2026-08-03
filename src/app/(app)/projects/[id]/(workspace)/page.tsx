@@ -112,7 +112,7 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
           own empty state for that case. */}
       <div className="mt-4">
         <FadeIn>
-          <ChatList chats={chats} basePath={`/projects/${id}/chats`} />
+          <ChatList chats={chats} userId={userId} basePath={`/projects/${id}/chats`} />
           {hasMore && (
             <p className="mt-4 text-center text-[12.5px] text-tertiary">
               Die neuesten {LIST_LOAD_LIMIT} Chats dieses Projekts.

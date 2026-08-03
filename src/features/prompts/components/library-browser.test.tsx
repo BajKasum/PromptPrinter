@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { okWrite, failedWrite } from "@tests/support/supabase-query";
 import { LibraryBrowser, type LibraryItem } from "./library-browser";
 
 const refresh = vi.fn();
@@ -36,18 +37,18 @@ describe("LibraryBrowser pagination", () => {
   beforeEach(() => {
     refresh.mockReset();
     update.mockReset();
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    update.mockReturnValue(okWrite());
   });
 
   it("renders every item when there are fewer than one page", () => {
-    render(<LibraryBrowser items={makeItems(5)} />);
+    render(<LibraryBrowser userId="u1" items={makeItems(5)} />);
     expect(screen.getByText("Projekt 0")).toBeInTheDocument();
     expect(screen.getByText("Projekt 4")).toBeInTheDocument();
     expect(screen.queryByText(/mehr laden/)).not.toBeInTheDocument();
   });
 
   it("caps the initial render at one page and offers to load more", () => {
-    render(<LibraryBrowser items={makeItems(30)} />);
+    render(<LibraryBrowser userId="u1" items={makeItems(30)} />);
     expect(screen.getByText("Projekt 0")).toBeInTheDocument();
     expect(screen.queryByText("Projekt 24")).not.toBeInTheDocument();
     expect(screen.getByText("24 von 30, mehr laden")).toBeInTheDocument();
@@ -55,7 +56,7 @@ describe("LibraryBrowser pagination", () => {
 
   it("reveals the next page on click and hides the button once exhausted", async () => {
     const user = userEvent.setup();
-    render(<LibraryBrowser items={makeItems(30)} />);
+    render(<LibraryBrowser userId="u1" items={makeItems(30)} />);
     await user.click(screen.getByText("24 von 30, mehr laden"));
 
     expect(screen.getByText("Projekt 24")).toBeInTheDocument();
@@ -65,7 +66,7 @@ describe("LibraryBrowser pagination", () => {
 
   it("resets back to the first page when the search query changes", async () => {
     const user = userEvent.setup();
-    render(<LibraryBrowser items={makeItems(30)} />);
+    render(<LibraryBrowser userId="u1" items={makeItems(30)} />);
     await user.click(screen.getByText("24 von 30, mehr laden"));
     expect(screen.getByText("Projekt 24")).toBeInTheDocument();
 
@@ -81,7 +82,7 @@ describe("LibraryBrowser pagination", () => {
     const items = makeItems(30);
     items[0].isFavorite = true;
     const user = userEvent.setup();
-    render(<LibraryBrowser items={items} />);
+    render(<LibraryBrowser userId="u1" items={items} />);
     await user.click(screen.getByText("24 von 30, mehr laden"));
     expect(screen.getByText("Projekt 24")).toBeInTheDocument();
 

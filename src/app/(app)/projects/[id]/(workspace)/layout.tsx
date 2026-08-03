@@ -137,6 +137,7 @@ export default async function ProjectWorkspaceLayout({
         <FadeIn>
           <ProjectRail
             projectId={project.id}
+            userId={project.userId}
             initialInstructions={project.instructions}
             initialContext={project.context}
             files={files}

@@ -51,8 +51,14 @@ export function DeleteProjectButton({
       await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
     }
 
-    // RLS scopes this to the owner; generations, chats and project_files rows cascade away.
-    const { error } = await supabase.from("projects").delete().eq("id", projectId);
+    // Explizites user_id neben RLS, wie ueberall sonst (CLAUDE.mds
+    // Defense-in-depth-Standard): `user` liegt hier ohnehin schon vor, es
+    // kostet also nichts. generations, chats und project_files kaskadieren weg.
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", projectId)
+      .eq("user_id", user.id);
     if (error) {
       setDeleting(false);
       toast({

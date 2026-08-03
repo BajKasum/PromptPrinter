@@ -11,7 +11,7 @@ import type { LibraryItem } from "@/features/prompts/hooks/use-library-filter";
 // Split out of library-browser.tsx: the favorites mutation (optimistic flip,
 // Supabase write, rollback on failure, toast, sidebar refresh) is its own
 // concern, independent from search/filter and from how a card renders.
-export function useLibraryFavorites(items: LibraryItem[]) {
+export function useLibraryFavorites(items: LibraryItem[], userId: string) {
   const router = useRouter();
   const { toast } = useToast();
   const [favorites, setFavorites] = useState<Set<string>>(
@@ -31,7 +31,8 @@ export function useLibraryFavorites(items: LibraryItem[]) {
     const { error } = await supabase
       .from("projects")
       .update({ is_favorite: next })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", userId);
     if (error) {
       // Revert on failure so the UI never lies about persisted state.
       setFavorites((prev) => {

@@ -20,9 +20,12 @@ import type { SavedPrompt } from "@/shared/lib/saved-prompts";
 // library, "sessionStartPrompt" only means something if you chose the name).
 export function SavedPromptList({
   prompts,
+  userId,
   canExportPdf,
 }: {
   prompts: SavedPrompt[];
+  /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). */
+  userId: string;
   canExportPdf: boolean;
 }) {
   const [items, setItems] = useState(prompts);
@@ -73,6 +76,7 @@ export function SavedPromptList({
         <SavedPromptCard
           key={p.id}
           prompt={p}
+          userId={userId}
           canExportPdf={canExportPdf}
           onDelete={() => removeAt(p.id)}
           onRename={(title) => renameTo(p.id, title)}
@@ -84,11 +88,13 @@ export function SavedPromptList({
 
 function SavedPromptCard({
   prompt,
+  userId,
   canExportPdf,
   onDelete,
   onRename,
 }: {
   prompt: SavedPrompt;
+  userId: string;
   canExportPdf: boolean;
   /** Applies the removal immediately and returns the undo for a failed write. */
   onDelete: () => () => void;
@@ -139,7 +145,8 @@ function SavedPromptCard({
           ...(prompt.target ? { target: prompt.target } : {}),
         },
       })
-      .eq("id", prompt.id);
+      .eq("id", prompt.id)
+      .eq("user_id", userId);
     if (error) {
       // Roll the title back, but reopen the editor holding what the user
       // actually typed. Closing it and dropping their text would make a failed
@@ -162,7 +169,11 @@ function SavedPromptCard({
   async function remove() {
     const undo = onDelete();
     const supabase = createClient();
-    const { error } = await supabase.from("generations").delete().eq("id", prompt.id);
+    const { error } = await supabase
+      .from("generations")
+      .delete()
+      .eq("id", prompt.id)
+      .eq("user_id", userId);
     if (error) {
       undo();
       toast({

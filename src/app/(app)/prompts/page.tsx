@@ -99,7 +99,7 @@ export default async function SavedPromptsPage() {
       </FadeIn>
 
       <FadeIn delay={0.06}>
-        <SavedPromptList prompts={prompts} canExportPdf={canExportPdf} />
+        <SavedPromptList prompts={prompts} userId={user.id} canExportPdf={canExportPdf} />
       </FadeIn>
     </div>
   );

@@ -41,7 +41,16 @@ vi.mock("@/shared/supabase/client", () => ({
         return chain;
       },
       insert: filesInsert,
-      delete: () => ({ eq: filesDelete }),
+      // Wie beim select oben: das Löschen filtert inzwischen auf id UND
+      // user_id, also muss auch diese Kette das zweite .eq() überleben.
+      // filesDelete bleibt der Spion, der das Ergebnis liefert.
+      delete: () => {
+        const chain = {
+          eq: () => chain,
+          then: (resolve: (v: unknown) => unknown) => resolve(filesDelete()),
+        };
+        return chain;
+      },
     }),
   }),
 }));
@@ -78,12 +87,12 @@ describe("ProjectFiles", () => {
   });
 
   it("shows the current file count against the limit", () => {
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     expect(screen.getByText("0/10")).toBeInTheDocument();
   });
 
   it("shows the format/size tip when there are no files yet", () => {
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     expect(screen.getByText(/token-effizient/)).toBeInTheDocument();
   });
 
@@ -91,6 +100,7 @@ describe("ProjectFiles", () => {
     render(
       <ProjectFiles
         projectId="p1"
+        userId="u1"
         initialFiles={[
           {
             id: "f1",
@@ -106,14 +116,14 @@ describe("ProjectFiles", () => {
   });
 
   it("rejects a disallowed extension without calling Supabase", async () => {
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("script.exe", 100));
     expect(await screen.findByText(/Nur \.md, \.txt, \.json, \.csv/)).toBeInTheDocument();
     expect(storageUpload).not.toHaveBeenCalled();
   });
 
   it("rejects a file over the size limit without calling Supabase", async () => {
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 300 * 1024));
     expect(await screen.findByText(/Höchstens 200 KB pro Datei/)).toBeInTheDocument();
     expect(storageUpload).not.toHaveBeenCalled();
@@ -127,12 +137,12 @@ describe("ProjectFiles", () => {
       sizeBytes: 10,
       createdAt: new Date().toISOString(),
     }));
-    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
     expect(screen.getByRole("button", { name: /Limit erreicht/ })).toBeDisabled();
   });
 
   it("uploads a valid file and lists it", async () => {
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
     expect(await screen.findByText("notes.md")).toBeInTheDocument();
@@ -150,7 +160,7 @@ describe("ProjectFiles", () => {
 
   it("rolls back the storage object when the DB insert fails", async () => {
     filesInsert.mockResolvedValue({ error: { message: "db down" } });
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
     expect(await screen.findByText(/Upload fehlgeschlagen/)).toBeInTheDocument();
@@ -164,7 +174,7 @@ describe("ProjectFiles", () => {
   // trigger (migration 0022) alone would.
   it("refuses to upload when a fresh server-side count already shows the limit reached", async () => {
     filesCount.mockResolvedValue({ count: 10, error: null });
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
     expect(await screen.findByText(/Höchstens 10 Dateien pro Projekt/)).toBeInTheDocument();
@@ -178,7 +188,7 @@ describe("ProjectFiles", () => {
   // the raw Postgres error (same principle as U-4).
   it("shows the limit message when the DB trigger rejects the insert", async () => {
     filesInsert.mockResolvedValue({ error: { message: "Projekt-Dateilimit erreicht (10)" } });
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
     expect(await screen.findByText("Höchstens 10 Dateien pro Projekt.")).toBeInTheDocument();
@@ -186,7 +196,7 @@ describe("ProjectFiles", () => {
 
   it("shows the file-type message when the DB trigger rejects the insert", async () => {
     filesInsert.mockResolvedValue({ error: { message: "Dateityp nicht erlaubt" } });
-    render(<ProjectFiles projectId="p1" initialFiles={[]} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
     expect(await screen.findByText(/Nur \.md, \.txt, \.json, \.csv/)).toBeInTheDocument();
@@ -204,7 +214,7 @@ describe("ProjectFiles", () => {
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
     ];
-    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
@@ -218,7 +228,7 @@ describe("ProjectFiles", () => {
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
     ];
-    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "notes.md löschen" }));
@@ -234,7 +244,7 @@ describe("ProjectFiles", () => {
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
     ];
-    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
     await deleteViaDialog(user, "notes.md");
@@ -254,7 +264,7 @@ describe("ProjectFiles", () => {
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "user-1/p1/f1-notes.md", sizeBytes: 42, createdAt: new Date().toISOString() },
     ];
-    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
     await deleteViaDialog(user, "notes.md");
@@ -270,7 +280,7 @@ describe("ProjectFiles", () => {
     const initialFiles: ProjectFile[] = [
       { id: "f1", name: "notes.md", storagePath: "path", sizeBytes: 42, createdAt: new Date().toISOString() },
     ];
-    render(<ProjectFiles projectId="p1" initialFiles={initialFiles} />);
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
 
     const user = userEvent.setup();
     await deleteViaDialog(user, "notes.md");

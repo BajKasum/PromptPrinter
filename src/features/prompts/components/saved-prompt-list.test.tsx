@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { okWrite, failedWrite } from "@tests/support/supabase-query";
 import { SavedPromptList } from "./saved-prompt-list";
 import type { SavedPrompt } from "@/shared/lib/saved-prompts";
 
@@ -39,8 +40,8 @@ describe("SavedPromptList", () => {
     update.mockReset();
     del.mockReset();
     writeText.mockClear();
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
-    del.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    update.mockReturnValue(okWrite());
+    del.mockReturnValue(okWrite());
     // Deliberately not defining navigator.clipboard here: user-event's
     // clipboard interception is wired up at setup() time, so it must run
     // before navigator.clipboard is ever (re)defined, or its click
@@ -49,19 +50,19 @@ describe("SavedPromptList", () => {
   });
 
   it("renders the prompt title, content and target", () => {
-    render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
     expect(screen.getByText("Alter Name")).toBeInTheDocument();
     expect(screen.getByText("Du bist ein hilfreicher Assistent.")).toBeInTheDocument();
     expect(screen.getByText("Für Cursor")).toBeInTheDocument();
   });
 
   it("hides the PDF export button on Free", () => {
-    render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
     expect(screen.queryByRole("button", { name: "Als PDF exportieren" })).not.toBeInTheDocument();
   });
 
   it("shows the PDF export button on Pro/Team", () => {
-    render(<SavedPromptList prompts={[prompt]} canExportPdf />);
+    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf />);
     expect(screen.getByRole("button", { name: "Als PDF exportieren" })).toBeInTheDocument();
   });
 
@@ -71,7 +72,7 @@ describe("SavedPromptList", () => {
     // own click simulation never reaches this test's writeText mock.
     const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
     await user.click(screen.getByRole("button", { name: /Kopieren/ }));
     expect(writeText).toHaveBeenCalledWith(prompt.content);
   });
@@ -80,10 +81,10 @@ describe("SavedPromptList", () => {
   // ("sessionStartPrompt"), so a saved prompt must be renameable.
   describe("renaming", () => {
     it("renames the prompt, reconstructing the outputs JSONB, and refreshes", async () => {
-      const eq = vi.fn().mockResolvedValue({ error: null });
-      update.mockReturnValue({ eq });
+      const chain = okWrite();
+      update.mockReturnValue(chain);
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       const input = screen.getByLabelText("Neuer Name für den Prompt");
@@ -93,7 +94,7 @@ describe("SavedPromptList", () => {
       expect(update).toHaveBeenCalledWith({
         outputs: { prompt: prompt.content, title: "sessionStartPrompt", target: "Cursor" },
       });
-      expect(eq).toHaveBeenCalledWith("id", "p1");
+      expect(chain.eq).toHaveBeenCalledWith("id", "p1");
       expect(refresh).toHaveBeenCalled();
       // The list re-renders with the new title from local state, without
       // waiting on the server refresh to reflect it.
@@ -101,11 +102,11 @@ describe("SavedPromptList", () => {
     });
 
     it("omits target from the reconstructed outputs when the prompt has none", async () => {
-      const eq = vi.fn().mockResolvedValue({ error: null });
-      update.mockReturnValue({ eq });
+      const chain = okWrite();
+      update.mockReturnValue(chain);
       const untargeted: SavedPrompt = { ...prompt, target: null };
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[untargeted]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[untargeted]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.type(screen.getByLabelText("Neuer Name für den Prompt"), " v2{Enter}");
@@ -117,7 +118,7 @@ describe("SavedPromptList", () => {
 
     it("cancels on Escape without calling Supabase", async () => {
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.type(screen.getByLabelText("Neuer Name für den Prompt"), " geändert");
@@ -129,7 +130,7 @@ describe("SavedPromptList", () => {
 
     it("does not rename to an empty title", async () => {
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.clear(screen.getByLabelText("Neuer Name für den Prompt"));
@@ -140,9 +141,9 @@ describe("SavedPromptList", () => {
     });
 
     it("shows a toast and stays in rename mode when the update fails", async () => {
-      update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: { message: "fail" } }) });
+      update.mockReturnValue(failedWrite());
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.type(screen.getByLabelText("Neuer Name für den Prompt"), " v2{Enter}");
@@ -154,23 +155,23 @@ describe("SavedPromptList", () => {
 
   describe("deleting", () => {
     it("deletes the prompt and shows a success toast", async () => {
-      const eq = vi.fn().mockResolvedValue({ error: null });
-      del.mockReturnValue({ eq });
+      const chain = okWrite();
+      del.mockReturnValue(chain);
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
 
-      expect(eq).toHaveBeenCalledWith("id", "p1");
+      expect(chain.eq).toHaveBeenCalledWith("id", "p1");
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "success" }));
       expect(refresh).toHaveBeenCalled();
       expect(screen.queryByText("Alter Name")).not.toBeInTheDocument();
     });
 
     it("shows an error toast and keeps the prompt listed when delete fails", async () => {
-      del.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: { message: "fail" } }) });
+      del.mockReturnValue(failedWrite());
       const user = userEvent.setup();
-      render(<SavedPromptList prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
 

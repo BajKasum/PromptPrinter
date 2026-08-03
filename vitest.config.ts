@@ -22,6 +22,9 @@ import path from "node:path";
 // build is already the empty one.
 const alias = {
   "@": path.resolve(process.cwd(), "src"),
+  // Test-Helfer liegen unter tests/, nicht in src/ — Testcode gehoert nicht
+  // in den Produktivbaum (und damit auch nicht in dessen Schichtpruefung).
+  "@tests": path.resolve(process.cwd(), "tests"),
   "server-only": path.resolve(process.cwd(), "node_modules/server-only/empty.js"),
 };
 const setupFiles = ["./vitest.setup.ts"];

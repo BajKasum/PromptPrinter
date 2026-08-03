@@ -24,9 +24,12 @@ import { formatBytes, randomId } from "@/shared/lib/utils";
 
 export function ProjectFiles({
   projectId,
+  userId,
   initialFiles,
 }: {
   projectId: string;
+  /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). */
+  userId: string;
   initialFiles: ProjectFile[];
 }) {
   const router = useRouter();
@@ -183,7 +186,8 @@ export function ProjectFiles({
       const { error: deleteError } = await supabase
         .from("project_files")
         .delete()
-        .eq("id", f.id);
+        .eq("id", f.id)
+        .eq("user_id", userId);
       if (deleteError) throw deleteError;
       // Best-effort: the row is already gone, so a failure here can only ever
       // leave the harmless kind of orphan, not the visible one above.

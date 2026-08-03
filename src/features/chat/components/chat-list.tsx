@@ -26,16 +26,20 @@ export type ChatListItem = {
 
 export function ChatList({
   chats,
+  userId,
   basePath = "/chats",
 }: {
   chats: ChatListItem[];
+  /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). Reicht
+   *  die aufrufende Server-Komponente durch, die den Nutzer ohnehin kennt. */
+  userId: string;
   /** Where a row links to, "/chats" (global) or "/projects/[id]/chats". */
   basePath?: string;
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       {chats.map((c) => (
-        <ChatRow key={c.id} chat={c} basePath={basePath} />
+        <ChatRow key={c.id} chat={c} userId={userId} basePath={basePath} />
       ))}
     </div>
   );
@@ -43,7 +47,15 @@ export function ChatList({
 
 type RowMode = "view" | "rename" | "confirm-delete";
 
-function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
+function ChatRow({
+  chat,
+  userId,
+  basePath,
+}: {
+  chat: ChatListItem;
+  userId: string;
+  basePath: string;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [mode, setMode] = useState<RowMode>("view");
@@ -66,7 +78,8 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
     const { error } = await supabase
       .from("conversations")
       .update({ title: next })
-      .eq("id", chat.id);
+      .eq("id", chat.id)
+      .eq("user_id", userId);
     setBusy(false);
     if (error) {
       toast({
@@ -85,7 +98,11 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
     setBusy(true);
     const supabase = createClient();
     // Messages cascade away with the conversation (FK on delete cascade).
-    const { error } = await supabase.from("conversations").delete().eq("id", chat.id);
+    const { error } = await supabase
+      .from("conversations")
+      .delete()
+      .eq("id", chat.id)
+      .eq("user_id", userId);
     setBusy(false);
     if (error) {
       toast({
@@ -185,7 +202,7 @@ function ChatRow({ chat, basePath }: { chat: ChatListItem; basePath: string }) {
         {/* Only global chats can be moved, a project chat already belongs
             to one, and moving between projects isn't a thing here. */}
         {basePath === "/chats" && (
-          <MoveToProjectButton chatId={chat.id} chatTitle={chat.title} />
+          <MoveToProjectButton chatId={chat.id} userId={userId} chatTitle={chat.title} />
         )}
         <button
           type="button"

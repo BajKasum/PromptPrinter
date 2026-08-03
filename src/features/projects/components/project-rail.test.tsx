@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { okWrite, failedWrite } from "@tests/support/supabase-query";
 import { ProjectRail } from "./project-rail";
 
 const refresh = vi.fn();
@@ -25,6 +26,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProjectRail>> = {}
   render(
     <ProjectRail
       projectId="proj-1"
+      userId="user-1"
       initialInstructions="Ausgangslage"
       initialContext={{ target: "Claude" }}
       files={[]}
@@ -40,7 +42,7 @@ describe("ProjectRail", () => {
     refresh.mockReset();
     toast.mockReset();
     update.mockReset();
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    update.mockReturnValue(okWrite());
   });
 
   it("does not persist on blur when nothing changed", async () => {
@@ -53,8 +55,8 @@ describe("ProjectRail", () => {
   });
 
   it("persists only instructions on blur when changed, Struktur is untouched", async () => {
-    const eq = vi.fn().mockResolvedValue({ error: null });
-    update.mockReturnValue({ eq });
+    const chain = okWrite();
+    update.mockReturnValue(chain);
     const user = userEvent.setup();
     setup();
 
@@ -66,14 +68,14 @@ describe("ProjectRail", () => {
     // Exact match, not objectContaining: proves the write no longer carries
     // along the unrelated context column the way the old shared persist() did.
     expect(update).toHaveBeenCalledWith({ instructions: "Ausgangslage  mehr Kontext" });
-    expect(eq).toHaveBeenCalledWith("id", "proj-1");
+    expect(chain.eq).toHaveBeenCalledWith("id", "proj-1");
     expect(await screen.findByText("Gespeichert")).toBeInTheDocument();
     expect(refresh).toHaveBeenCalled();
   });
 
   it("persists only Struktur on blur, dropping blank fields, Anweisungen is untouched", async () => {
-    const eq = vi.fn().mockResolvedValue({ error: null });
-    update.mockReturnValue({ eq });
+    const chain = okWrite();
+    update.mockReturnValue(chain);
     const user = userEvent.setup();
     setup({ initialContext: {} });
 
@@ -103,7 +105,7 @@ describe("ProjectRail", () => {
   });
 
   it("shows the Struktur save indicator independently of Anweisungen's", async () => {
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    update.mockReturnValue(okWrite());
     const user = userEvent.setup();
     setup({ initialContext: {} });
 
@@ -121,7 +123,7 @@ describe("ProjectRail", () => {
   });
 
   it("shows an error toast and indicator when persisting fails", async () => {
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: { message: "fail" } }) });
+    update.mockReturnValue(failedWrite());
     const user = userEvent.setup();
     setup();
 

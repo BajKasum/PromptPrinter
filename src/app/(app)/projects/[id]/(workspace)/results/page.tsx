@@ -122,7 +122,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       </FadeIn>
 
       <FadeIn>
-        <SavedPromptList prompts={prompts} canExportPdf={canExportPdf} />
+        <SavedPromptList prompts={prompts} userId={userId} canExportPdf={canExportPdf} />
       </FadeIn>
     </div>
   );

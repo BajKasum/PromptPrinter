@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { okWrite, failedWrite } from "@tests/support/supabase-query";
 import { MoveToProjectButton } from "./move-to-project";
 
 const refresh = vi.fn();
@@ -41,12 +42,12 @@ describe("MoveToProjectButton", () => {
         }),
       }),
     });
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+    update.mockReturnValue(okWrite());
   });
 
   it("lazy-loads the project list only when opened", async () => {
     const user = userEvent.setup();
-    render(<MoveToProjectButton chatId="chat-1" chatTitle="Mein Chat" />);
+    render(<MoveToProjectButton userId="u1" chatId="chat-1" chatTitle="Mein Chat" />);
     expect(select).not.toHaveBeenCalled();
 
     await user.click(
@@ -61,7 +62,7 @@ describe("MoveToProjectButton", () => {
       order: () => ({ limit: vi.fn().mockResolvedValue({ data: [] }) }),
     });
     const user = userEvent.setup();
-    render(<MoveToProjectButton chatId="chat-1" chatTitle="Mein Chat" />);
+    render(<MoveToProjectButton userId="u1" chatId="chat-1" chatTitle="Mein Chat" />);
     await user.click(
       screen.getByRole("button", { name: "Chat „Mein Chat“ in ein Projekt verschieben" })
     );
@@ -69,26 +70,26 @@ describe("MoveToProjectButton", () => {
   });
 
   it("moves the chat into the picked project and shows a success toast", async () => {
-    const eq = vi.fn().mockResolvedValue({ error: null });
-    update.mockReturnValue({ eq });
+    const chain = okWrite();
+    update.mockReturnValue(chain);
     const user = userEvent.setup();
-    render(<MoveToProjectButton chatId="chat-1" chatTitle="Mein Chat" />);
+    render(<MoveToProjectButton userId="u1" chatId="chat-1" chatTitle="Mein Chat" />);
     await user.click(
       screen.getByRole("button", { name: "Chat „Mein Chat“ in ein Projekt verschieben" })
     );
     await user.click(await screen.findByText("Beta"));
 
     expect(update).toHaveBeenCalledWith({ project_id: "proj-2" });
-    expect(eq).toHaveBeenCalledWith("id", "chat-1");
+    expect(chain.eq).toHaveBeenCalledWith("id", "chat-1");
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "success" }));
     expect(refresh).toHaveBeenCalled();
     expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
   });
 
   it("shows an error toast and keeps the menu open when the move fails", async () => {
-    update.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: { message: "fail" } }) });
+    update.mockReturnValue(failedWrite());
     const user = userEvent.setup();
-    render(<MoveToProjectButton chatId="chat-1" chatTitle="Mein Chat" />);
+    render(<MoveToProjectButton userId="u1" chatId="chat-1" chatTitle="Mein Chat" />);
     await user.click(
       screen.getByRole("button", { name: "Chat „Mein Chat“ in ein Projekt verschieben" })
     );

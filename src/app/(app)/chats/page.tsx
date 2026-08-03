@@ -99,7 +99,7 @@ export default async function ChatsPage() {
         </FadeIn>
       ) : (
         <FadeIn>
-          <ChatList chats={chats} />
+          <ChatList chats={chats} userId={user.id} />
           {/* Say it rather than silently showing a truncated list. There is no
               "load more" here yet — a real follow-up, same open point the
               saved-prompt cap carries. */}

@@ -16,9 +16,12 @@ type ProjectOption = { id: string; name: string };
 
 export function MoveToProjectButton({
   chatId,
+  userId,
   chatTitle,
 }: {
   chatId: string;
+  /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). */
+  userId: string;
   chatTitle: string;
 }) {
   const router = useRouter();
@@ -55,7 +58,8 @@ export function MoveToProjectButton({
     const { error } = await supabase
       .from("conversations")
       .update({ project_id: project.id })
-      .eq("id", chatId);
+      .eq("id", chatId)
+      .eq("user_id", userId);
     setMovingId(null);
     if (error) {
       toast({

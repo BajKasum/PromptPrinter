@@ -34,6 +34,7 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 
 export function ProjectRail({
   projectId,
+  userId,
   initialInstructions,
   initialContext,
   files,
@@ -41,6 +42,10 @@ export function ProjectRail({
   latestResultAt,
 }: {
   projectId: string;
+  /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). Kommt
+   *  vom Workspace-Layout, das die ID ohnehin schon hat — deshalb kostet die
+   *  Absicherung hier keinen zusaetzlichen Auth-Roundtrip. */
+  userId: string;
   initialInstructions: string | null;
   initialContext: Record<string, string>;
   files: ProjectFile[];
@@ -69,7 +74,8 @@ export function ProjectRail({
     const { error } = await supabase
       .from("projects")
       .update({ instructions: trimmed.length > 0 ? trimmed : null })
-      .eq("id", projectId);
+      .eq("id", projectId)
+      .eq("user_id", userId);
     if (error) {
       setInstructionsSaveState("error");
       toast({
@@ -100,7 +106,8 @@ export function ProjectRail({
     const { error } = await supabase
       .from("projects")
       .update({ context: cleanContext })
-      .eq("id", projectId);
+      .eq("id", projectId)
+      .eq("user_id", userId);
     if (error) {
       setContextSaveState("error");
       toast({
@@ -173,7 +180,7 @@ export function ProjectRail({
         )}
       </section>
 
-      <ProjectFiles projectId={projectId} initialFiles={files} />
+      <ProjectFiles projectId={projectId} userId={userId} initialFiles={files} />
 
       <Link
         href={`/projects/${projectId}/results`}

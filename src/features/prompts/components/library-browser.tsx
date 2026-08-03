@@ -11,8 +11,8 @@ export type { LibraryItem };
 // Orchestrator only, search/filter/pagination lives in useLibraryFilter, the
 // favorites mutation lives in useLibraryFavorites, and a single result's
 // presentation lives in LibraryCard. This component just composes them.
-export function LibraryBrowser({ items }: { items: LibraryItem[] }) {
-  const { favorites, toggleFavorite } = useLibraryFavorites(items);
+export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId: string }) {
+  const { favorites, toggleFavorite } = useLibraryFavorites(items, userId);
   const { query, setQuery, filter, setFilter, visiblePage, visibleTotal, hasMore, loadMore } =
     useLibraryFilter(items, favorites);
 

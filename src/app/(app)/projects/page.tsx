@@ -126,7 +126,7 @@ export default async function ProjectsPage() {
         </FadeIn>
       ) : (
         <FadeIn>
-          <LibraryBrowser items={items} />
+          <LibraryBrowser items={items} userId={user.id} />
           {/* LibraryBrowser's search filters what's loaded, so a truncated
               list would make its "nothing found" quietly wrong. Say it. */}
           {hasMore && (
