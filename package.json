@@ -15,7 +15,7 @@
     "is just an unexplained version pin. `npm audit` in CI is what catches that."
   ],
   "overrides": {
-    "brace-expansion": "^5.0.8",
+    "brace-expansion": "^5.0.9",
     "js-yaml": "^4.3.0",
     "postcss": "^8.5.24",
     "protobufjs": "^7.6.5",
