@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readBands, speechBands } from "@/lib/voice-engine";
 

@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto";
 
 // Encrypts user-supplied AI provider API keys (BYOK, settings) before they

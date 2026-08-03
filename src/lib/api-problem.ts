@@ -1,3 +1,5 @@
+import "server-only";
+
 import { NextResponse } from "next/server";
 
 // RFC 7807-ish error body, shared by every API route instead of each one

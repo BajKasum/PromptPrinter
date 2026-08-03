@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Rate limiter. Uses Upstash Redis when UPSTASH_REDIS_REST_URL +
  * UPSTASH_REDIS_REST_TOKEN are set, durable and shared across serverless

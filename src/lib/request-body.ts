@@ -1,3 +1,5 @@
+import "server-only";
+
 import { MAX_ASSISTANT_MESSAGE_CHARS, MAX_TRANSCRIPT_MESSAGES } from "@/lib/chat-limits";
 
 // Bounded JSON body reading for the API routes (Security-Audit finding H-3).

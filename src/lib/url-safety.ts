@@ -1,3 +1,5 @@
+import "server-only";
+
 import { promises as dns } from "node:dns";
 import { isIP } from "node:net";
 

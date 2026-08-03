@@ -1,3 +1,5 @@
+import "server-only";
+
 // Startup validation of the environment (QA finding S-2).
 //
 // Several variables are not "recommended" but load-bearing: without them the

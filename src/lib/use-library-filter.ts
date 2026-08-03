@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { useEffect, useMemo, useState } from "react";
 
 // Split out of library-browser.tsx: search, filter, and pagination are one

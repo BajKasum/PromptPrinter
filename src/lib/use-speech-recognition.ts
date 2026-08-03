@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // The Web Speech API is not in TypeScript's DOM lib (it's never left draft

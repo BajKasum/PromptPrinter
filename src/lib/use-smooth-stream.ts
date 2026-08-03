@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { useEffect, useRef, useState } from "react";
 
 // The model hands text over in bursts: one SSE delta can be a single token or

@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { useCallback, useEffect, useState } from "react";
 
 // The sidebar's collapse state persists in a cookie so the server-rendered

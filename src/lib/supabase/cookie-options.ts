@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { CookieOptions } from "@supabase/ssr";
 import { siteUrl } from "@/lib/site-url";
 

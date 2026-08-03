@@ -12,7 +12,18 @@ import path from "node:path";
 // bundled Vite carried a published advisory). Projects are the supported
 // replacement, and they describe what was always true here anyway — two
 // suites with two environments, not one suite with an exception.
-const alias = { "@": path.resolve(process.cwd(), "src") };
+// `server-only` is a marker package: outside a React Server Component graph it
+// resolves to a module whose only statement is `throw`. Next applies the
+// "react-server" export condition and gets the empty build; Vitest runs plain
+// Node and would get the throwing one, so every test touching a guarded module
+// (crypto, llm, rate-limit, …) would fail at import time. Aliasing to the same
+// empty module Next resolves to keeps the guard meaningful in the app without
+// making it a test-only obstacle. `client-only` needs no entry — its default
+// build is already the empty one.
+const alias = {
+  "@": path.resolve(process.cwd(), "src"),
+  "server-only": path.resolve(process.cwd(), "node_modules/server-only/empty.js"),
+};
 const setupFiles = ["./vitest.setup.ts"];
 
 export default defineConfig({

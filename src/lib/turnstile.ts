@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Cloudflare Turnstile verification, server side.
  *

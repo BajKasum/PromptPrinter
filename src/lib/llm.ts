@@ -1,3 +1,5 @@
+import "server-only";
+
 import { GoogleGenAI } from "@google/genai";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";

@@ -1,3 +1,5 @@
+import "server-only";
+
 // Content-Security-Policy for every response (QA finding S-2: chat renders
 // third-party markdown via react-markdown, which never emits raw HTML — no
 // rehype-raw, no dangerouslySetInnerHTML — so there's no known injection
