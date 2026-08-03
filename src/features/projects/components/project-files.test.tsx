@@ -61,8 +61,8 @@ function makeFile(name: string, sizeBytes: number, type = "text/plain") {
   return file;
 }
 
-// applyAccept: false, the input's accept=".md,.txt,.json,.csv" would
-// otherwise make user-event silently filter out a disallowed file before it
+// applyAccept: false, the input's own accept list (ALLOWED_FILE_EXTENSIONS)
+// would otherwise make user-event silently filter out a disallowed file before it
 // ever reaches the change handler, the same way a real file picker does.
 // That's exactly the case the component's own hasAllowedExtension check
 // guards against for drag-and-drop / "all files" picker overrides, so the
@@ -88,12 +88,12 @@ describe("ProjectFiles", () => {
 
   it("shows the current file count against the limit", () => {
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
-    expect(screen.getByText("0/10")).toBeInTheDocument();
+    expect(screen.getByText("0/20")).toBeInTheDocument();
   });
 
   it("shows the format/size tip when there are no files yet", () => {
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
-    expect(screen.getByText(/token-effizient/)).toBeInTheDocument();
+    expect(screen.getByText(/Screenshots/)).toBeInTheDocument();
   });
 
   it("hides the format/size tip once a file already exists", () => {
@@ -112,25 +112,70 @@ describe("ProjectFiles", () => {
         ]}
       />
     );
-    expect(screen.queryByText(/token-effizient/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Screenshots/)).not.toBeInTheDocument();
   });
 
   it("rejects a disallowed extension without calling Supabase", async () => {
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("script.exe", 100));
-    expect(await screen.findByText(/Nur \.md, \.txt, \.json, \.csv/)).toBeInTheDocument();
+    expect(await screen.findByText(/Dieses Format kann ich nicht lesen/)).toBeInTheDocument();
     expect(storageUpload).not.toHaveBeenCalled();
   });
 
   it("rejects a file over the size limit without calling Supabase", async () => {
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 300 * 1024));
-    expect(await screen.findByText(/Höchstens 200 KB pro Datei/)).toBeInTheDocument();
+    expect(await screen.findByText(/Diese Datei ist zu gross/)).toBeInTheDocument();
+    expect(storageUpload).not.toHaveBeenCalled();
+  });
+
+  // Die Groessengrenze gilt pro Art, nicht pauschal (maxBytesFor): waere sie
+  // eine Zahl, koennte das Projekt-Gedaechtnis kein einziges echtes Lockfile
+  // und keinen Screenshot analysieren.
+  it("accepts a lockfile above the text limit", async () => {
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
+    await uploadFile(makeFile("pnpm-lock.yaml", 600 * 1024));
+
+    expect(await screen.findByText("pnpm-lock.yaml")).toBeInTheDocument();
+    expect(storageUpload).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts a screenshot above the text limit", async () => {
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
+    await uploadFile(makeFile("dashboard.png", 1500 * 1024, "image/png"));
+
+    expect(await screen.findByText("dashboard.png")).toBeInTheDocument();
+    expect(storageUpload).toHaveBeenCalledTimes(1);
+  });
+
+  it("still rejects a lockfile beyond its own, larger ceiling", async () => {
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
+    await uploadFile(makeFile("pnpm-lock.yaml", 2 * 1024 * 1024));
+
+    expect(await screen.findByText(/Diese Datei ist zu gross/)).toBeInTheDocument();
+    expect(storageUpload).not.toHaveBeenCalled();
+  });
+
+  // Die Summe ist die eigentliche Schranke, seit Einzeldateien 2 MB duerfen.
+  it("refuses an upload that would blow the project's total storage budget", async () => {
+    const initialFiles: ProjectFile[] = [
+      {
+        id: "f1",
+        name: "big.png",
+        storagePath: "p",
+        sizeBytes: 24 * 1024 * 1024,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />);
+    await uploadFile(makeFile("another.png", 2 * 1024 * 1024, "image/png"));
+
+    expect(await screen.findByText(/Speicherlimit des Projekts erreicht/)).toBeInTheDocument();
     expect(storageUpload).not.toHaveBeenCalled();
   });
 
   it("refuses to upload once the file limit is reached", async () => {
-    const initialFiles: ProjectFile[] = Array.from({ length: 10 }, (_, i) => ({
+    const initialFiles: ProjectFile[] = Array.from({ length: 20 }, (_, i) => ({
       id: `f${i}`,
       name: `file${i}.md`,
       storagePath: `path/${i}`,
@@ -173,11 +218,11 @@ describe("ProjectFiles", () => {
   // right before the upload closes that race a step earlier than the DB
   // trigger (migration 0022) alone would.
   it("refuses to upload when a fresh server-side count already shows the limit reached", async () => {
-    filesCount.mockResolvedValue({ count: 10, error: null });
+    filesCount.mockResolvedValue({ count: 20, error: null });
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
-    expect(await screen.findByText(/Höchstens 10 Dateien pro Projekt/)).toBeInTheDocument();
+    expect(await screen.findByText(/Höchstens 20 Dateien pro Projekt/)).toBeInTheDocument();
     expect(storageUpload).not.toHaveBeenCalled();
     expect(filesInsert).not.toHaveBeenCalled();
   });
@@ -187,11 +232,11 @@ describe("ProjectFiles", () => {
   // Their exact text must map back to the same German messages, never leak
   // the raw Postgres error (same principle as U-4).
   it("shows the limit message when the DB trigger rejects the insert", async () => {
-    filesInsert.mockResolvedValue({ error: { message: "Projekt-Dateilimit erreicht (10)" } });
+    filesInsert.mockResolvedValue({ error: { message: "Projekt-Dateilimit erreicht (20)" } });
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
-    expect(await screen.findByText("Höchstens 10 Dateien pro Projekt.")).toBeInTheDocument();
+    expect(await screen.findByText("Höchstens 20 Dateien pro Projekt.")).toBeInTheDocument();
   });
 
   it("shows the file-type message when the DB trigger rejects the insert", async () => {
@@ -199,7 +244,7 @@ describe("ProjectFiles", () => {
     render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
     await uploadFile(makeFile("notes.md", 100));
 
-    expect(await screen.findByText(/Nur \.md, \.txt, \.json, \.csv/)).toBeInTheDocument();
+    expect(await screen.findByText(/Dieses Format kann ich nicht lesen/)).toBeInTheDocument();
   });
 
   // QA finding A-2: the row's own delete button now only opens a confirm
@@ -249,7 +294,7 @@ describe("ProjectFiles", () => {
     const user = userEvent.setup();
     await deleteViaDialog(user, "notes.md");
 
-    expect(await screen.findByText("0/10")).toBeInTheDocument();
+    expect(await screen.findByText("0/20")).toBeInTheDocument();
     expect(storageRemove).toHaveBeenCalledWith(["user-1/p1/f1-notes.md"]);
     expect(filesDelete).toHaveBeenCalledTimes(1);
   });
@@ -268,7 +313,7 @@ describe("ProjectFiles", () => {
 
     const user = userEvent.setup();
     await deleteViaDialog(user, "notes.md");
-    await screen.findByText("0/10");
+    await screen.findByText("0/20");
 
     expect(filesDelete.mock.invocationCallOrder[0]).toBeLessThan(
       storageRemove.mock.invocationCallOrder[0]

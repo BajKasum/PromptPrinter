@@ -9,9 +9,11 @@ import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
 import {
   ALLOWED_FILE_EXTENSIONS,
-  MAX_FILE_BYTES,
   MAX_FILES_PER_PROJECT,
+  MAX_PROJECT_FILE_BYTES,
+  MAX_TEXT_FILE_BYTES,
   hasAllowedExtension,
+  maxBytesFor,
   type ProjectFile,
 } from "@/features/projects/lib/project-files";
 import { formatBytes, randomId } from "@/shared/lib/utils";
@@ -59,11 +61,22 @@ export function ProjectFiles({
       return;
     }
     if (!hasAllowedExtension(file.name)) {
-      setError(`Nur ${ALLOWED_FILE_EXTENSIONS.join(", ")}.`);
+      setError("Dieses Format kann ich nicht lesen.");
       return;
     }
-    if (file.size > MAX_FILE_BYTES) {
-      setError(`Höchstens ${Math.round(MAX_FILE_BYTES / 1024)} KB pro Datei.`);
+    // Pro Art, nicht pro Datei: ein Lockfile darf gross sein, ein Screenshot
+    // noch groesser, eine Konfigurationsdatei nicht (maxBytesFor).
+    const maxBytes = maxBytesFor(file.name);
+    if (file.size > maxBytes) {
+      setError(`Diese Datei ist zu gross, höchstens ${formatBytes(maxBytes)}.`);
+      return;
+    }
+    // Die Summe ist die eigentliche Schranke, seit Einzeldateien 2 MB gross
+    // sein duerfen. Lokal geprueft fuer sofortige Rueckmeldung; migration
+    // 0038's Trigger haelt sie tatsaechlich (zwei Tabs zaehlen unabhaengig).
+    const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
+    if (usedBytes + file.size > MAX_PROJECT_FILE_BYTES) {
+      setError(`Speicherlimit des Projekts erreicht (${formatBytes(MAX_PROJECT_FILE_BYTES)}).`);
       return;
     }
 
@@ -144,7 +157,11 @@ export function ProjectFiles({
       if (message.includes("Projekt-Dateilimit erreicht")) {
         setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
       } else if (message.includes("Dateityp nicht erlaubt")) {
-        setError(`Nur ${ALLOWED_FILE_EXTENSIONS.join(", ")}.`);
+        setError("Dieses Format kann ich nicht lesen.");
+      } else if (message.includes("Datei zu gross")) {
+        setError(`Diese Datei ist zu gross, höchstens ${formatBytes(maxBytesFor(file.name))}.`);
+      } else if (message.includes("Projekt-Speicherlimit erreicht")) {
+        setError(`Speicherlimit des Projekts erreicht (${formatBytes(MAX_PROJECT_FILE_BYTES)}).`);
       } else {
         setError("Upload fehlgeschlagen. Bitte versuch es erneut.");
       }
@@ -277,11 +294,15 @@ export function ProjectFiles({
         // would be chrome, not help.
         files.length === 0 && (
           <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground/70">
-            Am besten{" "}
             <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
-              .md
+              package.json
             </code>
-            , token-effizient. Auch .txt, .json, .csv, bis {Math.round(MAX_FILE_BYTES / 1024)} KB.
+            ,{" "}
+            <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
+              README.md
+            </code>
+            , Konfig, SQL, Screenshots. Text bis {Math.round(MAX_TEXT_FILE_BYTES / 1024)} KB, Bilder
+            und Lockfiles mehr.
           </p>
         )
       )}
