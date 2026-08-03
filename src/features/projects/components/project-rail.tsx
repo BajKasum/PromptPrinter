@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, NotebookPen, Layers, Sparkles } from "lucide-react";
@@ -65,6 +65,21 @@ export function ProjectRail({
   const persistedInstructions = useRef(initialInstructions ?? "");
   const persistedContext = useRef(initialContext);
 
+  // Die beiden "gespeichert"-Häkchen blenden sich nach zwei Sekunden selbst
+  // aus. Die Timer liefen bisher ungebremst weiter, wenn die Rail vorher
+  // verschwand (Projektwechsel, Navigation) — folgenlos, weil React 18 ein
+  // setState auf einer toten Komponente verwirft, aber sie hielten je einen
+  // Closure über die Laufzeit hinaus am Leben. Gesammelt und beim Unmount
+  // abgeräumt, wie beim Scroll-Listener im Chat.
+  const fadeTimers = useRef<number[]>([]);
+  const fadeOutLater = (fn: () => void) => {
+    fadeTimers.current.push(window.setTimeout(fn, 2000));
+  };
+  useEffect(() => {
+    const timers = fadeTimers;
+    return () => timers.current.forEach(window.clearTimeout);
+  }, []);
+
   async function persistInstructions(next: string) {
     const trimmed = next.trim();
     if (trimmed === persistedInstructions.current.trim()) return;
@@ -87,10 +102,7 @@ export function ProjectRail({
     }
     persistedInstructions.current = trimmed;
     setInstructionsSaveState("saved");
-    window.setTimeout(
-      () => setInstructionsSaveState((s) => (s === "saved" ? "idle" : s)),
-      2000
-    );
+    fadeOutLater(() => setInstructionsSaveState((s) => (s === "saved" ? "idle" : s)));
     router.refresh();
   }
 
@@ -119,7 +131,7 @@ export function ProjectRail({
     }
     persistedContext.current = cleanContext;
     setContextSaveState("saved");
-    window.setTimeout(() => setContextSaveState((s) => (s === "saved" ? "idle" : s)), 2000);
+    fadeOutLater(() => setContextSaveState((s) => (s === "saved" ? "idle" : s)));
     router.refresh();
   }
 
