@@ -1,5 +1,11 @@
 import { truncate } from "@/shared/lib/chat-limits";
 import { getCachedFileContent } from "@/server/project-file-cache";
+import { fileKind } from "@/features/projects/lib/project-files";
+import {
+  formatBrainForPrompt,
+  projectBrainFactsSchema,
+  type ProjectBrainFacts,
+} from "@/shared/lib/project-brain";
 import type { createClient } from "@/server/supabase/server";
 
 // Builds the "PROJECT CONTEXT" block /api/chat appends to a project chat's
@@ -15,6 +21,19 @@ import type { createClient } from "@/server/supabase/server";
 // per-turn cost regardless of how much actually changed since the last turn.
 const FILES_TOTAL_BUDGET = 12000;
 const FILES_PER_FILE_CAP = 3000;
+
+// Sobald ein Projekt-Gedächtnis existiert, sinken beide.
+//
+// Das ist der eigentliche Kostengewinn des Features, nicht ein Nebeneffekt:
+// die Rohdateien wanderten bisher bei JEDEM Zug erneut in den Systemprompt,
+// damit das Modell daraus jedes Mal aufs Neue ableitet, welcher Stack hier
+// läuft. Genau diese Ableitung ist jetzt einmal passiert und steht als
+// 2500-Zeichen-Block bereit (BRAIN_PROMPT_BUDGET). Die Dateien bleiben
+// trotzdem drin — sie tragen mehr als Stack-Fakten, etwa eine API-Doku oder
+// eine Anforderungsliste, an die sich das Brain nicht erinnern soll — nur mit
+// halbem Budget. Unterm Strich: 12000 vorher, 6000 + höchstens 2500 nachher.
+const FILES_TOTAL_BUDGET_WITH_BRAIN = 6000;
+const FILES_PER_FILE_CAP_WITH_BRAIN = 2000;
 
 // Workspace context v2 (REDESIGN.md, Phase 3+4): a project chat works from the
 // project's living briefing, not just the original raw idea. Order encodes
@@ -47,7 +66,14 @@ export async function buildProjectContext(
   // acceptable and not a leak: both carry the same explicit user_id filter and
   // sit behind the same RLS policies, so for a foreign project they return
   // nothing, and the function still returns null below before using anything.
-  const [{ data: project }, { data: generation }, filesBlock] = await Promise.all([
+  //
+  // Das Brain kommt als vierter Leser dazu und muss VOR den Dateien bekannt
+  // sein, weil es deren Budget bestimmt (siehe die Konstanten oben). Es wird
+  // trotzdem parallel gelesen und nicht davor: der Zeilenlesevorgang ist der
+  // billige Teil, die Storage-Downloads sind der teure — die vorzuziehen und
+  // hinterher weniger davon zu verwenden kostet nichts, sie zu serialisieren
+  // schon.
+  const [{ data: project }, { data: generation }, { data: brainRow }, files] = await Promise.all([
     supabase
       .from("projects")
       .select("name, idea, instructions, context, tools")
@@ -62,9 +88,18 @@ export async function buildProjectContext(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    buildFilesContext(supabase, userId, projectId),
+    supabase
+      .from("project_brains")
+      .select("status, facts")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    loadProjectFiles(supabase, userId, projectId),
   ]);
   if (!project) return null;
+
+  const brainBlock = formatReadyBrain(brainRow as { status?: unknown; facts?: unknown } | null);
+  const filesBlock = renderFilesContext(files, brainBlock.length > 0);
 
   const outputs = (generation?.outputs ?? {}) as Record<string, string>;
 
@@ -91,7 +126,13 @@ export async function buildProjectContext(
     parts.push(`Structure:\n${structureLines.join("\n")}`);
   }
 
-  // Already resolved above, in parallel with the two row reads.
+  // Nach der Struktur, vor den Dateien: was der Nutzer selbst eingetragen hat,
+  // steht über dem, was aus seinen Quellen abgeleitet wurde. Wenn er „Ziel-KI:
+  // Cursor" tippt und das Brain aus dem Repo „VS Code Extension" ableitet,
+  // gewinnt seine Angabe — sie ist die Absicht, das Brain nur der Befund.
+  if (brainBlock) parts.push(brainBlock);
+
+  // Already resolved above, in parallel with the row reads.
   if (filesBlock) parts.push(filesBlock);
 
   const idea = typeof project.idea === "string" ? project.idea.trim() : "";
@@ -110,14 +151,38 @@ ${parts.join("\n\n")}
 --- END PROJECT CONTEXT ---`;
 }
 
-// Downloads and formats the project's attached files within a shared budget.
-// Storage reads happen through the caller's request-scoped client, so RLS
-// applies exactly as for the signed-in owner, no service-role needed.
-async function buildFilesContext(
+/**
+ * Der Brain-Block, aber nur für ein fertig analysiertes Projekt.
+ *
+ * Ein laufender oder fehlgeschlagener Lauf darf nichts in den Prompt geben:
+ * `facts` ist dann entweder leer oder der Stand von vorhin, und beides als
+ * gesichertes Wissen zu verkaufen wäre schlimmer als zu schweigen. Die
+ * gespeicherten Fakten laufen zusätzlich noch einmal durch das Schema — die
+ * Zeile kommt aus der Datenbank, und was von dort in einen Systemprompt
+ * wandert, wird geprüft, nicht geglaubt.
+ */
+function formatReadyBrain(row: { status?: unknown; facts?: unknown } | null): string {
+  if (!row || row.status !== "ready") return "";
+  const parsed = projectBrainFactsSchema.safeParse(row.facts);
+  if (!parsed.success) return "";
+  return formatBrainForPrompt(parsed.data satisfies ProjectBrainFacts);
+}
+
+type StoredFile = { name: string; storage_path: string };
+type LoadedFile = { name: string; text: string | null };
+
+// Downloads the project's attached files. Storage reads happen through the
+// caller's request-scoped client, so RLS applies exactly as for the signed-in
+// owner, no service-role needed.
+//
+// Getrennt vom Formatieren (renderFilesContext unten), seit das Budget davon
+// abhängt, ob ein Projekt-Gedächtnis existiert: das Laden kann parallel zum
+// Brain-Lesevorgang starten, die Budgetvergabe muss auf dessen Ergebnis warten.
+async function loadProjectFiles(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
   projectId: string
-): Promise<string> {
+): Promise<LoadedFile[]> {
   // Explicit user_id alongside project_id (Security-Audit finding L-3): was
   // RLS-only before, same as the two reads in the caller above.
   const { data: filesRaw } = await supabase
@@ -126,13 +191,20 @@ async function buildFilesContext(
     .eq("project_id", projectId)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
-  const files = (filesRaw as { name: string; storage_path: string }[] | null) ?? [];
-  if (files.length === 0) return "";
+  const files = (filesRaw as StoredFile[] | null) ?? [];
+  if (files.length === 0) return [];
+
+  // Bilder fallen hier raus, bevor irgendetwas geladen wird: sie sind
+  // Analysequellen für das Projekt-Gedächtnis, kein Chat-Kontext. Ihre Bytes
+  // als Text zu dekodieren gäbe Müll im Systemprompt, und der Download wäre
+  // pro Zug bis zu 2 MB für nichts.
+  const textFiles = files.filter((f) => fileKind(f.name) !== "image");
 
   const ordered = [
-    ...files.filter((f) => f.name.toLowerCase().endsWith(".md")),
-    ...files.filter((f) => !f.name.toLowerCase().endsWith(".md")),
+    ...textFiles.filter((f) => f.name.toLowerCase().endsWith(".md")),
+    ...textFiles.filter((f) => !f.name.toLowerCase().endsWith(".md")),
   ];
+  if (ordered.length === 0) return [];
 
   // Fetch every file at once, then apply the budget in order.
   //
@@ -148,8 +220,8 @@ async function buildFilesContext(
   // the slow, independent part; spending the budget is the fast, ordered part.
   // Fetching a file whose content the budget later has no room for is the
   // deliberate trade — it's a cache fill that the next turn reuses anyway
-  // (storage_path is immutable, see project-file-cache.ts), and at 10 files
-  // max the ceiling is small and known.
+  // (storage_path is immutable, see project-file-cache.ts), and at
+  // MAX_FILES_PER_PROJECT the ceiling is small and known.
   const contents = await Promise.all(
     ordered.map((f) =>
       getCachedFileContent(f.storage_path, async () => {
@@ -166,24 +238,43 @@ async function buildFilesContext(
     )
   );
 
+  return ordered.map((f, i) => ({ name: f.name, text: contents[i] }));
+}
+
+/**
+ * Formatiert die geladenen Dateien innerhalb des Budgets.
+ *
+ * `hasBrain` halbiert es: die Stack-Ableitung, für die diese Dateien bisher
+ * bei jedem Zug erneut mitreisen mussten, steht jetzt fertig im Brain-Block
+ * darüber (siehe die Konstanten oben).
+ *
+ * Bilder tauchen hier nicht auf — sie sind Analysequellen, kein Chat-Kontext.
+ * Ihre Bytes als Text zu dekodieren gäbe Müll, und pro Zug ein Bild an das
+ * Modell zu schicken wäre ein Kostenposten, den ein einmal abgeleiteter
+ * Design-System-Satz überflüssig macht.
+ */
+function renderFilesContext(files: LoadedFile[], hasBrain: boolean): string {
+  if (files.length === 0) return "";
+
+  const totalBudget = hasBrain ? FILES_TOTAL_BUDGET_WITH_BRAIN : FILES_TOTAL_BUDGET;
+  const perFileCap = hasBrain ? FILES_PER_FILE_CAP_WITH_BRAIN : FILES_PER_FILE_CAP;
+
   const blocks: string[] = [];
   const skipped: string[] = [];
-  let remaining = FILES_TOTAL_BUDGET;
+  let remaining = totalBudget;
 
-  for (let i = 0; i < ordered.length; i++) {
-    const f = ordered[i];
+  for (const file of files) {
     if (remaining <= 0) {
-      skipped.push(f.name);
+      skipped.push(file.name);
       continue;
     }
-    const text = contents[i];
-    if (text === null) {
-      skipped.push(f.name);
+    if (file.text === null) {
+      skipped.push(file.name);
       continue;
     }
-    if (!text) continue;
-    const content = truncate(text, Math.min(FILES_PER_FILE_CAP, remaining));
-    blocks.push(`File: ${f.name}\n${content}`);
+    if (!file.text) continue;
+    const content = truncate(file.text, Math.min(perFileCap, remaining));
+    blocks.push(`File: ${file.name}\n${content}`);
     remaining -= content.length;
   }
 
