@@ -3,6 +3,7 @@ import {
   GithubImportError,
   fetchRepoSnapshot,
   parseGithubRepoUrl,
+  selectSignalFiles,
   summarizeTree,
 } from "@/server/brain/github";
 
@@ -76,6 +77,54 @@ describe("parseGithubRepoUrl", () => {
     // kanonische URL neu zusammengesetzt, nicht durchgereicht.
     const ref = parseGithubRepoUrl("https://github.com/owner/repo?x=1#y");
     expect(ref?.url).toBe("https://github.com/owner/repo");
+  });
+});
+
+describe("selectSignalFiles", () => {
+  it("prefers manifests over prose, in that order", () => {
+    const chosen = selectSignalFiles(["README.md", "tsconfig.json", "package.json"]);
+    expect(chosen[0]).toBe("package.json");
+    expect(chosen.indexOf("tsconfig.json")).toBeLessThan(chosen.indexOf("README.md"));
+  });
+
+  it("prefers the root copy over a nested one of the same name", () => {
+    const chosen = selectSignalFiles(["apps/web/package.json", "package.json"]);
+    expect(chosen[0]).toBe("package.json");
+  });
+
+  // Beim ersten echten Lauf gegen dieses Repo gingen 5 von 14 Plaetzen an
+  // README.md-Dateien aus .claude/skills/*/ui_kits/* — fuenf Beschreibungen
+  // desselben UI-Kits, die ueber den Stack nichts sagten und Dateien
+  // verdraengten, die etwas gesagt haetten.
+  it("does not let one filename eat the whole budget", () => {
+    const chosen = selectSignalFiles([
+      "README.md",
+      "a/README.md",
+      "b/README.md",
+      "c/README.md",
+      "d/README.md",
+      "package.json",
+      "tsconfig.json",
+    ]);
+    expect(chosen.filter((p) => p.toLowerCase().endsWith("readme.md"))).toHaveLength(2);
+    expect(chosen).toContain("package.json");
+    expect(chosen).toContain("tsconfig.json");
+  });
+
+  // Ein Monorepo hat je Workspace ein Manifest; genau ein zweites soll noch
+  // mitkommen.
+  it("still keeps a second manifest for the monorepo case", () => {
+    const chosen = selectSignalFiles(["package.json", "apps/web/package.json", "apps/api/package.json"]);
+    expect(chosen).toEqual(["package.json", "apps/api/package.json"]);
+  });
+
+  it("respects the overall cap", () => {
+    const paths = Array.from({ length: 40 }, (_, i) => `pkg${i}/tsconfig.json`);
+    expect(selectSignalFiles(paths, 14).length).toBeLessThanOrEqual(14);
+  });
+
+  it("returns nothing when a repo carries no signal files at all", () => {
+    expect(selectSignalFiles(["src/index.rb", "lib/thing.rb"])).toEqual([]);
   });
 });
 

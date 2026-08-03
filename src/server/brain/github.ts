@@ -308,6 +308,47 @@ function signalRank(path: string): number {
 }
 
 /**
+ * Wie viele Treffer desselben Dateinamens höchstens mitgenommen werden.
+ *
+ * Beim ersten echten Lauf gegen dieses Repo selbst gingen 5 der 14 Plätze an
+ * `README.md`-Dateien tief unter `.claude/skills` — der Namensabgleich oben
+ * zieht jeden Treffer, egal wie tief. Fünf Beschreibungen desselben UI-Kits
+ * sagen über den Stack aber nichts, was die erste nicht schon gesagt hat, und
+ * sie verdrängten Dateien, die etwas gesagt hätten. Zwei pro Name lassen den
+ * Monorepo-Fall (ein package.json je Workspace) heil und schneiden die
+ * Wiederholung ab.
+ */
+const MAX_PER_BASENAME = 2;
+
+/**
+ * Wählt die Dateien aus, die tatsächlich geholt werden.
+ *
+ * Sortiert nach Signalrang, bei Gleichstand nach Pfadtiefe: `package.json` im
+ * Wurzelverzeichnis vor `apps/web/package.json`, denn das obere beschreibt
+ * das Projekt, das untere einen Teil davon.
+ */
+export function selectSignalFiles(paths: string[], limit = MAX_REPO_FILES): string[] {
+  const ranked = paths
+    .map((path) => ({ path, rank: signalRank(path), depth: path.split("/").length }))
+    .filter((entry) => entry.rank !== -1)
+    .sort((a, b) => a.rank - b.rank || a.depth - b.depth || a.path.localeCompare(b.path));
+
+  const perBasename = new Map<string, number>();
+  const chosen: string[] = [];
+
+  for (const entry of ranked) {
+    if (chosen.length >= limit) break;
+    const base = (entry.path.split("/").pop() ?? "").toLowerCase();
+    const used = perBasename.get(base) ?? 0;
+    if (used >= MAX_PER_BASENAME) continue;
+    perBasename.set(base, used + 1);
+    chosen.push(entry.path);
+  }
+
+  return chosen;
+}
+
+/**
  * Holt den analysierbaren Stand eines öffentlichen Repos.
  *
  * Private Repos sind bewusst nicht unterstützt: dafür bräuchte es OAuth mit
@@ -337,18 +378,14 @@ export async function fetchRepoSnapshot(
 
   if (paths.length === 0) throw new GithubImportError("repo_empty");
 
-  const wanted = paths
-    .map((path) => ({ path, rank: signalRank(path) }))
-    .filter((entry) => entry.rank !== -1)
-    .sort((a, b) => a.rank - b.rank)
-    .slice(0, MAX_REPO_FILES);
-
   // Parallel, denn keine dieser Dateien hängt von einer anderen ab, und sie
   // liegen alle auf dem CDN. Seriell wären es bei 14 Dateien 14 addierte
   // Latenzen auf dem kritischen Pfad einer Analyse, auf die der Nutzer
   // sichtbar wartet.
   const files = (
-    await Promise.all(wanted.map((entry) => fetchRawFile(ref, defaultBranch, entry.path, signal)))
+    await Promise.all(
+      selectSignalFiles(paths).map((path) => fetchRawFile(ref, defaultBranch, path, signal))
+    )
   ).filter((file): file is RepoFile => file !== null);
 
   return {
