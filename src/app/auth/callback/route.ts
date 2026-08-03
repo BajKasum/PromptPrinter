@@ -1,3 +1,9 @@
+// NICHT nach (auth) verschieben, so verlockend die Nachbarschaft aussieht.
+// (auth) ist eine Route-Group und verschwindet aus dem Pfad; dieses `auth/`
+// ist ein echtes URL-Segment. Die vollständige URL /auth/callback ist in den
+// Supabase-Redirect-URLs hinterlegt (Dashboard, nicht im Repo) — sie zu
+// ändern bricht OAuth über Google/GitHub und den Passwort-Reset, und zwar
+// erst in Produktion, weil lokal andere Redirect-URLs konfiguriert sind.
 import { NextResponse } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
