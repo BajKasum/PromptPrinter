@@ -3,6 +3,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { okWrite, failedWrite } from "@tests/support/supabase-query";
 import { ProjectRail } from "./project-rail";
+import { EMPTY_BRAIN_FACTS, type ProjectBrain } from "@/shared/lib/project-brain";
+
+const IDLE_BRAIN: ProjectBrain = {
+  status: "idle",
+  facts: EMPTY_BRAIN_FACTS,
+  repoUrl: null,
+  sources: [],
+  sourceDigest: null,
+  model: null,
+  errorCode: null,
+  analyzedAt: null,
+  updatedAt: new Date(0).toISOString(),
+};
 
 const refresh = vi.fn();
 const toast = vi.fn();
@@ -30,6 +43,8 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProjectRail>> = {}
       initialInstructions="Ausgangslage"
       initialContext={{ target: "Claude" }}
       files={[]}
+      brain={IDLE_BRAIN}
+      brainDigest="00000000"
       resultCount={0}
       latestResultAt={null}
       {...overrides}

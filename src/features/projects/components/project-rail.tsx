@@ -9,7 +9,9 @@ import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
 import { cn } from "@/shared/lib/utils";
 import { ProjectFiles } from "@/features/projects/components/project-files";
+import { ProjectBrainCard } from "@/features/projects/components/project-brain";
 import type { ProjectFile } from "@/features/projects/lib/project-files";
+import type { ProjectBrain } from "@/shared/lib/project-brain";
 
 // The workspace context rail (REDESIGN.md, Phase 3+4): the living briefing of
 // a project. Anweisungen (free text) and Struktur (fixed optional fields)
@@ -38,6 +40,8 @@ export function ProjectRail({
   initialInstructions,
   initialContext,
   files,
+  brain,
+  brainDigest,
   resultCount,
   latestResultAt,
 }: {
@@ -49,6 +53,10 @@ export function ProjectRail({
   initialInstructions: string | null;
   initialContext: Record<string, string>;
   files: ProjectFile[];
+  /** Stand des Projekt-Gedaechtnisses, serverseitig gelesen. */
+  brain: ProjectBrain;
+  /** Fingerabdruck der Quellen jetzt — daraus faellt "veraltet" ab. */
+  brainDigest: string;
   resultCount: number;
   latestResultAt: string | null;
 }) {
@@ -193,6 +201,15 @@ export function ProjectRail({
       </section>
 
       <ProjectFiles projectId={projectId} userId={userId} initialFiles={files} />
+
+      {/* Nach den Dateien, weil es aus ihnen entsteht: erst laedt man hoch,
+          dann laesst man lesen. */}
+      <ProjectBrainCard
+        projectId={projectId}
+        brain={brain}
+        currentDigest={brainDigest}
+        sourceCount={files.length}
+      />
 
       <Link
         href={`/projects/${projectId}/results`}

@@ -7,6 +7,15 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { relativeTime } from "@/shared/lib/utils";
+import { digestOfSources } from "@/features/projects/lib/brain-sources";
+import {
+  EMPTY_BRAIN_FACTS,
+  PROJECT_BRAIN_STATUSES,
+  projectBrainFactsSchema,
+  type BrainSource,
+  type ProjectBrain,
+  type ProjectBrainStatus,
+} from "@/shared/lib/project-brain";
 import type { ProjectFile } from "@/features/projects/lib/project-files";
 
 // The workspace shell (REDESIGN.md, Phase 3): header + context rail persist
@@ -28,6 +37,59 @@ type ProjectFileRow = {
   created_at: string;
 };
 
+type BrainRow = {
+  status: string;
+  facts: unknown;
+  repo_url: string | null;
+  sources: unknown;
+  source_digest: string | null;
+  model: string | null;
+  error_code: string | null;
+  analyzed_at: string | null;
+  updated_at: string;
+};
+
+/**
+ * Die Brain-Zeile in die Form, die die Rail erwartet — oder ein leeres
+ * Gedaechtnis, wenn es noch keine gibt.
+ *
+ * Alles wird geprueft statt uebernommen: `facts` laeuft durch dasselbe
+ * Zod-Schema wie beim Speichern, und `status` muss einer der bekannten sein.
+ * Das kostet fast nichts und haelt die Anzeige auch dann heil, wenn eine
+ * Zeile aus einer aelteren oder kaputten Schreiboperation stammt.
+ */
+function toBrain(row: BrainRow | null): ProjectBrain {
+  const empty: ProjectBrain = {
+    status: "idle",
+    facts: EMPTY_BRAIN_FACTS,
+    repoUrl: null,
+    sources: [],
+    sourceDigest: null,
+    model: null,
+    errorCode: null,
+    analyzedAt: null,
+    updatedAt: new Date(0).toISOString(),
+  };
+  if (!row) return empty;
+
+  const facts = projectBrainFactsSchema.safeParse(row.facts);
+  const status = PROJECT_BRAIN_STATUSES.includes(row.status as ProjectBrainStatus)
+    ? (row.status as ProjectBrainStatus)
+    : "idle";
+
+  return {
+    status,
+    facts: facts.success ? facts.data : EMPTY_BRAIN_FACTS,
+    repoUrl: row.repo_url,
+    sources: Array.isArray(row.sources) ? (row.sources as BrainSource[]) : [],
+    sourceDigest: row.source_digest,
+    model: row.model,
+    errorCode: row.error_code,
+    analyzedAt: row.analyzed_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export default async function ProjectWorkspaceLayout({
   children,
   params,
@@ -46,8 +108,12 @@ export default async function ProjectWorkspaceLayout({
   // return today; it's the same belt-and-suspenders the project applies at
   // every other user-scoped read, kept in sync here rather than left as the
   // one place that quietly relied on the caller above having checked already.
-  const [{ count: chatCount }, { data: latestGen, count: resultCount }, { data: filesRaw }] =
-    await Promise.all([
+  const [
+    { count: chatCount },
+    { data: latestGen, count: resultCount },
+    { data: filesRaw },
+    { data: brainRaw },
+  ] = await Promise.all([
       supabase
         .from("conversations")
         .select("id", { count: "exact", head: true })
@@ -66,6 +132,15 @@ export default async function ProjectWorkspaceLayout({
         .eq("project_id", id)
         .eq("user_id", project.userId)
         .order("created_at", { ascending: true }),
+      // Nur lesbar fuer den Client (0037 vergibt bewusst nur select) — die
+      // Rail zeigt den Stand an, geschrieben wird ausschliesslich ueber
+      // /api/projects/[id]/brain.
+      supabase
+        .from("project_brains")
+        .select("status, facts, repo_url, sources, source_digest, model, error_code, analyzed_at, updated_at")
+        .eq("project_id", id)
+        .eq("user_id", project.userId)
+        .maybeSingle(),
     ]);
 
   const chats = chatCount ?? 0;
@@ -80,6 +155,16 @@ export default async function ProjectWorkspaceLayout({
     sizeBytes: f.size_bytes,
     createdAt: f.created_at,
   }));
+
+  const brain = toBrain(brainRaw as BrainRow | null);
+  // Rein aus Datei-IDs und -Groessen plus der Repo-URL gerechnet, ohne einen
+  // einzigen Download oder GitHub-Aufruf: dieser Wert wird bei JEDEM Aufruf
+  // der Seite gebraucht, nur um "hat sich seit der Analyse etwas geaendert?"
+  // zu beantworten (siehe digestOfSources).
+  const brainDigest = digestOfSources(
+    files.map((f) => ({ id: f.id, sizeBytes: f.sizeBytes })),
+    brain.repoUrl
+  );
 
   return (
     <div>
@@ -141,6 +226,8 @@ export default async function ProjectWorkspaceLayout({
             initialInstructions={project.instructions}
             initialContext={project.context}
             files={files}
+            brain={brain}
+            brainDigest={brainDigest}
             resultCount={results}
             latestResultAt={latestResultAt}
           />
