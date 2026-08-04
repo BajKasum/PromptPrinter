@@ -212,16 +212,20 @@ describe("SignUpExperience", () => {
       profileUpdate.mockResolvedValue({ error: null });
     });
 
-    it("says plainly that payment is not live yet", () => {
+    // Bis zum 04.08.2026 stand hier, Bezahlung sei nicht freigeschaltet — der
+    // ehrliche Text, solange es keinen Checkout gab. Seit Lemon Squeezy
+    // angebunden ist, führt der Weg über die Abrechnungsseite, und genau das
+    // muss der Hinweis sagen: erst Konto, dann Kauf.
+    it("points the way on: account first, then buy under Abrechnung", () => {
       searchParams = new URLSearchParams("plan=pro");
       render(<SignUpExperience />);
-      expect(screen.getByText(/Bezahlung ist noch nicht freigeschaltet/)).toBeInTheDocument();
+      expect(screen.getByText(/direkt danach unter Abrechnung/)).toBeInTheDocument();
     });
 
     it("stays quiet for a plain signup", () => {
       searchParams = new URLSearchParams();
       render(<SignUpExperience />);
-      expect(screen.queryByText(/Bezahlung ist noch nicht freigeschaltet/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Du kommst über Pro/)).not.toBeInTheDocument();
     });
 
     it("records the interest without discarding the existing settings", async () => {

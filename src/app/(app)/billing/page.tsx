@@ -3,6 +3,7 @@ import { Check, Clock } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import { UsageMeter } from "@/features/settings/components/usage-meter";
+import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
 import { PLANS } from "@/shared/lib/pricing";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
@@ -143,9 +144,27 @@ export default async function BillingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[12.5px] text-tertiary">
-              <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-              Bezahlung ist noch nicht freigeschaltet, sobald es so weit ist, meld ich mich.
+            <div className="mt-6 border-t border-border pt-5">
+              {/* Der einzige Ort im Produkt, an dem Mail UND Konto-ID bekannt
+                  sind — beide reisen mit der Bestellung mit, damit eine
+                  eingegangene Zahlung ohne Rückfrage dem richtigen Konto
+                  zugeordnet werden kann. */}
+              <LemonCheckoutButton
+                email={user.email}
+                userId={user.id}
+                fallbackHref="/pricing"
+                className="w-full sm:w-auto"
+                successMessage="Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist."
+              >
+                Pro holen, {pro.price} pro {pro.cadence}
+              </LemonCheckoutButton>
+              <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-relaxed text-tertiary">
+                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+                <span>
+                  Nach der Zahlung schalte ich dein Konto von Hand auf Pro, in der Regel noch
+                  am selben Tag. Vollautomatisch geht das noch nicht.
+                </span>
+              </p>
             </div>
           </section>
         </FadeIn>

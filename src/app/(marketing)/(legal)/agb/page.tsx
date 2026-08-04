@@ -117,8 +117,11 @@ export default function AgbPage() {
         dauerhaft nutzbar, insbesondere in Verbindung mit einem eigenen API-Key.
       </p>
       <p>
-        <strong>Stand heute ist der Pro-Plan noch nicht freigeschaltet</strong>, es sind über den
-        Dienst derzeit keine Zahlungen möglich. Sobald das der Fall ist, gilt:
+        Die Zahlung für den Pro-Plan wird über <strong>Lemon Squeezy</strong> (Lemon Squeezy, LLC,
+        USA) abgewickelt. Lemon Squeezy tritt dabei als „Merchant of Record“ auf, verkauft also in
+        eigenem Namen an dich, stellt die Rechnung aus und führt die jeweils anfallende
+        Umsatzsteuer ab. Für den Zahlungsvorgang gelten daher zusätzlich die Bedingungen von Lemon
+        Squeezy. Es gilt:
       </p>
       <ul>
         <li>
@@ -133,11 +136,6 @@ export default function AgbPage() {
         <li>
           Für die Erstattung gilt unsere <a href="/rueckerstattung">Rückerstattungsrichtlinie</a>,
           einschliesslich einer 14-tägigen Geld-zurück-Garantie auf die erste Zahlung.
-        </li>
-        <li>
-          Der Verkauf wird über einen externen Zahlungsdienstleister abgewickelt, der zugleich
-          Vertragspartner für den Kauf ist und die Abrechnung samt Steuern übernimmt. Für die
-          Transaktion gelten dann ergänzend dessen Bedingungen.
         </li>
         <li>
           Preise und Leistungsumfang können geändert werden. Änderungen an einem laufenden

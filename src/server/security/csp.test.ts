@@ -39,6 +39,29 @@ describe("buildCsp", () => {
     expect(buildCsp("n")).not.toContain("'unsafe-eval'");
   });
 
+  it("allows both Lemon Squeezy script hosts, not just the advertised one", () => {
+    const csp = buildCsp("n");
+    // Der beworbene Host leitet auf den Asset-Host weiter, und eine CSP prüft
+    // das Weiterleitungsziel mit. Fehlt der zweite Eintrag, ist der Checkout
+    // tot — deshalb steht hier beides einzeln, nicht als ein Teilstring.
+    expect(csp).toContain("https://app.lemonsqueezy.com");
+    expect(csp).toContain("https://assets.lemonsqueezy.com");
+  });
+
+  it("allows the checkout overlay to be framed", () => {
+    const csp = buildCsp("n");
+    expect(csp).toContain("frame-src https://challenges.cloudflare.com https://*.lemonsqueezy.com");
+  });
+
+  it("keeps Lemon Squeezy out of connect-src and img-src (the script needs neither)", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    const csp = buildCsp("n");
+    const connectSrc = csp.split("; ").find((d) => d.startsWith("connect-src")) ?? "";
+    const imgSrc = csp.split("; ").find((d) => d.startsWith("img-src")) ?? "";
+    expect(connectSrc).not.toContain("lemonsqueezy");
+    expect(imgSrc).not.toContain("lemonsqueezy");
+  });
+
   it("blocks plugins and restricts base/form targets to same-origin", () => {
     const csp = buildCsp("n");
     expect(csp).toContain("object-src 'none'");

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   assertEnv,
   hasInsecureAppUrl,
+  hasInvalidCheckoutUrl,
   hasNoModelProvider,
   missingProductionEnv,
 } from "@/server/env";
@@ -125,6 +126,53 @@ describe("assertEnv", () => {
     ).not.toThrow();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("Stub-Modus"));
     warn.mockRestore();
+  });
+
+  it("warns about an unusable checkout address without blocking the boot", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() =>
+      assertEnv({
+        ...complete,
+        NODE_ENV: "production",
+        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "https://example.com/checkout",
+      })
+    ).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("LEMONSQUEEZY"));
+    warn.mockRestore();
+  });
+});
+
+// Zahlungen sind optional konfigurierbar, aber eine falsch konfigurierte
+// Adresse ist schlimmer als gar keine: die Seite sieht normal aus, nur kauft
+// niemand mehr. Deshalb dieselbe Sorte Prüfung wie bei NEXT_PUBLIC_APP_URL.
+describe("hasInvalidCheckoutUrl", () => {
+  it("stays quiet when payments are deliberately not configured", () => {
+    expect(hasInvalidCheckoutUrl({})).toBe(false);
+    expect(hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "  " })).toBe(false);
+  });
+
+  it("accepts the store's checkout address", () => {
+    expect(
+      hasInvalidCheckoutUrl({
+        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL:
+          "https://promptprinter.lemonsqueezy.com/checkout/buy/abc?embed=1",
+      })
+    ).toBe(false);
+  });
+
+  it("flags a foreign host, which the CSP would block anyway", () => {
+    expect(
+      hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "https://example.com/buy" })
+    ).toBe(true);
+  });
+
+  it("flags the realistic mistakes: http, and a value that is not a URL at all", () => {
+    expect(
+      hasInvalidCheckoutUrl({
+        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "http://promptprinter.lemonsqueezy.com/checkout",
+      })
+    ).toBe(true);
+    expect(hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "7a06a455" })).toBe(true);
   });
 });
 

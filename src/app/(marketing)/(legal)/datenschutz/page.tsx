@@ -149,6 +149,17 @@ export default function DatenschutzPage() {
           <strong>Upstash</strong> (Upstash Inc.): Rate-Limiting und Kontingentzählung; bearbeitet zu
           diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung.
         </li>
+        <li>
+          <strong>Lemon Squeezy</strong> (Lemon Squeezy, LLC, USA): Zahlungsabwicklung für den
+          Pro-Plan. Anders als die übrigen hier genannten Dienste handelt Lemon Squeezy nicht in
+          unserem Auftrag, sondern als „Merchant of Record“, also als Verkäufer in eigenem Namen,
+          und ist für die Zahlungs- und Rechnungsdaten <strong>eigenverantwortlich</strong>. Auf der{" "}
+          <a href="/pricing">Preisseite</a> und der Abrechnungsseite wird dazu ein Skript von Lemon
+          Squeezy in deinem Browser geladen, wobei deine <strong>IP-Adresse</strong> übermittelt
+          wird. Deine Zahlungsdaten gibst du im eingebetteten Bezahlfenster direkt bei Lemon Squeezy
+          ein; sie erreichen uns nicht. Wir erhalten von dort nur, was zur Zuordnung deines Abos
+          nötig ist, insbesondere Mailadresse und Status des Abonnements.
+        </li>
       </ul>
       <p>
         <strong>Wenn du einen eigenen API-Schlüssel hinterlegst</strong>, gehen deine Eingaben nicht
@@ -167,8 +178,8 @@ export default function DatenschutzPage() {
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
         Einzelne der oben genannten Dienste bearbeiten Daten ausserhalb der Schweiz bzw. des EWR,
-        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Google Gemini
-        sowie gegebenenfalls der von dir gewählte eigene Anbieter) und in{" "}
+        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Google Gemini,
+        Lemon Squeezy sowie gegebenenfalls der von dir gewählte eigene Anbieter) und in{" "}
         <strong>China</strong> (Z.ai).
       </p>
       <p>

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { normalizeCheckoutUrl } from "@/shared/lib/lemon-squeezy";
+
 // Startup validation of the environment (QA finding S-2).
 //
 // Several variables are not "recommended" but load-bearing: without them the
@@ -127,6 +129,23 @@ export function hasInsecureAppUrl(env: EnvLike = process.env): boolean {
 }
 
 /**
+ * True when a Lemon Squeezy checkout address is configured but unusable.
+ *
+ * Same failure shape as hasInsecureAppUrl above, one layer quieter: an empty
+ * value is a legitimate deployment ("keine Zahlungen hier"), and the button
+ * falls back to its `fallbackHref` either way, so nothing breaks. A value
+ * that is *set but wrong* is the state worth naming — a typo, an http link, a
+ * copied dashboard URL instead of the checkout link — because the page then
+ * looks entirely normal while the one button that earns money quietly points
+ * back at the signup form.
+ */
+export function hasInvalidCheckoutUrl(env: EnvLike = process.env): boolean {
+  const raw = env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL;
+  if (isBlank(raw)) return false;
+  return normalizeCheckoutUrl(raw) === null;
+}
+
+/**
  * Checks the environment once at server startup (wired up in
  * src/instrumentation.ts).
  *
@@ -156,6 +175,15 @@ export function assertEnv(env: EnvLike = process.env): void {
         "Secure-Flag gesetzt (lib/supabase/cookie-options.ts), und Bestätigungs- " +
         "sowie Passwort-Reset-Mails verlinken auf diese Adresse. Auf die öffentliche " +
         "https-Adresse der Deployment setzen."
+    );
+  }
+
+  if (hasInvalidCheckoutUrl(env)) {
+    console.warn(
+      "[env] NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL ist gesetzt, aber unbrauchbar " +
+        `(${env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}). Erwartet wird eine https-Adresse ` +
+        "auf einem *.lemonsqueezy.com-Host. Folge: Der Pro-Knopf führt auf die " +
+        "Registrierung statt in den Checkout, es kann niemand kaufen."
     );
   }
 

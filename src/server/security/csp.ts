@@ -16,6 +16,30 @@ import "server-only";
 //   (auth, storage, PostgREST). Every LLM provider call — Z.ai, Gemini,
 //   BYOK Anthropic/OpenAI/custom — happens server-side, so none of them
 //   need a connect-src entry here.
+// - lemonsqueezy.com: Zahlungen. Siehe LEMONSQUEEZY_* unten.
+
+// Lemon Squeezy braucht ZWEI Skript-Hosts, nicht einen.
+//
+// `app.lemonsqueezy.com/js/lemon.js` — die Adresse, die Lemon Squeezy selbst
+// ausgibt — antwortet mit `301` auf `assets.lemonsqueezy.com/lemon.js`
+// (nachgeprüft am 04.08.2026). Eine CSP prüft bei einer Weiterleitung auch
+// das Ziel: stünde hier nur der `app.`-Host, würde das Skript nach der
+// Weiterleitung blockiert, und zwar mit einer Meldung, die auf den falschen
+// Host zeigt. Beide Einträge gehören also zusammen; wer einen entfernt,
+// entfernt den Checkout.
+const LEMONSQUEEZY_SCRIPT_HOSTS = [
+  "https://app.lemonsqueezy.com",
+  "https://assets.lemonsqueezy.com",
+];
+
+// Das Overlay ist ein <iframe> auf den Checkout des eigenen Stores
+// (promptprinter.lemonsqueezy.com). Der Store-Name steckt in der
+// Checkout-Adresse und ist damit Konfiguration, keine Konstante — deshalb der
+// Platzhalter statt eines festen Hosts. Muss zur Host-Prüfung in
+// shared/lib/lemon-squeezy.ts passen: was dort erlaubt ist, muss hier
+// einbettbar sein.
+const LEMONSQUEEZY_FRAME_HOST = "https://*.lemonsqueezy.com";
+
 export function buildCsp(nonce: string): string {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
@@ -27,6 +51,7 @@ export function buildCsp(nonce: string): string {
     "'self'",
     `'nonce-${nonce}'`,
     "https://challenges.cloudflare.com",
+    ...LEMONSQUEEZY_SCRIPT_HOSTS,
     process.env.NODE_ENV !== "production" ? "'unsafe-eval'" : "",
   ]
     .filter(Boolean)
@@ -45,7 +70,7 @@ export function buildCsp(nonce: string): string {
     "img-src 'self' data: https://lh3.googleusercontent.com https://avatars.githubusercontent.com",
     "font-src 'self'",
     `connect-src ${connectSrc}`,
-    "frame-src https://challenges.cloudflare.com",
+    `frame-src https://challenges.cloudflare.com ${LEMONSQUEEZY_FRAME_HOST}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

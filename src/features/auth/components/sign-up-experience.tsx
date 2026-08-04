@@ -241,9 +241,9 @@ export function SignUpExperience() {
 
       {wantsPro && (
         <div className="rounded-lg border border-accent/30 bg-accent-subtle px-3.5 py-3 text-[13px] leading-relaxed text-accent-text">
-          Du kommst über Pro. Bezahlung ist noch nicht freigeschaltet, dein Konto
-          startet also auf Free, mit vollem Funktionsumfang über deinen eigenen
-          API-Key. Ich merke dir Pro vor und melde mich, sobald es so weit ist.
+          Du kommst über Pro. Erstell hier zuerst dein Konto, buchen kannst du
+          direkt danach unter Abrechnung. Bis dahin läuft es auf Free, mit
+          vollem Funktionsumfang über deinen eigenen API-Key.
         </div>
       )}
 

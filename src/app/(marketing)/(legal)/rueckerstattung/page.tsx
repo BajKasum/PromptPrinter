@@ -16,16 +16,13 @@ export default function RueckerstattungPage() {
       intro="Kurz: Wenn Pro nicht das ist, was du erwartet hast, bekommst du dein Geld zurück. Ohne dass du dir eine Begründung ausdenken musst."
       updated={LEGAL.lastUpdated}
     >
-      <h2>Der aktuelle Stand</h2>
+      <h2>Wer dein Geld hat</h2>
       <p>
-        <strong>
-          Derzeit sind über PromptPrinter keine Zahlungen möglich.
-        </strong>{" "}
-        Der Pro-Plan ist angekündigt, aber noch nicht freigeschaltet, es gibt
-        keinen Bezahlvorgang und damit auch nichts zu erstatten. Diese Richtlinie
-        beschreibt, was gilt, sobald Pro kostenpflichtig verfügbar ist. Sie steht
-        hier vorab, damit du vor einem Kauf weisst, woran du bist, und nicht
-        danach.
+        Der Kauf läuft über <strong>Lemon Squeezy</strong>, den Zahlungsanbieter
+        hinter PromptPrinter. Lemon Squeezy verkauft dabei in eigenem Namen und
+        stellt dir die Rechnung. Für eine Erstattung wendest du dich trotzdem
+        einfach an mich, ich stosse sie dort an. Du musst dich nicht selbst
+        durch ein fremdes Portal arbeiten.
       </p>
 
       <h2>14 Tage Geld zurück</h2>

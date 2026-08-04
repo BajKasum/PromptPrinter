@@ -52,6 +52,16 @@ export type MarketingPlan = {
   description: string;
   cta: string;
   href: string;
+  /**
+   * Öffnet der Aufruf zur Handlung den Lemon-Squeezy-Checkout statt zu
+   * navigieren?
+   *
+   * `href` bleibt daneben bestehen und ist kein toter Rest: es ist das Ziel,
+   * wenn kein Checkout konfiguriert ist (siehe LemonCheckoutButton's
+   * `fallbackHref`), und damit der Grund, warum eine Vorschau-Deployment ohne
+   * Zahlungsanbieter trotzdem eine vollständige Preisseite zeigt.
+   */
+  checkout?: boolean;
   note?: string;
   /** Short value pill shown under the price (e.g. "Kein eigener Key nötig"). */
   badge?: string;
@@ -87,14 +97,18 @@ export const PLANS: MarketingPlan[] = [
     price: PRO_PRICE_LABEL,
     cadence: "Monat",
     description: "Wenn du keinen eigenen Key einrichten willst, übernehme ich das für dich.",
-    // "Pro starten" versprach einen Kauf, den es nicht gibt: der Klick führte
-    // auf eine gewöhnliche Registrierung, das Konto landete auf Free, und dass
-    // Bezahlung noch gar nicht freigeschaltet ist, stand nur hinter dem Login
-    // auf der Abrechnungsseite (QA-Befund U-2). Jetzt sagt der Button, was er
-    // tut, und die Notiz darunter sagt, warum.
-    cta: "Für Pro vormerken",
+    // Der Knopf führt seit dem 04.08.2026 in den Checkout (Lemon Squeezy),
+    // nicht mehr auf eine Warteliste. Davor stand hier "Für Pro vormerken"
+    // samt Notiz, dass Bezahlung nicht freigeschaltet ist — die Fassung, mit
+    // der QA-Befund U-2 den Widerspruch "Knopf verspricht einen Kauf, den es
+    // nicht gibt" ehrlich stillgelegt hatte, bis es den Kauf wirklich gibt.
+    //
+    // `href` bleibt der Weg für den Fall, dass kein Checkout konfiguriert ist
+    // (siehe `checkout` oben): dann ist Registrieren immer noch das Richtige.
+    cta: "Pro holen",
     href: "/signup?plan=pro",
-    note: "Bezahlung ist noch nicht freigeschaltet. Du startest auf Free, ich melde mich, sobald Pro buchbar ist.",
+    checkout: true,
+    note: "Monatlich kündbar. Auf die erste Zahlung gibt es 14 Tage Geld zurück, ohne Begründung.",
     badge: "Kein eigener Key nötig",
     highlight: true,
     mascot: "celebrating",
