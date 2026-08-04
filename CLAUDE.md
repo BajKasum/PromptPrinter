@@ -108,11 +108,12 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Eintragen wurde der Nutzer explizit gefragt und hingewiesen, dass das Repo
 > öffentlich ist und die Adresse damit dauerhaft in der Git-Historie steht,
 > er hat sich bewusst für die echte Adresse entschieden. Impressum/AGB/
-> Datenschutz sind damit inhaltlich vollständig. Einzig offen: `appHost`
-> bleibt Platzhalter, bis die Hosting-Entscheidung gefallen ist (Punkt 2
-> oben), das ist beabsichtigt, kein Versehen. Alles andere aus dem
-> Kritik-Pass ist erledigt, keine bekannten offenen Findings mehr aus
-> dieser Runde.
+> Datenschutz sind damit inhaltlich vollständig. ~~Einzig offen: `appHost`
+> bleibt Platzhalter, bis die Hosting-Entscheidung gefallen ist.~~
+> **Erledigt:** `appHost` steht auf „Vercel Inc., USA", die App läuft live
+> unter `https://promptprinter.app`, die Hosting-Frage ist entschieden. Alles
+> andere aus dem Kritik-Pass ist erledigt, keine bekannten offenen Findings
+> mehr aus dieser Runde.
 >
 > **Landing-Aufräumung (2026-07-16):** Auf Zuruf aus Live-Screenshots drei
 > Sektionen entschlackt (`499208c`): Trust-Badge-Zeile aus dem Hero raus
@@ -648,6 +649,23 @@ npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
 Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
+
+**Wenn der Build mit `ENOENT … .next/…` abbricht:** läuft parallel ein
+Dev-Server? `next dev` und `next build` teilen sich dasselbe `.next`-
+Verzeichnis, und während der Dev-Server kompiliert (vor allem direkt nach dem
+Start), liest der Build Dateien, die der Dev-Server gerade ersetzt. Der Abbruch
+sieht aus wie ein echter Build-Fehler und ist keiner — Dev-Server stoppen,
+Build wiederholen.
+
+Das ist ein **Wettlauf, keine Zustandsverderbnis.** Gemessen am 2026-08-04
+(Planpunkt A-4, dessen ursprüngliche Diagnose „stale `.next`" damit widerlegt
+ist): zweimal `npm run build` hintereinander auf einem bestehenden `.next`
+läuft grün, und auch ein Build bei laufendem, fertig kompiliertem Dev-Server
+läuft grün. Reproduziert wurde der Abbruch nur, während der Dev-Server frisch
+startete und selbst noch schrieb. Deshalb bewusst **kein** `prebuild`, das
+`.next` löscht: das würde bei jedem Build den inkrementellen Cache wegwerfen
+(auch in der CI) und einen Wettlauf trotzdem nicht verhindern — `rm -rf .next`
+„hilft" nur, weil es Zeit kostet, in der der Dev-Server fertig wird.
 
 ## Arbeitsregeln (verbindlich)
 

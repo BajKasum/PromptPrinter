@@ -5,20 +5,35 @@
 product
 
 ## Users
-Solo/indie developers and "vibe-coders", people with a rough product idea who want a
-build-ready prompt package for AI coding tools (Claude, ChatGPT, Cursor, Lovable, Stitch).
-Technical enough to paste a prompt into a coding assistant, not looking to write the
-scaffolding prose themselves. On the Billing page specifically: an already-signed-up user
-checking their plan, their usage against monthly limits, and whether upgrading or adding
-their own API key (BYOK) changes anything for them.
+"Vibe-coders": people who build by feeding prompts into AI build tools (Lovable, Cursor,
+v0, Claude Code, Bolt, Replit). Technical enough to paste a prompt into a build tool, and
+paying for every wasted iteration in credits. On the Billing page specifically: an
+already-signed-up user checking their plan, their usage against monthly limits, and whether
+upgrading or adding their own API key (BYOK) changes anything for them.
 
 ## Product Purpose
-PromptPrinter turns a rough idea into a complete, structured prompt/artifact packet
-(product plan, AI instructions, app design, database schema, security checklist, marketing)
-via a guided chat with an in-app mascot ("Finn"). Success on the Billing page: the user
-immediately understands their plan, how much of their monthly allowance is used, and what
-changes if they upgrade or bring their own key, without it reading like an empty template
-bolted onto the app.
+PromptPrinter is a chat with an in-app mascot ("Finn") that makes the FIRST prompt into a
+build tool count. Finn asks one bundled clarifying question covering the things the build
+tool itself never asks (target tool, core screens, data model, auth, design direction), then
+delivers one finished, paste-ready prompt tailored to that tool. The value is not burning
+credits on iterations a complete prompt would have avoided.
+
+A project can additionally carry files and a public GitHub repository, analysed once into a
+"project brain" — after that every chat in the project already knows the stack (framework,
+language, architecture, database, design system, coding style, conventions) without the user
+explaining it.
+
+Success on the Billing page: the user immediately understands their plan, how much of their
+monthly allowance is used, and what changes if they upgrade or bring their own key, without
+it reading like an empty template bolted onto the app.
+
+> **Truth note (2026-08-04, plan item A-1).** Until now this section described "a complete,
+> structured prompt/artifact packet (product plan, AI instructions, app design, database
+> schema, security checklist, marketing)". That was the generation pipeline removed on
+> 2026-07-17; the software has not produced artifact packets since. Same class of finding as
+> the F-1 fix in the AGB — a document promising a capability the product does not have — at
+> a place the earlier pass did not reach. Note the current numbers while here: Free is
+> BYOK-only (zero server-key messages, 3 projects), Pro/Team are 400 messages per month.
 
 ## Brand Personality
 "Refined Dev-Brand", closest real references are Linear, Vercel, and Raycast: monochrome

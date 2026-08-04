@@ -54,3 +54,7 @@ screenshots_Docs/
 
 # scratch dir for mascot asset generation
 .mascot-tmp/
+
+# Scratch-Verzeichnis fuer Zwischenergebnisse (PDF-/Bildvergleiche u. a.).
+# Nicht versioniert: reine Arbeitsspuren, teils binaer, ohne Wert fuer andere.
+tmp/
