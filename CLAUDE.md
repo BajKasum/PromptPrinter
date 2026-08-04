@@ -456,13 +456,51 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Function-Cold-Start, `NODE_ENV=production` gilt dort für Production UND
 > Preview), keine Server Actions, kein `fs`-Schreibzugriff, kein
 > `child_process`, kein Cron, next/image ohne `unoptimized`, Fonts über
-> `next/font/google` (self-hosted im Build). `vercel.json` bewusst nicht
-> angelegt — nichts im Projekt braucht eine Einstellung, die
-> Next.js' eigene Konventionen (`next.config.ts` `headers()`/`redirects()`)
-> nicht schon abdecken. Kein Code-Findings-Posten offen; verbleibende
+> `next/font/google` (self-hosted im Build). ~~`vercel.json` bewusst nicht
+> angelegt.~~ **Überholt seit 2026-08-04 (Planpunkt B-1), siehe direkt
+> unten.** Kein Code-Findings-Posten offen; verbleibende
 > Schritte sind reine Dashboard-Konfiguration (Env-Vars in Vercel setzen,
 > Supabase-Redirect-URLs um die Vercel-Domain ergänzen), keine
 > Repo-Änderung.
+>
+> **Funktionsregion nach Dublin (2026-08-04, Planpunkt B-1):** Live gemessen
+> lieferte **jede** Route `X-Vercel-Id: fra1::iad1` — der Edge-Knoten steht in
+> Frankfurt, der Code lief in **Washington DC**, die Datenbank liegt in
+> **Irland** (`eu-west-1`). Jede Supabase-Query querte damit zweimal den
+> Atlantik, und ein Projekt-Chat-Aufruf macht rund 15 davon. Das hatte nie
+> jemand entschieden: `iad1` ist Vercels Standard, und ohne `vercel.json` hat
+> nie jemand widersprochen.
+>
+> `vercel.json` trägt jetzt `"regions": ["dub1"]`. **Warum Dublin und nicht
+> Frankfurt**, obwohl Frankfurt näher an den Nutzern liegt: die Distanz zum
+> Nutzer zahlt man **einmal** pro Aufruf, die Distanz zur Datenbank **pro
+> Query**. Bei rund 15 Rundreisen schlägt das jeden Gewinn beim ersten Byte —
+> grob 15 × 25 ms (fra1→Irland) gegen 15 × 2 ms (dub1, gleiche Stadt wie die
+> DB). Nach B-2 verstärkt sich das noch: die öffentlichen Seiten kommen dann
+> statisch vom CDN und sind von der Region gar nicht mehr betroffen, sodass
+> die Region **nur noch** den datenbankschweren, eingeloggten Teil bestimmt.
+> Die Datei enthält keine Kommentare (JSON), deshalb steht die Begründung
+> hier. Umstellen ist ein Wort, falls eine Messung widerspricht.
+>
+> ⚠️ **NEGATIVES ERGEBNIS: `browserslist` bringt hier nichts (2026-08-04,
+> Planpunkt B-4).** Der Plan wollte „41 KB Polyfills für Browser, die niemand
+> mehr benutzt" per `browserslist`-Angabe in `package.json` abschneiden.
+> Gemessen, nicht angenommen:
+>
+> - Mit `browserslist: ["chrome >= 111", "edge >= 111", "firefox >= 111",
+>   "safari >= 16.4"]` gebaut → `polyfills-42372ed130431b0a.js` ist **byte- und
+>   hash-identisch** (112.594 B), ebenso die geteilten Chunks (`103 kB`,
+>   gleiche Hashes) und die Landing Page (`172 kB`). Kein einziges Byte anders.
+> - Der Grund: Next hängt den Polyfill-Chunk mit `noModule: true` ein (im
+>   kompilierten `next/dist/server/app-render/app-render.js` nachgesehen). Ein
+>   `<script nomodule>` wird von **jedem** modul-fähigen Browser ignoriert —
+>   die 110 KB gehen für heutige Nutzer nie über die Leitung. Sie stehen im
+>   Build-Verzeichnis, nicht im Netzwerk-Wasserfall.
+>
+> Die Angabe wurde deshalb wieder entfernt: eine Konfigurationszeile, die eine
+> Wirkung suggeriert, die sie nicht hat, ist schlimmer als keine. Wer die
+> Bundle-Grösse angehen will, muss an die 103 kB geteilten Chunks — nicht an
+> die Polyfills.
 >
 > **Turnstile wurde nie verifiziert, jetzt schon (2026-08-02):** Das Captcha
 > auf Login/Registrierung/Reset war seit dem Einbau **reine Dekoration**. Der
