@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { Button } from "@/shared/ui/button";
-import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
+import { ProCheckoutCta } from "@/features/marketing/components/pro-checkout-cta";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Check } from "lucide-react";
 import { PLANS } from "@/shared/lib/pricing";
@@ -98,19 +98,11 @@ export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
               </div>
             )}
             {p.checkout ? (
-              // Ein anonymer Besucher hat hier kein Konto, das wir mitgeben
-              // könnten — er tippt seine Mail im Checkout selbst ein, und
-              // genau die ist danach die Verbindung zum Konto. Wer schon
-              // angemeldet ist, kauft über die Abrechnungsseite, die Mail und
-              // Konto-ID kennt und beide mitschickt.
-              <LemonCheckoutButton
-                fallbackHref={p.href}
-                variant="accent"
-                className="w-full mt-6"
-                successMessage="Danke! Deine Zahlung ist angekommen. Melde dich mit derselben Mail an, dann schalte ich Pro für dich frei."
-              >
-                {p.cta}
-              </LemonCheckoutButton>
+              // Diese Seite ist öffentlich und weiss standardmässig nicht,
+              // wer klickt — ProCheckoutCta prüft das selbst, clientseitig
+              // (siehe dort für das Warum), und zeigt bis dahin denselben
+              // Link auf `/signup?plan=pro`, den p.href ohnehin ist.
+              <ProCheckoutCta plan={p} />
             ) : (
               <Button
                 asChild
