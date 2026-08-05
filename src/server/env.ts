@@ -146,6 +146,22 @@ export function hasInvalidCheckoutUrl(env: EnvLike = process.env): boolean {
 }
 
 /**
+ * True when Pro is buyable but nothing listens for the payment.
+ *
+ * The Turnstile lesson (2026-08-02) applied to money: there, a visible widget
+ * whose token nobody redeemed looked exactly like a working captcha. Here, a
+ * working checkout whose webhook nobody receives looks exactly like a working
+ * upgrade — the customer pays, the plan stays free, and the only signal is a
+ * support mail. Unlike Turnstile this is a legitimate mode (the operator can
+ * upgrade by hand, and did so between 04.08. morning and this change), so it
+ * warns rather than refusing to boot.
+ */
+export function hasCheckoutWithoutWebhook(env: EnvLike = process.env): boolean {
+  if (normalizeCheckoutUrl(env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL) === null) return false;
+  return isBlank(env.LEMON_SQUEEZY_WEBHOOK_SECRET);
+}
+
+/**
  * Checks the environment once at server startup (wired up in
  * src/instrumentation.ts).
  *
@@ -184,6 +200,16 @@ export function assertEnv(env: EnvLike = process.env): void {
         `(${env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}). Erwartet wird eine https-Adresse ` +
         "auf einem *.lemonsqueezy.com-Host. Folge: Der Pro-Knopf führt auf die " +
         "Registrierung statt in den Checkout, es kann niemand kaufen."
+    );
+  }
+
+  if (hasCheckoutWithoutWebhook(env)) {
+    console.warn(
+      "[env] Der Pro-Checkout ist konfiguriert, LEMON_SQUEEZY_WEBHOOK_SECRET aber nicht. " +
+        "Folge: Kunden können bezahlen, aber niemand schaltet sie frei — " +
+        "/api/webhooks/lemonsqueezy antwortet mit 503, und jede Freischaltung " +
+        "bleibt Handarbeit. Das Secret steht im Lemon-Squeezy-Dashboard unter " +
+        "Settings → Webhooks."
     );
   }
 

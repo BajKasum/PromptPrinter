@@ -68,12 +68,25 @@ export const maxLegitimateChatBodyBytes = () =>
   MAX_TRANSCRIPT_MESSAGES * MAX_ASSISTANT_MESSAGE_CHARS * 4;
 
 /**
- * Reads and JSON-parses a request body, refusing anything past `maxBytes`.
- *
- * Throws RequestBodyTooLargeError or InvalidJsonBodyError; callers map those to
- * 413 and 400 respectively. Never returns a partially-read body.
+ * Ceiling for the Lemon Squeezy webhook. Its payloads are a handful of KB
+ * (one order or subscription object plus meta); 64 KB is generous headroom
+ * for a provider that may add fields, and still far below anything that
+ * could hurt. This one has no session check in front of it — the signature IS
+ * the check, and it can only run after the body has been read — so the bound
+ * matters more here than anywhere else.
  */
-export async function readJsonBody(req: Request, maxBytes: number): Promise<unknown> {
+export const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
+
+/**
+ * Reads a request body as text, refusing anything past `maxBytes`.
+ *
+ * Split out of readJsonBody (below) for the webhook, which must verify an HMAC
+ * over the bytes EXACTLY as they arrived: re-serializing a parsed object gives
+ * different bytes (key order, whitespace, number formatting) and the signature
+ * would never match. Callers that only need the parsed value keep using
+ * readJsonBody.
+ */
+export async function readCappedText(req: Request, maxBytes: number): Promise<string> {
   const declared = Number(req.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     throw new RequestBodyTooLargeError(maxBytes);
@@ -98,7 +111,17 @@ export async function readJsonBody(req: Request, maxBytes: number): Promise<unkn
     reader.releaseLock();
   }
 
-  const text = Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
+  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
+}
+
+/**
+ * Reads and JSON-parses a request body, refusing anything past `maxBytes`.
+ *
+ * Throws RequestBodyTooLargeError or InvalidJsonBodyError; callers map those to
+ * 413 and 400 respectively. Never returns a partially-read body.
+ */
+export async function readJsonBody(req: Request, maxBytes: number): Promise<unknown> {
+  const text = await readCappedText(req, maxBytes);
   try {
     return JSON.parse(text) as unknown;
   } catch {

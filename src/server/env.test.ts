@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   assertEnv,
+  hasCheckoutWithoutWebhook,
   hasInsecureAppUrl,
   hasInvalidCheckoutUrl,
   hasNoModelProvider,
@@ -173,6 +174,37 @@ describe("hasInvalidCheckoutUrl", () => {
       })
     ).toBe(true);
     expect(hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "7a06a455" })).toBe(true);
+  });
+});
+
+// Die Turnstile-Lehre auf Geld angewandt: dort sah ein Widget, dessen Token
+// niemand einloeste, wie ein funktionierendes Captcha aus. Hier sieht ein
+// Checkout, dessen Webhook niemand empfaengt, wie ein funktionierendes Upgrade
+// aus — der Kunde zahlt, der Plan bleibt free, und das einzige Signal ist eine
+// Supportmail.
+describe("hasCheckoutWithoutWebhook", () => {
+  const checkout = "https://promptprinter.lemonsqueezy.com/checkout/buy/abc";
+
+  it("warnt, wenn man kaufen kann, aber niemand die Zahlung entgegennimmt", () => {
+    expect(hasCheckoutWithoutWebhook({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: checkout })).toBe(
+      true
+    );
+  });
+
+  it("schweigt, sobald beide Haelften da sind", () => {
+    expect(
+      hasCheckoutWithoutWebhook({
+        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: checkout,
+        LEMON_SQUEEZY_WEBHOOK_SECRET: "secret",
+      })
+    ).toBe(false);
+  });
+
+  it("schweigt, wenn es gar keinen Checkout gibt — dann fehlt auch nichts", () => {
+    expect(hasCheckoutWithoutWebhook({})).toBe(false);
+    expect(
+      hasCheckoutWithoutWebhook({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "kaputt" })
+    ).toBe(false);
   });
 });
 

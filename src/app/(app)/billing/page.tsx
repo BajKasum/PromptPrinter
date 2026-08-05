@@ -5,11 +5,30 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import { UsageMeter } from "@/features/settings/components/usage-meter";
 import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
 import { PLANS } from "@/shared/lib/pricing";
+import { formatDate } from "@/shared/lib/utils";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { getConfiguredProviders } from "@/server/byok";
 
 export const metadata = { title: "Abrechnung" };
+
+/**
+ * Lemon Squeezys Abo-Zustände auf Deutsch.
+ *
+ * Unvollständig zu sein ist hier eingeplant: kommt ein neuer Zustand dazu,
+ * zeigt die Seite ihn im Original an, statt ihn zu verschweigen. Die
+ * Zugangsentscheidung hängt ohnehin nicht an dieser Tabelle, sondern an
+ * server/billing/lemonsqueezy.ts.
+ */
+const SUBSCRIPTION_STATUS_LABEL: Record<string, string> = {
+  on_trial: "Testphase",
+  active: "Aktiv",
+  past_due: "Zahlung offen",
+  paused: "Pausiert",
+  unpaid: "Nicht bezahlt",
+  cancelled: "Gekündigt",
+  expired: "Abgelaufen",
+};
 
 // Always reflect the latest plan + usage, never a cached snapshot.
 export const dynamic = "force-dynamic";
@@ -33,7 +52,11 @@ export default async function BillingPage() {
     { count: monthlyChatMessages },
     configuredProviders,
   ] = await Promise.all([
-    supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("plan, is_admin, subscription_status, subscription_renews_at, subscription_ends_at")
+      .eq("id", user.id)
+      .maybeSingle(),
     // Owner filter is explicit on top of RLS (defense in depth).
     supabase
       .from("projects")
@@ -76,6 +99,19 @@ export default async function BillingPage() {
         ? "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen oder Pro."
         : "Ist ein Balken voll, geht's erst im nächsten Monat weiter.";
 
+  // Was der Webhook zuletzt gemeldet hat. Nur lesbar, geschrieben wird
+  // ausschliesslich serverseitig (Migration 0039 vergibt kein UPDATE-Grant).
+  const subscriptionStatus = (profile?.subscription_status as string | null) ?? null;
+  const renewsAt = (profile?.subscription_renews_at as string | null) ?? null;
+  const endsAt = (profile?.subscription_ends_at as string | null) ?? null;
+  const isCancelled = subscriptionStatus === "cancelled";
+
+  // Ohne Webhook-Secret gibt es niemanden, der eine Zahlung entgegennimmt —
+  // dann ist die Freischaltung Handarbeit, und die Seite muss das sagen statt
+  // etwas zu versprechen, das kein Prozess einlöst. Serverseitig gelesen, der
+  // Wert erreicht den Browser nie.
+  const activatesAutomatically = Boolean(process.env.LEMON_SQUEEZY_WEBHOOK_SECRET);
+
   const pro = PLANS.find((p) => p.name === "Pro");
   // features[0] is "Alles aus Free", a meta-line, not something new, the
   // upgrade panel only cares about what's actually different.
@@ -115,6 +151,29 @@ export default async function BillingPage() {
           </div>
         </section>
       </FadeIn>
+
+      {/* Der Zustand, den der Webhook zuletzt gemeldet hat. Nur wo es einen
+          gibt: ein Konto ohne Abo hat hier nichts zu lesen, und ein leerer
+          Kasten "Abo: —" wäre schlechter als keiner. */}
+      {subscriptionStatus && (
+        <FadeIn delay={0.12}>
+          <section className="mt-12 card-surface p-6 md:p-8">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <h2 className="text-[17px] font-semibold text-foreground">Dein Abo</h2>
+              <span className="text-[13px] text-secondary">
+                {SUBSCRIPTION_STATUS_LABEL[subscriptionStatus] ?? subscriptionStatus}
+              </span>
+            </div>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-secondary">
+              {isCancelled && endsAt
+                ? `Gekündigt. Pro bleibt bis zum ${formatDate(endsAt)} aktiv, danach geht es auf Free zurück.`
+                : renewsAt
+                  ? `Verlängert sich automatisch am ${formatDate(renewsAt)}.`
+                  : "Kündigen und Zahlungsmittel ändern kannst du über den Link in deiner Kaufbestätigung von Lemon Squeezy."}
+            </p>
+          </section>
+        </FadeIn>
+      )}
 
       {/* Only a Free, non-admin account has anything to gain here, a Pro/
           Team account seeing its own plan pitched back at itself would read
@@ -161,8 +220,9 @@ export default async function BillingPage() {
               <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-relaxed text-tertiary">
                 <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
                 <span>
-                  Nach der Zahlung schalte ich dein Konto von Hand auf Pro, in der Regel noch
-                  am selben Tag. Vollautomatisch geht das noch nicht.
+                  {activatesAutomatically
+                    ? "Sobald die Zahlung durch ist, schaltet sich Pro von selbst frei. Lad die Seite danach einmal neu."
+                    : "Nach der Zahlung schalte ich dein Konto von Hand auf Pro, in der Regel noch am selben Tag."}
                 </span>
               </p>
             </div>
