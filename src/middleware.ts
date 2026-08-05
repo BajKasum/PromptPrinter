@@ -1,12 +1,11 @@
 import { type NextRequest } from "next/server";
-import { updateSession } from "@/server/supabase/middleware";
-import { buildCsp } from "@/server/security/csp";
+import { requiresSession, updateSession } from "@/server/supabase/middleware";
+import { buildCsp, buildStaticCsp } from "@/server/security/csp";
 
 export async function middleware(request: NextRequest) {
   // Base64-encode the UUID: CSP's nonce-source grammar is base64 alphabet
   // only, a raw UUID's hyphens aren't valid there.
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = buildCsp(nonce);
 
   // Only x-nonce goes on the request (layout.tsx reads it via headers() to
   // pass the same nonce to next-themes). CSP itself is only ever meaningful
@@ -18,6 +17,16 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
 
   const response = await updateSession(request, requestHeaders);
+
+  // Zwei Policies, nicht eine (gefunden 05.08.2026, siehe csp.ts für die volle
+  // Herleitung). Nur `(app)/*` liest den Nonce noch per `headers()` — jede
+  // andere Route ist seit Planpunkt B-2 statisch und threadet ihn nirgends
+  // mehr durch, bekam bis eben aber trotzdem die strikte Nonce-only-Policy:
+  // Next' eigene Hydration-Scripts hatten keinen passenden Nonce, die CSP
+  // blockierte sie, React hydrierte nie. `requiresSession()` ist bereits die
+  // einzige Quelle für "ist das eine (app)-Route" (siehe deren eigenen
+  // Kommentar) — hier wiederverwendet statt einer zweiten Routenliste.
+  const csp = requiresSession(request.nextUrl.pathname) ? buildCsp(nonce) : buildStaticCsp();
   response.headers.set("Content-Security-Policy", csp);
   return response;
 }

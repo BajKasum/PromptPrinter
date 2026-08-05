@@ -38,7 +38,15 @@ const PUBLIC_PREFIXES = [
 // they can't shadow a real page.
 const PUBLIC_EXACT = ["/", "/robots.txt", "/sitemap.xml", "/opengraph-image"] as const;
 
-function requiresSession(pathname: string): boolean {
+/**
+ * Exported additionally for `src/middleware.ts`, which reuses it to decide
+ * between the two CSP variants (`server/security/csp.ts`) — the same
+ * boundary ("is this an `(app)/*` route") happens to answer both questions,
+ * and a second, separately maintained route list is exactly the drift this
+ * function's own inverted-default design was built to avoid (see the comment
+ * above `PUBLIC_PREFIXES`).
+ */
+export function requiresSession(pathname: string): boolean {
   // API routes answer for themselves. Every one of them already returns a 401
   // JSON problem response when there is no session (/api/chat, /api/projects,
   // /api/settings/api-key, /api/account), and /api/health is deliberately
