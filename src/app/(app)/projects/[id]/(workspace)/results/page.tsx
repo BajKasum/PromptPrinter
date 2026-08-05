@@ -6,6 +6,7 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
+import { getSessionProfile } from "@/server/session";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
 
 // QA finding P-1: this query used to load every saved prompt a project ever
@@ -44,10 +45,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const { userId } = await getProject(id);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const [{ data: rowsRaw }, { count: chatCount }, { data: profile }] = await Promise.all([
+  const [{ data: rowsRaw }, { count: chatCount }, profile] = await Promise.all([
     supabase
       .from("generations")
       .select("id, created_at, outputs")
@@ -61,9 +59,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .eq("project_id", id)
       .eq("user_id", userId),
     // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
-    user
-      ? supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle()
-      : Promise.resolve({ data: null }),
+    // Request-gecacht (B-3): dieselbe Zeile hat das (app)-Layout schon geholt.
+    getSessionProfile(),
   ]);
   const canExportPdf =
     profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";

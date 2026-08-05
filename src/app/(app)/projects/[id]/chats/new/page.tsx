@@ -5,6 +5,7 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
 import { normalizeTarget } from "@/features/chat/lib/target-tools";
 import { createClient } from "@/server/supabase/server";
+import { getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +24,8 @@ export default async function NewProjectChatPage({ params }: { params: Params })
   // Whether saved results exist decides the empty-state copy: refining
   // something vs. starting the project's first work.
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const [{ data: generationRows, count }, { data: profile }] = await Promise.all([
+  const user = await getSessionUser();
+  const [{ data: generationRows, count }, profile] = await Promise.all([
     // Selecting `outputs` (not just a head-count) also gives the save button
     // the already-saved prompt texts, so it can start disabled for a prompt
     // that's already in the project's Ergebnisse (F-7). Explicit user_id
@@ -38,7 +37,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
       .eq("user_id", project.userId),
     // getProject already redirected to /login if unauthenticated, user.id is
     // safe here; the "" fallback just matches no row instead of throwing.
-    supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
+    getSessionProfile(),
   ]);
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(

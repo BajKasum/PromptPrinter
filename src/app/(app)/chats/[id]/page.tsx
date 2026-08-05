@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { createClient } from "@/server/supabase/server";
+import { getSessionProfile, getSessionUser } from "@/server/session";
 import { MESSAGE_LOAD_LIMIT, SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 
@@ -23,9 +24,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   const { id } = await params;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   // RLS scopes the read to the owner, a foreign or malformed id yields no row.
@@ -39,7 +38,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [{ data: rows }, { data: profile }, { data: generationRows }] = await Promise.all([
+  const [{ data: rows }, profile, { data: generationRows }] = await Promise.all([
     // Newest first + limit, then reversed below: with an unbounded chat, an
     // ascending query + limit would keep the OLDEST rows and cut off exactly
     // the turns the user is mid-conversation with.
@@ -49,7 +48,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
       .eq("conversation_id", id)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_LOAD_LIMIT),
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts.
     supabase

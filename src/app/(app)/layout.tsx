@@ -6,6 +6,7 @@ import { ToastProvider } from "@/shared/ui/toast";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
 import { Onboarding } from "@/features/onboarding/components/onboarding";
 import { createClient } from "@/server/supabase/server";
+import { getSessionProfile, getSessionUser } from "@/server/session";
 
 type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
@@ -14,11 +15,12 @@ type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null
 // user here is both the defense-in-depth check and the source for the
 // sidebar's account menu.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Request-gecacht (Planpunkt B-3): dieselbe Antwort bedienen auch
+  // getProject() und die Seiten darunter, statt je einmal nachzufragen.
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+
+  const supabase = await createClient();
 
   // Der CSP-Nonce fuer next-themes' Anti-Flash-Inline-Script. Der stand bis
   // Planpunkt B-2 im Root-Layout und machte damit ALLE 38 Routen dynamisch,
@@ -37,12 +39,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // Recents for the sidebar: the latest global chats (project chats live in
   // their workspace) and pinned-then-recent projects. RLS scopes both reads.
-  const [{ data: profile }, { data: rawChats }, { data: rawProjects }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("plan, is_admin, display_name, avatar_url, settings")
-      .eq("id", user.id)
-      .maybeSingle(),
+  // Das Profil kommt aus getSessionProfile() (B-3), damit die Seiten darunter
+  // dieselbe Zeile bekommen statt sie erneut zu holen — bis zu drei Ebenen
+  // fragten vorher unabhaengig voneinander nach display_name bzw. plan.
+  // Bleibt im selben Promise.all: die Abfrage laeuft dadurch weiterhin
+  // parallel zu den beiden Listen, nur eben genau einmal pro Request.
+  const [profile, { data: rawChats }, { data: rawProjects }] = await Promise.all([
+    getSessionProfile(),
     supabase
       .from("conversations")
       .select("id, title")

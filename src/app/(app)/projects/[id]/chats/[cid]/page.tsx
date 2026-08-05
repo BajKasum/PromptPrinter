@@ -6,6 +6,7 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
 import { normalizeTarget } from "@/features/chat/lib/target-tools";
 import { createClient } from "@/server/supabase/server";
+import { getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { MESSAGE_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
@@ -27,9 +28,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   const project = await getProject(id);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   // Explicit user_id alongside the id lookup: RLS-only defense-in-depth
   // before (Security-Audit finding L-3) — project.userId is guaranteed
   // non-null here since getProject() above already redirected an
@@ -46,7 +45,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [{ data: rows }, { data: generationRows, count: resultCount }, { data: profile }] =
+  const [{ data: rows }, { data: generationRows, count: resultCount }, profile] =
     await Promise.all([
       // Newest first + limit, then reversed below (QA finding P-1): an
       // ascending query + limit would keep the OLDEST rows on a long chat,
@@ -70,7 +69,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         .eq("user_id", project.userId),
       // getProject already redirected to /login if unauthenticated, user.id is
       // safe here; the "" fallback just matches no row instead of throwing.
-      supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle(),
+      getSessionProfile(),
     ]);
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();

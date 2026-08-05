@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/server/supabase/server";
+import { getSessionUser } from "@/server/session";
 
 // The workspace shell (layout) and its subroutes (Übersicht, Chats, Ergebnisse)
 // all need the same project row. Layouts can't pass props to pages, so every
@@ -44,11 +45,14 @@ function asStringRecord(value: unknown): Record<string, string> {
 }
 
 export const getProject = cache(async (id: string): Promise<WorkspaceProject> => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getSessionUser() statt eines eigenen auth.getUser() (Planpunkt B-3):
+  // diese Funktion ist zwar schon `cache()`-dedupliziert, aber nur gegen sich
+  // selbst — ihr Auth-Aufruf lief zusaetzlich zu dem im (app)-Layout und dem
+  // auf der Seite. Jetzt teilen sich alle drei denselben.
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+
+  const supabase = await createClient();
 
   // RLS scopes the read to the owner; the explicit .eq("user_id", …) is
   // defense-in-depth on top of it (CLAUDE.md's own standard for user-scoped
