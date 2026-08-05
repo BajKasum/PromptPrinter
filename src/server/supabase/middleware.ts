@@ -53,8 +53,45 @@ function requiresSession(pathname: string): boolean {
   );
 }
 
+/**
+ * Braucht dieser Pfad ueberhaupt einen Blick auf die Session?
+ *
+ * Bis Planpunkt B-2 lief `supabase.auth.getUser()` auf JEDEM Request — auch
+ * beim Abruf von `/agb`, `/docs` oder der Landing Page, wo das Ergebnis
+ * niemanden interessiert. Fuer anonyme Besucher war das folgenlos, fuer
+ * eingeloggte eine zusaetzliche Netzwerkrunde vor jedem Seitenaufruf.
+ *
+ * Zwei oeffentliche Pfade brauchen den Blick trotzdem, und das ist der Grund,
+ * warum hier nicht einfach `!requiresSession(pathname)` steht:
+ * `/login` und `/signup` leiten eingeloggte Nutzer nach `/chats/new` weiter,
+ * und dafuer muss man wissen, ob jemand eingeloggt ist. `/reset-password` und
+ * `/auth/*` bleiben ebenfalls drin: dort werden Sessions gerade hergestellt
+ * oder geaendert, und das Aktualisieren der Cookies laeuft ueber genau diesen
+ * Aufruf.
+ *
+ * Die uebrigen oeffentlichen Seiten verlieren dadurch nur die Cookie-
+ * Auffrischung waehrend des Lesens. Das ist unkritisch: der naechste Schritt
+ * in die App frischt auf, und bis dahin passiert nichts, was eine gueltige
+ * Session braeuchte.
+ */
+function needsSessionLookup(pathname: string): boolean {
+  if (requiresSession(pathname)) return true;
+  return (
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/reset-password" ||
+    pathname.startsWith("/reset-password/") ||
+    pathname === "/auth" ||
+    pathname.startsWith("/auth/")
+  );
+}
+
 export async function updateSession(request: NextRequest, requestHeaders: Headers) {
   let response = NextResponse.next({ request: { headers: requestHeaders } });
+
+  // Oeffentliche Seiten kommen ohne Supabase-Runde aus (B-2). Vor dem Anlegen
+  // des Clients, damit wirklich nichts passiert — nicht erst vor dem Aufruf.
+  if (!needsSessionLookup(request.nextUrl.pathname)) return response;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/shared/providers/theme-provider";
+import { MotionShell } from "@/shared/providers/motion-shell";
 import { siteUrl } from "@/shared/lib/site-url";
 import "./globals.css";
 
@@ -81,13 +80,37 @@ export const viewport: Viewport = {
   ],
 };
 
-export default async function RootLayout({
+/**
+ * Bewusst ohne `headers()` und ohne ThemeProvider (Planpunkt B-2).
+ *
+ * Hier stand bis 2026-08-04 ein `(await headers()).get("x-nonce")`, um
+ * next-themes' Anti-Flash-Inline-Script durch die CSP zu bringen. Ein
+ * `headers()`-Aufruf im Root-Layout macht aber **den gesamten Routenbaum**
+ * dynamisch: alle 38 Routen wurden pro Aufruf serverseitig gerendert und mit
+ * `Cache-Control: no-store` ausgeliefert — auch `/agb`, `/impressum` und die
+ * zehn `/docs`-Seiten, also unveraenderlicher Text. Live gemessen kostete das
+ * 360–510 ms TTFB bei durchgehend `X-Vercel-Cache: MISS`.
+ *
+ * Die oeffentlichen Seiten verlieren dadurch nichts: sie hatten nie eine
+ * Theme-Wahl. Der ThemeProvider erzwang dort bisher ausdruecklich `light`
+ * („the public site keeps one deliberate, always-light mood"), und genau das
+ * ergibt sich jetzt von selbst — `:root` in globals.css IST der helle Satz,
+ * und ohne Provider setzt niemand eine Theme-Klasse. Gleiches Bild, ein
+ * Script weniger. Der ThemeProvider sitzt seither nur noch in
+ * `(app)/layout.tsx`, wo ohnehin dynamisch gerendert wird und der Nonce
+ * nichts kostet.
+ *
+ * `suppressHydrationWarning` bleibt: next-themes schreibt die Theme-Klasse
+ * weiterhin an genau dieses `<html>`, nur eben aus einem tiefer liegenden
+ * Layout heraus.
+ *
+ * MotionShell bleibt hier oben — `prefers-reduced-motion` ist
+ * Barrierefreiheit und muss auch oeffentlich gelten. Eine Client-Komponente
+ * macht die Seite nicht dynamisch, nur `headers()`/`cookies()` taeten das.
+ */
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Set by src/middleware.ts, next-themes needs it for its own anti-flash
-  // inline script to pass the CSP's script-src nonce.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
-
   return (
     <html
       lang="de"
@@ -95,15 +118,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-          nonce={nonce}
-        >
-          {children}
-        </ThemeProvider>
+        <MotionShell>{children}</MotionShell>
       </body>
     </html>
   );

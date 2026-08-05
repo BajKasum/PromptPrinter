@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Sidebar, type SidebarChat, type SidebarProject } from "@/shell/components/sidebar";
 import { MobileNav } from "@/shell/components/mobile-nav";
 import { ToastProvider } from "@/shared/ui/toast";
+import { ThemeProvider } from "@/shared/providers/theme-provider";
 import { Onboarding } from "@/features/onboarding/components/onboarding";
 import { createClient } from "@/server/supabase/server";
 
@@ -18,6 +19,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Der CSP-Nonce fuer next-themes' Anti-Flash-Inline-Script. Der stand bis
+  // Planpunkt B-2 im Root-Layout und machte damit ALLE 38 Routen dynamisch,
+  // auch die unveraenderlichen Rechtstexte. Hier gelesen kostet er nichts:
+  // dieses Layout ist durch die Auth-Pruefung oben ohnehin dynamisch.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   // The sidebar's collapse state and user-chosen width both live in cookies
   // so the server renders the correct size on first paint, no client-side
@@ -66,42 +73,50 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     (rawSettings as Record<string, unknown>).onboarding_done === true;
 
   return (
-    <ToastProvider>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-ring/50 focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
-      >
-        Zum Inhalt springen
-      </a>
-      <div className="min-h-screen md:flex">
-        <Sidebar
-          initialCollapsed={sidebarCollapsed}
-          initialWidth={sidebarWidth}
-          chats={sidebarChats}
-          projects={sidebarProjects}
-          email={user.email ?? ""}
-          plan={profile?.plan ?? "free"}
-          isAdmin={profile?.is_admin ?? false}
-          displayName={profile?.display_name ?? null}
-          avatarUrl={profile?.avatar_url ?? null}
-        />
-        <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
-          {/* Mobile-only nav trigger, the desktop sidebar is hidden below md
-              so this is the sole way to move between sections on a phone.
-              Sticky so it stays reachable while a long chat thread scrolls. */}
-          <div className="sticky top-0 z-30 -mx-6 bg-background/70 px-6 pb-2 pt-3 backdrop-blur-xl md:hidden">
-            <MobileNav chats={sidebarChats} projects={sidebarProjects} />
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem
+      disableTransitionOnChange
+      nonce={nonce}
+    >
+      <ToastProvider>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-ring/50 focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
+        >
+          Zum Inhalt springen
+        </a>
+        <div className="min-h-screen md:flex">
+          <Sidebar
+            initialCollapsed={sidebarCollapsed}
+            initialWidth={sidebarWidth}
+            chats={sidebarChats}
+            projects={sidebarProjects}
+            email={user.email ?? ""}
+            plan={profile?.plan ?? "free"}
+            isAdmin={profile?.is_admin ?? false}
+            displayName={profile?.display_name ?? null}
+            avatarUrl={profile?.avatar_url ?? null}
+          />
+          <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
+            {/* Mobile-only nav trigger, the desktop sidebar is hidden below md
+                so this is the sole way to move between sections on a phone.
+                Sticky so it stays reachable while a long chat thread scrolls. */}
+            <div className="sticky top-0 z-30 -mx-6 bg-background/70 px-6 pb-2 pt-3 backdrop-blur-xl md:hidden">
+              <MobileNav chats={sidebarChats} projects={sidebarProjects} />
+            </div>
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="mx-auto w-full max-w-[1200px] pt-6 md:pt-8 focus:outline-none"
+            >
+              {children}
+            </main>
           </div>
-          <main
-            id="main-content"
-            tabIndex={-1}
-            className="mx-auto w-full max-w-[1200px] pt-6 md:pt-8 focus:outline-none"
-          >
-            {children}
-          </main>
         </div>
-      </div>
-      <Onboarding userId={user.id} initialDone={tourDone} />
-    </ToastProvider>
+        <Onboarding userId={user.id} initialDone={tourDone} />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
