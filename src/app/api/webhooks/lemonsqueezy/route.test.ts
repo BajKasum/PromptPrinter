@@ -270,7 +270,11 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       expect(res.status).toBe(200);
       await expect(res.json()).resolves.toMatchObject({ unmatched: true });
       expect(logWarning).toHaveBeenCalledWith("billing.webhook_unmatched", {
-        event: "order_created",
+        // `eventName`, nicht `event`: observability.ts setzt den
+        // Ereignisnamen der Zeile selbst, ein gleichnamiger Kontext-Schlüssel
+        // würde ihn überschreiben. Genau das ist beim ersten echten Lauf
+        // passiert, siehe den Kommentar in route.ts.
+        eventName: "order_created",
         customerId: "42",
         email: "kaeufer@example.test",
         resourceId: "order_9",
@@ -354,12 +358,35 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       expect(captureError).toHaveBeenCalledWith(
         "billing.webhook_failed",
         expect.anything(),
-        expect.objectContaining({ event: "subscription_created" })
+        expect.objectContaining({ eventName: "subscription_created" })
       );
       expect(eventUpdate).toHaveBeenLastCalledWith(
         expect.objectContaining({ status: "failed" }),
         "evt_1"
       );
+    });
+
+    it("überschreibt in keinem Zweig den Ereignisnamen der Log-Zeile", async () => {
+      // Die Fehlerklasse, nicht nur die eine Stelle: observability.ts baut
+      // `{ ts, level, event, ...context }`. Trägt irgendein Kontext hier einen
+      // Schlüssel `event`, verliert die Zeile ihren Namen — im Log stand dann
+      // "subscription_created" statt "billing.webhook_unmatched", und kein
+      // Unit-Test sah es, weil alle nur den Kontext prüften.
+      profileSelect.mockResolvedValue({ data: null });
+      await POST(req(body("subscription_updated", { attributes: { status: "active" } })));
+      await POST(req(body("order_refunded")));
+      claimUpsert.mockResolvedValue({ data: null });
+      eventSelect.mockResolvedValue({ data: { id: "evt_1", status: "processed" } });
+      await POST(req(body("subscription_created", { attributes: { status: "active" } })));
+
+      const contexts = [...logEvent.mock.calls, ...logWarning.mock.calls, ...captureError.mock.calls]
+        .map((call) => call[call.length - 1])
+        .filter((last): last is Record<string, unknown> => typeof last === "object" && last !== null);
+
+      expect(contexts.length).toBeGreaterThan(0);
+      for (const context of contexts) {
+        expect(Object.keys(context)).not.toContain("event");
+      }
     });
 
     it("quittiert ein Ereignis, für das es hier keine Behandlung gibt", async () => {

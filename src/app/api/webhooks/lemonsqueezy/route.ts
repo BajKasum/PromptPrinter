@@ -86,6 +86,13 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const payload = parsed.data;
+  // Wandert unten als `eventName` in jeden Log-Kontext, NICHT als `event`.
+  // observability.ts baut die Zeile als `{ ts, level, event, ...context }` —
+  // ein Kontext-Schlüssel namens `event` überschreibt also den Ereignisnamen
+  // der Zeile. Beim ersten echten Lauf stand deshalb
+  // `"event":"subscription_created"` statt `"event":"billing.webhook_unmatched"`
+  // im Log: ausgerechnet die Angabe weg, nach der man greppt, und den
+  // Unit-Tests nicht anzusehen, weil die nur den Kontext prüfen.
   const event = payload.meta.event_name;
   const key = eventKey(raw);
   const admin = createAdminClient();
@@ -106,7 +113,7 @@ export async function POST(req: Request): Promise<Response> {
     .maybeSingle<EventRow>();
 
   if (claimError) {
-    captureError("billing.webhook_claim_failed", claimError, { event });
+    captureError("billing.webhook_claim_failed", claimError, { eventName: event });
     return problem(503, "Ereignis konnte nicht angenommen werden.");
   }
 
@@ -121,7 +128,7 @@ export async function POST(req: Request): Promise<Response> {
 
     if (readError || !existing) {
       captureError("billing.webhook_lookup_failed", readError ?? new Error("Zeile verschwunden"), {
-        event,
+        eventName: event,
       });
       return problem(503, "Ereignis konnte nicht angenommen werden.");
     }
@@ -131,7 +138,7 @@ export async function POST(req: Request): Promise<Response> {
     // Werte, statt sie fortzuschreiben), aber "folgenlos" ist kein Grund, ihn
     // zu machen.
     if (existing.status !== "failed") {
-      logEvent("billing.webhook_duplicate", { event, status: existing.status });
+      logEvent("billing.webhook_duplicate", { eventName: event, status: existing.status });
       return NextResponse.json({ received: true, duplicate: true });
     }
 
@@ -155,7 +162,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const decision = decideBillingUpdate(payload);
     if (decision.kind === "ignore") {
-      logEvent("billing.webhook_ignored", { event, reason: decision.reason });
+      logEvent("billing.webhook_ignored", { eventName: event, reason: decision.reason });
       await finish("ignored", decision.reason, null);
       return NextResponse.json({ received: true, ignored: true });
     }
@@ -169,7 +176,7 @@ export async function POST(req: Request): Promise<Response> {
       // zuzuordnen. Kundennummer und Mail stehen deshalb hier, damit die
       // Freischaltung von Hand eine Minute dauert und keine Suche.
       logWarning("billing.webhook_unmatched", {
-        event,
+        eventName: event,
         customerId: decision.patch.subscription_customer_id ?? null,
         email: payload.data.attributes?.user_email ?? null,
         resourceId: payload.data.id,
@@ -185,7 +192,7 @@ export async function POST(req: Request): Promise<Response> {
     if (updateError) throw updateError;
 
     logEvent("billing.webhook_applied", {
-      event,
+      eventName: event,
       userId,
       plan: decision.patch.plan ?? null,
       subscriptionStatus: decision.patch.subscription_status ?? null,
@@ -193,7 +200,7 @@ export async function POST(req: Request): Promise<Response> {
     await finish("processed", null, userId);
     return NextResponse.json({ received: true });
   } catch (err) {
-    captureError("billing.webhook_failed", err, { event, resourceId: payload.data.id });
+    captureError("billing.webhook_failed", err, { eventName: event, resourceId: payload.data.id });
     // Absichtlich ohne await-Fehlerbehandlung verkettet: scheitert auch das
     // Protokollieren, bleibt die Zeile auf "processing" stehen und die
     // Wiederholung von Lemon Squeezy läuft trotzdem in den Duplikat-Zweig.
