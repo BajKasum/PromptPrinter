@@ -30,6 +30,10 @@ const tableResults: Record<string, { data?: unknown; error?: unknown; count?: nu
 // content into (QA finding F-8's own regression target: what project_id
 // ends up in the conversations insert).
 const insertCalls: Record<string, unknown[]> = {};
+// Ebenso fuer Loeschungen: C-1 nimmt eine Frage bei einem Anbieter-Fehler
+// wieder zurueck, und ohne diesen Zaehler wuerde ein fehlendes delete im
+// Stub stillschweigend durch rollbackTurns try/catch fallen.
+const deleteCalls: Record<string, number> = {};
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null, count: 0 };
@@ -43,6 +47,10 @@ function builder(table: string) {
   }
   chain.insert = vi.fn((row: unknown) => {
     (insertCalls[table] ??= []).push(row);
+    return chain;
+  });
+  chain.delete = vi.fn(() => {
+    deleteCalls[table] = (deleteCalls[table] ?? 0) + 1;
     return chain;
   });
   return chain;
@@ -75,11 +83,15 @@ vi.mock("@/server/llm", async (importOriginal) => {
   };
 });
 
-function req(body: unknown = { messages: [{ role: "user", content: "Hi" }] }) {
+function req(
+  body: unknown = { messages: [{ role: "user", content: "Hi" }] },
+  signal?: AbortSignal
+) {
   return new Request("https://promptprinter.app/api/chat", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    ...(signal ? { signal } : {}),
   });
 }
 
@@ -91,6 +103,7 @@ describe("POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     for (const table of Object.keys(insertCalls)) delete insertCalls[table];
+    for (const table of Object.keys(deleteCalls)) delete deleteCalls[table];
     createClient.mockResolvedValue(supabaseStub);
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 });
@@ -111,7 +124,7 @@ describe("POST /api/chat", () => {
     // The plan-limit behavior itself (including Free's own dedicated path) is
     // exercised explicitly in describe("limits") below.
     tableResults.profiles = { data: { plan: "pro", is_admin: false } };
-    tableResults.messages = { data: null, error: null, count: 3 };
+    tableResults.messages = { data: { id: "msg-1" }, error: null, count: 3 };
     tableResults.conversations = { data: { id: "conv-1" }, error: null };
     tableResults.projects = { data: null, error: null };
     tableResults.generations = { data: null, error: null };
@@ -274,7 +287,7 @@ describe("POST /api/chat", () => {
       // Pro/Team allow 400 (plans.ts); the DB-count fallback applies because
       // reserveMonthlyQuota returns null (no Redis) in this test's setup.
       tableResults.profiles = { data: { plan: "pro", is_admin: false } };
-      tableResults.messages = { data: null, error: null, count: 400 };
+      tableResults.messages = { data: { id: "msg-1" }, error: null, count: 400 };
 
       const res = await POST(req());
 
@@ -283,7 +296,7 @@ describe("POST /api/chat", () => {
     });
 
     it("skips the monthly allowance entirely for a BYOK user on a paid plan too", async () => {
-      tableResults.messages = { data: null, error: null, count: 5000 };
+      tableResults.messages = { data: { id: "msg-1" }, error: null, count: 5000 };
       getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
 
       const res = await POST(req());
@@ -648,7 +661,7 @@ describe("POST /api/chat", () => {
       expect(chatCompleteStream).not.toHaveBeenCalled();
     });
 
-    // Security-Audit finding L-5: persistTurn (chat-persistence.ts) stores the
+    // Security-Audit finding L-5: openTurn (chat-persistence.ts) stores the
     // transcript's LAST entry verbatim as the new "user" turn — `role:
     // newUser.role`, not a hardcoded "user". The real UI always appends a user
     // message before posting, but a crafted direct POST ending in an
@@ -667,6 +680,117 @@ describe("POST /api/chat", () => {
 
       expect(res.status).toBe(400);
       expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── Planpunkt C-1: der Zug ueberlebt einen geschlossenen Tab ────────────
+  //
+  // Vorher wurde der ganze Zug erst NACH dem vollstaendigen Stream
+  // geschrieben. Wer den Tab schloss, waehrend Finn antwortete, verlor auch
+  // die eigene Frage — sie war nie in der Datenbank.
+  describe("Zug sofort persistieren (C-1)", () => {
+    function userRows(): unknown[] {
+      return (insertCalls.messages ?? []).filter(
+        (row) => (row as { role?: string }).role === "user"
+      );
+    }
+    function assistantRows(): unknown[] {
+      return (insertCalls.messages ?? []).filter(
+        (row) => (row as { role?: string }).role === "assistant"
+      );
+    }
+
+    it("schreibt die Frage, BEVOR das Modell ueberhaupt gefragt wird", async () => {
+      let userRowsAtCallTime = -1;
+      chatCompleteStream.mockImplementation(async function* () {
+        // Zum Zeitpunkt des Modellaufrufs muss die Frage schon stehen.
+        userRowsAtCallTime = userRows().length;
+        yield "Antwort";
+      });
+
+      await readSse(await POST(req()));
+
+      expect(userRowsAtCallTime).toBe(1);
+    });
+
+    it("nennt die Konversation vor dem ersten Token, damit ein Reload richtig landet", async () => {
+      const body = await readSse(await POST(req()));
+      const metaAt = body.indexOf("event: meta");
+      const deltaAt = body.indexOf("event: delta");
+
+      expect(metaAt).toBeGreaterThanOrEqual(0);
+      expect(body).toContain('"conversationId":"conv-1"');
+      expect(metaAt).toBeLessThan(deltaAt);
+    });
+
+    it("ergaenzt die Antwort als eigene Zeile, wenn der Stream durchlaeuft", async () => {
+      await readSse(await POST(req()));
+
+      expect(userRows()).toHaveLength(1);
+      expect(assistantRows()).toHaveLength(1);
+    });
+
+    // Das ist der eigentliche Punkt des Planpunkts.
+    it("laesst die Frage stehen, wenn der Tab mitten im Stream zugeht", async () => {
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+
+      await readSse(await POST(req(undefined, controller.signal)));
+
+      expect(userRows()).toHaveLength(1);
+      // Nichts zurueckgenommen: genau das war vorher der Verlust.
+      expect(deleteCalls.messages ?? 0).toBe(0);
+      expect(deleteCalls.conversations ?? 0).toBe(0);
+    });
+
+    it("rettet einen Teiltext beim Abbruch weiterhin mit", async () => {
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        yield "halbe ";
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+
+      await readSse(await POST(req(undefined, controller.signal)));
+
+      expect(assistantRows()).toHaveLength(1);
+      expect((assistantRows()[0] as { content: string }).content).toContain("halbe");
+    });
+
+    // Anbieter-Fehler ist NICHT Tab-Schluss: dort rollt die Oberflaeche die
+    // Frage zurueck (F-4/U-6), also muss die Datenbank mitziehen — sonst
+    // haengt nach einem Reload ein Chat in der Seitenleiste, der nur aus der
+    // unbeantworteten Frage besteht.
+    it("nimmt die Frage zurueck, wenn der Anbieter scheitert", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("Z.ai 500: upstream down");
+      });
+
+      await readSse(await POST(req()));
+
+      // Frisch angelegte Konversation: die geht mitsamt Nachricht (CASCADE).
+      expect(deleteCalls.conversations ?? 0).toBe(1);
+    });
+
+    it("loescht bei einem Fehler im BESTEHENDEN Chat nur die Nachricht, nicht den Chat", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("Z.ai 500: upstream down");
+      });
+
+      await readSse(
+        await POST(
+          req({
+            conversationId: "11111111-1111-4111-8111-111111111111",
+            messages: [{ role: "user", content: "Hi" }],
+          })
+        )
+      );
+
+      expect(deleteCalls.messages ?? 0).toBe(1);
+      expect(deleteCalls.conversations ?? 0).toBe(0);
     });
   });
 });

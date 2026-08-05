@@ -24,7 +24,12 @@ import {
 import { captureError, logEvent } from "@/shared/lib/observability";
 import { CHAT_SYSTEM_PROMPT } from "@/server/system-prompt";
 import { buildProjectContext } from "@/features/projects/lib/project-context";
-import { persistTurn } from "@/features/chat/lib/chat-persistence";
+import {
+  completeTurn,
+  openTurn,
+  rollbackTurn,
+  type OpenedTurn,
+} from "@/features/chat/lib/chat-persistence";
 import { stubReply } from "@/features/chat/lib/chat-stub";
 import { createSseWriter } from "@/server/http/sse-writer";
 
@@ -37,7 +42,8 @@ export const maxDuration = 300;
 // recent turns matter for continuity, especially in the refine loop, where
 // each reply already IS the current, finished version, so older turns are
 // largely superseded rather than needed as history. This only trims what goes
-// to the model; persistTurn (below) always stores the full turn regardless.
+// to the model; die Persistenz (openTurn/completeTurn) speichert unabhaengig
+// davon immer den vollen Zug.
 const CHAT_HISTORY_LIMIT = 12;
 
 function trimHistory(messages: ChatMessage[]): ChatMessage[] {
@@ -92,7 +98,7 @@ function normalizeTranscript(body: unknown): unknown {
     return body;
   }
   // Newest entries win: the tail carries the current turn plus the context that
-  // still matters, and persistTurn only ever reads the last entry anyway.
+  // still matters, and openTurn only ever reads the last entry anyway.
   return { ...withMessages, messages: withMessages.messages.slice(-MAX_TRANSCRIPT_MESSAGES) };
 }
 
@@ -230,7 +236,7 @@ export async function POST(req: Request) {
   const input = parsed.data;
 
   // The schema allows either role in any position (it validates each message
-  // shape independently), but persistTurn (chat-persistence.ts) treats the
+  // shape independently), but openTurn (chat-persistence.ts) treats the
   // LAST entry as inherently "the new user message" — it stores it verbatim
   // as `role: newUser.role`. The client always appends a user message before
   // posting, so this never fires in the real UI, but a crafted direct POST
@@ -260,7 +266,7 @@ export async function POST(req: Request) {
   ).toISOString();
   const [{ data: profile }, { count: chatCount }, override] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
-    // One row per turn, persistTurn always inserts exactly one assistant
+    // One row per turn, completeTurn always inserts exactly one assistant
     // reply alongside the user message, so counting only that role avoids
     // double-counting a turn as two units. Still the number shown in
     // settings/billing either way; also the enforcement fallback below
@@ -387,7 +393,7 @@ export async function POST(req: Request) {
   }
   // Ownership-verified project id, never the raw input.projectId (QA finding
   // F-8). The request only checked the value was a UUID, not that this caller
-  // owns it, and persistTurn wrote it straight into conversations.project_id
+  // owns it, and openTurn writes it straight into conversations.project_id
   // regardless — a chat could end up filed under a project its owner can't
   // see (the workspace route 404s them out) and not in the global chat list
   // either (that filters project_id IS NULL), invisibly orphaned. No data
@@ -409,12 +415,38 @@ export async function POST(req: Request) {
     }
   }
 
-  // 6+7. Produce the reply and persist it, streamed to the client as it's
+  // 6. Den Zug OEFFNEN, bevor das Modell gefragt wird (Planpunkt C-1).
+  //
+  //    Vorher wurde der ganze Zug erst nach dem vollstaendigen Stream
+  //    geschrieben. Wer den Tab schloss, waehrend Finn antwortete, verlor
+  //    damit auch die eigene Frage — sie war nie in der Datenbank, und der
+  //    Prozess, der sie haette schreiben sollen, war genau der, den das
+  //    Schliessen beendet hat.
+  //
+  //    Bewusst VOR dem ReadableStream und nicht darin: scheitert das
+  //    Schreiben, ist noch keine Statuszeile abgeschickt, und der Client
+  //    bekommt eine ehrliche JSON-Fehlerantwort statt eines Streams, der
+  //    sofort mit einem Fehlerereignis endet.
+  let opened: OpenedTurn;
+  try {
+    opened = await openTurn(supabase, userId, input, verifiedProjectId);
+  } catch (err) {
+    await releaseReservations();
+    captureError("chat.open_turn_failed", err, { userId, projectId: verifiedProjectId });
+    return problem(503, "Dein Chat konnte nicht gespeichert werden. Versuch es nochmal.");
+  }
+
+  // 7. Produce the reply and persist it, streamed to the client as it's
   //    generated instead of one opaque round trip: everything above this
   //    point (validation, quota, rate limit, system prompt) still returns a
   //    plain JSON problem response on failure, only the actual reply becomes
   //    an SSE stream. Wire protocol (hand-rolled, not the provider's own SSE
   //    dialect, see readOpenAiCompatibleSse in lib/llm.ts for that one):
+  //      event: meta   data: {"conversationId": "..."}  exactly one, first
+  //        Seit C-1 steht die Konversation schon vor dem ersten Token fest.
+  //        Frueh gesendet, damit der Client sofort auf die kanonische URL
+  //        wechseln kann — ein Reload mitten im Stream landet dann im
+  //        richtigen Chat statt auf /chats/new.
   //      event: delta  data: {"text": "..."}   zero or more, as text arrives
   //      event: done   data: {conversationId?, persistError?}   exactly one, on success
   //        persistError is a stable CODE ("persist_failed"), never a message —
@@ -423,6 +455,10 @@ export async function POST(req: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const { send, closeQuietly } = createSseWriter(controller);
+
+      // Zuerst, noch vor dem ersten Token: der Client kennt damit die
+      // Konversation, bevor irgendetwas schiefgehen kann.
+      send("meta", { conversationId: opened.conversationId });
 
       // Cost/latency telemetry (QA finding C-7). Character counts stand in for
       // tokens: the streaming path never sees the provider's own usage numbers
@@ -462,20 +498,29 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         if (req.signal.aborted) {
-          // The client stopped generation itself (not a provider failure):
-          // the connection is already gone, so there's no "done"/"error"
-          // event left to deliver either way. Best-effort save whatever
-          // partial reply had already streamed, same as a natural
-          // completion would, so stopping early doesn't silently lose it on
-          // the next reload (the client keeps its own local copy of the
-          // same partial text). An empty partial means nothing was actually
-          // generated yet, nothing to persist, and the reservation is
-          // released the same as any other no-op call.
+          // The client stopped generation itself, or closed the tab (not a
+          // provider failure): the connection is already gone, so there's no
+          // "done"/"error" event left to deliver either way. Best-effort save
+          // whatever partial reply had already streamed, so stopping early
+          // doesn't silently lose it on the next reload (the client keeps its
+          // own local copy of the same partial text).
+          //
+          // Seit C-1 ist der wichtige Teil das, was hier NICHT steht: die
+          // Frage bleibt in jedem Fall stehen, weil openTurn sie laengst
+          // geschrieben hat. Genau das war der Verlust, den dieser Planpunkt
+          // behebt — vorher war ohne Teiltext der ganze Zug weg, inklusive
+          // der eigenen Nachricht.
           if (reply.trim()) {
-            await persistTurn(supabase, userId, input, reply, verifiedProjectId).catch(() => {});
-          } else if (!reply.trim()) {
+            await completeTurn(supabase, userId, opened.conversationId, reply).catch(() => {});
+          } else {
             await releaseReservations();
           }
+          // Den Stream trotzdem schliessen. Fuer den echten Abbruch ist das
+          // folgenlos (es hoert niemand mehr zu, closeQuietly schluckt den
+          // Fehler eines bereits geschlossenen Controllers), aber ein
+          // ReadableStream, der nie endet, bleibt sonst offen — im Test haengt
+          // dadurch jedes Auslesen der Antwort bis zum Timeout.
+          closeQuietly();
           return;
         }
         // The call never produced a (full) reply, so it never actually cost
@@ -484,6 +529,12 @@ export async function POST(req: Request) {
         // so a failure mid-stream can only be conveyed as an "error" event,
         // not a 502, the client treats the two the same way either way.
         await releaseReservations();
+        // Und die Frage wieder wegnehmen: die Oberflaeche rollt sie bei einem
+        // Anbieter-Fehler zurueck und stellt die Eingabe wieder her (F-4/U-6).
+        // Bliebe die Zeile stehen, staende sie nach einem Reload wieder da und
+        // in der Seitenleiste haenge ein Chat, der nur aus ihr besteht. Das
+        // gilt ausdruecklich NICHT fuer den Abbruch oben.
+        await rollbackTurn(supabase, userId, opened);
         captureError("chat.turn_failed", err, {
           userId,
           byok: Boolean(override),
@@ -497,10 +548,11 @@ export async function POST(req: Request) {
         return;
       }
 
-      // Persist the turn (in both modes), so the chat shows up in the sidebar
-      // and can be reopened/continued. Persistence failures are surfaced but
-      // never block the reply the user is waiting on.
-      let conversationId: string | null = input.conversationId ?? null;
+      // Die Antwort an den bereits geoeffneten Zug haengen. Die Konversation
+      // und die Frage stehen seit openTurn (C-1), hier fehlt nur noch das
+      // Ergebnis. Persistence failures are surfaced but never block the reply
+      // the user is waiting on.
+      const conversationId: string = opened.conversationId;
       // A stable CODE, never the underlying message (Security-Audit finding
       // M-1). This used to carry err.message straight to the browser, i.e.
       // PostgREST/Postgres text naming constraints, columns and policies —
@@ -510,10 +562,9 @@ export async function POST(req: Request) {
       // still gets the original for the logs.
       let persistError: string | null = null;
       try {
-        conversationId = await persistTurn(supabase, userId, input, reply, verifiedProjectId);
+        await completeTurn(supabase, userId, conversationId, reply);
       } catch (err) {
         persistError = "persist_failed";
-        conversationId = null;
         captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });
       }
 
@@ -532,7 +583,7 @@ export async function POST(req: Request) {
 
       send("done", {
         mode,
-        ...(conversationId ? { conversationId } : {}),
+        conversationId,
         ...(persistError ? { persistError } : {}),
       });
       closeQuietly();

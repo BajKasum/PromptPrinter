@@ -266,8 +266,43 @@ export function Chat({
       }
       if (!res.body) throw new Error("Keine Antwort erhalten.");
 
+      // Die Konversation kommt seit Planpunkt C-1 schon VOR dem ersten Token
+      // (SSE-Ereignis `meta`), weil die Route sie zusammen mit der Frage
+      // anlegt, bevor sie das Modell fragt. Frueh uebernommen heisst: ein
+      // Reload mitten im Stream landet im richtigen Chat statt auf
+      // /chats/new — und genau dort ist die Frage dann auch, was vorher nicht
+      // der Fall war.
+      //
+      // Eigene Variable statt des `conversationId`-States als Wache: ein
+      // setState wirkt nicht sofort, `done` saehe sonst weiterhin den alten
+      // Wert und wuerde router.replace/refresh ein zweites Mal ausloesen.
+      let adoptedId: string | null = null;
+      const adoptConversation = (newId: string) => {
+        if (adoptedId === newId) return;
+        adoptedId = newId;
+        // The route returns the conversation id on the first persisted turn;
+        // hold onto it so every following turn appends to the same stored
+        // chat. That first turn moves a fresh chat onto its canonical URL,
+        // /chats/[id] for global chats, the project subroute for workspace
+        // chats, and refreshes the server components so sidebar recents +
+        // project chat lists pick it up.
+        if (!conversationId) {
+          if (!initialConversationId) {
+            router.replace(
+              projectId ? `/projects/${projectId}/chats/${newId}` : `/chats/${newId}`,
+              { scroll: false }
+            );
+          }
+          router.refresh();
+        }
+        setConversationId(newId);
+      };
+
       for await (const { event, data } of parseSseEvents(res.body)) {
-        if (event === "delta") {
+        if (event === "meta") {
+          const { conversationId: newId } = JSON.parse(data) as { conversationId?: string };
+          if (newId) adoptConversation(newId);
+        } else if (event === "delta") {
           const { text: chunk } = JSON.parse(data) as { text: string };
           accumulated += chunk;
           setPending({ text: accumulated, complete: false });
@@ -282,24 +317,9 @@ export function Chat({
           // No text is coming any more; the reveal finishes writing what's
           // left and commits the message from its own callback.
           setPending({ text: accumulated, complete: true });
-          // The route returns the conversation id on the first persisted turn;
-          // hold onto it so every following turn appends to the same stored
-          // chat. That first turn moves a fresh chat onto its canonical URL,
-          // /chats/[id] for global chats, the project subroute for workspace
-          // chats, and refreshes the server components so sidebar recents +
-          // project chat lists pick it up.
-          if (newId) {
-            if (!conversationId) {
-              if (!initialConversationId) {
-                router.replace(
-                  projectId ? `/projects/${projectId}/chats/${newId}` : `/chats/${newId}`,
-                  { scroll: false }
-                );
-              }
-              router.refresh();
-            }
-            setConversationId(newId);
-          }
+          // Normalerweise schon durch `meta` erledigt; bleibt als Rueckfall
+          // fuer den Fall, dass ein Client dieses Ereignis nicht sieht.
+          if (newId) adoptConversation(newId);
           if (persistError) {
             setPersistWarning(
               "Diese Antwort ist da, konnte aber gerade nicht gespeichert werden, bei einem Neuladen geht sie verloren."
