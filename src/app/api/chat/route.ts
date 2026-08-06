@@ -26,6 +26,7 @@ import { CHAT_SYSTEM_PROMPT } from "@/server/system-prompt";
 import { buildProjectContext } from "@/features/projects/lib/project-context";
 import {
   completeTurn,
+  dropReplacedReply,
   openTurn,
   rollbackTurn,
   type OpenedTurn,
@@ -563,6 +564,12 @@ export async function POST(req: Request) {
       let persistError: string | null = null;
       try {
         await completeTurn(supabase, userId, conversationId, reply);
+        // Beim Neu-Erzeugen (C-2) faellt die alte Antwort JETZT weg, nicht
+        // vorher: waere sie schon beim Start geloescht worden, stuende der
+        // Nutzer nach einem gescheiterten Anbieter-Aufruf ohne beides da.
+        if (input.replaceMessageId) {
+          await dropReplacedReply(supabase, userId, conversationId, input.replaceMessageId);
+        }
       } catch (err) {
         persistError = "persist_failed";
         captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });

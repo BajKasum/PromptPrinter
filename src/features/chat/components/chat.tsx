@@ -225,8 +225,47 @@ export function Chat({
     const text = (textArg ?? input).trim();
     if (!text || busy) return null;
     const next: Msg[] = [...messages, { id: randomId(), role: "user", content: text }];
-    setMessages(next);
     setInput("");
+    return run(next, text);
+  }
+
+  /**
+   * Dieselbe Antwort noch einmal erzeugen (Planpunkt C-2).
+   *
+   * Schneidet die letzte Assistenten-Antwort vom Verlauf ab und schickt den
+   * Rest erneut — die Frage bleibt also stehen, sie wird nur neu beantwortet.
+   * `replaceMessageId` sagt der Route zweierlei: die Frage NICHT ein zweites
+   * Mal speichern (sie steht seit C-1 schon in der Datenbank), und die alte
+   * Antwort erst wegnehmen, wenn die neue sicher da ist.
+   */
+  async function regenerate(): Promise<string | null> {
+    if (busy) return null;
+    const lastAssistant = messages.map((m) => m.role).lastIndexOf("assistant");
+    if (lastAssistant === -1) return null;
+    const base = messages.slice(0, lastAssistant);
+    // Ohne vorangehende Frage gaebe es nichts neu zu erzeugen — und die Route
+    // verlangt ohnehin, dass der Verlauf mit einer Nutzer-Nachricht endet.
+    if (base.length === 0 || base[base.length - 1].role !== "user") return null;
+    return run(base, base[base.length - 1].content, messages[lastAssistant].id);
+  }
+
+  /**
+   * Der gemeinsame Kern von Senden und Neu-Erzeugen.
+   *
+   * `text` ist nur fuer den Fehlerfall da (zurueck in die Eingabe), `next` ist
+   * der Verlauf, wie er nach dem Zug aussehen soll.
+   */
+  async function run(
+    next: Msg[],
+    text: string,
+    replaceMessageId?: string
+  ): Promise<string | null> {
+    // Der Stand VOR dem Zug, fuer den Fehlerfall. Frueher stand dort ein
+    // `slice(0, -1)`, das die zuletzt angehaengte Nachricht wegnahm — beim
+    // Neu-Erzeugen waere das die Frage des Nutzers gewesen, die gar nicht neu
+    // ist. Den vorherigen Stand wiederherzustellen stimmt in beiden Faellen.
+    const before = messages;
+    setMessages(next);
     setError(null);
     setRetryAfter(null);
     setPersistWarning(null);
@@ -254,7 +293,16 @@ export function Chat({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ target, conversationId, projectId, messages: wireMessages }),
+        body: JSON.stringify({
+          target,
+          conversationId,
+          projectId,
+          messages: wireMessages,
+          // Nur beim Neu-Erzeugen gesetzt (C-2). Die Route liest daran zwei
+          // Dinge ab: die Frage nicht ein zweites Mal speichern, und die alte
+          // Antwort erst wegnehmen, wenn die neue sicher steht.
+          ...(replaceMessageId ? { replaceMessageId } : {}),
+        }),
         signal: controller.signal,
       });
       if (!res.ok) {
@@ -363,7 +411,7 @@ export function Chat({
         // shape BYOK-Anthropic rejects outright (it requires alternating
         // roles), so one network blip turned into every following turn
         // failing. Nothing unsent stays in the transcript now.
-        setMessages((m) => m.slice(0, -1));
+        setMessages(before);
         setInput(text);
         setError(e instanceof Error ? e.message : "Unbekannter Fehler");
         setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);
@@ -446,6 +494,28 @@ export function Chat({
             {/* Only after the last character is written: the answer to "is it
                 done, can I copy it now?". */}
             {justFinished && pending === null && <ChatFinishedMarker />}
+
+            {/* Neu erzeugen (Planpunkt C-2). Sitzt unter der letzten Antwort,
+                weil es sich auf genau die bezieht — und nur im Ruhezustand,
+                damit es waehrend eines laufenden Zugs nicht mit dem
+                Stopp-Knopf im Composer konkurriert.
+
+                Fuer ein Werkzeug, dessen Versprechen "nicht Credits
+                verbrennen" ist, ist das der passende Weg zurueck: eine Antwort
+                nachschaerfen, ohne einen neuen Chat aufzumachen und den ganzen
+                Kontext noch einmal zu bezahlen. */}
+            {lastAssistantIndex !== -1 && !busy && pending === null && (
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => void regenerate()}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+                  Neu erzeugen
+                </button>
+              </div>
+            )}
             <div ref={endRef} className="h-0 scroll-mb-32" />
           </div>
         )}

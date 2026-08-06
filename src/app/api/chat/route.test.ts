@@ -793,4 +793,79 @@ describe("POST /api/chat", () => {
       expect(deleteCalls.conversations ?? 0).toBe(0);
     });
   });
+
+  // ─── Planpunkt C-2: dieselbe Antwort noch einmal erzeugen ────────────────
+  //
+  // Beim Neu-Erzeugen steht die Frage schon in der Datenbank (seit C-1). Zwei
+  // Dinge folgen daraus, und beide werden hier festgehalten.
+  describe("Antwort neu erzeugen (C-2)", () => {
+    const REPLACE_ID = "22222222-2222-4222-8222-222222222222";
+
+    function regenerateReq() {
+      return req({
+        conversationId: "11111111-1111-4111-8111-111111111111",
+        replaceMessageId: REPLACE_ID,
+        messages: [{ role: "user", content: "Hi" }],
+      });
+    }
+
+    function userRows(): unknown[] {
+      return (insertCalls.messages ?? []).filter(
+        (row) => (row as { role?: string }).role === "user"
+      );
+    }
+
+    it("speichert die Frage NICHT ein zweites Mal", async () => {
+      await readSse(await POST(regenerateReq()));
+
+      expect(userRows()).toHaveLength(0);
+      // Die neue Antwort kommt trotzdem dazu.
+      expect(
+        (insertCalls.messages ?? []).filter((r) => (r as { role?: string }).role === "assistant")
+      ).toHaveLength(1);
+    });
+
+    // Reihenfolge ist der ganze Punkt: waere die alte Antwort schon zu Beginn
+    // geloescht, stuende der Nutzer nach einem gescheiterten Anbieter-Aufruf
+    // ohne beides da.
+    it("loescht die alte Antwort erst, nachdem die neue gespeichert ist", async () => {
+      await readSse(await POST(regenerateReq()));
+
+      expect(deleteCalls.messages ?? 0).toBe(1);
+    });
+
+    it("laesst die alte Antwort stehen, wenn der Anbieter scheitert", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("Z.ai 500: upstream down");
+      });
+
+      await readSse(await POST(regenerateReq()));
+
+      expect(deleteCalls.messages ?? 0).toBe(0);
+    });
+
+    it("nimmt beim Scheitern auch keine Frage zurueck, weil keine geschrieben wurde", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("Z.ai 500: upstream down");
+      });
+
+      await readSse(await POST(regenerateReq()));
+
+      // Weder die Konversation (die bestand schon) noch eine Nachricht.
+      expect(deleteCalls.conversations ?? 0).toBe(0);
+    });
+
+    it("weist eine unbrauchbare Ersetzungs-ID ab, statt sie zu raten", async () => {
+      const res = await POST(
+        req({
+          conversationId: "11111111-1111-4111-8111-111111111111",
+          replaceMessageId: "keine-uuid",
+          messages: [{ role: "user", content: "Hi" }],
+        })
+      );
+
+      expect(res.status).toBe(400);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+  });
 });

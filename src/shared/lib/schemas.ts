@@ -39,6 +39,23 @@ export const chatRequestSchema = z.object({
   // is normalized away rather than rejected. See chat-limits.ts for why that
   // matters (a chat past the old cap of 50 was permanently unusable).
   messages: z.array(chatMessageSchema).min(1).max(MAX_TRANSCRIPT_MESSAGES),
+  /**
+   * "Erzeug diese Antwort neu" (Planpunkt C-2): die Zeilen-ID der bisherigen
+   * Assistenten-Antwort, die ersetzt werden soll.
+   *
+   * Wirkt an genau zwei Stellen, und beide folgen aus einer Ueberlegung:
+   * beim Neu-Erzeugen steht die Frage schon in der Datenbank.
+   *   1. openTurn schreibt sie NICHT ein zweites Mal (sonst haette der Chat
+   *      sie doppelt).
+   *   2. Die alte Antwort wird erst geloescht, NACHDEM die neue gespeichert
+   *      ist. Andersherum waere ein gescheiterter Anbieter-Aufruf teuer: die
+   *      alte Antwort weg, die neue nie gekommen.
+   *
+   * Ein erfundener Wert kostet nichts: das Loeschen ist auf den Eigentuemer
+   * und die Konversation eingegrenzt, trifft also entweder die eigene Zeile
+   * oder gar keine.
+   */
+  replaceMessageId: z.string().uuid().optional(),
 });
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

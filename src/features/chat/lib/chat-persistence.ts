@@ -39,8 +39,11 @@ import type { createClient } from "@/server/supabase/server";
 /** Was `openTurn` hinterlaesst, und was `rollbackTurn` braucht. */
 export type OpenedTurn = {
   conversationId: string;
-  /** Zeilen-ID der eben geschriebenen Frage. */
-  userMessageId: string;
+  /**
+   * Zeilen-ID der eben geschriebenen Frage — `null` beim Neu-Erzeugen, wo
+   * keine geschrieben wurde, weil die Frage schon vorher dastand.
+   */
+  userMessageId: string | null;
   /**
    * Wurde die Konversation in DIESEM Request angelegt? Nur dann darf ein
    * Zuruecknehmen sie mitloeschen — sonst raeumte ein fehlgeschlagener Zug
@@ -78,6 +81,11 @@ export async function openTurn(
   if (!newUser || newUser.role !== "user") {
     throw new Error("openTurn: last message must be role 'user'");
   }
+
+  // Beim Neu-Erzeugen (C-2) steht die Frage schon in der Datenbank — sie wird
+  // nur noch einmal an das Modell geschickt. Ein zweites Insert haette sie im
+  // Chat doppelt.
+  const isRegenerate = Boolean(input.replaceMessageId);
 
   let conversationId = input.conversationId ?? null;
   let createdConversation = false;
@@ -123,6 +131,13 @@ export async function openTurn(
       .eq("user_id", userId);
   }
 
+  if (isRegenerate) {
+    // Nichts zu schreiben. `userMessageId` bleibt leer, damit ein
+    // Zuruecknehmen keine fremde Zeile trifft — beim Neu-Erzeugen gibt es
+    // ohnehin nichts zurueckzunehmen, die Frage stand schon vorher da.
+    return { conversationId, userMessageId: null, createdConversation };
+  }
+
   const { data: inserted, error: msgErr } = await supabase
     .from("messages")
     .insert({
@@ -139,6 +154,37 @@ export async function openTurn(
   if (!userMessageId) throw new Error("message insert returned no id");
 
   return { conversationId, userMessageId, createdConversation };
+}
+
+/**
+ * Loescht die ersetzte Antwort — erst NACHDEM die neue gespeichert ist.
+ *
+ * Die Reihenfolge ist der ganze Punkt: andersherum stuende der Nutzer bei
+ * einem gescheiterten Anbieter-Aufruf ohne beides da. Auf Eigentuemer UND
+ * Konversation eingegrenzt, damit eine erfundene ID entweder die eigene Zeile
+ * trifft oder gar keine.
+ *
+ * Best effort: bleibt die alte Antwort stehen, sieht der Nutzer nach einem
+ * Reload zwei Antworten — aergerlich, aber besser als ein Abbruch nach einem
+ * bereits erfolgreichen Zug.
+ */
+export async function dropReplacedReply(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  conversationId: string,
+  messageId: string
+): Promise<void> {
+  try {
+    await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId)
+      .eq("role", "assistant");
+  } catch {
+    // siehe oben: best effort
+  }
 }
 
 /**
@@ -194,6 +240,9 @@ export async function rollbackTurn(
         .eq("user_id", userId);
       return;
     }
+    // Beim Neu-Erzeugen wurde keine Frage geschrieben, also gibt es hier auch
+    // nichts zurueckzunehmen.
+    if (!opened.userMessageId) return;
     await supabase
       .from("messages")
       .delete()
