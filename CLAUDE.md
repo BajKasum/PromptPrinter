@@ -618,6 +618,32 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   README es beschrieb, nämlich als die am 17.07. entfernte
 >   Generierungs-Pipeline. Die README ist entsprechend korrigiert.
 
+> **Erst-Login-Tour entfernt (2026-08-05):** Auf expliziten Nutzerwunsch die
+> geführte Finn-Tour komplett gestrichen, `src/features/onboarding/` (drei
+> Dateien: `onboarding.tsx`, `tour.tsx`, `tour-steps.ts`) gelöscht, der Ordner
+> existiert nicht mehr. Mitentfernt: der `<Onboarding>`-Mount samt
+> `tourDone`/`onboarding_done`-Auswertung in `(app)/layout.tsx`, die
+> „Hilfe & Onboarding"-Karte in Settings (`?tour=1`-Neustart-Button, das war
+> der einzige Ort, der die Tour manuell erneut auslösen konnte) und alle
+> sechs `data-tour="…"`-Anker in `sidebar.tsx`/`mobile-nav.tsx`, die nur die
+> Tour als Spotlight-Ziele brauchte. `profiles.settings.onboarding_done`
+> wird damit nirgends mehr geschrieben oder gelesen; die Spalte selbst bleibt
+> unangetastet (JSONB, kein Migrationsbedarf), `settings.interested_in`
+> (Pro-Signup-Marker) läuft unverändert weiter. **Bewusst nicht angefasst:**
+> `sign-up-experience.test.tsx`s Fixture, die `onboarding_done: true` als
+> Beispielwert für „bereits vorhandene Settings bleiben beim Merge erhalten"
+> nutzt — das prüft generisches Merge-Verhalten, nicht die Tour selbst, und
+> hätte mit jedem anderen Schlüsselnamen genauso funktioniert. Ebenso
+> unangetastet: MASCOT.mds „Onboarding-Begleiter"-Eintrag (§8, Ideen-Katalog
+> für spätere Weiterentwicklung, keine Beschreibung von bestehendem Code) und
+> `docs/projekte/page.tsx`s Erwähnung eines „Onboarding-Flow"-Chats (Beispiel
+> für einen Chat-Namen in der Doku-Prosa, nichts mit der UI-Tour zu tun).
+> Der `⌘K`-Absatz weiter oben in diesem Dokument nennt die Tour noch als den
+> Ort, an dem die Befehlspalette einst gelehrt wurde — das ist ein
+> historischer Changelog-Eintrag über eine vergangene Änderung (`74ee9f1`,
+> 2026-07-22) und bleibt unverändert stehen, wie jeder Eintrag hier den Stand
+> zum Zeitpunkt der jeweiligen Änderung beschreibt, nicht den heutigen.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -739,7 +765,7 @@ src/app/       NUR Routing. (marketing) = öffentlich (inkl. (legal)),
                (app) = eingeloggt, (auth) = Login/Signup, api/ = Handler.
                auth/callback ist ein ECHTES Segment, nicht verschieben.
 src/features/  Vertikale Schnitte, je components/ hooks/ lib/:
-               auth · chat · marketing · onboarding · projects · prompts · settings
+               auth · chat · marketing · projects · prompts · settings
 src/shell/     App-Rahmen (Sidebar, Mobile-Nav, Command-Palette). Darf
                Features mounten — Features dürfen einander NICHT kennen.
 src/server/    Nie im Browser, jede Datei mit `import "server-only"`.

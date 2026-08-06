@@ -22,7 +22,7 @@ import { describe, expect, it } from "vitest";
 
 const SRC = join(process.cwd(), "src");
 
-const FEATURES = ["auth", "chat", "marketing", "onboarding", "projects", "prompts", "settings"];
+const FEATURES = ["auth", "chat", "marketing", "projects", "prompts", "settings"];
 
 /** Welcher Schicht gehoert ein Pfad an? Pfade sind repo-relativ, mit "/". */
 function layerOf(file: string): string {

@@ -18,7 +18,6 @@ import {
   ArrowUpRight,
   Loader2,
   Check,
-  Compass,
   SunMoon,
   type LucideIcon,
 } from "lucide-react";
@@ -342,29 +341,6 @@ export function SettingsWorkspace({
           description="Ändere dein Passwort."
         >
           <ChangePassword />
-        </SettingsCard>
-
-        {/* Help & onboarding */}
-        <SettingsCard
-          Icon={Compass}
-          accent="--accent"
-          title="Hilfe & Onboarding"
-          description="Lern die Oberfläche in einer geführten Tour kennen."
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[13px] text-secondary">
-              Die Tour führt dich Schritt für Schritt durch Chats, Projekte und
-              Navigation, genau wie beim ersten Login.
-            </p>
-            <Button
-              variant="ghost"
-              className="shrink-0"
-              onClick={() => router.push("/chats/new?tour=1")}
-            >
-              <Compass className="h-4 w-4" />
-              Tour erneut starten
-            </Button>
-          </div>
         </SettingsCard>
 
         {/* Danger zone */}

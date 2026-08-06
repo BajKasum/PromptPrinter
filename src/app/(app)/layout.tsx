@@ -4,7 +4,6 @@ import { Sidebar, type SidebarChat, type SidebarProject } from "@/shell/componen
 import { MobileNav } from "@/shell/components/mobile-nav";
 import { ToastProvider } from "@/shared/ui/toast";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
-import { Onboarding } from "@/features/onboarding/components/onboarding";
 import { createClient } from "@/server/supabase/server";
 import { getSessionProfile, getSessionUser } from "@/server/session";
 
@@ -67,14 +66,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     (rawProjects as SidebarProjectRow[] | null) ?? []
   ).map((p) => ({ id: p.id, name: p.name, isFavorite: p.is_favorite ?? false }));
 
-  // First-login tour: auto-start until profiles.settings.onboarding_done is set.
-  const rawSettings = profile?.settings;
-  const tourDone =
-    !!rawSettings &&
-    typeof rawSettings === "object" &&
-    !Array.isArray(rawSettings) &&
-    (rawSettings as Record<string, unknown>).onboarding_done === true;
-
   return (
     <ThemeProvider
       attribute="class"
@@ -118,7 +109,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </main>
           </div>
         </div>
-        <Onboarding userId={user.id} initialDone={tourDone} />
       </ToastProvider>
     </ThemeProvider>
   );

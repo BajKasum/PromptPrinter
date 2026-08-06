@@ -237,12 +237,11 @@ function Full({
       <div className="flex-1 overflow-y-auto px-3 pb-4 pt-4">
         <TabSwitcher tab={tab} />
 
-        <div data-tour="nav-main">
+        <div>
           {tab === "chats" ? (
             <>
               <Link
                 href="/chats/new"
-                data-tour="new-chat"
                 className="mx-1 mb-5 flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
               >
                 <Plus className="h-[15px] w-[15px]" strokeWidth={2} />
@@ -386,10 +385,9 @@ function TabPill({
 function Rail({ pathname, ...account }: { pathname: string } & AccountProps) {
   return (
     <>
-      <div data-tour="nav-main" className="flex flex-1 flex-col items-center gap-1.5 px-2">
+      <div className="flex flex-1 flex-col items-center gap-1.5 px-2">
         <Link
           href="/chats/new"
-          data-tour="new-chat"
           aria-label="Neuer Chat"
           title="Neuer Chat"
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-transparent text-foreground/80 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.97]"
@@ -540,7 +538,6 @@ function AccountMenu({
       <button
         ref={triggerRef}
         type="button"
-        data-tour="account-menu"
         onClick={() => setOpen((v) => !v)}
         aria-label="Kontomenü"
         aria-haspopup="true"

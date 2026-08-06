@@ -63,7 +63,8 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
  *
  * Holt bewusst die Vereinigungsmenge aller Spalten, die irgendeine Seite
  * braucht (`plan`/`is_admin` fuer Limits, `display_name`/`avatar_url` fuer die
- * Anzeige, `settings` fuer die Onboarding-Tour). Es ist genau eine Zeile;
+ * Anzeige, `settings` u.a. fuer den "interested_in"-Marker aus dem
+ * Pro-Signup). Es ist genau eine Zeile;
  * zwei Abfragen mit je zwei Spalten kosten mehr als eine mit fuenf, sobald
  * sie auf verschiedenen Render-Ebenen liegen und deshalb nacheinander laufen.
  *
