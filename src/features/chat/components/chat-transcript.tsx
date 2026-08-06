@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { Copy, Check, Download } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Copy, Check, Download, Pencil } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/shared/ui/button";
 import { DolphinLoader } from "@/shared/brand/dolphin-loader";
@@ -10,15 +10,105 @@ import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { useSmoothStream } from "@/features/chat/hooks/use-smooth-stream";
 import { downloadFile } from "@/shared/lib/utils";
+import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 
 // The message-list rendering family: one component per row that can appear
 // in the transcript (a user turn, an older assistant turn, the in-flight
 // typing indicator, the reply being written, the finished marker). The
 // current/newest assistant reply is its own thing, see chat-result-panel.tsx.
 
-export function ChatUserBubble({ content }: { content: string }) {
+export function ChatUserBubble({
+  content,
+  onEdit,
+}: {
+  content: string;
+  /**
+   * Bearbeiten der eigenen Frage (Planpunkt C-2). Fehlt, solange ein Zug
+   * laeuft — mitten im Streamen die Frage umzuschreiben, auf die gerade
+   * geantwortet wird, ergaebe einen Verlauf, der nicht zusammenpasst.
+   */
+  onEdit?: (next: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (editing) textareaRef.current?.focus();
+  }, [editing]);
+
+  function start() {
+    setDraft(content);
+    setEditing(true);
+  }
+
+  function save() {
+    setEditing(false);
+    const next = draft.trim();
+    if (next && next !== content) onEdit?.(next);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex justify-end">
+        <div className="w-full max-w-[80%]">
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            maxLength={MAX_USER_MESSAGE_CHARS}
+            rows={Math.min(10, draft.split("\n").length + 1)}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Wie im Composer: Enter schickt ab, Shift+Enter bricht die
+              // Zeile um, Escape verwirft.
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                save();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setEditing(false);
+              }
+            }}
+            aria-label="Nachricht bearbeiten"
+            className="w-full resize-y rounded-2xl border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+          <div className="mt-1.5 flex justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-md px-2 py-1 text-[12.5px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={!draft.trim() || draft.trim() === content}
+              className="rounded-md bg-primary px-2.5 py-1 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Neu senden
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex justify-end">
+    <div className="group flex items-start justify-end gap-1.5">
+      {onEdit && (
+        <button
+          type="button"
+          onClick={start}
+          aria-label="Nachricht bearbeiten"
+          // Auf Touch dauerhaft sichtbar (QA-Befund K-2, dieselbe Begruendung
+          // wie bei den Zeilen-Aktionen der Chat-Liste): ein Hover-Reveal
+          // laesst Touch-Geraete ohne verlaesslichen Weg zum Knopf.
+          className="mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-foreground focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.8} />
+        </button>
+      )}
       <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-accent-subtle border border-accent/30 px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground whitespace-pre-wrap">
         {content}
       </div>

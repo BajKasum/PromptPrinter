@@ -250,6 +250,27 @@ export function Chat({
   }
 
   /**
+   * Eine eigene Frage aendern und ab dort neu beantworten (Planpunkt C-2).
+   *
+   * Bearbeiten heisst im Chat immer "ab hier neu": alles nach der geaenderten
+   * Frage bezog sich auf eine Frage, die es so nicht mehr gibt. Die alten
+   * Zeilen gehen deshalb mit — aber erst, wenn der neue Zug steht, damit ein
+   * gescheiterter Anbieter-Aufruf keinen Verlauf loescht.
+   */
+  async function editMessage(id: string, nextText: string): Promise<string | null> {
+    const text = nextText.trim();
+    if (!text || busy) return null;
+    const index = messages.findIndex((m) => m.id === id);
+    if (index === -1 || messages[index].role !== "user") return null;
+    if (text === messages[index].content) return null;
+
+    const base = messages.slice(0, index);
+    const edited: Msg = { id: randomId(), role: "user", content: text };
+    const superseded = messages.slice(index).map((m) => m.id);
+    return run([...base, edited], text, undefined, superseded);
+  }
+
+  /**
    * Der gemeinsame Kern von Senden und Neu-Erzeugen.
    *
    * `text` ist nur fuer den Fehlerfall da (zurueck in die Eingabe), `next` ist
@@ -258,7 +279,8 @@ export function Chat({
   async function run(
     next: Msg[],
     text: string,
-    replaceMessageId?: string
+    replaceMessageId?: string,
+    supersededMessageIds?: string[]
   ): Promise<string | null> {
     // Der Stand VOR dem Zug, fuer den Fehlerfall. Frueher stand dort ein
     // `slice(0, -1)`, das die zuletzt angehaengte Nachricht wegnahm — beim
@@ -302,6 +324,7 @@ export function Chat({
           // Dinge ab: die Frage nicht ein zweites Mal speichern, und die alte
           // Antwort erst wegnehmen, wenn die neue sicher steht.
           ...(replaceMessageId ? { replaceMessageId } : {}),
+          ...(supersededMessageIds?.length ? { supersededMessageIds } : {}),
         }),
         signal: controller.signal,
       });
@@ -469,7 +492,14 @@ export function Chat({
           <div role="log" className="flex flex-col gap-6">
             {messages.map((m, i) =>
               m.role === "user" ? (
-                <ChatUserBubble key={m.id} content={m.content} />
+                <ChatUserBubble
+                  key={m.id}
+                  content={m.content}
+                  // Kein Bearbeiten waehrend eines laufenden Zugs: die Frage
+                  // umzuschreiben, auf die gerade geantwortet wird, ergaebe
+                  // einen Verlauf, der nicht zusammenpasst.
+                  onEdit={busy ? undefined : (next) => void editMessage(m.id, next)}
+                />
               ) : i === lastAssistantIndex ? (
                 <div key={m.id} ref={resultRef} className="scroll-mt-24">
                   <ChatResultPanel

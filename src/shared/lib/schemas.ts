@@ -56,6 +56,23 @@ export const chatRequestSchema = z.object({
    * oder gar keine.
    */
   replaceMessageId: z.string().uuid().optional(),
+  /**
+   * "Diese Nachricht bearbeiten" (Planpunkt C-2): die Zeilen-IDs, die durch
+   * diesen Zug ueberholt sind — die alte Fassung der Frage und alles, was ihr
+   * folgte.
+   *
+   * Bearbeiten heisst im Chat immer: ab hier neu. Alles nach der geaenderten
+   * Frage bezieht sich auf eine Frage, die es so nicht mehr gibt, und stehen
+   * zu lassen ergaebe einen Verlauf, der sich selbst widerspricht.
+   *
+   * Wie bei `replaceMessageId` faellt das Alte erst weg, NACHDEM das Neue
+   * steht — ein gescheiterter Anbieter-Aufruf darf keinen Verlauf loeschen.
+   * Die Liste kommt vom Client, weil nur er weiss, ab welcher Stelle
+   * bearbeitet wurde; das Loeschen ist trotzdem auf Eigentuemer und
+   * Konversation eingegrenzt, eine erfundene Liste trifft also hoechstens
+   * eigene Zeilen desselben Chats.
+   */
+  supersededMessageIds: z.array(z.string().uuid()).max(MAX_TRANSCRIPT_MESSAGES).optional(),
 });
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

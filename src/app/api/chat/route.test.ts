@@ -868,4 +868,65 @@ describe("POST /api/chat", () => {
       expect(chatCompleteStream).not.toHaveBeenCalled();
     });
   });
+
+  // ─── Planpunkt C-2: eine Frage bearbeiten ────────────────────────────────
+  //
+  // Bearbeiten heisst im Chat immer "ab hier neu": alles nach der geaenderten
+  // Frage bezog sich auf eine Frage, die es so nicht mehr gibt.
+  describe("Frage bearbeiten (C-2)", () => {
+    const OLD_IDS = [
+      "33333333-3333-4333-8333-333333333333",
+      "44444444-4444-4444-8444-444444444444",
+    ];
+
+    function editReq() {
+      return req({
+        conversationId: "11111111-1111-4111-8111-111111111111",
+        supersededMessageIds: OLD_IDS,
+        messages: [{ role: "user", content: "Anders gefragt" }],
+      });
+    }
+
+    it("speichert die neue Fassung als eigene Frage", async () => {
+      await readSse(await POST(editReq()));
+
+      const users = (insertCalls.messages ?? []).filter(
+        (r) => (r as { role?: string }).role === "user"
+      );
+      expect(users).toHaveLength(1);
+      expect((users[0] as { content: string }).content).toBe("Anders gefragt");
+    });
+
+    it("raeumt die ueberholten Zeilen weg, nachdem der neue Zug steht", async () => {
+      await readSse(await POST(editReq()));
+
+      expect(deleteCalls.messages ?? 0).toBe(1);
+    });
+
+    it("laesst den alten Verlauf stehen, wenn der Anbieter scheitert", async () => {
+      chatCompleteStream.mockImplementation(async function* () {
+        throw new Error("Z.ai 500: upstream down");
+      });
+
+      await readSse(await POST(editReq()));
+
+      // Nur das Zuruecknehmen der eben geschriebenen Frage, kein Aufraeumen
+      // des alten Verlaufs: sonst waere die Bearbeitung ein Datenverlust.
+      expect(deleteCalls.conversations ?? 0).toBe(0);
+      expect(deleteCalls.messages ?? 0).toBe(1);
+    });
+
+    it("weist eine Liste mit unbrauchbarer ID ab", async () => {
+      const res = await POST(
+        req({
+          conversationId: "11111111-1111-4111-8111-111111111111",
+          supersededMessageIds: ["keine-uuid"],
+          messages: [{ role: "user", content: "Hi" }],
+        })
+      );
+
+      expect(res.status).toBe(400);
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+  });
 });

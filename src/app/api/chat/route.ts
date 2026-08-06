@@ -27,6 +27,7 @@ import { buildProjectContext } from "@/features/projects/lib/project-context";
 import {
   completeTurn,
   dropReplacedReply,
+  dropSupersededMessages,
   openTurn,
   rollbackTurn,
   type OpenedTurn,
@@ -569,6 +570,16 @@ export async function POST(req: Request) {
         // Nutzer nach einem gescheiterten Anbieter-Aufruf ohne beides da.
         if (input.replaceMessageId) {
           await dropReplacedReply(supabase, userId, conversationId, input.replaceMessageId);
+        }
+        // Bearbeitete Frage (C-2): die alte Fassung und alles, was ihr folgte,
+        // faellt jetzt weg — aus demselben Grund erst hier.
+        if (input.supersededMessageIds?.length) {
+          await dropSupersededMessages(
+            supabase,
+            userId,
+            conversationId,
+            input.supersededMessageIds
+          );
         }
       } catch (err) {
         persistError = "persist_failed";

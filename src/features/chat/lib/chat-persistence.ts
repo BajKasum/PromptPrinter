@@ -216,6 +216,38 @@ export async function completeTurn(
 }
 
 /**
+ * Raeumt die Zeilen weg, die eine bearbeitete Frage ueberholt hat (C-2).
+ *
+ * Dieselbe Reihenfolge-Regel wie bei dropReplacedReply: erst wenn der neue Zug
+ * steht. Ein gescheiterter Anbieter-Aufruf darf keinen Verlauf loeschen.
+ *
+ * Auf Eigentuemer UND Konversation eingegrenzt: eine erfundene Liste trifft
+ * damit hoechstens eigene Zeilen desselben Chats, nie fremde.
+ *
+ * Best effort, wie die anderen Aufraeumschritte — bleibt etwas stehen, sieht
+ * der Nutzer einen zu langen Verlauf, was deutlich harmloser ist als ein
+ * Abbruch nach einem bereits erfolgreichen Zug.
+ */
+export async function dropSupersededMessages(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  conversationId: string,
+  messageIds: string[]
+): Promise<void> {
+  if (messageIds.length === 0) return;
+  try {
+    await supabase
+      .from("messages")
+      .delete()
+      .in("id", messageIds)
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId);
+  } catch {
+    // siehe oben: best effort
+  }
+}
+
+/**
  * Nimmt einen geoeffneten Zug zurueck, wenn der Anbieter-Aufruf gescheitert ist.
  *
  * Ausdruecklich NICHT beim Tab-Schluss aufrufen — dort ist das Stehenbleiben
