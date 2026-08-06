@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { Logo } from "@/shared/brand/logo";
 import { Button } from "@/shared/ui/button";
 import { MenuToggleIcon } from "@/shared/ui/menu-toggle-icon";
+import { NavWave } from "@/shared/ui/nav-wave";
 import { cn } from "@/shared/lib/utils";
 
 // "Preise" is a real route: its own page, worth linking to directly from
@@ -25,41 +26,6 @@ const nav = [
   { label: "Funktionen", href: "/#funktionen", route: null },
   { label: "Preise", href: "/pricing", route: "/pricing" },
 ] as const;
-
-/**
- * The wave that swims in under a hovered or current nav link — the design
- * system's water/bioluminescence motif (DESIGN.md, Manifesto #4 and #9) doing
- * the job a plain colour change was doing badly.
- *
- * The reveal, the glow's timing and the reduced-motion fallback all live in
- * globals.css under `.nav-wave`; this only draws the shape and says whether
- * this link is the current page.
- *
- * The stroke is `accent-text`, not `accent`: the public site is always light,
- * and `--accent` is the light fill tone — measured at ~1.7:1 against both the
- * page and the pill behind it, i.e. a line you can barely see. DESIGN.md makes
- * the same call for accent text. The bloom around it still comes from
- * `--accent`, which is what makes it read as water-light rather than a hard
- * rule (Manifesto #9).
- */
-function NavWave({ active }: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 36 8"
-      fill="none"
-      data-active={active}
-      className="nav-wave pointer-events-none absolute bottom-[3px] left-1/2 h-2 w-9 -translate-x-1/2 text-accent-text drop-shadow-[0_0_3px_hsl(var(--accent)/0.75)]"
-    >
-      <path
-        d="M1 5 Q 5.4 1.7, 9.7 5 T 18.3 5 T 26.8 5 T 35 5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);

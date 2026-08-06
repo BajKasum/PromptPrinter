@@ -8,28 +8,12 @@ import { cn } from "@/shared/lib/utils";
 
 const faqs = [
   {
-    q: "Muss ich programmieren können?",
-    a: "Nein. Du beschreibst deine Idee in ganz normaler Sprache, den technischen Teil übernehme ich. Was du bekommst, bringt dich auch ohne tiefes Vorwissen voran.",
-  },
-  {
     q: "Was, wenn der Prompt nicht passt?",
     a: "Dann sagst du mir einfach im Chat, was anders sein soll, kürzer, ausführlicher, ein anderer Ton. Ich schreib dir den ganzen Prompt neu, so oft wie nötig. Nichts ist endgültig.",
   },
   {
-    q: "Was bringt mir das, statt Claude einfach selbst zu fragen?",
+    q: "Was bringt mir das, statt eine KI einfach direkt zu fragen?",
     a: "Bevor du in Lovable, Cursor oder Claude Code überhaupt tippst, frag ich dich genau das, was dein Bau-Tool selbst nicht abfragt, Datenmodell, Auth, wie's aussehen soll. Das spart dir die Credits und Nachbesserungs-Runden, die ein zu vager erster Prompt sonst kostet. Der Prompt selbst ist ausserdem zugeschnitten, Lovable bekommt etwas anderes als Cursor. Und jedes Gespräch bleibt gespeichert, du erklärst nicht jedes Mal neu, woran du arbeitest.",
-  },
-  {
-    q: "Was, wenn ich die Technik noch gar nicht festgelegt habe?",
-    a: "Das ist der Normalfall. Sag mir einfach, was du vorhast, dann schlage ich dir einen passenden Stack vor. Ändern kannst du ihn jederzeit.",
-  },
-  {
-    q: "Ist meine Idee bei dir sicher?",
-    a: "Ja. Deine Projekte gehören nur dir und sind fest an dein Konto gebunden. Niemand sonst sieht sie. Für die KI-Antworten schicke ich deine Eingaben an unseren KI-Anbieter (Details dazu in der Datenschutzerklärung), sonst bleibt alles bei uns. Löschst du ein Projekt, ist es endgültig weg.",
-  },
-  {
-    q: "Gehört mir, was dabei rauskommt?",
-    a: "Ja. Was du erstellst, gehört dir. Du kopierst es raus und baust damit weiter, wo du willst. Nichts hält dich an PromptPrinter fest.",
   },
 ];
 

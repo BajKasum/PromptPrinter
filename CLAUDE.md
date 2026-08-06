@@ -644,6 +644,45 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > 2026-07-22) und bleibt unverändert stehen, wie jeder Eintrag hier den Stand
 > zum Zeitpunkt der jeweiligen Änderung beschreibt, nicht den heutigen.
 
+> **Footer entschlackt, Landing Page ohne Preis/FAQ (2026-08-05):** Auf
+> Nutzerfeedback zu einem Screenshot drei Änderungen. Erstens, `footer.tsx`:
+> die Abschiedszeile „Schön, dass du da warst. · Finn" ist weg, übrig bleibt
+> nur das Mascot-Bild — Finn spricht hier nicht mehr, er steht nur noch da.
+> Die beiden getrennten Link-Zeilen (Produkt normal-, Legal leiser gewichtet)
+> sind zu einer einzigen Zeile neben Finn zusammengelegt, alle neun Seiten
+> gleich gewichtet, im selben Hover-Stil wie die Navbar-Links (Wasser-Pille +
+> einschwimmende Welle). Dafür wurde `NavWave`, bis dahin eine private
+> Funktion in `navbar.tsx`, nach `shared/ui/nav-wave.tsx` gezogen — sie hat
+> keine Hooks und keinen State, bleibt also in einer Server Component (dem
+> Footer) genauso gültig wie in der Client-Component-Navbar. Die zweite
+> `border-t`, die vorher das Copyright vom Rest des Footers abtrennte, ist
+> weg (der gemeldete „doppelte Rand"), genau wie das grössere vertikale
+> Padding — der Footer ist jetzt spürbar kompakter.
+>
+> Zweitens, die Landing Page (`(marketing)/page.tsx`): `PricingBridge` („Und
+> was kostet das? Bring deinen eigenen Key mit …") und `FAQ` sind raus, auf
+> ausdrücklichen Wunsch, keinen Preis und keine Fragen mehr auf der
+> Startseite zu zeigen. Beides bleibt exklusiv auf `/pricing`, wo `FAQ`
+> ohnehin schon direkt unter `PricingGrid` sass. `pricing-bridge.tsx` ist
+> komplett gelöscht, kein anderer Aufrufer.
+>
+> Drittens, `faq.tsx`: von 6 auf 2 Fragen gekürzt, auf Zuruf, welche der
+> vermeintlichen Trust-Fragen tatsächlich Vertrauen schaffen und welche nur
+> Zweifel einpflanzen, die vorher niemand hatte. Geblieben: „Was, wenn der
+> Prompt nicht passt?" und die Tool-Vergleichsfrage, deren Titel von „…statt
+> Claude einfach selbst zu fragen?" auf „…statt eine KI einfach direkt zu
+> fragen?" geändert wurde (die Antwort selbst nennt weiterhin Lovable/Cursor/
+> Claude Code als Positionierung, nur die Frage sollte nicht an einem
+> einzelnen Produktnamen hängen). Entfernt: „Muss ich programmieren können?",
+> „Was, wenn ich die Technik noch nicht festgelegt habe?", „Ist meine Idee
+> bei dir sicher?" und „Gehört mir, was dabei rauskommt?" — die inhaltlichen
+> Zusagen dahinter (Datenschutzerklärung, Eigentum am Ergebnis) bestehen
+> unverändert fort, nur diese eine FAQ-Sektion nennt sie nicht mehr einzeln.
+> **Bewusst nicht angefasst:** `sign-in-experience`/`sign-up-experience` und
+> alle anderen Landing-Sektionen; `/pricing`s eigene FAQ-Instanz zeigt jetzt
+> automatisch dieselben 2 Fragen, weil beide Seiten dieselbe Komponente
+> rendern, keine separate Anpassung nötig.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -848,16 +887,14 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 > den Pitch). `next.config.ts` leitet `/features` dauerhaft auf
 > `/#funktionen` um; Navbar und Footer verlinken direkt den Anker.
 
-**Aktuelle Seiten-Reihenfolge** (`src/app/page.tsx`):
+**Aktuelle Seiten-Reihenfolge** (`src/app/(marketing)/page.tsx`):
 ```
-Navbar → Hero → HowItWorks → FeaturesGrid → ProductShowcase →
-PricingBridge → FAQ → FinalCTA → Footer
+Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 ```
-`HowItWorks` trägt `id="funktionen"` (das Ziel des Navbar-Links, bewusst dort
-und nicht auf `FeaturesGrid`, sonst überspringt der Sprung die drei Schritte,
-die die Feature-Liste erst verständlich machen). `PricingBridge` ist der eine
-Ort auf der Landing Page, der einen Preis nennt, die Pläne selbst bleiben auf
-`/pricing`.
+`HowItWorks` trägt `id="funktionen"` (das Ziel des Navbar-Links). Die Landing
+Page nennt seit 2026-08-05 keinen Preis mehr und stellt keine Fragen mehr,
+`PricingBridge` (war: „Und was kostet das?") und `FAQ` sind raus, siehe
+Eintrag unten. Beides lebt jetzt ausschliesslich auf `/pricing`.
 
 **Entfernte Sektionen** (bewusst gelöscht, nicht wiederherstellen):
 - `Capabilities`, früh entfernt (war Jargon-lastig)
@@ -883,12 +920,9 @@ Ort auf der Landing Page, der einen Preis nennt, die Pläne selbst bleiben auf
 | `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt`. Subtext auf einen kurzen Zweizeiler gekürzt + vergrößert (18/21px statt 16/18px), Demo-Fensterchrome ohne „PromptPrinter · Demo"-Label (2026-07-16). | `welcoming` + Stage-States |
 | `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor FeaturesGrid. Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
-| `features-grid.tsx` | 6 Karten, was ein Chat tatsächlich liefert. Lebte auf `/features`, seit 2026-07-30 wieder auf der Landing Page, dabei Mono-Eyebrow entfernt (alle anderen Sektionen hatten ihre längst verloren). | `organizing` |
-| `pricing-bridge.tsx` | „Und was kostet das?" + Link auf `/pricing`. Der einzige Ort auf der Landing Page, der einen Preis nennt. | Kein Finn |
-| `faq.tsx` | 6 Trust-Fragen, vollständig de-jargoned | Kein Finn |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Finn's Farewell: kleiner Finn + "Schön, dass du da warst., Finn" + 5 echte Links. Links hovern auf `accent-text` (DESIGN.mds Link-Regel), nicht mehr auf `foreground`. | `idle` |
-| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
+| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 9 Seiten, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie. Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
+| `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css, `NavWave`-Komponente in `shared/ui/nav-wave.tsx`), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
 
 **`/pricing`** (`src/app/pricing/page.tsx`): `PageHeader` (nur Headline) →
 `PricingGrid` → 3 Beruhigungs-Karten je mit Finn → `FAQ` → `Footer`. Der
