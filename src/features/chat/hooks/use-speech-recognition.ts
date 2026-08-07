@@ -53,6 +53,25 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+/**
+ * Brave ships the same `webkitSpeechRecognition` constructor as any other
+ * Chromium browser, so `speechRecognitionSupported()` passes — but Brave has
+ * no working path to Google's recognition backend, so every session fails
+ * immediately with a "network" error, even with mic access granted and
+ * everything else online. Detected via Brave's own `navigator.brave`, purely
+ * to pick an honest error message: this is a permanent browser limitation,
+ * not a transient connectivity problem, so "try again" would never help.
+ */
+type BraveNavigator = Navigator & { brave?: { isBrave: () => Promise<boolean> } };
+let braveDetection: Promise<boolean> | null = null;
+function isBrave(): Promise<boolean> {
+  if (typeof navigator === "undefined") return Promise.resolve(false);
+  const brave = (navigator as BraveNavigator).brave;
+  if (!brave) return Promise.resolve(false);
+  if (!braveDetection) braveDetection = brave.isBrave().catch(() => false);
+  return braveDetection;
+}
+
 /** True when this browser can transcribe at all (Chrome, Edge, Safari 14.1+). */
 export function speechRecognitionSupported(): boolean {
   return getRecognitionCtor() !== null;
@@ -155,7 +174,13 @@ export function useSpeechRecognition({
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         setError("Ich darf nicht mithören. Erlaub den Mikrofonzugriff in der Adresszeile.");
       } else if (event.error === "network") {
-        setError("Die Spracherkennung ist gerade nicht erreichbar. Tipp solange einfach.");
+        void isBrave().then((brave) => {
+          setError(
+            brave
+              ? "Brave blockiert Googles Spracherkennungsdienst grundsätzlich. Nutz Chrome, Edge oder Safari, oder tipp einfach."
+              : "Die Spracherkennung ist gerade nicht erreichbar. Tipp solange einfach."
+          );
+        });
       } else {
         setError("Die Spracherkennung hat abgebrochen.");
       }
