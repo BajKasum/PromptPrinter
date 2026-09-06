@@ -31,6 +31,28 @@ describe("buildCsp", () => {
     expect(csp).toContain("connect-src 'self' https://challenges.cloudflare.com;");
   });
 
+  // M-1 (Audit 06.09.2026): img-src kannte die Supabase-Origin nicht, obwohl
+  // connect-src sie zwei Zeilen darueber schon berechnet. Jeder hochgeladene
+  // Avatar liegt im "avatars"-Bucket auf genau dieser Origin — live bestaetigt
+  // blockierte der Browser das eigene Profilbild jedes Nutzers, der eins
+  // hochlaedt (nur OAuth-Avatare von Google/GitHub blieben verschont, die
+  // kommen von anderen, bereits erlaubten Hosts).
+  it("adds the Supabase project origin to img-src as well, for uploaded avatars", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcxyz.supabase.co");
+    const csp = buildCsp("n");
+    const imgSrc = csp.split("; ").find((d) => d.startsWith("img-src")) ?? "";
+    expect(imgSrc).toContain("https://abcxyz.supabase.co");
+  });
+
+  it("omits the Supabase origin from img-src when unset, instead of a broken empty entry", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    const csp = buildCsp("n");
+    const imgSrc = csp.split("; ").find((d) => d.startsWith("img-src")) ?? "";
+    expect(imgSrc).toBe(
+      "img-src 'self' data: https://lh3.googleusercontent.com https://avatars.githubusercontent.com"
+    );
+  });
+
   it("allows 'unsafe-eval' outside production only (Next dev/Fast Refresh needs eval)", () => {
     vi.stubEnv("NODE_ENV", "development");
     expect(buildCsp("n")).toContain("'unsafe-eval'");

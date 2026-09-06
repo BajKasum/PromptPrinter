@@ -85,6 +85,18 @@ function sharedDirectives(scriptSrc: string): string[] {
   const connectSrc = ["'self'", "https://challenges.cloudflare.com", supabaseOrigin()]
     .filter(Boolean)
     .join(" ");
+  // M-1 (Audit 06.09.2026): fehlte hier, obwohl `supabaseOrigin()` zwei
+  // Zeilen darueber schon fuer connect-src berechnet wird. Jeder hochgeladene
+  // Avatar (avatar-upload.tsx laedt ihn oeffentlich in den "avatars"-Bucket)
+  // liegt auf genau dieser Origin — ohne den Eintrag blockierte der Browser
+  // das eigene Profilbild jedes Nutzers, der eins hochlaedt, live bestaetigt
+  // (Konsole: "img-src … violates the following Content Security Policy").
+  // Google-/GitHub-Avatare (OAuth) blieben davon unberuehrt, weil die von
+  // fremden Hosts kommen, die schon in der Liste stehen — das hat den Fehler
+  // beim eigenen Login unsichtbar gemacht.
+  const imgSrc = ["'self'", "data:", "https://lh3.googleusercontent.com", "https://avatars.githubusercontent.com", supabaseOrigin()]
+    .filter(Boolean)
+    .join(" ");
 
   return [
     "default-src 'self'",
@@ -92,7 +104,7 @@ function sharedDirectives(scriptSrc: string): string[] {
     // Tailwind/Framer Motion set inline `style` attributes at runtime;
     // limiting this further isn't practical without breaking layout.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://lh3.googleusercontent.com https://avatars.githubusercontent.com",
+    `img-src ${imgSrc}`,
     "font-src 'self'",
     `connect-src ${connectSrc}`,
     `frame-src https://challenges.cloudflare.com ${LEMONSQUEEZY_FRAME_HOST}`,
