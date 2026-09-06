@@ -71,6 +71,13 @@ export default function Page() {
         Her verbraucht also fünf.
       </p>
       <p>
+        Eine Projekt-Analyse (das{" "}
+        <Link href="/docs/projekte">Gedächtnis</Link> eines Projekts einmal
+        einlesen) ist ein Modellaufruf wie eine Chat-Antwort und zählt genauso
+        eine, aus demselben Kontingent. Mit eigenem Key entfällt das wie beim
+        Chat vollständig.
+      </p>
+      <p>
         Der Zähler läuft pro Kalendermonat und springt am Monatsersten wieder auf
         null. Du siehst deinen Stand in den Einstellungen und unter Abrechnung.
       </p>
