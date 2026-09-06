@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { okWrite, failedWrite } from "@tests/support/supabase-query";
 import { SavedPromptList } from "./saved-prompt-list";
@@ -153,14 +153,47 @@ describe("SavedPromptList", () => {
     });
   });
 
+  // K-6 (Audit 06.09.2026): ein Klick auf das Loesch-Icon entfernte den
+  // Prompt bisher sofort, ohne Rueckfrage und ohne Undo — live ausgeloest.
+  // Projekt, Datei und Gedaechtnis fragen alle ueber dieselbe ConfirmDialog
+  // nach, hier fehlte sie.
   describe("deleting", () => {
-    it("deletes the prompt and shows a success toast", async () => {
+    it("does not delete on the first click, only after confirming", async () => {
       const chain = okWrite();
       del.mockReturnValue(chain);
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
+
+      expect(del).not.toHaveBeenCalled();
+      expect(screen.getByText("Alter Name")).toBeInTheDocument();
+      expect(screen.getByRole("dialog", { name: "Prompt löschen?" })).toBeInTheDocument();
+    });
+
+    it("does nothing when the confirmation is cancelled", async () => {
+      const chain = okWrite();
+      del.mockReturnValue(chain);
+      const user = userEvent.setup();
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+
+      await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
+      await user.click(screen.getByRole("button", { name: "Abbrechen" }));
+
+      // AnimatePresence fades the dialog out rather than removing it instantly.
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(del).not.toHaveBeenCalled();
+      expect(screen.getByText("Alter Name")).toBeInTheDocument();
+    });
+
+    it("deletes the prompt and shows a success toast once confirmed", async () => {
+      const chain = okWrite();
+      del.mockReturnValue(chain);
+      const user = userEvent.setup();
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+
+      await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
+      await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
 
       expect(chain.eq).toHaveBeenCalledWith("id", "p1");
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "success" }));
@@ -174,6 +207,7 @@ describe("SavedPromptList", () => {
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
+      await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
 
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
       expect(screen.getByText("Alter Name")).toBeInTheDocument();

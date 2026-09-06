@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Copy, Check, X, Trash2, FileDown, Pencil } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { relativeTime } from "@/shared/lib/utils";
 import type { SavedPrompt } from "@/shared/lib/saved-prompts";
@@ -106,6 +107,12 @@ function SavedPromptCard({
   const { copied, copy } = useCopyToClipboard();
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(prompt.title);
+  // K-6 (Audit 06.09.2026): der Loesch-Knopf entfernte den gespeicherten
+  // Prompt bisher mit einem einzigen Klick, ohne Rueckfrage und ohne Undo —
+  // live ausgeloest: ein Klick, sofort weg. Projekt, Datei und Gedaechtnis
+  // fragen alle ueber dieselbe ConfirmDialog nach, ausgerechnet der einzige
+  // Prompt, den der Nutzer bewusst aufgehoben hat, tat es nicht.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   async function exportPdf() {
     const { downloadMarkdownAsPdf } = await import("@/features/prompts/lib/pdf-export");
@@ -272,11 +279,9 @@ function SavedPromptCard({
               <FileDown className="h-3.5 w-3.5" />
             </button>
           )}
-          {/* No spinner: the card is gone from the list the moment this is
-              clicked, so there is nothing left on screen to spin. */}
           <button
             type="button"
-            onClick={() => void remove()}
+            onClick={() => setConfirmingDelete(true)}
             aria-label="Prompt löschen"
             className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive"
           >
@@ -287,6 +292,21 @@ function SavedPromptCard({
       <pre className="overflow-x-auto whitespace-pre-wrap px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
         {prompt.content}
       </pre>
+
+      {/* Kein Spinner: nach der Bestaetigung verschwindet die Karte sofort aus
+          der Liste, es bleibt also nichts uebrig, das drehen koennte. */}
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Prompt löschen?"
+        description={`„${prompt.title}“ wird endgültig entfernt. Das kann nicht rückgängig gemacht werden.`}
+        confirmLabel="Endgültig löschen"
+        busyLabel="Wird gelöscht…"
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          void remove();
+        }}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </article>
   );
 }
