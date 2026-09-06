@@ -89,12 +89,12 @@ Klemmbrett, Paket, Megafon, …). So entsteht Vielfalt ohne Stil-Drift.
 | # | State (key) | Label | Ebene | Pose / Requisite | Asset-Status |
 |---|---|---|---|---|---|
 | 1 | `idle` | Neutral | Core | ruhig, leichtes Lächeln, frontal | ✅ `dolphin.png` |
-| 2 | `welcoming` | Begrüßend | Core | winkt, einladend, Blick zum Nutzer | ✅ `dolphin-happy.png` (vorerst) |
+| 2 | `welcoming` | Begrüßend | Core | winkt, einladend, Blick zum Nutzer | ✅ `dolphin-welcoming.png` |
 | 3 | `curious` | Neugierig | Core | Kopf geneigt, große Augen, lehnt nach vorn | 🆕 |
 | 4 | `listening` | Zuhörend | Core | aufmerksam, nickt leicht, Flosse am „Ohr" | 🆕 |
 | 5 | `thinking` | Nachdenklich | Core | Flosse am Kinn, Gedanken-Punkte | 🆕 |
 | 6 | `researching` | Recherchierend | B | Lupe, sucht/prüft | 🆕 |
-| 7 | `building` | Bauend | B | Bauhelm + Werkzeug | ✅ `dolphin-think.png` (umbenennen) |
+| 7 | `building` | Bauend | B | Bauhelm + Werkzeug | ✅ `dolphin-building.png` |
 | 8 | `organizing` | Sortierend | B | stapelt Karten/Dokumente | 🆕 |
 | 9 | `explaining` | Erklärend | B | zeigt auf Board / hält Doc, präsentiert | 🆕 |
 | 10 | `delivering` | Übergebend | B | reicht ein Paket/Box nach vorn | 🆕 |
@@ -103,8 +103,9 @@ Klemmbrett, Paket, Megafon, …). So entsteht Vielfalt ohne Stil-Drift.
 | 13 | `waiting` | Wartend | Core | schwimmt/bobbt, Bubbles | ✅ via `dolphin-loader` |
 | 14 | `sad` | Mitfühlend/Fehler | Core | betreten, gesenkt | ✅ `dolphin-sad.png` |
 
-**14 States, davon 5 vorhanden, 1 nur umzubenennen, 8 neu.** Das ist die
-produzierbare Mindestmenge für ein vollwertiges Guide-System.
+**14 States, alle 14 Assets vorhanden.** Ursprünglicher Plan (zum Zeitpunkt
+dieses Abschnitts): 5 vorhanden, 1 nur umzubenennen, 8 neu — inzwischen
+umgesetzt, siehe Statusspalte oben.
 
 ---
 
@@ -142,12 +143,11 @@ Für jeden State: **Wo · Welche Emotion · Welches Business-Ziel · Animation**
 - **Business-Ziel:** **Qualitäts-Signal**, differenziert von „einfach ChatGPT fragen".
 - **Animation:** **Lupe** fährt suchend über eine Fläche; kurzes „!"-Aufleuchten bei Fund.
 
-### 6) `building`, Bauend  *(= heutiges `dolphin-think.png`)*
+### 6) `building`, Bauend  *(ursprünglich `dolphin-think.png`, inzwischen zu `dolphin-building.png` umbenannt)*
 - **Wo:** How-It-Works (Section-Guide); Hero-Demo-Status „baut…".
 - **Emotion:** „Mein Projekt entsteht gerade."
 - **Business-Ziel:** **Fortschritt sichtbar machen** → hält Aufmerksamkeit, transportiert den Kern-Nutzen (Bauplan entsteht).
 - **Animation:** leichtes **Hammer-Tippen** / Zahnrad-Dreh; Bauhelm wackelt minimal.
-- **Migration:** Datei zu `dolphin-building.png` umbenennen, `building` als Alias auf das vorhandene Asset.
 
 ### 7) `organizing`, Sortierend
 - **Wo:** „Was du bekommst"-Grid (Intro); App-Bibliothek/Workspace.
