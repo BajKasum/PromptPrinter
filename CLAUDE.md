@@ -683,6 +683,52 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > automatisch dieselben 2 Fragen, weil beide Seiten dieselbe Komponente
 > rendern, keine separate Anpassung nötig.
 
+> **Sprachmodus im Chat (2026-07-30, `4990356`, umgebaut 2026-08-01,
+> `5c13ecf`), bisher nirgends dokumentiert (B-2, Audit 06.09.2026):** Ein
+> Composer-Button öffnet eine `VoiceBar` (`src/features/chat/components/
+> voice-bar.tsx`), die den Composer im normalen Chat-Fluss ersetzt (kein
+> Vollbild-Overlay mehr seit dem Umbau). Vier Zustände im Kreis:
+> listening → thinking → speaking → listening. Web Speech API für die
+> Transkription (`interimResults`, Turn geht nach 1,5 s Stille selbst raus),
+> Mikrofon-Waveform über `AnalyserNode` auf Canvas (`voice-waveform.tsx`,
+> ~63 Balken, 80–4200 Hz Bandpass, `autoGainControl: false` — sonst klingen
+> Flüstern und Rufen nach kurzer Zeit gleich laut). Gesprochene Turns laufen
+> durch dasselbe `send()` wie getippte, landen also identisch im Transkript.
+> Reine Client-Logik (`voice-engine.ts`, 22 Tests für die Waveform-Mathematik),
+> kein eigener Server-Endpunkt.
+>
+> ⚠️ **Offener Datenschutz-Punkt, seit dem Bau-Commit bekannt, bis heute nicht
+> geschlossen:** Chrome und Edge erkennen Sprache NICHT auf dem Gerät, sie
+> streamen das Mikrofon-Audio an den Spracherkennungsdienst des jeweiligen
+> Browser-Herstellers (Google/Microsoft). Damit kommt ein Auftragsbearbeiter
+> hinzu, den `datenschutz/page.tsx` bis heute nicht nennt (dort stehen nur
+> Z.ai, Gemini, Supabase, Lemon Squeezy). Safari erkennt lokal, ist also nicht
+> betroffen. Nicht mechanisch nachgezogen, weil es eine echte rechtliche
+> Einordnung braucht (welcher Dienst genau, welches Land, welche
+> Übermittlungsgrundlage) — wer als Nächstes an dieser Datei arbeitet, sollte
+> das klären, bevor mehr Nutzer den Sprachmodus finden.
+
+> **Chat: Antwort neu erzeugen + eigene Frage bearbeiten (2026-08-06,
+> `625b7e5` + `0aa41c2`, Planpunkt C-2), bisher nirgends dokumentiert (B-2,
+> Audit 06.09.2026):** Zwei Aktionen im Chat, die beide "ab hier neu"
+> bedeuten. „Neu erzeugen" schneidet die letzte Antwort vom Verlauf ab und
+> lässt sie neu beantworten, die Frage bleibt stehen. Der Stift neben einer
+> eigenen Nachricht öffnet sie als Textfeld (Enter sendet, Shift+Enter
+> Zeilenumbruch, Escape verwirft, wie im Composer); Absenden ersetzt die
+> Frage UND verwirft jede Antwort danach — ein alter Verlauf auf eine Frage,
+> die es so nicht mehr gibt, wäre ein sich selbst widersprechendes
+> Transkript. Beide teilen sich serverseitig einen Kern (`run()` in
+> `api/chat/route.ts`), der Wire-Vertrag trägt dafür `replaceMessageId`
+> (Neu-Erzeugen) bzw. `supersededMessageIds` (Bearbeiten). In beiden Fällen
+> fällt der alte Verlauf immer erst NACH dem erfolgreichen neuen Zug weg —
+> ein gescheiterter Anbieter-Aufruf darf nie ersatzlos löschen. Kein
+> Bearbeiten während eines laufenden Zugs (kein `onEdit` wird durchgereicht,
+> solange eine Antwort streamt). Eine spätere Änderung liess die vom Client
+> mitgeschickte ID zwischenzeitlich durch eine frei erfundene `randomId()`
+> ersetzen, wodurch das Löschen der Vorgänger-Zeile ins Leere lief (K-2,
+> Audit-Befundbericht 06.09.2026, im 2nd-brain-Projektordner) — mittlerweile
+> behoben.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -718,10 +764,12 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
    verschlüsselt via `API_KEY_ENCRYPTION_SECRET`), der übersteuert den
    Server-Key komplett und hebt Generierungen-/Chat-Nachrichten-Limits auf.
    Routen sprechen nie direkt mit einem Provider-SDK.
-2. **Zahlungen → Lemon Squeezy, aber erst später.** Bezahlung läuft künftig über
-   **Lemon Squeezy** (nicht Stripe). Das passiert **erst, nachdem die Website
-   gehostet ist**, vorher nicht anfangen. Im Code liegt noch Stripe-Gerüst
-   (UI, `stripe`-Dep, DB-Spalten `stripe_*`); das wird ersetzt, nicht ausgebaut.
+2. **Zahlungen laufen über Lemon Squeezy, live seit 2026-08.** Checkout,
+   Webhook (`/api/webhooks/lemonsqueezy`) und Kundenportal-Verlinkung sind
+   gebaut und produktiv (siehe „Kritik-Pass + BYOK" und den Audit-Abarbeitungs-
+   Block weiter unten für die seither behobenen Befunde). Stripe ist aus Code
+   UND Datenbank vollständig entfernt (Migration `0043_drop_stripe_remnants.sql`,
+   **B-11, Audit 06.09.2026 — noch nicht live angewendet**, siehe dort).
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
    Prod-Docker-Container liest `.env` (via `env_file` in
    `docker-compose.prod.yml`), das `--env-file .env.local` im Compose-Befehl
@@ -849,10 +897,11 @@ Finn ist das zentrale Markenmerkmal. Das vollständige Spec steht in [MASCOT.md]
 building | organizing | explaining | delivering | celebrating | helping | waiting | sad`
 
 **Schlüssel-Komponenten:**
-- `src/components/brand/mascot-states.ts`, State-Registry (Single Source of Truth)
-- `src/components/brand/mascot.tsx`, Base-Komponente mit `state?` prop
-- `src/components/brand/animated-mascot.tsx`, AnimatePresence-Crossfade + Idle-Loops
-- `public/mascot/dolphin-<state>.png`, 16 Assets total (original 4 + 12 neue)
+- `src/shared/brand/mascot-states.ts`, State-Registry (Single Source of Truth)
+- `src/shared/brand/mascot.tsx`, Base-Komponente mit `state?` prop
+- `src/shared/brand/animated-mascot.tsx`, AnimatePresence-Crossfade + Idle-Loops
+- `public/mascot/dolphin-<state>.png`, 14 Assets, eins pro State (zwei
+  zusätzliche, unreferenzierte Originale sind seit B-7, Audit 06.09.2026, entfernt)
 
 **Animations-Presets:** `float | lean | nod | think | bob | cheer | peek | sigh`
 Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, nicht `Target`.
@@ -917,30 +966,33 @@ Eintrag unten. Beides lebt jetzt ausschliesslich auf `/pricing`.
 **Sektion-Dateien:**
 | Datei | Zustand | Finn |
 |---|---|---|
-| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo (Idea→Plan→Build→Launch mit Stage-Narration). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt`. Subtext auf einen kurzen Zweizeiler gekürzt + vergrößert (18/21px statt 16/18px), Demo-Fensterchrome ohne „PromptPrinter · Demo"-Label (2026-07-16). | `welcoming` + Stage-States |
-| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor FeaturesGrid. Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
+| `hero.tsx` | Asymmetrisch: Finn + Sprechblase links, Headline+CTAs rechts. Darunter HeroDemo, seit dem Finn-Umbau (2026-07-22, U-1) 3 Stufen statt 4 (Idee → Rückfrage → Prompt, spiegelt `chat-markdown.tsx`s echtes CodeBlock-Chrome). Trust-Badge-Zeile unter den CTAs entfernt, „Erst mal zuschauen" zeigt jetzt auf `#produkt`. Subtext auf einen kurzen Zweizeiler gekürzt + vergrößert (18/21px statt 16/18px), Demo-Fensterchrome ohne „PromptPrinter · Demo"-Label (2026-07-16). | `welcoming` + Stage-States |
+| `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase (`FeaturesGrid` stand hier zwischenzeitlich, am 2026-07-30 wieder entfernt, siehe unten). Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
 | `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 9 Seiten, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie. Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
 | `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css, `NavWave`-Komponente in `shared/ui/nav-wave.tsx`), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
 
-**`/pricing`** (`src/app/pricing/page.tsx`): `PageHeader` (nur Headline) →
-`PricingGrid` → 3 Beruhigungs-Karten je mit Finn → `FAQ` → `Footer`. Der
-begrüssende Finn samt Sprechblase und Subline über der Headline ist auf
-Nutzerwunsch weg (2026-07-30), `FinnGreeting` hatte danach keinen Aufrufer
-mehr und ist gelöscht; `page-header.tsx` behält nur Grid + Floaters. Die
-Finns auf den Plan- und Beruhigungs-Karten sind ausdrücklich geblieben, das
-ist weiterhin die Seite, auf der er überall sein soll.
+**`/pricing`** (`src/app/(marketing)/pricing/page.tsx`): `PageHeader` (nur
+Headline) → `PricingGrid` → `FAQ` → `Footer`. Der begrüssende Finn samt
+Sprechblase und Subline über der Headline ist auf Nutzerwunsch weg
+(2026-07-30), `FinnGreeting` hatte danach keinen Aufrufer mehr und ist
+gelöscht; `page-header.tsx` behält nur Grid + Floaters. Die Finns auf den
+Plan-Karten (`PricingGrid withMascot`) sind ausdrücklich geblieben, das ist
+weiterhin die Seite, auf der er überall sein soll — die separate
+Beruhigungs-Kartenreihe (eigener Key / keine Kreditkarte / monatlich
+kündbar, je mit eigenem Finn) zwischen Plan-Grid und FAQ ist seit `ca77daa`
+(2026-07-30, selber Tag wie ihre Einführung) wieder weg: die FAQ direkt
+darunter beantwortet dieselben drei Sorgen ausführlicher.
 
-> **Spannung, bewusst eingegangen (2026-07-30):** Die Brand-Prinzipien unten
-> sagen „kein Feature-Grid". `FeaturesGrid` steht trotzdem wieder auf der
-> Landing Page, weil der Nutzer die Funktionen-Seite ausdrücklich mit der
-> Homepage zusammengelegt haben wollte und der Inhalt sonst ersatzlos
-> verschwunden wäre. Das Prinzip stammt aus der Zeit, als das Grid dieselben
-> vier Outputs wie `ExampleOutput` wiederholte (beide gibt es nicht mehr), es
-> ist also nicht mehr dieselbe Sektion, gegen die das Prinzip formuliert
-> wurde. Wenn die Landing Page nochmal überarbeitet wird: das ist die Stelle,
-> an der Prinzip und Ist-Zustand auseinanderliegen.
+> **Spannung aus 2026-07-30, seit demselben Tag aufgelöst:** `FeaturesGrid`
+> stand zwischenzeitlich zwischen `HowItWorks` und `ProductShowcase`
+> (Widerspruch zum Brand-Prinzip „kein Feature-Grid" unten, damals bewusst
+> eingegangen, weil der Nutzer die Funktionen-Seite mit der Homepage
+> zusammengelegt haben wollte). Auf Zuruf aus Live-Screenshots noch am selben
+> Tag (`ca77daa`) wieder entfernt: deckte dieselbe Fläche wie `HowItWorks`
+> und der echte Workspace direkt daneben schon ab. Komponente gelöscht, aus
+> der Git-Historie rekonstruierbar, kein Aufrufer mehr.
 
 ---
 
@@ -993,7 +1045,8 @@ Brand-Audit-Status (2026-07-17 durchgegangen):
    zusammen. Reine Whitespace-Änderung.
 
 **Nicht anfassen (stabil, fertig):**
-- Mascot-State-System und alle 16 Assets
-- Hero-Demo (Idea→Plan→Build→Launch)
+- Mascot-State-System und alle 14 Assets (die zwei toten Reste `dolphin-happy.png`/
+  `dolphin-think.png` sind seit B-7, Audit 06.09.2026, entfernt)
+- Hero-Demo (seit 2026-07-22 3 Stufen: Idee → Rückfrage → Prompt, siehe Tabelle oben)
 - Footer (Finn's Farewell)
 - Auth-Flow, DB-Migrationen, RLS-Policies
