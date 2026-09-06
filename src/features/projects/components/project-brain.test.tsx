@@ -166,17 +166,38 @@ describe("ProjectBrainCard", () => {
       updatedAt: new Date().toISOString(),
     };
 
-    it("shows progress and locks the controls", () => {
+    it("shows progress", () => {
       setup({ brain: analyzing });
       expect(screen.getByText(/Ich lese mich gerade ein/)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Analysiere/ })).toBeDisabled();
+    });
+
+    // M-12 (Audit 06.09.2026): die Route prueft den gespeicherten Status nie
+    // und erlaubt "Neu analysieren" bewusst jederzeit (kein Job-System im
+    // Projekt) — die Steuerung haengte hier trotzdem am liegengebliebenen
+    // "analyzing", das ohne Cron-Aufraeumer bis zu 10 Minuten stehen kann,
+    // wenn ein Request abreisst. Das sperrte einen sofortigen neuen Versuch
+    // fuer eine Zeitspanne, die der Server selbst nie verlangt hat, und liess
+    // alle Projekt-Chats so lange ohne Gedaechtnis laufen.
+    it("keeps the controls usable even while a run looks like it might still be in progress", () => {
+      setup({ brain: analyzing });
+      expect(screen.getByLabelText(/GitHub-Repository/)).toBeEnabled();
+      expect(screen.getByRole("button", { name: /Projekt analysieren/ })).toBeEnabled();
+    });
+
+    it("only locks the controls while THIS component has its own request in flight", async () => {
+      fetchMock.mockReturnValue(new Promise(() => {})); // löst absichtlich nie auf
+      setup({ brain: analyzing });
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /Projekt analysieren/ }));
+      expect(await screen.findByRole("button", { name: /Analysiere/ })).toBeDisabled();
       expect(screen.getByLabelText(/GitHub-Repository/)).toBeDisabled();
     });
 
     // Die Analyse laeuft synchron in der Route; reisst der Request ab, bleibt
     // der Status stehen und der Prozess, der ihn aufraeumen sollte, ist genau
-    // der, der weg ist. Deshalb entscheidet die Leseseite ueber den Zeitablauf.
-    it("offers a retry once a stuck run is old enough", () => {
+    // der, der weg ist. Die Anzeige (nicht mehr die Steuerung, siehe oben)
+    // entscheidet ueber den Zeitablauf.
+    it("clears the progress panel once a stuck run is old enough", () => {
       setup({
         brain: {
           ...analyzing,

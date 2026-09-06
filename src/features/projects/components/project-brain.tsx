@@ -69,7 +69,19 @@ export function ProjectBrainCard({
   const [error, setError] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
+  // Fuer die ANZEIGE (Panel, Hinweise): "sieht nach einer laufenden Analyse
+  // aus", bleibt bis zu BRAIN_ANALYZING_TIMEOUT_MS (10 Minuten) stehen, auch
+  // wenn der Request laengst abgerissen ist — rein informativ, klaert sich
+  // von selbst, sobald das Fenster ablaeuft oder die Seite neu laedt.
   const running = busy || isAnalysisRunning(brain);
+  // M-12 (Audit 06.09.2026): NUR fuer Eingabefeld und Knopf — die Route
+  // selbst prueft den Status nie und erlaubt "Neu analysieren" bewusst
+  // jederzeit (kein Job-System im Projekt, siehe brain/route.ts). Der Knopf
+  // haengte bisher trotzdem an `running` und blieb dadurch bis zu 10 Minuten
+  // gesperrt, nachdem ein Request abgerissen war — obwohl ein sofortiger
+  // neuer Versuch laengst wieder funktioniert haette, und alle Projekt-Chats
+  // in der Zwischenzeit ohne Gedaechtnis liefen.
+  const blocked = busy;
   const stale = isBrainStale(brain, currentDigest);
   const ready = brain.status === "ready";
   const hasSources = sourceCount > 0 || repoUrl.trim().length > 0;
@@ -197,7 +209,7 @@ export function ProjectBrainCard({
           id="brain-repo"
           value={repoUrl}
           onChange={(e) => setRepoUrl(e.target.value)}
-          disabled={running}
+          disabled={blocked}
           maxLength={300}
           inputMode="url"
           autoComplete="off"
@@ -217,17 +229,17 @@ export function ProjectBrainCard({
         variant={ready ? "ghost" : "accent"}
         size="sm"
         onClick={() => void analyze()}
-        disabled={running || !hasSources}
+        disabled={blocked || !hasSources}
         className="mt-3 w-full"
       >
-        {running ? (
+        {blocked ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : ready ? (
           <RefreshCw className="h-3.5 w-3.5" />
         ) : (
           <Brain className="h-3.5 w-3.5" />
         )}
-        {running ? "Analysiere…" : ready ? "Neu analysieren" : "Projekt analysieren"}
+        {blocked ? "Analysiere…" : ready ? "Neu analysieren" : "Projekt analysieren"}
       </Button>
 
       {!hasSources && !running && (
