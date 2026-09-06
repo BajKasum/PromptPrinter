@@ -207,6 +207,18 @@ describe("ProjectBrainCard", () => {
       expect(screen.getByRole("button", { name: /Projekt analysieren/ })).toBeEnabled();
       expect(screen.queryByText(/Ich lese mich gerade ein/)).not.toBeInTheDocument();
     });
+
+    // Nachtrag zu M-12 (Audit 06.09.2026, zweiter Durchgang): der Knopf hing
+    // schon an `blocked`, dieser Hinweis darunter aber noch am alten
+    // `running` -- ohne eigene Quellen UND einem liegengebliebenen
+    // "analyzing" zeigte der Knopf weder den Spinner (der haengt an `blocked`,
+    // nicht `running`) noch erschien der Hinweis, warum er trotzdem
+    // deaktiviert ist.
+    it("still explains a missing-sources state even while a stuck run looks like it might be in progress", () => {
+      setup({ brain: analyzing, sourceCount: 0 });
+      expect(screen.getByRole("button", { name: /Projekt analysieren/ })).toBeDisabled();
+      expect(screen.getByText(/Lade zuerst Dateien hoch/)).toBeInTheDocument();
+    });
   });
 
   describe("veraltete Quellen", () => {

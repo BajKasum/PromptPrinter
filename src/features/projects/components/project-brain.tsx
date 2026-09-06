@@ -242,7 +242,7 @@ export function ProjectBrainCard({
         {blocked ? "Analysiere…" : ready ? "Neu analysieren" : "Projekt analysieren"}
       </Button>
 
-      {!hasSources && !running && (
+      {!hasSources && !blocked && (
         <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
           Lade zuerst Dateien hoch oder trag ein Repository ein.
         </p>
