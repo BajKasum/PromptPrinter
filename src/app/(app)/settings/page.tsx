@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { SettingsWorkspace } from "@/features/settings/components/settings-workspace";
-import { parseToolDefaults } from "@/features/settings/lib/tools";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
@@ -34,7 +33,7 @@ export default async function SettingsPage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, settings, plan, is_admin, avatar_url")
+      .select("display_name, plan, is_admin, avatar_url")
       .eq("id", user.id)
       .maybeSingle(),
     // RLS scopes both counts to the signed-in owner; the explicit owner filter
@@ -64,7 +63,6 @@ export default async function SettingsPage() {
 
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
-  const toolDefaults = parseToolDefaults(profile?.settings);
   const plan = (profile?.plan ?? "free") as PlanKey;
   const isAdmin = profile?.is_admin ?? false;
   const limits = effectiveLimits(plan, isAdmin);
@@ -73,21 +71,16 @@ export default async function SettingsPage() {
   const hasByok = configuredProviders.length > 0;
   const chatLimit = hasByok ? Infinity : limits.chatMessages;
 
-  // Only forward a genuine settings object so the client can safely merge it.
-  const rawSettings = profile?.settings;
-  const baseSettings =
-    rawSettings && typeof rawSettings === "object" && !Array.isArray(rawSettings)
-      ? (rawSettings as Record<string, unknown>)
-      : null;
-
   return (
     <div>
       <FadeIn>
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
           Einstellungen
         </h1>
+        {/* M-18 (Audit 06.09.2026): "Standardwerte" nannte die inzwischen
+            entfernte "Standard-Tools"-Karte (settings-workspace.tsx). */}
         <p className="mt-1.5 text-[14px] text-secondary mb-8">
-          Profil, Workspace und Standardwerte an einem Ort.
+          Profil, Workspace und Sicherheit an einem Ort.
         </p>
       </FadeIn>
 
@@ -96,8 +89,6 @@ export default async function SettingsPage() {
         email={email}
         initialDisplayName={displayName}
         initialAvatarUrl={profile?.avatar_url ?? null}
-        initialTools={toolDefaults}
-        baseSettings={baseSettings}
         plan={plan}
         isAdmin={isAdmin}
         usage={{

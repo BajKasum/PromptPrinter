@@ -1,43 +1,23 @@
 /**
- * Brand marks for every build-target tool the app offers. Each logo is an
- * inline SVG (no network assets, works server- or client-side) sized via the
- * `size` prop. `TOOL_VISUAL` carries the brand accent color and a one-line
- * blurb so the picker can tint each tile and describe the choice. Keys match
- * the strings in `TOOL_OPTIONS` exactly, so the picker can look them up 1:1.
+ * Brand marks for the AI providers BYOK offers a key for (api-keys.tsx). Each
+ * logo is an inline SVG (no network assets, works server- or client-side)
+ * sized via the `size` prop.
  *
  * The raw hex values throughout this file are a deliberate, blanket exception
  * to CLAUDE.md's "no raw hex, only semantic tokens" rule (QA finding C-3):
- * these are third-party brand colors (Claude's terracotta, ChatGPT's green,
- * Figma's gradient, …), fixed identity marks that must render the same
- * regardless of the app's own light/dark theme — a design token would be the
- * wrong tool here, not a missed one. auth/oauth-buttons.tsx is the only other
- * file with the same exception, for the same reason (Google/GitHub brand marks).
+ * these are third-party brand colors (Claude's terracotta, ChatGPT's green, …),
+ * fixed identity marks that must render the same regardless of the app's own
+ * light/dark theme — a design token would be the wrong tool here, not a
+ * missed one. auth/oauth-buttons.tsx is the only other file with the same
+ * exception, for the same reason (Google/GitHub brand marks).
+ *
+ * M-18 (Audit 06.09.2026): this file used to carry nine more cases (Lovable,
+ * Stitch, Figma, Claude Code, Cursor, Windsurf, PostgreSQL, MySQL, Supabase)
+ * plus a TOOL_VISUAL/toolVisual export, all built for the "Standard-Tools"
+ * settings picker. That picker is gone (settings-workspace.tsx) and nothing
+ * else ever called toolVisual or looked up those nine names, so they went
+ * with it rather than sit here unreachable.
  */
-
-export type ToolVisual = { color: string; blurb: string };
-
-export const TOOL_VISUAL: Record<string, ToolVisual> = {
-  // master
-  Claude: { color: "#D97757", blurb: "Stark für Prompts" },
-  ChatGPT: { color: "#10A37F", blurb: "Strukturierte Outputs" },
-  Gemini: { color: "#4285F4", blurb: "Recherche & Kontext" },
-  // frontend
-  Lovable: { color: "#FF7AA2", blurb: "Full-Stack aus Prompt" },
-  Stitch: { color: "#00BFA6", blurb: "UI aus Text" },
-  Figma: { color: "#A259FF", blurb: "Design-Handoff" },
-  // backend
-  "Claude Code": { color: "#D97757", blurb: "Agentisches Coding" },
-  Cursor: { color: "#A1A1AA", blurb: "KI-Code-Editor" },
-  Windsurf: { color: "#22D3EE", blurb: "Agentische IDE" },
-  // database
-  PostgreSQL: { color: "#5A9BD4", blurb: "Robustes SQL" },
-  MySQL: { color: "#00A6C9", blurb: "Bewährtes SQL" },
-  Supabase: { color: "#3ECF8E", blurb: "Postgres + Auth" },
-};
-
-export function toolVisual(name: string): ToolVisual {
-  return TOOL_VISUAL[name] ?? { color: "#8FCDF2", blurb: "Build-Tool" };
-}
 
 export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
   const common = {
@@ -92,134 +72,6 @@ export function ToolLogo({ name, size = 18 }: { name: string; size?: number }) {
           <path
             fill={`url(#tl-${uid})`}
             d="M12 2c.5 5.3 4.4 9.2 9.7 9.7v.6c-5.3.5-9.2 4.4-9.7 9.7h-.6c-.5-5.3-4.4-9.2-9.7-9.7v-.6C7 11.2 10.9 7.3 11.4 2h.6z"
-          />
-        </svg>
-      );
-
-    case "Lovable":
-      return (
-        <svg {...common}>
-          <defs>
-            <linearGradient id={`tl-${uid}`} x1="3" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#FF7AA2" />
-              <stop offset="1" stopColor="#FF8E53" />
-            </linearGradient>
-          </defs>
-          <path
-            fill={`url(#tl-${uid})`}
-            d="M12 20.6l-1.3-1.2C6.1 15.2 3.3 12.6 3.3 9.3 3.3 6.7 5.3 4.7 7.9 4.7c1.5 0 2.9.7 3.8 1.9.9-1.2 2.3-1.9 3.8-1.9 2.6 0 4.6 2 4.6 4.6 0 3.3-2.8 5.9-7.4 10.1L12 20.6z"
-          />
-        </svg>
-      );
-
-    case "Stitch":
-      // Sewing needle threading a curved stitch.
-      return (
-        <svg {...common}>
-          <g stroke="#00BFA6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none">
-            <path d="M4.5 19.5 14 10" />
-            <path d="M14 10l5-5" />
-            <path d="M4.5 19.5c-1.6-1.6.1-3.7 2-2.9" />
-            <ellipse cx="15.6" cy="8.4" rx="1.7" ry="0.9" transform="rotate(-45 15.6 8.4)" />
-          </g>
-        </svg>
-      );
-
-    case "Figma":
-      return (
-        <svg {...common}>
-          <path d="M8 24a4 4 0 0 0 4-4v-4H8a4 4 0 1 0 0 8z" fill="#0ACF83" />
-          <path d="M4 12a4 4 0 0 1 4-4h4v8H8a4 4 0 0 1-4-4z" fill="#A259FF" />
-          <path d="M4 4a4 4 0 0 1 4-4h4v8H8a4 4 0 0 1-4-4z" fill="#F24E1E" />
-          <path d="M12 0h4a4 4 0 0 1 0 8h-4V0z" fill="#FF7262" />
-          <path d="M20 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" fill="#1ABCFE" />
-        </svg>
-      );
-
-    case "Claude Code":
-      // Terminal tinted in Anthropic clay.
-      return (
-        <svg {...common}>
-          <rect x="2.5" y="4.5" width="19" height="15" rx="3" stroke="#D97757" strokeWidth="1.6" />
-          <path d="M7 10l3 2-3 2" stroke="#D97757" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M12.5 15h4.5" stroke="#D97757" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-
-    case "Cursor":
-      return (
-        <svg {...common}>
-          <defs>
-            <linearGradient id={`tl-${uid}`} x1="5" y1="3" x2="18" y2="20" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#fff" />
-              <stop offset="1" stopColor="#9CA3AF" />
-            </linearGradient>
-          </defs>
-          <path
-            fill={`url(#tl-${uid})`}
-            d="M5 3.2 19.4 10c.7.3.6 1.3-.1 1.5l-5.5 1.6-2.6 5.2c-.3.7-1.4.6-1.6-.2L4.9 3.9c-.1-.5.4-.9.1-.7z"
-          />
-        </svg>
-      );
-
-    case "Windsurf":
-      return (
-        <svg {...common}>
-          <defs>
-            <linearGradient id={`tl-${uid}`} x1="6" y1="3" x2="18" y2="18" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#5EEAD4" />
-              <stop offset="1" stopColor="#0EA5E9" />
-            </linearGradient>
-          </defs>
-          <path fill={`url(#tl-${uid})`} d="M12 2.5c3.7 2.2 5.7 6 5.9 11.5H6.1C6.3 8.5 8.3 4.7 12 2.5z" />
-          <path d="M12 2.5V18" stroke="#0EA5E9" strokeWidth="1.4" strokeLinecap="round" />
-          <path d="M4.5 18.5c2 1.3 3.5 1.3 5.5 0s3.5-1.3 5.5 0 3.5 1.3 5.5 0" stroke={`url(#tl-${uid})`} strokeWidth="1.6" strokeLinecap="round" fill="none" />
-        </svg>
-      );
-
-    case "PostgreSQL":
-      // Stylized elephant head, Postgres blue.
-      return (
-        <svg {...common}>
-          <path
-            fill="#5A9BD4"
-            d="M8 3.5C5.2 3.5 3 5.7 3 8.5c0 1.7.8 3.2 2.1 4.1V18a1.5 1.5 0 0 0 3 0v-2.2h1.3V18a1.5 1.5 0 0 0 3 0v-2.6c.5-.2.9-.4 1.3-.7.5.9 1.4 1.3 2.3 1.3v-2c-.5 0-.9-.4-.9-.9v-2.7c0-3.3-2.6-5.9-5.8-5.9H8z"
-          />
-          <path
-            fill="#5A9BD4"
-            d="M5.2 12.2c-1 .6-1.6 1.7-1.6 2.9V18a1.4 1.4 0 0 0 2.8 0v-3.1"
-          />
-          <circle cx="8.2" cy="8" r="0.95" fill="#0A0A0A" />
-          <path d="M11.5 6c1.5 0 2.6 1.1 2.6 2.6" stroke="#3D7AB3" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-        </svg>
-      );
-
-    case "MySQL":
-      // Leaping dolphin, MySQL teal with an orange ripple.
-      return (
-        <svg {...common}>
-          <path
-            fill="#00A6C9"
-            d="M3 13.6c3 1 5.3.2 7.3-1.8 1.4-1.4 3-2.8 5.6-2.9-.8 1.2-.8 2.2-.3 3.1 1.4-1 2.4-2.1 2.9-3.2.4 3.4-1.8 7.2-6.1 7.2-2.5 0-4.2-.7-5.5-1.6-1.2.2-2.4.7-3.3 1.4L3 13.6z"
-          />
-          <path fill="#00A6C9" d="M13 9.6c.4-1.9 1.8-3.1 3.9-3.3-.9.9-1 2-.8 3.2" />
-          <circle cx="8.6" cy="11.3" r="0.7" fill="#fff" />
-          <path d="M4 16.4c2.1.9 4.2.9 6.3 0" stroke="#F29111" strokeWidth="1.3" strokeLinecap="round" fill="none" />
-        </svg>
-      );
-
-    case "Supabase":
-      return (
-        <svg {...common}>
-          <defs>
-            <linearGradient id={`tl-${uid}`} x1="6" y1="2" x2="16" y2="22" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#3ECF8E" />
-              <stop offset="1" stopColor="#1B8F5E" />
-            </linearGradient>
-          </defs>
-          <path
-            fill={`url(#tl-${uid})`}
-            d="M12.6 2.3 4.3 12.9c-.5.6-.1 1.6.7 1.6h6.1l-.9 7.1c-.1.8 1 1.2 1.5.6l8.3-10.6c.5-.6.1-1.6-.7-1.6h-6.1l.9-7.1c.1-.8-1-1.2-1.5-.6z"
           />
         </svg>
       );

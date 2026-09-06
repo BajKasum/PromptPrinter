@@ -10,10 +10,6 @@ import {
   Gauge,
   KeyRound,
   Lock,
-  Sparkles,
-  LayoutTemplate,
-  TerminalSquare,
-  Database,
   ShieldAlert,
   ArrowUpRight,
   Loader2,
@@ -24,7 +20,6 @@ import {
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
-import { ToolPickerGroup } from "@/features/settings/components/tool-picker";
 import { DeleteAccount } from "@/features/settings/components/delete-account";
 import { ChangePassword } from "@/features/settings/components/change-password";
 import { AvatarUpload } from "@/features/settings/components/avatar-upload";
@@ -34,7 +29,6 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import { UsageMeter } from "@/features/settings/components/usage-meter";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import type { PlanKey } from "@/shared/lib/plans";
-import { TOOL_OPTIONS, type ProjectTools } from "@/features/settings/lib/tools";
 import { createClient } from "@/shared/supabase/client";
 import { cn, hslVar } from "@/shared/lib/utils";
 type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
@@ -51,8 +45,6 @@ export function SettingsWorkspace({
   email,
   initialDisplayName,
   initialAvatarUrl,
-  initialTools,
-  baseSettings,
   plan,
   isAdmin = false,
   usage,
@@ -65,8 +57,6 @@ export function SettingsWorkspace({
   email: string;
   initialDisplayName: string;
   initialAvatarUrl: string | null;
-  initialTools: ProjectTools;
-  baseSettings: Record<string, unknown> | null;
   plan: PlanKey;
   /** A role (profiles.is_admin), not a plan, shows "Admin" instead of the
    * tier badge and means the usage meters below never actually cap out. */
@@ -86,50 +76,25 @@ export function SettingsWorkspace({
   // Current edits vs. the saved baseline. The baseline advances on a successful
   // save so the dirty state (and the save bar) reset without a full reload.
   const [displayName, setDisplayName] = useState(initialDisplayName);
-  const [tools, setTools] = useState<ProjectTools>(initialTools);
   const [baseName, setBaseName] = useState(initialDisplayName);
-  const [baseTools, setBaseTools] = useState<ProjectTools>(initialTools);
   const [saving, setSaving] = useState(false);
 
   const nameTrimmed = displayName.trim();
   const nameDirty = nameTrimmed !== baseName.trim();
   const nameValid = nameTrimmed.length > 0;
-  // Compare trimmed against the (already-trimmed) baseline so trailing spaces in
-  // a custom entry don't register as a phantom change.
-  const toolsDirty =
-    tools.master.trim() !== baseTools.master ||
-    tools.frontend.trim() !== baseTools.frontend ||
-    tools.backend.trim() !== baseTools.backend ||
-    tools.database.trim() !== baseTools.database;
-  // A custom tool the user left blank can't be saved.
-  const toolsValid =
-    tools.master.trim().length > 0 &&
-    tools.frontend.trim().length > 0 &&
-    tools.backend.trim().length > 0 &&
-    tools.database.trim().length > 0;
-  const dirty = nameDirty || toolsDirty;
-  const canSave = dirty && !saving && !(nameDirty && !nameValid) && toolsValid;
+  const dirty = nameDirty;
+  const canSave = dirty && !saving && !(nameDirty && !nameValid);
 
   function cancel() {
     setDisplayName(baseName);
-    setTools(baseTools);
   }
 
   async function save() {
     if (!canSave) return;
     setSaving(true);
 
-    // Persist trimmed tool names so stray whitespace never reaches storage.
-    const cleanTools: ProjectTools = {
-      master: tools.master.trim(),
-      frontend: tools.frontend.trim(),
-      backend: tools.backend.trim(),
-      database: tools.database.trim(),
-    };
-
     const patch: Record<string, unknown> = {};
     if (nameDirty && nameValid) patch.display_name = nameTrimmed;
-    if (toolsDirty) patch.settings = { ...(baseSettings ?? {}), defaultTools: cleanTools };
 
     const supabase = createClient();
     const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
@@ -148,8 +113,6 @@ export function SettingsWorkspace({
     // away and the visible fields reflect exactly what was stored.
     setDisplayName(nameTrimmed);
     setBaseName(nameTrimmed);
-    setTools(cleanTools);
-    setBaseTools(cleanTools);
     toast({ title: "Einstellungen gespeichert", variant: "success" });
     router.refresh();
   }
@@ -286,52 +249,17 @@ export function SettingsWorkspace({
           </SettingsCard>
         </div>
 
-        {/* Default tools, the centerpiece */}
-        <SettingsCard
-          Icon={Sparkles}
-          accent="--accent"
-          title="Standard-Tools"
-          description="Vorbelegung fürs Software-Paket, solange dein Projekt noch keine eigene Struktur hat."
-        >
-          <div className="grid gap-3 md:grid-cols-2">
-            <ToolPickerGroup
-              label="KI-Assistent"
-              hint="Master-Prompt-Ziel"
-              Icon={Sparkles}
-              accent="--accent"
-              options={TOOL_OPTIONS.master}
-              value={tools.master}
-              onChange={(v) => setTools({ ...tools, master: v })}
-            />
-            <ToolPickerGroup
-              label="Frontend-Builder"
-              hint="UI-Generierung"
-              Icon={LayoutTemplate}
-              accent="--accent"
-              options={TOOL_OPTIONS.frontend}
-              value={tools.frontend}
-              onChange={(v) => setTools({ ...tools, frontend: v })}
-            />
-            <ToolPickerGroup
-              label="Backend-Agent"
-              hint="Code-Assistent"
-              Icon={TerminalSquare}
-              accent="--accent"
-              options={TOOL_OPTIONS.backend}
-              value={tools.backend}
-              onChange={(v) => setTools({ ...tools, backend: v })}
-            />
-            <ToolPickerGroup
-              label="Datenbank"
-              hint="Daten-Layer"
-              Icon={Database}
-              accent="--accent"
-              options={TOOL_OPTIONS.database}
-              value={tools.database}
-              onChange={(v) => setTools({ ...tools, database: v })}
-            />
-          </div>
-        </SettingsCard>
+        {/* M-18 (Audit 06.09.2026): die "Standard-Tools"-Karte sass hier
+            zwischen API-Keys und Sicherheit — 4 Werte, die einzig in dieses
+            Formular hinein- und wieder herausgelesen wurden, ohne dass ein
+            anderer Codepfad sie je nutzte. Ein Überbleibsel der am
+            17.07.2026 gelöschten Chat→Ergebnis-Pipeline, die pro Generierung
+            genau diese vier Dimensionen (Master-KI/Frontend/Backend/DB)
+            abfragte; der heutige Chat kennt nur ein einzelnes Ziel-Tool
+            (conversations.target). Komplett entfernt statt an eine neue
+            Wirkung angeschlossen (features/settings/lib/tools.ts, der
+            tool-picker.tsx und die dafuer nicht mehr gebrauchten
+            ToolLogo-Faelle gingen mit). */}
 
         {/* Security */}
         <SettingsCard
