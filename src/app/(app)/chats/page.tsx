@@ -84,10 +84,16 @@ export default async function ChatsPage() {
           <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-8 md:p-10 text-center shadow-card">
             <AnimatedMascot state="curious" size={92} priority className="mx-auto mb-4" />
             <p className="text-[15px] font-semibold text-foreground">Noch kein Gespräch</p>
+            {/* M-14 (Audit 06.09.2026): stand vorher "ein gutes Ergebnis
+                speicherst du dir als Projekt" — den Handoff, den dieser Satz
+                beschrieb, gibt es seit 16.07.2026 nicht mehr, ein Chat kann
+                kein Projekt erzeugen. Was es wirklich gibt: der "Speichern"-
+                Knopf im Ergebnis-Panel (chat-result-panel.tsx), der einen
+                Prompt in die Bibliothek unter /prompts legt. */}
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
               Erzähl mir dein Ziel, einen Text, einen Plan, eine ganze Software-Idee.
-              Jeder Chat lässt sich jederzeit fortsetzen, und ein gutes Ergebnis
-              speicherst du dir als Projekt.
+              Jeder Chat lässt sich jederzeit fortsetzen, und ein guter Prompt
+              landet mit „Speichern“ in deiner Bibliothek.
             </p>
             <Button asChild>
               <Link href="/chats/new">

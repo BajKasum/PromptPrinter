@@ -108,10 +108,16 @@ export default async function ProjectsPage() {
           <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-8 md:p-10 text-center shadow-card">
             <AnimatedMascot state="building" size={92} priority className="mx-auto mb-4" />
             <p className="text-[15px] font-semibold text-foreground">Noch kein Projekt angelegt</p>
+            {/* M-14 (Audit 06.09.2026): stand vorher "...heb dir das Ergebnis
+                als Projekt auf" — ein Chat erzeugt kein Projekt, das gab es
+                seit der Handoff-Entfernung (16.07.2026) nicht mehr. Was
+                wirklich geht: einen bestehenden Chat nachträglich per
+                move-to-project.tsx in ein (dann schon existierendes) Projekt
+                verschieben. */}
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
               Leg direkt eins an, ein Name genügt, Briefing und Struktur wachsen
-              im Workspace. Oder beschreib deine Idee zuerst im Chat und heb dir
-              das Ergebnis als Projekt auf.
+              im Workspace. Oder beschreib deine Idee zuerst im Chat — gefällt
+              sie dir, verschiebst du den Chat später in ein Projekt.
             </p>
             <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
               <NewProjectButton />
