@@ -1,43 +1,42 @@
 import { Skeleton } from "@/shared/ui/skeleton";
 
+// B-9 (Audit 06.09.2026, zweiter Durchgang): zeigte bis hier ein
+// Vier-Kennzahlen-Kasten plus ein Drei-Spalten-Plan-Raster — die Form einer
+// älteren Seite. Die echte Seite (page.tsx) hat zwei Nutzungsbalken
+// (Projekte, Chat-Nachrichten) in zwei Spalten, danach höchstens EINE Karte
+// (Abo-Status oder Pro-Angebot, nie beide, nie ein Raster). Ohne den Wechsel
+// sprang die Seite beim Laden sichtbar in eine andere Form.
 export default function BillingLoading() {
   return (
     <div>
-      <Skeleton className="h-10 w-56 max-w-full" />
-      <Skeleton className="mb-8 mt-3 h-4 w-72 max-w-full" />
-
-      <div className="card-surface mb-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <Skeleton className="mb-2 h-3 w-24" />
-            <Skeleton className="h-7 w-28" />
-          </div>
-          <Skeleton className="h-10 w-40 rounded-lg" />
+      <div className="mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="mt-2 h-4 w-64 max-w-full" />
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border pt-6 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton className="h-6 w-40 rounded-full" />
+      </div>
+
+      <section className="mb-12">
+        <Skeleton className="mb-2 h-4 w-44" />
+        <Skeleton className="mb-7 h-3.5 w-72 max-w-full" />
+        <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
             <div key={i}>
-              <Skeleton className="mb-2 h-3 w-20" />
-              <Skeleton className="h-5 w-12" />
+              <div className="mb-2 flex items-baseline justify-between">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-3.5 w-16" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <Skeleton className="mb-4 h-6 w-36" />
-      <div className="grid gap-3 md:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="card-surface p-6">
-            <Skeleton className="mb-2 h-5 w-20" />
-            <Skeleton className="mb-5 h-8 w-24" />
-            <div className="mb-5 space-y-2">
-              {Array.from({ length: 4 }).map((_, j) => (
-                <Skeleton key={j} className="h-3.5 w-full" />
-              ))}
-            </div>
-            <Skeleton className="h-10 w-full rounded-lg" />
-          </div>
-        ))}
+      <div className="card-surface p-6 md:p-8">
+        <Skeleton className="mb-2.5 h-4 w-32" />
+        <Skeleton className="mb-1.5 h-3.5 w-full max-w-md" />
+        <Skeleton className="h-3.5 w-2/3 max-w-sm" />
       </div>
     </div>
   );
