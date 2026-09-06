@@ -239,6 +239,38 @@ describe("fetchRepoSnapshot", () => {
     expect(snapshot.files.map((f) => f.path).sort()).toEqual(["README.md", "package.json"]);
   });
 
+  // M-13 (Audit 06.09.2026): stand vorher auf defaultBranch (z.B. "main"),
+  // fuer jedes Repo bei jedem Lauf unveraenderlich — ein Gedaechtnis konnte
+  // sich damit nie als veraltet erkennen, obwohl Migration 0037 genau das
+  // von der Spalte verlangt.
+  it("nimmt die echte Baum-SHA aus der Tree-Antwort, nicht den Branch-Namen", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          sha: "a1b2c3d4e5f6",
+          tree: [{ path: "package.json", type: "blob" }],
+        })
+      )
+      .mockResolvedValue(textResponse("{}"));
+
+    const snapshot = await fetchRepoSnapshot(ref);
+
+    expect(snapshot.sha).toBe("a1b2c3d4e5f6");
+    expect(snapshot.sha).not.toBe(snapshot.defaultBranch);
+  });
+
+  it("faellt auf den Branch-Namen zurueck, wenn die Tree-Antwort ausnahmsweise keine SHA traegt", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }))
+      .mockResolvedValueOnce(jsonResponse({ tree: [{ path: "package.json", type: "blob" }] }))
+      .mockResolvedValue(textResponse("{}"));
+
+    const snapshot = await fetchRepoSnapshot(ref);
+
+    expect(snapshot.sha).toBe("main");
+  });
+
   // Nur die ersten beiden Requests duerfen gegen api.github.com laufen (60/h
   // unauthentifiziert), die Dateien kommen vom CDN. Geht das kaputt, sinkt
   // das Kontingent von ~30 Analysen/Stunde auf ~4.

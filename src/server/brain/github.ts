@@ -269,6 +269,10 @@ type RepoMeta = {
 };
 
 type TreeResponse = {
+  // Die SHA des zurückgegebenen Baum-Objekts selbst — GitHub akzeptiert einen
+  // Branch-Namen hier nur als Komfort, löst ihn aber intern auf den exakten
+  // Tree-Stand auf. Ändert sich auch nur eine Datei, ändert sich diese SHA.
+  sha?: string;
   tree?: { path?: string; type?: string; size?: number }[];
   truncated?: boolean;
 };
@@ -407,7 +411,15 @@ export async function fetchRepoSnapshot(
 
   return {
     ref,
-    sha: defaultBranch,
+    // M-13 (Audit 06.09.2026): stand vorher auf defaultBranch, also z.B. dem
+    // festen String "main" — fuer JEDES Repo, bei JEDEM Lauf unveraenderlich.
+    // Migration 0037 schreibt der Spalte ausdruecklich den Zweck zu, ein
+    // Gedaechtnis als veraltet zu erkennen, sobald sich das Repo aendert —
+    // mit einem Branch-Namen statt einer echten Inhalts-SHA konnte das nie
+    // eintreten. tree.sha ist die SHA des zurueckgegebenen Baum-Objekts
+    // selbst (siehe TreeResponse oben), aendert sich also mit jeder Aenderung
+    // am Dateibestand, und kostet keinen zusaetzlichen Request.
+    sha: typeof tree.sha === "string" ? tree.sha : defaultBranch,
     defaultBranch,
     description: typeof meta.description === "string" ? meta.description : null,
     primaryLanguage: typeof meta.language === "string" ? meta.language : null,
