@@ -42,5 +42,14 @@ describe("translateAuthError", () => {
         "Zu viele Versuche, bitte kurz warten."
       );
     });
+
+    // Nachtrag (Audit 06.09.2026, zweiter Durchgang): 0 ist eine gueltige,
+    // aber falsy Sekundenzahl -- `seconds ? ... : ...` haette sie faelschlich
+    // als "keine Zahl gefunden" behandelt.
+    it("zeigt 0 Sekunden korrekt an, statt auf die generische Meldung zurueckzufallen", () => {
+      expect(
+        translateAuthError("For security purposes, you can only request this after 0 seconds.")
+      ).toBe("Bitte warte noch 0 Sekunden, bevor du eine weitere Mail anforderst.");
+    });
   });
 });

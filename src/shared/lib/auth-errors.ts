@@ -20,8 +20,11 @@ export function isMailCooldownError(message: string): boolean {
  */
 export function mailCooldownMessage(message: string): string {
   const match = message.match(MAIL_COOLDOWN_PATTERN);
+  // Nachtrag zu M-10 (Audit 06.09.2026, zweiter Durchgang): `seconds ? ... :
+  // ...` liess eine (theoretische) "after 0 seconds"-Meldung als falsy
+  // durchfallen und zeigte die generische Meldung statt "0 Sekunden".
   const seconds = match ? Number(match[1]) : null;
-  return seconds
+  return seconds !== null
     ? `Bitte warte noch ${seconds} Sekunden, bevor du eine weitere Mail anforderst.`
     : "Zu viele Versuche, bitte kurz warten.";
 }
