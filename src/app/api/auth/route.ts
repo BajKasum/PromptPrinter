@@ -9,7 +9,7 @@ import {
   RequestBodyTooLargeError,
   readJsonBody,
 } from "@/server/http/request-body";
-import { translateAuthError } from "@/shared/lib/auth-errors";
+import { isMailCooldownError, mailCooldownMessage, translateAuthError } from "@/shared/lib/auth-errors";
 import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
 import { MIN_PASSWORD_LENGTH } from "@/shared/lib/password";
 import { logWarning } from "@/shared/lib/observability";
@@ -176,8 +176,16 @@ export async function POST(req: Request) {
       // Throttling is the one failure worth naming. Everything else answers
       // ok, preserving the form's existing promise never to reveal whether an
       // address is registered — an error here would leak exactly that.
-      if (error && error.message.toLowerCase().includes("rate limit")) {
-        return problem(429, "Zu viele Versuche, bitte kurz warten.");
+      //
+      // M-10 (Audit 06.09.2026): GoTrues eigener Mail-Cooldown traegt NICHT
+      // das Wort "rate limit" ("For security purposes, you can only request
+      // this after 51 seconds."). Die alte Pruefung erkannte nur die
+      // benannte Rate-Limit-Form und meldete den — dem Zweck nach
+      // haeufigeren — Cooldown-Fall (kurz hintereinander zweimal
+      // angefordert) faelschlich als Erfolg: die Seite zeigte "Schau in dein
+      // Postfach", obwohl gar keine Mail rausging.
+      if (error && isMailCooldownError(error.message)) {
+        return problem(429, mailCooldownMessage(error.message));
       }
       return NextResponse.json({ ok: true });
     }

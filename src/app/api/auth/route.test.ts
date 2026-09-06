@@ -174,6 +174,20 @@ describe("POST /api/auth", () => {
       const res = await POST(req(body));
       expect(res.status).toBe(429);
     });
+
+    // M-10 (Audit 06.09.2026): GoTrues eigener Mail-Cooldown traegt NICHT
+    // das Wort "rate limit" — die alte Pruefung erkannte nur die benannte
+    // Form und meldete diesen, haeufigeren Fall faelschlich als Erfolg
+    // ("Schau in dein Postfach", obwohl keine Mail rausging).
+    it("erkennt GoTrues Cooldown-Meldung auch ohne das Wort 'rate limit'", async () => {
+      resetPasswordForEmail.mockResolvedValue({
+        error: { message: "For security purposes, you can only request this after 51 seconds." },
+      });
+      const res = await POST(req(body));
+      expect(res.status).toBe(429);
+      const json = await res.json();
+      expect(json.detail).toContain("51 Sekunden");
+    });
   });
 
   describe("guards around the gate", () => {
