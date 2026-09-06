@@ -89,6 +89,13 @@ const attributesSchema = z
     // Nur auf Rechnungen (subscription_payment_success): dort ist data.id die
     // RECHNUNG, die Abo-Nummer steht hier.
     subscription_id: identifier.optional(),
+    // Nur auf Abo-Objekten (M-2, Audit 06.09.2026). Die Kundenportal-Adresse,
+    // ueber die ein Nutzer sein Abo selbst kuendigt oder das Zahlungsmittel
+    // aendert — ohne sie hatte die App keinen Weg, das anzubieten.
+    urls: z
+      .object({ customer_portal: z.string().max(2000).optional() })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 
@@ -161,6 +168,8 @@ export type ProfileBillingPatch = {
   subscription_status?: string;
   subscription_renews_at?: string | null;
   subscription_ends_at?: string | null;
+  /** M-2: die Adresse, über die ein Nutzer sein Abo selbst verwaltet. */
+  subscription_portal_url?: string;
 };
 
 export type BillingDecision =
@@ -248,6 +257,12 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
   patch.plan = ACCESS_GRANTING_STATUSES.has(status) ? "pro" : "free";
   if (attributes.renews_at !== undefined) patch.subscription_renews_at = attributes.renews_at;
   if (attributes.ends_at !== undefined) patch.subscription_ends_at = attributes.ends_at;
+  // M-2 (Audit 06.09.2026): ohne das liess sich ein laufendes Abo in der App
+  // nirgends kuendigen. Nur gesetzt, wenn mitgeliefert — kein `?? null`, ein
+  // fehlender Wert soll die zuletzt bekannte Adresse nicht loeschen.
+  if (attributes.urls?.customer_portal) {
+    patch.subscription_portal_url = attributes.urls.customer_portal;
+  }
 
   return { kind: "apply", patch };
 }

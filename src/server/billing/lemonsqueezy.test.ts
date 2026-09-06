@@ -253,6 +253,32 @@ describe("decideBillingUpdate", () => {
       const decision = decideBillingUpdate(payload("subscription_updated", { id: "sub_1" }));
       expect(decision.kind).toBe("ignore");
     });
+
+    // M-2 (Audit 06.09.2026): ohne das liess sich ein laufendes Abo in der
+    // App nirgends kuendigen.
+    it("merkt sich die Kundenportal-Adresse, wenn sie mitkommt", () => {
+      const decision = decideBillingUpdate(
+        payload("subscription_updated", {
+          id: "sub_1",
+          attributes: {
+            status: "active",
+            urls: { customer_portal: "https://promptprinter.lemonsqueezy.com/billing" },
+          },
+        })
+      );
+      expect(decision.kind === "apply" && decision.patch.subscription_portal_url).toBe(
+        "https://promptprinter.lemonsqueezy.com/billing"
+      );
+    });
+
+    it("loescht die zuletzt bekannte Portal-Adresse nicht, wenn sie diesmal fehlt", () => {
+      const decision = decideBillingUpdate(
+        payload("subscription_updated", { id: "sub_1", attributes: { status: "active" } })
+      );
+      expect(
+        decision.kind === "apply" && "subscription_portal_url" in decision.patch
+      ).toBe(false);
+    });
   });
 
   describe("subscription_payment_success", () => {

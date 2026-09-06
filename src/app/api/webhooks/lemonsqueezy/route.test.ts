@@ -193,6 +193,33 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       );
     });
 
+    // M-2 (Audit 06.09.2026): ohne das liess sich ein laufendes Abo in der
+    // App nirgends kuendigen.
+    it("schreibt die Kundenportal-Adresse mit, wenn Lemon Squeezy sie mitschickt", async () => {
+      await POST(
+        req(
+          body(
+            "subscription_created",
+            {
+              id: "sub_1",
+              attributes: {
+                status: "active",
+                urls: { customer_portal: "https://promptprinter.lemonsqueezy.com/billing" },
+              },
+            },
+            { user_id: USER_ID }
+          )
+        )
+      );
+
+      expect(profileUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subscription_portal_url: "https://promptprinter.lemonsqueezy.com/billing",
+        }),
+        USER_ID
+      );
+    });
+
     it("behält Pro bei einer Kündigung und nimmt es beim Ablauf weg", async () => {
       await POST(
         req(

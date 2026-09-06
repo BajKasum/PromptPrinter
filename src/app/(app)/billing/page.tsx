@@ -54,7 +54,9 @@ export default async function BillingPage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("plan, is_admin, subscription_status, subscription_renews_at, subscription_ends_at")
+      .select(
+        "plan, is_admin, subscription_status, subscription_renews_at, subscription_ends_at, subscription_portal_url"
+      )
       .eq("id", user.id)
       .maybeSingle(),
     // Owner filter is explicit on top of RLS (defense in depth).
@@ -104,6 +106,7 @@ export default async function BillingPage() {
   const subscriptionStatus = (profile?.subscription_status as string | null) ?? null;
   const renewsAt = (profile?.subscription_renews_at as string | null) ?? null;
   const endsAt = (profile?.subscription_ends_at as string | null) ?? null;
+  const portalUrl = (profile?.subscription_portal_url as string | null) ?? null;
   const isCancelled = subscriptionStatus === "cancelled";
 
   // Ohne Webhook-Secret gibt es niemanden, der eine Zahlung entgegennimmt —
@@ -171,6 +174,22 @@ export default async function BillingPage() {
                   ? `Verlängert sich automatisch am ${formatDate(renewsAt)}.`
                   : "Kündigen und Zahlungsmittel ändern kannst du über den Link in deiner Kaufbestätigung von Lemon Squeezy."}
             </p>
+            {/* M-2 (Audit 06.09.2026): vorher stand hier, egal was oben
+                stand, nichts, worüber ein laufendes Abo tatsächlich
+                kündbar war — der Hinweistext im dritten Fall (kein
+                renewsAt) beschrieb einen Weg, den es sonst nirgends gab.
+                Lemon Squeezys eigene Kundenportal-Adresse kommt jetzt mit
+                jedem Abo-Ereignis mit (Migration 0041). */}
+            {portalUrl && (
+              <a
+                href={portalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center text-[13px] font-medium text-accent-text underline underline-offset-2 hover:text-accent-text/80"
+              >
+                Abo verwalten
+              </a>
+            )}
           </section>
         </FadeIn>
       )}
