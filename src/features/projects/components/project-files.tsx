@@ -293,7 +293,7 @@ export function ProjectFiles({
         // list, the constraint has already been learned; repeating it forever
         // would be chrome, not help.
         files.length === 0 && (
-          <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground/70">
+          <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
             <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
               package.json
             </code>

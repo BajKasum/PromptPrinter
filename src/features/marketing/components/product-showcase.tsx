@@ -118,7 +118,7 @@ function NavSwitcher({ view, onChange }: { view: ViewKey; onChange: (v: ViewKey)
               "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12.5px] font-medium transition-colors",
               active
                 ? "bg-surface-raised text-foreground shadow-sm"
-                : "text-muted-foreground/70 hover:text-foreground"
+                : "text-secondary hover:text-foreground"
             )}
           >
             <Icon className="h-3.5 w-3.5" strokeWidth={2} />

@@ -132,7 +132,7 @@ export function MobileNav({
                     </Link>
                     <nav aria-label="Chats" className="space-y-0.5">
                       {chats.length === 0 ? (
-                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
                           Dein erster Chat landet hier.
                         </p>
                       ) : (
@@ -167,7 +167,7 @@ export function MobileNav({
                     />
                     <nav aria-label="Projekte" className="space-y-0.5">
                       {projects.length === 0 ? (
-                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
                           Noch kein Projekt angelegt.
                         </p>
                       ) : (

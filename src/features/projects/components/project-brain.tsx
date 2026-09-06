@@ -215,12 +215,12 @@ export function ProjectBrainCard({
           autoComplete="off"
           spellCheck={false}
           placeholder="github.com/name/projekt"
-          className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-muted-foreground/60 transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+          className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
         />
         {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
             auf fremden Quellcode auf dem Server, das ist eine eigene
             Vertrauensfrage und keine Erweiterung dieses Feldes. */}
-        <p className="text-[11px] leading-relaxed text-muted-foreground/70">
+        <p className="text-[11px] leading-relaxed text-secondary">
           Muss öffentlich sein. Private Repos: lade die wichtigen Dateien hoch.
         </p>
       </div>
@@ -243,7 +243,7 @@ export function ProjectBrainCard({
       </Button>
 
       {!hasSources && !running && (
-        <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground/70">
+        <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
           Lade zuerst Dateien hoch oder trag ein Repository ein.
         </p>
       )}
@@ -309,7 +309,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
       {/* Die Selbsteinschaetzung des Modells sichtbar lassen: ein aus einer
           einzigen README abgeleitetes Ergebnis soll nicht so aussehen wie
           eines aus package.json plus Migrationen. */}
-      <p className="text-[11px] text-muted-foreground/70">
+      <p className="text-[11px] text-secondary">
         {brain.sources.length} {brain.sources.length === 1 ? "Quelle" : "Quellen"}
         <span className={cn(facts.confidence === "low" && "text-destructive/80")}>
           {" · "}

@@ -137,7 +137,7 @@ export function Sidebar({
           aria-label={collapsed ? "Seitenleiste ausklappen" : "Seitenleiste einklappen"}
           aria-keyshortcuts="Control+B Meta+B"
           title="Seitenleiste ein-/ausklappen (Strg/⌘ B)"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground/60 transition-colors hover:bg-surface-hover hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
         >
           {collapsed ? (
             <PanelLeftOpen className="h-4 w-4" strokeWidth={1.8} />
@@ -249,7 +249,7 @@ function Full({
               </Link>
               <div className="space-y-0.5">
                 {chats.length === 0 ? (
-                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
                     Dein erster Chat landet hier.
                   </p>
                 ) : (
@@ -283,7 +283,7 @@ function Full({
               />
               <div className="space-y-0.5">
                 {projects.length === 0 ? (
-                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-muted-foreground/60">
+                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
                     Noch kein Projekt angelegt.
                   </p>
                 ) : (
@@ -352,6 +352,11 @@ export function TabSwitcher({ tab }: { tab: "chats" | "projects" }) {
   );
 }
 
+// M-15 (Audit 06.09.2026): der inaktive Zustand stand vorher auf einer
+// Alpha-Stufe (/70) auf muted-foreground, einem Ton, der schon bei voller
+// Deckkraft nur knapp über der AA-Schwelle liegt (im Light Mode 5,4:1 auf
+// background, 4,9:1 auf der ungünstigeren surface), fällt bei /70 auf rund
+// 2,9:1. `text-secondary` ist die dafür kalibrierte Stufe.
 function TabPill({
   href,
   active,
@@ -371,7 +376,7 @@ function TabPill({
         "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12.5px] font-medium transition-colors",
         active
           ? "bg-surface-raised text-foreground shadow-sm"
-          : "text-muted-foreground/70 hover:text-foreground"
+          : "text-secondary hover:text-foreground"
       )}
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={2} />
