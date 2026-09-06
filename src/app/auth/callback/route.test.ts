@@ -80,4 +80,38 @@ describe("GET /auth/callback", () => {
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(exchangeCodeForSession).not.toHaveBeenCalled();
   });
+
+  // M-8 (Audit 06.09.2026): ein OAuth-Fehlschlag (Google/GitHub) traegt
+  // `error`/`error_description` statt eines `code` — vorher fiel das in
+  // denselben Zweig wie ein abgelaufener Mail-Link, mit einer Meldung, die
+  // mit einem abgebrochenen Google-Login nichts zu tun hat.
+  describe("OAuth-Fehlschlag (M-8)", () => {
+    it("erkennt einen selbst abgebrochenen Login als eigenen Fall", async () => {
+      const res = await GET(
+        req("?error=access_denied&error_description=User+denied+access")
+      );
+      expect(res.headers.get("location")).toBe(
+        "https://promptprinter.app/login?error=oauth_cancelled"
+      );
+      expect(verifyOtp).not.toHaveBeenCalled();
+      expect(exchangeCodeForSession).not.toHaveBeenCalled();
+    });
+
+    it("behandelt jeden anderen OAuth-Fehler als eigenen, generischen Fall", async () => {
+      const res = await GET(req("?error=server_error"));
+      expect(res.headers.get("location")).toBe(
+        "https://promptprinter.app/login?error=oauth_failed"
+      );
+    });
+
+    it("prueft den OAuth-Fehler, bevor ein code ueberhaupt versucht wird", async () => {
+      // Ein `code` koennte theoretisch trotzdem mitkommen — der Fehler-
+      // Parameter hat Vorrang, ein zusaetzlicher Versuch waere sinnlos.
+      const res = await GET(req("?error=access_denied&code=xyz"));
+      expect(res.headers.get("location")).toBe(
+        "https://promptprinter.app/login?error=oauth_cancelled"
+      );
+      expect(exchangeCodeForSession).not.toHaveBeenCalled();
+    });
+  });
 });

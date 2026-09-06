@@ -19,6 +19,21 @@ export async function GET(request: Request) {
   const rawNext = url.searchParams.get("next");
   const next = rawNext && rawNext.startsWith("/") ? rawNext : "/chats/new";
 
+  // M-8 (Audit 06.09.2026): Supabase haengt bei einem gescheiterten OAuth-
+  // Versuch (Google/GitHub) `error`/`error_description` an diese URL, statt
+  // eines `code` — bisher fiel jeder dieser Faelle in denselben Zweig ganz
+  // unten wie ein abgelaufener Mail-Link, und die Login-Seite zeigte einen
+  // Satz ueber Bestaetigungs-/Reset-Links, der mit "Abbrechen" bei Google
+  // nichts zu tun hat, plus eine Handlungsaufforderung (neuen Link
+  // anfordern), die es fuer OAuth gar nicht gibt. `access_denied` ist der
+  // Standard-Code, wenn die Nutzerin selbst abbricht (RFC 6749 §4.1.2.1);
+  // alles andere ist ein echter, seltener Fehler beim Anbieter.
+  const oauthError = url.searchParams.get("error");
+  if (oauthError) {
+    const reason = oauthError === "access_denied" ? "oauth_cancelled" : "oauth_failed";
+    return NextResponse.redirect(siteUrl(`/login?error=${reason}`));
+  }
+
   const supabase = await createClient();
 
   // Preferred path for email links (recovery, signup confirm, magic link): the

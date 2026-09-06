@@ -153,6 +153,26 @@ describe("SignInExperience", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Bestätigungs- oder Reset-Link");
   });
 
+  // M-8 (Audit 06.09.2026): ein abgebrochener oder gescheiterter OAuth-Login
+  // zeigte bisher denselben Satz ueber Bestaetigungs-/Reset-Links, der damit
+  // nichts zu tun hat, und eine Handlungsaufforderung ("neuen Link
+  // anfordern"), die es fuer OAuth gar nicht gibt.
+  it("prefills a distinct message for a self-cancelled OAuth login", () => {
+    searchParams = new URLSearchParams("error=oauth_cancelled");
+    render(<SignInExperience />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("abgebrochen");
+    expect(alert).not.toHaveTextContent("Bestätigungs- oder Reset-Link");
+  });
+
+  it("prefills a distinct message for a genuine OAuth failure", () => {
+    searchParams = new URLSearchParams("error=oauth_failed");
+    render(<SignInExperience />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("nicht geklappt");
+    expect(alert).not.toHaveTextContent("Bestätigungs- oder Reset-Link");
+  });
+
   it("never redirects to an attacker-supplied next target", async () => {
     searchParams = new URLSearchParams({ next: "https://evil.example/phish" });
     render(<SignInExperience />);

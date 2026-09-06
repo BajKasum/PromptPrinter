@@ -30,6 +30,24 @@ const schema = z.object({
   password: z.string().min(1, "Bitte Passwort eingeben"),
 });
 
+// M-8 (Audit 06.09.2026): /auth/callback unterscheidet seither drei Faelle
+// statt einem — vorher landete jeder Fehlschlag hier im selben
+// "auth_callback_failed"-Satz, auch ein bei Google auf "Abbrechen" geklickter
+// OAuth-Versuch, der weder einen Bestaetigungs- noch einen Reset-Link kennt
+// und fuer den "fordere einen neuen an" keine sinnvolle Handlung ist.
+function authCallbackErrorMessage(code: string | null): string | null {
+  switch (code) {
+    case "auth_callback_failed":
+      return "Der Bestätigungs- oder Reset-Link ist ungültig oder abgelaufen. Bitte fordere unten einen neuen an.";
+    case "oauth_cancelled":
+      return "Die Anmeldung wurde abgebrochen. Du kannst es jederzeit erneut versuchen.";
+    case "oauth_failed":
+      return "Die Anmeldung hat nicht geklappt. Versuch es erneut, oder melde dich mit Email und Passwort an.";
+    default:
+      return null;
+  }
+}
+
 /**
  * Login, right column of the two-column auth layout (Finn lives in the left
  * panel, see AuthExperienceShell): OAuth first (Google/GitHub), then email +
@@ -45,9 +63,7 @@ export function SignInExperience() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(
-    search.get("error") === "auth_callback_failed"
-      ? "Der Bestätigungs- oder Reset-Link ist ungültig oder abgelaufen. Bitte fordere unten einen neuen an."
-      : null
+    authCallbackErrorMessage(search.get("error"))
   );
   const [celebrateMsg, setCelebrateMsg] = useState<string | null>(null);
 
