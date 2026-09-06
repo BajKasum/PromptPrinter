@@ -215,6 +215,49 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     });
   });
 
+  // K-4 (Audit 06.09.2026): order_refunded und subscription_payment_refunded
+  // fehlten komplett in SUPPORTED_EVENTS, der Webhook ignorierte beide, das
+  // Konto blieb Pro -- obwohl /rueckerstattung woertlich "dein Konto wechselt
+  // zurueck auf den Free-Plan" verspricht.
+  describe("Erstatten", () => {
+    it("nimmt Pro weg, wenn die Bestellung erstattet wird", async () => {
+      const res = await POST(
+        req(
+          body(
+            "order_refunded",
+            { type: "orders", attributes: { status: "refunded", customer_id: 42 } },
+            { user_id: USER_ID }
+          )
+        )
+      );
+
+      expect(res.status).toBe(200);
+      expect(profileUpdate).toHaveBeenCalledWith(
+        { plan: "free", subscription_customer_id: "42" },
+        USER_ID
+      );
+    });
+
+    it("nimmt Pro weg, wenn eine Abo-Abbuchung erstattet wird", async () => {
+      const res = await POST(
+        req(
+          body(
+            "subscription_payment_refunded",
+            {
+              id: "invoice_888",
+              type: "subscription-invoices",
+              attributes: { subscription_id: 555, status: "refunded" },
+            },
+            { user_id: USER_ID }
+          )
+        )
+      );
+
+      expect(res.status).toBe(200);
+      expect(profileUpdate).toHaveBeenCalledWith({ plan: "free" }, USER_ID);
+    });
+  });
+
   describe("Konto finden", () => {
     it("nimmt die Konto-ID aus dem Checkout, prüft sie aber gegen die Profiltabelle", async () => {
       await POST(
@@ -390,7 +433,12 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     });
 
     it("quittiert ein Ereignis, für das es hier keine Behandlung gibt", async () => {
-      const res = await POST(req(body("order_refunded", { attributes: { status: "refunded" } })));
+      // subscription_payment_failed, nicht order_refunded: das ist seit K-4
+      // (Audit 06.09.2026) selbst behandelt (nimmt Pro weg), waere hier also
+      // das falsche Beispiel fuer "unbehandelt".
+      const res = await POST(
+        req(body("subscription_payment_failed", { attributes: { status: "failed" } }))
+      );
       expect(res.status).toBe(200);
       await expect(res.json()).resolves.toMatchObject({ ignored: true });
       expect(profileUpdate).not.toHaveBeenCalled();

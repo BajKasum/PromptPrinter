@@ -118,11 +118,13 @@ export type LemonSqueezyWebhookPayload = z.infer<typeof webhookPayloadSchema>;
  */
 export const SUPPORTED_EVENTS = [
   "order_created",
+  "order_refunded",
   "subscription_created",
   "subscription_updated",
   "subscription_cancelled",
   "subscription_expired",
   "subscription_payment_success",
+  "subscription_payment_refunded",
 ] as const;
 
 export type SupportedEvent = (typeof SUPPORTED_EVENTS)[number];
@@ -197,6 +199,17 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
     return { kind: "apply", patch };
   }
 
+  if (event === "order_refunded") {
+    // K-4 (Audit 06.09.2026): fehlte bisher komplett in SUPPORTED_EVENTS,
+    // der Webhook ignorierte das Ereignis, das Konto blieb Pro. /rueckerstattung
+    // verspricht woertlich "der Betrag wird vollstaendig erstattet, und dein
+    // Konto wechselt zurueck auf den Free-Plan" -- kein Codepfad tat das.
+    // Unbedingt auf "free", unabhaengig vom sonstigen Status: erstattet ist
+    // erstattet, das Geld ist zurueck.
+    patch.plan = "free";
+    return { kind: "apply", patch };
+  }
+
   if (event === "subscription_payment_success") {
     // Hier ist data.id die RECHNUNG. Die Abo-Nummer steht in den Attributen —
     // data.id zu nehmen wäre der stille Fehler, der erst auffällt, wenn eine
@@ -207,6 +220,17 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
     // NICHT gesetzt: der Status auf einer Rechnung ist "paid", das ist kein
     // Abo-Zustand.
     patch.plan = "pro";
+    return { kind: "apply", patch };
+  }
+
+  if (event === "subscription_payment_refunded") {
+    // Dieselbe Zusage wie order_refunded, nur fuer eine erstattete
+    // Abo-Abbuchung statt der Erstbestellung (K-4, Audit 06.09.2026). Die
+    // Kuendigung selbst laeuft weiterhin ueber subscription_cancelled/
+    // _expired unten -- dieses Ereignis betrifft nur das Geld einer
+    // einzelnen Rechnung, nicht das Abo als Ganzes, deshalb bleiben
+    // subscription_status/_id/_renews_at/_ends_at unangetastet.
+    patch.plan = "free";
     return { kind: "apply", patch };
   }
 

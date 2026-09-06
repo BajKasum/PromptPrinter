@@ -124,12 +124,14 @@ describe("webhookPayloadSchema", () => {
 
 describe("isSupportedEvent", () => {
   it("knows every event this endpoint subscribes to", () => {
-    expect(SUPPORTED_EVENTS).toHaveLength(6);
+    // 8, seit K-4 (Audit 06.09.2026) order_refunded und
+    // subscription_payment_refunded dazukamen (vorher 6).
+    expect(SUPPORTED_EVENTS).toHaveLength(8);
     for (const name of SUPPORTED_EVENTS) expect(isSupportedEvent(name)).toBe(true);
   });
 
   it("does not claim events it has no handler for", () => {
-    expect(isSupportedEvent("order_refunded")).toBe(false);
+    expect(isSupportedEvent("subscription_payment_failed")).toBe(false);
     expect(isSupportedEvent("license_key_created")).toBe(false);
   });
 });
@@ -285,9 +287,48 @@ describe("decideBillingUpdate", () => {
     });
   });
 
+  // K-4 (Audit 06.09.2026): order_refunded fehlte komplett in SUPPORTED_EVENTS,
+  // der Webhook ignorierte das Ereignis, das Konto blieb Pro -- obwohl
+  // /rueckerstattung woertlich "dein Konto wechselt zurueck auf den
+  // Free-Plan" verspricht.
+  describe("order_refunded", () => {
+    it("nimmt Pro weg, egal welchen Status die Bestellung sonst noch traegt", () => {
+      const decision = decideBillingUpdate(
+        payload("order_refunded", {
+          type: "orders",
+          attributes: { status: "refunded", customer_id: 42 },
+        })
+      );
+      expect(decision).toEqual({
+        kind: "apply",
+        patch: { subscription_customer_id: "42", plan: "free" },
+      });
+    });
+  });
+
+  // Dieselbe Zusage, nur fuer eine erstattete Abo-Abbuchung statt der
+  // Erstbestellung (K-4).
+  describe("subscription_payment_refunded", () => {
+    it("nimmt Pro weg, laesst Abo-Status/-ID aber unangetastet", () => {
+      const decision = decideBillingUpdate(
+        payload("subscription_payment_refunded", {
+          id: "invoice_888",
+          type: "subscription-invoices",
+          attributes: { subscription_id: 555, status: "refunded" },
+        })
+      );
+      expect(decision.kind === "apply" && decision.patch.plan).toBe("free");
+      expect(decision.kind === "apply" && decision.patch.subscription_status).toBeUndefined();
+      expect(decision.kind === "apply" && decision.patch.subscription_id).toBeUndefined();
+    });
+  });
+
   it("ignoriert Ereignisse, für die es hier keine Behandlung gibt", () => {
+    // Ein reales, bewusst weiterhin unbehandeltes Lemon-Squeezy-Ereignis: ein
+    // Fehlversuch zeigt sich schon ueber subscription_updateds status=past_due
+    // (siehe oben), ein eigener Zweig dafuer waere doppelte Buchfuehrung.
     const decision = decideBillingUpdate(
-      payload("order_refunded", { attributes: { status: "refunded" } })
+      payload("subscription_payment_failed", { attributes: { status: "failed" } })
     );
     expect(decision.kind).toBe("ignore");
   });
