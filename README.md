@@ -46,7 +46,7 @@ und die Bedingung, unter der sich das ändern würde.
 
 - **Next.js 15** (App Router) · **React 19** · **TypeScript** (strict)
 - **Supabase**, Auth, Postgres, Row-Level-Security
-- **Stripe**, Billing (UI gebaut, Checkout/Webhook in Arbeit)
+- **Lemon Squeezy**, Billing (Checkout + Webhook live)
 - **Z.ai (GLM)**, Prompt-Generierung, Gemini als Zweit-Provider; ohne Key läuft der Stub-Modus
 - **Tailwind** mit HSL-Token-System · **Framer Motion** · **next-themes**
 - **Vitest** für Unit-Tests · **Docker** für Dev (Hot-Reload) und Prod (standalone)
@@ -104,12 +104,12 @@ Vorlage: [`.env.example`](.env.example). Welche Datei wo gelesen wird:
 
 **Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen, die landen sonst im
 Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`,
-`STRIPE_*`) bleiben ohne Prefix.
+`LEMON_SQUEEZY_WEBHOOK_SECRET`) bleiben ohne Prefix.
 
 ### Deploy-Checkliste
 
 Diese sieben Variablen sind in Produktion **Pflicht**, nicht optional. Fehlt eine,
-bricht der Start mit einer Meldung ab, die sie benennt (`src/lib/env.ts`, geprüft
+bricht der Start mit einer Meldung ab, die sie benennt (`src/server/env.ts`, geprüft
 beim Boot über `src/instrumentation.ts`):
 
 | Variable | Warum sie load-bearing ist |
@@ -153,15 +153,23 @@ Kette bei jedem Push und PR aus.
 
 ## Projektstruktur
 
+> M-24 (Audit 06.09.2026): dieser Abschnitt zeigte noch den Baum von vor der
+> Restrukturierung am 02.08.2026 — `src/lib/` und `src/components/` gibt es
+> nicht mehr, ebenso wenig `api/generate` (entfernt am 17.07.2026). Details
+> und Layer-Regeln: [CLAUDE.md](CLAUDE.md).
+
 ```
 src/
-  app/            App-Router-Routen
-    (app)/        eingeloggter Bereich (Dashboard, Chat, Projekte, Settings …)
-    (auth)/       Login, Signup, Passwort-Reset
-    api/          Route-Handler (chat, generate, account)
-  components/     UI-, App-, Marketing-, Onboarding-Komponenten
-  lib/            Supabase-Clients, Rate-Limit, Pläne, Zod-Schemas, Utils
-  prompts/        Prompt-Vorlagen + System-Prompts pro Artefakt
+  app/            NUR Routing. (marketing) = öffentlich, (app) = eingeloggt,
+                  (auth) = Login/Signup, api/ = Route-Handler.
+  features/       Vertikale Schnitte, je components/ hooks/ lib/:
+                  auth · chat · marketing · projects · prompts · settings
+  shell/          App-Rahmen (Sidebar, Mobile-Nav, Command-Palette)
+  server/         Nie im Browser (`import "server-only"`): security/, brain/,
+                  http/, supabase/, llm.ts, env.ts, byok.ts
+  shared/         Von überall nutzbar: ui/ brand/ motion/ providers/ lib/
+tests/
+  guards/         Repo-weite Invarianten (Kontrast, Schichtgrenzen, …)
 supabase/
   migrations/     SQL-Schema (RLS, Grants, gehärtete Funktionen)
 ```
