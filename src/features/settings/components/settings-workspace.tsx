@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
   Building2,
-  Gauge,
   KeyRound,
   Lock,
   ShieldAlert,
@@ -22,32 +21,21 @@ import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { DeleteAccount } from "@/features/settings/components/delete-account";
 import { ChangePassword } from "@/features/settings/components/change-password";
-import { AvatarUpload } from "@/features/settings/components/avatar-upload";
 import { ThemePreference } from "@/features/settings/components/theme-preference";
 import { ApiKeys } from "@/features/settings/components/api-keys";
 import { PlanBadge } from "@/shared/ui/plan-badge";
-import { UsageMeter } from "@/features/settings/components/usage-meter";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import type { PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn, hslVar } from "@/shared/lib/utils";
 type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
-type Usage = {
-  projects: number;
-  projectLimit: number;
-  chatMessages: number;
-  chatMessageLimit: number;
-};
-
 export function SettingsWorkspace({
   userId,
   email,
   initialDisplayName,
-  initialAvatarUrl,
   plan,
   isAdmin = false,
-  usage,
   memberSince,
   configuredProviders,
   activeProvider,
@@ -56,12 +44,10 @@ export function SettingsWorkspace({
   userId: string;
   email: string;
   initialDisplayName: string;
-  initialAvatarUrl: string | null;
   plan: PlanKey;
   /** A role (profiles.is_admin), not a plan, shows "Admin" instead of the
-   * tier badge and means the usage meters below never actually cap out. */
+   * tier badge. */
   isAdmin?: boolean;
-  usage: Usage;
   memberSince: string | null;
   /** Which BYOK providers this user already has a key stored for. */
   configuredProviders: ByokProvider[];
@@ -138,15 +124,6 @@ export function SettingsWorkspace({
             description="Wie du in deinem Workspace erscheinst."
           >
             <div className="space-y-4">
-              <Field label="Profilbild">
-                <AvatarUpload
-                  userId={userId}
-                  displayName={displayName}
-                  email={email}
-                  initialUrl={initialAvatarUrl}
-                />
-              </Field>
-
               <Field label="Anzeigename">
                 <Input
                   value={displayName}
@@ -206,48 +183,22 @@ export function SettingsWorkspace({
           <ThemePreference />
         </SettingsCard>
 
-        {/* Row: Usage + API providers */}
-        <div className="grid gap-4 md:grid-cols-5">
-          <SettingsCard
-            className="md:col-span-3"
-            Icon={Gauge}
-            accent="--accent"
-            title="Nutzung"
-            description="Dein Verbrauch im aktuellen Abrechnungszeitraum."
-          >
-            <div className="space-y-5">
-              <UsageMeter
-                label="Projekte"
-                used={usage.projects}
-                limit={usage.projectLimit}
-              />
-              <UsageMeter
-                label="Chat-Nachrichten (Monat)"
-                used={usage.chatMessages}
-                limit={usage.chatMessageLimit}
-                zeroLabel="Ohne eigenen Key nicht verfügbar auf Free"
-              />
-            </div>
-          </SettingsCard>
-
-          <SettingsCard
-            className="md:col-span-2"
-            Icon={KeyRound}
-            accent="--accent"
-            title="Eigene API-Keys"
-            description="Nutze dein eigenes Kontingent statt unserer Limits."
-          >
-            <ApiKeys
-              configured={configuredProviders}
-              active={activeProvider}
-              customProvider={customProvider}
-            />
-            <p className="mt-3 text-[12px] text-tertiary">
-              Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit
-              bleibt bestehen.
-            </p>
-          </SettingsCard>
-        </div>
+        <SettingsCard
+          Icon={KeyRound}
+          accent="--accent"
+          title="Eigene API-Keys"
+          description="Nutze dein eigenes Kontingent statt unserer Limits."
+        >
+          <ApiKeys
+            configured={configuredProviders}
+            active={activeProvider}
+            customProvider={customProvider}
+          />
+          <p className="mt-3 text-[12px] text-tertiary">
+            Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit
+            bleibt bestehen.
+          </p>
+        </SettingsCard>
 
         {/* M-18 (Audit 06.09.2026): die "Standard-Tools"-Karte sass hier
             zwischen API-Keys und Sicherheit — 4 Werte, die einzig in dieses

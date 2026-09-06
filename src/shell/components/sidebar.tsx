@@ -70,7 +70,6 @@ export function Sidebar({
   plan = "free",
   isAdmin = false,
   displayName,
-  avatarUrl,
 }: {
   initialCollapsed: boolean;
   initialWidth: number;
@@ -80,7 +79,6 @@ export function Sidebar({
   plan?: string;
   isAdmin?: boolean;
   displayName?: string | null;
-  avatarUrl?: string | null;
 }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -123,7 +121,7 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const accountProps = { email, plan, isAdmin, displayName, avatarUrl };
+  const accountProps = { email, plan, isAdmin, displayName };
 
   return (
     <aside
@@ -228,7 +226,6 @@ type AccountProps = {
   plan: string;
   isAdmin: boolean;
   displayName?: string | null;
-  avatarUrl?: string | null;
 };
 
 function Full({
@@ -467,12 +464,10 @@ function AccountMenu({
   plan,
   isAdmin,
   displayName,
-  avatarUrl,
 }: { collapsed: boolean } & AccountProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [avatarBroken, setAvatarBroken] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   // Viewport coordinates for the open panel; null until measured, so it never
   // paints for a frame in the top-left corner before being positioned.
@@ -513,7 +508,6 @@ function AccountMenu({
 
   const label = displayName || email.split("@")[0] || "Konto";
   const initial = (label[0] ?? "?").toUpperCase();
-  const showAvatar = Boolean(avatarUrl) && !avatarBroken;
   // `plan` arrives as a raw DB string (Sidebar's own prop stays loosely typed),
   // narrow it the same way billing/settings already do before it reaches the
   // shared PlanBadge, which needs a real PlanKey.
@@ -540,15 +534,7 @@ function AccountMenu({
     }
   }
 
-  const avatar = showAvatar ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={avatarUrl as string}
-      alt=""
-      className="h-7 w-7 shrink-0 rounded-full object-cover"
-      onError={() => setAvatarBroken(true)}
-    />
-  ) : (
+  const avatar = (
     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-semibold text-accent-foreground">
       {initial}
     </div>
@@ -599,18 +585,9 @@ function AccountMenu({
           >
             <div className="border-b border-border px-4 py-3">
               <div className="flex items-center gap-2.5">
-                {showAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl as string}
-                    alt=""
-                    className="h-8 w-8 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-accent-foreground">
-                    {initial}
-                  </div>
-                )}
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-accent-foreground">
+                  {initial}
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-medium text-foreground">{label}</div>
                   <div className="truncate text-[12px] text-muted-foreground">{email}</div>

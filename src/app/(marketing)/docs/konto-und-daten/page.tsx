@@ -36,10 +36,9 @@ export default function Page() {
 
       <h2>Profil</h2>
       <p>
-        In den Einstellungen kannst du deinen Anzeigenamen und ein Profilbild
-        setzen. Der Anzeigename ist auch das, womit Finn dich im leeren Chat
-        begrüsst. Ohne Angabe wird der Teil vor dem @ deiner E-Mail-Adresse
-        benutzt.
+        In den Einstellungen kannst du deinen Anzeigenamen setzen. Er ist auch
+        das, womit Finn dich im leeren Chat begrüsst. Ohne Angabe wird der Teil
+        vor dem @ deiner E-Mail-Adresse benutzt.
       </p>
       <p>
         Ausserdem stellst du dort das Erscheinungsbild ein, hell, dunkel oder
@@ -48,7 +47,7 @@ export default function Page() {
 
       <h2>Was gespeichert wird</h2>
       <ul>
-        <li>dein Konto: E-Mail, Anzeigename, optional Profilbild</li>
+        <li>dein Konto: E-Mail, Anzeigename</li>
         <li>
           deine Chats vollständig, also deine Nachrichten und Finns Antworten
         </li>

@@ -91,7 +91,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             plan={profile?.plan ?? "free"}
             isAdmin={profile?.is_admin ?? false}
             displayName={profile?.display_name ?? null}
-            avatarUrl={profile?.avatar_url ?? null}
           />
           <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
             {/* Mobile-only nav trigger, the desktop sidebar is hidden below md

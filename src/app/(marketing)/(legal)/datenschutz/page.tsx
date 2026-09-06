@@ -45,9 +45,8 @@ export default function DatenschutzPage() {
         <strong>Chat-Nachrichten</strong> (deine Eingaben und die Antworten des Modells),{" "}
         <strong>Projekte</strong> samt Name, Anweisungen und Kontextangaben,{" "}
         <strong>gespeicherte Prompts</strong> sowie <strong>Dateien</strong>, die du an ein Projekt
-        anhängst (Textformate wie .md, .txt, .json, .csv, begrenzt in Anzahl und Grösse). Optional
-        kommt ein <strong>Profilbild</strong> dazu, wenn du eines hochlädst. Diese Inhalte werden in
-        deinem Workspace gespeichert, damit du sie wieder aufrufen kannst.
+        anhängst (Textformate wie .md, .txt, .json, .csv, begrenzt in Anzahl und Grösse). Diese
+        Inhalte werden in deinem Workspace gespeichert, damit du sie wieder aufrufen kannst.
       </p>
       <h3>Sprachmodus (Mikrofon, optional)</h3>
       <p>
@@ -132,8 +131,8 @@ export default function DatenschutzPage() {
       <ul>
         <li>
           <strong>Supabase</strong> (Supabase Inc.): Authentifizierung, Datenbank und Dateispeicher
-          für deine Konto- und Inhaltsdaten, einschliesslich hochgeladener Projektdateien und
-          Profilbilder. Datenregion: {LEGAL.dataRegion}.
+          für deine Konto- und Inhaltsdaten, einschliesslich hochgeladener Projektdateien.
+          Datenregion: {LEGAL.dataRegion}.
         </li>
         <li>
           <strong>{LEGAL.appHost}</strong>: Betrieb und Auslieferung der Anwendung. Dabei fallen
@@ -242,7 +241,7 @@ export default function DatenschutzPage() {
       <p>
         Wir speichern deine Konto- und Inhaltsdaten, solange dein Konto besteht. Löschst du dein
         Konto, werden Profil, Chats, Projekte, gespeicherte Prompts sowie hochgeladene Projektdateien
-        und dein Profilbild gelöscht. Zähler für Rate-Limiting und Monatskontingente liegen in einem
+        gelöscht. Zähler für Rate-Limiting und Monatskontingente liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
         und werden danach selbsttätig entfernt. Server- und Fehlerprotokolle unseres Hosting-Anbieters
         werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
@@ -276,9 +275,9 @@ export default function DatenschutzPage() {
       <p>
         Du kannst dein Konto jederzeit selbst löschen, direkt in der App unter{" "}
         <strong>Einstellungen</strong>. Dabei werden dein Profil, deine Chats und Nachrichten, deine
-        Projekte samt hochgeladenen Dateien, deine gespeicherten Prompts, ein allfälliges Profilbild
-        sowie hinterlegte API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und
-        nicht erst nach einer Frist.
+        Projekte samt hochgeladenen Dateien, deine gespeicherten Prompts sowie hinterlegte
+        API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
+        einer Frist.
       </p>
 
       <h2>9. Kontakt</h2>

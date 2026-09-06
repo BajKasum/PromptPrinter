@@ -39,7 +39,6 @@ export type SessionProfile = {
   plan: string | null;
   is_admin: boolean | null;
   display_name: string | null;
-  avatar_url: string | null;
   settings: unknown;
 };
 
@@ -62,9 +61,9 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
  * Das Profil des angemeldeten Nutzers, hoechstens einmal pro Request.
  *
  * Holt bewusst die Vereinigungsmenge aller Spalten, die irgendeine Seite
- * braucht (`plan`/`is_admin` fuer Limits, `display_name`/`avatar_url` fuer die
- * Anzeige, `settings` u.a. fuer den "interested_in"-Marker aus dem
- * Pro-Signup). Es ist genau eine Zeile;
+ * braucht (`plan`/`is_admin` fuer Limits, `display_name` fuer die Anzeige,
+ * `settings` u.a. fuer den "interested_in"-Marker aus dem Pro-Signup). Es ist
+ * genau eine Zeile;
  * zwei Abfragen mit je zwei Spalten kosten mehr als eine mit fuenf, sobald
  * sie auf verschiedenen Render-Ebenen liegen und deshalb nacheinander laufen.
  *
@@ -79,7 +78,7 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("plan, is_admin, display_name, avatar_url, settings")
+    .select("plan, is_admin, display_name, settings")
     .eq("id", user.id)
     .maybeSingle<SessionProfile>();
 

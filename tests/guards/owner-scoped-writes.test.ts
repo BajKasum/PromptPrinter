@@ -29,7 +29,6 @@ const EXEMPT: Record<string, string> = {
   // existiert auf der Tabelle gar nicht.
   "src/features/auth/components/sign-up-experience.tsx": "profiles.id ist die User-ID",
   "src/features/settings/components/settings-workspace.tsx": "profiles.id ist die User-ID",
-  "src/features/settings/components/avatar-upload.tsx": "profiles.id ist die User-ID",
 };
 
 function tsxFilesIn(dir: string): string[] {

@@ -109,9 +109,10 @@ export async function DELETE(req: Request) {
         );
       }
     }
-    // Always a fixed "{uid}/avatar" path (avatar-upload.tsx upserts in place,
-    // and migration 0027 pins the insert policy to exactly that name), removing
-    // a path that was never uploaded is a harmless no-op.
+    // Always a fixed "{uid}/avatar" path (migration 0027 pins the insert
+    // policy to exactly that name — the upload UI that used to write it here
+    // is gone, but old objects from before its removal may still exist),
+    // removing a path that was never uploaded is a harmless no-op.
     await supabase.storage.from("avatars").remove([avatarStoragePath(user.id)]);
   } catch (err) {
     captureError("account.storage_cleanup_failed", err, { userId: user.id });

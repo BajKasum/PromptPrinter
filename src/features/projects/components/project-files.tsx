@@ -21,8 +21,7 @@ import { formatBytes, randomId } from "@/shared/lib/utils";
 // Workspace-Dateien (REDESIGN.md, Phase 4): kleine Text-Kontextdateien, die
 // buildProjectContext direkt in jeden Projekt-Chat injiziert. Bewusst eng,
 // kein Dateimanager, sondern gezielter Kontext. Upload/Delete laufen direkt
-// über den Browser-Client (RLS-scoped), gleiches Muster wie
-// avatar-upload.tsx, keine eigene API-Route nötig.
+// über den Browser-Client (RLS-scoped), keine eigene API-Route nötig.
 
 export function ProjectFiles({
   projectId,
