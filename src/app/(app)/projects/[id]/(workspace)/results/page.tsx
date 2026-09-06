@@ -8,6 +8,7 @@ import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getSessionProfile } from "@/server/session";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
+import { splitAtLimit } from "@/shared/lib/chat-limits";
 
 // QA finding P-1: this query used to load every saved prompt a project ever
 // had, full `outputs` JSONB included, unbounded — the single most expensive
@@ -45,6 +46,10 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const { userId } = await getProject(id);
 
   const supabase = await createClient();
+  // M-17 (Audit 06.09.2026): over-fetched by one (.range, not .limit) so
+  // splitAtLimit below can tell "exactly at the cap" from "there are more" —
+  // this used to silently drop anything past RESULTS_LOAD_LIMIT and show the
+  // truncated count as if it were the project's true total.
   const [{ data: rowsRaw }, { count: chatCount }, profile] = await Promise.all([
     supabase
       .from("generations")
@@ -52,7 +57,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .eq("project_id", id)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(RESULTS_LOAD_LIMIT),
+      .range(0, RESULTS_LOAD_LIMIT),
     supabase
       .from("conversations")
       .select("id", { count: "exact", head: true })
@@ -65,7 +70,11 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const canExportPdf =
     profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";
 
-  const prompts = mapGenerationRowsToSavedPrompts((rowsRaw as GenerationRow[] | null) ?? []);
+  const { items: rows, hasMore } = splitAtLimit(
+    (rowsRaw as GenerationRow[] | null) ?? [],
+    RESULTS_LOAD_LIMIT
+  );
+  const prompts = mapGenerationRowsToSavedPrompts(rows);
 
   const backLink = (
     <Link
@@ -112,8 +121,12 @@ export default async function ProjectResultsPage({ params }: { params: Params })
           <h2 className="text-[18px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground">
             Ergebnisse
           </h2>
+          {/* M-17 (Audit 06.09.2026): stand vorher immer als exakte
+              Gesamtzahl da, auch wenn der Cap griff. */}
           <p className="mt-1 text-[12.5px] text-muted-foreground">
-            {prompts.length} {prompts.length === 1 ? "gespeicherter Prompt" : "gespeicherte Prompts"}
+            {hasMore
+              ? `Die neuesten ${RESULTS_LOAD_LIMIT} gespeicherten Prompts`
+              : `${prompts.length} ${prompts.length === 1 ? "gespeicherter Prompt" : "gespeicherte Prompts"}`}
           </p>
         </div>
       </FadeIn>

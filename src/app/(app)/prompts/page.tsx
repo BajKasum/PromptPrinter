@@ -7,7 +7,7 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { createClient } from "@/server/supabase/server";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
-import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -37,19 +37,27 @@ export default async function SavedPromptsPage() {
   const [{ data: rowsRaw }, { data: profile }] = await Promise.all([
     // Explicit user_id on top of RLS (defense in depth, same as every other
     // user-scoped query here), not project-scoped at all — that's the point.
+    // M-17 (Audit 06.09.2026): over-fetched by one (.range, not .limit) so
+    // splitAtLimit below can tell "exactly at the cap" from "there are more" —
+    // this used to silently drop anything past SAVED_PROMPTS_LOAD_LIMIT and
+    // show the truncated count as if it were the true total.
     supabase
       .from("generations")
       .select("id, created_at, outputs")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(SAVED_PROMPTS_LOAD_LIMIT),
+      .range(0, SAVED_PROMPTS_LOAD_LIMIT),
     // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
   ]);
   const canExportPdf =
     profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";
 
-  const prompts = mapGenerationRowsToSavedPrompts((rowsRaw as GenerationRow[] | null) ?? []);
+  const { items: rows, hasMore } = splitAtLimit(
+    (rowsRaw as GenerationRow[] | null) ?? [],
+    SAVED_PROMPTS_LOAD_LIMIT
+  );
+  const prompts = mapGenerationRowsToSavedPrompts(rows);
 
   if (prompts.length === 0) {
     return (
@@ -92,8 +100,14 @@ export default async function SavedPromptsPage() {
           <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
             Gespeicherte Prompts
           </h1>
+          {/* M-17 (Audit 06.09.2026): stand vorher immer als exakte
+              Gesamtzahl da, auch wenn der Cap griff — "die neuesten N"
+              macht den Unterschied ehrlich, statt eine Zahl zu behaupten,
+              die es so nicht gibt. */}
           <p className="mt-1.5 text-[14px] text-secondary">
-            {prompts.length} {prompts.length === 1 ? "gespeicherter Prompt" : "gespeicherte Prompts"}
+            {hasMore
+              ? `Die neuesten ${SAVED_PROMPTS_LOAD_LIMIT} gespeicherten Prompts`
+              : `${prompts.length} ${prompts.length === 1 ? "gespeicherter Prompt" : "gespeicherte Prompts"}`}
           </p>
         </div>
       </FadeIn>
