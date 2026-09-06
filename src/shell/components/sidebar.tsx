@@ -91,6 +91,22 @@ export function Sidebar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // M-19 (Audit 06.09.2026): the sidebar's live width only ever lived in this
+  // component's own state, so a `position: fixed` element elsewhere (e.g.
+  // settings-workspace.tsx's save bar) had no way to track it and hardcoded a
+  // guess instead — one that didn't even match DEFAULT_SIDEBAR_WIDTH, let
+  // alone the resized/collapsed range. A CSS custom property on the document
+  // root is the standard bridge for a fixed sibling that needs a flex
+  // sibling's current size: any element anywhere can read
+  // `var(--sidebar-w, <fallback>)`, live, without prop-drilling or a new
+  // context provider for a value only one other component happens to need.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-w",
+      `${collapsed ? COLLAPSED_WIDTH : width}px`
+    );
+  }, [collapsed, width]);
+
   const [cmdOpen, setCmdOpen] = useState(false);
 
   // Global ⌘K / Ctrl+K opens the command palette from anywhere in the app

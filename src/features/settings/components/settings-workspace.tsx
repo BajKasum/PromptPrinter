@@ -282,7 +282,13 @@ export function SettingsWorkspace({
         </SettingsCard>
       </div>
 
-      {/* Sticky save bar, Stripe / Linear style */}
+      {/* Sticky save bar, Stripe / Linear style. M-19 (Audit 06.09.2026):
+          used to hardcode md:pl-[280px] — didn't match the sidebar's actual
+          default (264px), let alone its resizable (220-380px) or collapsed
+          (68px) states. --sidebar-w is kept live by sidebar.tsx; the
+          fallback only ever applies for the one frame before that effect
+          runs, and this bar never renders that early (it needs `dirty`
+          first, well after mount). */}
       <AnimatePresence>
         {dirty && (
           <motion.div
@@ -290,7 +296,7 @@ export function SettingsWorkspace({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 28, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="pointer-events-none fixed inset-x-0 bottom-5 z-50 px-6 md:pl-[280px] md:pr-10"
+            className="pointer-events-none fixed inset-x-0 bottom-5 z-50 px-6 md:pl-[var(--sidebar-w,264px)] md:pr-10"
           >
             <div className="pointer-events-auto flex max-w-[1080px] items-center justify-between gap-4 rounded-2xl border border-border glass-strong px-4 py-3 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.85)]">
               <div className="flex items-center gap-2.5">
