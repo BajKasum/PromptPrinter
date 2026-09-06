@@ -213,7 +213,17 @@ export default async function BillingPage() {
                 userId={user.id}
                 fallbackHref="/pricing"
                 className="w-full sm:w-auto"
-                successMessage="Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist."
+                // M-5 (Audit 06.09.2026): stand vorher immer auf "ich schalte
+                // von Hand frei", direkt ueber dem Hinweis zwei Zeilen weiter
+                // unten, der bei gesetztem Webhook-Secret das Gegenteil sagt
+                // ("schaltet sich von selbst frei") — der Kaeufer las beide
+                // Saetze gleichzeitig im selben Kasten. Beide haengen jetzt
+                // an derselben activatesAutomatically-Bedingung.
+                successMessage={
+                  activatesAutomatically
+                    ? "Danke! Deine Zahlung ist angekommen. Lad die Seite einmal neu, dann ist Pro aktiv."
+                    : "Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist."
+                }
               >
                 Pro holen, {pro.price} pro {pro.cadence}
               </LemonCheckoutButton>

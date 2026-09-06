@@ -31,6 +31,11 @@ import { cn } from "@/shared/lib/utils";
  * CTA colour applied everywhere.
  */
 export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
+  // M-5 (Audit 06.09.2026): ohne das versprach der Kauf-Knopf immer eine
+  // Freischaltung von Hand, egal ob der Webhook laengst automatisch
+  // freischaltet — server-gelesen und als Prop durchgereicht, der Wert
+  // erreicht den Client-Chip (ProCheckoutCta) nie direkt.
+  const activatesAutomatically = Boolean(process.env.LEMON_SQUEEZY_WEBHOOK_SECRET);
   return (
     <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
       {PLANS.map((p, i) => (
@@ -102,7 +107,7 @@ export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
               // wer klickt — ProCheckoutCta prüft das selbst, clientseitig
               // (siehe dort für das Warum), und zeigt bis dahin denselben
               // Link auf `/signup?plan=pro`, den p.href ohnehin ist.
-              <ProCheckoutCta plan={p} />
+              <ProCheckoutCta plan={p} activatesAutomatically={activatesAutomatically} />
             ) : (
               <Button
                 asChild

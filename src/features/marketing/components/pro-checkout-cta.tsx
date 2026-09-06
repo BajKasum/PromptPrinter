@@ -42,7 +42,21 @@ type Buyer = { email: string | null; userId: string };
  * der öffentlichen Preisseite statt auf `/billing` landet, verliert dadurch
  * nichts, ausser einer kurzen, folgenlosen Verzögerung.
  */
-export function ProCheckoutCta({ plan }: { plan: MarketingPlan }) {
+export function ProCheckoutCta({
+  plan,
+  activatesAutomatically,
+}: {
+  plan: MarketingPlan;
+  /**
+   * Server-gelesen (`process.env.LEMON_SQUEEZY_WEBHOOK_SECRET`) und von
+   * PricingGrid durchgereicht, statt hier selbst gelesen — ein Server-
+   * Secret darf diesen Client-Chip nicht direkt erreichen. Steuert nur die
+   * Erfolgsmeldung (M-5, Audit 06.09.2026): ohne das versprach der Knopf
+   * immer eine Freischaltung von Hand, auch wenn der Webhook laengst
+   * automatisch freischaltet.
+   */
+  activatesAutomatically: boolean;
+}) {
   const [buyer, setBuyer] = useState<Buyer | null>(null);
 
   useEffect(() => {
@@ -67,7 +81,11 @@ export function ProCheckoutCta({ plan }: { plan: MarketingPlan }) {
         userId={buyer.userId}
         variant="accent"
         className="w-full mt-6"
-        successMessage="Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist."
+        successMessage={
+          activatesAutomatically
+            ? "Danke! Deine Zahlung ist angekommen. Lad die Seite einmal neu, dann ist Pro aktiv."
+            : "Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist."
+        }
       >
         {plan.cta}
       </LemonCheckoutButton>

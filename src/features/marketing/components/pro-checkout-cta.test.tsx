@@ -42,7 +42,7 @@ beforeEach(() => {
 describe("ProCheckoutCta", () => {
   it("startet als Link auf das Signup-Ziel, bevor der Login-Stand feststeht", () => {
     getUser.mockReturnValue(new Promise(() => {})); // löst absichtlich nie auf
-    render(<ProCheckoutCta plan={plan} />);
+    render(<ProCheckoutCta plan={plan} activatesAutomatically />);
 
     const link = screen.getByRole("link", { name: "Pro holen" });
     expect(link).toHaveAttribute("href", "/signup?plan=pro");
@@ -51,7 +51,7 @@ describe("ProCheckoutCta", () => {
 
   it("bleibt beim Signup-Link, wenn niemand angemeldet ist", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
-    render(<ProCheckoutCta plan={plan} />);
+    render(<ProCheckoutCta plan={plan} activatesAutomatically />);
 
     await screen.findByRole("link", { name: "Pro holen" });
     expect(screen.getByRole("link")).toHaveAttribute("href", "/signup?plan=pro");
@@ -62,7 +62,7 @@ describe("ProCheckoutCta", () => {
     getUser.mockResolvedValue({
       data: { user: { id: "user-42", email: "kasum@example.test" } },
     });
-    render(<ProCheckoutCta plan={plan} />);
+    render(<ProCheckoutCta plan={plan} activatesAutomatically />);
 
     await screen.findByText("Pro holen");
     expect(checkoutProps).toHaveLength(1);
@@ -75,17 +75,43 @@ describe("ProCheckoutCta", () => {
 
   it("reicht eine fehlende Mail als null durch, statt sie zu erfinden", async () => {
     getUser.mockResolvedValue({ data: { user: { id: "user-42", email: undefined } } });
-    render(<ProCheckoutCta plan={plan} />);
+    render(<ProCheckoutCta plan={plan} activatesAutomatically />);
 
     await screen.findByText("Pro holen");
     expect(checkoutProps[0]).toMatchObject({ email: null, userId: "user-42" });
+  });
+
+  // M-5 (Audit 06.09.2026): die Erfolgsmeldung sagte bisher immer "ich
+  // schalte von Hand frei", auch wenn der Webhook laengst automatisch
+  // freischaltet — im selben Kasten wie ein Hinweis, der das Gegenteil sagt.
+  describe("Erfolgsmeldung haengt von activatesAutomatically ab (M-5)", () => {
+    it("verspricht eine automatische Freischaltung, wenn der Webhook konfiguriert ist", async () => {
+      getUser.mockResolvedValue({
+        data: { user: { id: "user-42", email: "kasum@example.test" } },
+      });
+      render(<ProCheckoutCta plan={plan} activatesAutomatically />);
+
+      await screen.findByText("Pro holen");
+      expect(checkoutProps[0].successMessage).toContain("Lad die Seite einmal neu");
+      expect(checkoutProps[0].successMessage).not.toContain("melde mich");
+    });
+
+    it("verspricht Handarbeit, wenn kein Webhook konfiguriert ist", async () => {
+      getUser.mockResolvedValue({
+        data: { user: { id: "user-42", email: "kasum@example.test" } },
+      });
+      render(<ProCheckoutCta plan={plan} activatesAutomatically={false} />);
+
+      await screen.findByText("Pro holen");
+      expect(checkoutProps[0].successMessage).toContain("melde mich");
+    });
   });
 
   it("setzt keinen State mehr, nachdem die Komponente schon abgehängt wurde", async () => {
     let resolveUser: (v: unknown) => void = () => {};
     getUser.mockReturnValue(new Promise((resolve) => (resolveUser = resolve)));
 
-    const { unmount } = render(<ProCheckoutCta plan={plan} />);
+    const { unmount } = render(<ProCheckoutCta plan={plan} activatesAutomatically />);
     unmount();
 
     const warn = vi.spyOn(console, "error").mockImplementation(() => {});
