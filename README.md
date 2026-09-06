@@ -62,8 +62,9 @@ cp .env.example .env.local
 #   → NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY und SUPABASE_SERVICE_ROLE_KEY eintragen
 
 # 3. Datenbank-Migrationen einspielen
-#    Supabase SQL-Editor oder CLI, die Dateien in supabase/migrations/ der
-#    Reihe nach (0001 → 0038).
+#    Supabase SQL-Editor oder CLI, ALLE Dateien in supabase/migrations/ der
+#    Reihe nach, von 0001 aufwärts (kein Endpunkt hier genannt, der sonst bei
+#    jeder neuen Migration erneut veraltet, M-23 im Audit vom 06.09.2026).
 
 # 4. Dev-Server
 npm run dev          # http://localhost:3000
