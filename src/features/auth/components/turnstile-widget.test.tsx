@@ -82,6 +82,29 @@ describe("TurnstileWidget", () => {
     );
   });
 
+  // Nachtrag zu M-9 (Audit 06.09.2026, zweiter Durchgang): ein SPAETES "load"
+  // (nach dem Timeout, z.B. ein langsames Firmennetzwerk) durfte den Knoten,
+  // den React bereits durch die Fehlermeldung ersetzt hatte, nicht doch noch
+  // per render() bespielen — der Nutzer haette dann eine permanente
+  // Fehlermeldung gesehen, waehrend das echte Widget unsichtbar irgendwo
+  // gerendert wurde.
+  it("ignores a load event that fires after the timeout already gave up", async () => {
+    vi.useFakeTimers();
+    const { TurnstileWidget } = await importWidget("site-key-1");
+    render(<TurnstileWidget onToken={() => {}} />);
+    const script = scriptTag();
+
+    act(() => void vi.advanceTimersByTime(8000));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+
+    const renderSpy = vi.fn().mockReturnValue("widget-1");
+    window.turnstile = { render: renderSpy, reset: vi.fn(), remove: vi.fn() };
+    act(() => void script!.dispatchEvent(new Event("load")));
+
+    expect(renderSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
   it("does not show an error if the widget renders before the timeout", async () => {
     vi.useFakeTimers();
     const { TurnstileWidget } = await importWidget("site-key-1");

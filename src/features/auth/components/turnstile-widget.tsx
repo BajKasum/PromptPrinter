@@ -71,6 +71,15 @@ export function TurnstileWidget({
     const container = containerRef.current;
     if (!container) return;
     let cancelled = false;
+    // Nachtrag zu M-9 (Audit 06.09.2026, zweiter Durchgang): eine reine
+    // React-State-Pruefung (loadFailed) haette hier nicht gereicht — dieser
+    // Effect laeuft nicht erneut, nur weil sich der gerenderte Zweig aendert.
+    // Ohne dieses Flag konnte ein SPAETES "load" (nach dem Timeout, aber vor
+    // dem Unmount) `renderWidget()` noch auf den bereits aus dem DOM
+    // entfernten `container` anwenden: die Fehlermeldung blieb sichtbar
+    // stehen, der echte Widget rendert unsichtbar in einen Knoten, den
+    // niemand mehr sieht, und `onToken` feuert nie.
+    let timedOut = false;
     setLoadFailed(false);
 
     // Faengt sowohl "das Skript kam gar nie an" (Timeout) als auch "kam an,
@@ -78,11 +87,14 @@ export function TurnstileWidget({
     // die Cloudflare-Herausforderung selbst haengt) — der Timer laeuft in
     // jedem Fall bis renderWidget ihn stoppt.
     const timeout = window.setTimeout(() => {
-      if (!cancelled && !widgetIdRef.current) setLoadFailed(true);
+      if (!cancelled && !widgetIdRef.current) {
+        timedOut = true;
+        setLoadFailed(true);
+      }
     }, LOAD_TIMEOUT_MS);
 
     function renderWidget() {
-      if (cancelled || !container || !window.turnstile || widgetIdRef.current) return;
+      if (cancelled || timedOut || !container || !window.turnstile || widgetIdRef.current) return;
       window.clearTimeout(timeout);
       widgetIdRef.current = window.turnstile.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
