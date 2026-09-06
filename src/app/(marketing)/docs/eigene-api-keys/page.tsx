@@ -32,10 +32,11 @@ export default function Page() {
 
       <h2>Einrichten</h2>
       <p>
-        Unter <strong>Einstellungen → Eigene API-Keys</strong> wählst du deinen
-        Anbieter und fügst den Key ein. Vor dem Speichern wird er einmal
-        testweise benutzt, ein Tippfehler oder ein abgelaufener Key fällt also
-        sofort auf und nicht erst mitten im Arbeiten.
+        Unter <strong>Einstellungen → Eigene API-Keys</strong> fügst du einfach
+        deinen Key ein, welcher Anbieter das ist, erkenne ich am Key selbst.
+        Vor dem Speichern wird er einmal testweise benutzt, ein Tippfehler oder
+        ein abgelaufener Key fällt also sofort auf und nicht erst mitten im
+        Arbeiten.
       </p>
 
       <h2>Welche Anbieter gehen</h2>

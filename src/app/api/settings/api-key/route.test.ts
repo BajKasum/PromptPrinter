@@ -80,8 +80,12 @@ describe("POST /api/settings/api-key", () => {
     tableResults.user_api_keys = { data: null };
   });
 
-  it("stores a named provider's key encrypted, never in plaintext", async () => {
-    const res = await POST(post({ provider: "anthropic", apiKey: "sk-ant-secret" }));
+  // Nutzerwunsch (2026-09-06): kein Anbieter-Dropdown mehr — der Primaerzweig
+  // schickt nur noch `{ apiKey }`, der Server erkennt Anthropic/OpenAI/Gemini
+  // am Key-Format selbst (byok-detect.ts). Test-Keys tragen deshalb echte
+  // Praefixe, nicht nur Platzhalter wie "k".
+  it("erkennt einen Anthropic-Key am sk-ant--Praefix und speichert ihn verschluesselt, nie im Klartext", async () => {
+    const res = await POST(post({ apiKey: "sk-ant-secret" }));
 
     expect(res.status).toBe(200);
     expect(encrypt).toHaveBeenCalledWith("sk-ant-secret");
@@ -90,9 +94,41 @@ describe("POST /api/settings/api-key", () => {
     expect(JSON.stringify(row)).not.toContain("sk-ant-secret");
   });
 
+  it("erkennt einen OpenAI-Key am generischen sk--Praefix", async () => {
+    const res = await POST(post({ apiKey: "sk-proj-x" }));
+    expect(res.status).toBe(200);
+    expect(upsert.mock.calls[0][0]).toMatchObject({ provider: "openai" });
+  });
+
+  it("erkennt einen Gemini-Key am AIza-Praefix", async () => {
+    const res = await POST(post({ apiKey: "AIzaSyD-example" }));
+    expect(res.status).toBe(200);
+    expect(upsert.mock.calls[0][0]).toMatchObject({ provider: "gemini" });
+  });
+
   it("nulls the custom-only columns for a named provider", async () => {
-    await POST(post({ provider: "openai", apiKey: "sk-x" }));
+    await POST(post({ apiKey: "sk-x" }));
     expect(upsert.mock.calls[0][0]).toMatchObject({ label: null, base_url: null, model: null });
+  });
+
+  it("lehnt einen Key ohne erkennbaren Anbieter-Praefix ab und meldet die erweiterte Option", async () => {
+    const res = await POST(post({ apiKey: "glm-4.5-air-abcdef" }));
+    const body = (await res.json()) as { detail: string; kind?: string };
+
+    expect(res.status).toBe(400);
+    expect(body.kind).toBe("unknownProvider");
+    expect(body.detail).toContain("erweiterte Option");
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("vertraut nie einer vom Client mitgeschickten provider-Angabe fuer den Primaerpfad (Schema lehnt die Extra-Eigenschaft ab)", async () => {
+    // Ein Primaer-Body mit einem zusaetzlichen `provider`-Feld darf nicht
+    // stillschweigend durchgehen (das waere ein Client, der wieder waehlt) —
+    // `.strict()` auf dem Primaerzweig sorgt dafuer, dass das als ungueltige
+    // Anfrage abgelehnt wird, statt "anthropic" einfach zu glauben.
+    const res = await POST(post({ provider: "anthropic", apiKey: "sk-ant-secret" }));
+    expect(res.status).toBe(400);
+    expect(upsert).not.toHaveBeenCalled();
   });
 
   it("stores endpoint and model for a custom provider", async () => {
@@ -118,14 +154,14 @@ describe("POST /api/settings/api-key", () => {
   it("refuses to store a key the provider rejects", async () => {
     chatComplete.mockRejectedValue(new Error("401 invalid_api_key"));
 
-    const res = await POST(post({ provider: "anthropic", apiKey: "sk-wrong" }));
+    const res = await POST(post({ apiKey: "sk-ant-wrong" }));
 
     expect(res.status).toBe(400);
     expect(upsert).not.toHaveBeenCalled();
   });
 
   it("tests the key before storing it, not after", async () => {
-    await POST(post({ provider: "anthropic", apiKey: "sk-ok" }));
+    await POST(post({ apiKey: "sk-ant-ok" }));
     expect(chatComplete.mock.invocationCallOrder[0]).toBeLessThan(
       upsert.mock.invocationCallOrder[0]
     );
@@ -133,14 +169,9 @@ describe("POST /api/settings/api-key", () => {
 
   it("requires authentication", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
-    const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
+    const res = await POST(post({ apiKey: "sk-ant-k" }));
     expect(res.status).toBe(401);
     expect(chatComplete).not.toHaveBeenCalled();
-  });
-
-  it("rejects an unknown provider", async () => {
-    const res = await POST(post({ provider: "hackerman", apiKey: "k" }));
-    expect(res.status).toBe(400);
   });
 
   it("rejects a custom provider without its endpoint", async () => {
@@ -158,7 +189,7 @@ describe("POST /api/settings/api-key", () => {
 
   it("rejects once the hourly rate limit is exceeded", async () => {
     rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
-    const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
+    const res = await POST(post({ apiKey: "sk-ant-k" }));
     expect(res.status).toBe(429);
   });
 
@@ -166,7 +197,7 @@ describe("POST /api/settings/api-key", () => {
     tableResults.profiles = { data: { is_admin: true } };
     rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
 
-    const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
+    const res = await POST(post({ apiKey: "sk-ant-k" }));
 
     expect(res.status).toBe(200);
     expect(rateLimit).not.toHaveBeenCalled();
@@ -174,7 +205,7 @@ describe("POST /api/settings/api-key", () => {
 
   it("reports a failed write rather than pretending the key was saved", async () => {
     upsert.mockResolvedValue({ error: { message: "db down" } });
-    const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
+    const res = await POST(post({ apiKey: "sk-ant-k" }));
     expect(res.status).toBe(500);
   });
 
@@ -188,7 +219,7 @@ describe("POST /api/settings/api-key", () => {
           'duplicate key value violates unique constraint "user_api_keys_user_id_provider_key"',
       },
     });
-    const res = await POST(post({ provider: "anthropic", apiKey: "k" }));
+    const res = await POST(post({ apiKey: "sk-ant-k" }));
     const body = (await res.json()) as { detail: string };
 
     expect(res.status).toBe(500);
@@ -202,7 +233,7 @@ describe("POST /api/settings/api-key", () => {
   // from a revoked key, and it is THEIR provider talking, not our database.
   it("still surfaces the provider's own message when the key test fails", async () => {
     chatComplete.mockRejectedValueOnce(new Error("invalid_api_key"));
-    const res = await POST(post({ provider: "anthropic", apiKey: "bad" }));
+    const res = await POST(post({ apiKey: "sk-ant-bad" }));
     const body = (await res.json()) as { detail: string };
 
     expect(res.status).toBe(400);
@@ -291,7 +322,7 @@ describe("BYOK active-provider selection (M-6)", () => {
   it("activates the first key, or it would be stored and then ignored", async () => {
     tableResults.user_api_keys = { data: null }; // nothing active yet
 
-    await POST(post({ provider: "anthropic", apiKey: "k" }));
+    await POST(post({ apiKey: "sk-ant-k" }));
 
     expect(rpc).toHaveBeenCalledWith("set_active_byok_provider", {
       target_provider: "anthropic",
@@ -303,7 +334,7 @@ describe("BYOK active-provider selection (M-6)", () => {
   it("does not steal the active slot when one is already set", async () => {
     tableResults.user_api_keys = { data: { provider: "anthropic" } };
 
-    await POST(post({ provider: "openai", apiKey: "k" }));
+    await POST(post({ apiKey: "sk-openai-k" }));
 
     expect(rpc).not.toHaveBeenCalled();
   });

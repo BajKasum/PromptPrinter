@@ -6,6 +6,7 @@ import { chatComplete, type LlmOverride } from "@/server/llm";
 import { encrypt } from "@/server/security/crypto";
 import { problem } from "@/server/http/api-problem";
 import { captureError } from "@/shared/lib/observability";
+import { detectProviderFromKey } from "@/shared/lib/byok-detect";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
@@ -26,11 +27,17 @@ export const runtime = "nodejs";
 const NAMED_PROVIDERS = ["anthropic", "openai", "gemini"] as const;
 const PROVIDERS = [...NAMED_PROVIDERS, "custom"] as const;
 
-const saveSchema = z.discriminatedUnion("provider", [
-  z.object({
-    provider: z.enum(NAMED_PROVIDERS),
-    apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300),
-  }),
+// Nutzerwunsch (2026-09-06): kein Anbieter-Dropdown mehr, nur noch ein Feld.
+// Der Primärzweig traegt bewusst KEIN `provider` — welcher der drei
+// benannten Anbieter gemeint ist, leitet der Server unten aus dem Key selbst
+// ab (detectProviderFromKey), nie aus einer Client-Angabe. `.strict()` ist
+// hier kein Stilmittel: ohne sie wuerde Zod ein mitgeschicktes
+// `provider: "custom"` (samt label/baseUrl/model) stillschweigend
+// verwerfen und die Anfrage trotzdem gegen DIESEN Zweig matchen, bevor der
+// echte custom-Zweig unten je geprueft wird — jede fehlerhafte custom-
+// Eingabe liefe dann unbemerkt in den falschen Pfad.
+const saveSchema = z.union([
+  z.object({ apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300) }).strict(),
   z.object({
     provider: z.literal("custom"),
     apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300),
@@ -70,7 +77,38 @@ export async function POST(req: Request) {
       issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
     });
   }
-  const { provider, apiKey } = parsed.data;
+
+  // Provider kommt entweder explizit mit (der custom-Zweig, der eigene
+  // Endpunkt-Angaben braucht und deshalb nicht erratbar ist) oder wird aus
+  // dem Key-Format selbst hergeleitet — nie aus einer Client-Angabe fuer die
+  // drei benannten Anbieter, es gibt dafuer keine mehr. `resolved` haelt
+  // provider und (nur beim custom-Zweig) label/baseUrl/model als EIN
+  // diskriminiertes Objekt zusammen, damit `resolved.provider === "custom"`
+  // weiter unten sauber narrowt, statt zwei getrennte Variablen ausser
+  // Sync geraten zu lassen oder ein `!`-Assertion zu brauchen.
+  const apiKey = parsed.data.apiKey;
+  type Resolved =
+    | { provider: "anthropic" | "openai" | "gemini" }
+    | { provider: "custom"; label: string; baseUrl: string; model: string };
+  const resolved: Resolved | null = "provider" in parsed.data
+    ? {
+        provider: parsed.data.provider,
+        label: parsed.data.label,
+        baseUrl: parsed.data.baseUrl,
+        model: parsed.data.model,
+      }
+    : (() => {
+        const detected = detectProviderFromKey(apiKey);
+        return detected ? { provider: detected } : null;
+      })();
+  if (!resolved) {
+    return problem(
+      400,
+      "Konnte den Anbieter nicht erkennen. Nutze die erweiterte Option für andere Anbieter (z. B. Z.ai, DeepSeek, Groq).",
+      { kind: "unknownProvider" }
+    );
+  }
+  const provider = resolved.provider;
 
   // Admin exemption mirrors /api/chat, /api/projects and /api/account:
   // a single is_admin lookup gates whether the hourly limit below applies.
@@ -89,9 +127,9 @@ export async function POST(req: Request) {
   }
 
   const override: LlmOverride =
-    provider === "custom"
-      ? { provider, apiKey, baseUrl: parsed.data.baseUrl, model: parsed.data.model }
-      : { provider, apiKey };
+    resolved.provider === "custom"
+      ? { provider: resolved.provider, apiKey, baseUrl: resolved.baseUrl, model: resolved.model }
+      : { provider: resolved.provider, apiKey };
 
   // Test the key against its real provider before it's ever persisted, a
   // bad key should fail loudly right here, not silently at generation time.
@@ -129,18 +167,18 @@ export async function POST(req: Request) {
     model: string | null;
   };
   const row: UserApiKeyRow =
-    provider === "custom"
+    resolved.provider === "custom"
       ? {
           user_id: user.id,
-          provider,
+          provider: resolved.provider,
           encrypted_key: encrypt(apiKey),
-          label: parsed.data.label,
-          base_url: parsed.data.baseUrl,
-          model: parsed.data.model,
+          label: resolved.label,
+          base_url: resolved.baseUrl,
+          model: resolved.model,
         }
       : {
           user_id: user.id,
-          provider,
+          provider: resolved.provider,
           encrypted_key: encrypt(apiKey),
           label: null,
           base_url: null,
