@@ -103,6 +103,65 @@ describe("Chat", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  // K-1 (Audit 2026-09-06): the route sends `meta` — carrying the fresh
+  // conversationId — well before the reply is done, since openTurn creates
+  // the conversation before ever calling the model. Navigating to the
+  // canonical URL right there used to unmount this very component
+  // (/chats/new and /chats/[id] are different route segments, each with
+  // their own server component), aborting the stream before a single token
+  // had landed — the answer was fully generated and persisted, just never
+  // shown until a manual reload. Only `done`, after the route's own
+  // completeTurn has already written the reply, may move the address bar.
+  it("does not navigate on `meta`, only after the reply is safely persisted on `done`", async () => {
+    let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    const encoder = new TextEncoder();
+    controllerRef.enqueue(encoder.encode(sseFrame("meta", { conversationId: "conv-77" })));
+    controllerRef.enqueue(encoder.encode(sseFrame("delta", { text: "Antwort kommt" })));
+    await screen.findByText("Antwort kommt");
+
+    // Mid-stream is exactly the moment the old code navigated — and with it,
+    // unmounted itself.
+    expect(replace).not.toHaveBeenCalled();
+
+    controllerRef.enqueue(encoder.encode(sseFrame("done", { conversationId: "conv-77" })));
+    controllerRef.close();
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/chats/conv-77", { scroll: false })
+    );
+  });
+
+  // If completeTurn itself failed, the DB has the question but not the
+  // reply — navigating (and so remounting on a fresh initialMessages fetch)
+  // would lose the on-screen answer immediately instead of "on the next
+  // reload", which is what the persist warning tells the user.
+  it("does not navigate when the reply could not be persisted", async () => {
+    mockStreamingFetch(["Antwort da"], {
+      conversationId: "conv-88",
+      persistError: "insert failed",
+    });
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    await screen.findByRole("status");
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("does not redirect again once a conversationId is already established", async () => {
     mockStreamingFetch(["Zweite Antwort"], { conversationId: "conv-1" });
     render(

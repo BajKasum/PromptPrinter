@@ -130,6 +130,12 @@ export function Chat({
   const reducedMotion = useReducedMotion() ?? false;
   // The in-flight request's controller, so stop() (below) can abort it.
   const abortControllerRef = useRef<AbortController | null>(null);
+  // False once this component has unmounted, so a `done` event that (in some
+  // unlikely race) still gets processed afterwards can't call `router.replace`
+  // on a router instance that no longer belongs to the visible page — see the
+  // unmount effect right below for why that's a real risk here, not a
+  // theoretical one.
+  const mountedRef = useRef(true);
 
   // Abort the turn when the chat unmounts — navigating to another chat, into
   // a project, or out of the app entirely.
@@ -147,7 +153,10 @@ export function Chat({
   // no-ops after unmount. The route persists whatever text had streamed so
   // far, so a turn cut short this way still shows up in the reloaded chat.
   useEffect(() => {
-    return () => abortControllerRef.current?.abort();
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   // Busy covers both halves of a turn: the request itself, and the stretch
@@ -339,33 +348,42 @@ export function Chat({
 
       // Die Konversation kommt seit Planpunkt C-1 schon VOR dem ersten Token
       // (SSE-Ereignis `meta`), weil die Route sie zusammen mit der Frage
-      // anlegt, bevor sie das Modell fragt. Frueh uebernommen heisst: ein
-      // Reload mitten im Stream landet im richtigen Chat statt auf
-      // /chats/new — und genau dort ist die Frage dann auch, was vorher nicht
-      // der Fall war.
+      // anlegt, bevor sie das Modell fragt.
+      //
+      // Frueher wurde hier sofort auf die kanonische URL navigiert
+      // (`router.replace`) — das brach jede erste Antwort in einem neuen Chat
+      // (K-1 im Audit vom 06.09.2026): /chats/new und /chats/[id] sind zwei
+      // verschiedene Route-Segmente mit je einer eigenen Server-Component,
+      // die Navigation tauscht also die gerade laufende <Chat>-Instanz aus,
+      // und das Cleanup oben abortet dadurch den Stream, bevor eine einzige
+      // Antwort steht. Die neu gemountete Instanz laed initialMessages aus
+      // der DB, in der zu diesem Zeitpunkt nur die Frage steht — die Antwort
+      // war in Wahrheit laengst fertig und gespeichert, nur unsichtbar bis
+      // zum naechsten Reload.
+      //
+      // Jetzt navigiert nur noch der `done`-Zweig unten, NACHDEM
+      // completeTurn (api/chat/route.ts) die Antwort bereits geschrieben hat
+      // — ein Remount an dieser Stelle verliert dann nichts mehr, er kappt
+      // hoechstens die Schreibmaschinen-Animation der allerersten Antwort.
+      // `router.refresh()` bleibt hier: es rendert dieselbe Route neu, ohne
+      // die Seite zu wechseln, kann also nicht unmounten.
       //
       // Eigene Variable statt des `conversationId`-States als Wache: ein
       // setState wirkt nicht sofort, `done` saehe sonst weiterhin den alten
-      // Wert und wuerde router.replace/refresh ein zweites Mal ausloesen.
+      // Wert und wuerde `router.refresh()` ein zweites Mal ausloesen.
       let adoptedId: string | null = null;
+      // Einmal zu Beginn dieses Zugs entschieden, nicht bei jedem Ereignis
+      // neu gelesen: `conversationId` aendert sich innerhalb eines Zugs nur
+      // durch adoptConversation selbst, das faengt Mehrfachaufrufe schon per
+      // `adoptedId` ab.
+      const isFirstTurn = !conversationId && !initialConversationId;
       const adoptConversation = (newId: string) => {
         if (adoptedId === newId) return;
         adoptedId = newId;
         // The route returns the conversation id on the first persisted turn;
         // hold onto it so every following turn appends to the same stored
-        // chat. That first turn moves a fresh chat onto its canonical URL,
-        // /chats/[id] for global chats, the project subroute for workspace
-        // chats, and refreshes the server components so sidebar recents +
-        // project chat lists pick it up.
-        if (!conversationId) {
-          if (!initialConversationId) {
-            router.replace(
-              projectId ? `/projects/${projectId}/chats/${newId}` : `/chats/${newId}`,
-              { scroll: false }
-            );
-          }
-          router.refresh();
-        }
+        // chat, and so the sidebar recents + project chat lists pick it up.
+        if (!conversationId) router.refresh();
         setConversationId(newId);
       };
 
@@ -394,6 +412,20 @@ export function Chat({
           if (persistError) {
             setPersistWarning(
               "Diese Antwort ist da, konnte aber gerade nicht gespeichert werden, bei einem Neuladen geht sie verloren."
+            );
+            // Kein router.replace hier: completeTurn ist genau in diesem Fall
+            // gescheitert, die DB hat also nur die Frage, nicht die Antwort.
+            // Ein Remount jetzt wuerde initialMessages ohne die Antwort laden
+            // und sie sofort verlieren, statt erst "beim naechsten Neuladen",
+            // wie die Warnung eben sagt.
+          } else if (isFirstTurn && newId && mountedRef.current) {
+            // Jetzt navigieren, nicht frueher (siehe Kommentar an
+            // adoptConversation oben): completeTurn hat die Antwort bereits
+            // geschrieben, ein Remount auf /chats/[id] verliert sie also
+            // nicht mehr.
+            router.replace(
+              projectId ? `/projects/${projectId}/chats/${newId}` : `/chats/${newId}`,
+              { scroll: false }
             );
           }
         }
