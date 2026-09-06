@@ -11,13 +11,25 @@ Light + Dark über `next-themes` (`attribute="class"`, `defaultTheme="dark"`,
 
 > **Theme-Entscheidung (2026-07):** Die öffentliche Website (Marketing, Auth,
 > Legal) hat **eine** bewusste, immer helle Grundstimmung, kein Toggle im
-> Header. `ThemeProvider` (`src/components/theme-provider.tsx`) erzwingt das
-> per next-themes' eigenem `forcedTheme`-Mechanismus routenbasiert
-> (`usePathname`), ohne die tatsächlich gespeicherte Praeferenz zu
-> überschreiben. Umschaltbar ist das Theme nur innerhalb des eingeloggten
-> Bereichs, als bewusste Workspace-Praeferenz in den Einstellungen
-> (`ThemePreference`, `src/components/app/theme-preference.tsx`), Hell /
-> Dunkel / System, kein Header-Button mehr.
+> Header. Umschaltbar ist das Theme nur innerhalb des eingeloggten Bereichs,
+> als bewusste Workspace-Praeferenz in den Einstellungen (`ThemePreference`,
+> `src/features/settings/components/theme-preference.tsx`), Hell / Dunkel /
+> System, kein Header-Button mehr.
+>
+> **Mechanismus geändert (2026-08-05, B-3 im Audit 06.09.2026 nachgezogen):**
+> Ursprünglich erzwang `ThemeProvider` (damals im Root-Layout) das per
+> next-themes' `forcedTheme`-Mechanismus routenbasiert (`usePathname` +
+> eine handgepflegte `isAppRoute()`-Präfixliste). Diese Liste war laut
+> eigenem Commentar bereits zweimal hinterher — `/prompts` und `/admin`
+> rendertem eine Zeit lang zwangshell. Seit Planpunkt B-2 (öffentliche Seiten
+> sollen statisch vom CDN kommen, `headers()` macht den ganzen Routenbaum
+> dynamisch) sitzt `ThemeProvider` (`src/shared/providers/theme-provider.tsx`)
+> nur noch im `(app)/layout.tsx`. Die öffentlichen Seiten brauchen dadurch gar
+> keinen Mechanismus mehr: `:root` in `globals.css` ist ohnehin der helle
+> Tokensatz, und ohne den Provider setzt dort nie jemand eine `.dark`-Klasse.
+> Kein `forcedTheme`, kein `usePathname`, keine Präfixliste — die
+> Verzeichnisstruktur selbst entscheidet, eine neue Route unter `(app)` kann
+> den Mechanismus nicht mehr vergessen.
 
 ## Farb-Tokens
 
