@@ -192,13 +192,21 @@ export async function dropReplacedReply(
  *
  * Wird auch beim Abbruch mit Teiltext aufgerufen: was schon da war, gehoert
  * gespeichert, sonst verliert ein "Stopp" den halben Prompt.
+ *
+ * Gibt die echte Zeilen-ID zurueck (K-2, Audit 06.09.2026): die Route reicht
+ * sie im `done`-Ereignis an den Client durch, der seine optimistisch mit
+ * `randomId()` vergebene ID damit ersetzt. Ohne das schickte "Neu erzeugen"/
+ * "Bearbeiten" eine erfundene ID als `replaceMessageId`/
+ * `supersededMessageIds`, `dropReplacedReply`/`dropSupersededMessages` trafen
+ * damit nie eine echte Zeile, und die alte Antwort blieb nach jedem Reload
+ * zusaetzlich zur neuen stehen — live nachgezaehlt: aus 4 Nachrichten wurden 5.
  */
 export async function completeTurn(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
   conversationId: string,
   reply: string
-): Promise<void> {
+): Promise<string> {
   // Never store a reply the request contract couldn't accept back: it would be
   // replayed on the next turn and fail validation, which is exactly how a chat
   // used to die permanently (QA finding F-2). The provider's own max_tokens
@@ -206,13 +214,20 @@ export async function completeTurn(
   // endpoint that ignores it — in which case a truncated stored reply beats an
   // unusable chat. The client keeps the untruncated text it already rendered.
   const storedReply = truncate(reply, MAX_ASSISTANT_MESSAGE_CHARS);
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    user_id: userId,
-    role: "assistant",
-    content: storedReply,
-  });
+  const { data: inserted, error } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "assistant",
+      content: storedReply,
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+  const id = inserted?.id as string | undefined;
+  if (!id) throw new Error("message insert returned no id");
+  return id;
 }
 
 /**

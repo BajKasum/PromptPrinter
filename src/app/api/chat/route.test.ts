@@ -723,6 +723,16 @@ describe("POST /api/chat", () => {
       expect(metaAt).toBeLessThan(deltaAt);
     });
 
+    // K-2 (Audit 06.09.2026): ohne die echte Zeilen-ID der eben geschriebenen
+    // Frage haelt der Client seine eigene, erfundene ID fuer den Rest der
+    // Sitzung — bearbeitet der Nutzer diese Frage spaeter, trifft das
+    // Aufraeumen auf dem Server keine echte Zeile.
+    it("nennt im selben Ereignis auch die echte Zeilen-ID der Frage", async () => {
+      const body = await readSse(await POST(req()));
+
+      expect(body).toContain('"userMessageId":"msg-1"');
+    });
+
     it("ergaenzt die Antwort als eigene Zeile, wenn der Stream durchlaeuft", async () => {
       await readSse(await POST(req()));
 
@@ -866,6 +876,26 @@ describe("POST /api/chat", () => {
 
       expect(res.status).toBe(400);
       expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+
+    // K-2 (Audit 06.09.2026): der Client kannte die echte Zeilen-ID der neuen
+    // Antwort nie und schickte beim naechsten "Neu erzeugen" eine selbst
+    // erfundene UUID als replaceMessageId. dropReplacedReply traf damit nie
+    // eine echte Zeile — live nachgezaehlt: aus 4 Nachrichten wurden 5, beide
+    // Antworten standen nach einem Reload untereinander.
+    it("gibt die echte Zeilen-ID der neuen Antwort im done-Ereignis zurueck", async () => {
+      const body = await readSse(await POST(regenerateReq()));
+
+      expect(body).toContain('"assistantMessageId":"msg-1"');
+    });
+
+    it("gibt keine assistantMessageId zurueck, wenn das Speichern scheitert", async () => {
+      tableResults.messages = { data: null, error: new Error("insert failed") };
+
+      const body = await readSse(await POST(regenerateReq()));
+
+      expect(body).not.toContain("assistantMessageId");
+      expect(body).toContain('"persistError"');
     });
   });
 

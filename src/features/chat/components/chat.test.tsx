@@ -292,6 +292,33 @@ describe("Chat", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
+  // K-2 (Audit 06.09.2026): der Client erfand fuer jede selbst erzeugte
+  // Nachricht eine eigene UUID und schickte genau die als replaceMessageId
+  // an die Route. Die Route loescht damit eine Zeile, die es nie gab —
+  // live nachgezaehlt: aus 4 Nachrichten wurden 5, beide Antworten standen
+  // nach einem Reload untereinander.
+  it("regeneriert mit der echten, vom Server vergebenen ID — nicht mit einer erfundenen", async () => {
+    mockStreamingFetch(["Antwort eins"], {
+      conversationId: "conv-1",
+      assistantMessageId: "asst-real-1",
+    });
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+    await screen.findByText("Antwort eins");
+    await screen.findByRole("button", { name: /Senden/ });
+
+    mockStreamingFetch(["Antwort zwei"], { conversationId: "conv-1" });
+    await user.click(screen.getByRole("button", { name: /Neu erzeugen/ }));
+    await screen.findByText("Antwort zwei");
+
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = JSON.parse(call[1].body);
+    expect(body.replaceMessageId).toBe("asst-real-1");
+  });
+
   it("swaps send for a stop button while a request is in flight, streaming text in as it grows", async () => {
     let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
     const body = new ReadableStream<Uint8Array>({

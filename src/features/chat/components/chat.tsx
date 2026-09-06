@@ -203,6 +203,17 @@ export function Chat({
     }
   }, [messages, busy, streamedChars, reducedMotion]);
 
+  // Die echte Zeilen-ID der gerade beantworteten Anfrage, sobald die Route sie
+  // im `done`-Ereignis mitschickt (K-2, Audit 06.09.2026). `commitReply` liest
+  // sie hier ab statt eine neue `randomId()` zu erfinden — sonst schickte
+  // "Neu erzeugen"/"Bearbeiten" beim naechsten Zug eine ID, die in der
+  // Datenbank nie existiert hat, `dropReplacedReply`/`dropSupersededMessages`
+  // liefen ins Leere, und die alte Antwort blieb zusaetzlich zur neuen stehen.
+  // Bleibt null (also faellt commitReply auf randomId() zurueck), wenn nie ein
+  // `done` ankam (Abbruch, abgerissene Verbindung) — dort gibt es ohnehin
+  // keine echte ID zu lernen.
+  const pendingAssistantIdRef = useRef<string | null>(null);
+
   // Turn the in-flight reply into a real message. Idempotent via pendingRef:
   // the reveal's own callback and a stop() click can both reach here for the
   // same reply, and the second one must not append it twice. The text comes in
@@ -213,7 +224,9 @@ export function Chat({
     pendingRef.current = null;
     setPending(null);
     if (!text.trim()) return;
-    setMessages((m) => [...m, { id: randomId(), role: "assistant", content: text }]);
+    const id = pendingAssistantIdRef.current ?? randomId();
+    pendingAssistantIdRef.current = null;
+    setMessages((m) => [...m, { id, role: "assistant", content: text }]);
     if (celebrate) setJustFinished(true);
   }, []);
 
@@ -302,10 +315,19 @@ export function Chat({
     setPersistWarning(null);
     setPending(null);
     pendingRef.current = null;
+    pendingAssistantIdRef.current = null;
     setJustFinished(false);
     setLoading(true);
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    // Die eben optimistisch angehaengte Frage, damit `meta` sie unten gegen
+    // die echte Zeilen-ID austauschen kann (K-2) — nur fuer send()/
+    // editMessage(), die genau diese Nachricht gerade neu erzeugt haben.
+    // regenerate() haengt nichts an (`next` endet dann auf einer bereits
+    // bestehenden Frage), replaceMessageId ist in dem Fall gesetzt, und
+    // openTurn schreibt entsprechend keine neue Frage (userMessageId bleibt
+    // dort null) — derselbe Fall also an beiden Enden der Leitung erkannt.
+    const optimisticUserMessageId = replaceMessageId ? null : (next.at(-1)?.id ?? null);
     // The route streams the reply as "delta" events (see /api/chat), a local
     // accumulator rather than reading `streamingReply` back: state updates
     // are async, this loop needs the exact running text on every iteration,
@@ -389,8 +411,24 @@ export function Chat({
 
       for await (const { event, data } of parseSseEvents(res.body)) {
         if (event === "meta") {
-          const { conversationId: newId } = JSON.parse(data) as { conversationId?: string };
+          const { conversationId: newId, userMessageId } = JSON.parse(data) as {
+            conversationId?: string;
+            userMessageId?: string;
+          };
           if (newId) adoptConversation(newId);
+          // K-2: die eben optimistisch angehaengte Frage gegen ihre echte
+          // Zeilen-ID austauschen, sobald sie bekannt ist — lange bevor die
+          // Antwort ueberhaupt zu streamen beginnt, also ohne sichtbaren
+          // Effekt. Ohne das bliebe die Frage dauerhaft bei ihrer erfundenen
+          // ID, und ein spaeteres Bearbeiten dieser Frage haette dasselbe
+          // Problem wie "Neu erzeugen" vor diesem Fix.
+          if (userMessageId && optimisticUserMessageId) {
+            setMessages((m) =>
+              m.map((msg) =>
+                msg.id === optimisticUserMessageId ? { ...msg, id: userMessageId } : msg
+              )
+            );
+          }
         } else if (event === "delta") {
           const { text: chunk } = JSON.parse(data) as { text: string };
           accumulated += chunk;
@@ -399,10 +437,22 @@ export function Chat({
           const { detail } = JSON.parse(data) as { detail: string };
           throw new StreamProtocolError(detail);
         } else if (event === "done") {
-          const { conversationId: newId, persistError } = JSON.parse(data) as {
+          const {
+            conversationId: newId,
+            assistantMessageId,
+            persistError,
+          } = JSON.parse(data) as {
             conversationId?: string;
+            assistantMessageId?: string;
             persistError?: string;
           };
+          // K-2: commitReply liest diese ID gleich ab, statt eine eigene zu
+          // erfinden. Nur gesetzt, wenn die Antwort auch wirklich in der DB
+          // steht (kein persistError) — sonst gaebe es eine ID, die commitReply
+          // fuer echt haelt, obwohl `dropReplacedReply` sie nie finden wuerde.
+          if (assistantMessageId && !persistError) {
+            pendingAssistantIdRef.current = assistantMessageId;
+          }
           // No text is coming any more; the reveal finishes writing what's
           // left and commits the message from its own callback.
           setPending({ text: accumulated, complete: true });

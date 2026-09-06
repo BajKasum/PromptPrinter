@@ -444,15 +444,23 @@ export async function POST(req: Request) {
   //    plain JSON problem response on failure, only the actual reply becomes
   //    an SSE stream. Wire protocol (hand-rolled, not the provider's own SSE
   //    dialect, see readOpenAiCompatibleSse in lib/llm.ts for that one):
-  //      event: meta   data: {"conversationId": "..."}  exactly one, first
+  //      event: meta   data: {conversationId, userMessageId?}  exactly one, first
   //        Seit C-1 steht die Konversation schon vor dem ersten Token fest.
-  //        Frueh gesendet, damit der Client sofort auf die kanonische URL
-  //        wechseln kann — ein Reload mitten im Stream landet dann im
-  //        richtigen Chat statt auf /chats/new.
+  //        Fruehes Senden erlaubt dem Client, seine mit `randomId()`
+  //        optimistisch angelegte Frage sofort gegen die echte Zeilen-ID
+  //        auszutauschen (K-2, Audit 06.09.2026) — `userMessageId` fehlt
+  //        beim Neu-Erzeugen, wo openTurn keine Frage schreibt.
+  //        Der Client navigiert bewusst NICHT mehr bei diesem Ereignis (K-1,
+  //        Audit 06.09.2026): /chats/new und /chats/[id] sind zwei
+  //        verschiedene Route-Segmente, eine sofortige Navigation wuerde die
+  //        laufende Chat-Instanz und damit den Stream selbst abbrechen.
   //      event: delta  data: {"text": "..."}   zero or more, as text arrives
-  //      event: done   data: {conversationId?, persistError?}   exactly one, on success
-  //        persistError is a stable CODE ("persist_failed"), never a message —
-  //        see the catch below (Security-Audit finding M-1).
+  //      event: done   data: {conversationId?, assistantMessageId?, persistError?}
+  //        exactly one, on success. assistantMessageId (K-2) ist die echte
+  //        Zeilen-ID der gespeicherten Antwort, fehlt bei persistError, weil
+  //        dann nichts gespeichert wurde. persistError ist eine stabile CODE
+  //        ("persist_failed"), nie eine Meldung — siehe den catch unten
+  //        (Security-Audit finding M-1).
   //      event: error  data: {"detail": "..."}                  exactly one, on failure
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -460,7 +468,10 @@ export async function POST(req: Request) {
 
       // Zuerst, noch vor dem ersten Token: der Client kennt damit die
       // Konversation, bevor irgendetwas schiefgehen kann.
-      send("meta", { conversationId: opened.conversationId });
+      send("meta", {
+        conversationId: opened.conversationId,
+        ...(opened.userMessageId ? { userMessageId: opened.userMessageId } : {}),
+      });
 
       // Cost/latency telemetry (QA finding C-7). Character counts stand in for
       // tokens: the streaming path never sees the provider's own usage numbers
@@ -563,8 +574,14 @@ export async function POST(req: Request) {
       // text was never read by anyone but an attacker. captureError below
       // still gets the original for the logs.
       let persistError: string | null = null;
+      // Die echte Zeilen-ID der gespeicherten Antwort (K-2, Audit
+      // 06.09.2026) — geht im `done`-Ereignis an den Client, der damit seine
+      // optimistische `randomId()` ersetzt. Bleibt null bei einem
+      // persistError, dann gibt es keine Zeile, deren ID man mitschicken
+      // koennte.
+      let assistantMessageId: string | null = null;
       try {
-        await completeTurn(supabase, userId, conversationId, reply);
+        assistantMessageId = await completeTurn(supabase, userId, conversationId, reply);
         // Beim Neu-Erzeugen (C-2) faellt die alte Antwort JETZT weg, nicht
         // vorher: waere sie schon beim Start geloescht worden, stuende der
         // Nutzer nach einem gescheiterten Anbieter-Aufruf ohne beides da.
@@ -602,6 +619,7 @@ export async function POST(req: Request) {
       send("done", {
         mode,
         conversationId,
+        ...(assistantMessageId ? { assistantMessageId } : {}),
         ...(persistError ? { persistError } : {}),
       });
       closeQuietly();
