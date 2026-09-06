@@ -230,21 +230,35 @@ export async function POST(req: Request): Promise<Response> {
  * bietet keine Suche nach Mail an, nur ein seitenweises Auflisten aller
  * Konten, und eine Zuordnung über eine selbst eingetippte Mailadresse wäre
  * ohnehin die schwächste der drei.
+ *
+ * ─── M-6 (Audit 06.09.2026): der Checkout-Weg gilt NICHT für einen Entzug ──
+ * `custom_data.user_id` ist vom Käufer frei wählbar. Für eine Gutschrift ist
+ * das folgenlos — wer sie fälscht, bezahlt ein fremdes Konto frei, schadet
+ * also nur sich selbst. Für einen Entzug (`patch.plan === "free"`) wäre die
+ * Asymmetrie real: ein Käufer könnte beim eigenen Checkout die Konto-ID
+ * eines fremden Kontos eintragen und es kostenlos zurückstufen lassen,
+ * sobald das eigene Abo irgendwann erstattet wird oder ausläuft. Ein Entzug
+ * löst deshalb ausschliesslich über die Kundennummer auf, die eine
+ * bestehende Zahlung tatsächlich am Konto hinterlassen hat.
  */
 async function resolveUserId(
   admin: ReturnType<typeof createAdminClient>,
   payload: Parameters<typeof customUserId>[0],
   patch: ProfileBillingPatch
 ): Promise<string | null> {
-  const fromCheckout = customUserId(payload);
-  if (fromCheckout) {
-    const { data } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("id", fromCheckout)
-      .maybeSingle<{ id: string }>();
-    if (data) return data.id;
-    logWarning("billing.webhook_unknown_user_id", { userId: fromCheckout });
+  const isRevocation = patch.plan === "free";
+
+  if (!isRevocation) {
+    const fromCheckout = customUserId(payload);
+    if (fromCheckout) {
+      const { data } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("id", fromCheckout)
+        .maybeSingle<{ id: string }>();
+      if (data) return data.id;
+      logWarning("billing.webhook_unknown_user_id", { userId: fromCheckout });
+    }
   }
 
   const customerId = patch.subscription_customer_id;

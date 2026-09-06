@@ -208,7 +208,15 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       profileUpdate.mockClear();
       await POST(
         req(
-          body("subscription_expired", { id: "sub_1", attributes: { status: "expired" } }, { user_id: USER_ID })
+          body(
+            "subscription_expired",
+            // M-6 (Audit 06.09.2026): ein Entzug loest nicht mehr ueber die
+            // custom_data-Konto-ID auf (die ist im Checkout des Kaeufers frei
+            // waehlbar), sondern ausschliesslich ueber die Kundennummer —
+            // die Lemon Squeezy auf jedem echten Ereignis mitschickt.
+            { id: "sub_1", attributes: { status: "expired", customer_id: 42 } },
+            { user_id: USER_ID }
+          )
         )
       );
       expect(profileUpdate.mock.calls[0][0]).toMatchObject({ plan: "free" });
@@ -246,7 +254,12 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
             {
               id: "invoice_888",
               type: "subscription-invoices",
-              attributes: { subscription_id: 555, status: "refunded" },
+              // customer_id dazu (M-6, Audit 06.09.2026): ein Entzug loest
+              // seither ausschliesslich ueber die Kundennummer auf, nicht
+              // mehr ueber die im Checkout des Kaeufers frei waehlbare
+              // custom_data-Konto-ID — genau die hier trotzdem mitgeschickt
+              // wird, um zu zeigen, dass sie fuer einen Entzug ignoriert wird.
+              attributes: { subscription_id: 555, status: "refunded", customer_id: 42 },
             },
             { user_id: USER_ID }
           )
@@ -254,7 +267,10 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       );
 
       expect(res.status).toBe(200);
-      expect(profileUpdate).toHaveBeenCalledWith({ plan: "free" }, USER_ID);
+      expect(profileUpdate).toHaveBeenCalledWith(
+        { plan: "free", subscription_customer_id: "42" },
+        USER_ID
+      );
     });
   });
 
@@ -293,6 +309,39 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       expect(logWarning).toHaveBeenCalledWith("billing.webhook_unknown_user_id", {
         userId: USER_ID,
       });
+    });
+
+    // M-6 (Audit 06.09.2026): custom_data.user_id ist im Checkout des
+    // Kaeufers frei waehlbar. Fuer eine Gutschrift ist das folgenlos (wer
+    // sie faelscht, bezahlt ein fremdes Konto frei), fuer einen ENTZUG waere
+    // es das Gegenteil: ein Kaeufer koennte beim eigenen Checkout die
+    // Konto-ID eines fremden Kontos eintragen und es zurueckstufen lassen,
+    // sobald das eigene Abo ausserlaeuft.
+    it("trifft mit einem Entzug nicht die untergeschobene Konto-ID, sondern das Konto der echten Kundennummer", async () => {
+      const VICTIM_ID = "99999999-9999-4999-8999-999999999999";
+      profileSelect.mockImplementation((column: string, value: string) => {
+        if (column === "id" && value === VICTIM_ID) {
+          return Promise.resolve({ data: { id: VICTIM_ID } });
+        }
+        if (column === "subscription_customer_id" && value === "42") {
+          return Promise.resolve({ data: { id: USER_ID } });
+        }
+        return Promise.resolve({ data: null });
+      });
+
+      const res = await POST(
+        req(
+          body(
+            "subscription_expired",
+            { attributes: { status: "expired", customer_id: 42 } },
+            { user_id: VICTIM_ID }
+          )
+        )
+      );
+
+      expect(res.status).toBe(200);
+      expect(profileUpdate).toHaveBeenCalledWith(expect.anything(), USER_ID);
+      expect(profileUpdate).not.toHaveBeenCalledWith(expect.anything(), VICTIM_ID);
     });
 
     it("quittiert einen nicht zuzuordnenden Kauf und nennt im Log alles zum Nachfassen", async () => {
