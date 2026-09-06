@@ -371,6 +371,67 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
       expect(profileUpdate).not.toHaveBeenCalledWith(expect.anything(), VICTIM_ID);
     });
 
+    // M-6-Nachtrag (Audit 06.09.2026, zweiter Durchgang): eine Gutschrift ueber
+    // die untergeschobene Konto-ID durfte bisher trotzdem die ECHTE Kundennummer
+    // des Kaeufers auf einem fremden, bereits zahlenden Konto hinterlegen —
+    // genau die Kundennummer, ueber die ein spaeterer Entzug aufloest. Damit
+    // liess sich ein fremdes, laufendes Abo kapern: kuendigt der Angreifer
+    // spaeter sein eigenes billigeres Abo, wird das Opferkonto zurueckgestuft.
+    it("ueberschreibt nicht die bereits hinterlegte Kundennummer eines fremden Kontos ueber eine untergeschobene Konto-ID", async () => {
+      const VICTIM_ID = "99999999-9999-4999-8999-999999999999";
+      profileSelect.mockImplementation((column: string, value: string) => {
+        if (column === "id" && value === VICTIM_ID) {
+          // Opfer ist bereits zahlender Kunde mit einer ECHTEN, ANDEREN
+          // Kundennummer.
+          return Promise.resolve({ data: { id: VICTIM_ID, subscription_customer_id: "7" } });
+        }
+        // Die untergeschobene Kundennummer (42) gehoert noch keinem Konto.
+        return Promise.resolve({ data: null });
+      });
+
+      const res = await POST(
+        req(
+          body(
+            "subscription_created",
+            { attributes: { status: "active", customer_id: 42 } },
+            { user_id: VICTIM_ID }
+          )
+        )
+      );
+
+      expect(res.status).toBe(200);
+      expect(profileUpdate).not.toHaveBeenCalledWith(expect.anything(), VICTIM_ID);
+      expect(logWarning).toHaveBeenCalledWith("billing.webhook_customer_id_conflict", {
+        userId: VICTIM_ID,
+      });
+    });
+
+    // Ein frisches Konto ohne eigene Kundennummer bleibt wie zuvor kostenlos
+    // hochstufbar — das ist die bewusst akzeptierte, folgenlose Seite von M-6
+    // (siehe Kommentar in route.ts): niemand verliert dabei etwas Echtes.
+    it("stuft ein Konto ohne eigene Kundennummer weiterhin ueber die Checkout-Konto-ID hoch", async () => {
+      const FRESH_ID = "88888888-8888-4888-8888-888888888888";
+      profileSelect.mockImplementation((column: string, value: string) => {
+        if (column === "id" && value === FRESH_ID) {
+          return Promise.resolve({ data: { id: FRESH_ID, subscription_customer_id: null } });
+        }
+        return Promise.resolve({ data: null });
+      });
+
+      const res = await POST(
+        req(
+          body(
+            "subscription_created",
+            { attributes: { status: "active", customer_id: 42 } },
+            { user_id: FRESH_ID }
+          )
+        )
+      );
+
+      expect(res.status).toBe(200);
+      expect(profileUpdate).toHaveBeenCalledWith(expect.anything(), FRESH_ID);
+    });
+
     it("quittiert einen nicht zuzuordnenden Kauf und nennt im Log alles zum Nachfassen", async () => {
       profileSelect.mockResolvedValue({ data: null });
 

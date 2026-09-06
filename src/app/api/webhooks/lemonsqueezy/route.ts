@@ -240,6 +240,21 @@ export async function POST(req: Request): Promise<Response> {
  * sobald das eigene Abo irgendwann erstattet wird oder ausläuft. Ein Entzug
  * löst deshalb ausschliesslich über die Kundennummer auf, die eine
  * bestehende Zahlung tatsächlich am Konto hinterlassen hat.
+ *
+ * ─── M-6-Nachtrag (Audit 06.09.2026, zweiter Durchgang): Kundennummer nicht
+ * überschreiben ─────────────────────────────────────────────────────────
+ * Der Schutz oben reichte nicht: eine Gutschrift über die untergeschobene
+ * Konto-ID schrieb `patch.subscription_customer_id` (die ECHTE Kundennummer
+ * des Käufers) trotzdem auf das fremde Konto — und genau DAS Feld ist es,
+ * über das ein Entzug auflöst. Ein Käufer konnte damit einem fremden, bereits
+ * zahlenden Konto seine eigene Kundennummer unterschieben; kündigt oder
+ * erstattet er später sein eigenes (billigeres) Abo, löst der Entzug über die
+ * jetzt dort hinterlegte Kundennummer auf und stuft das fremde Konto zurück —
+ * das schon vorhandene, echte Abo dieses Kontos bleibt dabei unberührt in
+ * Lemon Squeezy, verschwindet der App aber aus den Augen. Deshalb: die
+ * Konto-ID aus dem Checkout gilt nur, solange sie keine bereits hinterlegte,
+ * ANDERE Kundennummer überschreiben würde. Ein Konto ohne eigene Kundennummer
+ * (frisch, nie gekauft) bleibt wie zuvor kostenlos hochstufbar.
  */
 async function resolveUserId(
   admin: ReturnType<typeof createAdminClient>,
@@ -253,11 +268,20 @@ async function resolveUserId(
     if (fromCheckout) {
       const { data } = await admin
         .from("profiles")
-        .select("id")
+        .select("id, subscription_customer_id")
         .eq("id", fromCheckout)
-        .maybeSingle<{ id: string }>();
-      if (data) return data.id;
-      logWarning("billing.webhook_unknown_user_id", { userId: fromCheckout });
+        .maybeSingle<{ id: string; subscription_customer_id: string | null }>();
+      if (data) {
+        const incomingCustomerId = patch.subscription_customer_id;
+        const overwritesDifferentCustomer =
+          incomingCustomerId != null &&
+          data.subscription_customer_id != null &&
+          data.subscription_customer_id !== incomingCustomerId;
+        if (!overwritesDifferentCustomer) return data.id;
+        logWarning("billing.webhook_customer_id_conflict", { userId: fromCheckout });
+      } else {
+        logWarning("billing.webhook_unknown_user_id", { userId: fromCheckout });
+      }
     }
   }
 
