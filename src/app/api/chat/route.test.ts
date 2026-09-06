@@ -448,8 +448,26 @@ describe("POST /api/chat", () => {
       await POST(req({ messages: longTranscript }));
 
       const sent = chatCompleteStream.mock.calls[0][0] as { messages: { content: string }[] };
-      expect(sent.messages).toHaveLength(12); // CHAT_HISTORY_LIMIT
+      // 11, not 12 (CHAT_HISTORY_LIMIT): a straight slice(-12) of this
+      // alternating, user-ending transcript starts on an assistant turn (see
+      // the next test, K-3), so one leading entry is dropped to keep the
+      // window valid for every provider.
+      expect(sent.messages).toHaveLength(11);
       expect(sent.messages.at(-1)?.content).toBe("Nachricht 80");
+    });
+
+    // K-3 (Audit 06.09.2026): CHAT_HISTORY_LIMIT (12) is even, and the newest
+    // turn is always role "user" — counting back 12 from there lands on
+    // "assistant" for EVERY transcript past the limit, not just some of them.
+    // Anthropic's Messages API rejects any request that doesn't start with a
+    // user message, so every BYOK-Anthropic chat (Free requires BYOK) died
+    // for good on its 7th turn. Z.ai/OpenAI happen to tolerate it, which is
+    // exactly why this went unnoticed on the default provider.
+    it("never starts the forwarded window on an assistant turn", async () => {
+      await POST(req({ messages: longTranscript }));
+
+      const sent = chatCompleteStream.mock.calls[0][0] as { messages: { role: string }[] };
+      expect(sent.messages[0]?.role).toBe("user");
     });
 
     it("still rejects an empty transcript", async () => {

@@ -48,8 +48,28 @@ export const maxDuration = 300;
 // davon immer den vollen Zug.
 const CHAT_HISTORY_LIMIT = 12;
 
+// K-3 (Audit 06.09.2026): a plain slice(-CHAT_HISTORY_LIMIT) cut the window
+// at a FIXED distance from the newest turn, and the newest turn is always
+// role "user" (openTurn asserts it). Counting back from there, position
+// -CHAT_HISTORY_LIMIT lands on "assistant" whenever CHAT_HISTORY_LIMIT is
+// even — which 12 is — for EVERY transcript longer than the limit, not just
+// some of them: the parity is fixed by the limit itself, not by how long the
+// chat happens to be. Anthropic's Messages API rejects outright any request
+// whose first message isn't role "user", so every BYOK-Anthropic chat (Free
+// requires BYOK) died for good on its 7th turn — reloading doesn't help,
+// since the stored history IS what breaks the next request too.
+//
+// Z.ai and OpenAI happen to tolerate a leading assistant turn, which is
+// exactly why this went unnoticed on the default provider — same shape of
+// bug as collapseConsecutiveRoles below (QA finding F-4).
 function trimHistory(messages: ChatMessage[]): ChatMessage[] {
-  return messages.length > CHAT_HISTORY_LIMIT ? messages.slice(-CHAT_HISTORY_LIMIT) : messages;
+  const trimmed =
+    messages.length > CHAT_HISTORY_LIMIT ? messages.slice(-CHAT_HISTORY_LIMIT) : messages;
+  const firstUserIndex = trimmed.findIndex((m) => m.role === "user");
+  // -1 only if the caller's own "must end in user" contract was somehow
+  // violated further up the chain — leave the window untouched rather than
+  // slicing to an empty array over it.
+  return firstUserIndex > 0 ? trimmed.slice(firstUserIndex) : trimmed;
 }
 
 // Merges consecutive same-role turns before the transcript reaches a provider
