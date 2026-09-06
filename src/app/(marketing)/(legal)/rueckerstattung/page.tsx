@@ -94,16 +94,6 @@ export default function RueckerstattungPage() {
         Zahlungsmittel ab, üblich sind einige Werktage.
       </p>
 
-      <h2>Zahlungsabwicklung</h2>
-      <p>
-        Der Verkauf von Pro wird über einen externen Zahlungsdienstleister
-        laufen, der zugleich dein Vertragspartner für den Kauf ist und die
-        Abrechnung samt anfallender Steuern übernimmt. Sobald das
-        freigeschaltet ist, wird der konkrete Anbieter hier und in den{" "}
-        <a href="/agb">AGB</a> namentlich genannt. Für die Erstattung selbst
-        bleibt der Weg derselbe: du schreibst mir, ich kümmere mich darum.
-      </p>
-
       <h2>Deine gesetzlichen Rechte</h2>
       <p>
         Diese Richtlinie ist ein freiwilliges Versprechen und beschränkt keine
