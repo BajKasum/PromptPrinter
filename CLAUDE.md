@@ -729,6 +729,44 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Audit-Befundbericht 06.09.2026, im 2nd-brain-Projektordner) — mittlerweile
 > behoben.
 
+> **Settings entschlackt (2026-09-06, `7ccd3a3` + `9051a2f`):** Auf
+> Nutzerwunsch drei Vereinfachungen in den Einstellungen.
+>
+> Erstens, **Profilbild komplett entfernt**: `avatar-upload.tsx` gelöscht
+> (war der einzige Weg, der `avatar_url` je gesetzt hat — keine
+> OAuth-Foto-Übernahme von Google/GitHub existiert in diesem Code). Beide
+> Render-Stellen in `sidebar.tsx` (Kontomenü-Trigger + offenes Panel) zeigen
+> jetzt immer den Initialen-Kreis, nie ein `<img>`. `avatar.ts`
+> (`avatarStoragePath()`) bleibt bewusst bestehen, `api/account/route.ts`
+> braucht sie weiterhin für die Storage-Bereinigung bei Kontolöschung; DB-
+> Spalte, Storage-Bucket und Migration 0027 ebenfalls bewusst unangetastet.
+>
+> Zweitens, **die "Nutzung"-Karte in den Einstellungen entfernt**: war
+> byte-identisch mit der Abrechnungsseite eigenen "Nutzung diesen
+> Monat"-Abschnitt (dieselben zwei `UsageMeter`, dieselben Abfragen), zeigte
+> also nichts, was `/billing` nicht schon zeigt.
+>
+> Drittens, **BYOK-Einstellungen ohne Anbieter-Auswahl**: statt vier immer
+> sichtbaren Karten (Anthropic/OpenAI/Gemini/Custom) gibt es jetzt ein
+> einziges Feld. Neu: `shared/lib/byok-detect.ts`, `detectProviderFromKey()`
+> erkennt Anthropic/OpenAI/Gemini am Key-Format selbst (`sk-ant-`/`AIza`/
+> generisches `sk-`, in dieser Reihenfolge — sonst wäre jeder Anthropic-Key
+> fälschlich OpenAI). Der Server leitet den Provider immer selbst her,
+> vertraut nie einer Client-Angabe dafür; `api/settings/api-key/route.ts`s
+> POST-Schema wechselte von `z.discriminatedUnion` zu `z.union` mit
+> `.strict()` auf dem Primärzweig, damit ein mitgeschickter
+> `provider: "custom"` samt Zusatzfeldern nicht stillschweigend gegen den
+> Primärzweig durchgeht, bevor der echte custom-Zweig je geprüft wird. Der
+> bestehende 4-Felder-Fallback für jeden anderen OpenAI-kompatiblen
+> Endpunkt (Z.ai, DeepSeek, Groq, OpenRouter, eigenes Gateway) bleibt
+> unverändert erhalten, jetzt hinter einem "Anderer Anbieter?"-Link statt
+> einer vierten Karte — der lässt sich aus einem Key allein nicht erraten.
+> Kein DB-Schema-Wechsel nötig, `provider` war schon ein CHECK-Constraint,
+> keine echte Postgres-Enum.
+>
+> Alle drei im Dev-Server mit echter Anmeldung verifiziert. Gate grün
+> (typecheck/lint/build, 1143 Tests, davon 15 neu).
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
