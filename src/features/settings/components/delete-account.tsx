@@ -70,7 +70,8 @@ export function DeleteAccount({ email }: { email: string }) {
         <div>
           <div className="text-[14px] font-medium text-foreground">Konto löschen</div>
           <div className="text-[12.5px] text-secondary">
-            Entfernt dein Konto und alle Projekte und Generierungen unwiderruflich.
+            Entfernt dein Konto und alles darin unwiderruflich: Projekte, Chats, Dateien,
+            gespeicherte Prompts und hinterlegte API-Keys.
           </div>
         </div>
         <Button
@@ -114,8 +115,8 @@ export function DeleteAccount({ email }: { email: string }) {
                         Konto endgültig löschen?
                       </h2>
                       <p className="mt-1 text-[13px] text-secondary">
-                        Diese Aktion ist unwiderruflich. Alle deine Projekte und Generierungen
-                        werden dauerhaft entfernt.
+                        Diese Aktion ist unwiderruflich. Alle deine Projekte, Chats, Dateien,
+                        gespeicherten Prompts und hinterlegten API-Keys werden dauerhaft entfernt.
                       </p>
                     </div>
                   </div>
