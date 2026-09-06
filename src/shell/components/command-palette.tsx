@@ -14,6 +14,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { createClient } from "@/shared/supabase/client";
 import { primaryNav, secondaryNav } from "@/shell/lib/nav";
+import { LIST_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
 type Cmd = { id: string; label: string; group: string; Icon: LucideIcon; perform: () => void };
 
@@ -51,6 +52,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // Lazily load the user's projects + chats the first time the palette opens
   //, chats are the primary object since the redesign, so they belong here
   // just as much as projects do.
+  //
+  // M-16 (Audit 06.09.2026): this used to hardcode 50, while chats/page.tsx
+  // and projects/page.tsx each show up to LIST_LOAD_LIMIT (100) and tell the
+  // user anything older is "reachable via ⌘K" — a claim that broke the moment
+  // a list held more than 50 rows, well before either page's own truncation
+  // banner would ever appear. Sharing the same constant keeps this at least
+  // as deep as what the lists themselves already show.
   useEffect(() => {
     if (!open || loaded) return;
     let cancelled = false;
@@ -61,12 +69,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           .from("projects")
           .select("id, name")
           .order("updated_at", { ascending: false })
-          .limit(50),
+          .limit(LIST_LOAD_LIMIT),
         supabase
           .from("conversations")
           .select("id, title, project_id")
           .order("updated_at", { ascending: false })
-          .limit(50),
+          .limit(LIST_LOAD_LIMIT),
       ]);
       if (!cancelled) {
         setProjects(projectRows ?? []);
