@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Cloudflare Turnstile site key, public by design (NEXT_PUBLIC_). When unset,
@@ -40,6 +40,14 @@ declare global {
 
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
+// M-9 (Audit 06.09.2026): ohne eine Obergrenze blieb der Nutzer bei einem
+// blockierten oder nie ankommenden Skript (Adblocker, Firmenproxy, eine
+// Cloudflare-Stoerung) vor einer leeren 65px-Box stehen, die Formulare
+// forderten weiterhin "bestaetige, dass du ein Mensch bist" -- eine
+// Aufforderung, die nichts auf dem Bildschirm erfuellen konnte. Grosszuegig
+// genug, dass gewoehnliche Ladezeit (typischerweise <1s) nie ausloest.
+const LOAD_TIMEOUT_MS = 8000;
+
 /**
  * Renders the "Bestätigen Sie, dass Sie ein Mensch sind"-box and reports the
  * token upward (`null` when it expires or errors). Tokens are single-use,
@@ -55,15 +63,27 @@ export function TurnstileWidget({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  // M-9: kein Zustand fuer "das Skript kam nie an" existierte bisher.
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY) return;
     const container = containerRef.current;
     if (!container) return;
     let cancelled = false;
+    setLoadFailed(false);
+
+    // Faengt sowohl "das Skript kam gar nie an" (Timeout) als auch "kam an,
+    // aber render() erschien nie" ab (window.turnstile ist z.B. gesetzt, doch
+    // die Cloudflare-Herausforderung selbst haengt) — der Timer laeuft in
+    // jedem Fall bis renderWidget ihn stoppt.
+    const timeout = window.setTimeout(() => {
+      if (!cancelled && !widgetIdRef.current) setLoadFailed(true);
+    }, LOAD_TIMEOUT_MS);
 
     function renderWidget() {
       if (cancelled || !container || !window.turnstile || widgetIdRef.current) return;
+      window.clearTimeout(timeout);
       widgetIdRef.current = window.turnstile.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
         action: TURNSTILE_ACTION,
@@ -90,10 +110,22 @@ export function TurnstileWidget({
         document.head.appendChild(script);
       }
       script.addEventListener("load", renderWidget, { once: true });
+      // M-9: ein blockiertes Skript (Adblocker, Firmenproxy) loest nie
+      // "load" aus, sondern "error" — ohne diesen Listener blieb dieser
+      // konkrete, haeufigste Fall unbehandelt und wartete stumm auf den
+      // Timeout, statt sofort Bescheid zu geben.
+      script.addEventListener(
+        "error",
+        () => {
+          if (!cancelled) setLoadFailed(true);
+        },
+        { once: true }
+      );
     }
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
@@ -108,6 +140,17 @@ export function TurnstileWidget({
   }, [resetSignal]);
 
   if (!TURNSTILE_SITE_KEY) return null;
+
+  if (loadFailed) {
+    return (
+      <p role="alert" className="min-h-[65px] text-[13px] leading-relaxed text-destructive">
+        Die Mensch-Prüfung von Cloudflare konnte nicht geladen werden (Werbe-
+        oder Skriptblocker? Firmennetzwerk?). Bitte deaktiviere ihn für diese
+        Seite und lade sie neu.
+      </p>
+    );
+  }
+
   // min-h matches the widget's normal size so it never causes layout shift.
   return <div ref={containerRef} className="min-h-[65px]" />;
 }
