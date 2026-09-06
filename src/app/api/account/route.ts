@@ -5,6 +5,7 @@ import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { captureError } from "@/shared/lib/observability";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
 import { removeAllPaths } from "@/features/projects/lib/storage-cleanup";
+import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,15 @@ export const runtime = "nodejs";
 // of /datenschutz), so it is a DSGVO/revDSG commitment, not an implementation
 // detail: anything user-scoped added later needs the same cascade, or that
 // paragraph silently becomes false.
+//
+// A running Lemon Squeezy subscription does NOT cascade with any of that
+// (K-5, Audit 06.09.2026): it lives entirely on Lemon Squeezy's side, keyed
+// by profiles.subscription_id. Without cancelling it here first, a paying
+// user who deletes their account keeps getting billed for an access that no
+// longer exists — and once profiles is gone, no webhook can find them again
+// to fix it (resolveUserId in the webhook route has nothing left to match).
+// So the subscription is cancelled immediately (not "at period end") while
+// the id to do that with still exists, before anything is torn down.
 //
 // Storage objects don't cascade
 // with a DB row (same reason delete-project.tsx cleans up "project-files"
@@ -46,7 +56,7 @@ export async function DELETE(req: Request) {
   // mirrors the other three routes.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("is_admin, subscription_id")
     .eq("id", user.id)
     .maybeSingle();
   if (!(profile?.is_admin ?? false)) {
@@ -56,6 +66,20 @@ export async function DELETE(req: Request) {
         { error: "Zu viele Anfragen, bitte warte kurz und versuch es erneut." },
         { status: 429 }
       );
+    }
+  }
+
+  // K-5: best-effort, wie jeder Aufraeumschritt hier -- ein unerreichbares
+  // oder ablehnendes Lemon Squeezy blockiert das Loeschen des Kontos nicht,
+  // ein Nutzer, der deshalb nicht loeschen kann, waere schlimmer als ein Abo,
+  // das von Hand nachgezogen werden muss.
+  if (profile?.subscription_id) {
+    const result = await cancelSubscriptionImmediately(profile.subscription_id);
+    if (!result.ok) {
+      captureError("account.subscription_cancel_failed", new Error(result.reason), {
+        userId: user.id,
+        subscriptionId: profile.subscription_id,
+      });
     }
   }
 
