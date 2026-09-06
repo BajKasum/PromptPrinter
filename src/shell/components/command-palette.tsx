@@ -24,6 +24,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [mounted, setMounted] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  // M-20 (Audit 06.09.2026): arrow-key navigation moved activeIndex but never
+  // scrolled the highlighted row into view, so it silently left the
+  // scrollable results panel — mouse hover worked because the cursor was
+  // already on a visible row, arrow keys have no such guarantee.
+  const rowRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [chats, setChats] = useState<{ id: string; title: string; project_id: string | null }[]>(
     []
@@ -132,6 +137,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     setActiveIndex((i) => Math.min(i, Math.max(results.length - 1, 0)));
   }, [results.length]);
 
+  // Follow the highlight with the scroll position. `"nearest"` is a no-op
+  // when the row is already fully visible (e.g. a mouse-driven change),
+  // so this is safe to run on every activeIndex change, not just arrow keys.
+  useEffect(() => {
+    rowRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -202,6 +214,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                         </div>
                       )}
                       <button
+                        ref={(el) => {
+                          rowRefs.current[i] = el;
+                        }}
                         type="button"
                         onMouseEnter={() => setActiveIndex(i)}
                         onClick={() => c.perform()}
