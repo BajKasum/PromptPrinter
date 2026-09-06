@@ -43,11 +43,12 @@ Befehl, den der blanke `docker compose up --build` sowieso ausführt —
   genau wie der Produktions-Build). Erster Start dauert etwas, jeder folgende
   ist schnell, solange sich `package-lock.json` nicht ändert.
 - Braucht **kein** `UPSTASH_REDIS_REST_URL`/`_TOKEN` und kein
-  `API_KEY_ENCRYPTION_SECRET` mehr: `src/lib/rate-limit.ts` fällt ausserhalb
-  von Produktion auf einen In-Memory-Limiter zurück, `src/lib/crypto.ts` auf
-  einen festen, klar als unsicher markierten Dev-Schlüssel (Konsolen-Warnung
-  macht das sichtbar). Beides nur ausserhalb `NODE_ENV=production` aktiv, in
-  Produktion bleibt es beim strikten Verhalten.
+  `API_KEY_ENCRYPTION_SECRET` mehr: `src/server/security/rate-limit.ts` fällt
+  ausserhalb von Produktion auf einen In-Memory-Limiter zurück,
+  `src/server/security/crypto.ts` auf einen festen, klar als unsicher
+  markierten Dev-Schlüssel (Konsolen-Warnung macht das sichtbar). Beides nur
+  ausserhalb `NODE_ENV=production` aktiv, in Produktion bleibt es beim
+  strikten Verhalten.
 
 **Stoppen:** im selben Terminal **`Strg + C`**, danach sauber aufräumen:
 
