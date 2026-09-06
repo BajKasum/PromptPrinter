@@ -5,7 +5,32 @@ import {
   parseGithubRepoUrl,
   selectSignalFiles,
   summarizeTree,
+  withRequestTimeout,
 } from "@/server/brain/github";
+
+// M-11 (Audit 06.09.2026): `signal ?? AbortSignal.timeout(...)` sah aus wie
+// ein Rueckfall, war aber ein Ersatz — wenn ein Aufrufer-Signal vorlag (der
+// einzige Produktionsaufrufer reicht immer eines durch), gab die alte Zeile
+// GENAU DASSELBE Objekt zurueck, der 15s-Timeout existierte dann gar nicht.
+describe("withRequestTimeout", () => {
+  it("gibt ein NEUES, zusammengefuehrtes Signal zurueck statt des Aufrufer-Signals unveraendert", () => {
+    const controller = new AbortController();
+    const merged = withRequestTimeout(controller.signal);
+    expect(merged).not.toBe(controller.signal);
+  });
+
+  it("bricht ab, sobald der Aufrufer selbst abbricht", () => {
+    const controller = new AbortController();
+    const merged = withRequestTimeout(controller.signal);
+    expect(merged.aborted).toBe(false);
+    controller.abort();
+    expect(merged.aborted).toBe(true);
+  });
+
+  it("liefert ein funktionierendes Signal auch ganz ohne Aufrufer-Signal", () => {
+    expect(withRequestTimeout(undefined).aborted).toBe(false);
+  });
+});
 
 describe("parseGithubRepoUrl", () => {
   it("accepts the forms a person actually pastes", () => {

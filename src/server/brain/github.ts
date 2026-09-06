@@ -197,6 +197,23 @@ const IGNORED_TREE_PREFIXES = [
 
 const REQUEST_TIMEOUT_MS = 15000;
 
+/**
+ * Verbindet den vom Aufrufer durchgereichten Abbruch (die Analyse-Route
+ * gibt ihren eigenen request.signal weiter) MIT dem festen Timeout, statt
+ * ihn zu ERSETZEN.
+ *
+ * M-11 (Audit 06.09.2026): `signal ?? AbortSignal.timeout(...)` sah aus wie
+ * ein Rueckfall, war aber ein Ersatz — der einzige Produktionsaufrufer
+ * reicht immer ein Signal durch, der `??`-Zweig griff also nie, und die
+ * 15s existierten faktisch nicht. Haengt GitHub, lief die Analyse bis zur
+ * maxDuration der Route (300s) statt nach 15 Sekunden abzubrechen. Dasselbe
+ * Muster wie llm.ts' withProviderTimeout.
+ */
+export function withRequestTimeout(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
 function githubHeaders(): HeadersInit {
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
@@ -216,7 +233,7 @@ async function githubJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   try {
     res = await fetch(url, {
       headers: githubHeaders(),
-      signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: withRequestTimeout(signal),
       // Ein Redirect könnte das Ziel verlassen; hier gibt es keinen legitimen
       // Grund dafür, also gar nicht erst folgen (dieselbe Linie wie llm.ts'
       // customComplete seit S-1).
@@ -422,7 +439,7 @@ async function fetchRawFile(
 
   try {
     const res = await fetch(url, {
-      signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: withRequestTimeout(signal),
       redirect: "error",
       headers: { "user-agent": "PromptPrinter-ProjectBrain" },
     });
