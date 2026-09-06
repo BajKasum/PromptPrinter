@@ -5,6 +5,7 @@ import { parseToolDefaults } from "@/features/settings/lib/tools";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
+import { chatQuotaKey, getMonthlyQuotaUsage } from "@/server/security/rate-limit";
 
 export const metadata = { title: "Einstellungen" };
 
@@ -25,10 +26,11 @@ export default async function SettingsPage() {
   const [
     { data: profile },
     { count: projectCount },
-    { count: chatCount },
+    { count: chatCountFromDb },
     configuredProviders,
     customProvider,
     activeProvider,
+    redisChatUsage,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -42,6 +44,8 @@ export default async function SettingsPage() {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
     // One row per turn (see api/chat/route.ts's own count for why role=assistant).
+    // Fallback only (see redisChatUsage below): a *deletable* balance, not the
+    // *monotonic* one /api/chat actually enforces.
     supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
@@ -51,7 +55,12 @@ export default async function SettingsPage() {
     getConfiguredProviders(supabase, user.id),
     getCustomProvider(supabase, user.id),
     getActiveProvider(supabase, user.id),
+    // M-3 (Audit 06.09.2026): see billing/page.tsx's identical read for why —
+    // the DB count above drops when old chats are deleted, this Redis counter
+    // (the one /api/chat actually enforces against) doesn't.
+    getMonthlyQuotaUsage(chatQuotaKey(user.id)),
   ]);
+  const chatCount = redisChatUsage ?? chatCountFromDb;
 
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";

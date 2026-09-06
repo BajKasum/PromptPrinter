@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { rateLimitKey } from "@/server/security/rate-limit";
+import { chatQuotaKey, rateLimitKey } from "@/server/security/rate-limit";
 
 function req(headers: Record<string, string> = {}) {
   return new Request("https://promptprinter.app/api/chat", { headers });
@@ -307,6 +307,76 @@ describe("reserveMonthlyQuota", () => {
     const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
 
     expect(await reserveMonthlyQuota("chat-quota:u1:2026-07", 200)).toBeNull();
+  });
+});
+
+// chatQuotaKey is the one place that builds a chat-quota Redis key — shared by
+// /api/chat's reservation and the billing/settings pages' display read (M-3,
+// Audit 06.09.2026), so both sides can no longer drift apart by computing the
+// month string differently.
+describe("chatQuotaKey", () => {
+  it("formats as chat-quota:{userId}:{UTC year}-{zero-padded UTC month}", () => {
+    expect(chatQuotaKey("u1", new Date(Date.UTC(2026, 6, 15)))).toBe("chat-quota:u1:2026-07");
+  });
+
+  it("pads a single-digit month", () => {
+    expect(chatQuotaKey("u1", new Date(Date.UTC(2026, 0, 1)))).toBe("chat-quota:u1:2026-01");
+  });
+});
+
+// getMonthlyQuotaUsage is a read-only GET against the same counter
+// reserveMonthlyQuota's INCR enforces, for display (M-3, Audit 06.09.2026):
+// the DB count billing/settings used to show is deletable, this one isn't.
+describe("getMonthlyQuotaUsage", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.doUnmock("@upstash/redis");
+    vi.resetModules();
+  });
+
+  it("returns null when Redis isn't configured, so callers fall back to their own count", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
+
+    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBeNull();
+  });
+
+  it("returns the counter's current value without incrementing it", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    const get = vi.fn().mockResolvedValue(42);
+    const incr = vi.fn();
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ get, incr }) } }));
+    vi.resetModules();
+    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
+
+    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBe(42);
+    expect(get).toHaveBeenCalledWith("chat-quota:u1:2026-07");
+    expect(incr).not.toHaveBeenCalled();
+  });
+
+  it("treats a missing key (nobody has reserved yet this month) as zero", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ get: vi.fn().mockResolvedValue(null) }) } }));
+    vi.resetModules();
+    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
+
+    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBe(0);
+  });
+
+  it("fails open (returns null) instead of throwing when Redis errors", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    vi.doMock("@upstash/redis", () => ({
+      Redis: { fromEnv: () => ({ get: vi.fn().mockRejectedValue(new Error("down")) }) },
+    }));
+    vi.resetModules();
+    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
+
+    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBeNull();
   });
 });
 

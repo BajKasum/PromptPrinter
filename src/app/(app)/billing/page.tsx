@@ -9,6 +9,7 @@ import { formatDate } from "@/shared/lib/utils";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { getConfiguredProviders } from "@/server/byok";
+import { chatQuotaKey, getMonthlyQuotaUsage } from "@/server/security/rate-limit";
 
 export const metadata = { title: "Abrechnung" };
 
@@ -49,8 +50,9 @@ export default async function BillingPage() {
   const [
     { data: profile },
     { count: projectsCount },
-    { count: monthlyChatMessages },
+    { count: monthlyChatMessagesFromDb },
     configuredProviders,
+    redisChatUsage,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -65,6 +67,8 @@ export default async function BillingPage() {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
     // One row per turn (see api/chat/route.ts's own count for why role=assistant).
+    // Fallback only (see redisChatUsage below): a *deletable* balance, not the
+    // *monotonic* one /api/chat actually enforces.
     supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
@@ -72,7 +76,15 @@ export default async function BillingPage() {
       .eq("role", "assistant")
       .gte("created_at", monthStart),
     getConfiguredProviders(supabase, user.id),
+    // M-3 (Audit 06.09.2026): this page used to show only the DB count above,
+    // which drops when old chats are deleted while the Redis counter that
+    // actually gates /api/chat never does — showing room that's already used
+    // up. Read the same counter enforcement reads from, fall back to the DB
+    // count when Redis isn't configured (dev/self-hosting, where enforcement
+    // itself falls back to that same DB count, see reserveMonthlyQuota).
+    getMonthlyQuotaUsage(chatQuotaKey(user.id)),
   ]);
+  const monthlyChatMessages = redisChatUsage ?? monthlyChatMessagesFromDb;
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";

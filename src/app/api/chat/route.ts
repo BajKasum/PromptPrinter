@@ -6,6 +6,7 @@ import {
   truncate,
 } from "@/shared/lib/chat-limits";
 import {
+  chatQuotaKey,
   rateLimit,
   rateLimitKey,
   reserveMonthlyQuota,
@@ -282,7 +283,6 @@ export async function POST(req: Request) {
   //    there being a user: there always is one now (step 2), which is precisely
   //    what an anonymous request used to skip.
   const now = new Date();
-  const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
   ).toISOString();
@@ -332,10 +332,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const reservation = await reserveMonthlyQuota(
-      `chat-quota:${userId}:${monthKey}`,
-      limits.chatMessages
-    );
+    const reservation = await reserveMonthlyQuota(chatQuotaKey(userId, now), limits.chatMessages);
     const overLimit = reservation ? !reservation.allowed : (chatCount ?? 0) >= limits.chatMessages;
     if (overLimit) {
       if (reservation) await reservation.release();

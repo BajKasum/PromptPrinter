@@ -217,6 +217,51 @@ export async function reserveMonthlyQuota(
 }
 
 /**
+ * The exact Redis key `/api/chat` reserves the caller's monthly chat
+ * allowance against. Exported so the billing/settings pages that DISPLAY
+ * usage read the very counter enforcement gates on, instead of a second,
+ * independently-computed value for the same month (M-3, Audit 06.09.2026):
+ * two call sites building "chat-quota:{userId}:{year}-{month}" by hand can
+ * only drift apart, one typo or off-by-one away from a display that quietly
+ * stops matching what actually blocks the next message.
+ */
+export function chatQuotaKey(userId: string, at: Date = new Date()): string {
+  const monthKey = `${at.getUTCFullYear()}-${String(at.getUTCMonth() + 1).padStart(2, "0")}`;
+  return `chat-quota:${userId}:${monthKey}`;
+}
+
+/**
+ * Reads a monthly quota counter's current value without mutating it (a plain
+ * GET, never an INCR) — for display, not enforcement.
+ *
+ * Exists because the DB count billing/settings used to show is a *deletable*
+ * balance (reserveMonthlyQuota's own comment above), while this Redis counter
+ * is the *monotonic* one /api/chat actually enforces: deleting old chats
+ * lowers the DB count mid-month without lowering this one, so a page built
+ * on the DB count alone can promise room that has already been used up
+ * (M-3, Audit 06.09.2026). Reading the enforcement counter itself for display
+ * closes that gap whenever Redis is configured — which production requires
+ * (env.ts's boot check) — and callers fall back to their own DB count
+ * otherwise, matching what enforcement itself falls back to.
+ *
+ * Same fail-open contract as reserveMonthlyQuota: null means "Redis isn't
+ * configured or didn't answer, use your own count," never zero — a missing
+ * key (nobody has reserved against it yet this month) is the one case that
+ * legitimately IS zero, and Redis's own `null` for a missing key collapses
+ * into that below.
+ */
+export async function getMonthlyQuotaUsage(key: string): Promise<number | null> {
+  if (!redis) return null;
+  try {
+    const raw = await redis.get<number>(key);
+    const count = Number(raw ?? 0);
+    return Number.isFinite(count) ? Math.max(0, count) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The bucket a request counts against: the signed-in user, or the caller's IP
  * when there is none.
  *

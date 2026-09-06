@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  chatQuotaKey,
   rateLimit,
   rateLimitKey,
   reserveMonthlyQuota,
@@ -62,23 +63,21 @@ const brainRequestSchema = z.object({
 
 type Params = { params: Promise<{ id: string }> };
 
-/**
- * Eine Analyse ist ein Modellaufruf wie ein Chat-Zug und zählt deshalb gegen
- * dasselbe Monatskontingent — mit demselben Redis-Schlüssel, nicht mit einem
- * eigenen. Ein zweiter Zähler wäre ein zweites Versprechen, das die Preisseite
- * gar nicht macht („400 Nachrichten pro Monat"), und der Nutzer müsste
- * plötzlich zwei Budgets im Kopf haben.
- *
- * Der Aufruf ist beim Input teurer als ein Chat-Zug (bis zu 60 000 Zeichen
- * Quellen), beim Output deutlich billiger (rund 250 Token statt bis zu 6144).
- * Live gemessen liegt eine Textanalyse bei rund 0,0005 $ — in derselben
- * Grössenordnung wie ein Chat-Zug, also ist eine Einheit die ehrliche
- * Verrechnung.
- */
-function quotaKey(userId: string): string {
-  const now = new Date();
-  return `chat-quota:${userId}:${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-}
+// Eine Analyse ist ein Modellaufruf wie ein Chat-Zug und zählt deshalb gegen
+// dasselbe Monatskontingent — mit demselben Redis-Schlüssel (chatQuotaKey,
+// server/security/rate-limit.ts), nicht mit einem eigenen. Ein zweiter Zähler
+// wäre ein zweites Versprechen, das die Preisseite gar nicht macht
+// („400 Nachrichten pro Monat"), und der Nutzer müsste plötzlich zwei Budgets
+// im Kopf haben. Bis 06.09.2026 (M-3) baute diese Datei denselben
+// Schlüsselstring per Hand nach statt die geteilte Funktion zu importieren —
+// stimmte zufällig überein, war aber genau die Art Duplikat, die irgendwann
+// leise auseinanderdriftet.
+//
+// Der Aufruf ist beim Input teurer als ein Chat-Zug (bis zu 60 000 Zeichen
+// Quellen), beim Output deutlich billiger (rund 250 Token statt bis zu 6144).
+// Live gemessen liegt eine Textanalyse bei rund 0,0005 $ — in derselben
+// Grössenordnung wie ein Chat-Zug, also ist eine Einheit die ehrliche
+// Verrechnung.
 
 export async function POST(req: Request, { params }: Params) {
   const { id: projectId } = await params;
@@ -172,7 +171,7 @@ export async function POST(req: Request, { params }: Params) {
         { kind: "byokRequired", plan }
       );
     }
-    const reservation = await reserveMonthlyQuota(quotaKey(userId), limits.chatMessages);
+    const reservation = await reserveMonthlyQuota(chatQuotaKey(userId), limits.chatMessages);
     if (reservation && !reservation.allowed) {
       await reservation.release();
       return problem(

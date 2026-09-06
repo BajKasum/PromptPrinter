@@ -63,12 +63,18 @@ const supabaseStub = {
 };
 
 vi.mock("@/server/supabase/server", () => ({ createClient: () => createClient() }));
-vi.mock("@/server/security/rate-limit", () => ({
-  rateLimit: (...a: unknown[]) => rateLimit(...a),
-  rateLimitKey: (...a: unknown[]) => rateLimitKey(...a),
-  reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
-  reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
-}));
+vi.mock("@/server/security/rate-limit", async (importOriginal) => {
+  // chatQuotaKey is real below (pure string formatting, no Redis I/O) — no
+  // test needs to fake its actual month format.
+  const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();
+  return {
+    ...actual,
+    rateLimit: (...a: unknown[]) => rateLimit(...a),
+    rateLimitKey: (...a: unknown[]) => rateLimitKey(...a),
+    reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
+    reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
+  };
+});
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
 // Mocked so the test never pulls in the three provider SDKs, and so "did the
 // model get called" is directly assertable. classifyLlmFailure/LlmEmptyReplyError

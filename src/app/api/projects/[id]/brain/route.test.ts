@@ -59,12 +59,19 @@ vi.mock("@/server/supabase/server", () => ({
 vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: () => ({ from: (t: string) => adminBuilder(t) }),
 }));
-vi.mock("@/server/security/rate-limit", () => ({
-  rateLimit: (...a: unknown[]) => rateLimit(...a),
-  rateLimitKey: () => "u:user-1",
-  reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
-  reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
-}));
+vi.mock("@/server/security/rate-limit", async (importOriginal) => {
+  // chatQuotaKey is real below (pure string formatting, no Redis I/O) — one
+  // test asserts its actual month format, which a stub would have to fake
+  // right back.
+  const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();
+  return {
+    ...actual,
+    rateLimit: (...a: unknown[]) => rateLimit(...a),
+    rateLimitKey: () => "u:user-1",
+    reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
+    reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
+  };
+});
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
 vi.mock("@/server/llm", () => ({ llmConfig: () => llmConfig() }));
 vi.mock("@/features/projects/lib/brain-sources", () => ({
