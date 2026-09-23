@@ -41,7 +41,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProjectRail>> = {}
       projectId="proj-1"
       userId="user-1"
       initialInstructions="Ausgangslage"
-      initialContext={{ target: "Claude" }}
+      initialContext={{ notes: "Mobile first" }}
       files={[]}
       brain={IDLE_BRAIN}
       brainDigest="00000000"
@@ -115,7 +115,7 @@ describe("ProjectRail", () => {
   });
 
   it("hides the Struktur hint when a field already carries content", () => {
-    setup({ initialContext: { target: "Claude" } });
+    setup({ initialContext: { notes: "Mobile first" } });
     expect(screen.queryByText(/Alles optional/)).not.toBeInTheDocument();
   });
 

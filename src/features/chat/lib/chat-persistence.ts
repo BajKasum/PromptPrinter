@@ -108,7 +108,6 @@ export async function openTurn(
       .from("conversations")
       .insert({
         user_id: userId,
-        target: input.target ?? null,
         title,
         project_id: verifiedProjectId,
       })
@@ -120,13 +119,10 @@ export async function openTurn(
     conversationId = id;
     createdConversation = true;
   } else {
-    // Continued chat, bump updated_at so it sorts to the top of the list, and
-    // carry over a target the user changed mid-conversation — it used to be
-    // written only at creation, so switching the build tool later was accepted
-    // for that one turn and then silently forgotten.
+    // Continued chat, bump updated_at so it sorts to the top of the list.
     await supabase
       .from("conversations")
-      .update({ updated_at: new Date().toISOString(), target: input.target ?? null })
+      .update({ updated_at: new Date().toISOString() })
       .eq("id", conversationId)
       .eq("user_id", userId);
   }

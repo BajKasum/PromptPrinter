@@ -1,7 +1,7 @@
 // Helpers for the "Prompt speichern" flow (Ergebnisse-Neubau, 2026-07): pull
 // the paste-ready prompt out of an assistant reply and give it a short title.
 // A saved prompt is stored as a `generations` row with outputs = { prompt,
-// title, target } (see save-prompt-button.tsx + results/page.tsx); the table
+// title } (see save-prompt-button.tsx + results/page.tsx); the table
 // keeps its historical name, but semantically a row is now one prompt the user
 // chose to keep. These helpers are the pure, UI-agnostic part, unit-tested on
 // their own.
@@ -10,7 +10,6 @@ export type SavedPrompt = {
   id: string;
   title: string;
   content: string;
-  target: string | null;
   createdAt: string;
 };
 
@@ -64,7 +63,7 @@ export function extractPrompt(markdown: string): string | null {
 
 /**
  * Pull the saved prompt text out of a batch of `generations` rows (each row's
- * `outputs` is `{ prompt, title, target }`, see save-prompt-button.tsx). Used
+ * `outputs` is `{ prompt, title }`, see save-prompt-button.tsx). Used
  * by the chat pages to know which prompts are already saved for a project, so
  * SavePromptButton can start disabled instead of allowing a duplicate
  * (QA finding F-7).
@@ -94,8 +93,7 @@ export function mapGenerationRowsToSavedPrompts(
       const outputs = (row.outputs ?? {}) as Record<string, unknown>;
       const content = typeof outputs.prompt === "string" ? outputs.prompt : "";
       const title = typeof outputs.title === "string" ? outputs.title : "Gespeicherter Prompt";
-      const target = typeof outputs.target === "string" ? outputs.target : null;
-      return { id: row.id, title, content, target, createdAt: row.created_at };
+      return { id: row.id, title, content, createdAt: row.created_at };
     })
     .filter((p) => p.content.trim().length > 0);
 }

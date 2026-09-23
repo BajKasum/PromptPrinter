@@ -17,7 +17,6 @@ type Params = Promise<{ id: string }>;
 type ConversationQueryRow = {
   id: string;
   title: string;
-  target: string | null;
   updated_at: string;
   messages: { count: number }[] | null;
 };
@@ -47,7 +46,7 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
   // unbounded before, same class of problem as /chats.
   const { data: raw } = await supabase
     .from("conversations")
-    .select("id, title, target, updated_at, messages(count)")
+    .select("id, title, updated_at, messages(count)")
     .eq("project_id", id)
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
@@ -89,7 +88,6 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
   const chats: ChatListItem[] = rows.map((c) => ({
     id: c.id,
     title: c.title,
-    target: c.target,
     updatedAt: c.updated_at,
     messageCount: c.messages?.[0]?.count ?? 0,
   }));

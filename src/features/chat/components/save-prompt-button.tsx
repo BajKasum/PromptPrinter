@@ -11,7 +11,7 @@ type SaveState = "idle" | "saving" | "saved";
 
 // The "Prompt speichern" affordance in a chat's result panel: persists the
 // current prompt into the user's saved-prompt library (a `generations` row
-// with outputs = { prompt, title, target }). Zero extra model calls, it just
+// with outputs = { prompt, title }). Zero extra model calls, it just
 // keeps text the user already has. The insert goes through the RLS-scoped
 // browser client (owner-only insert policy, 0001), the same pattern the
 // project rail uses for its own writes, so no API route is needed. Only ever
@@ -36,13 +36,11 @@ type SaveState = "idle" | "saving" | "saved";
 export function SavePromptButton({
   projectId,
   prompt,
-  target,
   initiallySaved = false,
 }: {
   /** Omit (or null) for a global chat — the saved prompt isn't tied to a project. */
   projectId?: string | null;
   prompt: string;
-  target?: string | null;
   initiallySaved?: boolean;
 }) {
   const router = useRouter();
@@ -73,7 +71,6 @@ export function SavePromptButton({
       outputs: {
         prompt,
         title: derivePromptTitle(prompt),
-        ...(target ? { target } : {}),
       },
       model: null,
     });

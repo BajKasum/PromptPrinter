@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
-import { normalizeTarget } from "@/features/chat/lib/target-tools";
 import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
@@ -35,7 +34,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   // unauthenticated caller to /login.
   const { data: convo } = await supabase
     .from("conversations")
-    .select("id, title, target, project_id")
+    .select("id, title, project_id")
     .eq("id", cid)
     .eq("user_id", project.userId)
     .maybeSingle();
@@ -96,11 +95,6 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         </div>
       </FadeIn>
       <Chat
-        // The chat's own stored target wins; a chat started before the project
-        // had one falls back to the rail's "Ziel-KI" so the two can't disagree.
-        target={
-          normalizeTarget(convo.target as string | null) ?? normalizeTarget(project.context.target)
-        }
         projectId={project.id}
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}

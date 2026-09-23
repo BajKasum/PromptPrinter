@@ -16,7 +16,6 @@ export const dynamic = "force-dynamic";
 type ConversationQueryRow = {
   id: string;
   title: string;
-  target: string | null;
   updated_at: string;
   messages: { count: number }[] | null;
 };
@@ -40,7 +39,7 @@ export default async function ChatsPage() {
   // user-scoped reads.
   const { data: raw } = await supabase
     .from("conversations")
-    .select("id, title, target, updated_at, messages(count)")
+    .select("id, title, updated_at, messages(count)")
     .eq("user_id", user.id)
     .is("project_id", null)
     .order("updated_at", { ascending: false })
@@ -52,7 +51,6 @@ export default async function ChatsPage() {
   const chats: ChatListItem[] = rows.map((c) => ({
     id: c.id,
     title: c.title,
-    target: c.target,
     updatedAt: c.updated_at,
     messageCount: c.messages?.[0]?.count ?? 0,
   }));

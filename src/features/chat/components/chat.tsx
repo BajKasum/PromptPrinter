@@ -19,7 +19,6 @@ import { VoiceBar } from "@/features/chat/components/voice-bar";
 import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-variants";
 import { parseSseEvents } from "@/features/chat/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/shared/lib/chat-limits";
-import { normalizeTarget } from "@/features/chat/lib/target-tools";
 import { randomId } from "@/shared/lib/utils";
 
 // A stable id per message (real DB id for history loaded from the server,
@@ -52,7 +51,6 @@ function formatRetryDelay(seconds: number): string {
 // the composer no longer risks touching markdown rendering or the
 // empty-state copy along the way.
 export function Chat({
-  target: initialTarget,
   projectId,
   initialMessages,
   initialConversationId,
@@ -61,7 +59,6 @@ export function Chat({
   name,
   needsKey = false,
 }: {
-  target?: string;
   projectId?: string;
   initialMessages?: Msg[];
   initialConversationId?: string;
@@ -80,12 +77,6 @@ export function Chat({
   const { heading, placeholder } = resolveEmptyState(variant, hasResults, name);
 
   const router = useRouter();
-  // The tool this prompt is being written for. Was a read-only prop with no
-  // control anywhere, so conversations.target was NULL in every row while the
-  // pricing page advertised "Für jede Ziel-KI" (QA finding F-3). Seeded from
-  // the stored conversation, or from the project's own "Ziel-KI" field for a
-  // fresh project chat, so the rail and the chat can't disagree.
-  const [target, setTarget] = useState<string | undefined>(normalizeTarget(initialTarget));
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
   const [conversationId, setConversationId] = useState<string | undefined>(
     initialConversationId
@@ -357,7 +348,6 @@ export function Chat({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          target,
           conversationId,
           projectId,
           messages: wireMessages,
@@ -604,7 +594,6 @@ export function Chat({
                   <ChatResultPanel
                     content={m.content}
                     projectId={projectId}
-                    target={target}
                     savedPrompts={savedPrompts}
                   />
                 </div>
@@ -704,8 +693,6 @@ export function Chat({
           onSend={() => send()}
           onStop={stop}
           onVoice={() => setVoiceOpen(true)}
-          target={target}
-          onTargetChange={setTarget}
         />
       )}
     </div>

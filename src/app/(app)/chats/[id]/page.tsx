@@ -30,7 +30,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // RLS scopes the read to the owner, a foreign or malformed id yields no row.
   const { data: convo } = await supabase
     .from("conversations")
-    .select("id, title, target, project_id")
+    .select("id, title, project_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -62,7 +62,6 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const name = profile?.display_name || user.email?.split("@")[0] || null;
-  const target = (convo.target as string | null) ?? undefined;
   const savedPrompts = extractSavedPromptContents(
     (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
   );
@@ -81,11 +80,9 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
           <h1 className="truncate text-[22px] md:text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">
             {convo.title as string}
           </h1>
-          {target && <p className="mt-1 text-[13px] text-secondary">Für {target}</p>}
         </div>
       </FadeIn>
       <Chat
-        target={target}
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}
         savedPrompts={savedPrompts}

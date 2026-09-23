@@ -5,7 +5,6 @@ import { AudioLines, Send, Square } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/input";
 import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
-import { TargetPicker } from "@/features/chat/components/target-picker";
 import { useVisualViewportInset } from "@/features/chat/hooks/use-visual-viewport-inset";
 
 // Caps how tall the composer can grow before it scrolls internally instead,
@@ -24,8 +23,6 @@ export function ChatComposer({
   onSend,
   onStop,
   onVoice,
-  target,
-  onTargetChange,
 }: {
   input: string;
   onInputChange: (value: string) => void;
@@ -36,9 +33,6 @@ export function ChatComposer({
   onStop: () => void;
   /** Opens voice mode. Omitted where there's no chat to talk to. */
   onVoice?: () => void;
-  /** The build tool the prompt is tailored for; undefined means "not specified". */
-  target?: string;
-  onTargetChange?: (next: string | undefined) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // QA finding K-1: keeps the sticky composer pinned above an on-screen
@@ -69,14 +63,6 @@ export function ChatComposer({
     <div
       style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
       className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5">
-      {/* Above the input, not inside it: it qualifies what gets written, so it
-          belongs next to the writing, and it stays reachable in a chat that
-          already has turns (an empty-state-only control would strand those). */}
-      {onTargetChange && (
-        <div className="mb-2">
-          <TargetPicker value={target} onChange={onTargetChange} disabled={loading} />
-        </div>
-      )}
       <div className="relative rounded-2xl border border-border-strong bg-surface-raised">
         <Textarea
           ref={textareaRef}

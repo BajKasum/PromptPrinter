@@ -17,14 +17,11 @@ import { extractPrompt } from "@/shared/lib/saved-prompts";
 export function ChatResultPanel({
   content,
   projectId,
-  target,
   savedPrompts,
 }: {
   content: string;
   /** Present for project chats; omitted (or null) for a global chat's save. */
   projectId?: string | null;
-  /** The chat's target AI, stored alongside a saved prompt. */
-  target?: string | null;
   /** Prompt text of every result already saved (project-scoped, or every one of this user's for a global chat). */
   savedPrompts?: string[];
 }) {
@@ -47,7 +44,6 @@ export function ChatResultPanel({
           <SavePromptButton
             projectId={projectId}
             prompt={savablePrompt}
-            target={target}
             initiallySaved={alreadySaved}
           />
         )}

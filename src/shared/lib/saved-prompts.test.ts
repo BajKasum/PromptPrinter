@@ -122,20 +122,18 @@ describe("mapGenerationRowsToSavedPrompts", () => {
         id: "g1",
         title: "sessionStartPrompt",
         content: "Du bist ein Tutor.",
-        target: "Cursor",
         createdAt: "2026-07-01T00:00:00Z",
       },
     ]);
   });
 
-  it("falls back to a generic title and null target when either is missing", () => {
+  it("falls back to a generic title when it is missing", () => {
     const rows = [{ id: "g1", created_at: "2026-07-01T00:00:00Z", outputs: { prompt: "Text." } }];
     expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([
       {
         id: "g1",
         title: "Gespeicherter Prompt",
         content: "Text.",
-        target: null,
         createdAt: "2026-07-01T00:00:00Z",
       },
     ]);

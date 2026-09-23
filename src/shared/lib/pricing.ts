@@ -88,7 +88,7 @@ export const PLANS: MarketingPlan[] = [
       "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
       "Mit deinem Key: unbegrenzt, die App selbst bleibt gratis",
       `Bis zu ${PLAN_LIMITS.free.projects} Projekte`,
-      "Für jede Ziel-KI zugeschnitten",
+      "Zugeschnitten auf dein Bau-Tool",
       "Markdown-Export",
     ],
   },

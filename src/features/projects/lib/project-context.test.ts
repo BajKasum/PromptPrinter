@@ -65,7 +65,7 @@ describe("buildProjectContext", () => {
         projects: {
           ...PROJECT,
           instructions: "Schreib knapp.",
-          context: { target: "Cursor" },
+          context: { frontend: "Next.js" },
           idea: "Ein Zeiterfasser",
         },
       }),
@@ -74,8 +74,22 @@ describe("buildProjectContext", () => {
     );
     expect(context).toContain("Name: Demo");
     expect(context).toContain("Schreib knapp.");
-    expect(context).toContain("- target: Cursor");
+    expect(context).toContain("- frontend: Next.js");
     expect(context).toContain("Idea: Ein Zeiterfasser");
+  });
+
+  // Das Struktur-Feld "Ziel-KI" ist seit 23.09.2026 weg. Ein Altwert darf
+  // nicht mehr in den Prompt wandern, solange Migration 0044 nicht lief.
+  it("ignores the removed Ziel-KI field in stored context", async () => {
+    const context = await buildProjectContext(
+      supabaseWith({
+        projects: { ...PROJECT, context: { target: "Cursor", frontend: "Next.js" } },
+      }),
+      "u1",
+      "p1"
+    );
+    expect(context).not.toContain("target");
+    expect(context).toContain("- frontend: Next.js");
   });
 
   describe("Projekt-Gedaechtnis", () => {
@@ -94,13 +108,13 @@ describe("buildProjectContext", () => {
     it("places the user's own structure above the derived facts", async () => {
       const context = await buildProjectContext(
         supabaseWith({
-          projects: { ...PROJECT, context: { target: "Cursor" } },
+          projects: { ...PROJECT, context: { frontend: "Vue" } },
           project_brains: READY_BRAIN,
         }),
         "u1",
         "p1"
       );
-      expect(context!.indexOf("- target: Cursor")).toBeLessThan(context!.indexOf("Project Brain"));
+      expect(context!.indexOf("- frontend: Vue")).toBeLessThan(context!.indexOf("Project Brain"));
     });
 
     // Ein laufender oder gescheiterter Lauf traegt entweder nichts oder den

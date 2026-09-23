@@ -119,7 +119,12 @@ export async function buildProjectContext(
     project.context && typeof project.context === "object" && !Array.isArray(project.context)
       ? (project.context as Record<string, unknown>)
       : {};
+  // "target" war das Struktur-Feld "Ziel-KI", entfernt am 23.09.2026 samt
+  // Ziel-Tool-Auswahl im Chat (Migration 0044 raeumt die Altdaten). Bis die
+  // Migration ueberall gelaufen ist, wird der Schluessel hier ignoriert,
+  // damit kein Feld in den Prompt wandert, das der Nutzer nirgends mehr sieht.
   const structureLines = Object.entries(context)
+    .filter(([key]) => key !== "target")
     .filter((e): e is [string, string] => typeof e[1] === "string" && e[1].trim().length > 0)
     .map(([k, v]) => `- ${k}: ${truncate(v.trim(), 200)}`);
   if (structureLines.length > 0) {
@@ -127,8 +132,8 @@ export async function buildProjectContext(
   }
 
   // Nach der Struktur, vor den Dateien: was der Nutzer selbst eingetragen hat,
-  // steht über dem, was aus seinen Quellen abgeleitet wurde. Wenn er „Ziel-KI:
-  // Cursor" tippt und das Brain aus dem Repo „VS Code Extension" ableitet,
+  // steht über dem, was aus seinen Quellen abgeleitet wurde. Wenn er
+  // „Frontend: Vue" tippt und das Brain aus dem Repo „React" ableitet,
   // gewinnt seine Angabe — sie ist die Absicht, das Brain nur der Befund.
   if (brainBlock) parts.push(brainBlock);
 

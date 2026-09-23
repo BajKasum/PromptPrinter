@@ -3,7 +3,6 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
-import { normalizeTarget } from "@/features/chat/lib/target-tools";
 import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
@@ -61,9 +60,6 @@ export default async function NewProjectChatPage({ params }: { params: Params })
         </Link>
       </FadeIn>
       <Chat
-        // Seeded from the workspace rail's "Ziel-KI" so a project chat starts
-        // knowing what the project already says it builds for.
-        target={normalizeTarget(project.context.target)}
         projectId={project.id}
         hasResults={(count ?? 0) > 0}
         savedPrompts={savedPrompts}

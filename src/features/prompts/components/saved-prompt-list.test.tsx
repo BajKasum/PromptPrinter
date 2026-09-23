@@ -29,7 +29,6 @@ const prompt: SavedPrompt = {
   id: "p1",
   title: "Alter Name",
   content: "Du bist ein hilfreicher Assistent.",
-  target: "Cursor",
   createdAt: new Date().toISOString(),
 };
 
@@ -49,11 +48,10 @@ describe("SavedPromptList", () => {
     // needs it (below) does both in the right order itself.
   });
 
-  it("renders the prompt title, content and target", () => {
+  it("renders the prompt title and content", () => {
     render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
     expect(screen.getByText("Alter Name")).toBeInTheDocument();
     expect(screen.getByText("Du bist ein hilfreicher Assistent.")).toBeInTheDocument();
-    expect(screen.getByText("Für Cursor")).toBeInTheDocument();
   });
 
   it("hides the PDF export button on Free", () => {
@@ -92,28 +90,13 @@ describe("SavedPromptList", () => {
       await user.type(input, "sessionStartPrompt{Enter}");
 
       expect(update).toHaveBeenCalledWith({
-        outputs: { prompt: prompt.content, title: "sessionStartPrompt", target: "Cursor" },
+        outputs: { prompt: prompt.content, title: "sessionStartPrompt" },
       });
       expect(chain.eq).toHaveBeenCalledWith("id", "p1");
       expect(refresh).toHaveBeenCalled();
       // The list re-renders with the new title from local state, without
       // waiting on the server refresh to reflect it.
       expect(await screen.findByText("sessionStartPrompt")).toBeInTheDocument();
-    });
-
-    it("omits target from the reconstructed outputs when the prompt has none", async () => {
-      const chain = okWrite();
-      update.mockReturnValue(chain);
-      const untargeted: SavedPrompt = { ...prompt, target: null };
-      const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[untargeted]} canExportPdf={false} />);
-
-      await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
-      await user.type(screen.getByLabelText("Neuer Name für den Prompt"), " v2{Enter}");
-
-      expect(update).toHaveBeenCalledWith({
-        outputs: { prompt: prompt.content, title: "Alter Name v2" },
-      });
     });
 
     it("cancels on Escape without calling Supabase", async () => {

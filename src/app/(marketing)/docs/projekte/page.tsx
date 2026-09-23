@@ -57,9 +57,8 @@ export default function Page() {
 
       <h3>Struktur</h3>
       <p>
-        Sechs kurze Felder für die Eckdaten, die sich selten ändern:{" "}
-        <strong>Ziel-KI</strong>, <strong>Frontend</strong>,{" "}
-        <strong>Backend</strong>, <strong>Sprache</strong>,{" "}
+        Fünf kurze Felder für die Eckdaten, die sich selten ändern:{" "}
+        <strong>Frontend</strong>, <strong>Backend</strong>, <strong>Sprache</strong>,{" "}
         <strong>Datenbank</strong> und <strong>Weiteres</strong>. Alle sind
         freiwillig, leere Felder werden einfach weggelassen. Der Vorteil
         gegenüber Freitext: du siehst auf einen Blick, was gesetzt ist.

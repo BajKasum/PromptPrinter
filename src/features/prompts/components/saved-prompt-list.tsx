@@ -140,16 +140,15 @@ function SavedPromptCard({
     const undo = onRename(next);
 
     const supabase = createClient();
-    // outputs is one JSONB column (prompt, title, target), so renaming writes
-    // it back whole — the card already holds the other two fields in memory,
-    // no read-modify-write round trip needed.
+    // outputs is one JSONB column (prompt, title), so renaming writes it back
+    // whole — the card already holds the prompt in memory, no
+    // read-modify-write round trip needed.
     const { error } = await supabase
       .from("generations")
       .update({
         outputs: {
           prompt: prompt.content,
           title: next,
-          ...(prompt.target ? { target: prompt.target } : {}),
         },
       })
       .eq("id", prompt.id)
@@ -248,11 +247,6 @@ function SavedPromptCard({
             </button>
           )}
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-tertiary">
-            {prompt.target && (
-              <span className="rounded-full border border-accent/30 bg-accent-subtle px-2 py-0.5 text-accent-text">
-                Für {prompt.target}
-              </span>
-            )}
             <span>{relativeTime(prompt.createdAt)}</span>
           </div>
         </div>

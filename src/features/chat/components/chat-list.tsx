@@ -19,7 +19,6 @@ import { MoveToProjectButton } from "@/features/chat/components/move-to-project"
 export type ChatListItem = {
   id: string;
   title: string;
-  target: string | null;
   updatedAt: string;
   messageCount: number;
 };
@@ -121,7 +120,6 @@ function ChatRow({
   }
 
   const meta = [
-    chat.target ? `Für ${chat.target}` : null,
     `zuletzt ${relativeTime(chat.updatedAt)}`,
     `${chat.messageCount} Nachricht${chat.messageCount === 1 ? "" : "en"}`,
   ]

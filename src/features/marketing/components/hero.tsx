@@ -229,14 +229,13 @@ const STAGES: { key: StageKey; label: string }[] = [
 
 // Each demo is a real, plain-language idea that walks through what actually
 // happens today: Finn asks only what this specific idea needs clarifying
-// (here, one thing each), then delivers the finished, paste-ready prompt,
-// tailored to the named target assistant. This mirrors src/prompts/system.ts's
+// (here, one thing each), then delivers the finished, paste-ready prompt.
+// This mirrors src/prompts/system.ts's
 // CHAT_SYSTEM_PROMPT (a bundled question covering only what applies, not a
 // fixed checklist), not an invented pipeline.
 const DEMOS = [
   {
     idea: "Airbnb für Hundesitter",
-    target: "Lovable",
     question: "Für wen zuerst, Hundebesitzer oder Sitter?",
     answer: "Für Besitzer, die kurzfristig jemanden brauchen.",
     prompt: [
@@ -251,7 +250,6 @@ const DEMOS = [
   },
   {
     idea: "KI-Habit-Tracker mit Streaks",
-    target: "Claude",
     question: "Sollen die KI-Anstupser eher locker-witzig oder ernsthaft-coachig klingen?",
     answer: "Locker und ein bisschen witzig.",
     prompt: [
@@ -265,7 +263,6 @@ const DEMOS = [
   },
   {
     idea: "Marktplatz für lokale Künstler",
-    target: "ChatGPT",
     question: "Verkaufen die Künstler direkt in der App, oder erstmal nur ein Schaufenster?",
     answer: "Erstmal nur Schaufenster, Verkauf kommt später.",
     prompt: [
@@ -482,7 +479,6 @@ function HeroDemo() {
                 {stage === 2 && (
                   <PromptStage
                     lines={demo.prompt}
-                    target={demo.target}
                     revealed={promptRevealed}
                     copied={copied}
                   />
@@ -545,26 +541,19 @@ function ClarifyStage({
 // chat UI, not a separate invented mockup.
 function PromptStage({
   lines,
-  target,
   revealed,
   copied,
 }: {
   lines: string[];
-  target: string;
   revealed: number;
   copied: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-3.5 py-2">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-tertiary">
-            Prompt
-          </span>
-          <span className="rounded-full border border-accent/25 bg-accent-subtle px-2 py-0.5 text-[10.5px] text-accent-text">
-            Für {target}
-          </span>
-        </div>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-tertiary">
+          Prompt
+        </span>
         <span
           className={cn(
             "inline-flex items-center gap-1 text-[11.5px] transition-colors duration-300",

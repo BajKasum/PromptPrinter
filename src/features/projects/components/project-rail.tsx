@@ -22,7 +22,6 @@ import type { ProjectBrain } from "@/shared/lib/project-brain";
 // linking to the results area.
 
 const STRUCTURE_FIELDS = [
-  { key: "target", label: "Ziel-KI", placeholder: "z. B. Claude, Cursor, Lovable" },
   { key: "frontend", label: "Frontend", placeholder: "z. B. Next.js, React" },
   { key: "backend", label: "Backend", placeholder: "z. B. Supabase, Node.js" },
   { key: "language", label: "Sprache", placeholder: "z. B. TypeScript, Python" },

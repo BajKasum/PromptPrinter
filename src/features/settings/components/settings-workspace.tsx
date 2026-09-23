@@ -220,8 +220,7 @@ export function SettingsWorkspace({
             anderer Codepfad sie je nutzte. Ein Überbleibsel der am
             17.07.2026 gelöschten Chat→Ergebnis-Pipeline, die pro Generierung
             genau diese vier Dimensionen (Master-KI/Frontend/Backend/DB)
-            abfragte; der heutige Chat kennt nur ein einzelnes Ziel-Tool
-            (conversations.target). Komplett entfernt statt an eine neue
+            abfragte. Komplett entfernt statt an eine neue
             Wirkung angeschlossen (features/settings/lib/tools.ts, der
             tool-picker.tsx und die dafuer nicht mehr gebrauchten
             ToolLogo-Faelle gingen mit). */}

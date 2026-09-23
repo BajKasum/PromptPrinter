@@ -145,18 +145,13 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-// ── Chats, mirrors the real /chats list: title, target-if-any, freshness,
+// ── Chats, mirrors the real /chats list: title, freshness,
 // message count. One chat experience, no mode badge, no outcome label, the
 // finished prompt lives inside the conversation itself. ────────────────────
 
-const CHATS: { title: string; target?: string; when: string; messages: number }[] = [
-  { title: "KI-Habit-Tracker mit Streaks", target: "Claude", when: "vor 2 Std.", messages: 8 },
-  {
-    title: "Bewerbungsschreiben für UX-Rolle",
-    target: "ChatGPT",
-    when: "vor 5 Std.",
-    messages: 4,
-  },
+const CHATS: { title: string; when: string; messages: number }[] = [
+  { title: "KI-Habit-Tracker mit Streaks", when: "vor 2 Std.", messages: 8 },
+  { title: "Bewerbungsschreiben für UX-Rolle", when: "vor 5 Std.", messages: 4 },
   { title: "Rezept-App für Resteverwertung", when: "vor 1 Std.", messages: 3 },
 ];
 
@@ -177,7 +172,6 @@ function ChatsView() {
               <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-tertiary">
                 <Clock className="h-3 w-3 shrink-0" />
                 <span className="truncate">
-                  {c.target ? `Für ${c.target} · ` : ""}
                   {c.when} · {c.messages} Nachrichten
                 </span>
               </div>

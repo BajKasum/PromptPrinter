@@ -29,7 +29,6 @@ vi.mock("@/shared/supabase/client", () => ({
 const chat: ChatListItem = {
   id: "chat-1",
   title: "Alte Idee",
-  target: null,
   updatedAt: new Date().toISOString(),
   messageCount: 2,
 };
