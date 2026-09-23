@@ -871,10 +871,15 @@ npm run build        # Production-Build (standalone)
 **Quality-Gate, vor JEDEM Commit muss das komplett grün sein:**
 
 ```bash
-npm run typecheck && npm run lint && npm run test && npm run build
+npm audit --audit-level=high && npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
-Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push/PR.
+Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push auf
+**jeden** Branch und bei jedem PR. `npm audit` steht dort VOR allem anderen:
+schlägt er an, laufen Typecheck, Lint, Test und Build gar nicht erst. Genau so
+waren am 23.09.2026 fünf Commits in Folge rot, obwohl das lokale Gate (damals
+noch ohne `npm audit`) grün war — ein neues `sharp`-Advisory war seit dem
+letzten Push erschienen. Deshalb gehört der Audit ins lokale Gate.
 
 **Wenn der Build mit `ENOENT … .next/…` abbricht:** läuft parallel ein
 Dev-Server? `next dev` und `next build` teilen sich dasselbe `.next`-
@@ -898,6 +903,11 @@ startete und selbst noch schrieb. Deshalb bewusst **kein** `prebuild`, das
 - **Git-Staging immer explizit per Dateiname**, nie `git add .` / `git add -A`.
 - **Gate vor jedem Commit** (siehe oben), alles grün.
 - **Commit-Trailer:** `Co-Authored-By: Claude <aktuelles Modell> <noreply@anthropic.com>`.
+- **Nie direkt auf `main` arbeiten** (Kasums Regel seit 2026-09-23). Jede
+  Arbeit auf einem eigenen Branch (`fix/…`, `feat/…`, `docs/…`), dort
+  committen und den Branch pushen. Ist die CI auf dem Branch grün, per
+  Fast-Forward nach `main` mergen und `main` pushen. **Branches nie löschen**,
+  weder lokal noch auf GitHub.
 - **Nach jeder abgeschlossenen Änderung committen + pushen**, nicht auf Aufforderung warten.
 - **Secrets nie mit `NEXT_PUBLIC_*`** prefixen, landen sonst im Client-Bundle.
   Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.

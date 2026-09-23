@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # Every branch, not just main: since 23.09.2026 all work happens on a
+  # feature branch that is merged into main only once it is green here.
+  # Checking only main meant a branch's problems surfaced after the merge.
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
 
 # Cancel superseded runs on the same ref so pushes don't pile up.
