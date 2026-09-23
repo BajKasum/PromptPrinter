@@ -81,4 +81,15 @@ describe("MarkdownMessage", () => {
     expect(writeText).toHaveBeenCalledWith("hello world");
     expect(await screen.findByRole("button", { name: /Kopiert/ })).toBeInTheDocument();
   });
+
+  // Audit 23.09.2026, F-3: the model closed the block on the content line,
+  // the fence stayed open and "Prompt kopieren" pasted ``` into the build tool.
+  it("copies a prompt without the fence the model closed on the same line", async () => {
+    const user = setupWithClipboardMock();
+    render(
+      <MarkdownMessage content={"```text\nErstelle eine App.\n\nFuer Buchungsanfragen.```"} />
+    );
+    await user.click(screen.getByRole("button", { name: /Prompt kopieren/ }));
+    expect(writeText).toHaveBeenCalledWith("Erstelle eine App.\n\nFuer Buchungsanfragen.");
+  });
 });

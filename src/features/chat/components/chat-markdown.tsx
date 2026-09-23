@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { CopyMoment } from "@/features/chat/components/copy-moment";
+import { normalizeFences } from "@/features/chat/lib/normalize-fences";
 
 // Render an assistant reply as real Markdown, headings, lists, bold, tables,
 // instead of raw text. Any fenced block becomes a CodeBlock with its own copy
@@ -97,7 +98,9 @@ export function MarkdownMessage({ content }: { content: string }) {
           },
         }}
       >
-        {content}
+        {/* A fence the model closed on the content line would otherwise stay
+            open and end up in the copied prompt (Audit 23.09.2026, F-3). */}
+        {normalizeFences(content)}
       </ReactMarkdown>
     </div>
   );
