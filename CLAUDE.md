@@ -801,8 +801,19 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 >   klappt den Prompt mit Kopieren/Umbenennen/PDF/Löschen auf. WAI-Accordion
 >   (Überschrift umschliesst den Knopf).
 >
-> Offen aus dem Audit, von Kasum als Nächstes genannt: das Projekt-Gedächtnis
-> in der Rail sichtbarer machen (nicht auf der Landing Page).
+> - **Gedächtnis zuoberst in der Rail** (`a164de4`, P-3, auf dem ersten
+>   Feature-Branch `feat/project-brain-rail`): erste Karte statt vierter,
+>   leiser Akzentrahmen, Status "aktiv"/"veraltet", fertig analysiert kompakt
+>   (Zusammenfassung + Stack), Einzelfelder unter "Details". Bewusst NICHT
+>   auf der Landing Page (Kasums Entscheid).
+>
+> **CI war danach fünf Commits lang rot** (alle von diesem Tag), nicht wegen
+> des Codes: `npm audit --audit-level=high` steht in der CI vor allen anderen
+> Schritten und schlug wegen eines neuen `sharp`-Advisories an. Behoben in
+> `671b8e7` (sharp-Override ^0.35.4, vitest ^4.1.11, 0 vulnerabilities),
+> `npm audit` ist seitdem Teil des lokalen Gates (siehe "Befehle"). Seit
+> demselben Commit läuft die CI bei Pushes auf jeden Branch, und es gilt die
+> Branch-Regel unter "Arbeitsregeln".
 
 ## Was ist PromptPrinter?
 
