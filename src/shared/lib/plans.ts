@@ -60,3 +60,21 @@ export function effectiveLimits(plan: PlanKey, isAdmin: boolean): PlanLimits {
     ? { projects: Infinity, chatMessages: Infinity }
     : PLAN_LIMITS[plan];
 }
+
+/** Normalizes a stored `profiles.plan` value; anything unknown is Free. */
+export function toPlanKey(raw: string | null | undefined): PlanKey {
+  return raw === "pro" || raw === "team" ? raw : "free";
+}
+
+/**
+ * Kann dieses Konto nur mit eigenem Key chatten, und hat es keinen?
+ *
+ * Genau der Zustand, in dem /api/chat mit `kind: "byokRequired"` ablehnt
+ * (Audit 23.09.2026, F-1). Die Chat-Seiten fragen das beim Rendern, damit ein
+ * neues Free-Konto den Hinweis sieht, BEVOR es seine Idee tippt, und nicht
+ * erst als Fehler nach dem Absenden.
+ */
+export function requiresOwnKey(plan: PlanKey, isAdmin: boolean, hasOwnKey: boolean): boolean {
+  if (hasOwnKey) return false;
+  return effectiveLimits(plan, isAdmin).chatMessages <= 0;
+}

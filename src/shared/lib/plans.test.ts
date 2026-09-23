@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effectiveLimits, PLAN_LIMITS } from "@/shared/lib/plans";
+import { effectiveLimits, PLAN_LIMITS, requiresOwnKey, toPlanKey } from "@/shared/lib/plans";
 
 describe("effectiveLimits", () => {
   it("returns the plan's own limits for a non-admin account", () => {
@@ -71,5 +71,35 @@ describe("marketed plans match enforced limits", () => {
 
     expect(pro?.badge).toBe("Kein eigener Key nötig");
     expect(pro?.badge).not.toMatch(/\d+\s*×/);
+  });
+});
+
+describe("toPlanKey", () => {
+  it("keeps pro and team, maps everything else to free", () => {
+    expect(toPlanKey("pro")).toBe("pro");
+    expect(toPlanKey("team")).toBe("team");
+    expect(toPlanKey("free")).toBe("free");
+    expect(toPlanKey("enterprise")).toBe("free");
+    expect(toPlanKey(null)).toBe("free");
+    expect(toPlanKey(undefined)).toBe("free");
+  });
+});
+
+describe("requiresOwnKey", () => {
+  it("is true for a Free account without a key", () => {
+    expect(requiresOwnKey("free", false, false)).toBe(true);
+  });
+
+  it("is false once the Free account has its own key", () => {
+    expect(requiresOwnKey("free", false, true)).toBe(false);
+  });
+
+  it("is false for Pro and Team, they run on the server key", () => {
+    expect(requiresOwnKey("pro", false, false)).toBe(false);
+    expect(requiresOwnKey("team", false, false)).toBe(false);
+  });
+
+  it("is false for an admin on Free, admins are never capped", () => {
+    expect(requiresOwnKey("free", true, false)).toBe(false);
   });
 });

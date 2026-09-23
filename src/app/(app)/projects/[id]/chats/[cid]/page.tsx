@@ -6,7 +6,7 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
 import { normalizeTarget } from "@/features/chat/lib/target-tools";
 import { createClient } from "@/server/supabase/server";
-import { getSessionProfile, getSessionUser } from "@/server/session";
+import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { MESSAGE_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
@@ -45,7 +45,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [{ data: rows }, { data: generationRows, count: resultCount }, profile] =
+  const [{ data: rows }, { data: generationRows, count: resultCount }, profile, needsKey] =
     await Promise.all([
       // Newest first + limit, then reversed below (QA finding P-1): an
       // ascending query + limit would keep the OLDEST rows on a long chat,
@@ -70,6 +70,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       // getProject already redirected to /login if unauthenticated, user.id is
       // safe here; the "" fallback just matches no row instead of throwing.
       getSessionProfile(),
+      getNeedsOwnKey(),
     ]);
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
@@ -106,6 +107,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         hasResults={(resultCount ?? 0) > 0}
         savedPrompts={savedPrompts}
         name={name}
+        needsKey={needsKey}
       />
     </div>
   );

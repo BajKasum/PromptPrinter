@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { createClient } from "@/server/supabase/server";
-import { getSessionProfile, getSessionUser } from "@/server/session";
+import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { MESSAGE_LOAD_LIMIT, SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 
@@ -38,7 +38,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [{ data: rows }, profile, { data: generationRows }] = await Promise.all([
+  const [{ data: rows }, profile, { data: generationRows }, needsKey] = await Promise.all([
     // Newest first + limit, then reversed below: with an unbounded chat, an
     // ascending query + limit would keep the OLDEST rows and cut off exactly
     // the turns the user is mid-conversation with.
@@ -57,6 +57,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
+    getNeedsOwnKey(),
   ]);
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
@@ -89,6 +90,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
         initialConversationId={convo.id as string}
         savedPrompts={savedPrompts}
         name={name}
+        needsKey={needsKey}
       />
     </div>
   );

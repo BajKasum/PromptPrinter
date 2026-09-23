@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
+import { ChatKeyNotice } from "@/features/chat/components/chat-key-notice";
 import { ChatResultPanel } from "@/features/chat/components/chat-result-panel";
 import {
   ChatUserBubble,
@@ -58,6 +59,7 @@ export function Chat({
   hasResults = false,
   savedPrompts,
   name,
+  needsKey = false,
 }: {
   target?: string;
   projectId?: string;
@@ -69,6 +71,8 @@ export function Chat({
   savedPrompts?: string[];
   /** The user's display name, personalizes the unified empty-state greeting. */
   name?: string | null;
+  /** Free without an own key: /api/chat will refuse, so say so up front (F-1). */
+  needsKey?: boolean;
 }) {
   // A project chat is its own context; every standalone chat is the one
   // unified chat. See lib/chat-variants.ts for what each variant means.
@@ -90,6 +94,9 @@ export function Chat({
   const [loading, setLoading] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Starts from the server's own check and flips on if the route answers
+  // 403 byokRequired anyway (e.g. the key was deleted in another tab).
+  const [keyRequired, setKeyRequired] = useState(needsKey);
   // Seconds until a rate-limited request may be retried, straight from the
   // route's own `retryAfter`. Null for every other kind of failure.
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
@@ -335,6 +342,9 @@ export function Chat({
     // arrived so far too.
     let accumulated = "";
     let retryAfterSeconds: number | null = null;
+    // The route's machine-readable failure kind (api-problem extras), so a
+    // 403 byokRequired can get its own way forward instead of a retry button.
+    let failureKind: string | null = null;
     // `messages` stays complete for the transcript on screen; only the newest
     // turns go over the wire. The route forwards just the last 12 to the model
     // and clamps anything longer than this itself, so replaying the full
@@ -364,6 +374,7 @@ export function Chat({
         // The route already tells us how long a 429 lasts; showing it beats
         // making the user guess when they may try again.
         retryAfterSeconds = typeof json.retryAfter === "number" ? json.retryAfter : null;
+        failureKind = typeof json.kind === "string" ? json.kind : null;
         throw new Error((json.detail as string | undefined) ?? "Chat fehlgeschlagen");
       }
       if (!res.body) throw new Error("Keine Antwort erhalten.");
@@ -518,8 +529,14 @@ export function Chat({
         // failing. Nothing unsent stays in the transcript now.
         setMessages(before);
         setInput(text);
-        setError(e instanceof Error ? e.message : "Unbekannter Fehler");
-        setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);
+        if (failureKind === "byokRequired") {
+          // No banner, no "Erneut senden": resending can only fail the same
+          // way. The key notice below names the two ways that do work.
+          setKeyRequired(true);
+        } else {
+          setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+          setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);
+        }
       }
       return null;
     } finally {
@@ -632,6 +649,8 @@ export function Chat({
           </div>
         )}
       </div>
+
+      {keyRequired && <ChatKeyNotice />}
 
       {error && (
         <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,6 +58,19 @@ export function SettingsWorkspace({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+
+  // Der Key-Hinweis im Chat verlinkt /settings#api-keys (Audit 23.09.2026,
+  // F-1). Next scrollt bei einer Client-Navigation nur dann zum Anker, wenn
+  // das Ziel schon steht, wenn die Route wechselt; diese Seite blendet aber
+  // erst ein. Deshalb hier einmal nach dem Mount selbst hinscrollen.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   // Current edits vs. the saved baseline. The baseline advances on a successful
   // save so the dirty state (and the save bar) reset without a full reload.
@@ -184,6 +197,7 @@ export function SettingsWorkspace({
         </SettingsCard>
 
         <SettingsCard
+          id="api-keys"
           Icon={KeyRound}
           accent="--accent"
           title="Eigene API-Keys"
@@ -288,6 +302,7 @@ export function SettingsWorkspace({
 /* ─── Presentational pieces ─────────────────────────────────────────────── */
 
 function SettingsCard({
+  id,
   Icon,
   accent,
   title,
@@ -297,6 +312,8 @@ function SettingsCard({
   className,
   children,
 }: {
+  /** Sprunganker, z. B. fuer den Key-Hinweis im Chat (/settings#api-keys). */
+  id?: string;
   Icon: LucideIcon;
   /** A design-token CSS variable name (e.g. "--accent"), not a literal color — see hslVar. */
   accent: string;
@@ -309,8 +326,9 @@ function SettingsCard({
 }) {
   return (
     <section
+      id={id}
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-surface-raised p-6 md:p-7",
+        "relative scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-surface-raised p-6 md:p-7",
         className
       )}
     >

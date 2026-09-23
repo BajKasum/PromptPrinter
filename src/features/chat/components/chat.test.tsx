@@ -439,6 +439,42 @@ describe("Chat", () => {
       expect(screen.queryByRole("button", { name: /Erneut senden/ })).not.toBeInTheDocument();
     });
   });
+
+  // Audit 23.09.2026, F-1: Free chats only with an own key. A new Free
+  // account used to learn that only after sending its first idea, from a red
+  // banner whose "Erneut senden" repeated the same 403 forever.
+  describe("Free without an own key (Audit 23.09.2026, F-1)", () => {
+    it("says so before the first message, with the two ways forward", () => {
+      render(<Chat needsKey />);
+      expect(screen.getByText(/brauche ich deinen eigenen KI-Key/)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Key hinterlegen" })).toHaveAttribute(
+        "href",
+        "/settings#api-keys"
+      );
+      expect(screen.getByRole("link", { name: "Pro ansehen" })).toHaveAttribute("href", "/billing");
+    });
+
+    it("shows no key notice for an account that can chat", () => {
+      render(<Chat />);
+      expect(screen.queryByText(/brauche ich deinen eigenen KI-Key/)).not.toBeInTheDocument();
+    });
+
+    it("turns a 403 byokRequired into the notice instead of a retry banner", async () => {
+      mockFetchOnce(
+        { detail: "Free läuft nur mit deinem eigenen KI-Key.", kind: "byokRequired" },
+        false
+      );
+      render(<Chat />);
+      await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
+      await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
+
+      expect(await screen.findByText(/brauche ich deinen eigenen KI-Key/)).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Erneut senden/ })).not.toBeInTheDocument();
+      // The idea is not lost, it waits in the composer for after the key.
+      expect(screen.getByRole("textbox")).toHaveValue("Baue mir eine Todo-App");
+    });
+  });
   // QA finding U-3: `pending` was replaced on every delta and sat in the
   // scroll effect's dependencies, so an animated scroll fired per token. The
   // page fought the user for control at the exact moment they were waiting.

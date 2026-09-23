@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
+import { requiresOwnKey, toPlanKey } from "@/shared/lib/plans";
 
 // Die eine Stelle, die pro Request nach dem angemeldeten Nutzer und seinem
 // Profil fragt (Planpunkt B-3).
@@ -83,4 +84,36 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
     .maybeSingle<SessionProfile>();
 
   return data ?? null;
+});
+
+/**
+ * Braucht der angemeldete Nutzer einen eigenen Key, bevor er chatten kann?
+ *
+ * Free hat seit 30.07.2026 kein Kontingent auf dem Server-Key (plans.ts), ein
+ * Free-Konto ohne hinterlegten Key bekommt von /api/chat also immer 403
+ * `byokRequired`. Die Chat-Seiten fragen das hier vorab, damit der Hinweis
+ * schon im leeren Chat steht (Audit 23.09.2026, F-1).
+ *
+ * Liest nur `provider`, das in der SELECT-Allowlist von `authenticated` liegt
+ * (0020/0030) — der Schluessel selbst bleibt unangetastet. Jede Zeile zaehlt,
+ * genau wie in getUserOverride (byok.ts), das ebenfalls jede Zeile nimmt.
+ */
+export const getNeedsOwnKey = cache(async (): Promise<boolean> => {
+  const user = await getSessionUser();
+  if (!user) return false;
+
+  const profile = await getSessionProfile();
+  const plan = toPlanKey(profile?.plan);
+  const isAdmin = profile?.is_admin ?? false;
+  // Pro, Team und Admins laufen ohnehin auf dem Server-Key, keine Abfrage noetig.
+  if (!requiresOwnKey(plan, isAdmin, false)) return false;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_api_keys")
+    .select("provider")
+    .eq("user_id", user.id)
+    .limit(1);
+
+  return requiresOwnKey(plan, isAdmin, (data?.length ?? 0) > 0);
 });

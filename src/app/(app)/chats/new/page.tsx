@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { createClient } from "@/server/supabase/server";
-import { getSessionProfile, getSessionUser } from "@/server/session";
+import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
@@ -19,7 +19,7 @@ export default async function NewChatPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [profile, { data: generationRows }] = await Promise.all([
+  const [profile, { data: generationRows }, needsKey] = await Promise.all([
     getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts, not
@@ -31,6 +31,7 @@ export default async function NewChatPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
+    getNeedsOwnKey(),
   ]);
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
@@ -40,7 +41,7 @@ export default async function NewChatPage() {
   return (
     <div className="mx-auto max-w-[900px]">
       <FadeIn>
-        <Chat name={name} savedPrompts={savedPrompts} />
+        <Chat name={name} savedPrompts={savedPrompts} needsKey={needsKey} />
       </FadeIn>
     </div>
   );
