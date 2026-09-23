@@ -144,6 +144,19 @@ export function ProjectRail({
 
   return (
     <aside className="space-y-4" aria-label="Projekt-Kontext">
+      {/* Zuoberst (Audit 23.09.2026, P-3): stand bisher als vierte Karte
+          unter den Dateien, "weil es aus ihnen entsteht" — logisch, aber
+          damit das am wenigsten sichtbare Element der Rail, obwohl es das
+          ist, was ein Projekt von einem normalen Chat unterscheidet. Das
+          GitHub-Feld in der Karte ist ohnehin der schnellere Weg als ein
+          Upload. */}
+      <ProjectBrainCard
+        projectId={projectId}
+        brain={brain}
+        currentDigest={brainDigest}
+        sourceCount={files.length}
+      />
+
       <section className="card-surface p-4">
         <div className="mb-2 flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
@@ -200,15 +213,6 @@ export function ProjectRail({
       </section>
 
       <ProjectFiles projectId={projectId} userId={userId} initialFiles={files} />
-
-      {/* Nach den Dateien, weil es aus ihnen entsteht: erst laedt man hoch,
-          dann laesst man lesen. */}
-      <ProjectBrainCard
-        projectId={projectId}
-        brain={brain}
-        currentDigest={brainDigest}
-        sourceCount={files.length}
-      />
 
       <Link
         href={`/projects/${projectId}/results`}

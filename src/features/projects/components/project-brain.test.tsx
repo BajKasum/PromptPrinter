@@ -78,9 +78,40 @@ describe("ProjectBrainCard", () => {
   it("shows the detected facts once ready", () => {
     setup({ brain: READY });
     expect(screen.getByText("Eine Next.js-App mit Supabase.")).toBeInTheDocument();
-    expect(screen.getByText("Next.js 15 (App Router)")).toBeInTheDocument();
     expect(screen.getByText("Supabase")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Neu analysieren/ })).toBeInTheDocument();
+  });
+
+  // Seit 23.09.2026 die erste Karte der Rail: fertig bleibt sie kompakt,
+  // die Einzelfelder klappen erst auf Wunsch auf.
+  it("keeps the single fields behind Details until asked", async () => {
+    setup({ brain: READY });
+    expect(screen.queryByText("Next.js 15 (App Router)")).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Details" }));
+    expect(screen.getByRole("button", { name: "Details" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Next.js 15 (App Router)")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript (strict)")).toBeInTheDocument();
+  });
+
+  describe("Status neben der Ueberschrift", () => {
+    it("says active when the brain is ready and current", () => {
+      setup({ brain: READY, currentDigest: "aaaa1111" });
+      expect(screen.getByText("aktiv")).toBeInTheDocument();
+    });
+
+    it("says outdated when the sources changed", () => {
+      setup({ brain: READY, currentDigest: "bbbb2222" });
+      expect(screen.getByText("veraltet")).toBeInTheDocument();
+      expect(screen.queryByText("aktiv")).not.toBeInTheDocument();
+    });
+
+    it("shows no status before the first analysis", () => {
+      setup();
+      expect(screen.queryByText("aktiv")).not.toBeInTheDocument();
+      expect(screen.queryByText("veraltet")).not.toBeInTheDocument();
+    });
   });
 
   // Ein aus einer einzigen README abgeleitetes Ergebnis soll nicht aussehen

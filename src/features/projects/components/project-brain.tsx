@@ -1,8 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Brain, Github, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Brain,
+  ChevronRight,
+  Github,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { Mascot } from "@/shared/brand/mascot";
@@ -17,8 +26,16 @@ import {
 
 // Die Kontext-Rail-Karte des Projekt-Gedächtnisses.
 //
-// Anders als „Anweisungen" und „Struktur" daneben schreibt diese Karte nicht
-// direkt über den Browser-Client in die Datenbank: project_brains hat nur ein
+// Seit 23.09.2026 die ERSTE Karte der Rail und optisch hervorgehoben (Audit
+// 23.09.2026, P-3): sie stand vorher als vierte Karte ganz unten, unter
+// Anweisungen, Struktur und Dateien, und war damit das am wenigsten sichtbare
+// Element — ausgerechnet das Feature, das PromptPrinter von einem normalen
+// Chat unterscheidet. Weil sie jetzt oben sitzt, bleibt sie im fertigen
+// Zustand kompakt (Zusammenfassung und Stack), die Einzelfelder klappen unter
+// "Details" auf, damit sie die Anweisungen nicht nach unten schiebt.
+//
+// Anders als „Anweisungen" und „Struktur" schreibt diese Karte nicht direkt
+// über den Browser-Client in die Datenbank: project_brains hat nur ein
 // select-Grant (migration 0037), alles Schreibende läuft über
 // /api/projects/[id]/brain. Das ist genau die Grenze, die den Wert der
 // Tabelle ausmacht — die Fakten stammen aus echten Quellen, nicht aus einer
@@ -141,118 +158,139 @@ export function ProjectBrainCard({
   }
 
   return (
-    <section className="card-surface p-4" aria-label="Projekt-Gedächtnis">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <Brain className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-          Gedächtnis
-        </h2>
-        {ready && !running && (
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            aria-label="Gedächtnis löschen"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
+    <section
+      className="relative overflow-hidden rounded-2xl border border-accent/30 bg-surface-raised p-4"
+      aria-label="Projekt-Gedächtnis"
+    >
+      {/* Ein leiser Akzentschimmer oben, damit die Karte als das Besondere
+          dieser Rail lesbar ist, ohne laut zu werden (DESIGN.md: felt, not
+          seen). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-accent-subtle to-transparent"
+      />
 
-      {running ? (
-        <div className="flex items-center gap-3 py-1">
-          {/* Finn liest sich ein — derselbe State wie beim Recherchieren. */}
-          <Mascot state="researching" size={36} className="shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[12.5px] text-foreground">Ich lese mich gerade ein…</p>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-              Dauert je nach Projektgrösse ein paar Sekunden.
+      <div className="relative">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent/15 text-accent-text">
+              <Brain className="h-3.5 w-3.5" strokeWidth={2} />
+            </span>
+            Gedächtnis
+            <BrainStatus ready={ready} stale={stale} running={running} />
+          </h2>
+          {ready && !running && (
+            <button
+              type="button"
+              onClick={() => setConfirmReset(true)}
+              aria-label="Gedächtnis löschen"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {running ? (
+          <div className="flex items-center gap-3 py-1">
+            {/* Finn liest sich ein — derselbe State wie beim Recherchieren. */}
+            <Mascot state="researching" size={36} className="shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[12.5px] text-foreground">Ich lese mich gerade ein…</p>
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                Dauert je nach Projektgrösse ein paar Sekunden.
+              </p>
+            </div>
+          </div>
+        ) : ready ? (
+          <BrainFacts brain={brain} />
+        ) : (
+          <div className="flex items-start gap-3">
+            <Mascot state="curious" size={36} className="shrink-0" />
+            <p className="text-[12px] leading-relaxed text-secondary">
+              Ich lese deine Dateien und dein Repository einmal durch und merke mir Framework,
+              Sprache, Architektur, Datenbank, Design und Konventionen. Danach kennt jeder Chat in
+              diesem Projekt deinen Stack, ohne dass du ihn erklärst.
             </p>
           </div>
-        </div>
-      ) : ready ? (
-        <BrainFacts brain={brain} />
-      ) : (
-        <p className="text-[12px] leading-relaxed text-muted-foreground">
-          Ich lese deine Dateien und dein Repository einmal durch und merke mir Framework,
-          Sprache, Architektur, Datenbank, Design und Konventionen. Danach kennt jeder Chat in
-          diesem Projekt deinen Stack, ohne dass du ihn erklärst.
-        </p>
-      )}
-
-      {stale && !running && (
-        <p className="mt-2.5 flex items-start gap-1.5 rounded-md bg-accent-subtle px-2.5 py-2 text-[11.5px] leading-relaxed text-accent-text">
-          <Sparkles className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-          Seit der Analyse haben sich deine Quellen geändert.
-        </p>
-      )}
-
-      {brain.status === "failed" && !running && (
-        <p
-          role="status"
-          className="mt-2.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-destructive"
-        >
-          <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-          {errorText(brain.errorCode)}
-        </p>
-      )}
-
-      <div className="mt-3 space-y-2">
-        <label
-          htmlFor="brain-repo"
-          className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
-        >
-          <Github className="h-3.5 w-3.5" strokeWidth={1.8} />
-          GitHub-Repository, optional
-        </label>
-        <input
-          id="brain-repo"
-          value={repoUrl}
-          onChange={(e) => setRepoUrl(e.target.value)}
-          disabled={blocked}
-          maxLength={300}
-          inputMode="url"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="github.com/name/projekt"
-          className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
-        />
-        {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
-            auf fremden Quellcode auf dem Server, das ist eine eigene
-            Vertrauensfrage und keine Erweiterung dieses Feldes. */}
-        <p className="text-[11px] leading-relaxed text-secondary">
-          Muss öffentlich sein. Private Repos: lade die wichtigen Dateien hoch.
-        </p>
-      </div>
-
-      <Button
-        variant={ready ? "ghost" : "accent"}
-        size="sm"
-        onClick={() => void analyze()}
-        disabled={blocked || !hasSources}
-        className="mt-3 w-full"
-      >
-        {blocked ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : ready ? (
-          <RefreshCw className="h-3.5 w-3.5" />
-        ) : (
-          <Brain className="h-3.5 w-3.5" />
         )}
-        {blocked ? "Analysiere…" : ready ? "Neu analysieren" : "Projekt analysieren"}
-      </Button>
 
-      {!hasSources && !blocked && (
-        <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
-          Lade zuerst Dateien hoch oder trag ein Repository ein.
-        </p>
-      )}
+        {stale && !running && (
+          <p className="mt-2.5 flex items-start gap-1.5 rounded-md bg-accent-subtle px-2.5 py-2 text-[11.5px] leading-relaxed text-accent-text">
+            <Sparkles className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+            Seit der Analyse haben sich deine Quellen geändert.
+          </p>
+        )}
 
-      {error && (
-        <p role="status" className="mt-2 text-[11.5px] leading-relaxed text-destructive">
-          {error}
-        </p>
-      )}
+        {brain.status === "failed" && !running && (
+          <p
+            role="status"
+            className="mt-2.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-destructive"
+          >
+            <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+            {errorText(brain.errorCode)}
+          </p>
+        )}
+
+        <div className="mt-3 space-y-2">
+          <label
+            htmlFor="brain-repo"
+            className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+          >
+            <Github className="h-3.5 w-3.5" strokeWidth={1.8} />
+            GitHub-Repository, optional
+          </label>
+          <input
+            id="brain-repo"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+            disabled={blocked}
+            maxLength={300}
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="github.com/name/projekt"
+            className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+          />
+          {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
+              auf fremden Quellcode auf dem Server, das ist eine eigene
+              Vertrauensfrage und keine Erweiterung dieses Feldes. */}
+          <p className="text-[11px] leading-relaxed text-secondary">
+            Muss öffentlich sein. Private Repos: lade die wichtigen Dateien hoch.
+          </p>
+        </div>
+
+        <Button
+          // Vor der ersten Analyse und bei veralteten Quellen ist das DIE
+          // Aktion der Karte, sonst ein ruhiges Nachladen.
+          variant={ready && !stale ? "ghost" : "accent"}
+          size="sm"
+          onClick={() => void analyze()}
+          disabled={blocked || !hasSources}
+          className="mt-3 w-full"
+        >
+          {blocked ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : ready ? (
+            <RefreshCw className="h-3.5 w-3.5" />
+          ) : (
+            <Brain className="h-3.5 w-3.5" />
+          )}
+          {blocked ? "Analysiere…" : ready ? "Neu analysieren" : "Projekt analysieren"}
+        </Button>
+
+        {!hasSources && !blocked && (
+          <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
+            Lade zuerst Dateien hoch oder trag ein Repository ein.
+          </p>
+        )}
+
+        {error && (
+          <p role="status" className="mt-2 text-[11.5px] leading-relaxed text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
 
       <ConfirmDialog
         open={confirmReset}
@@ -268,9 +306,33 @@ export function ProjectBrainCard({
   );
 }
 
-/** Das Ergebnis einer fertigen Analyse. */
+/** Kleine Statusmarke neben der Überschrift. */
+function BrainStatus({
+  ready,
+  stale,
+  running,
+}: {
+  ready: boolean;
+  stale: boolean;
+  running: boolean;
+}) {
+  if (running || !ready) return null;
+  return stale ? (
+    <span className="rounded-full bg-accent/15 px-1.5 py-px text-[10.5px] font-medium text-accent-text">
+      veraltet
+    </span>
+  ) : (
+    <span className="rounded-full bg-success/15 px-1.5 py-px text-[10.5px] font-medium text-success">
+      aktiv
+    </span>
+  );
+}
+
+/** Das Ergebnis einer fertigen Analyse: kompakt, Einzelfelder auf Wunsch. */
 function BrainFacts({ brain }: { brain: ProjectBrain }) {
   const { facts } = brain;
+  const detailsId = useId();
+  const [showDetails, setShowDetails] = useState(false);
   const fields = BRAIN_FIELDS.filter(({ key }) => {
     const value = facts[key];
     return typeof value === "string" && value.length > 0;
@@ -282,19 +344,8 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
         <p className="text-[12.5px] leading-relaxed text-foreground/90">{facts.summary}</p>
       )}
 
-      {fields.length > 0 && (
-        <dl className="space-y-1">
-          {fields.map(({ key, label }) => (
-            <div key={key} className="grid grid-cols-[92px_1fr] gap-2">
-              <dt className="text-[11.5px] text-muted-foreground">{label}</dt>
-              <dd className="text-[11.5px] text-foreground/85">{facts[key] as string}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-
       {facts.stack.length > 0 && (
-        <ul className="flex flex-wrap gap-1">
+        <ul className="flex flex-wrap gap-1" aria-label="Stack">
           {facts.stack.map((item) => (
             <li
               key={item}
@@ -304,6 +355,34 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {fields.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            aria-expanded={showDetails}
+            aria-controls={detailsId}
+            className="inline-flex items-center gap-1 rounded text-[11.5px] text-secondary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <ChevronRight
+              className={cn("h-3.5 w-3.5 transition-transform duration-150", showDetails && "rotate-90")}
+              strokeWidth={2}
+            />
+            Details
+          </button>
+          {showDetails && (
+            <dl id={detailsId} className="mt-1.5 space-y-1">
+              {fields.map(({ key, label }) => (
+                <div key={key} className="grid grid-cols-[92px_1fr] gap-2">
+                  <dt className="text-[11.5px] text-muted-foreground">{label}</dt>
+                  <dd className="text-[11.5px] text-foreground/85">{facts[key] as string}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
       )}
 
       {/* Die Selbsteinschaetzung des Modells sichtbar lassen: ein aus einer

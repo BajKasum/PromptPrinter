@@ -166,4 +166,11 @@ describe("ProjectRail", () => {
     setup({ resultCount: 1, latestResultAt: null });
     expect(screen.getByText("1 Prompt")).toBeInTheDocument();
   });
+
+  // Audit 23.09.2026, P-3: das Gedaechtnis stand als vierte Karte ganz unten.
+  it("puts the project memory first in the rail", () => {
+    setup();
+    const rail = screen.getByRole("complementary", { name: "Projekt-Kontext" });
+    expect(rail.firstElementChild).toHaveAttribute("aria-label", "Projekt-Gedächtnis");
+  });
 });
