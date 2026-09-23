@@ -33,8 +33,13 @@ export default function Page() {
       <h2>Wiederfinden</h2>
       <p>
         Im Projekt führt der Reiter <strong>Ergebnisse</strong> zur Liste aller
-        gespeicherten Prompts, neueste zuerst, jeweils mit Titel. Von dort
-        kannst du jeden Eintrag kopieren oder wieder löschen.
+        gespeicherten Prompts, neueste zuerst. Die Liste zeigt nur die Titel,
+        ein Klick klappt den Prompt auf. Dort kopierst du ihn, benennst ihn um
+        oder löschst ihn.
+      </p>
+      <p>
+        Den Titel musst du beim Speichern nicht vergeben: er entsteht aus der
+        ersten Zeile des Prompts. Passt er nicht, änderst du ihn jederzeit.
       </p>
 
       <h2>Export als PDF</h2>

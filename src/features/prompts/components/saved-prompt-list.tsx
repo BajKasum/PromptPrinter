@@ -1,24 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, X, Trash2, FileDown, Pencil } from "lucide-react";
+import { ChevronRight, Copy, Check, X, Trash2, FileDown, Pencil } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
-import { relativeTime } from "@/shared/lib/utils";
+import { cn, relativeTime } from "@/shared/lib/utils";
 import type { SavedPrompt } from "@/shared/lib/saved-prompts";
 
-// The Ergebnisse/Gespeicherte-Prompts list: one card per saved prompt, newest
-// first. Each card is a read-and-reuse unit: copy the prompt, rename it,
-// export it as PDF (Pro), or delete it. Rename and delete go through the
-// RLS-scoped browser client (owner-only update/delete policy, 0001/0018) and
-// refresh so any visible counters (project header/rail) stay in sync. No
-// editing the prompt text itself: a saved prompt is an immutable snapshot, to
-// change one, save a fresh version from the chat — only its name is yours to
-// change (QA finding N-1: naming is the whole point of a saved-prompt
-// library, "sessionStartPrompt" only means something if you chose the name).
+// The Ergebnisse/Gespeicherte-Prompts list, newest first.
+//
+// Seit 23.09.2026 eine Liste von Titeln, auf Kasums Wunsch: zugeklappt steht
+// nur der Name des Prompts, ein Klick darauf klappt den Prompt auf, und erst
+// dort sitzen Kopieren, Umbenennen, PDF (Pro) und Loeschen. Vorher stand jeder
+// Prompt in voller Laenge in der Liste, mit fuenf gespeicherten Prompts war
+// das schon eine lange Textwand, in der man seinen Prompt suchen musste.
+//
+// Der Titel entsteht beim Speichern automatisch aus der ersten Zeile des
+// Prompts (derivePromptTitle, saved-prompts.ts), gefragt wird dabei nichts.
+// Umbenennen bleibt moeglich (QA finding N-1: "sessionStartPrompt" bedeutet
+// nur etwas, wenn man den Namen selbst gewaehlt hat).
+//
+// Rename and delete go through the RLS-scoped browser client (owner-only
+// update/delete policy, 0018/0026) and refresh so any visible counters
+// (project header/rail) stay in sync. No editing the prompt text itself: a
+// saved prompt is an immutable snapshot, to change one, save a fresh version
+// from the chat.
 export function SavedPromptList({
   prompts,
   userId,
@@ -72,18 +81,19 @@ export function SavedPromptList({
   };
 
   return (
-    <div className="space-y-3">
+    <ul className="space-y-2">
       {items.map((p) => (
-        <SavedPromptCard
-          key={p.id}
-          prompt={p}
-          userId={userId}
-          canExportPdf={canExportPdf}
-          onDelete={() => removeAt(p.id)}
-          onRename={(title) => renameTo(p.id, title)}
-        />
+        <li key={p.id}>
+          <SavedPromptCard
+            prompt={p}
+            userId={userId}
+            canExportPdf={canExportPdf}
+            onDelete={() => removeAt(p.id)}
+            onRename={(title) => renameTo(p.id, title)}
+          />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -105,6 +115,8 @@ function SavedPromptCard({
   const router = useRouter();
   const { toast } = useToast();
   const { copied, copy } = useCopyToClipboard();
+  const panelId = useId();
+  const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(prompt.title);
   // K-6 (Audit 06.09.2026): der Loesch-Knopf entfernte den gespeicherten
@@ -194,98 +206,131 @@ function SavedPromptCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-xl border border-border bg-surface">
-      <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
-        <div className="min-w-0 flex-1">
-          {renaming ? (
-            <div className="flex items-center gap-1.5">
-              <input
-                autoFocus
-                value={title}
-                maxLength={80}
-                aria-label="Neuer Name für den Prompt"
-                onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void rename();
-                  } else if (e.key === "Escape") {
-                    cancelRename();
-                  }
-                }}
-                className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
-              {/* No pending/disabled state on either button any more: the
-                  rename closes the editor and updates the title on click,
-                  there is no in-flight window left to guard. */}
+    <article
+      className={cn(
+        "overflow-hidden rounded-xl border bg-surface transition-colors",
+        open ? "border-border-strong" : "border-border hover:border-border-strong"
+      )}
+    >
+      {renaming ? (
+        <div className="flex items-center gap-1.5 px-3 py-2.5">
+          <input
+            autoFocus
+            value={title}
+            maxLength={80}
+            aria-label="Neuer Name für den Prompt"
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void rename();
+              } else if (e.key === "Escape") {
+                cancelRename();
+              }
+            }}
+            className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+          {/* No pending/disabled state on either button: the rename closes
+              the editor and updates the title on click, there is no in-flight
+              window left to guard. */}
+          <button
+            type="button"
+            onClick={() => void rename()}
+            aria-label="Namen speichern"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={cancelRename}
+            aria-label="Umbenennen abbrechen"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        // Heading wraps the button (the WAI accordion pattern), not the other
+        // way round: a heading inside a <button> is invalid HTML and loses
+        // its role for screen readers.
+        <h3>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={panelId}
+            className="flex w-full min-w-0 items-center gap-2.5 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
+          >
+            <ChevronRight
+              className={cn(
+                "h-4 w-4 shrink-0 text-tertiary transition-transform duration-150",
+                open && "rotate-90"
+              )}
+              strokeWidth={2}
+            />
+            <span className="truncate text-[14px] font-medium text-foreground">
+              {prompt.title}
+            </span>
+          </button>
+        </h3>
+      )}
+
+      {open && (
+        <div id={panelId} className="border-t border-border">
+          <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
+            {prompt.content}
+          </pre>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
+            <span className="px-1 text-[11.5px] text-tertiary">
+              Gespeichert {relativeTime(prompt.createdAt)}
+            </span>
+            <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => void rename()}
-                aria-label="Namen speichern"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+                onClick={() => copy(prompt.content)}
+                className="inline-flex items-center gap-1.5 rounded-md bg-accent-subtle px-2.5 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent/15"
               >
-                <Check className="h-3.5 w-3.5" />
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-success" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copied ? "Kopiert" : "Kopieren"}
               </button>
               <button
                 type="button"
-                onClick={cancelRename}
-                aria-label="Umbenennen abbrechen"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+                onClick={() => setRenaming(true)}
+                aria-label={`„${prompt.title}“ umbenennen`}
+                title="Umbenennen"
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
               >
-                <X className="h-3.5 w-3.5" />
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              {canExportPdf && (
+                <button
+                  type="button"
+                  onClick={() => void exportPdf()}
+                  aria-label="Als PDF exportieren"
+                  title="Als PDF exportieren"
+                  className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                aria-label="Prompt löschen"
+                title="Löschen"
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setRenaming(true)}
-              aria-label={`„${prompt.title}“ umbenennen`}
-              className="group/title flex min-w-0 items-center gap-1.5 rounded-md text-left"
-            >
-              <h3 className="truncate text-[13.5px] font-medium text-foreground">{prompt.title}</h3>
-              <Pencil className="h-3 w-3 shrink-0 text-tertiary opacity-0 transition-opacity group-hover/title:opacity-100" />
-            </button>
-          )}
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-tertiary">
-            <span>{relativeTime(prompt.createdAt)}</span>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => copy(prompt.content)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-success" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-            {copied ? "Kopiert" : "Kopieren"}
-          </button>
-          {canExportPdf && (
-            <button
-              type="button"
-              onClick={() => void exportPdf()}
-              aria-label="Als PDF exportieren"
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
-            >
-              <FileDown className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setConfirmingDelete(true)}
-            aria-label="Prompt löschen"
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </header>
-      <pre className="overflow-x-auto whitespace-pre-wrap px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
-        {prompt.content}
-      </pre>
+      )}
 
       {/* Kein Spinner: nach der Bestaetigung verschwindet die Karte sofort aus
           der Liste, es bleibt also nichts uebrig, das drehen koennte. */}

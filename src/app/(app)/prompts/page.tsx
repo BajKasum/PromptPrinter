@@ -78,8 +78,8 @@ export default async function SavedPromptsPage() {
             </p>
             <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
               Wenn Finn dir im Chat einen Prompt schreibt, sicherst du ihn mit
-              „Speichern“ hierher, dann findest du ihn jederzeit wieder, unter
-              dem Namen, den du ihm gibst.
+              „Speichern“ hierher. Den Namen nehme ich aus dem Prompt selbst,
+              ändern kannst du ihn jederzeit.
             </p>
             <Button asChild size="sm">
               <Link href="/chats/new">

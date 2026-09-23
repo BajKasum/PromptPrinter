@@ -32,6 +32,12 @@ const prompt: SavedPrompt = {
   createdAt: new Date().toISOString(),
 };
 
+// Seit 23.09.2026 eine Titelliste: zugeklappt nur der Name, ein Klick klappt
+// den Prompt samt Aktionen auf.
+async function openPrompt(user: ReturnType<typeof userEvent.setup>, name = "Alter Name") {
+  await user.click(screen.getByRole("button", { name }));
+}
+
 describe("SavedPromptList", () => {
   beforeEach(() => {
     refresh.mockReset();
@@ -48,19 +54,54 @@ describe("SavedPromptList", () => {
     // needs it (below) does both in the right order itself.
   });
 
-  it("renders the prompt title and content", () => {
-    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
-    expect(screen.getByText("Alter Name")).toBeInTheDocument();
-    expect(screen.getByText("Du bist ein hilfreicher Assistent.")).toBeInTheDocument();
+  describe("list of titles", () => {
+    it("shows only the title while closed", () => {
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      expect(screen.getByRole("button", { name: "Alter Name" })).toHaveAttribute(
+        "aria-expanded",
+        "false"
+      );
+      expect(screen.queryByText("Du bist ein hilfreicher Assistent.")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Kopieren/ })).not.toBeInTheDocument();
+    });
+
+    it("opens the prompt on click and closes it again", async () => {
+      const user = userEvent.setup();
+      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+
+      await openPrompt(user);
+      expect(screen.getByRole("button", { name: "Alter Name" })).toHaveAttribute(
+        "aria-expanded",
+        "true"
+      );
+      expect(screen.getByText("Du bist ein hilfreicher Assistent.")).toBeInTheDocument();
+
+      await openPrompt(user);
+      expect(screen.queryByText("Du bist ein hilfreicher Assistent.")).not.toBeInTheDocument();
+    });
+
+    it("opens each prompt on its own", async () => {
+      const user = userEvent.setup();
+      const second: SavedPrompt = { ...prompt, id: "p2", title: "Zweiter", content: "Zweiter Text." };
+      render(<SavedPromptList userId="u1" prompts={[prompt, second]} canExportPdf={false} />);
+
+      await openPrompt(user, "Zweiter");
+      expect(screen.getByText("Zweiter Text.")).toBeInTheDocument();
+      expect(screen.queryByText("Du bist ein hilfreicher Assistent.")).not.toBeInTheDocument();
+    });
   });
 
-  it("hides the PDF export button on Free", () => {
+  it("hides the PDF export button on Free", async () => {
+    const user = userEvent.setup();
     render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+    await openPrompt(user);
     expect(screen.queryByRole("button", { name: "Als PDF exportieren" })).not.toBeInTheDocument();
   });
 
-  it("shows the PDF export button on Pro/Team", () => {
+  it("shows the PDF export button on Pro/Team", async () => {
+    const user = userEvent.setup();
     render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf />);
+    await openPrompt(user);
     expect(screen.getByRole("button", { name: "Als PDF exportieren" })).toBeInTheDocument();
   });
 
@@ -71,6 +112,7 @@ describe("SavedPromptList", () => {
     const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+    await openPrompt(user);
     await user.click(screen.getByRole("button", { name: /Kopieren/ }));
     expect(writeText).toHaveBeenCalledWith(prompt.content);
   });
@@ -84,6 +126,7 @@ describe("SavedPromptList", () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       const input = screen.getByLabelText("Neuer Name für den Prompt");
       await user.clear(input);
@@ -96,31 +139,33 @@ describe("SavedPromptList", () => {
       expect(refresh).toHaveBeenCalled();
       // The list re-renders with the new title from local state, without
       // waiting on the server refresh to reflect it.
-      expect(await screen.findByText("sessionStartPrompt")).toBeInTheDocument();
+      expect(await screen.findByRole("button", { name: "sessionStartPrompt" })).toBeInTheDocument();
     });
 
     it("cancels on Escape without calling Supabase", async () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.type(screen.getByLabelText("Neuer Name für den Prompt"), " geändert");
       await user.keyboard("{Escape}");
 
       expect(update).not.toHaveBeenCalled();
-      expect(screen.getByText("Alter Name")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Alter Name" })).toBeInTheDocument();
     });
 
     it("does not rename to an empty title", async () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.clear(screen.getByLabelText("Neuer Name für den Prompt"));
       await user.keyboard("{Enter}");
 
       expect(update).not.toHaveBeenCalled();
-      expect(screen.getByText("Alter Name")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Alter Name" })).toBeInTheDocument();
     });
 
     it("shows a toast and stays in rename mode when the update fails", async () => {
@@ -128,6 +173,7 @@ describe("SavedPromptList", () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
       await user.type(screen.getByLabelText("Neuer Name für den Prompt"), " v2{Enter}");
 
@@ -147,6 +193,7 @@ describe("SavedPromptList", () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
 
       expect(del).not.toHaveBeenCalled();
@@ -160,6 +207,7 @@ describe("SavedPromptList", () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
       await user.click(screen.getByRole("button", { name: "Abbrechen" }));
 
@@ -175,6 +223,7 @@ describe("SavedPromptList", () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
       await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
 
@@ -189,6 +238,7 @@ describe("SavedPromptList", () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
 
+      await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
       await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
 
