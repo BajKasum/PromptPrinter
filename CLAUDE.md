@@ -767,6 +767,43 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Alle drei im Dev-Server mit echter Anmeldung verifiziert. Gate grün
 > (typecheck/lint/build, 1143 Tests, davon 15 neu).
 
+> **Audit 23.09.2026 + erste Umsetzung (`9a31260`..`7ac0ba9`):** Vollständiger
+> Durchgang ohne Codeänderung, Bericht im 2nd-brain
+> (`02 Projekte/PromptPrinter/PromptPrinter Audit 2026-09-23.md`). Kernbefund:
+> technisch gesund, die Hebel liegen beim Produkt. Danach auf Kasums Auswahl
+> umgesetzt, je ein Commit, Gate davor:
+>
+> - **Free ohne Key** (`9a31260`, F-1): Free chattet nur mit eigenem Key, ein
+>   neues Konto erfuhr das aber erst NACH dem Absenden, mit einem
+>   "Erneut senden"-Knopf, der denselben 403 wiederholte. Jetzt fragen die
+>   vier Chat-Seiten `getNeedsOwnKey()` (server/session.ts, Entscheidung als
+>   reine Funktion `requiresOwnKey()` in plans.ts) und `<Chat needsKey>` zeigt
+>   `ChatKeyNotice` schon im leeren Chat ("Key hinterlegen" →
+>   `/settings#api-keys`, "Pro ansehen" → `/billing`). Ein 403 mit
+>   `kind: "byokRequired"` zeigt denselben Hinweis statt des Fehlerbanners.
+> - **Ziel-Tool-Auswahl komplett entfernt** (`212e4bc`): auf Kasums Wunsch,
+>   niemand hat sie benutzt, und das Modell ignorierte das gewählte Tool
+>   ohnehin. Picker, `target-tools.ts`, `target` im Request-Schema, im
+>   Systemprompt-Zusatz, in `chat-persistence.ts`, "Für X" in Chat-Kopf/
+>   -Liste/gespeicherten Prompts, das Struktur-Feld "Ziel-KI" der Rail sowie
+>   die "Für Lovable"-Pillen in Hero-Demo und ProductShowcase sind weg. Finn
+>   fragt im Gespräch selbst nach dem Tool. **Migration 0044** (dropt
+>   `conversations.target`, räumt `projects.context.target` und
+>   `generations.outputs.target`) ist **live angewendet**, nach dem Deploy
+>   des Codes, per SQL verifiziert. Achtung: 0043 (Stripe-Reste) ist weiterhin
+>   NICHT live, 0044 lief also vor 0043 — die beiden sind unabhängig.
+> - **Kopierter Prompt ohne ```** (`6e7af90`, F-3): glm-4.5-air schliesst den
+>   Codeblock auf der Inhaltszeile, der Block blieb offen und "Prompt kopieren"
+>   nahm die Backticks mit. `normalizeFences()` (features/chat/lib) repariert
+>   das vor dem Rendern.
+> - **Gespeicherte Prompts als Titelliste** (`7ac0ba9`): zugeklappt nur der
+>   Titel (automatisch aus der ersten Prompt-Zeile, umbenennbar), ein Klick
+>   klappt den Prompt mit Kopieren/Umbenennen/PDF/Löschen auf. WAI-Accordion
+>   (Überschrift umschliesst den Knopf).
+>
+> Offen aus dem Audit, von Kasum als Nächstes genannt: das Projekt-Gedächtnis
+> in der Rail sichtbarer machen (nicht auf der Landing Page).
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
