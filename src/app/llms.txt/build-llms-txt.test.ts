@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildLlmsTxt } from "./route";
+import { buildLlmsTxt } from "./build-llms-txt";
 
 // Same drift guard as robots.test.ts / sitemap.test.ts: every URL in here
 // must come from the configured app origin, never a hardcoded domain this
