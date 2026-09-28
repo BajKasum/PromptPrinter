@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Kontakt",
   description:
     "Fehler melden, Fragen stellen, Datenschutzanfragen: alles läuft über eine E-Mail-Adresse, ohne Ticket-System.",
+  alternates: { canonical: "/kontakt" },
 };
 
 // Deliberately no contact form: the project has no transactional mail setup,

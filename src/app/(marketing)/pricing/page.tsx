@@ -6,6 +6,12 @@ import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
 export const metadata = {
   title: "Preise",
   description: `Free läuft mit deinem eigenen KI-Key komplett gratis. Ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`,
+  // Ohne eigenes `alternates` erbt jede Seite das Root-Layout-Canonical "/"
+  // unverändert (Next merged `alternates` nicht pro Feld) — /pricing zeigte
+  // damit Google "die Startseite ist die eigentliche URL dieser Seite",
+  // stille Selbst-Kannibalisierung. Jede indexierbare Seite braucht ihr
+  // eigenes Canonical.
+  alternates: { canonical: "/pricing" },
 };
 
 // A reassurance row (eigener Key / keine Kreditkarte / monatlich kündbar, each

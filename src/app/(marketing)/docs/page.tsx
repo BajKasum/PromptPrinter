@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Hilfe",
   description:
     "Alles, was PromptPrinter kann: Chat mit Finn, Projekte, Dateien, eigene API-Keys, Pläne und Limits. Von vorne lesbar oder gezielt nachschlagen.",
+  alternates: { canonical: "/docs" },
 };
 
 export default function DocsIndexPage() {

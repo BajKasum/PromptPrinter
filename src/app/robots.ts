@@ -15,7 +15,12 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/chats", "/projects", "/settings", "/billing"],
+      // /admin fehlte hier bislang, obwohl es dieselbe auth-gated
+      // App-Only-Fläche ist wie die anderen vier: 404 für alle ausser
+      // is_admin=true (admin/page.tsx), "nobody else needs to know exists".
+      // robots.txt macht den Pfad nicht unsichtbar, hält brave Crawler aber
+      // davon ab, ihn zu indexieren.
+      disallow: ["/api/", "/chats", "/projects", "/settings", "/billing", "/admin"],
     },
     sitemap: siteUrl("/sitemap.xml"),
   };

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug } from "@/shared/lib/docs-nav";
+import { docBySlug, docHref } from "@/shared/lib/docs-nav";
 import {
   ALLOWED_FILE_EXTENSIONS,
   MAX_FILES_PER_PROJECT,
@@ -13,6 +13,7 @@ const doc = docBySlug("dateien")!;
 export const metadata: Metadata = {
   title: doc.title,
   description: doc.summary,
+  alternates: { canonical: docHref(doc.slug) },
 };
 
 // Limits are read from the same module the upload UI enforces them with, so

@@ -5,6 +5,7 @@ import { LEGAL } from "@/shared/lib/legal";
 export const metadata: Metadata = {
   title: "Impressum",
   description: "Anbieterkennzeichnung und Kontaktangaben zu PromptPrinter.",
+  alternates: { canonical: "/impressum" },
 };
 
 export default function ImpressumPage() {
