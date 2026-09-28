@@ -325,6 +325,29 @@ export function VoiceBar({
           )}
         </button>
       </div>
+
+      {/* Hinweis im Moment der Erhebung, nicht nur in der Datenschutzerklaerung:
+          Chrome und Edge erkennen Sprache nicht auf dem Geraet, sondern
+          streamen das Mikrofon an den Dienst ihres Herstellers. Das stand seit
+          dem Bau des Sprachmodus (30.07.2026) als offener Punkt in CLAUDE.md,
+          die Datenschutzerklaerung nennt es seit 06.09., hier fehlte es
+          (Rechts-Audit 28.09.2026). Nur wenn die Erkennung ueberhaupt laeuft;
+          ohne Unterstuetzung steht oben schon, dass nichts passiert. Neuer Tab,
+          damit der offene Sprachmodus nicht verloren geht. */}
+      {supported && (
+        <p className="mt-2 px-3 text-center text-[11.5px] leading-snug text-tertiary">
+          Chrome und Edge schicken deine Aufnahme zur Erkennung an Google bzw. Microsoft, Safari
+          erkennt auf dem Gerät.{" "}
+          <a
+            href="/datenschutz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent-text underline underline-offset-2"
+          >
+            Datenschutz
+          </a>
+        </p>
+      )}
     </motion.div>
   );
 }
