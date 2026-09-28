@@ -132,6 +132,16 @@ export function ChatComposer({
           </Button>
         )}
       </div>
+      {/* EU-KI-Verordnung Art. 50 Abs. 1, anwendbar seit 2. August 2026: wer
+          mit einem KI-System spricht, muss das spaetestens bei der ersten
+          Interaktion erfahren, ausser es ist offensichtlich. Ein Delfin als
+          Maskottchen macht es nicht offensichtlich. Der Satz steht deshalb
+          dauerhaft hier, also auch in der leeren Ansicht vor der ersten
+          Nachricht, und ist bewusst keine "Enter sendet"-Chrome (siehe oben):
+          er ist eine Pflichtangabe (Rechts-Audit 28.09.2026). */}
+      <p className="mt-2 text-center text-[11.5px] leading-snug text-tertiary">
+        Finn ist eine KI und kann Fehler machen. Prüf wichtige Angaben selbst.
+      </p>
     </div>
   );
 }

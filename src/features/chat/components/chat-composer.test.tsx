@@ -41,6 +41,14 @@ class FakeVisualViewport extends EventTarget {
 }
 
 describe("ChatComposer", () => {
+  // EU AI Act Art. 50(1): users must learn they are talking to an AI no later
+  // than the first interaction, so the notice has to be there before anything
+  // is typed, not only after a reply.
+  it("tells the user up front that Finn is an AI", () => {
+    setup();
+    expect(screen.getByText(/Finn ist eine KI/)).toBeInTheDocument();
+  });
+
   // QA finding F-2/E-1: the server rejects anything past this, and pasting a
   // long spec or log is exactly what this audience does. Without the cap that
   // came back as a bare "Invalid request".
