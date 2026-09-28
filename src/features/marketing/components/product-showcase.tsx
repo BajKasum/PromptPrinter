@@ -66,12 +66,14 @@ export function ProductShowcase() {
           <div>
             <div className="grid md:grid-cols-[200px_1fr]">
               {/* Mini sidebar */}
-              <aside className="hidden md:flex flex-col border-r border-border bg-surface/60 p-3">
+              {/* div, not aside: this is a picture of the app's sidebar, not a
+                  landmark of this page (axe, Rechts-Audit 28.09.2026). */}
+              <div className="hidden md:flex flex-col border-r border-border bg-surface/60 p-3">
                 <div className="px-2 py-2 mb-3">
                   <Logo />
                 </div>
                 <NavSwitcher view={view} onChange={setView} />
-              </aside>
+              </div>
 
               {/* Content */}
               <div className="p-5 md:p-6 min-h-[260px]">

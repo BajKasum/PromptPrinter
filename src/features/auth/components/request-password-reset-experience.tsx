@@ -81,7 +81,7 @@ export function RequestPasswordResetExperience() {
             </p>
           </div>
           <p className="text-[13px] text-secondary">
-            <Link href="/login" className="text-accent-text hover:underline">
+            <Link href="/login" className="text-accent-text underline underline-offset-2">
               Zurück zum Login
             </Link>
           </p>
@@ -149,7 +149,7 @@ export function RequestPasswordResetExperience() {
 
       <p className="text-center text-[13px] text-secondary">
         Doch erinnert?{" "}
-        <Link href="/login" className="text-accent-text hover:underline">
+        <Link href="/login" className="text-accent-text underline underline-offset-2">
           Einloggen
         </Link>
       </p>

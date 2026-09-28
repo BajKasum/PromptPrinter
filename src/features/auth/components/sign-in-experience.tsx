@@ -203,7 +203,7 @@ export function SignInExperience() {
 
       <p className="text-center text-[13px] text-secondary">
         Noch kein Konto?{" "}
-        <Link href="/signup" className="text-accent-text hover:underline">
+        <Link href="/signup" className="text-accent-text underline underline-offset-2">
           Registrieren
         </Link>
       </p>

@@ -82,7 +82,10 @@ export function AuthExperienceShell({
           </Link>
         </header>
 
-        <div className="flex flex-1 items-center justify-center px-6 py-8 md:px-12 lg:py-16">
+        {/* <main>, not <div>: without it the auth pages had no main landmark,
+            and screen-reader users could not jump to the form (axe
+            landmark-one-main, Rechts-Audit 28.09.2026). */}
+        <main className="flex flex-1 items-center justify-center px-6 py-8 md:px-12 lg:py-16">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -95,7 +98,7 @@ export function AuthExperienceShell({
             </div>
             {children}
           </motion.div>
-        </div>
+        </main>
       </div>
     </div>
   );

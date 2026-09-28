@@ -204,7 +204,7 @@ export function SignUpExperience() {
 
           <p className="text-[13px] text-secondary">
             Schon bestätigt?{" "}
-            <Link href="/login" className="text-accent-text hover:underline">
+            <Link href="/login" className="text-accent-text underline underline-offset-2">
               Einloggen
             </Link>
           </p>
@@ -296,11 +296,11 @@ export function SignUpExperience() {
               Nutzungsvertrag beruht (Rechts-Audit 28.09.2026). */}
           <span>
             Ich akzeptiere die{" "}
-            <Link href="/agb" className="text-accent-text hover:underline">
+            <Link href="/agb" className="text-accent-text underline underline-offset-2">
               AGB
             </Link>
             . Die{" "}
-            <Link href="/datenschutz" className="text-accent-text hover:underline">
+            <Link href="/datenschutz" className="text-accent-text underline underline-offset-2">
               Datenschutzerklärung
             </Link>{" "}
             habe ich zur Kenntnis genommen.
@@ -336,7 +336,7 @@ export function SignUpExperience() {
 
       <p className="text-center text-[13px] text-secondary">
         Schon ein Konto?{" "}
-        <Link href="/login" className="text-accent-text hover:underline">
+        <Link href="/login" className="text-accent-text underline underline-offset-2">
           Einloggen
         </Link>
       </p>

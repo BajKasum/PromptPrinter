@@ -75,14 +75,14 @@ export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
                 alt=""
               />
             )}
-            <h3
+            <h2
               className={cn(
                 "text-[17px] font-semibold",
                 p.highlight ? "text-accent-text" : "text-foreground"
               )}
             >
               {p.name}
-            </h3>
+            </h2>
             <p className="mt-1.5 text-[13.5px] leading-[1.5] text-secondary">
               {p.description}
             </p>
