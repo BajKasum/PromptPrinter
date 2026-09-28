@@ -177,10 +177,13 @@ export default function DatenschutzPage() {
           Browser-Merkmale werden zur Prüfung übermittelt, ob die Anfrage automatisiert ist.
         </li>
         <li>
-          <strong>Z.ai</strong> (Zhipu AI): deine Chat-Nachrichten und der jeweilige Projektkontext,
-          beim Projekt-Gedächtnis auch Projektdateien, Screenshots und Repository-Inhalte, werden
-          zur Erzeugung der Antwort an die Z.ai-API übermittelt. Dabei findet eine
-          Übermittlung nach <strong>China</strong> statt.
+          <strong>Z.ai</strong> (JINGSHENG HENGXING TECHNOLOGY PTE. LTD., Singapur, die internationale
+          Plattform des chinesischen KI-Unternehmens Zhipu AI): deine Chat-Nachrichten und der
+          jeweilige Projektkontext, beim Projekt-Gedächtnis auch Projektdateien, Screenshots und
+          Repository-Inhalte, werden zur Erzeugung der Antwort an die Z.ai-API übermittelt. Nach
+          Angaben von Z.ai werden sie in der Regel in <strong>Singapur</strong> bearbeitet. Eine
+          Bearbeitung durch Konzerngesellschaften in <strong>China</strong> können wir nicht
+          ausschliessen.
         </li>
         <li>
           <strong>Google Gemini</strong> (Google Ireland Ltd. / Google LLC): als Ausweich-Anbieter,
@@ -264,17 +267,24 @@ export default function DatenschutzPage() {
         namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Google Gemini,
         Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter, bei der Anmeldung über
         diese Dienste Google bzw. GitHub sowie, wenn du den Sprachmodus mit Chrome oder Edge
-        nutzt, Google bzw. Microsoft, siehe Ziffer 4) und in{" "}
-        <strong>China</strong> (Z.ai).
+        nutzt, Google bzw. Microsoft, siehe Ziffer 4) sowie in <strong>Singapur</strong> (Z.ai,
+        möglicherweise auch in <strong>China</strong>).
       </p>
       <p>
-        Für Übermittlungen in die USA stützen wir uns auf die Standardvertragsklauseln der
-        EU-Kommission und, soweit der jeweilige Anbieter entsprechend zertifiziert ist, ergänzend
-        auf das EU-US bzw. Swiss-US Data Privacy Framework. Für China besteht weder ein
-        Angemessenheitsbeschluss der EU-Kommission noch eine Anerkennung durch den Schweizer
-        Bundesrat; wir stützen diese Übermittlung auf die Standardvertragsklauseln als geeignete
-        Garantie. Ein gleichwertiges Datenschutzniveau kann für China trotz dieser Garantien nicht
-        vollständig zugesichert werden. Wenn du das vermeiden möchtest, kannst du in den
+        Für Übermittlungen an Dienstleister in den USA, die in unserem Auftrag handeln, stützen wir
+        uns auf die Standardvertragsklauseln der EU-Kommission in deren
+        Auftragsbearbeitungsvereinbarungen und, soweit der jeweilige Anbieter entsprechend
+        zertifiziert ist, ergänzend auf das EU-US bzw. Swiss-US Data Privacy Framework. Anbieter,
+        die in eigener Verantwortung handeln (Ziffer 4), bestimmen die Grundlage ihrer
+        Übermittlungen selbst.
+      </p>
+      <p>
+        Für Singapur und China besteht weder ein Angemessenheitsbeschluss der EU-Kommission noch
+        eine Anerkennung durch den Schweizer Bundesrat. Z.ai verpflichtet sich in seiner
+        Vereinbarung zur Auftragsbearbeitung für API-Kunden, Daten nur nach unseren Weisungen zu
+        bearbeiten, und nach eigenen Angaben, Daten nur gestützt auf gesetzlich anerkannte
+        Mechanismen ins Ausland zu übermitteln. Ein gleichwertiges Datenschutzniveau können wir für
+        diese Länder dennoch nicht vollständig zusichern. Wenn du das vermeiden möchtest, kannst du in den
         Einstellungen einen eigenen API-Schlüssel eines Anbieters deiner Wahl hinterlegen; deine
         Eingaben gehen dann nicht mehr an Z.ai.
       </p>
