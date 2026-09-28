@@ -21,11 +21,15 @@ import type { ProjectBrain } from "@/shared/lib/project-brain";
 // injected into chats by buildProjectContext; Ergebnisse is a status card
 // linking to the results area.
 
+// Auf Zuruf (2026-09-28): die Beispiel-Platzhalter ("z. B. Next.js, React")
+// wirkten wie eine Anleitung, die selbst erklärungsbedürftig ist — das Label
+// links sagt schon, was gemeint ist. "Weiteres" bleibt die Ausnahme, dessen
+// Label allein wäre zu vage, um das Feld zu füllen.
 const STRUCTURE_FIELDS = [
-  { key: "frontend", label: "Frontend", placeholder: "z. B. Next.js, React" },
-  { key: "backend", label: "Backend", placeholder: "z. B. Supabase, Node.js" },
-  { key: "language", label: "Sprache", placeholder: "z. B. TypeScript, Python" },
-  { key: "database", label: "Datenbank", placeholder: "z. B. Postgres, Supabase" },
+  { key: "frontend", label: "Frontend", placeholder: undefined },
+  { key: "backend", label: "Backend", placeholder: undefined },
+  { key: "language", label: "Sprache", placeholder: undefined },
+  { key: "database", label: "Datenbank", placeholder: undefined },
   { key: "notes", label: "Weiteres", placeholder: "Was ich sonst wissen sollte" },
 ] as const;
 
