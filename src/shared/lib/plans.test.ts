@@ -54,6 +54,31 @@ describe("marketed plans match enforced limits", () => {
     expect(pro?.features.some((f) => f.includes(String(PLAN_LIMITS.pro.chatMessages)))).toBe(true);
   });
 
+  // chatMessages counts assistant replies, and one finished prompt takes at
+  // least two (the bundled question, then the prompt). Calling the allowance
+  // "Prompts" promised about twice what it covers (Rechts-Audit 28.09.2026).
+  it("names pro's allowance in the unit that is actually counted", async () => {
+    const { PLANS } = await import("@/shared/lib/pricing");
+    const pro = PLANS.find((p) => p.name === "Pro");
+    const allowance = pro?.features.find((f) => f.includes(String(PLAN_LIMITS.pro.chatMessages)));
+
+    expect(allowance).toMatch(/Chat-Antworten/);
+    expect(allowance).not.toMatch(/Prompts/);
+  });
+
+  // With an own key the monthly cap is gone, the hourly abuse limit is not.
+  // ("Unbegrenzt viele Projekte" on Pro stays: projects really are uncapped.)
+  it("does not call BYOK usage unlimited", async () => {
+    const { PLANS } = await import("@/shared/lib/pricing");
+    const byokLine = PLANS.find((p) => p.name === "Free")?.features.find((f) =>
+      /Mit deinem Key/.test(f)
+    );
+
+    expect(byokLine).toBeDefined();
+    expect(byokLine).not.toMatch(/unbegrenzt/i);
+    expect(byokLine).toMatch(/ohne Monatslimit/);
+  });
+
   it("keeps Pro's price and the free tier's zero price in sync with the config", async () => {
     const { PLANS, PRO_PRICE_LABEL } = await import("@/shared/lib/pricing");
     expect(PLANS.find((p) => p.name === "Free")?.price).toBe("0 €");

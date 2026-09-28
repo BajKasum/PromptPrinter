@@ -30,7 +30,7 @@ export function AuthExperienceShell({
   children,
   overlay,
   panelTitle = "Schön, dass du da bist.",
-  panelSub = "Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Plan draus.",
+  panelSub = "Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Prompt draus.",
 }: {
   children: React.ReactNode;
   overlay?: React.ReactNode;

@@ -216,7 +216,7 @@ export function SignUpExperience() {
   return (
     <AuthExperienceShell
       panelTitle="Schön, dass du da bist."
-      panelSub="Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Plan draus."
+      panelSub="Ich bin Finn. Erzähl mir deine Idee, ich mach einen fertigen Prompt draus."
       overlay={
         celebrateMsg && (
           <SuccessCelebration
@@ -235,7 +235,7 @@ export function SignUpExperience() {
           Konto erstellen
         </h1>
         <p className="text-[15px] font-light text-secondary">
-          Kostenlos, keine Kreditkarte, jederzeit kündbar.
+          Kostenlos und ohne Kreditkarte. Zum Chatten brauchst du einen eigenen KI-Key oder Pro.
         </p>
       </div>
 

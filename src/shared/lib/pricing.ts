@@ -86,7 +86,10 @@ export const PLANS: MarketingPlan[] = [
       // what makes Free free. Without a key, Free can't chat at all — see
       // this file's own top comment for why.
       "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
-      "Mit deinem Key: unbegrenzt, die App selbst bleibt gratis",
+      // "ohne Monatslimit" statt "unbegrenzt": auch mit eigenem Key greift
+      // der stuendliche Missbrauchsschutz (AGB Ziffer 8). "Unbegrenzt" war
+      // damit eine Zusage, die der Code nicht haelt (Rechts-Audit 28.09.2026).
+      "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
       `Bis zu ${PLAN_LIMITS.free.projects} Projekte`,
       "Zugeschnitten auf dein Bau-Tool",
       "Markdown-Export",
@@ -114,7 +117,12 @@ export const PLANS: MarketingPlan[] = [
     mascot: "celebrating",
     features: [
       "Alles aus Free",
-      `${PLAN_LIMITS.pro.chatMessages} Prompts pro Monat mit meiner KI`,
+      // Gezaehlt werden Chat-Antworten (plans.ts), nicht fertige Prompts: ein
+      // Prompt braucht mindestens zwei Antworten (Rueckfrage, dann Prompt).
+      // "400 Prompts" versprach damit rund das Doppelte dessen, was das
+      // Kontingent hergibt, und widersprach /docs/plaene-und-limits, das
+      // schon "Chat-Antworten" sagt (Rechts-Audit 28.09.2026).
+      `${PLAN_LIMITS.pro.chatMessages} Chat-Antworten pro Monat mit meiner KI`,
       "Kein eigener Key nötig",
       "Unbegrenzt viele Projekte",
       "PDF- & Markdown-Export",
