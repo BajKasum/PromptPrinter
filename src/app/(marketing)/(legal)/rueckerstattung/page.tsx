@@ -47,6 +47,14 @@ export default function RueckerstattungPage() {
         verlierst aber auch keinen Tag, den du bezahlt hast.
       </p>
       <p>
+        So kündigst du: in der App unter <strong>Abrechnung</strong> über „Abo
+        verwalten“, das dich ins Kundenportal von Lemon Squeezy bringt, oder
+        über den Link in deiner Kaufbestätigung von Lemon Squeezy. Wenn beides
+        nicht klappt, genügt eine formlose Mail an{" "}
+        <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>, ich kündige dann
+        für dich.
+      </p>
+      <p>
         Eine Kündigung ist keine Erstattung. Wenn du dein Geld zurückwillst und
         noch innerhalb der 14 Tage bist, sag das ausdrücklich dazu.
       </p>
