@@ -208,9 +208,8 @@ export function ProjectBrainCard({
           <div className="flex items-start gap-3">
             <Mascot state="curious" size={36} className="shrink-0" />
             <p className="text-[12px] leading-relaxed text-secondary">
-              Ich lese deine Dateien und dein Repository einmal durch und merke mir Framework,
-              Sprache, Architektur, Datenbank, Design und Konventionen. Danach kennt jeder Chat in
-              diesem Projekt deinen Stack, ohne dass du ihn erklärst.
+              Lad Dateien hoch oder trag unten dein öffentliches GitHub-Repo ein, dann auf
+              „Projekt analysieren“ drücken. Ich merk mir den Rest.
             </p>
           </div>
         )}
