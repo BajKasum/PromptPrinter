@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { MotionShell } from "@/shared/providers/motion-shell";
 import { siteUrl } from "@/shared/lib/site-url";
 import "./globals.css";
@@ -119,6 +120,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <MotionShell>{children}</MotionShell>
+        <Analytics />
       </body>
     </html>
   );
