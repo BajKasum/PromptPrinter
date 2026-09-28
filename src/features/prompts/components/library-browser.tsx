@@ -19,12 +19,13 @@ export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId
   return (
     <div>
       <div className="relative max-w-md mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary" />
+        <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-tertiary" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Projekte oder Tools durchsuchen…"
+          aria-label="Projekte oder Tools durchsuchen"
           className="w-full h-10 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
         />
       </div>

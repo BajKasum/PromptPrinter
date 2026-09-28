@@ -44,6 +44,11 @@ describe("ChatComposer", () => {
   // EU AI Act Art. 50(1): users must learn they are talking to an AI no later
   // than the first interaction, so the notice has to be there before anything
   // is typed, not only after a reply.
+  it("gives the message field an accessible name beyond its placeholder", () => {
+    setup();
+    expect(screen.getByRole("textbox", { name: "Nachricht an Finn" })).toBeInTheDocument();
+  });
+
   it("tells the user up front that Finn is an AI", () => {
     setup();
     expect(screen.getByText(/Finn ist eine KI/)).toBeInTheDocument();

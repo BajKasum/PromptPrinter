@@ -69,6 +69,7 @@ export function ChatComposer({
           rows={1}
           value={input}
           placeholder={placeholder}
+          aria-label="Nachricht an Finn"
           maxLength={MAX_USER_MESSAGE_CHARS}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => {

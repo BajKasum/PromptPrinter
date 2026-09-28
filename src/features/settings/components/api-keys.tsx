@@ -431,6 +431,7 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Name (z. B. Z.ai)"
+            aria-label="Name des Anbieters"
             autoComplete="off"
             autoFocus
           />
@@ -438,6 +439,7 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
             value={model}
             onChange={(e) => setModel(e.target.value)}
             placeholder="Modell (z. B. glm-4.6)"
+            aria-label="Modell"
             autoComplete="off"
           />
         </div>
@@ -445,6 +447,7 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
           placeholder="API-Endpoint (z. B. https://api.z.ai/api/paas/v4/chat/completions)"
+          aria-label="API-Endpoint"
           autoComplete="off"
         />
         <div className="flex items-center gap-2">
@@ -458,6 +461,7 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
                 if (e.key === "Escape") cancel();
               }}
               placeholder="API-Key"
+              aria-label="API-Key"
               autoComplete="off"
               className="pr-9"
             />
