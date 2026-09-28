@@ -110,7 +110,7 @@ export default async function ProjectWorkspaceLayout({
   // one place that quietly relied on the caller above having checked already.
   const [
     { count: chatCount },
-    { data: latestGen, count: resultCount },
+    { count: resultCount },
     { data: filesRaw },
     { data: brainRaw },
   ] = await Promise.all([
@@ -119,13 +119,14 @@ export default async function ProjectWorkspaceLayout({
         .select("id", { count: "exact", head: true })
         .eq("project_id", id)
         .eq("user_id", project.userId),
+      // Nur noch die Zahl fuers Header-Stat (Rail-Karte, die die einzelne
+      // neueste Zeile brauchte, ist auf Zuruf entfernt, siehe project-rail.tsx),
+      // deshalb head: true statt einer tatsaechlichen Zeile wie vorher.
       supabase
         .from("generations")
-        .select("created_at", { count: "exact" })
+        .select("id", { count: "exact", head: true })
         .eq("project_id", id)
-        .eq("user_id", project.userId)
-        .order("created_at", { ascending: false })
-        .limit(1),
+        .eq("user_id", project.userId),
       supabase
         .from("project_files")
         .select("id, name, storage_path, size_bytes, created_at")
@@ -145,9 +146,6 @@ export default async function ProjectWorkspaceLayout({
 
   const chats = chatCount ?? 0;
   const results = resultCount ?? 0;
-  const latestResultAt = latestGen?.[0]?.created_at
-    ? relativeTime(latestGen[0].created_at as string)
-    : null;
   const files: ProjectFile[] = ((filesRaw as ProjectFileRow[] | null) ?? []).map((f) => ({
     id: f.id,
     name: f.name,
@@ -228,8 +226,6 @@ export default async function ProjectWorkspaceLayout({
             files={files}
             brain={brain}
             brainDigest={brainDigest}
-            resultCount={results}
-            latestResultAt={latestResultAt}
           />
         </FadeIn>
       </div>
