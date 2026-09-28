@@ -68,6 +68,7 @@ describe("updateSession", () => {
       "/reset-password/update",
       "/impressum",
       "/agb",
+      "/cookies",
       "/datenschutz",
       "/kontakt",
       "/rueckerstattung",

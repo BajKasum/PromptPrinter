@@ -27,6 +27,7 @@ const PUBLIC_PREFIXES = [
   "/pricing",
   "/docs",
   "/agb",
+  "/cookies",
   "/datenschutz",
   "/impressum",
   "/kontakt",

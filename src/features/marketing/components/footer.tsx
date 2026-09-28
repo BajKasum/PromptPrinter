@@ -21,6 +21,7 @@ const FOOTER_LINKS = [
   { href: "/ueber", label: "Über" },
   { href: "/kontakt", label: "Kontakt" },
   { href: "/datenschutz", label: "Datenschutz" },
+  { href: "/cookies", label: "Cookies" },
   { href: "/agb", label: "AGB" },
   { href: "/rueckerstattung", label: "Rückerstattung" },
   { href: "/impressum", label: "Impressum" },

@@ -48,6 +48,7 @@ ${docs}
 ## Recht
 - [Impressum](${base}/impressum)
 - [Datenschutz](${base}/datenschutz)
+- [Cookies](${base}/cookies)
 - [AGB](${base}/agb)
 - [Rückerstattung](${base}/rueckerstattung)
 `;

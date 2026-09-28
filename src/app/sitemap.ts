@@ -39,6 +39,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Legal pages: indexable, but they should never outrank the product.
   const legal: MetadataRoute.Sitemap = [
     "/datenschutz",
+    "/cookies",
     "/agb",
     "/rueckerstattung",
     "/impressum",
