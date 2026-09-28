@@ -1,7 +1,9 @@
 import { PricingGrid } from "@/features/marketing/components/pricing-grid";
 import { PageHeader } from "@/features/marketing/components/page-header";
 import { FAQ } from "@/features/marketing/components/faq";
+import { faqs } from "@/features/marketing/lib/faq-data";
 import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
+import { JsonLd } from "@/shared/ui/json-ld";
 
 export const metadata = {
   title: "Preise",
@@ -19,9 +21,26 @@ export const metadata = {
 // on request as unnecessary: the FAQ right below already answers the same
 // three worries in more depth, so the row was saying the same thing twice
 // before you'd even scrolled past it.
+
+// FAQPage-Markup: exakt die zwei Fragen, die <FAQ/> auch rendert (faqs aus
+// faq.tsx), nicht zweimal getippt. Der eigentliche Wert für Answer Engines
+// (Google-Featured-Snippets, Voice-Assistants, KI-Zusammenfassungen): eine
+// direkte, zitierbare Antwort pro Frage, ohne das Akkordeon aufklappen zu
+// müssen.
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
 export default function PricingPage() {
   return (
     <>
+      <JsonLd data={faqJsonLd} />
 
       {/* Headline only. The greeting Finn and the subline that used to sit here
           are gone (see page-header.tsx): the difference between the two plans is

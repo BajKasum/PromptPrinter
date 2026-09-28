@@ -5,17 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { cn } from "@/shared/lib/utils";
-
-const faqs = [
-  {
-    q: "Was, wenn der Prompt nicht passt?",
-    a: "Dann sagst du mir einfach im Chat, was anders sein soll, kürzer, ausführlicher, ein anderer Ton. Ich schreib dir den ganzen Prompt neu, so oft wie nötig. Nichts ist endgültig.",
-  },
-  {
-    q: "Was bringt mir das, statt eine KI einfach direkt zu fragen?",
-    a: "Bevor du in Lovable, Cursor oder Claude Code überhaupt tippst, frag ich dich genau das, was dein Bau-Tool selbst nicht abfragt, Datenmodell, Auth, wie's aussehen soll. Das spart dir die Credits und Nachbesserungs-Runden, die ein zu vager erster Prompt sonst kostet. Der Prompt selbst ist ausserdem zugeschnitten, Lovable bekommt etwas anderes als Cursor. Und jedes Gespräch bleibt gespeichert, du erklärst nicht jedes Mal neu, woran du arbeitest.",
-  },
-];
+import { faqs } from "@/features/marketing/lib/faq-data";
 
 export function FAQ() {
   return (
