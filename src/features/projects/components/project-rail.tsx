@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Loader2, NotebookPen, Layers, Sparkles } from "lucide-react";
+import { Check, Loader2, NotebookPen, Layers } from "lucide-react";
 import { Label } from "@/shared/ui/label";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
@@ -18,14 +17,24 @@ import type { ProjectBrain } from "@/shared/lib/project-brain";
 // save on blur via the browser client (RLS scopes writes to the owner),
 // every project chat reads them server-side on the next turn, so there is
 // nothing to sync beyond the DB row. Dateien (Phase 4) is a real upload list,
-// injected into chats by buildProjectContext; Ergebnisse is a status card
-// linking to the results area.
+// injected into chats by buildProjectContext.
+//
+// Removed on request (2026-09-28): an "Ergebnisse" status card used to sit
+// here, linking to /projects/[id]/results. It didn't communicate its own
+// purpose ("what even are Ergebnisse") and the underlying saved prompts stay
+// fully reachable at /prompts (the unscoped library, see that page's own
+// comment) — this only dropped the confusing project-scoped shortcut, not
+// the feature or the route itself.
 
+// Auf Zuruf (2026-09-28): die Beispiel-Platzhalter ("z. B. Next.js, React")
+// wirkten wie eine Anleitung, die selbst erklärungsbedürftig ist — das Label
+// links sagt schon, was gemeint ist. "Weiteres" bleibt die Ausnahme, dessen
+// Label allein wäre zu vage, um das Feld zu füllen.
 const STRUCTURE_FIELDS = [
-  { key: "frontend", label: "Frontend", placeholder: "z. B. Next.js, React" },
-  { key: "backend", label: "Backend", placeholder: "z. B. Supabase, Node.js" },
-  { key: "language", label: "Sprache", placeholder: "z. B. TypeScript, Python" },
-  { key: "database", label: "Datenbank", placeholder: "z. B. Postgres, Supabase" },
+  { key: "frontend", label: "Frontend", placeholder: undefined },
+  { key: "backend", label: "Backend", placeholder: undefined },
+  { key: "language", label: "Sprache", placeholder: undefined },
+  { key: "database", label: "Datenbank", placeholder: undefined },
   { key: "notes", label: "Weiteres", placeholder: "Was ich sonst wissen sollte" },
 ] as const;
 
@@ -41,8 +50,6 @@ export function ProjectRail({
   files,
   brain,
   brainDigest,
-  resultCount,
-  latestResultAt,
 }: {
   projectId: string;
   /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). Kommt
@@ -56,8 +63,6 @@ export function ProjectRail({
   brain: ProjectBrain;
   /** Fingerabdruck der Quellen jetzt — daraus faellt "veraltet" ab. */
   brainDigest: string;
-  resultCount: number;
-  latestResultAt: string | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -213,26 +218,6 @@ export function ProjectRail({
       </section>
 
       <ProjectFiles projectId={projectId} userId={userId} initialFiles={files} />
-
-      <Link
-        href={`/projects/${projectId}/results`}
-        className="card-surface group flex items-center justify-between gap-3 p-4 transition-colors hover:border-border-strong"
-      >
-        <div>
-          <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-            <Sparkles className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-            Ergebnisse
-          </h2>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
-            {resultCount === 0
-              ? "Noch keine gespeichert"
-              : `${resultCount} ${resultCount === 1 ? "Prompt" : "Prompts"}${
-                  latestResultAt ? ` · zuletzt ${latestResultAt}` : ""
-                }`}
-          </p>
-        </div>
-        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-      </Link>
     </aside>
   );
 }
