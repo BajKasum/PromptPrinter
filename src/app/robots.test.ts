@@ -24,7 +24,14 @@ describe("robots", () => {
     const { rules } = robots();
     const disallow = (Array.isArray(rules) ? rules[0] : rules).disallow;
     expect(disallow).toEqual(
-      expect.arrayContaining(["/api/", "/chats", "/projects", "/settings", "/billing"])
+      expect.arrayContaining([
+        "/api/",
+        "/chats",
+        "/projects",
+        "/settings",
+        "/billing",
+        "/admin",
+      ])
     );
   });
 });
