@@ -57,6 +57,19 @@ describe("OAuthButtons", () => {
     expect(screen.getByRole("button", { name: /Weiter mit Google/ })).toBeEnabled();
   });
 
+  // OAuth skips the signup form's terms checkbox and can create an account
+  // from /login too, so the notice has to live in this shared component.
+  it("tells the user that a new account accepts the AGB", () => {
+    render(<OAuthButtons next="/chats/new" />);
+
+    expect(screen.getByText(/akzeptierst du damit die/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "AGB" })).toHaveAttribute("href", "/agb");
+    expect(screen.getByRole("link", { name: "Datenschutzerklärung" })).toHaveAttribute(
+      "href",
+      "/datenschutz"
+    );
+  });
+
   it("disables both buttons while a flow is starting", async () => {
     // Never resolves, simulates the window between click and provider redirect.
     signInWithOAuth.mockReturnValue(new Promise(() => {}));

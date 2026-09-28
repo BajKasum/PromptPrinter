@@ -68,7 +68,7 @@ export function SignUpExperience() {
       return;
     }
     if (!termsAccepted) {
-      setError("Bitte akzeptiere zuerst die AGB und die Datenschutzerklärung.");
+      setError("Bitte akzeptiere zuerst die AGB.");
       return;
     }
     if (TURNSTILE_SITE_KEY && !captchaToken) {
@@ -290,16 +290,20 @@ export function SignUpExperience() {
             onChange={(e) => setTermsAccepted(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-accent"
           />
+          {/* Nur die AGB werden akzeptiert. Die Datenschutzerklärung ist eine
+              Information, kein Vertrag: sie "akzeptieren" zu lassen, erweckt
+              den Eindruck einer Einwilligung, obwohl die Bearbeitung auf dem
+              Nutzungsvertrag beruht (Rechts-Audit 28.09.2026). */}
           <span>
-            Ich habe die{" "}
+            Ich akzeptiere die{" "}
             <Link href="/agb" className="text-accent-text hover:underline">
               AGB
-            </Link>{" "}
-            und die{" "}
+            </Link>
+            . Die{" "}
             <Link href="/datenschutz" className="text-accent-text hover:underline">
               Datenschutzerklärung
             </Link>{" "}
-            gelesen und akzeptiere sie.
+            habe ich zur Kenntnis genommen.
           </span>
         </label>
 

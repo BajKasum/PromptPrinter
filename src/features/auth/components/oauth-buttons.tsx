@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { siteUrl } from "@/shared/lib/site-url";
@@ -96,6 +97,24 @@ export function OAuthButtons({ next }: { next: string }) {
         {pending === "github" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitHubMark />}
         Weiter mit GitHub
       </button>
+
+      {/* Dieser Weg umgeht die AGB-Checkbox des Registrierungsformulars, und
+          Supabase legt beim ersten OAuth-Login stillschweigend ein Konto an,
+          auch von der Login-Seite aus. Ohne diesen Hinweis entstand ein
+          Konto, ohne dass die AGB je gezeigt wurden (Rechts-Audit
+          28.09.2026). Deshalb hier, im Baustein selbst, und nicht nur auf
+          /signup. */}
+      <p className="text-[12px] leading-relaxed text-tertiary">
+        Entsteht dabei ein neues Konto, akzeptierst du damit die{" "}
+        <Link href="/agb" className="text-accent-text underline underline-offset-2">
+          AGB
+        </Link>
+        . Welche Daten wir von Google oder GitHub erhalten, steht in der{" "}
+        <Link href="/datenschutz" className="text-accent-text underline underline-offset-2">
+          Datenschutzerklärung
+        </Link>
+        .
+      </p>
 
       {error && (
         <div

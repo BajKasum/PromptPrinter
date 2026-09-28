@@ -114,6 +114,17 @@ describe("SignUpExperience", () => {
     expect(postAuthAction).not.toHaveBeenCalled();
   });
 
+  // The privacy policy is information, not a contract term: the checkbox must
+  // not ask the user to "accept" it (Rechts-Audit 28.09.2026).
+  it("asks to accept only the AGB and to take note of the privacy policy", () => {
+    render(<SignUpExperience />);
+    const checkbox = screen.getByRole("checkbox");
+    const label = checkbox.closest("label");
+    expect(label).toHaveTextContent("Ich akzeptiere die AGB.");
+    expect(label).toHaveTextContent("Datenschutzerklärung habe ich zur Kenntnis genommen.");
+    expect(label).not.toHaveTextContent(/akzeptiere sie/);
+  });
+
   // The German wording itself is the route's job now (translateAuthError runs
   // there); what this asserts is that the form renders whatever came back.
   it("shows the failure the endpoint reported", async () => {
