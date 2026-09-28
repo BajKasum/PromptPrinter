@@ -72,7 +72,7 @@ describe("ProjectBrainCard", () => {
   it("explains what it does before it has ever run", () => {
     setup();
     expect(screen.getByRole("button", { name: /Projekt analysieren/ })).toBeEnabled();
-    expect(screen.getByText(/kennt jeder Chat in diesem Projekt deinen Stack/)).toBeInTheDocument();
+    expect(screen.getByText(/öffentliches GitHub-Repo/)).toBeInTheDocument();
   });
 
   it("shows the detected facts once ready", () => {
