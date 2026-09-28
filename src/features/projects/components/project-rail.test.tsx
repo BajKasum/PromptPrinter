@@ -45,8 +45,6 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProjectRail>> = {}
       files={[]}
       brain={IDLE_BRAIN}
       brainDigest="00000000"
-      resultCount={0}
-      latestResultAt={null}
       {...overrides}
     />
   );
@@ -150,21 +148,6 @@ describe("ProjectRail", () => {
     expect(await screen.findByText("Fehler")).toBeInTheDocument();
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
     expect(refresh).not.toHaveBeenCalled();
-  });
-
-  it("shows the empty-results copy when no results exist yet", () => {
-    setup({ resultCount: 0 });
-    expect(screen.getByText("Noch keine gespeichert")).toBeInTheDocument();
-  });
-
-  it("shows the saved-prompt count and last-result timestamp when results exist", () => {
-    setup({ resultCount: 3, latestResultAt: "vor 2 Tagen" });
-    expect(screen.getByText("3 Prompts · zuletzt vor 2 Tagen")).toBeInTheDocument();
-  });
-
-  it("singularizes a single saved prompt", () => {
-    setup({ resultCount: 1, latestResultAt: null });
-    expect(screen.getByText("1 Prompt")).toBeInTheDocument();
   });
 
   // Audit 23.09.2026, P-3: das Gedaechtnis stand als vierte Karte ganz unten.
