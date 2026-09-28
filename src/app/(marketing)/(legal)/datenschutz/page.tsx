@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { LEGAL } from "@/shared/lib/legal";
+import {
+  MAX_FILES_PER_PROJECT,
+  MAX_PROJECT_FILE_BYTES,
+} from "@/features/projects/lib/project-files";
+
+// Die Dateigrenzen kommen aus project-files.ts, derselben Quelle, die Upload
+// und Migration 0038 durchsetzen. Bis 28.09.2026 stand hier von Hand
+// ".md, .txt, .json, .csv", obwohl seit dem Projekt-Gedaechtnis auch Code,
+// Konfiguration und Bilder erlaubt sind.
+const MAX_PROJECT_MB = Math.round(MAX_PROJECT_FILE_BYTES / (1024 * 1024));
 
 export const metadata: Metadata = {
   title: "Datenschutz",
@@ -36,9 +46,21 @@ export default function DatenschutzPage() {
       <h2>2. Welche Daten wir bearbeiten</h2>
       <h3>Kontodaten</h3>
       <p>
-        Bei der Registrierung erfassen wir deine <strong>E-Mail-Adresse</strong> und ein
+        Bei der Registrierung mit E-Mail erfassen wir deine <strong>E-Mail-Adresse</strong> und ein
         <strong> Passwort</strong>. Das Passwort wird ausschliesslich verschlüsselt (gehasht) durch
         unseren Authentifizierungs-Dienst gespeichert; wir sehen es zu keinem Zeitpunkt im Klartext.
+      </p>
+      <p>
+        Meldest du dich stattdessen über <strong>Google</strong> oder <strong>GitHub</strong> an,
+        gibt es bei uns kein Passwort. Wir erhalten dann vom jeweiligen Anbieter deine
+        E-Mail-Adresse, deinen Namen bzw. Benutzernamen, die Adresse deines Profilbilds und eine
+        Kennung deines Kontos bei diesem Anbieter. Diese Angaben speichert unser
+        Authentifizierungs-Dienst zusammen mit deinem Konto; das Profilbild zeigen wir nicht an.
+      </p>
+      <p>
+        Als <strong>Anzeigenamen</strong> verwenden wir den Namen aus Google oder GitHub oder, wenn
+        es keinen gibt, den Teil deiner E-Mail-Adresse vor dem @. Du kannst ihn in den Einstellungen
+        ändern.
       </p>
       <h3>Inhaltsdaten</h3>
       <p>
@@ -46,8 +68,20 @@ export default function DatenschutzPage() {
         <strong>Chat-Nachrichten</strong> (deine Eingaben und die Antworten des Modells),{" "}
         <strong>Projekte</strong> samt Name, Anweisungen und Kontextangaben,{" "}
         <strong>gespeicherte Prompts</strong> sowie <strong>Dateien</strong>, die du an ein Projekt
-        anhängst (Textformate wie .md, .txt, .json, .csv, begrenzt in Anzahl und Grösse). Diese
-        Inhalte werden in deinem Workspace gespeichert, damit du sie wieder aufrufen kannst.
+        anhängst (Text-, Code- und Konfigurationsdateien sowie Bilder wie Screenshots, höchstens{" "}
+        {MAX_FILES_PER_PROJECT} Dateien und {MAX_PROJECT_MB} MB pro Projekt). Diese Inhalte werden in
+        deinem Workspace gespeichert, damit du sie wieder aufrufen kannst.
+      </p>
+      <h3>Projekt-Gedächtnis (optional)</h3>
+      <p>
+        Startest du in einem Projekt die Analyse für das <strong>Projekt-Gedächtnis</strong>, werten
+        wir die angehängten Dateien und Screenshots aus und, falls du eines angibst, ein{" "}
+        <strong>öffentliches GitHub-Repository</strong>. Dafür ruft unser Server bei GitHub die
+        öffentlich zugänglichen Angaben und einzelne Dateien dieses Repositorys ab; GitHub erfährt
+        dabei nur Besitzer- und Repository-Namen, nicht, wer du bist. Die Inhalte gehen zur
+        Auswertung an den Modellanbieter (Ziffer 4). Gespeichert werden nur das Ergebnis, also eine
+        kurze Zusammenfassung von Technik, Aufbau und Konventionen deines Projekts, die Adresse des
+        Repositorys und die Namen der ausgewerteten Quellen, nicht deren Inhalt.
       </p>
       <h3>Sprachmodus (Mikrofon, optional)</h3>
       <p>
@@ -79,29 +113,16 @@ export default function DatenschutzPage() {
       </p>
       <h3>Cookies</h3>
       <p>
-        Wir setzen ausschliesslich <strong>technisch notwendige Cookies</strong>, und zwar nur diese
-        beiden Sorten:
-      </p>
-      <ul>
-        <li>
-          <strong>Anmelde-Cookies</strong> unseres Authentifizierungs-Dienstes (Präfix{" "}
-          <code>sb-</code>), die deine Sitzung aufrechterhalten. Ohne sie ist kein Login möglich.
-        </li>
-        <li>
-          <strong>Oberflächen-Einstellungen</strong> (<code>pp-sidebar</code>,{" "}
-          <code>pp-sidebar-width</code>), die sich merken, ob die Seitenleiste ein- oder ausgeklappt
-          ist und wie breit sie war. Sie enthalten keine Personendaten, sondern eine Ziffer bzw.
-          eine Breitenangabe.
-        </li>
-      </ul>
-      <p>
-        Deine Theme-Einstellung (hell/dunkel) liegt im lokalen Speicher deines Browsers und wird
-        nicht an uns übertragen. Der Captcha-Dienst von Cloudflare kann beim Anmelden eigene
-        technisch notwendige Cookies setzen. Es kommen{" "}
-        <strong>keine Tracking-, Analyse- oder Werbe-Cookies</strong> zum Einsatz, wir betreiben
-        keine Webanalyse und kein Drittanbieter-Tracking. Weil alle eingesetzten Cookies technisch
-        notwendig sind, ist dafür keine Einwilligung erforderlich, es gibt daher bewusst kein
-        Cookie-Banner.
+        Wir setzen ausschliesslich <strong>technisch notwendige Cookies</strong> ein: Anmelde-Cookies
+        unseres Authentifizierungs-Dienstes (Präfix <code>sb-</code>), die deine Sitzung
+        aufrechterhalten, und zwei Cookies für die Seitenleiste (<code>pp-sidebar</code>,{" "}
+        <code>pp-sidebar-width</code>), die keine Personendaten enthalten. Deine Theme-Einstellung
+        (hell/dunkel) liegt im lokalen Speicher deines Browsers und wird nicht an uns übertragen. Es
+        kommen <strong>keine Tracking-, Analyse- oder Werbe-Cookies</strong> zum Einsatz, wir
+        betreiben keine Webanalyse und kein Drittanbieter-Tracking. Weil alle eingesetzten Cookies
+        technisch notwendig sind, ist dafür keine Einwilligung erforderlich, es gibt daher bewusst
+        kein Cookie-Banner. Jeden Eintrag mit Zweck und Speicherdauer sowie den Weg, Cookies
+        abzulehnen, findest du in der <a href="/cookies">Cookie-Richtlinie</a>.
       </p>
 
       <h2>3. Zwecke und Rechtsgrundlagen</h2>
@@ -118,10 +139,20 @@ export default function DatenschutzPage() {
           Art. 31 Abs. 1 revDSG).
         </li>
         <li>
-          <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Antworten im Chat, zur
-          Erfüllung des Nutzungsvertrags.
+          <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Antworten im Chat und,
+          wenn du es startest, zur Analyse für das Projekt-Gedächtnis, zur Erfüllung des
+          Nutzungsvertrags.
         </li>
       </ul>
+      <p>
+        Für ein Konto brauchen wir eine E-Mail-Adresse oder die Anmeldung über Google bzw. GitHub;
+        ohne sie können wir den Dienst nicht bereitstellen. Alle übrigen Angaben sind freiwillig.
+      </p>
+      <p>
+        Wir treffen keine automatisierten Einzelentscheidungen, die dir gegenüber rechtliche Wirkung
+        entfalten oder dich erheblich beeinträchtigen, und wir betreiben kein Profiling. Die KI
+        erzeugt Textvorschläge für dich, sie entscheidet nichts über dich.
+      </p>
 
       <h2>4. Eingesetzte Dienste und Auftragsbearbeiter</h2>
       <p>
@@ -146,8 +177,9 @@ export default function DatenschutzPage() {
           Browser-Merkmale werden zur Prüfung übermittelt, ob die Anfrage automatisiert ist.
         </li>
         <li>
-          <strong>Z.ai</strong> (Zhipu AI): deine Chat-Nachrichten und der jeweilige Projektkontext
-          werden zur Erzeugung der Antwort an die Z.ai-API übermittelt. Dabei findet eine
+          <strong>Z.ai</strong> (Zhipu AI): deine Chat-Nachrichten und der jeweilige Projektkontext,
+          beim Projekt-Gedächtnis auch Projektdateien, Screenshots und Repository-Inhalte, werden
+          zur Erzeugung der Antwort an die Z.ai-API übermittelt. Dabei findet eine
           Übermittlung nach <strong>China</strong> statt.
         </li>
         <li>
@@ -205,6 +237,14 @@ export default function DatenschutzPage() {
         wie Safari.
       </p>
       <p>
+        <strong>Anmeldung über Google oder GitHub (Ziffer 2):</strong> Wählst du diesen Weg, meldest
+        du dich direkt bei <strong>Google</strong> (Google Ireland Ltd. / Google LLC, USA) bzw.{" "}
+        <strong>GitHub</strong> (GitHub, Inc., USA) an, die uns danach die in Ziffer 2 genannten
+        Angaben übermitteln. Diese Anbieter handeln dabei in eigener Verantwortung, es gelten deren
+        Datenschutzbestimmungen. Für das Projekt-Gedächtnis ruft unser Server ausserdem öffentliche
+        Daten bei GitHub ab, ohne dabei Angaben über dich zu übermitteln.
+      </p>
+      <p>
         <strong>Wenn du einen eigenen API-Schlüssel hinterlegst</strong>, gehen deine Eingaben nicht
         mehr an die oben genannten Modellanbieter, sondern an den von dir gewählten Anbieter, je
         nach deiner Auswahl etwa <strong>Anthropic</strong> (Anthropic PBC, USA),{" "}
@@ -222,8 +262,9 @@ export default function DatenschutzPage() {
       <p>
         Einzelne der oben genannten Dienste bearbeiten Daten ausserhalb der Schweiz bzw. des EWR,
         namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Google Gemini,
-        Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter sowie, wenn du den
-        Sprachmodus mit Chrome oder Edge nutzt, Google bzw. Microsoft, siehe Ziffer 4) und in{" "}
+        Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter, bei der Anmeldung über
+        diese Dienste Google bzw. GitHub sowie, wenn du den Sprachmodus mit Chrome oder Edge
+        nutzt, Google bzw. Microsoft, siehe Ziffer 4) und in{" "}
         <strong>China</strong> (Z.ai).
       </p>
       <p>
@@ -276,7 +317,7 @@ export default function DatenschutzPage() {
       <p>
         Du kannst dein Konto jederzeit selbst löschen, direkt in der App unter{" "}
         <strong>Einstellungen</strong>. Dabei werden dein Profil, deine Chats und Nachrichten, deine
-        Projekte samt hochgeladenen Dateien, deine gespeicherten Prompts sowie hinterlegte
+        Projekte samt hochgeladenen Dateien und Projekt-Gedächtnis, deine gespeicherten Prompts sowie hinterlegte
         API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
         einer Frist.
       </p>
