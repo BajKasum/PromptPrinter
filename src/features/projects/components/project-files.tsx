@@ -11,7 +11,6 @@ import {
   ALLOWED_FILE_EXTENSIONS,
   MAX_FILES_PER_PROJECT,
   MAX_PROJECT_FILE_BYTES,
-  MAX_TEXT_FILE_BYTES,
   hasAllowedExtension,
   maxBytesFor,
   type ProjectFile,
@@ -285,26 +284,13 @@ export function ProjectFiles({
         {atLimit ? "Limit erreicht" : "Datei hochladen"}
       </Button>
 
-      {error ? (
-        <p className="mt-2 text-[11.5px] text-destructive">{error}</p>
-      ) : (
-        // Format/size tip only before the first upload, once a file's in the
-        // list, the constraint has already been learned; repeating it forever
-        // would be chrome, not help.
-        files.length === 0 && (
-          <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
-            <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
-              package.json
-            </code>
-            ,{" "}
-            <code className="rounded bg-accent-subtle px-1 py-0.5 font-mono text-[11px] text-accent-text">
-              README.md
-            </code>
-            , Konfig, SQL, Screenshots. Text bis {Math.round(MAX_TEXT_FILE_BYTES / 1024)} KB, Bilder
-            und Lockfiles mehr.
-          </p>
-        )
-      )}
+      {/* Kein Format/Groessen-Hinweistext mehr (auf Zuruf, 2026-09-28): der
+          Knopf "Datei hochladen" ist selbsterklaerend, eine erklaerende
+          Zeile darunter war ueberfluessige Erklaerung von etwas
+          Offensichtlichem. Der native accept-Filter (ALLOWED_FILE_EXTENSIONS
+          oben) und die Fehlermeldung bei einem abgelehnten Upload bleiben die
+          eigentliche Führung. */}
+      {error && <p className="mt-2 text-[11.5px] text-destructive">{error}</p>}
 
       <ConfirmDialog
         open={pendingDelete !== null}
