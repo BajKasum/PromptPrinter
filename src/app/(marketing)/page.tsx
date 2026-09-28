@@ -5,6 +5,7 @@ import { ProductShowcase } from "@/features/marketing/components/product-showcas
 import { FinalCTA } from "@/features/marketing/components/final-cta";
 import { JsonLd } from "@/shared/ui/json-ld";
 import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
+import { steps, title as howItWorksTitle } from "@/features/marketing/lib/how-it-works-data";
 //
 // The public site is two pages: this one and /pricing.
 //
@@ -52,10 +53,26 @@ const softwareApplicationJsonLd = {
   })),
 };
 
+// HowTo-Markup: dieselben drei Schritte, die HowItWorks tatsächlich rendert
+// (steps aus how-it-works.tsx), für Answer Engines, die eine "wie
+// funktioniert X"-Frage direkt als Schrittliste beantworten wollen, statt
+// erst die ganze Seite zusammenzufassen.
+const howToJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: howItWorksTitle,
+  step: steps.map((s) => ({
+    "@type": "HowToStep",
+    name: s.title,
+    text: s.body,
+  })),
+};
+
 export default function HomePage() {
   return (
     <>
       <JsonLd data={softwareApplicationJsonLd} />
+      <JsonLd data={howToJsonLd} />
       <FinnAtmosphere />
       <Hero />
       <HowItWorks />

@@ -3,11 +3,11 @@
 import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
-import { Pencil, MessageSquare, Copy } from "lucide-react";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 import { cn } from "@/shared/lib/utils";
+import { title, steps } from "@/features/marketing/lib/how-it-works-data";
 
 // GSAP (DrawSVG + MotionPath) lives entirely in this sibling chunk, loaded
 // only client-side and only once mounted, see how-it-works-spine.tsx for
@@ -16,28 +16,6 @@ const HowItWorksSpine = dynamic(
   () => import("@/features/marketing/components/how-it-works-spine").then((m) => m.HowItWorksSpine),
   { ssr: false }
 );
-
-const steps = [
-  {
-    n: "01",
-    Icon: Pencil,
-    title: "Erzähl mir deine Idee",
-    body: "Sag mir in einem Satz, was du bauen willst, egal wie grob. Ein paar Notizen reichen. Ich hol dich da ab, wo du gerade stehst.",
-  },
-  {
-    n: "02",
-    Icon: MessageSquare,
-    title: "Wir klären es kurz",
-    body: "Ich stell dir ein paar einfache Fragen und helf dir auch, wenn du Zielgruppe oder Technik noch gar nicht kennst.",
-    chat: true,
-  },
-  {
-    n: "03",
-    Icon: Copy,
-    title: "Du bekommst deinen Prompt, startklar",
-    body: "Fertig formuliert, zugeschnitten auf dein Tool, direkt im Chat. Ein Klick, kopiert, und du legst los.",
-  },
-];
 
 // In place of NoteMage's leaves (a forest motif that doesn't fit a dolphin's
 // world), see components/brand/floaters.tsx for the shared component.
@@ -70,7 +48,7 @@ export function HowItWorks() {
         <div className="relative z-10 mb-14 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <h2 className="text-balance text-[36px] md:text-[48px] leading-[1.1] tracking-[-0.03em] font-semibold text-foreground">
-              In drei Schritten von der Idee zum fertigen Prompt.
+              {title}
             </h2>
             <p className="mt-4 text-[17px] text-secondary max-w-xl">
               Kein Formular, kein Fachchinesisch. Du redest ganz normal, um den
