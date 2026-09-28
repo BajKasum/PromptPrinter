@@ -36,7 +36,16 @@ const PUBLIC_PREFIXES = [
 
 // Metadata routes Next serves from the app directory. Exact matches only, so
 // they can't shadow a real page.
-const PUBLIC_EXACT = ["/", "/robots.txt", "/sitemap.xml", "/opengraph-image"] as const;
+const PUBLIC_EXACT = [
+  "/",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/opengraph-image",
+  // llms.txt (app/llms.txt/route.ts): without this, an anonymous request —
+  // which is every AI crawler and every browser that never logged in — got
+  // 307'd to /login instead of the file, silently defeating the whole point.
+  "/llms.txt",
+] as const;
 
 /**
  * Exported additionally for `src/middleware.ts`, which reuses it to decide

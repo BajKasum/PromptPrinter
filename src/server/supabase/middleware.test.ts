@@ -74,6 +74,7 @@ describe("updateSession", () => {
       "/ueber",
       "/robots.txt",
       "/sitemap.xml",
+      "/llms.txt",
       "/auth/callback",
     ])("leaves the public page %s alone", async (path) => {
       const res = await updateSession(request(path), new Headers());
