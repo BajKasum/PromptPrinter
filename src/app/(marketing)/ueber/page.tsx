@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Über",
   description:
     "Wer hinter PromptPrinter steckt, warum es das gibt und was ich dir verspreche, solange ich es allein baue.",
+  alternates: { canonical: "/ueber" },
 };
 
 // The one page written in the founder's own voice rather than Finn's. The

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug } from "@/shared/lib/docs-nav";
+import { docBySlug, docHref } from "@/shared/lib/docs-nav";
 import { LEGAL } from "@/shared/lib/legal";
 
 const doc = docBySlug("konto-und-daten")!;
@@ -9,6 +9,7 @@ const doc = docBySlug("konto-und-daten")!;
 export const metadata: Metadata = {
   title: doc.title,
   description: doc.summary,
+  alternates: { canonical: docHref(doc.slug) },
 };
 
 export default function Page() {

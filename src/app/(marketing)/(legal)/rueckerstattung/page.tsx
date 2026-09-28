@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Rückerstattung",
   description:
     "Wann du dein Geld zurückbekommst, wie du eine Erstattung anforderst und was davon ausgenommen ist.",
+  alternates: { canonical: "/rueckerstattung" },
 };
 
 export default function RueckerstattungPage() {

@@ -5,6 +5,7 @@ import { LEGAL } from "@/shared/lib/legal";
 export const metadata: Metadata = {
   title: "AGB",
   description: "Allgemeine Geschäftsbedingungen für die Nutzung von PromptPrinter.",
+  alternates: { canonical: "/agb" },
 };
 
 export default function AgbPage() {

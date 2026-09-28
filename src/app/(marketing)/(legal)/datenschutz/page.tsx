@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Datenschutz",
   description:
     "Wie PromptPrinter deine Personendaten bearbeitet: Konto, Eingaben, KI-Verarbeitung und deine Rechte.",
+  alternates: { canonical: "/datenschutz" },
 };
 
 export default function DatenschutzPage() {

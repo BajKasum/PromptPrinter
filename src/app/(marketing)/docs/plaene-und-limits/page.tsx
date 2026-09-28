@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug } from "@/shared/lib/docs-nav";
+import { docBySlug, docHref } from "@/shared/lib/docs-nav";
 import { PLAN_LIMITS } from "@/shared/lib/plans";
 
 const doc = docBySlug("plaene-und-limits")!;
@@ -9,6 +9,7 @@ const doc = docBySlug("plaene-und-limits")!;
 export const metadata: Metadata = {
   title: doc.title,
   description: doc.summary,
+  alternates: { canonical: docHref(doc.slug) },
 };
 
 // Numbers come from the same module the server enforces them with, so this
