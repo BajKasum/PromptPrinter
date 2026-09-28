@@ -10,6 +10,8 @@ import {
   docStep,
 } from "@/shared/lib/docs-nav";
 import { cn } from "@/shared/lib/utils";
+import { JsonLd } from "@/shared/ui/json-ld";
+import { siteUrl } from "@/shared/lib/site-url";
 
 // Shared chrome for every docs article. Deliberately a server component: the
 // active entry comes in as `slug` from the page itself, so the sidebar needs
@@ -74,8 +76,26 @@ export function DocsShell({
     : { prev: null, next: null };
   const step = slug ? docStep(slug) : 0;
 
+  // BreadcrumbList für Answer Engines und Google-Rich-Snippets: dieselbe
+  // Home → Hilfe → Artikel-Hierarchie, die die Sidebar links auch zeigt,
+  // nur maschinenlesbar. Nur auf echten Artikeln (slug gesetzt), der
+  // Hilfe-Index selbst braucht keinen dritten Krumen zu sich selbst.
+  const base = siteUrl();
+  const breadcrumbJsonLd = slug
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "PromptPrinter", item: base },
+          { "@type": "ListItem", position: 2, name: "Hilfe", item: `${base}/docs` },
+          { "@type": "ListItem", position: 3, name: title, item: `${base}${docHref(slug)}` },
+        ],
+      }
+    : null;
+
   return (
     <>
+      {breadcrumbJsonLd && <JsonLd data={breadcrumbJsonLd} />}
       <div className="container-x pt-28 md:pt-36 pb-24">
         <div className="flex flex-col gap-10 lg:flex-row lg:gap-14">
           {/* Desktop sidebar: sticky, clears the floating navbar pill. */}
