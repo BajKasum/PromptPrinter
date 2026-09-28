@@ -815,6 +815,53 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > demselben Commit läuft die CI bei Pushes auf jeden Branch, und es gilt die
 > Branch-Regel unter "Arbeitsregeln".
 
+> **Rechts- und Barrierefreiheits-Audit (2026-09-28):** Auf Kasums Wunsch
+> ("die Seite soll nicht verklagt werden") Rechtstexte, Cookies, Einwilligungen,
+> Drittdienste, Werbeaussagen, Bilder und Barrierefreiheit gegen Code UND
+> Live-Seite geprüft. Bericht mit allen offenen Punkten im 2nd-brain
+> (`02 Projekte/PromptPrinter/PromptPrinter Rechts-Audit 2026-09-28.md`).
+> Ein Branch pro Problem, alle CI-grün und per Fast-Forward in `main`:
+>
+> - `fix/signup-consent-wording`: Checkbox akzeptiert nur die AGB, die
+>   Datenschutzerklärung wird "zur Kenntnis genommen" (sie ist keine
+>   Einwilligung). `OAuthButtons` zeigt selbst den AGB-Hinweis, weil Google/
+>   GitHub die Checkbox umgingen und Supabase auch von `/login` aus Konten anlegt.
+> - `feat/cookie-policy-page`: neue Seite `/cookies`. Einträge in
+>   `features/marketing/lib/cookie-inventory.ts`, Guard
+>   `tests/guards/cookie-inventory.test.ts` scheitert bei jedem neuen Cookie
+>   oder localStorage-Schlüssel, der dort fehlt. **Neues Cookie = Eintrag dort.**
+>   Gemessen: anonyme Besucher bekommen auf öffentlichen Seiten gar nichts
+>   gespeichert, deshalb weiterhin bewusst kein Banner.
+> - `fix/privacy-policy-completeness`: Datenschutz nennt jetzt OAuth-Daten,
+>   Anzeigename, die echten Dateigrenzen (aus `project-files.ts`),
+>   Projekt-Gedächtnis inkl. GitHub-Abruf, Pflichtangaben und "kein Profiling".
+> - `fix/privacy-zai-transfer-facts`: Z.ai ist laut eigener Privacy Policy
+>   eine Firma in **Singapur** (nicht China), und nirgends belegt sind die
+>   Standardvertragsklauseln, die der Text behauptete. Jetzt steht nur, was
+>   belegt ist. **Rechtlich offen**, siehe Bericht.
+> - `fix/pricing-unsupported-claims`: "400 Prompts" -> "400 Chat-Antworten"
+>   (gezählt werden Antworten), "unbegrenzt" -> "ohne Monatslimit",
+>   "fertigen Plan" -> "Prompt", Registrierung nennt den Key-Bedarf von Free.
+> - `feat/ai-chat-disclosure`: Satz "Finn ist eine KI…" dauerhaft unter dem
+>   Composer (EU-KI-Verordnung Art. 50 Abs. 1, gilt seit 02.08.2026).
+> - `feat/voice-mode-privacy-notice`: Sprachmodus sagt beim Aufnehmen, dass
+>   Chrome/Edge an Google/Microsoft schicken, mit Link zur Datenschutzerklärung.
+>   Der ⚠️-Sprachmodus-Punkt weiter oben ist damit im Code erledigt
+>   (Datenschutzerklärung seit 06.09., Hinweis in der Sprachleiste jetzt),
+>   offen bleibt nur die juristische Einordnung.
+> - `fix/a11y-landmarks-and-links`, `fix/a11y-form-labels`: axe (WCAG 2.2 AA)
+>   über alle öffentlichen Seiten plus statischer JSX-Scan der eingeloggten App.
+>   `<main>` auf den Auth-Seiten, Links im Fliesstext unterstrichen,
+>   Überschriften-Reihenfolge auf `/pricing`, Formularfelder mit Namen.
+> - `fix/refund-cancel-path`: `/rueckerstattung` sagt, WIE man kündigt.
+>
+> Nicht per Code lösbar und deshalb nur im Bericht: EU-Vertreter nach
+> Art. 27 DSGVO, Übermittlungsgrundlage für Z.ai, Lemon-Squeezy-Einstellungen
+> (Testmodus-URL in `.env.local`, Preise inkl. MwSt.), Kündigungsbutton
+> (§ 312k BGB), Higgsfield-Lizenz des Maskottchens. **Nicht mergen:** den
+> Vercel-Bot-Branch `vercel/install-vercel-web-analytics-…`, solange
+> Datenschutz und `/cookies` die Webanalyse nicht nennen.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -1066,7 +1113,7 @@ Eintrag unten. Beides lebt jetzt ausschliesslich auf `/pricing`.
 | `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase (`FeaturesGrid` stand hier zwischenzeitlich, am 2026-07-30 wieder entfernt, siehe unten). Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 9 Seiten, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie. Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
+| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 10 Seiten, seit 2026-09-28 inkl. `/cookies`, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie. Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
 | `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css, `NavWave`-Komponente in `shared/ui/nav-wave.tsx`), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
 
 **`/pricing`** (`src/app/(marketing)/pricing/page.tsx`): `PageHeader` (nur
