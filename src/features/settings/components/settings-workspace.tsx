@@ -339,16 +339,12 @@ function SettingsCard({
         style={{ background: hslVar(accent) }}
       />
 
-      <header className="mb-5 flex items-start gap-3.5">
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
-          style={{
-            background: `linear-gradient(160deg, ${hslVar(accent, 0.2)}, ${hslVar(accent, 0.05)})`,
-            borderColor: hslVar(accent, 0.25),
-          }}
-        >
-          <Icon className="h-[18px] w-[18px]" style={{ color: hslVar(accent) }} strokeWidth={2} />
-        </span>
+      <header className="mb-5 flex items-start gap-2.5">
+        <Icon
+          className="mt-0.5 h-[18px] w-[18px] shrink-0"
+          style={{ color: hslVar(accent) }}
+          strokeWidth={1.8}
+        />
         <div className="min-w-0 flex-1">
           <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
           <p className="mt-0.5 text-[13px] text-secondary">{description}</p>
