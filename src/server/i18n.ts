@@ -6,6 +6,7 @@ import { de, type Messages } from "@/shared/i18n/messages/de";
 import { en } from "@/shared/i18n/messages/en";
 import { fr } from "@/shared/i18n/messages/fr";
 import { it } from "@/shared/i18n/messages/it";
+import { es } from "@/shared/i18n/messages/es";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale, type Locale } from "@/shared/i18n/locales";
 import { getSessionProfile } from "@/server/session";
 
@@ -17,6 +18,7 @@ const CATALOG: Record<Locale, Messages> = {
   en,
   fr,
   it,
+  es,
 };
 
 export function messagesFor(locale: Locale): Messages {

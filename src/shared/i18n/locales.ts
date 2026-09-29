@@ -7,7 +7,7 @@
 // server/i18n.ts. TypeScript meldet jeden fehlenden Schlüssel, weil jedes
 // Wörterbuch den Typ `Messages` aus de.ts erfüllen muss.
 
-export const LOCALES = ["de", "en", "fr", "it"] as const;
+export const LOCALES = ["de", "en", "fr", "it", "es"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -22,6 +22,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   en: "English",
   fr: "Français",
   it: "Italiano",
+  es: "Español",
 };
 
 /**
@@ -36,6 +37,7 @@ export const LOCALE_TAGS: Record<Locale, { intl: string; speech: string }> = {
   en: { intl: "en-GB", speech: "en-US" },
   fr: { intl: "fr-FR", speech: "fr-FR" },
   it: { intl: "it-IT", speech: "it-IT" },
+  es: { intl: "es-ES", speech: "es-ES" },
 };
 
 /**
@@ -48,6 +50,7 @@ export const LOCALE_ENGLISH_NAMES: Record<Locale, string> = {
   en: "English",
   fr: "French",
   it: "Italian",
+  es: "Spanish",
 };
 
 export function toLocale(raw: unknown): Locale | null {
