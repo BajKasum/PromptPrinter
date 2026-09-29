@@ -50,6 +50,7 @@ ${docs}
 - [Datenschutz](${base}/datenschutz)
 - [Cookies](${base}/cookies)
 - [AGB](${base}/agb)
+- [Nutzungsrichtlinie](${base}/nutzungsrichtlinie)
 - [Rückerstattung](${base}/rueckerstattung)
 `;
 }

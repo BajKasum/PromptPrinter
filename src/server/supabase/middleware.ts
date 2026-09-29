@@ -28,6 +28,7 @@ const PUBLIC_PREFIXES = [
   "/docs",
   "/agb",
   "/cookies",
+  "/nutzungsrichtlinie",
   "/datenschutz",
   "/impressum",
   "/kontakt",

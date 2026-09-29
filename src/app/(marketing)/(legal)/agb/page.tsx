@@ -4,7 +4,7 @@ import { LEGAL } from "@/shared/lib/legal";
 
 export const metadata: Metadata = {
   title: "AGB",
-  description: "Allgemeine Geschäftsbedingungen für die Nutzung von PromptPrinter.",
+  description: "Allgemeine Geschäftsbedingungen (Nutzungsbedingungen) für PromptPrinter.",
   alternates: { canonical: "/agb" },
 };
 
@@ -13,7 +13,7 @@ export default function AgbPage() {
     <LegalShell
       badge="Rechtliches"
       title="Allgemeine Geschäftsbedingungen"
-      intro="Die Bedingungen für die Nutzung von PromptPrinter, kurz gehalten und in verständlicher Sprache."
+      intro="Die Nutzungsbedingungen von PromptPrinter, kurz gehalten und in verständlicher Sprache."
       updated={LEGAL.lastUpdated}
     >
       <h2>1. Geltungsbereich und Anbieter</h2>
@@ -91,6 +91,11 @@ export default function AgbPage() {
         </li>
         <li>Rechte Dritter oder geltendes Recht zu verletzen.</li>
       </ul>
+      <p>
+        Einzelheiten dazu, welche Inhalte und welche Nutzung nicht erlaubt sind und was bei einem
+        Verstoss geschieht, stehen in der <a href="/nutzungsrichtlinie">Nutzungsrichtlinie</a>. Sie
+        ist Bestandteil dieser AGB.
+      </p>
 
       <h2>8. Nutzungsgrenzen</h2>
       <p>

@@ -30,6 +30,9 @@ export const LEGAL = {
   appHost: "Vercel Inc., USA",
   /** Gerichtsstand für die AGB, z. B. "Zürich". */
   jurisdiction: "Basel-Stadt",
-  /** Letzte Aktualisierung der Rechtstexte (gilt für alle fünf gemeinsam, inkl. /cookies). */
-  lastUpdated: "28. September 2026",
+  /**
+   * Letzte Aktualisierung der Rechtstexte (gilt für alle sechs gemeinsam, inkl.
+   * /cookies und /nutzungsrichtlinie).
+   */
+  lastUpdated: "29. September 2026",
 } as const;

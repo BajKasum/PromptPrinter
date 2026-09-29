@@ -70,6 +70,7 @@ describe("updateSession", () => {
       "/impressum",
       "/agb",
       "/cookies",
+      "/nutzungsrichtlinie",
       "/datenschutz",
       "/kontakt",
       "/rueckerstattung",

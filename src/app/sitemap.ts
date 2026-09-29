@@ -41,6 +41,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/datenschutz",
     "/cookies",
     "/agb",
+    "/nutzungsrichtlinie",
     "/rueckerstattung",
     "/impressum",
   ].map((path) => ({
