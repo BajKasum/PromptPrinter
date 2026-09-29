@@ -42,6 +42,26 @@ describe("MobileNav", () => {
     expect(document.body.style.overflow).toBe("hidden");
   });
 
+  it("lists the account destinations, all plans and a collapsible 'Mehr erfahren'", async () => {
+    const user = userEvent.setup();
+    render(<MobileNav chats={chats} projects={[]} />);
+    await user.click(screen.getByRole("button", { name: "Menü öffnen" }));
+
+    expect(screen.getByRole("link", { name: "Nutzung" })).toHaveAttribute("href", "/usage");
+    expect(screen.getByRole("link", { name: "Alle Tarife anzeigen" })).toHaveAttribute(
+      "href",
+      "/plans"
+    );
+    const more = screen.getByRole("button", { name: "Mehr erfahren" });
+    expect(more).toHaveAttribute("aria-expanded", "false");
+    await user.click(more);
+    expect(more).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: /Nutzungsrichtlinie/ })).toHaveAttribute(
+      "href",
+      "/nutzungsrichtlinie"
+    );
+  });
+
   it("closes on Escape and restores body scroll", async () => {
     const user = userEvent.setup();
     render(<MobileNav chats={chats} projects={[]} />);

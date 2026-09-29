@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Star, LogOut, Loader2 } from "lucide-react";
+import { Menu, X, Plus, Star, LogOut, Loader2, Info, ChevronDown, ArrowUpRight } from "lucide-react";
 import { Logo } from "@/shared/brand/logo";
 import { NewProjectButton } from "@/features/projects/components/new-project";
 import {
@@ -14,7 +14,7 @@ import {
   type SidebarChat,
   type SidebarProject,
 } from "@/shell/components/sidebar";
-import { plansNav, secondaryNav } from "@/shell/lib/nav";
+import { learnMoreLinks, plansNav, secondaryNav } from "@/shell/lib/nav";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 
@@ -34,6 +34,9 @@ export function MobileNav({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // "Mehr erfahren" klappt hier in der Liste auf statt seitlich wie am
+  // Desktop: im schmalen Drawer ist neben dem Menü kein Platz.
+  const [learnMoreOpen, setLearnMoreOpen] = useState(false);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -223,6 +226,45 @@ export function MobileNav({
                       </Link>
                     );
                   })}
+                  <button
+                    type="button"
+                    aria-expanded={learnMoreOpen}
+                    aria-controls="mobile-learn-more"
+                    onClick={() => setLearnMoreOpen((v) => !v)}
+                    className={cn(
+                      "flex h-10 w-full items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
+                      INACTIVE_ROW
+                    )}
+                  >
+                    <Info className="h-4 w-4" strokeWidth={1.8} />
+                    <span className="flex-1 text-left">Mehr erfahren</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        learnMoreOpen && "rotate-180"
+                      )}
+                    />
+                  </button>
+                  {learnMoreOpen && (
+                    <div id="mobile-learn-more" className="space-y-0.5 pb-1 pl-7">
+                      {learnMoreLinks.map((l) => (
+                        <a
+                          key={l.href}
+                          href={l.href}
+                          target="_blank"
+                          rel="noopener"
+                          className={cn(
+                            "flex h-9 items-center gap-2 rounded-md px-3 text-[13.5px] transition-colors",
+                            INACTIVE_ROW
+                          )}
+                        >
+                          <span className="flex-1 truncate">{l.label}</span>
+                          <ArrowUpRight aria-hidden className="h-3.5 w-3.5 shrink-0" />
+                          <span className="sr-only">(öffnet in neuem Tab)</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => void handleSignOut()}

@@ -57,3 +57,17 @@ export const secondaryNav: NavItem[] = [
 // mit Kürzel), dieser Eintrag ist ein Angebot und steht im Menü deshalb in
 // einer eigenen Gruppe darunter.
 export const plansNav: NavItem = { label: "Alle Tarife anzeigen", href: "/plans", Icon: Sparkles };
+
+// "Mehr erfahren" (29.09.2026): Hilfe und alle Rechtstexte, als seitliches
+// Untermenü im Kontomenü und als aufklappbare Gruppe im Mobile-Drawer. Die
+// AGB tragen hier ihren Alltagsnamen, "Nutzungsbedingungen": danach sucht
+// man, wenn man wissen will, was man darf.
+export const learnMoreLinks: { label: string; href: string }[] = [
+  { label: "Hilfe und Anleitungen", href: "/docs" },
+  { label: "Nutzungsbedingungen (AGB)", href: "/agb" },
+  { label: "Nutzungsrichtlinie", href: "/nutzungsrichtlinie" },
+  { label: "Datenschutzerklärung", href: "/datenschutz" },
+  { label: "Cookie-Richtlinie", href: "/cookies" },
+  { label: "Rückerstattung", href: "/rueckerstattung" },
+  { label: "Impressum", href: "/impressum" },
+];
