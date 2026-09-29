@@ -61,6 +61,15 @@
     --warning-foreground: 0 0% 100%;
 
     --shadow: 205 48% 10%;
+
+    /*
+     * Fremdmarke, kein PromptPrinter-Ton: das Oliv der bauenden Agentur
+     * kazuvate (#3F5019), nur fuer deren Credit im Footer. Dieselbe Regel wie
+     * auf allen kazuvate-Kundenseiten (ProMeti, Artemis, Portfolio): der
+     * Credit traegt die eigene Markenfarbe, nicht den Seitenakzent.
+     * 7,9:1 auf background.
+     */
+    --kazuvate: 79 52% 21%;
   }
 
   .dark {
@@ -111,6 +120,9 @@
     --warning-foreground: 216 22% 6%;
 
     --shadow: 213 50% 3%;
+
+    /* kazuvate-Oliv hell (#93AA5E), deren eigener Dunkelmodus-Ton. 7,5:1 auf background. */
+    --kazuvate: 78 31% 52%;
   }
 
   @media (prefers-reduced-motion: no-preference) {

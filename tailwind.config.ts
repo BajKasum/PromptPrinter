@@ -64,6 +64,8 @@ const config: Config = {
           DEFAULT: "hsl(var(--warning) / <alpha-value>)",
           foreground: "hsl(var(--warning-foreground) / <alpha-value>)",
         },
+        // Fremdmarke, nur fuer den Agentur-Credit im Footer (globals.css).
+        kazuvate: "hsl(var(--kazuvate) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "Geist", "system-ui", "sans-serif"],

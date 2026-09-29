@@ -54,28 +54,31 @@ export function Footer() {
           </nav>
         </div>
 
-        {/* No second border here on purpose — a rule above the links plus one
-            above the copyright read as one footer split in two. One line, at
-            the top of the whole block, is enough. */}
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[12px] text-tertiary">
-            © {new Date().getFullYear()} PromptPrinter
-          </p>
-          {/* Erbauer-Credit, wie auf Kundenprojekten der eigenen Agentur
-              (z.B. kazuvate-Logo im Footer von ProMeti): Zeichen + Name,
-              verlinkt auf kazuvate.ch. Eigene Tailwind-Token statt der
-              kazuvate-eigenen Marken-Farbe, damit es zum PromptPrinter-Theme
-              passt. */}
+        {/* No second full-width border here on purpose — a rule above the
+            links plus one above the copyright read as one footer split in
+            two. One line, at the top of the whole block, is enough. */}
+        <p className="mt-5 text-[12px] text-tertiary">
+          © {new Date().getFullYear()} PromptPrinter
+        </p>
+
+        {/* Erbauer-Credit, gleich aufgebaut wie auf den Kundenseiten der
+            eigenen Agentur (ProMeti, Artemis, Portfolio): ein eigener Block
+            unter dem Rest, abgesetzt durch eine KURZE Linie (nicht über die
+            ganze Breite, sonst wäre das wieder die doppelte Trennlinie von
+            oben), Zeichen + Name gross genug, dass es als Logo gelesen wird,
+            und in kazuvate-Oliv statt im Seitenakzent. Vorher stand es
+            12 px klein und grau rechts neben dem Copyright und ging unter. */}
+        <div className="mt-6 w-fit border-t border-border pt-5">
           <a
             href="https://kazuvate.ch"
             target="_blank"
             rel="noopener"
             aria-label="Website von kazuvate, öffnet in einem neuen Tab"
-            className="focus-glow group inline-flex items-center gap-1.5 rounded-sm text-[12px] text-tertiary transition-opacity duration-200 hover:opacity-70"
+            className="focus-glow inline-flex items-center gap-2.5 rounded-sm text-[20px] font-bold leading-none tracking-[-0.015em] text-kazuvate transition-opacity duration-200 hover:opacity-75"
           >
             <svg
               viewBox="0 0 585.51 442.90"
-              className="h-3 w-auto"
+              className="h-7 w-auto shrink-0"
               aria-hidden="true"
               focusable="false"
             >
