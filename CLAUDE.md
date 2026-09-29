@@ -862,6 +862,81 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Vercel-Bot-Branch `vercel/install-vercel-web-analytics-…`, solange
 > Datenschutz und `/cookies` die Webanalyse nicht nennen.
 
+> **Kontomenü, Nutzung, Tarife, Nutzungsrichtlinie, Sprachen (2026-09-29):**
+> Auf Kasums Wunsch, ein Branch pro Änderung, jede CI-grün und per
+> Fast-Forward in `main`:
+>
+> - `fix/footer-kazuvate-credit`: der kazuvate-Credit im Footer war 12 px
+>   klein und grau. Jetzt wie auf den Kundenseiten (ProMeti, Artemis,
+>   Portfolio): eigener Block unter dem Copyright, kurze Trennlinie (nicht
+>   volle Breite, sonst wieder die "doppelte Linie" vom 05.08.), Zeichen 28 px
+>   + Name 20 px fett in kazuvate-Oliv. Farbe als Token `--kazuvate`
+>   (hell `#3F5019`, dunkel `#93AA5E`) + Tailwind `text-kazuvate`,
+>   ausschliesslich für diesen Credit.
+> - `feat/usage-page`: neue Seite `/usage` ("Nutzung", für alle). Das eigene
+>   Kontingent zog von `/billing` dorthin, `/billing` zeigt nur noch Plan und
+>   Abo. Die frühere Admin-Seite "Betrieb" (`/admin`) ist ein Abschnitt
+>   derselben Seite, der nur für `is_admin` rendert; `/admin` leitet per
+>   `next.config.ts` dauerhaft auf `/usage` um. `adminNav` existiert nicht mehr.
+> - `feat/account-menu-shortcuts`: Kontomenü in der Reihenfolge Einstellungen,
+>   Nutzung, Gespeicherte Prompts, Abrechnung, jeweils mit Kürzel
+>   (Strg/⌘+`,`, Strg/⌘+Shift+U/S/B). Definition in `shell/lib/nav.ts` +
+>   `shortcuts.ts`, globaler Listener `shell/hooks/use-nav-shortcuts.ts`
+>   (nur in der Sidebar gemountet), Hinweise auch in der Befehlspalette. Alt
+>   bewusst ausgeschlossen (Strg+Alt = AltGr). Nebenbei: Strg+B/Strg+K
+>   prüften Shift nicht.
+> - `feat/plans-overview`: "Alle Tarife anzeigen" → `/plans`, Free und Pro
+>   wie auf `/pricing`, aber mit markiertem aktuellem Plan, Checkout mit
+>   Konto-ID und einer Vergleichstabelle aus `plans.ts`/`pricing.ts`.
+> - `feat/usage-policy`: neue Seite `/nutzungsrichtlinie` (die AGB sind die
+>   Nutzungsbedingungen, eine Nutzungsrichtlinie fehlte). AGB Ziffer 7 macht
+>   sie zum Bestandteil. Verlinkt in Footer, Sitemap, `llms.txt`, öffentlich in
+>   der Middleware. Wie alle Rechtstexte: Entwurf, juristisch prüfen lassen.
+> - `feat/account-menu-learn-more`: Untermenü "Mehr erfahren" (Hilfe + alle
+>   Rechtstexte, neuer Tab). Das Kontomenü lebt seitdem in
+>   `shell/components/account-menu.tsx`, das seitliche Untermenü ist ein
+>   eigener Baustein (`account-submenu.tsx`, Disclosure-Muster, Tastatur:
+>   Pfeil rechts/links, Escape schliesst erst das Untermenü).
+>
+> **Mehrsprachigkeit (i18n), Branches `feat/i18n-foundation` + `-en/-fr/-it/-es`:**
+> Die eingeloggte App gibt es auf Deutsch, Englisch, Französisch,
+> Italienisch und Spanisch. **Landing Page, Login/Registrierung und die
+> Rechtstexte bleiben Deutsch** (Entscheid Kasum; eine übersetzte
+> Datenschutzerklärung wäre rechtlich eine eigene Fassung).
+>
+> - Keine Bibliothek. `shared/i18n/messages/de.ts` ist die Quelle der Wahrheit,
+>   sein Typ `Messages` zwingt jede Sprache zu denselben Schlüsseln.
+>   `tests/guards/i18n-catalog.test.ts` prüft zusätzlich, dass jede
+>   Übersetzung dieselben `{platzhalter}` hat wie das Deutsche, dass die
+>   deutschen App-Plantexte mit `/pricing` übereinstimmen, und dass kein
+>   Client-Code fremde Wörterbücher importiert.
+> - Lesen: Client `useT()`/`useLocale()` (`shared/i18n/provider.tsx`,
+>   Standardwert Deutsch, deshalb laufen alte Komponententests ohne
+>   Provider), Server-Seiten `getT()`/`getLocale()`, API-Routen
+>   `requestT(req)` (liest den Cookie aus dem Request-Header, nicht über
+>   `next/headers`). Helfer: `fmt`, `plural` (Intl.PluralRules), `rich`
+>   (Links/Hervorhebungen mitten im Satz).
+> - Speichern: Cookie `pp-locale` (in der Cookie-Richtlinie) +
+>   `profiles.settings.locale` für andere Geräte (`use-change-locale.ts`).
+>   Auf einem neuen Gerät nimmt das (app)-Layout die Profil-Sprache und der
+>   Provider schreibt den Cookie nach. `<html lang>` zieht der Provider im
+>   Browser nach (das Root-Layout darf keine Request-Daten lesen).
+> - Wählen: Kontomenü → "Sprache", Mobile-Drawer, Einstellungen (Karte
+>   "Sprache"). Datum/relative Zeiten über Intl (Deutsch unverändert),
+>   Sprachmodus hört und spricht in der App-Sprache, die Projekt-Analyse
+>   schreibt das Gedächtnis in der App-Sprache (löst Audit-Befund F-7).
+> - **Neue UI-Texte gehören ab jetzt ins Wörterbuch**, in alle fünf
+>   Sprachen. Neue Sprache: Code in `LOCALES`, Eintrag in `LOCALE_NAMES`,
+>   `LOCALE_TAGS`, `LOCALE_ENGLISH_NAMES`, Datei `messages/<code>.ts`,
+>   Eintrag im `CATALOG` von `server/i18n.ts`.
+>
+> **Nicht im Browser verifiziert:** alle eingeloggten Seiten (Kontomenü,
+> `/usage`, `/plans`, Sprachwechsel). Diese Sitzung hatte keinen Login im
+> Browser-Pane. Abgesichert über das Gate (1219 Tests, darunter
+> Komponententests für Menü, Kürzel, Untermenüs und das englische Rendern)
+> und `curl` für die Umleitungen. Öffentliche Seiten (Footer,
+> `/nutzungsrichtlinie`) im Dev-Server geprüft.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -1113,7 +1188,7 @@ Eintrag unten. Beides lebt jetzt ausschliesslich auf `/pricing`.
 | `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase (`FeaturesGrid` stand hier zwischenzeitlich, am 2026-07-30 wieder entfernt, siehe unten). Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 10 Seiten, seit 2026-09-28 inkl. `/cookies`, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie. Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
+| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 11 Seiten, seit 2026-09-28 inkl. `/cookies`, seit 2026-09-29 inkl. `/nutzungsrichtlinie`, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie, darunter der kazuvate-Credit als eigener Block (kurze Linie, Oliv, seit 2026-09-29). Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
 | `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css, `NavWave`-Komponente in `shared/ui/nav-wave.tsx`), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
 
 **`/pricing`** (`src/app/(marketing)/pricing/page.tsx`): `PageHeader` (nur
