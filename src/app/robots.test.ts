@@ -30,6 +30,8 @@ describe("robots", () => {
         "/projects",
         "/settings",
         "/billing",
+        "/usage",
+        "/prompts",
         "/admin",
       ])
     );

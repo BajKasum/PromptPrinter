@@ -48,7 +48,7 @@ describe("middleware", () => {
     }
   );
 
-  it.each(["/chats", "/chats/new", "/projects", "/settings", "/billing", "/admin", "/prompts"])(
+  it.each(["/chats", "/chats/new", "/projects", "/settings", "/billing", "/usage", "/admin", "/prompts"])(
     "gibt %s weiterhin die strikte Nonce-Policy — hier liest (app)/layout.tsx headers() und threadet sie durch",
     async (path) => {
       // (app)-Routen brauchen eine Sitzung; ohne eine würde updateSession auf

@@ -98,8 +98,16 @@ const nextConfig: NextConfig = {
   // costs one config entry. next.config redirects run before middleware, so
   // this resolves before the auth check ever sees the path (which is why
   // /features could be dropped from the middleware's public prefixes).
+  //
+  // /admin ("Betrieb") ist seit 2026-09-29 ein Abschnitt der Seite /usage
+  // ("Nutzung"), sichtbar nur für is_admin. Die Umleitung hält alte
+  // Lesezeichen am Leben; ein Nicht-Admin landet auf seiner eigenen
+  // Nutzungsseite, wie jeder andere Weg dorthin auch.
   async redirects() {
-    return [{ source: "/features", destination: "/#funktionen", permanent: true }];
+    return [
+      { source: "/features", destination: "/#funktionen", permanent: true },
+      { source: "/admin", destination: "/usage", permanent: true },
+    ];
   },
 };
 

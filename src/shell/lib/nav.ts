@@ -26,14 +26,14 @@ export const primaryNav: NavItem[] = [
 // stays a chat vs. workspace choice; a saved-prompt library is neither, it's
 // reachable the same way Einstellungen/Abrechnung already are: account menu,
 // ⌘K, and the URL directly.
+//
+// "Nutzung" (/usage) steht seit 2026-09-29 fuer alle hier. Davor gab es nur
+// einen Admin-Eintrag "Betrieb" (/admin) in einer eigenen adminNav-Liste; die
+// Betriebszahlen sind jetzt ein Abschnitt derselben Seite, den sie selbst nur
+// fuer is_admin rendert, deshalb braucht das Menue keine Rollen mehr.
 export const secondaryNav: NavItem[] = [
-  { label: "Gespeicherte Prompts", href: "/prompts", Icon: Bookmark },
   { label: "Einstellungen", href: "/settings", Icon: Settings },
+  { label: "Nutzung", href: "/usage", Icon: Gauge },
+  { label: "Gespeicherte Prompts", href: "/prompts", Icon: Bookmark },
   { label: "Abrechnung", href: "/billing", Icon: CreditCard },
 ];
-
-// Only rendered for profiles.is_admin (the page itself 404s for everyone else,
-// this just keeps it out of the menu). Kept separate from secondaryNav so the
-// command palette and mobile drawer don't have to learn about roles — they
-// render secondaryNav and stay unaware this exists.
-export const adminNav: NavItem[] = [{ label: "Betrieb", href: "/admin", Icon: Gauge }];

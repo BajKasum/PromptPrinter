@@ -35,6 +35,7 @@ describe("updateSession", () => {
       "/projects",
       "/settings",
       "/billing",
+      "/usage",
       "/admin",
       // Security-Audit finding M-7: /prompts existed for a full release without
       // being on the old protected-prefix list. The (app) layout still caught
@@ -109,7 +110,7 @@ describe("updateSession", () => {
       getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     });
 
-    it.each(["/chats", "/projects", "/settings", "/billing", "/admin", "/prompts"])(
+    it.each(["/chats", "/projects", "/settings", "/billing", "/usage", "/admin", "/prompts"])(
       "lets %s through",
       async (path) => {
         const res = await updateSession(request(path), new Headers());

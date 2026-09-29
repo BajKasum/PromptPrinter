@@ -80,7 +80,7 @@ export default function Page() {
       </p>
       <p>
         Der Zähler läuft pro Kalendermonat und springt am Monatsersten wieder auf
-        null. Du siehst deinen Stand in den Einstellungen und unter Abrechnung.
+        null. Deinen Stand siehst du im Kontomenü unter Nutzung.
       </p>
 
       <h2>Was nichts kostet</h2>
