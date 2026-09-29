@@ -14,7 +14,7 @@ import {
   type SidebarChat,
   type SidebarProject,
 } from "@/shell/components/sidebar";
-import { secondaryNav } from "@/shell/lib/nav";
+import { plansNav, secondaryNav } from "@/shell/lib/nav";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 
@@ -205,7 +205,7 @@ export function MobileNav({
                 <div className="my-5 h-px bg-border" />
 
                 <nav aria-label="Konto" className="space-y-0.5">
-                  {secondaryNav.map(({ label, href, Icon }) => {
+                  {[...secondaryNav, plansNav].map(({ label, href, Icon }) => {
                     const active = pathname === href || pathname.startsWith(href + "/");
                     return (
                       <Link

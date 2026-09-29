@@ -28,6 +28,7 @@ export default function robots(): MetadataRoute.Robots {
         "/settings",
         "/usage",
         "/billing",
+        "/plans",
         "/admin",
       ],
     },

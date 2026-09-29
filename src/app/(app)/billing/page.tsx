@@ -157,6 +157,12 @@ export default async function BillingPage() {
                 <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">
                   {pro.description}
                 </p>
+                <Link
+                  href="/plans"
+                  className="mt-2 inline-flex text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  Free und Pro im Vergleich
+                </Link>
                 <div className="mt-4 flex items-baseline gap-1.5">
                   <span className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">
                     {pro.price}

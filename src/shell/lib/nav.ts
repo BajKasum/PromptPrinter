@@ -5,6 +5,7 @@ import {
   Settings,
   CreditCard,
   Gauge,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,3 +51,9 @@ export const secondaryNav: NavItem[] = [
   },
   { label: "Abrechnung", href: "/billing", Icon: CreditCard, shortcut: { key: "b", shift: true } },
 ];
+
+// "Alle Tarife anzeigen" (29.09.2026): Free und Pro nebeneinander, in der App.
+// Bewusst nicht in secondaryNav: das sind die Orte des eigenen Kontos (jeder
+// mit Kürzel), dieser Eintrag ist ein Angebot und steht im Menü deshalb in
+// einer eigenen Gruppe darunter.
+export const plansNav: NavItem = { label: "Alle Tarife anzeigen", href: "/plans", Icon: Sparkles };

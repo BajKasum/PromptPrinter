@@ -17,7 +17,7 @@ import { Logo, LogoMark } from "@/shared/brand/logo";
 import { NewProjectButton } from "@/features/projects/components/new-project";
 import { CommandPalette } from "@/shell/components/command-palette";
 import { PlanBadge } from "@/shared/ui/plan-badge";
-import { primaryNav, secondaryNav, type NavItem } from "@/shell/lib/nav";
+import { plansNav, primaryNav, secondaryNav, type NavItem } from "@/shell/lib/nav";
 import type { PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
@@ -634,6 +634,16 @@ function AccountMenu({
                   )}
                 </Link>
               ))}
+            </div>
+            <div className="border-t border-border p-1.5">
+              <Link
+                href={plansNav.href}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+              >
+                <plansNav.Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                <span className="min-w-0 flex-1 truncate">{plansNav.label}</span>
+              </Link>
             </div>
             <div className="border-t border-border p-1.5">
               <button

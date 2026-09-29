@@ -231,6 +231,16 @@ describe("Sidebar account shortcuts", () => {
     expect(settings).toHaveTextContent("Strg+,");
     expect(screen.getByRole("link", { name: /Nutzung/ })).toHaveTextContent("Strg+Shift+U");
   });
+
+  it("offers all plans in its own group below the account destinations", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    await user.click(screen.getByRole("button", { name: "Kontomenü" }));
+    expect(screen.getByRole("link", { name: "Alle Tarife anzeigen" })).toHaveAttribute(
+      "href",
+      "/plans"
+    );
+  });
 });
 
 describe("Sidebar (collapsed)", () => {
