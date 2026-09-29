@@ -29,6 +29,12 @@ describe("requestT", () => {
     expect(t.nav.settings).toBe("Settings");
   });
 
+  it("serves French for pp-locale=fr", () => {
+    const { locale, t } = requestT(req("pp-locale=fr"));
+    expect(locale).toBe("fr");
+    expect(t.nav.settings).toBe("Paramètres");
+  });
+
   it("ignores unknown values and look-alike cookie names", () => {
     expect(requestT(req("pp-locale=xx")).locale).toBe("de");
     expect(requestT(req("xpp-locale=de")).locale).toBe("de");
