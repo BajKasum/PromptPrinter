@@ -936,6 +936,15 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > Komponententests für Menü, Kürzel, Untermenüs und das englische Rendern)
 > und `curl` für die Umleitungen. Öffentliche Seiten (Footer,
 > `/nutzungsrichtlinie`) im Dev-Server geprüft.
+>
+> ⚠️ **Merge-Weg geändert (2026-09-29): Pull Request mit "Rebase and merge"
+> statt lokalem Fast-Forward.** Alle Branches oben kamen noch per
+> Fast-Forward nach `main`, und GitHub hat die meisten dieser Commits nicht in
+> Kasums Contributions gezählt (Messung und Begründung unter
+> "Arbeitsregeln"). Ab jetzt geht jeder Branch per PR und `gh pr merge
+> --rebase` nach `main`. Die bereits gemergten Commits bleiben, wie sie sind:
+> sie nachträglich zählen zu lassen hiesse, `main` umzuschreiben und per
+> Force-Push hochzuladen, das ist bewusst nicht passiert.
 
 ## Was ist PromptPrinter?
 
@@ -1037,10 +1046,26 @@ startete und selbst noch schrieb. Deshalb bewusst **kein** `prebuild`, das
 - **Gate vor jedem Commit** (siehe oben), alles grün.
 - **Commit-Trailer:** `Co-Authored-By: Claude <aktuelles Modell> <noreply@anthropic.com>`.
 - **Nie direkt auf `main` arbeiten** (Kasums Regel seit 2026-09-23). Jede
-  Arbeit auf einem eigenen Branch (`fix/…`, `feat/…`, `docs/…`), dort
-  committen und den Branch pushen. Ist die CI auf dem Branch grün, per
-  Fast-Forward nach `main` mergen und `main` pushen. **Branches nie löschen**,
-  weder lokal noch auf GitHub.
+  Arbeit auf einem eigenen Branch (`fix/…`, `feat/…`, `docs/…`), für jedes
+  Problem ein eigener. **Branches nie löschen**, weder lokal noch auf GitHub
+  (auch nicht beim Merge, kein `--delete-branch`).
+- **Nach `main` nur per Pull Request mit "Rebase and merge"** (Kasums Regel
+  seit 2026-09-29). Ablauf pro Branch:
+  1. Frischen Branch von aktuellem `main` anlegen (`git pull` vorher).
+  2. Committen, Gate grün, Branch pushen.
+  3. `gh pr create --base main` mit kurzer Beschreibung.
+  4. CI auf dem PR grün abwarten, dann `gh pr merge <nr> --rebase`.
+  5. Lokal `git checkout main && git pull`, erst danach der nächste Branch.
+
+  **Warum kein lokales Fast-Forward mehr:** GitHub hat Commits, die zuerst
+  auf einem Branch lagen und dann per Fast-Forward auf `main` geschoben
+  wurden, grösstenteils nicht in Kasums Contributions gezählt (gemessen:
+  28.09. 6 von 37, 29.09. 2 von 12; am 23.09., direkt auf `main`, 8 von 8).
+  "Rebase and merge" schreibt die Commits auf `main` neu, jeder einzelne
+  zählt, und die Historie bleibt linear. Folge daraus: die Commits auf `main`
+  haben andere IDs als auf dem Branch. Deshalb den nächsten Branch **nie**
+  vom vorherigen Feature-Branch abzweigen, sondern immer von frisch
+  gepulltem `main`, sonst trägt der neue PR die alten Commits noch einmal mit.
 - **Nach jeder abgeschlossenen Änderung committen + pushen**, nicht auf Aufforderung warten.
 - **Secrets nie mit `NEXT_PUBLIC_*`** prefixen, landen sonst im Client-Bundle.
   Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.
