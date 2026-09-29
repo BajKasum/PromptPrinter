@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AccountMenu } from "./account-menu";
+import { I18nProvider } from "@/shared/i18n/provider";
+import { en } from "@/shared/i18n/messages/en";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -73,5 +75,26 @@ describe("AccountMenu: Mehr erfahren", () => {
     expect(screen.getByRole("button", { name: "Mehr erfahren" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("button", { name: "Mehr erfahren" })).not.toBeInTheDocument();
+  });
+});
+
+describe("AccountMenu in English", () => {
+  it("renders labels, shortcut hints and the language list from the English dictionary", async () => {
+    const user = userEvent.setup();
+    render(
+      <I18nProvider locale="en" messages={en}>
+        <AccountMenu collapsed={false} email="finn@example.com" plan="free" isAdmin={false} />
+      </I18nProvider>
+    );
+    await user.click(screen.getByRole("button", { name: "Account menu" }));
+    expect(screen.getByRole("link", { name: /Settings/ })).toHaveTextContent("Ctrl+,");
+    expect(screen.getByRole("link", { name: "View all plans" })).toBeInTheDocument();
+
+    const language = screen.getByRole("button", { name: /Language/ });
+    expect(language).toHaveTextContent("English");
+    await user.click(language);
+    const group = screen.getByRole("group", { name: "Language" });
+    expect(group).toHaveTextContent("Deutsch");
+    expect(group).toHaveTextContent("English");
   });
 });

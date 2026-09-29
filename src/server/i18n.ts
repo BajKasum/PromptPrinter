@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { de, type Messages } from "@/shared/i18n/messages/de";
+import { en } from "@/shared/i18n/messages/en";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale, type Locale } from "@/shared/i18n/locales";
 import { getSessionProfile } from "@/server/session";
 
@@ -11,6 +12,7 @@ import { getSessionProfile } from "@/server/session";
 // übrigen Sprachen landen nie im Browser-Bundle.
 const CATALOG: Record<Locale, Messages> = {
   de,
+  en,
 };
 
 export function messagesFor(locale: Locale): Messages {

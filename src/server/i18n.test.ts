@@ -23,6 +23,12 @@ describe("requestT", () => {
     expect(requestT(req("sb-token=abc; pp-locale=de; pp-sidebar=1")).locale).toBe("de");
   });
 
+  it("serves English for pp-locale=en", () => {
+    const { locale, t } = requestT(req("pp-locale=en"));
+    expect(locale).toBe("en");
+    expect(t.nav.settings).toBe("Settings");
+  });
+
   it("ignores unknown values and look-alike cookie names", () => {
     expect(requestT(req("pp-locale=xx")).locale).toBe("de");
     expect(requestT(req("xpp-locale=de")).locale).toBe("de");

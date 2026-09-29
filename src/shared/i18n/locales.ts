@@ -7,7 +7,7 @@
 // server/i18n.ts. TypeScript meldet jeden fehlenden Schlüssel, weil jedes
 // Wörterbuch den Typ `Messages` aus de.ts erfüllen muss.
 
-export const LOCALES = ["de"] as const;
+export const LOCALES = ["de", "en"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -19,6 +19,7 @@ export const LOCALE_COOKIE = "pp-locale";
 /** So nennt sich jede Sprache selbst, damit man sie auch findet, wenn man die aktuelle nicht liest. */
 export const LOCALE_NAMES: Record<Locale, string> = {
   de: "Deutsch",
+  en: "English",
 };
 
 /**
@@ -28,6 +29,9 @@ export const LOCALE_NAMES: Record<Locale, string> = {
  */
 export const LOCALE_TAGS: Record<Locale, { intl: string; speech: string }> = {
   de: { intl: "de-CH", speech: "de-DE" },
+  // Britisch: Datum als "29 Sept 2026" statt "Sep 29, 2026", näher an der
+  // europäischen Reihenfolge, in der der Rest der App denkt.
+  en: { intl: "en-GB", speech: "en-US" },
 };
 
 /**
@@ -37,6 +41,7 @@ export const LOCALE_TAGS: Record<Locale, { intl: string; speech: string }> = {
  */
 export const LOCALE_ENGLISH_NAMES: Record<Locale, string> = {
   de: "German",
+  en: "English",
 };
 
 export function toLocale(raw: unknown): Locale | null {
