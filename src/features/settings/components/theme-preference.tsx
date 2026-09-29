@@ -4,11 +4,12 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/i18n/provider";
 
 const OPTIONS = [
-  { value: "light", label: "Hell", Icon: Sun },
-  { value: "dark", label: "Dunkel", Icon: Moon },
-  { value: "system", label: "System", Icon: Monitor },
+  { value: "light", labelKey: "themeLight", Icon: Sun },
+  { value: "dark", labelKey: "themeDark", Icon: Moon },
+  { value: "system", labelKey: "themeSystem", Icon: Monitor },
 ] as const;
 
 /**
@@ -20,6 +21,7 @@ const OPTIONS = [
  * surface moved from the topbar to here.
  */
 export function ThemePreference() {
+  const t = useT();
   const { theme, setTheme } = useTheme();
   // Gate the active-option highlight on mount so the server render and first
   // client render agree (the stored theme is only knowable client-side).
@@ -60,8 +62,8 @@ export function ThemePreference() {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Erscheinungsbild">
-      {OPTIONS.map(({ value, label, Icon }, index) => {
+    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t.settings.appearance}>
+      {OPTIONS.map(({ value, labelKey, Icon }, index) => {
         const active = mounted && theme === value;
         return (
           <button
@@ -83,7 +85,7 @@ export function ThemePreference() {
             )}
           >
             <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-            {label}
+            {t.settings[labelKey]}
           </button>
         );
       })}

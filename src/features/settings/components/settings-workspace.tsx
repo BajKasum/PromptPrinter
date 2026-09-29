@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
+  Languages,
   Building2,
   KeyRound,
   Lock,
@@ -28,6 +29,9 @@ import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import type { PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn, hslVar } from "@/shared/lib/utils";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { LanguagePreference } from "@/features/settings/components/language-preference";
 type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
 export function SettingsWorkspace({
@@ -56,6 +60,8 @@ export function SettingsWorkspace({
   /** The user's custom-endpoint BYOK config (no key), if any. */
   customProvider: CustomProviderMeta | null;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -101,8 +107,8 @@ export function SettingsWorkspace({
 
     if (error) {
       toast({
-        title: "Konnte nicht gespeichert werden",
-        description: "Bitte versuche es erneut.",
+        title: t.settings.saveFailed,
+        description: t.settings.tryAgain,
         variant: "error",
       });
       return;
@@ -112,18 +118,18 @@ export function SettingsWorkspace({
     // away and the visible fields reflect exactly what was stored.
     setDisplayName(nameTrimmed);
     setBaseName(nameTrimmed);
-    toast({ title: "Einstellungen gespeichert", variant: "success" });
+    toast({ title: t.settings.saved, variant: "success" });
     router.refresh();
   }
 
   const memberSinceLabel = useMemo(() => {
     if (!memberSince) return "-";
-    return new Intl.DateTimeFormat("de-CH", {
+    return new Intl.DateTimeFormat(LOCALE_TAGS[locale].intl, {
       month: "long",
       year: "numeric",
       timeZone: "UTC",
     }).format(new Date(memberSince));
-  }, [memberSince]);
+  }, [memberSince, locale]);
 
   return (
     <>
@@ -133,16 +139,16 @@ export function SettingsWorkspace({
           <SettingsCard
             Icon={User}
             accent="--accent"
-            title="Profil"
-            description="Wie du in deinem Workspace erscheinst."
+            title={t.settings.profile}
+            description={t.settings.profileHint}
           >
             <div className="space-y-4">
-              <Field label="Anzeigename">
+              <Field label={t.settings.displayName}>
                 <Input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Dein Name"
-                  aria-label="Anzeigename"
+                  placeholder={t.settings.displayNamePlaceholder}
+                  aria-label={t.settings.displayName}
                   maxLength={60}
                   autoComplete="name"
                   className={cn(
@@ -150,17 +156,15 @@ export function SettingsWorkspace({
                   )}
                 />
                 {nameDirty && !nameValid && (
-                  <p className="text-[12px] text-destructive/90">Der Name darf nicht leer sein.</p>
+                  <p className="text-[12px] text-destructive/90">{t.settings.nameEmpty}</p>
                 )}
               </Field>
 
-              <Field label="Email">
+              <Field label={t.settings.email}>
                 <div className="flex h-11 items-center rounded-lg border border-border bg-surface px-3.5 text-sm text-secondary">
                   {email}
                 </div>
-                <p className="text-[12px] text-tertiary">
-                  Mit deinem Login verknüpft, hier nicht änderbar.
-                </p>
+                <p className="text-[12px] text-tertiary">{t.settings.emailHint}</p>
               </Field>
             </div>
           </SettingsCard>
@@ -168,19 +172,19 @@ export function SettingsWorkspace({
           <SettingsCard
             Icon={Building2}
             accent="--accent"
-            title="Workspace"
-            description="Konto- und Plan-Übersicht."
+            title={t.settings.workspace}
+            description={t.settings.workspaceHint}
             headerRight={<PlanBadge plan={plan} isAdmin={isAdmin} />}
           >
             <div className="divide-y divide-border">
-              <InfoRow label="Rolle" value="Eigentümer" />
-              <InfoRow label="Mitglied seit" value={memberSinceLabel} />
+              <InfoRow label={t.settings.role} value={t.settings.owner} />
+              <InfoRow label={t.settings.memberSince} value={memberSinceLabel} />
             </div>
             <Link
               href="/billing"
               className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent-text transition-colors hover:text-accent-text/80"
             >
-              Plan verwalten
+              {t.settings.managePlan}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </SettingsCard>
@@ -190,28 +194,37 @@ export function SettingsWorkspace({
         <SettingsCard
           Icon={SunMoon}
           accent="--accent"
-          title="Erscheinungsbild"
-          description="Hell, dunkel oder automatisch nach Systemeinstellung, nur hier im Workspace."
+          title={t.settings.appearance}
+          description={t.settings.appearanceHint}
         >
           <ThemePreference />
+        </SettingsCard>
+
+        {/* Sprache (29.09.2026): dieselbe Wahl wie im Kontomenü, hier für
+            alle, die sie in den Einstellungen suchen. */}
+        <SettingsCard
+          id="language"
+          Icon={Languages}
+          accent="--accent"
+          title={t.settings.language}
+          description={t.settings.languageHint}
+        >
+          <LanguagePreference />
         </SettingsCard>
 
         <SettingsCard
           id="api-keys"
           Icon={KeyRound}
           accent="--accent"
-          title="Eigene API-Keys"
-          description="Nutze dein eigenes Kontingent statt unserer Limits."
+          title={t.settings.apiKeys}
+          description={t.settings.apiKeysHint}
         >
           <ApiKeys
             configured={configuredProviders}
             active={activeProvider}
             customProvider={customProvider}
           />
-          <p className="mt-3 text-[12px] text-tertiary">
-            Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit
-            bleibt bestehen.
-          </p>
+          <p className="mt-3 text-[12px] text-tertiary">{t.settings.apiKeysNote}</p>
         </SettingsCard>
 
         {/* M-18 (Audit 06.09.2026): die "Standard-Tools"-Karte sass hier
@@ -229,8 +242,8 @@ export function SettingsWorkspace({
         <SettingsCard
           Icon={Lock}
           accent="--accent"
-          title="Sicherheit"
-          description="Ändere dein Passwort."
+          title={t.settings.security}
+          description={t.settings.securityHint}
         >
           <ChangePassword />
         </SettingsCard>
@@ -239,8 +252,8 @@ export function SettingsWorkspace({
         <SettingsCard
           Icon={ShieldAlert}
           accent="--destructive"
-          title="Gefahrenzone"
-          description="Unwiderrufliche Aktionen."
+          title={t.settings.danger}
+          description={t.settings.dangerHint}
         >
           <DeleteAccount email={email} />
         </SettingsCard>
@@ -269,23 +282,23 @@ export function SettingsWorkspace({
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-warning" />
                 </span>
                 <span className="text-[13.5px] font-medium text-foreground">
-                  Ungespeicherte Änderungen
+                  {t.settings.unsaved}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={cancel} disabled={saving}>
-                  Verwerfen
+                  {t.settings.discard}
                 </Button>
                 <Button size="sm" onClick={() => void save()} disabled={!canSave}>
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Speichern…
+                      {t.settings.savingEllipsis}
                     </>
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Speichern
+                      {t.common.save}
                     </>
                   )}
                 </Button>

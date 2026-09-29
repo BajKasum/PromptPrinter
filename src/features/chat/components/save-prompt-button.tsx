@@ -6,6 +6,7 @@ import { Bookmark, Check, Loader2 } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
 import { derivePromptTitle } from "@/shared/lib/saved-prompts";
+import { useT } from "@/shared/i18n/provider";
 
 type SaveState = "idle" | "saving" | "saved";
 
@@ -43,6 +44,7 @@ export function SavePromptButton({
   prompt: string;
   initiallySaved?: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [state, setState] = useState<SaveState>(initiallySaved ? "saved" : "idle");
@@ -58,8 +60,8 @@ export function SavePromptButton({
     if (!user) {
       setState("idle");
       toast({
-        title: "Nicht angemeldet",
-        description: "Melde dich an, um Prompts zu speichern.",
+        title: t.chat.notSignedIn,
+        description: t.chat.signInToSave,
         variant: "error",
       });
       return;
@@ -70,7 +72,7 @@ export function SavePromptButton({
       user_id: user.id,
       outputs: {
         prompt,
-        title: derivePromptTitle(prompt),
+        title: derivePromptTitle(prompt, t.prompts.fallbackTitle),
       },
       model: null,
     });
@@ -78,15 +80,15 @@ export function SavePromptButton({
     if (error) {
       setState("idle");
       toast({
-        title: "Speichern fehlgeschlagen",
-        description: "Der Prompt konnte nicht gespeichert werden.",
+        title: t.chat.saveFailed,
+        description: t.chat.saveFailedBody,
         variant: "error",
       });
       return;
     }
 
     setState("saved");
-    toast({ title: "Prompt gespeichert", variant: "success" });
+    toast({ title: t.chat.promptSaved, variant: "success" });
     // Refresh so any visible counter (project header/rail) picks it up.
     router.refresh();
     // Stays "saved" for good (no re-arm timer): this exact prompt is now in
@@ -107,7 +109,7 @@ export function SavePromptButton({
       ) : (
         <Bookmark className="h-3.5 w-3.5" />
       )}
-      {state === "saving" ? "Speichert…" : state === "saved" ? "Gespeichert" : "Speichern"}
+      {state === "saving" ? t.chat.saving : state === "saved" ? t.common.saved : t.common.save}
     </button>
   );
 }

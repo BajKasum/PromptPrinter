@@ -17,6 +17,9 @@ import {
   type ProjectBrainStatus,
 } from "@/shared/lib/project-brain";
 import type { ProjectFile } from "@/features/projects/lib/project-files";
+import { getLocale, getT } from "@/server/i18n";
+import { fmt, plural } from "@/shared/i18n/format";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
 // The workspace shell (REDESIGN.md, Phase 3): header + context rail persist
 // across the project's "Arbeitsraum" subroutes, Übersicht and Ergebnisse are
@@ -144,6 +147,7 @@ export default async function ProjectWorkspaceLayout({
         .maybeSingle(),
     ]);
 
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const chats = chatCount ?? 0;
   const results = resultCount ?? 0;
   const files: ProjectFile[] = ((filesRaw as ProjectFileRow[] | null) ?? []).map((f) => ({
@@ -174,7 +178,7 @@ export default async function ProjectWorkspaceLayout({
               className="inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Zurück zu Projekten
+              {t.pages.workspace.back}
             </Link>
             <DeleteProjectButton projectId={project.id} projectName={project.name} />
           </div>
@@ -185,7 +189,7 @@ export default async function ProjectWorkspaceLayout({
             <div className="flex min-w-0 flex-col gap-2">
               <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
                 <FolderKanban className="h-3 w-3" />
-                Projekt
+                {t.pages.workspace.eyebrow}
               </div>
               <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
                 {project.name}
@@ -193,21 +197,23 @@ export default async function ProjectWorkspaceLayout({
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-secondary">
                 <span className="inline-flex items-center gap-1.5">
                   <MessageSquare className="h-3.5 w-3.5" />
-                  {chats} {chats === 1 ? "Chat" : "Chats"}
+                  {plural(t.pages.workspace.chats, chats, locale)}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5" />
-                  {files.length} {files.length === 1 ? "Datei" : "Dateien"}
+                  {plural(t.pages.workspace.files, files.length, locale)}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5" />
                   {results === 0
-                    ? "Noch keine Ergebnisse"
-                    : `${results} ${results === 1 ? "Ergebnis" : "Ergebnisse"}`}
+                    ? t.pages.workspace.noResults
+                    : plural(t.pages.workspace.results, results, locale)}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
-                  Aktualisiert {relativeTime(project.updated_at)}
+                  {fmt(t.pages.workspace.updated, {
+                    time: relativeTime(project.updated_at, LOCALE_TAGS[locale].intl, t.time.justNow),
+                  })}
                 </span>
               </div>
             </div>

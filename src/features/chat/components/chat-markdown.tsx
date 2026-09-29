@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { CopyMoment } from "@/features/chat/components/copy-moment";
 import { normalizeFences } from "@/features/chat/lib/normalize-fences";
+import { useT } from "@/shared/i18n/provider";
 
 // Render an assistant reply as real Markdown, headings, lists, bold, tables,
 // instead of raw text. Any fenced block becomes a CodeBlock with its own copy
@@ -108,6 +109,7 @@ export function MarkdownMessage({ content }: { content: string }) {
 
 // The paste-ready prompt, in a bordered box with its own copy button.
 function CodeBlock({ text }: { text: string }) {
+  const t = useT();
   const { copied, copy, copyCount } = useCopyToClipboard();
 
   return (
@@ -122,14 +124,14 @@ function CodeBlock({ text }: { text: string }) {
     <div className="my-2 overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-tertiary">
-          Prompt
+          {t.chat.promptLabel}
         </span>
         <button
           type="button"
           onClick={() => copy(text)}
           className="inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
         >
-          <CopyMoment copied={copied} copyCount={copyCount} idleLabel="Prompt kopieren" />
+          <CopyMoment copied={copied} copyCount={copyCount} idleLabel={t.chat.copyPrompt} />
         </button>
       </div>
       <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">

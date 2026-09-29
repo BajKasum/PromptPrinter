@@ -6,8 +6,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
+import { useT } from "@/shared/i18n/provider";
 
 export function DeleteAccount({ email }: { email: string }) {
+  const t = useT();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -21,8 +23,8 @@ export function DeleteAccount({ email }: { email: string }) {
   useEffect(() => {
     if (!open) return;
     setConfirm("");
-    const t = window.setTimeout(() => inputRef.current?.focus(), 20);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 20);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
   // Require the exact email so deletion can never be a stray click.
@@ -40,15 +42,15 @@ export function DeleteAccount({ email }: { email: string }) {
       const res = await fetch("/api/account", { method: "DELETE" });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? "Unbekannter Fehler.");
+        throw new Error(body?.error ?? t.common.unknownError);
       }
       // Account + session are gone, hard navigate to a clean public page.
       window.location.href = "/";
     } catch (err) {
       setDeleting(false);
       toast({
-        title: "Löschen fehlgeschlagen",
-        description: err instanceof Error ? err.message : "Bitte versuche es erneut.",
+        title: t.settings.deleteAccount.failed,
+        description: err instanceof Error ? err.message : t.settings.tryAgain,
         variant: "error",
       });
     }
@@ -68,18 +70,17 @@ export function DeleteAccount({ email }: { email: string }) {
     <>
       <div className="flex flex-col gap-3 rounded-lg border border-destructive/25 bg-destructive/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[14px] font-medium text-foreground">Konto löschen</div>
-          <div className="text-[12.5px] text-secondary">
-            Entfernt dein Konto und alles darin unwiderruflich: Projekte, Chats, Dateien,
-            gespeicherte Prompts und hinterlegte API-Keys.
+          <div className="text-[14px] font-medium text-foreground">
+            {t.settings.deleteAccount.title}
           </div>
+          <div className="text-[12.5px] text-secondary">{t.settings.deleteAccount.body}</div>
         </div>
         <Button
           variant="destructive"
           className="shrink-0"
           onClick={() => setOpen(true)}
         >
-          Löschen
+          {t.common.delete}
         </Button>
       </div>
 
@@ -98,7 +99,7 @@ export function DeleteAccount({ email }: { email: string }) {
                 <motion.div
                   role="dialog"
                   aria-modal="true"
-                  aria-label="Konto löschen bestätigen"
+                  aria-label={t.settings.deleteAccount.dialog}
                   initial={{ opacity: 0, scale: 0.98, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: 8 }}
@@ -112,18 +113,17 @@ export function DeleteAccount({ email }: { email: string }) {
                     </div>
                     <div>
                       <h2 className="text-[15px] font-semibold text-foreground">
-                        Konto endgültig löschen?
+                        {t.settings.deleteAccount.confirmTitle}
                       </h2>
                       <p className="mt-1 text-[13px] text-secondary">
-                        Diese Aktion ist unwiderruflich. Alle deine Projekte, Chats, Dateien,
-                        gespeicherten Prompts und hinterlegten API-Keys werden dauerhaft entfernt.
+                        {t.settings.deleteAccount.confirmBody}
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-3 p-5">
                     <label htmlFor="confirm-email" className="block text-[13px] text-foreground/70">
-                      Tippe zur Bestätigung deine E-Mail{" "}
+                      {t.settings.deleteAccount.typeEmail}{" "}
                       <span className="font-mono text-foreground/90">{email}</span>
                     </label>
                     <input
@@ -141,7 +141,7 @@ export function DeleteAccount({ email }: { email: string }) {
 
                   <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
                     <Button variant="ghost" onClick={close} disabled={deleting}>
-                      Abbrechen
+                      {t.common.cancel}
                     </Button>
                     <Button
                       variant="destructive"
@@ -151,10 +151,10 @@ export function DeleteAccount({ email }: { email: string }) {
                       {deleting ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Wird gelöscht…
+                          {t.common.deleting}
                         </>
                       ) : (
-                        "Konto löschen"
+                        t.settings.deleteAccount.title
                       )}
                     </Button>
                   </div>

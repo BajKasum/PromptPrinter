@@ -6,6 +6,9 @@ import { ToastProvider } from "@/shared/ui/toast";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
 import { createClient } from "@/server/supabase/server";
 import { getSessionProfile, getSessionUser } from "@/server/session";
+import { I18nProvider } from "@/shared/i18n/provider";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale } from "@/shared/i18n/locales";
+import { localeFromSettings, messagesFor } from "@/server/i18n";
 
 type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
@@ -59,6 +62,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .limit(5),
   ]);
 
+  // Sprache (29.09.2026): Cookie zuerst, sonst die im Profil gespeicherte
+  // Wahl (neues Gerät), sonst Deutsch. Das Profil kam oben ohnehin, die
+  // Entscheidung kostet also keine weitere Abfrage. Kam sie aus dem Profil,
+  // schreibt der Provider den Cookie nach, damit auch die API-Routen (die nur
+  // den Cookie lesen) ab jetzt in dieser Sprache antworten.
+  const cookieLocale = toLocale(cookieStore.get(LOCALE_COOKIE)?.value);
+  const locale = cookieLocale ?? localeFromSettings(profile?.settings) ?? DEFAULT_LOCALE;
+  const t = messagesFor(locale);
+
   const sidebarChats: SidebarChat[] = ((rawChats as SidebarChatRow[] | null) ?? []).map(
     (c) => ({ id: c.id, title: c.title })
   );
@@ -74,41 +86,47 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       disableTransitionOnChange
       nonce={nonce}
     >
-      <ToastProvider>
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-ring/50 focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
-        >
-          Zum Inhalt springen
-        </a>
-        <div className="min-h-screen md:flex">
-          <Sidebar
-            initialCollapsed={sidebarCollapsed}
-            initialWidth={sidebarWidth}
-            chats={sidebarChats}
-            projects={sidebarProjects}
-            email={user.email ?? ""}
-            plan={profile?.plan ?? "free"}
-            isAdmin={profile?.is_admin ?? false}
-            displayName={profile?.display_name ?? null}
-          />
-          <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
-            {/* Mobile-only nav trigger, the desktop sidebar is hidden below md
-                so this is the sole way to move between sections on a phone.
-                Sticky so it stays reachable while a long chat thread scrolls. */}
-            <div className="sticky top-0 z-30 -mx-6 bg-background/70 px-6 pb-2 pt-3 backdrop-blur-xl md:hidden">
-              <MobileNav chats={sidebarChats} projects={sidebarProjects} />
+      <I18nProvider
+        locale={locale}
+        messages={t}
+        persistCookie={!cookieLocale && locale !== DEFAULT_LOCALE}
+      >
+        <ToastProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-ring/50 focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
+          >
+            {t.shell.skipToContent}
+          </a>
+          <div className="min-h-screen md:flex">
+            <Sidebar
+              initialCollapsed={sidebarCollapsed}
+              initialWidth={sidebarWidth}
+              chats={sidebarChats}
+              projects={sidebarProjects}
+              email={user.email ?? ""}
+              plan={profile?.plan ?? "free"}
+              isAdmin={profile?.is_admin ?? false}
+              displayName={profile?.display_name ?? null}
+            />
+            <div className="min-w-0 flex-1 px-6 md:px-10 pb-16">
+              {/* Mobile-only nav trigger, the desktop sidebar is hidden below md
+                  so this is the sole way to move between sections on a phone.
+                  Sticky so it stays reachable while a long chat thread scrolls. */}
+              <div className="sticky top-0 z-30 -mx-6 bg-background/70 px-6 pb-2 pt-3 backdrop-blur-xl md:hidden">
+                <MobileNav chats={sidebarChats} projects={sidebarProjects} />
+              </div>
+              <main
+                id="main-content"
+                tabIndex={-1}
+                className="mx-auto w-full max-w-[1200px] pt-6 md:pt-8 focus:outline-none"
+              >
+                {children}
+              </main>
             </div>
-            <main
-              id="main-content"
-              tabIndex={-1}
-              className="mx-auto w-full max-w-[1200px] pt-6 md:pt-8 focus:outline-none"
-            >
-              {children}
-            </main>
           </div>
-        </div>
-      </ToastProvider>
+        </ToastProvider>
+      </I18nProvider>
     </ThemeProvider>
   );
 }

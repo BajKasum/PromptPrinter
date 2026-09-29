@@ -4,20 +4,22 @@ import Link from "next/link";
 import { FolderKanban, Sparkles, Clock, Star } from "lucide-react";
 import { cn, relativeTime } from "@/shared/lib/utils";
 import type { LibraryItem } from "@/features/prompts/hooks/use-library-filter";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { fmt, plural } from "@/shared/i18n/format";
+import { LOCALE_TAGS, type Locale } from "@/shared/i18n/locales";
+import type { Messages } from "@/shared/i18n/messages/de";
 
 // Split out of library-browser.tsx: purely presentational, one project's
 // card, agnostic to how the list was filtered or how favorites are persisted.
 
 // What lives in this workspace, compact: "2 Chats · 3 Prompts". A project
 // without either is simply young, not defective.
-function workspaceMeta(it: LibraryItem): string {
+function workspaceMeta(it: LibraryItem, m: Messages["library"], locale: Locale): string {
   const parts = [
-    it.chatCount > 0 ? `${it.chatCount} ${it.chatCount === 1 ? "Chat" : "Chats"}` : null,
-    it.savedPromptCount > 0
-      ? `${it.savedPromptCount} ${it.savedPromptCount === 1 ? "Prompt" : "Prompts"}`
-      : null,
+    it.chatCount > 0 ? plural(m.chats, it.chatCount, locale) : null,
+    it.savedPromptCount > 0 ? plural(m.prompts, it.savedPromptCount, locale) : null,
   ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Frisch angelegt";
+  return parts.length > 0 ? parts.join(" · ") : m.fresh;
 }
 
 export function LibraryCard({
@@ -29,12 +31,14 @@ export function LibraryCard({
   isFavorite: boolean;
   onToggleFavorite: () => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   return (
     <div className="card-surface relative h-full p-5 flex flex-col hover:border-border-strong transition-colors">
       {/* Full-card click target; the star sits above it via z-10. */}
       <Link
         href={`/projects/${item.id}`}
-        aria-label={`${item.name} öffnen`}
+        aria-label={fmt(t.library.open, { name: item.name })}
         className="absolute inset-0 rounded-xl"
       />
       <div className="flex items-start justify-between mb-3">
@@ -49,7 +53,7 @@ export function LibraryCard({
             onToggleFavorite();
           }}
           aria-pressed={isFavorite}
-          aria-label={isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+          aria-label={isFavorite ? t.library.unfavorite : t.library.favorite}
           className="relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-tertiary hover:text-warning hover:bg-surface-hover transition-colors active:scale-90"
         >
           <Star
@@ -72,11 +76,11 @@ export function LibraryCard({
       <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
         <span className="inline-flex items-center gap-1.5">
           <Sparkles className="h-3 w-3" />
-          {workspaceMeta(item)}
+          {workspaceMeta(item, t.library, locale)}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Clock className="h-3 w-3" />
-          {relativeTime(item.updatedAt)}
+          {relativeTime(item.updatedAt, LOCALE_TAGS[locale].intl, t.time.justNow)}
         </span>
       </div>
     </div>

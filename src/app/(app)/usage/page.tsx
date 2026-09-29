@@ -15,8 +15,12 @@ import {
 } from "@/server/security/rate-limit";
 import { alertingConfigured } from "@/server/observability/alerting";
 import { llmConfig } from "@/server/llm";
+import { getT } from "@/server/i18n";
+import { fmt, rich } from "@/shared/i18n/format";
 
-export const metadata = { title: "Nutzung" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.usage };
+}
 
 // Always the live counters, never a cached snapshot.
 export const dynamic = "force-dynamic";
@@ -71,6 +75,7 @@ export default async function UsagePage() {
     // falls back to that same DB count, see reserveMonthlyQuota).
     getMonthlyQuotaUsage(chatQuotaKey(user.id)),
   ]);
+  const t = await getT();
   const monthlyChatMessages = redisChatUsage ?? monthlyChatMessagesFromDb;
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
@@ -91,13 +96,14 @@ export default async function UsagePage() {
   // "nächsten Monat" branch still fits Pro/Team as-is: their project cap is
   // Infinity, so the only bar that can ever fill for them is chat, which
   // genuinely does reset monthly.
+  const m = t.pages.usage;
   const usageNote = isAdmin
-    ? "Admin-Konto, die Balken unten sind nur zur Orientierung, sie greifen für dich nicht."
+    ? m.noteAdmin
     : hasByok
-      ? "Mit deinem eigenen Key entfällt das Chat-Limit. Das Projekt-Limit bleibt bestehen."
+      ? m.noteByok
       : isFree
-        ? "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen oder Pro."
-        : "Ist ein Balken voll, geht's erst im nächsten Monat weiter.";
+        ? m.noteFree
+        : m.notePaid;
 
   return (
     <div>
@@ -105,11 +111,9 @@ export default async function UsagePage() {
         <div className="mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div>
             <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-              Nutzung
+              {m.title}
             </h1>
-            <p className="mt-1.5 text-[14px] text-secondary">
-              Was du im aktuellen Monat verbraucht hast.
-            </p>
+            <p className="mt-1.5 text-[14px] text-secondary">{m.subtitle}</p>
           </div>
           <div className="flex items-center gap-2.5 pb-0.5">
             <PlanBadge plan={planKey} isAdmin={isAdmin} />
@@ -117,7 +121,7 @@ export default async function UsagePage() {
               href="/billing"
               className="text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
             >
-              Plan und Abo
+              {m.planLink}
             </Link>
           </div>
         </div>
@@ -125,15 +129,15 @@ export default async function UsagePage() {
 
       <FadeIn delay={0.06}>
         <section>
-          <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">Diesen Monat</h2>
+          <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">{m.thisMonth}</h2>
           <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-secondary">{usageNote}</p>
           <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
-            <UsageMeter label="Projekte" used={projectsCount ?? 0} limit={limits.projects} />
+            <UsageMeter label={m.projects} used={projectsCount ?? 0} limit={limits.projects} />
             <UsageMeter
-              label="Chat-Nachrichten"
+              label={m.chatMessages}
               used={monthlyChatMessages ?? 0}
               limit={chatLimit}
-              zeroLabel="Ohne eigenen Key nicht verfügbar auf Free"
+              zeroLabel={m.freeWithoutKey}
             />
           </div>
         </section>
@@ -156,6 +160,7 @@ export default async function UsagePage() {
 // this component only renders behind the page's is_admin check, and it is a
 // server component: nothing of it reaches a non-admin's browser.
 async function OperationsSection() {
+  const ops = (await getT()).pages.usage.ops;
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   const dayStart = new Date(
@@ -188,31 +193,25 @@ async function OperationsSection() {
   return (
     <FadeIn delay={0.12}>
       <section className="mt-14 border-t border-border pt-10">
-        <h2 className="text-[15px] font-semibold text-foreground">Betrieb</h2>
+        <h2 className="text-[15px] font-semibold text-foreground">{ops.title}</h2>
         <p className="mb-6 mt-1.5 max-w-lg text-[13px] leading-relaxed text-secondary">
-          Nur für Admins sichtbar. Die Zahlen, an denen ein Kostenausreisser zuerst sichtbar
-          wird, über alle Nutzer.
+          {ops.hint}
         </p>
 
         <div className="card-surface mb-4 p-6">
           <h3 className="mb-1 flex items-center gap-2 text-[15px] font-semibold text-foreground">
             <Gauge className="h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
-            Server-Key heute
+            {ops.serverKey}
           </h3>
           <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
-            Modell-Aufrufe auf dem eigenen Key, global über alle Nutzer. Greift die
-            Bremse, laufen BYOK-Nutzer weiter.
+            {ops.serverKeyHint}
           </p>
           {serverKey ? (
-            <UsageMeter label="Aufrufe heute" used={serverKey.used} limit={serverKey.budget} />
+            <UsageMeter label={ops.callsToday} used={serverKey.used} limit={serverKey.budget} />
           ) : (
             <div className="flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-3 text-[13px] text-warning">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
-              <span>
-                Ohne Upstash gibt es keinen Zähler und damit keine Tagesbremse. In
-                Produktion ist Upstash Pflicht, sonst antworten ohnehin alle API-Routen
-                mit 429.
-              </span>
+              <span>{ops.noUpstash}</span>
             </div>
           )}
         </div>
@@ -220,21 +219,25 @@ async function OperationsSection() {
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
             Icon={Activity}
-            label="Antworten heute"
+            label={ops.repliesToday}
             value={String(messagesToday ?? 0)}
-            hint="Alle Nutzer, seit 00:00 UTC"
+            hint={ops.repliesTodayHint}
           />
           <StatCard
             Icon={Activity}
-            label="Antworten diesen Monat"
+            label={ops.repliesMonth}
             value={String(messagesMonth ?? 0)}
-            hint={`grob ${estimatedMonthCost} $ geschätzt`}
+            hint={fmt(ops.repliesMonthHint, { cost: estimatedMonthCost })}
           />
           <StatCard
             Icon={Database}
-            label="Konten"
+            label={ops.accounts}
             value={String(usersTotal ?? 0)}
-            hint={provider ? `Provider: ${provider.provider} · ${provider.model}` : "Stub-Modus"}
+            hint={
+              provider
+                ? fmt(ops.provider, { provider: provider.provider, model: provider.model })
+                : ops.stub
+            }
           />
         </div>
 
@@ -244,17 +247,11 @@ async function OperationsSection() {
         {!alertingConfigured() && (
           <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-3 text-[13px] text-warning">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
-            <span>
-              Kein Alert-Webhook konfiguriert (<code>ALERT_WEBHOOK_URL</code>). Fehler
-              und Warnungen landen nur im Log, niemand wird aktiv benachrichtigt.
-            </span>
+            <span>{rich(ops.noWebhook, { name: <code>ALERT_WEBHOOK_URL</code> })}</span>
           </div>
         )}
         <p className="mt-6 text-[12.5px] leading-relaxed text-muted-foreground">
-          Kostenschätzung ist eine Grössenordnung, keine Abrechnung: der Streaming-Pfad
-          sieht die Token-Zahlen des Anbieters nicht, gerechnet wird mit dem gemessenen
-          Worst Case pro Turn. Für echte Zahlen bleibt die Abrechnung beim Anbieter
-          massgeblich, und dort gehört zusätzlich ein hartes Ausgabenlimit gesetzt.
+          {ops.costNote}
         </p>
       </section>
     </FadeIn>

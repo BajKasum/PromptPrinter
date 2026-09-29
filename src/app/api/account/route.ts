@@ -6,6 +6,7 @@ import { captureError } from "@/shared/lib/observability";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
 import { removeAllPaths } from "@/features/projects/lib/storage-cleanup";
 import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
+import { requestT } from "@/server/i18n";
 
 export const runtime = "nodejs";
 
@@ -39,6 +40,8 @@ export const runtime = "nodejs";
 // losing a few orphaned objects is far better than a user being stuck unable
 // to delete their account because of a storage hiccup.
 export async function DELETE(req: Request) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,7 +49,7 @@ export async function DELETE(req: Request) {
 
   // The id comes from the verified session, never from client input.
   if (!user) {
-    return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
+    return NextResponse.json({ error: m.accountNotSignedIn }, { status: 401 });
   }
 
   // Was the one route of the four that touch rateLimit (chat, projects,
@@ -63,7 +66,7 @@ export async function DELETE(req: Request) {
     const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return NextResponse.json(
-        { error: "Zu viele Anfragen, bitte warte kurz und versuch es erneut." },
+        { error: m.tooManyRequests },
         { status: 429 }
       );
     }
@@ -125,8 +128,8 @@ export async function DELETE(req: Request) {
   } catch (err) {
     const message =
       err instanceof Error && err.message.includes("admin credentials")
-        ? "Server-Konfiguration unvollständig, Service-Role-Key fehlt."
-        : "Konto konnte nicht gelöscht werden.";
+        ? m.accountConfigIncomplete
+        : m.accountDeleteFailed;
     return NextResponse.json({ error: message }, { status: 500 });
   }
 

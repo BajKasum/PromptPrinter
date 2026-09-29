@@ -20,6 +20,10 @@ import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-vari
 import { parseSseEvents } from "@/features/chat/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/shared/lib/chat-limits";
 import { randomId } from "@/shared/lib/utils";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { fmt, plural } from "@/shared/i18n/format";
+import type { Messages } from "@/shared/i18n/messages/de";
+import type { Locale } from "@/shared/i18n/locales";
 
 // A stable id per message (real DB id for history loaded from the server,
 // a client-generated one for anything created during this session) is the
@@ -37,10 +41,9 @@ class StreamProtocolError extends Error {}
 
 // "in 2 Minuten" reads better than "in 118 Sekunden"; below a minute the exact
 // number is the useful part.
-function formatRetryDelay(seconds: number): string {
-  if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))} Sekunden`;
-  const minutes = Math.ceil(seconds / 60);
-  return minutes === 1 ? "einer Minute" : `${minutes} Minuten`;
+function formatRetryDelay(seconds: number, m: Messages["chat"], locale: Locale): string {
+  if (seconds < 60) return plural(m.retrySeconds, Math.max(1, Math.ceil(seconds)), locale);
+  return plural(m.retryMinutes, Math.ceil(seconds / 60), locale);
 }
 
 // Orchestrator only, every UI role that used to live inline here now has its
@@ -73,8 +76,10 @@ export function Chat({
 }) {
   // A project chat is its own context; every standalone chat is the one
   // unified chat. See lib/chat-variants.ts for what each variant means.
+  const t = useT();
+  const locale = useLocale();
   const variant = resolveVariant(projectId);
-  const { heading, placeholder } = resolveEmptyState(variant, hasResults, name);
+  const { heading, placeholder } = resolveEmptyState(variant, hasResults, name, t.chat);
 
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
@@ -365,9 +370,9 @@ export function Chat({
         // making the user guess when they may try again.
         retryAfterSeconds = typeof json.retryAfter === "number" ? json.retryAfter : null;
         failureKind = typeof json.kind === "string" ? json.kind : null;
-        throw new Error((json.detail as string | undefined) ?? "Chat fehlgeschlagen");
+        throw new Error((json.detail as string | undefined) ?? t.chat.failed);
       }
-      if (!res.body) throw new Error("Keine Antwort erhalten.");
+      if (!res.body) throw new Error(t.chat.noResponse);
 
       // Die Konversation kommt seit Planpunkt C-1 schon VOR dem ersten Token
       // (SSE-Ereignis `meta`), weil die Route sie zusammen mit der Frage
@@ -461,9 +466,7 @@ export function Chat({
           // fuer den Fall, dass ein Client dieses Ereignis nicht sieht.
           if (newId) adoptConversation(newId);
           if (persistError) {
-            setPersistWarning(
-              "Diese Antwort ist da, konnte aber gerade nicht gespeichert werden, bei einem Neuladen geht sie verloren."
-            );
+            setPersistWarning(t.chat.persistFailed);
             // Kein router.replace hier: completeTurn ist genau in diesem Fall
             // gescheitert, die DB hat also nur die Frage, nicht die Antwort.
             // Ein Remount jetzt wuerde initialMessages ohne die Antwort laden
@@ -503,9 +506,7 @@ export function Chat({
         // user-initiated stop, and warn instead of erroring: nothing failed
         // to *send*, the connection just didn't survive to see "done".
         commitReply(accumulated, false);
-        setPersistWarning(
-          "Die Verbindung ist mitten in der Antwort abgebrochen. Lade die Seite neu, die Antwort ist eventuell schon gespeichert."
-        );
+        setPersistWarning(t.chat.connectionDropped);
         return accumulated;
       } else {
         pendingRef.current = null;
@@ -524,7 +525,7 @@ export function Chat({
           // way. The key notice below names the two ways that do work.
           setKeyRequired(true);
         } else {
-          setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+          setError(e instanceof Error ? e.message : t.common.unknownError);
           setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);
         }
       }
@@ -550,11 +551,11 @@ export function Chat({
   // character. The text itself stays readable at the user's own pace in the log
   // above (QA finding A-1).
   const liveStatus = loading
-    ? "Finn schreibt…"
+    ? t.chat.statusWriting
     : pending !== null
-      ? "Antwort wird geschrieben…"
+      ? t.chat.statusRevealing
       : justFinished
-        ? "Antwort fertig."
+        ? t.chat.statusDone
         : "";
 
   return (
@@ -630,7 +631,7 @@ export function Chat({
                   className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
                   <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-                  Neu erzeugen
+                  {t.chat.regenerate}
                 </button>
               </div>
             )}
@@ -648,7 +649,8 @@ export function Chat({
         >
           <span>
             {error}
-            {retryAfter !== null && ` Versuch es in ${formatRetryDelay(retryAfter)} nochmal.`}
+            {retryAfter !== null &&
+              ` ${fmt(t.chat.retryIn, { delay: formatRetryDelay(retryAfter, t.chat, locale) })}`}
           </span>
           {/* The failed message is back in the composer, so this just sends it
               again — the banner used to be a dead end with the input already
@@ -662,7 +664,7 @@ export function Chat({
               className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 py-1 text-[12.5px] font-medium transition-colors hover:bg-destructive/10 disabled:opacity-60"
             >
               <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-              Erneut senden
+              {t.chat.resend}
             </button>
           )}
         </div>

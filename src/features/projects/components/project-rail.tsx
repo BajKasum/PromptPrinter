@@ -11,6 +11,7 @@ import { ProjectFiles } from "@/features/projects/components/project-files";
 import { ProjectBrainCard } from "@/features/projects/components/project-brain";
 import type { ProjectFile } from "@/features/projects/lib/project-files";
 import type { ProjectBrain } from "@/shared/lib/project-brain";
+import { useT } from "@/shared/i18n/provider";
 
 // The workspace context rail (REDESIGN.md, Phase 3+4): the living briefing of
 // a project. Anweisungen (free text) and Struktur (fixed optional fields)
@@ -30,13 +31,9 @@ import type { ProjectBrain } from "@/shared/lib/project-brain";
 // wirkten wie eine Anleitung, die selbst erklärungsbedürftig ist — das Label
 // links sagt schon, was gemeint ist. "Weiteres" bleibt die Ausnahme, dessen
 // Label allein wäre zu vage, um das Feld zu füllen.
-const STRUCTURE_FIELDS = [
-  { key: "frontend", label: "Frontend", placeholder: undefined },
-  { key: "backend", label: "Backend", placeholder: undefined },
-  { key: "language", label: "Sprache", placeholder: undefined },
-  { key: "database", label: "Datenbank", placeholder: undefined },
-  { key: "notes", label: "Weiteres", placeholder: "Was ich sonst wissen sollte" },
-] as const;
+// Beschriftungen kommen aus dem Wörterbuch (t.projects.structureFields); der
+// Schlüssel ist zugleich der Name im gespeicherten projects.context.
+const STRUCTURE_FIELDS = ["frontend", "backend", "language", "database", "notes"] as const;
 
 const INSTRUCTIONS_MAX = 4000;
 
@@ -64,6 +61,7 @@ export function ProjectRail({
   /** Fingerabdruck der Quellen jetzt — daraus faellt "veraltet" ab. */
   brainDigest: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [instructions, setInstructions] = useState(initialInstructions ?? "");
@@ -106,8 +104,8 @@ export function ProjectRail({
     if (error) {
       setInstructionsSaveState("error");
       toast({
-        title: "Speichern fehlgeschlagen",
-        description: "Deine Anweisungen konnten nicht gespeichert werden.",
+        title: t.projects.saveFailed,
+        description: t.projects.instructionsSaveFailed,
         variant: "error",
       });
       return;
@@ -135,8 +133,8 @@ export function ProjectRail({
     if (error) {
       setContextSaveState("error");
       toast({
-        title: "Speichern fehlgeschlagen",
-        description: "Deine Struktur-Angaben konnten nicht gespeichert werden.",
+        title: t.projects.saveFailed,
+        description: t.projects.structureSaveFailed,
         variant: "error",
       });
       return;
@@ -148,7 +146,7 @@ export function ProjectRail({
   }
 
   return (
-    <aside className="space-y-4" aria-label="Projekt-Kontext">
+    <aside className="space-y-4" aria-label={t.projects.contextLabel}>
       {/* Zuoberst (Audit 23.09.2026, P-3): stand bisher als vierte Karte
           unter den Dateien, "weil es aus ihnen entsteht" — logisch, aber
           damit das am wenigsten sichtbare Element der Rail, obwohl es das
@@ -166,7 +164,7 @@ export function ProjectRail({
         <div className="mb-2 flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
             <NotebookPen className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-            Anweisungen
+            {t.projects.instructions}
           </h2>
           <SaveIndicator state={instructionsSaveState} />
         </div>
@@ -174,10 +172,10 @@ export function ProjectRail({
           value={instructions}
           maxLength={INSTRUCTIONS_MAX}
           rows={5}
-          placeholder="Wie soll dein Prompt aussehen? Ton, Format, Ziel. Ich richte mich in jedem Chat dieses Projekts danach."
+          placeholder={t.projects.instructionsPlaceholder}
           onChange={(e) => setInstructions(e.target.value)}
           onBlur={() => void persistInstructions(instructions)}
-          aria-label="Projekt-Anweisungen"
+          aria-label={t.projects.instructionsLabel}
           className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[13px] leading-relaxed text-foreground placeholder:text-secondary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
         />
       </section>
@@ -186,21 +184,21 @@ export function ProjectRail({
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
             <Layers className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-            Struktur
+            {t.projects.structure}
           </h2>
           <SaveIndicator state={contextSaveState} />
         </div>
         <div className="space-y-2.5">
-          {STRUCTURE_FIELDS.map(({ key, label, placeholder }) => (
+          {STRUCTURE_FIELDS.map((key) => (
             <div key={key} className="grid grid-cols-[88px_1fr] items-center gap-2">
               <Label htmlFor={`ctx-${key}`} className="text-[12px] text-muted-foreground">
-                {label}
+                {t.projects.structureFields[key]}
               </Label>
               <input
                 id={`ctx-${key}`}
                 value={context[key] ?? ""}
                 maxLength={120}
-                placeholder={placeholder}
+                placeholder={key === "notes" ? t.projects.notesPlaceholder : undefined}
                 onChange={(e) => setContext((c) => ({ ...c, [key]: e.target.value }))}
                 onBlur={() => void persistContext(context)}
                 className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
@@ -212,7 +210,7 @@ export function ProjectRail({
             "alles optional" has already been learned by using it. */}
         {Object.values(context).every((v) => !v?.trim()) && (
           <p className="mt-2.5 text-[11.5px] leading-relaxed text-secondary">
-            Alles optional, was du ausfüllst, kennt jeder Chat in diesem Projekt.
+            {t.projects.structureOptional}
           </p>
         )}
       </section>
@@ -223,6 +221,7 @@ export function ProjectRail({
 }
 
 function SaveIndicator({ state }: { state: SaveState }) {
+  const t = useT();
   if (state === "idle") return null;
   return (
     <span
@@ -234,7 +233,11 @@ function SaveIndicator({ state }: { state: SaveState }) {
     >
       {state === "saving" && <Loader2 className="h-3 w-3 animate-spin" />}
       {state === "saved" && <Check className="h-3 w-3 text-success" />}
-      {state === "saving" ? "Speichert…" : state === "saved" ? "Gespeichert" : "Fehler"}
+      {state === "saving"
+        ? t.projects.saving
+        : state === "saved"
+          ? t.common.saved
+          : t.projects.saveError}
     </span>
   );
 }

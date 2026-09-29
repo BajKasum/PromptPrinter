@@ -12,6 +12,7 @@ import {
   useLemonSqueezy,
   type LemonSqueezyEvent,
 } from "@/shared/lib/use-lemon-squeezy";
+import { useT } from "@/shared/i18n/provider";
 
 type LemonCheckoutButtonProps = {
   /** Beschriftung. */
@@ -59,8 +60,9 @@ export function LemonCheckoutButton({
   variant = "accent",
   size,
   className,
-  successMessage = "Danke! Deine Zahlung ist angekommen.",
+  successMessage,
 }: LemonCheckoutButtonProps) {
+  const t = useT();
   const [purchased, setPurchased] = useState(false);
 
   const handleEvent = useCallback((event: LemonSqueezyEvent) => {
@@ -108,7 +110,7 @@ export function LemonCheckoutButton({
         )}
       >
         <Check className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
-        <span>{successMessage}</span>
+        <span>{successMessage ?? t.common.paymentReceived}</span>
       </div>
     );
   }

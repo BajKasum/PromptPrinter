@@ -7,6 +7,8 @@ import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 export function DeleteProjectButton({
   projectId,
@@ -15,6 +17,7 @@ export function DeleteProjectButton({
   projectId: string;
   projectName: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -30,8 +33,8 @@ export function DeleteProjectButton({
     if (!user) {
       setDeleting(false);
       toast({
-        title: "Nicht angemeldet",
-        description: "Bitte melde dich erneut an.",
+        title: t.projects.notSignedIn,
+        description: t.projects.signInAgain,
         variant: "error",
       });
       return;
@@ -62,15 +65,15 @@ export function DeleteProjectButton({
     if (error) {
       setDeleting(false);
       toast({
-        title: "Löschen fehlgeschlagen",
-        description: "Bitte versuche es erneut.",
+        title: t.projects.deleteFailed,
+        description: t.projects.tryAgain,
         variant: "error",
       });
       return;
     }
     toast({
-      title: "Projekt gelöscht",
-      description: `„${projectName}“ wurde entfernt.`,
+      title: t.projects.deleted,
+      description: fmt(t.projects.deletedBody, { name: projectName }),
       variant: "success",
     });
     // The detail page no longer exists, leave for the list, which re-fetches.
@@ -87,15 +90,15 @@ export function DeleteProjectButton({
         className="shrink-0 text-secondary hover:border-destructive/30 hover:bg-destructive/[0.06] hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />
-        Löschen
+        {t.common.delete}
       </Button>
 
       <ConfirmDialog
         open={open}
-        title="Projekt löschen?"
-        description={`„${projectName}“ wird mit allen Chats, Dateien und Ergebnissen dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.`}
-        confirmLabel="Projekt löschen"
-        busyLabel="Wird gelöscht…"
+        title={t.projects.deleteConfirmTitle}
+        description={fmt(t.projects.deleteConfirmBody, { name: projectName })}
+        confirmLabel={t.projects.deleteConfirm}
+        busyLabel={t.common.deleting}
         busy={deleting}
         onConfirm={() => void handleDelete()}
         onCancel={() => setOpen(false)}

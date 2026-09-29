@@ -9,6 +9,9 @@ import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
 import { relativeTime } from "@/shared/lib/utils";
 import { MoveToProjectButton } from "@/features/chat/components/move-to-project";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { fmt, plural, rich } from "@/shared/i18n/format";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
 // The global chat list (REDESIGN.md, Phase 2): calm bordered rows instead of
 // cards, the title is the content, the sidebar already carries resume. Each
@@ -55,6 +58,8 @@ function ChatRow({
   userId: string;
   basePath: string;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
   const [mode, setMode] = useState<RowMode>("view");
@@ -82,8 +87,8 @@ function ChatRow({
     setBusy(false);
     if (error) {
       toast({
-        title: "Umbenennen fehlgeschlagen",
-        description: "Bitte versuch es erneut.",
+        title: t.chat.renameFailed,
+        description: t.chat.tryAgain,
         variant: "error",
       });
       return;
@@ -105,23 +110,25 @@ function ChatRow({
     setBusy(false);
     if (error) {
       toast({
-        title: "Löschen fehlgeschlagen",
-        description: "Bitte versuch es erneut.",
+        title: t.chat.deleteFailed,
+        description: t.chat.tryAgain,
         variant: "error",
       });
       return;
     }
     toast({
-      title: "Chat gelöscht",
-      description: `„${chat.title}“ wurde entfernt.`,
+      title: t.chat.deleted,
+      description: fmt(t.chat.deletedBody, { title: chat.title }),
       variant: "success",
     });
     router.refresh();
   }
 
   const meta = [
-    `zuletzt ${relativeTime(chat.updatedAt)}`,
-    `${chat.messageCount} Nachricht${chat.messageCount === 1 ? "" : "en"}`,
+    fmt(t.chat.lastActive, {
+      time: relativeTime(chat.updatedAt, LOCALE_TAGS[locale].intl, t.time.justNow),
+    }),
+    plural(t.chat.messageCount, chat.messageCount, locale),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -133,7 +140,7 @@ function ChatRow({
           autoFocus
           value={title}
           maxLength={80}
-          aria-label="Neuer Chat-Titel"
+          aria-label={t.chat.newTitleLabel}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -149,7 +156,7 @@ function ChatRow({
           type="button"
           onClick={() => void rename()}
           disabled={busy}
-          aria-label="Titel speichern"
+          aria-label={t.chat.saveTitle}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -158,7 +165,7 @@ function ChatRow({
           type="button"
           onClick={cancel}
           disabled={busy}
-          aria-label="Umbenennen abbrechen"
+          aria-label={t.chat.cancelRename}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
         >
           <X className="h-4 w-4" />
@@ -171,15 +178,17 @@ function ChatRow({
     return (
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 last:border-0">
         <p className="min-w-0 text-[13px] text-foreground/85">
-          <span className="font-medium">„{chat.title}“</span> endgültig löschen?
+          {rich(t.chat.confirmDelete, {
+            title: <span className="font-medium">{chat.title}</span>,
+          })}
         </p>
         <div className="flex shrink-0 items-center gap-2">
           <Button size="sm" variant="ghost" onClick={cancel} disabled={busy}>
-            Abbrechen
+            {t.common.cancel}
           </Button>
           <Button size="sm" variant="destructive" onClick={() => void remove()} disabled={busy}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            Löschen
+            {t.common.delete}
           </Button>
         </div>
       </div>
@@ -205,7 +214,7 @@ function ChatRow({
         <button
           type="button"
           onClick={() => setMode("rename")}
-          aria-label={`Chat „${chat.title}“ umbenennen`}
+          aria-label={fmt(t.chat.renameLabel, { title: chat.title })}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -213,7 +222,7 @@ function ChatRow({
         <button
           type="button"
           onClick={() => setMode("confirm-delete")}
-          aria-label={`Chat „${chat.title}“ löschen`}
+          aria-label={fmt(t.chat.deleteLabel, { title: chat.title })}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/[0.08] hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />

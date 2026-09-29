@@ -7,10 +7,14 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
+import { getT } from "@/server/i18n";
+import { fmt } from "@/shared/i18n/format";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Projekt" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.project };
+}
 
 type Params = Promise<{ id: string }>;
 
@@ -34,6 +38,7 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
   const { userId } = await getProject(id);
 
   const supabase = await createClient();
+  const t = await getT();
 
   // One round trip, not two. This used to run a `count: exact, head: true`
   // query purely to decide the empty-state branch below, then immediately run
@@ -69,15 +74,16 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
       <FadeIn>
         <div className="card-surface p-8 text-center">
           <AnimatedMascot state="waiting" size={72} priority className="mx-auto mb-3" />
-          <p className="text-[14px] font-semibold text-foreground">Noch keine Chats</p>
+          <p className="text-[14px] font-semibold text-foreground">
+            {t.pages.workspace.noChats}
+          </p>
           <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-            Starte den ersten Chat in diesem Projekt, Finn kennt dann schon
-            Anweisungen, Struktur und Dateien aus der Rail.
+            {t.pages.workspace.noChatsBody}
           </p>
           <Button asChild size="sm">
             <Link href={`/projects/${id}/chats/new`}>
               <MessageSquare className="h-4 w-4" />
-              Neuen Chat starten
+              {t.pages.workspace.startChat}
             </Link>
           </Button>
         </div>
@@ -100,7 +106,7 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
           className="group flex items-center justify-between gap-3 rounded-xl border border-border-strong bg-surface px-4 py-3 transition-colors hover:border-ring/50 hover:bg-surface-hover"
         >
           <span className="text-[13.5px] text-muted-foreground">
-            Neuer Chat in diesem Projekt…
+            {t.pages.workspace.newChatHere}
           </span>
           <Send className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
         </Link>
@@ -113,7 +119,7 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
           <ChatList chats={chats} userId={userId} basePath={`/projects/${id}/chats`} />
           {hasMore && (
             <p className="mt-4 text-center text-[12.5px] text-tertiary">
-              Die neuesten {LIST_LOAD_LIMIT} Chats dieses Projekts.
+              {fmt(t.pages.workspace.truncated, { count: LIST_LOAD_LIMIT })}
             </p>
           )}
         </FadeIn>

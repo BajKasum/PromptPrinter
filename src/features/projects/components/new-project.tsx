@@ -9,6 +9,8 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { useToast } from "@/shared/ui/toast";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): "Neues Projekt" ist ein
 // echter Projektstart, ein Name genügt, kein Umweg über einen Chat. Der
@@ -25,6 +27,7 @@ export function NewProjectButton({
   /** Nur für variant="bar", die Klassen der Aufrufstelle (spiegelt "Neuer Chat"). */
   className?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -38,8 +41,8 @@ export function NewProjectButton({
 
   useEffect(() => {
     if (!open) return;
-    const t = window.setTimeout(() => inputRef.current?.focus(), 20);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 20);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
   useEffect(() => {
@@ -70,11 +73,11 @@ export function NewProjectButton({
         body: JSON.stringify({ name: name.trim() }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.detail ?? "Projekt konnte nicht angelegt werden.");
+      if (!res.ok) throw new Error(json.detail ?? t.projects.createFailed);
       const projectId = json.projectId as string;
       toast({
-        title: "Projekt angelegt",
-        description: `„${name.trim()}“ ist bereit.`,
+        title: t.projects.created,
+        description: fmt(t.projects.createdBody, { name: name.trim() }),
         variant: "success",
       });
       setOpen(false);
@@ -82,7 +85,7 @@ export function NewProjectButton({
       router.push(`/projects/${projectId}`);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+      setError(e instanceof Error ? e.message : t.common.unknownError);
     } finally {
       setCreating(false);
     }
@@ -93,12 +96,12 @@ export function NewProjectButton({
       {variant === "bar" ? (
         <button type="button" onClick={() => setOpen(true)} className={className}>
           <FolderPlus className="h-4 w-4" />
-          Neues Projekt
+          {t.projects.newProject}
         </button>
       ) : (
         <Button onClick={() => setOpen(true)}>
           <FolderPlus className="h-4 w-4" />
-          Neues Projekt
+          {t.projects.newProject}
         </Button>
       )}
 
@@ -117,7 +120,7 @@ export function NewProjectButton({
                 <motion.div
                   role="dialog"
                   aria-modal="true"
-                  aria-label="Neues Projekt anlegen"
+                  aria-label={t.projects.newProjectDialog}
                   initial={{ opacity: 0, scale: 0.98, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: 8 }}
@@ -126,11 +129,10 @@ export function NewProjectButton({
                   className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
                 >
                   <div className="border-b border-border p-5">
-                    <h2 className="text-[15px] font-semibold text-foreground">Neues Projekt</h2>
-                    <p className="mt-1 text-[13px] text-secondary">
-                      Gib ihm einen Namen, Briefing, Struktur und Chats wachsen danach im
-                      Workspace.
-                    </p>
+                    <h2 className="text-[15px] font-semibold text-foreground">
+                      {t.projects.newProject}
+                    </h2>
+                    <p className="mt-1 text-[13px] text-secondary">{t.projects.newProjectHint}</p>
                   </div>
 
                   <div className="p-5">
@@ -142,13 +144,13 @@ export function NewProjectButton({
                         {error}
                       </div>
                     )}
-                    <Label htmlFor="new-project-name">Projektname</Label>
+                    <Label htmlFor="new-project-name">{t.projects.nameLabel}</Label>
                     <Input
                       id="new-project-name"
                       ref={inputRef}
                       value={name}
                       maxLength={80}
-                      placeholder="z. B. Fitness-App, Bewerbung, Portfolio"
+                      placeholder={t.projects.namePlaceholder}
                       onChange={(e) => setName(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -162,16 +164,16 @@ export function NewProjectButton({
 
                   <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
                     <Button variant="ghost" onClick={close} disabled={creating}>
-                      Abbrechen
+                      {t.common.cancel}
                     </Button>
                     <Button variant="accent" onClick={() => void create()} disabled={!valid || creating}>
                       {creating ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Wird angelegt…
+                          {t.projects.creating}
                         </>
                       ) : (
-                        "Projekt anlegen"
+                        t.projects.create
                       )}
                     </Button>
                   </div>

@@ -8,10 +8,13 @@ import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { MESSAGE_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { getT } from "@/server/i18n";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Projekt-Chat" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.projectChat };
+}
 
 type Params = Promise<{ id: string; cid: string }>;
 
@@ -73,6 +76,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
     ]);
 
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
+  const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
     (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
@@ -87,7 +91,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
             className="mb-2 inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Zurück zur Übersicht
+            {t.pages.workspace.backToOverview}
           </Link>
           <h2 className="truncate text-[18px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground">
             {convo.title as string}

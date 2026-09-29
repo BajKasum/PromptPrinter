@@ -7,10 +7,13 @@ import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { MESSAGE_LOAD_LIMIT, SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { getT } from "@/server/i18n";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Chat" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.chat };
+}
 
 type Params = Promise<{ id: string }>;
 
@@ -60,6 +63,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
     getNeedsOwnKey(),
   ]);
 
+  const t = await getT();
   const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
@@ -75,7 +79,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
             className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Zurück zu deinen Chats
+            {t.pages.chats.back}
           </Link>
           <h1 className="truncate text-[22px] md:text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">
             {convo.title as string}

@@ -2,6 +2,7 @@
 
 import { Check, Copy } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useT } from "@/shared/i18n/provider";
 
 // Deterministic bubble burst (not randomized per render) — Finn's ocean in
 // miniature, the same accent/accent-warm alternation Floaters uses for its
@@ -32,7 +33,7 @@ export function CopyMoment({
   copied,
   copyCount,
   idleLabel,
-  copiedLabel = "Kopiert",
+  copiedLabel,
   iconClassName = "h-3.5 w-3.5",
 }: {
   copied: boolean;
@@ -43,6 +44,8 @@ export function CopyMoment({
   iconClassName?: string;
 }) {
   const reduceMotion = useReducedMotion() ?? false;
+  const t = useT();
+  const copiedText = copiedLabel ?? t.common.copied;
 
   // The label sits in its own aria-live region in every branch (QA finding
   // A-3): the visual "Kopiert" swap was silent for a screen reader, no
@@ -63,7 +66,7 @@ export function CopyMoment({
     return (
       <>
         <Check className={`${iconClassName} text-success`} />
-        <span aria-live="polite">{copiedLabel}</span>
+        <span aria-live="polite">{copiedText}</span>
       </>
     );
   }
@@ -111,7 +114,7 @@ export function CopyMoment({
         ))}
       </span>
       <span aria-live="polite" className="text-success">
-        {copiedLabel}
+        {copiedText}
       </span>
     </>
   );

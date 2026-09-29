@@ -7,11 +7,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
 import type { LibraryItem } from "@/features/prompts/hooks/use-library-filter";
+import { useT } from "@/shared/i18n/provider";
 
 // Split out of library-browser.tsx: the favorites mutation (optimistic flip,
 // Supabase write, rollback on failure, toast, sidebar refresh) is its own
 // concern, independent from search/filter and from how a card renders.
 export function useLibraryFavorites(items: LibraryItem[], userId: string) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [favorites, setFavorites] = useState<Set<string>>(
@@ -42,8 +44,8 @@ export function useLibraryFavorites(items: LibraryItem[], userId: string) {
         return s;
       });
       toast({
-        title: "Favorit konnte nicht gespeichert werden",
-        description: "Bitte versuche es erneut.",
+        title: t.library.favoriteFailed,
+        description: t.library.tryAgain,
         variant: "error",
       });
       return;

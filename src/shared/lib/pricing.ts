@@ -1,4 +1,7 @@
 import { PLAN_LIMITS } from "@/shared/lib/plans";
+import { fmt } from "@/shared/i18n/format";
+import { LOCALE_TAGS, type Locale } from "@/shared/i18n/locales";
+import type { Messages } from "@/shared/i18n/messages/de";
 
 // The marketed price and what each plan actually gets. One source, because
 // this used to live inside the pricing-grid component while the ENFORCED
@@ -129,3 +132,47 @@ export const PLANS: MarketingPlan[] = [
     ],
   },
 ];
+
+/**
+ * Preis als Text in der Sprache der App. Deutsch wie auf der Preisseite
+ * ("5,90 €"), sonst nach den Regeln der jeweiligen Sprache ("€5.90").
+ * de-CH bewusst nicht: Intl schreibt dort "€ 5.90", die Preisseite aber
+ * "5,90 €", und beides nebeneinander sähe nach zwei Preisen aus.
+ */
+const PRICE_TAG_OVERRIDE: Partial<Record<Locale, string>> = { de: "de-DE" };
+
+export function formatPlanPrice(amount: number, locale: Locale): string {
+  const tag = PRICE_TAG_OVERRIDE[locale] ?? LOCALE_TAGS[locale].intl;
+  return new Intl.NumberFormat(tag, {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+/**
+ * PLANS in der Sprache der App (/plans, /billing). Struktur, Links und
+ * Checkout bleiben die aus PLANS, nur die Texte kommen aus dem Wörterbuch
+ * (t.planCopy), die Zahlen darin setzt diese Funktion aus PLAN_LIMITS ein.
+ * Die öffentliche Preisseite bleibt Deutsch und liest PLANS direkt.
+ */
+export function localizePlans(t: Messages, locale: Locale): MarketingPlan[] {
+  const vars = {
+    projects: PLAN_LIMITS.free.projects,
+    chatMessages: PLAN_LIMITS.pro.chatMessages,
+  };
+  return PLANS.map((plan) => {
+    const isPro = plan.name === "Pro";
+    const copy = isPro ? t.planCopy.pro : t.planCopy.free;
+    return {
+      ...plan,
+      price: formatPlanPrice(isPro ? PRO_PRICE_EUR : 0, locale),
+      cadence: copy.cadence,
+      description: copy.description,
+      badge: isPro ? t.planCopy.pro.badge : plan.badge,
+      note: isPro ? t.planCopy.pro.note : plan.note,
+      features: copy.features.map((f) => fmt(f, vars)),
+    };
+  });
+}

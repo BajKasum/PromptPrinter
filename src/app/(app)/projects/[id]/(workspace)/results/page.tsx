@@ -9,6 +9,8 @@ import { createClient } from "@/server/supabase/server";
 import { getSessionProfile } from "@/server/session";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
 import { splitAtLimit } from "@/shared/lib/chat-limits";
+import { getLocale, getT } from "@/server/i18n";
+import { fmt, plural } from "@/shared/i18n/format";
 
 // QA finding P-1: this query used to load every saved prompt a project ever
 // had, full `outputs` JSONB included, unbounded — the single most expensive
@@ -20,7 +22,9 @@ const RESULTS_LOAD_LIMIT = 200;
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Ergebnisse" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.results };
+}
 
 type Params = Promise<{ id: string }>;
 
@@ -74,7 +78,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
     (rowsRaw as GenerationRow[] | null) ?? [],
     RESULTS_LOAD_LIMIT
   );
-  const prompts = mapGenerationRowsToSavedPrompts(rows);
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const prompts = mapGenerationRowsToSavedPrompts(rows, t.prompts.fallbackTitle);
 
   const backLink = (
     <Link
@@ -82,7 +87,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       className="mb-2 inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
     >
       <ArrowLeft className="h-3.5 w-3.5" />
-      Zurück zur Übersicht
+      {t.pages.workspace.backToOverview}
     </Link>
   );
 
@@ -96,16 +101,15 @@ export default async function ProjectResultsPage({ params }: { params: Params })
         <div className="card-surface p-8 text-center">
           <AnimatedMascot state="waiting" size={72} priority className="mx-auto mb-3" />
           <p className="text-[14px] font-semibold text-foreground">
-            Noch keine Prompts gespeichert
+            {t.pages.results.noneTitle}
           </p>
           <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-            Wenn Finn dir im Chat einen Prompt schreibt, sicherst du ihn mit
-            „Speichern“ hierher, dann findest du ihn jederzeit wieder.
+            {t.pages.results.noneBody}
           </p>
           <Button asChild size="sm">
             <Link href={hasChats ? `/projects/${id}` : `/projects/${id}/chats/new`}>
               <MessageSquare className="h-4 w-4" />
-              {hasChats ? "Zu deinen Chats" : "Ersten Chat starten"}
+              {hasChats ? t.pages.results.toChats : t.pages.results.startFirst}
             </Link>
           </Button>
         </div>
@@ -119,14 +123,14 @@ export default async function ProjectResultsPage({ params }: { params: Params })
         <div className="mb-4">
           {backLink}
           <h2 className="text-[18px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground">
-            Ergebnisse
+            {t.pages.results.title}
           </h2>
           {/* M-17 (Audit 06.09.2026): stand vorher immer als exakte
               Gesamtzahl da, auch wenn der Cap griff. */}
           <p className="mt-1 text-[12.5px] text-muted-foreground">
             {hasMore
-              ? `Die neuesten ${RESULTS_LOAD_LIMIT} gespeicherten Prompts`
-              : `${prompts.length} ${prompts.length === 1 ? "gespeicherter Prompt" : "gespeicherte Prompts"}`}
+              ? fmt(t.pages.results.newest, { count: RESULTS_LOAD_LIMIT })
+              : plural(t.pages.results.count, prompts.length, locale)}
           </p>
         </div>
       </FadeIn>

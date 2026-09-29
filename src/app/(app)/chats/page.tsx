@@ -8,8 +8,12 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { ChatList, type ChatListItem } from "@/features/chat/components/chat-list";
 import { createClient } from "@/server/supabase/server";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
+import { getT } from "@/server/i18n";
+import { fmt } from "@/shared/i18n/format";
 
-export const metadata = { title: "Chats" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.chats };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +34,7 @@ export default async function ChatsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  const t = await getT();
 
   // Capped, and over-fetched by one so the note below can be truthful about
   // whether anything was cut. This read was unbounded: every global chat the
@@ -61,7 +66,7 @@ export default async function ChatsPage() {
     <Button asChild>
       <Link href="/chats/new">
         <MessageSquare className="h-4 w-4" />
-        Neuer Chat
+        {t.nav.newChat}
       </Link>
     </Button>
   );
@@ -72,8 +77,8 @@ export default async function ChatsPage() {
           itself is self-explanatory and doesn't need re-narrating on every visit. */}
       <AppHeader
         mascot="listening"
-        title="Deine Chats"
-        subtitle={hasChats ? undefined : "Hier laufen deine Gespräche weiter, sobald du eins startest."}
+        title={t.pages.chats.title}
+        subtitle={hasChats ? undefined : t.pages.chats.emptySubtitle}
         action={hasChats ? newChatAction : undefined}
       />
 
@@ -81,7 +86,7 @@ export default async function ChatsPage() {
         <FadeIn>
           <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-8 md:p-10 text-center shadow-card">
             <AnimatedMascot state="curious" size={92} priority className="mx-auto mb-4" />
-            <p className="text-[15px] font-semibold text-foreground">Noch kein Gespräch</p>
+            <p className="text-[15px] font-semibold text-foreground">{t.pages.chats.emptyTitle}</p>
             {/* M-14 (Audit 06.09.2026): stand vorher "ein gutes Ergebnis
                 speicherst du dir als Projekt" — den Handoff, den dieser Satz
                 beschrieb, gibt es seit 16.07.2026 nicht mehr, ein Chat kann
@@ -89,14 +94,12 @@ export default async function ChatsPage() {
                 Knopf im Ergebnis-Panel (chat-result-panel.tsx), der einen
                 Prompt in die Bibliothek unter /prompts legt. */}
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-              Erzähl mir dein Ziel, einen Text, einen Plan, eine ganze Software-Idee.
-              Jeder Chat lässt sich jederzeit fortsetzen, und ein guter Prompt
-              landet mit „Speichern“ in deiner Bibliothek.
+              {t.pages.chats.emptyBody}
             </p>
             <Button asChild>
               <Link href="/chats/new">
                 <MessageSquare className="h-4 w-4" />
-                Ersten Chat starten
+                {t.pages.chats.startFirst}
               </Link>
             </Button>
           </div>
@@ -109,8 +112,7 @@ export default async function ChatsPage() {
               saved-prompt cap carries. */}
           {hasMore && (
             <p className="mt-4 text-center text-[12.5px] text-tertiary">
-              Die neuesten {LIST_LOAD_LIMIT} Chats. Ältere sind über die Suche
-              (⌘K) erreichbar.
+              {fmt(t.pages.chats.truncated, { count: LIST_LOAD_LIMIT })}
             </p>
           )}
         </FadeIn>

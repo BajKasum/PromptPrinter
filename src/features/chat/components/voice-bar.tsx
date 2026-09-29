@@ -10,6 +10,8 @@ import { useMicAnalyser } from "@/features/chat/hooks/use-mic-analyser";
 import { useSpeechRecognition } from "@/features/chat/hooks/use-speech-recognition";
 import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import { useVisualViewportInset } from "@/features/chat/hooks/use-visual-viewport-inset";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
 /** Silence after a committed phrase before the turn is sent on its own. */
 const AUTO_SEND_SILENCE_MS = 1500;
@@ -23,19 +25,17 @@ const MASCOT_FOR_MODE: Record<SpokenMode, MascotState> = {
   speaking: "explaining",
 };
 
-/** Screen-reader-only equivalent of what the mascot pose + waveform motion show sighted users. */
-const STATUS_FOR_MODE: Record<SpokenMode, string> = {
-  listening: "Ich höre zu.",
-  thinking: "Finn denkt nach.",
-  speaking: "Finn spricht.",
-};
-
-/** Picks a German voice if the platform has one, else whatever is default. */
-function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+/**
+ * Picks a voice in the app's language if the platform has one (preferring an
+ * on-device one), else whatever is default. `lang` is a BCP-47 tag like
+ * "de-DE"; only its language part has to match.
+ */
+function pickVoice(voices: SpeechSynthesisVoice[], lang: string): SpeechSynthesisVoice | null {
   if (voices.length === 0) return null;
+  const prefix = lang.slice(0, 2).toLowerCase();
   return (
-    voices.find((v) => v.lang.toLowerCase().startsWith("de") && v.localService) ??
-    voices.find((v) => v.lang.toLowerCase().startsWith("de")) ??
+    voices.find((v) => v.lang.toLowerCase().startsWith(prefix) && v.localService) ??
+    voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ??
     null
   );
 }
@@ -62,13 +62,23 @@ function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null 
 export function VoiceBar({
   onClose,
   onSubmit,
-  lang = "de-DE",
+  lang: langOverride,
 }: {
   onClose: () => void;
   /** Sends the spoken turn and resolves with Finn's reply (null if it failed). */
   onSubmit: (text: string) => Promise<string | null>;
+  /** Erkennungs- und Vorlesesprache; ohne Angabe die Sprache der App. */
   lang?: string;
 }) {
+  const t = useT();
+  const locale = useLocale();
+  const lang = langOverride ?? LOCALE_TAGS[locale].speech;
+  /** Screen-reader-only equivalent of what the mascot pose + waveform motion show sighted users. */
+  const statusForMode: Record<SpokenMode, string> = {
+    listening: t.voice.statusListening,
+    thinking: t.voice.statusThinking,
+    speaking: t.voice.statusSpeaking,
+  };
   const [mode, setMode] = useState<SpokenMode>("listening");
   const [reply, setReply] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
@@ -136,10 +146,10 @@ export function VoiceBar({
       }
       // Reading a full prompt aloud, code block and all, is unbearable; voice
       // mode answers with the prose and leaves the artefact on screen.
-      const spoken = text.replace(/```[\s\S]*?```/g, " … den fertigen Prompt hab ich dir aufgeschrieben. ");
+      const spoken = text.replace(/```[\s\S]*?```/g, ` … ${t.voice.promptWrittenDown} `);
       const utterance = new SpeechSynthesisUtterance(spoken.slice(0, 4000));
       utterance.lang = lang;
-      const voice = pickVoice(synth.getVoices());
+      const voice = pickVoice(synth.getVoices(), lang);
       if (voice) utterance.voice = voice;
       utterance.rate = 1.02;
       utterance.pitch = 1.02;
@@ -154,7 +164,7 @@ export function VoiceBar({
       synth.speak(utterance);
       setMode("speaking");
     },
-    [lang]
+    [lang, t.voice.promptWrittenDown]
   );
 
   const submit = useCallback(
@@ -171,18 +181,18 @@ export function VoiceBar({
             setReply(answer);
             speak(answer);
           } else {
-            setSendError("Da kam nichts zurück. Sag es nochmal, oder tipp es.");
+            setSendError(t.voice.emptyReply);
             setMode("listening");
           }
         },
         () => {
           reset();
-          setSendError("Das hat nicht geklappt. Sag es nochmal, oder tipp es.");
+          setSendError(t.voice.sendFailed);
           setMode("listening");
         }
       );
     },
-    [onSubmit, reset, speak]
+    [onSubmit, reset, speak, t.voice.emptyReply, t.voice.sendFailed]
   );
   useEffect(() => {
     submitRef.current = submit;
@@ -230,12 +240,15 @@ export function VoiceBar({
     if (el) el.scrollTop = el.scrollHeight;
   }, [spokenText, reply]);
 
+  const hardwareError = mic.error ?? sttError;
   const blocker = !supported
-    ? "Dieser Browser kann noch nicht mithören. In Chrome, Edge oder Safari funktioniert es."
-    : mic.error ?? sttError ?? sendError;
+    ? t.voice.unsupported
+    : hardwareError
+      ? t.voice.errors[hardwareError]
+      : sendError;
 
   const primaryDisabled = mode === "thinking" || (mode === "listening" && !spokenText.trim());
-  const primaryLabel = mode === "speaking" ? "Überspringen" : "Absenden";
+  const primaryLabel = mode === "speaking" ? t.voice.skip : t.voice.submit;
   function primaryAction() {
     if (mode === "speaking") {
       stopSpeaking();
@@ -256,7 +269,7 @@ export function VoiceBar({
       {/* The accessible announcement of the state machine. Sighted users read
           the state off Finn's pose and the waveform instead (see module doc). */}
       <div aria-live="polite" className="sr-only">
-        {STATUS_FOR_MODE[mode]}
+        {statusForMode[mode]}
       </div>
 
       {/* Live transcript, directly above the bar. Final words are solid, the
@@ -281,7 +294,7 @@ export function VoiceBar({
           </p>
         ) : (
           <p className="text-[13px] text-secondary">
-            {mode === "thinking" ? "Einen Moment…" : "Sag einfach, was du bauen willst."}
+            {mode === "thinking" ? t.voice.oneMoment : t.voice.prompt}
           </p>
         )}
       </div>
@@ -290,7 +303,7 @@ export function VoiceBar({
         <button
           type="button"
           onClick={close}
-          aria-label="Sprachmodus schliessen"
+          aria-label={t.voice.close}
           className="focus-glow flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-hover hover:text-foreground"
         >
           <X className="h-4 w-4" strokeWidth={1.8} />
@@ -336,15 +349,14 @@ export function VoiceBar({
           damit der offene Sprachmodus nicht verloren geht. */}
       {supported && (
         <p className="mt-2 px-3 text-center text-[11.5px] leading-snug text-tertiary">
-          Chrome und Edge schicken deine Aufnahme zur Erkennung an Google bzw. Microsoft, Safari
-          erkennt auf dem Gerät.{" "}
+          {t.voice.privacyNotice}{" "}
           <a
             href="/datenschutz"
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent-text underline underline-offset-2"
           >
-            Datenschutz
+            {t.voice.privacyLink}
           </a>
         </p>
       )}

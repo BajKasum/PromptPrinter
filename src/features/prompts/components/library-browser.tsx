@@ -5,6 +5,8 @@ import { cn } from "@/shared/lib/utils";
 import { useLibraryFavorites } from "@/features/prompts/hooks/use-library-favorites";
 import { useLibraryFilter, FILTERS, type LibraryItem } from "@/features/prompts/hooks/use-library-filter";
 import { LibraryCard } from "@/features/prompts/components/library-card";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 export type { LibraryItem };
 
@@ -12,6 +14,12 @@ export type { LibraryItem };
 // favorites mutation lives in useLibraryFavorites, and a single result's
 // presentation lives in LibraryCard. This component just composes them.
 export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId: string }) {
+  const t = useT();
+  const filterLabels = {
+    all: t.library.filterAll,
+    favorites: t.library.filterFavorites,
+    recent: t.library.filterRecent,
+  } as const;
   const { favorites, toggleFavorite } = useLibraryFavorites(items, userId);
   const { query, setQuery, filter, setFilter, visiblePage, visibleTotal, hasMore, loadMore } =
     useLibraryFilter(items, favorites);
@@ -24,8 +32,8 @@ export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Projekte oder Tools durchsuchen…"
-          aria-label="Projekte oder Tools durchsuchen"
+          placeholder={t.library.searchPlaceholder}
+          aria-label={t.library.searchLabel}
           className="w-full h-10 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
         />
       </div>
@@ -44,7 +52,7 @@ export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId
                   : "border-border bg-surface text-secondary hover:text-foreground hover:bg-surface-hover"
               )}
             >
-              {f.label}
+              {filterLabels[f.key]}
             </button>
           );
         })}
@@ -55,11 +63,9 @@ export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-surface border border-border">
             <Library className="h-5 w-5 text-foreground/85" strokeWidth={1.8} />
           </div>
-          <p className="text-[15px] text-foreground/80">Keine Treffer</p>
+          <p className="text-[15px] text-foreground/80">{t.library.noResults}</p>
           <p className="mt-1.5 text-[13px] text-tertiary max-w-sm mx-auto">
-            {filter === "favorites"
-              ? "Du hast noch keine Favoriten markiert. Tippe auf den Stern einer Karte."
-              : "Keine Projekte passen zu dieser Auswahl. Passe Suche oder Filter an."}
+            {filter === "favorites" ? t.library.noFavorites : t.library.noMatches}
           </p>
         </div>
       ) : (
@@ -82,7 +88,7 @@ export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId
             onClick={loadMore}
             className="text-[13px] px-4 py-2 rounded-lg border border-border bg-surface text-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors active:scale-[0.98]"
           >
-            {visiblePage.length} von {visibleTotal}, mehr laden
+            {fmt(t.library.loadMore, { shown: visiblePage.length, total: visibleTotal })}
           </button>
         </div>
       )}

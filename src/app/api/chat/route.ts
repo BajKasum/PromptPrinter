@@ -35,6 +35,10 @@ import {
 } from "@/features/chat/lib/chat-persistence";
 import { stubReply } from "@/features/chat/lib/chat-stub";
 import { createSseWriter } from "@/server/http/sse-writer";
+import { requestT } from "@/server/i18n";
+import type { Messages } from "@/shared/i18n/messages/de";
+import { fmt } from "@/shared/i18n/format";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -164,16 +168,18 @@ function clampStoredReplies(body: unknown): unknown {
 // U-4 (raw provider error text reaching the client) is handled by
 // describeLlmFailure below.
 function describeValidationFailure(
-  issues: { code: string; path: (string | number)[] }[]
+  issues: { code: string; path: (string | number)[] }[],
+  m: Messages["api"],
+  intlTag: string
 ): string {
   const overlongMessage = issues.some(
     (issue) =>
       issue.code === "too_big" && issue.path[0] === "messages" && issue.path.at(-1) === "content"
   );
   if (overlongMessage) {
-    return `Deine Nachricht ist zu lang, höchstens ${MAX_USER_MESSAGE_CHARS.toLocaleString("de-CH")} Zeichen pro Nachricht.`;
+    return fmt(m.messageTooLong, { max: MAX_USER_MESSAGE_CHARS.toLocaleString(intlTag) });
   }
-  return "Die Anfrage konnte nicht verarbeitet werden. Lade die Seite neu und versuch es erneut.";
+  return m.unprocessableReload;
 }
 
 // German, non-leaking text for a failed model call (QA finding U-4). The
@@ -182,22 +188,28 @@ function describeValidationFailure(
 // glm-4.5-air", English mid a German product and a small disclosure of which
 // model/provider runs underneath. classifyLlmFailure buckets the error;
 // captureError (at the call site) still gets the original for the logs.
-function describeLlmFailure(kind: ReturnType<typeof classifyLlmFailure>): string {
+function describeLlmFailure(
+  kind: ReturnType<typeof classifyLlmFailure>,
+  m: Messages["api"]
+): string {
   switch (kind) {
     case "rate_limited":
-      return "Der KI-Anbieter ist gerade überlastet. Versuch es in einer Minute nochmal.";
+      return m.llm.rate_limited;
     case "auth":
-      return "Der KI-Anbieter hat die Anfrage abgelehnt. Das liegt nicht an dir, bitte versuch es später erneut.";
+      return m.llm.auth;
     case "unavailable":
-      return "Der KI-Anbieter ist gerade nicht erreichbar. Versuch es in ein paar Minuten nochmal.";
+      return m.llm.unavailable;
     case "empty":
-      return "Der KI-Anbieter hat keine Antwort geliefert. Versuch es nochmal, ggf. mit einer anderen Formulierung.";
+      return m.llm.empty;
     default:
-      return "Etwas ist schiefgelaufen. Versuch es nochmal, oder lade die Seite neu.";
+      return m.llm.other;
   }
 }
 
 export async function POST(req: Request) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const { t, locale } = requestT(req);
+  const m = t.api;
   // 1. Require a session BEFORE touching the body (Security-Audit finding
   //    H-3). Reading and JSON-parsing first meant an unauthenticated caller
   //    could make the server buffer and parse an arbitrarily large payload and
@@ -221,7 +233,7 @@ export async function POST(req: Request) {
     // Supabase isn't reachable/configured at all. Signing in is required from
     // here on, so there is nothing this route can still do — say so plainly
     // instead of silently continuing on the server's key.
-    return problem(503, "Der Chat ist gerade nicht erreichbar, bitte versuch es später erneut.");
+    return problem(503, m.chatUnavailable);
   }
 
   let sessionUserId: string | null = null;
@@ -232,7 +244,7 @@ export async function POST(req: Request) {
     // Auth lookup failed — treat as "not signed in", never as "anonymous, go ahead".
   }
   if (!sessionUserId) {
-    return problem(401, "Bitte melde dich an, um mit Finn zu chatten.");
+    return problem(401, m.signInToChat);
   }
   // Re-bound as a const so the narrowing survives into the stream closure below
   // (TypeScript widens a `let` back to `string | null` inside a callback, since
@@ -245,14 +257,14 @@ export async function POST(req: Request) {
     body = await readJsonBody(req, MAX_CHAT_BODY_BYTES);
   } catch (err) {
     if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, "Die Anfrage ist zu gross. Starte einen neuen Chat.");
+      return problem(413, m.tooLargeNewChat);
     }
-    return problem(400, "Die Anfrage konnte nicht gelesen werden. Lade die Seite neu.");
+    return problem(400, m.unreadableReload);
   }
 
   const parsed = chatRequestSchema.safeParse(clampStoredReplies(normalizeTranscript(body)));
   if (!parsed.success) {
-    return problem(400, describeValidationFailure(parsed.error.issues), {
+    return problem(400, describeValidationFailure(parsed.error.issues, m, LOCALE_TAGS[locale].intl), {
       issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
     });
   }
@@ -271,7 +283,7 @@ export async function POST(req: Request) {
   if (input.messages[input.messages.length - 1].role !== "user") {
     return problem(
       400,
-      "Die Anfrage konnte nicht verarbeitet werden. Lade die Seite neu und versuch es erneut."
+      m.unprocessableReload
     );
   }
 
@@ -327,7 +339,7 @@ export async function POST(req: Request) {
     if (limits.chatMessages <= 0) {
       return problem(
         403,
-        "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
+        m.byokRequired,
         { kind: "byokRequired", plan }
       );
     }
@@ -338,7 +350,7 @@ export async function POST(req: Request) {
       if (reservation) await reservation.release();
       return problem(
         403,
-        `Monatslimit für Chat-Nachrichten erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} pro Monat. Nächsten Monat geht's weiter, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
+        fmt(m.chatLimit, { plan, limit: limits.chatMessages }),
         { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
       );
     }
@@ -352,7 +364,7 @@ export async function POST(req: Request) {
     const rl = await rateLimit(rateLimitKey(req, userId), { limit: 120, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       await releaseReservations();
-      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+      return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
@@ -376,7 +388,7 @@ export async function POST(req: Request) {
       await releaseReservations();
       return problem(
         503,
-        "Der Chat ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen, dann läuft er sofort weiter."
+        m.chatBudget
       );
     }
     if (budget) reservations.push(budget.release);
@@ -396,7 +408,7 @@ export async function POST(req: Request) {
     await releaseReservations();
     return problem(
       503,
-      "Der Chat ist gerade nicht richtig eingerichtet. Das liegt nicht an dir, bitte versuch es später erneut."
+      m.chatNotConfigured
     );
   }
 
@@ -450,7 +462,7 @@ export async function POST(req: Request) {
   } catch (err) {
     await releaseReservations();
     captureError("chat.open_turn_failed", err, { userId, projectId: verifiedProjectId });
-    return problem(503, "Dein Chat konnte nicht gespeichert werden. Versuch es nochmal.");
+    return problem(503, m.chatPersistFailed);
   }
 
   // 7. Produce the reply and persist it, streamed to the client as it's
@@ -571,7 +583,7 @@ export async function POST(req: Request) {
           promptChars,
           partialReplyChars: reply.length,
         });
-        send("error", { detail: describeLlmFailure(classifyLlmFailure(err)) });
+        send("error", { detail: describeLlmFailure(classifyLlmFailure(err), m) });
         closeQuietly();
         return;
       }

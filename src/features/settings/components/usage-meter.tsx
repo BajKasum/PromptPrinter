@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/i18n/provider";
 
 // Deliberately hand-rolled rather than Intl.NumberFormat's own
 // `notation: "compact"`: that depends on the runtime's bundled ICU
@@ -10,10 +11,10 @@ import { cn } from "@/shared/lib/utils";
 // (12345 stays "12'345"), a gap discovered while testing this exact function
 // in Node's Vitest environment vs. a browser's full ICU. A fixed number
 // format shouldn't depend on which ICU data happens to be linked in.
-function compactNumber(n: number): string {
+function compactNumber(n: number, units: { thousand: string; million: string }): string {
   if (n < 1000) return String(n);
-  if (n < 1_000_000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)} Tsd.`;
-  return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)} Mio.`;
+  if (n < 1_000_000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)} ${units.thousand}`;
+  return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)} ${units.million}`;
 }
 
 /**
@@ -38,6 +39,7 @@ export function UsageMeter({
    */
   zeroLabel?: string;
 }) {
+  const t = useT();
   const unlimited = !Number.isFinite(limit);
   if (limit === 0 && zeroLabel) {
     return (
@@ -59,7 +61,7 @@ export function UsageMeter({
   // which reads as "the number got cut off, guess the rest"; a compact
   // format (12,3 Tsd.) stays a real number at a bounded width instead
   // (QA finding E-3). The full value is still one hover away via `title`.
-  const displayUsed = compactNumber(used);
+  const displayUsed = compactNumber(used, t.usage);
   const tone =
     !unlimited && pct >= 100
       ? "from-destructive to-destructive/80"
@@ -74,7 +76,7 @@ export function UsageMeter({
         <span className="text-[13px] tabular-nums text-secondary" title={String(used)}>
           {unlimited ? (
             <>
-              {displayUsed} <span className="text-tertiary">· Unbegrenzt</span>
+              {displayUsed} <span className="text-tertiary">· {t.usage.unlimited}</span>
             </>
           ) : (
             <>

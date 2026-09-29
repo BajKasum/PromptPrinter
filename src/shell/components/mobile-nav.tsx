@@ -4,7 +4,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Plus, Star, LogOut, Loader2, Info, ChevronDown, ArrowUpRight } from "lucide-react";
+import {
+  Menu,
+  X,
+  Plus,
+  Star,
+  LogOut,
+  Loader2,
+  Info,
+  ChevronDown,
+  ArrowUpRight,
+  Globe,
+  Check,
+} from "lucide-react";
 import { Logo } from "@/shared/brand/logo";
 import { NewProjectButton } from "@/features/projects/components/new-project";
 import {
@@ -17,6 +29,9 @@ import {
 import { learnMoreLinks, plansNav, secondaryNav } from "@/shell/lib/nav";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { LOCALES, LOCALE_NAMES } from "@/shared/i18n/locales";
+import { useChangeLocale } from "@/shared/i18n/use-change-locale";
 
 // Mobile-only navigation. The desktop sidebar is hidden below md, so without
 // this the app has no way to move between sections on a phone, and it needs
@@ -30,6 +45,9 @@ export function MobileNav({
   chats: SidebarChat[];
   projects: SidebarProject[];
 }) {
+  const t = useT();
+  const locale = useLocale();
+  const { change: changeLocale, pending: localePending } = useChangeLocale();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -37,6 +55,7 @@ export function MobileNav({
   // "Mehr erfahren" klappt hier in der Liste auf statt seitlich wie am
   // Desktop: im schmalen Drawer ist neben dem Menü kein Platz.
   const [learnMoreOpen, setLearnMoreOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -80,7 +99,7 @@ export function MobileNav({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Menü öffnen"
+        aria-label={t.shell.openMenu}
         aria-expanded={open}
         className="md:hidden h-9 w-9 shrink-0 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
       >
@@ -95,7 +114,7 @@ export function MobileNav({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              aria-label="Menü schliessen"
+              aria-label={t.shell.closeMenu}
               onClick={() => setOpen(false)}
               className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm"
             />
@@ -113,7 +132,7 @@ export function MobileNav({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Menü schliessen"
+                  aria-label={t.shell.closeMenu}
                   className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
                 >
                   <X className="h-4 w-4" strokeWidth={1.8} />
@@ -131,12 +150,12 @@ export function MobileNav({
                       className="flex items-center justify-center gap-2 mb-4 mx-1 h-10 rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
                     >
                       <Plus className="h-4 w-4" strokeWidth={2} />
-                      Neuer Chat
+                      {t.nav.newChat}
                     </Link>
-                    <nav aria-label="Chats" className="space-y-0.5">
+                    <nav aria-label={t.nav.chats} className="space-y-0.5">
                       {chats.length === 0 ? (
                         <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                          Dein erster Chat landet hier.
+                          {t.shell.firstChatHint}
                         </p>
                       ) : (
                         chats.map((c) => {
@@ -168,10 +187,10 @@ export function MobileNav({
                       variant="bar"
                       className="flex items-center justify-center gap-2 mb-4 mx-1 h-10 w-[calc(100%-0.5rem)] rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
                     />
-                    <nav aria-label="Projekte" className="space-y-0.5">
+                    <nav aria-label={t.nav.projects} className="space-y-0.5">
                       {projects.length === 0 ? (
                         <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                          Noch kein Projekt angelegt.
+                          {t.shell.noProjectsHint}
                         </p>
                       ) : (
                         projects.map((p) => {
@@ -193,7 +212,7 @@ export function MobileNav({
                               <span className="min-w-0 flex-1 truncate">{p.name}</span>
                               {p.isFavorite && (
                                 <Star
-                                  aria-label="Angepinnt"
+                                  aria-label={t.shell.pinned}
                                   className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
                                 />
                               )}
@@ -207,8 +226,8 @@ export function MobileNav({
 
                 <div className="my-5 h-px bg-border" />
 
-                <nav aria-label="Konto" className="space-y-0.5">
-                  {[...secondaryNav, plansNav].map(({ label, href, Icon }) => {
+                <nav aria-label={t.shell.accountNav} className="space-y-0.5">
+                  {[...secondaryNav, plansNav].map(({ labelKey, href, Icon }) => {
                     const active = pathname === href || pathname.startsWith(href + "/");
                     return (
                       <Link
@@ -222,10 +241,57 @@ export function MobileNav({
                         )}
                       >
                         <Icon className="h-4 w-4" strokeWidth={1.8} />
-                        <span>{label}</span>
+                        <span>{t.nav[labelKey]}</span>
                       </Link>
                     );
                   })}
+                  {/* Sprache, als aufklappbare Gruppe wie "Mehr erfahren"
+                      darunter: im schmalen Drawer ist neben dem Menü kein
+                      Platz für ein seitliches Panel. */}
+                  <button
+                    type="button"
+                    aria-expanded={languageOpen}
+                    aria-controls="mobile-language"
+                    onClick={() => setLanguageOpen((v) => !v)}
+                    className={cn(
+                      "flex h-10 w-full items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
+                      INACTIVE_ROW
+                    )}
+                  >
+                    <Globe className="h-4 w-4" strokeWidth={1.8} />
+                    <span className="flex-1 text-left">{t.nav.language}</span>
+                    <span className="text-[12.5px] text-tertiary">{LOCALE_NAMES[locale]}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        languageOpen && "rotate-180"
+                      )}
+                    />
+                  </button>
+                  {languageOpen && (
+                    <div id="mobile-language" className="space-y-0.5 pb-1 pl-7">
+                      {LOCALES.map((code) => {
+                        const active = code === locale;
+                        return (
+                          <button
+                            key={code}
+                            type="button"
+                            lang={code}
+                            aria-pressed={active}
+                            disabled={localePending}
+                            onClick={() => !active && void changeLocale(code)}
+                            className={cn(
+                              "flex h-9 w-full items-center gap-2 rounded-md px-3 text-left text-[13.5px] transition-colors",
+                              active ? "text-foreground" : INACTIVE_ROW
+                            )}
+                          >
+                            <span className="flex-1 truncate">{LOCALE_NAMES[code]}</span>
+                            {active && <Check aria-hidden className="h-3.5 w-3.5 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <button
                     type="button"
                     aria-expanded={learnMoreOpen}
@@ -237,7 +303,7 @@ export function MobileNav({
                     )}
                   >
                     <Info className="h-4 w-4" strokeWidth={1.8} />
-                    <span className="flex-1 text-left">Mehr erfahren</span>
+                    <span className="flex-1 text-left">{t.nav.learnMore}</span>
                     <ChevronDown
                       className={cn(
                         "h-4 w-4 transition-transform duration-200",
@@ -258,9 +324,9 @@ export function MobileNav({
                             INACTIVE_ROW
                           )}
                         >
-                          <span className="flex-1 truncate">{l.label}</span>
+                          <span className="flex-1 truncate">{t.nav[l.labelKey]}</span>
                           <ArrowUpRight aria-hidden className="h-3.5 w-3.5 shrink-0" />
-                          <span className="sr-only">(öffnet in neuem Tab)</span>
+                          <span className="sr-only">{t.common.opensInNewTab}</span>
                         </a>
                       ))}
                     </div>
@@ -276,7 +342,7 @@ export function MobileNav({
                     ) : (
                       <LogOut className="h-4 w-4" strokeWidth={1.8} />
                     )}
-                    <span>Abmelden</span>
+                    <span>{t.nav.signOut}</span>
                   </button>
                 </nav>
               </div>

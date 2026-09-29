@@ -12,6 +12,8 @@ import {
   RequestBodyTooLargeError,
   readJsonBody,
 } from "@/server/http/request-body";
+import { requestT } from "@/server/i18n";
+import { fmt } from "@/shared/i18n/format";
 
 export const runtime = "nodejs";
 
@@ -50,6 +52,8 @@ const saveSchema = z.union([
 const activateSchema = z.object({ provider: z.enum(PROVIDERS) });
 
 export async function POST(req: Request) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   // Session first, body second (Security-Audit finding H-3): parsing before
   // authenticating let an unauthenticated caller make the server read and parse
   // an unbounded payload just to be told 401. Doubly worth it here — the body
@@ -59,14 +63,14 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
+  if (!user) return problem(401, m.signInRequired);
 
   let body: unknown;
   try {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
   } catch (err) {
     if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, "Die Anfrage ist zu gross.");
+      return problem(413, m.tooLarge);
     }
     return problem(400, "Invalid JSON body");
   }
@@ -104,7 +108,7 @@ export async function POST(req: Request) {
   if (!resolved) {
     return problem(
       400,
-      "Konnte den Anbieter nicht erkennen. Nutze die erweiterte Option für andere Anbieter (z. B. Z.ai, DeepSeek, Groq).",
+      m.keyUnknownProvider,
       { kind: "unknownProvider" }
     );
   }
@@ -120,7 +124,7 @@ export async function POST(req: Request) {
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
-      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+      return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
@@ -151,7 +155,7 @@ export async function POST(req: Request) {
   } catch (err) {
     return problem(
       400,
-      `Key konnte nicht bestätigt werden: ${err instanceof Error ? err.message : "unbekannter Fehler"}`
+      fmt(m.keyVerifyFailed, { reason: err instanceof Error ? err.message : m.keyVerifyUnknown })
     );
   }
 
@@ -196,7 +200,7 @@ export async function POST(req: Request) {
     // and its message names constraints and columns — nothing the user can act
     // on, everything an attacker would like to know.
     captureError("api_key.save_failed", error, { userId: user.id, provider });
-    return problem(500, "Key konnte nicht gespeichert werden. Bitte versuch es erneut.");
+    return problem(500, m.keySaveFailed);
   }
 
   // A first key has to become the active one, or it would be stored and then
@@ -233,11 +237,13 @@ export async function POST(req: Request) {
  * index rejects.
  */
 export async function PATCH(req: Request) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
+  if (!user) return problem(401, m.signInRequired);
 
   // Security-Audit finding L-7: PATCH and DELETE on this route were the only
   // authenticated mutations in the project with no ceiling at all — POST
@@ -253,7 +259,7 @@ export async function PATCH(req: Request) {
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
-      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+      return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
@@ -264,13 +270,13 @@ export async function PATCH(req: Request) {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
   } catch (err) {
     if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, "Die Anfrage ist zu gross.");
+      return problem(413, m.tooLarge);
     }
     return problem(400, "Invalid JSON body");
   }
 
   const parsed = activateSchema.safeParse(body);
-  if (!parsed.success) return problem(400, "Unbekannter Provider.");
+  if (!parsed.success) return problem(400, m.keyUnknownProviderShort);
   const { provider } = parsed.data;
 
   // Only a provider the user has actually stored may be activated. Without this
@@ -282,30 +288,32 @@ export async function PATCH(req: Request) {
     .eq("user_id", user.id)
     .eq("provider", provider)
     .maybeSingle();
-  if (!existing) return problem(404, "Für diesen Anbieter ist kein Key hinterlegt.");
+  if (!existing) return problem(404, m.keyNotFound);
 
   const { error } = await supabase.rpc("set_active_byok_provider", {
     target_provider: provider,
   });
   if (error) {
     captureError("api_key.activate_failed", error, { userId: user.id, provider });
-    return problem(500, "Key konnte nicht aktiviert werden. Bitte versuch es erneut.");
+    return problem(500, m.keyActivateFailed);
   }
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: Request) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   const provider = new URL(req.url).searchParams.get("provider");
   if (!provider || !PROVIDERS.includes(provider as (typeof PROVIDERS)[number])) {
-    return problem(400, "Unbekannter Provider.");
+    return problem(400, m.keyUnknownProviderShort);
   }
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
+  if (!user) return problem(401, m.signInRequired);
 
   // Security-Audit finding L-7: the one unlimited authenticated mutation in
   // this route (and, before this, in the project) — see the same block on
@@ -318,7 +326,7 @@ export async function DELETE(req: Request) {
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
-      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+      return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
@@ -331,7 +339,7 @@ export async function DELETE(req: Request) {
     .eq("provider", provider);
   if (error) {
     captureError("api_key.delete_failed", error, { userId: user.id, provider });
-    return problem(500, "Key konnte nicht entfernt werden. Bitte versuch es erneut.");
+    return problem(500, m.keyRemoveFailed);
   }
 
   return NextResponse.json({ ok: true });

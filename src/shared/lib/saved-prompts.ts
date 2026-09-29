@@ -86,13 +86,14 @@ export function extractSavedPromptContents(
  * malformed row shouldn't render as broken UI).
  */
 export function mapGenerationRowsToSavedPrompts(
-  rows: { id: string; created_at: string; outputs: Record<string, unknown> | null }[]
+  rows: { id: string; created_at: string; outputs: Record<string, unknown> | null }[],
+  fallbackTitle = "Gespeicherter Prompt"
 ): SavedPrompt[] {
   return rows
     .map((row) => {
       const outputs = (row.outputs ?? {}) as Record<string, unknown>;
       const content = typeof outputs.prompt === "string" ? outputs.prompt : "";
-      const title = typeof outputs.title === "string" ? outputs.title : "Gespeicherter Prompt";
+      const title = typeof outputs.title === "string" ? outputs.title : fallbackTitle;
       return { id: row.id, title, content, createdAt: row.created_at };
     })
     .filter((p) => p.content.trim().length > 0);
@@ -105,16 +106,16 @@ const TITLE_MAX = 72;
  * leading markdown heading marker or list bullet so it reads as prose. Falls
  * back to a generic label when the prompt has no usable first line.
  */
-export function derivePromptTitle(content: string): string {
+export function derivePromptTitle(content: string, fallbackTitle = "Gespeicherter Prompt"): string {
   const firstLine = content
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.length > 0);
-  if (!firstLine) return "Gespeicherter Prompt";
+  if (!firstLine) return fallbackTitle;
   const clean = firstLine
     .replace(/^#{1,6}\s+/, "")
     .replace(/^[-*]\s+/, "")
     .trim();
-  if (clean.length === 0) return "Gespeicherter Prompt";
+  if (clean.length === 0) return fallbackTitle;
   return clean.length > TITLE_MAX ? `${clean.slice(0, TITLE_MAX - 1).trimEnd()}…` : clean;
 }

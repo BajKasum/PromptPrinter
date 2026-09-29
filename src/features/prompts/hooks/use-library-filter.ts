@@ -19,11 +19,8 @@ export type LibraryItem = {
   isFavorite: boolean;
 };
 
-export const FILTERS = [
-  { key: "all", label: "Alle" },
-  { key: "favorites", label: "Favoriten" },
-  { key: "recent", label: "Kürzlich verwendet" },
-] as const;
+// Beschriftungen im Wörterbuch (t.library.filter*), hier nur die Schlüssel.
+export const FILTERS = [{ key: "all" }, { key: "favorites" }, { key: "recent" }] as const;
 
 export type FilterKey = (typeof FILTERS)[number]["key"];
 

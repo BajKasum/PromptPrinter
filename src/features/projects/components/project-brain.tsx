@@ -23,6 +23,10 @@ import {
   isBrainStale,
   type ProjectBrain,
 } from "@/shared/lib/project-brain";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { plural } from "@/shared/i18n/format";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import type { Messages } from "@/shared/i18n/messages/de";
 
 // Die Kontext-Rail-Karte des Projekt-Gedächtnisses.
 //
@@ -42,26 +46,10 @@ import {
 // Behauptung des Clients.
 
 /** Fehlercodes der Route in Text, den ein Mensch lesen will. */
-const ERROR_TEXTS: Record<string, string> = {
-  repo_not_found: "Das Repository konnte ich nicht lesen. Ist es öffentlich und die Adresse richtig?",
-  repo_rate_limited: "GitHub lässt gerade keine weiteren Abfragen zu. In einer Stunde nochmal.",
-  repo_empty: "In dem Repository sind keine analysierbaren Dateien.",
-  repo_unavailable: "GitHub war nicht erreichbar. Versuch es in ein paar Minuten nochmal.",
-  repo_invalid_url: "Das sieht nicht nach einem öffentlichen GitHub-Repository aus.",
-  analysis_no_sources: "Noch nichts zu analysieren. Lade Dateien hoch oder hinterlege ein Repository.",
-  analysis_unparsable: "Da kam kein verwertbares Ergebnis zurück. Versuch es nochmal.",
-};
-
-function errorText(code: string | null): string {
-  if (!code) return "Die Analyse ist fehlgeschlagen. Versuch es nochmal.";
-  return ERROR_TEXTS[code] ?? "Die Analyse ist fehlgeschlagen. Versuch es nochmal.";
+function errorText(code: string | null, m: Messages["projects"]["brain"]): string {
+  const errors: Record<string, string> = m.errors;
+  return (code && errors[code]) || m.failed;
 }
-
-const CONFIDENCE_LABELS = {
-  high: "gut belegt",
-  medium: "grösstenteils belegt",
-  low: "unsicher",
-} as const;
 
 export function ProjectBrainCard({
   projectId,
@@ -76,6 +64,7 @@ export function ProjectBrainCard({
   /** Dateien + ggf. Repo, entscheidet ob es überhaupt etwas zu analysieren gibt. */
   sourceCount: number;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -120,18 +109,18 @@ export function ProjectBrainCard({
         };
         // `detail` ist bereits serverseitig übersetzt und leckt nichts (M-1),
         // `code` nur als Rückfallebene, falls eine Antwort ohne detail kommt.
-        setError(body.detail ?? errorText(body.code ?? null));
+        setError(body.detail ?? errorText(body.code ?? null, t.projects.brain));
         return;
       }
 
       toast({
-        title: "Gedächtnis aktualisiert",
-        description: "Jeder Chat in diesem Projekt kennt den Stack jetzt.",
+        title: t.projects.brain.updated,
+        description: t.projects.brain.updatedBody,
         variant: "success",
       });
       router.refresh();
     } catch {
-      setError("Die Analyse konnte nicht gestartet werden. Bist du online?");
+      setError(t.projects.brain.startFailed);
     } finally {
       setBusy(false);
     }
@@ -148,8 +137,8 @@ export function ProjectBrainCard({
       router.refresh();
     } catch {
       toast({
-        title: "Löschen fehlgeschlagen",
-        description: "Bitte versuch es erneut.",
+        title: t.projects.deleteFailed,
+        description: t.projects.tryAgain,
         variant: "error",
       });
     } finally {
@@ -160,7 +149,7 @@ export function ProjectBrainCard({
   return (
     <section
       className="relative overflow-hidden rounded-2xl border border-accent/30 bg-surface-raised p-4"
-      aria-label="Projekt-Gedächtnis"
+      aria-label={t.projects.brain.label}
     >
       {/* Ein leiser Akzentschimmer oben, damit die Karte als das Besondere
           dieser Rail lesbar ist, ohne laut zu werden (DESIGN.md: felt, not
@@ -176,14 +165,14 @@ export function ProjectBrainCard({
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent/15 text-accent-text">
               <Brain className="h-3.5 w-3.5" strokeWidth={2} />
             </span>
-            Gedächtnis
+            {t.projects.brain.title}
             <BrainStatus ready={ready} stale={stale} running={running} />
           </h2>
           {ready && !running && (
             <button
               type="button"
               onClick={() => setConfirmReset(true)}
-              aria-label="Gedächtnis löschen"
+              aria-label={t.projects.brain.delete}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -196,9 +185,9 @@ export function ProjectBrainCard({
             {/* Finn liest sich ein — derselbe State wie beim Recherchieren. */}
             <Mascot state="researching" size={36} className="shrink-0" />
             <div className="min-w-0">
-              <p className="text-[12.5px] text-foreground">Ich lese mich gerade ein…</p>
+              <p className="text-[12.5px] text-foreground">{t.projects.brain.reading}</p>
               <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                Dauert je nach Projektgrösse ein paar Sekunden.
+                {t.projects.brain.readingHint}
               </p>
             </div>
           </div>
@@ -208,8 +197,7 @@ export function ProjectBrainCard({
           <div className="flex items-start gap-3">
             <Mascot state="curious" size={36} className="shrink-0" />
             <p className="text-[12px] leading-relaxed text-secondary">
-              Lad Dateien hoch oder trag unten dein öffentliches GitHub-Repo ein, dann auf
-              „Projekt analysieren“ drücken. Ich merk mir den Rest.
+              {t.projects.brain.emptyHint}
             </p>
           </div>
         )}
@@ -217,7 +205,7 @@ export function ProjectBrainCard({
         {stale && !running && (
           <p className="mt-2.5 flex items-start gap-1.5 rounded-md bg-accent-subtle px-2.5 py-2 text-[11.5px] leading-relaxed text-accent-text">
             <Sparkles className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-            Seit der Analyse haben sich deine Quellen geändert.
+            {t.projects.brain.staleHint}
           </p>
         )}
 
@@ -227,7 +215,7 @@ export function ProjectBrainCard({
             className="mt-2.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-destructive"
           >
             <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-            {errorText(brain.errorCode)}
+            {errorText(brain.errorCode, t.projects.brain)}
           </p>
         )}
 
@@ -237,7 +225,7 @@ export function ProjectBrainCard({
             className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
           >
             <Github className="h-3.5 w-3.5" strokeWidth={1.8} />
-            GitHub-Repository, optional
+            {t.projects.brain.repoLabel}
           </label>
           <input
             id="brain-repo"
@@ -248,14 +236,14 @@ export function ProjectBrainCard({
             inputMode="url"
             autoComplete="off"
             spellCheck={false}
-            placeholder="github.com/name/projekt"
+            placeholder={t.projects.brain.repoPlaceholder}
             className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
           />
           {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
               auf fremden Quellcode auf dem Server, das ist eine eigene
               Vertrauensfrage und keine Erweiterung dieses Feldes. */}
           <p className="text-[11px] leading-relaxed text-secondary">
-            Muss öffentlich sein. Private Repos: lade die wichtigen Dateien hoch.
+            {t.projects.brain.repoHint}
           </p>
         </div>
 
@@ -275,12 +263,16 @@ export function ProjectBrainCard({
           ) : (
             <Brain className="h-3.5 w-3.5" />
           )}
-          {blocked ? "Analysiere…" : ready ? "Neu analysieren" : "Projekt analysieren"}
+          {blocked
+            ? t.projects.brain.analyzing
+            : ready
+              ? t.projects.brain.reanalyze
+              : t.projects.brain.analyze}
         </Button>
 
         {!hasSources && !blocked && (
           <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
-            Lade zuerst Dateien hoch oder trag ein Repository ein.
+            {t.projects.brain.noSources}
           </p>
         )}
 
@@ -293,10 +285,10 @@ export function ProjectBrainCard({
 
       <ConfirmDialog
         open={confirmReset}
-        title="Gedächtnis löschen?"
-        description="Deine Dateien und das Repository bleiben. Nur was ich daraus gelernt habe, wird verworfen — die Chats dieses Projekts kennen deinen Stack danach nicht mehr."
-        confirmLabel="Gedächtnis löschen"
-        busyLabel="Wird gelöscht…"
+        title={t.projects.brain.deleteConfirmTitle}
+        description={t.projects.brain.deleteConfirmBody}
+        confirmLabel={t.projects.brain.delete}
+        busyLabel={t.common.deleting}
         busy={false}
         onConfirm={() => void reset()}
         onCancel={() => setConfirmReset(false)}
@@ -315,20 +307,23 @@ function BrainStatus({
   stale: boolean;
   running: boolean;
 }) {
+  const t = useT();
   if (running || !ready) return null;
   return stale ? (
     <span className="rounded-full bg-accent/15 px-1.5 py-px text-[10.5px] font-medium text-accent-text">
-      veraltet
+      {t.projects.brain.stale}
     </span>
   ) : (
     <span className="rounded-full bg-success/15 px-1.5 py-px text-[10.5px] font-medium text-success">
-      aktiv
+      {t.projects.brain.active}
     </span>
   );
 }
 
 /** Das Ergebnis einer fertigen Analyse: kompakt, Einzelfelder auf Wunsch. */
 function BrainFacts({ brain }: { brain: ProjectBrain }) {
+  const t = useT();
+  const locale = useLocale();
   const { facts } = brain;
   const detailsId = useId();
   const [showDetails, setShowDetails] = useState(false);
@@ -344,7 +339,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
       )}
 
       {facts.stack.length > 0 && (
-        <ul className="flex flex-wrap gap-1" aria-label="Stack">
+        <ul className="flex flex-wrap gap-1" aria-label={t.projects.brain.stack}>
           {facts.stack.map((item) => (
             <li
               key={item}
@@ -369,13 +364,15 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
               className={cn("h-3.5 w-3.5 transition-transform duration-150", showDetails && "rotate-90")}
               strokeWidth={2}
             />
-            Details
+            {t.projects.brain.details}
           </button>
           {showDetails && (
             <dl id={detailsId} className="mt-1.5 space-y-1">
-              {fields.map(({ key, label }) => (
+              {fields.map(({ key }) => (
                 <div key={key} className="grid grid-cols-[92px_1fr] gap-2">
-                  <dt className="text-[11.5px] text-muted-foreground">{label}</dt>
+                  <dt className="text-[11.5px] text-muted-foreground">
+                    {t.projects.brain.fields[key]}
+                  </dt>
                   <dd className="text-[11.5px] text-foreground/85">{facts[key] as string}</dd>
                 </div>
               ))}
@@ -388,12 +385,14 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
           einzigen README abgeleitetes Ergebnis soll nicht so aussehen wie
           eines aus package.json plus Migrationen. */}
       <p className="text-[11px] text-secondary">
-        {brain.sources.length} {brain.sources.length === 1 ? "Quelle" : "Quellen"}
+        {plural(t.projects.brain.sources, brain.sources.length, locale)}
         <span className={cn(facts.confidence === "low" && "text-destructive/80")}>
           {" · "}
-          {CONFIDENCE_LABELS[facts.confidence]}
+          {t.projects.brain.confidence[facts.confidence]}
         </span>
-        {brain.analyzedAt ? ` · ${relativeTime(brain.analyzedAt)}` : ""}
+        {brain.analyzedAt
+          ? ` · ${relativeTime(brain.analyzedAt, LOCALE_TAGS[locale].intl, t.time.justNow)}`
+          : ""}
       </p>
     </div>
   );

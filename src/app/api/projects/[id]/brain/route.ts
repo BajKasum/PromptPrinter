@@ -23,6 +23,10 @@ import { analyzeProjectBrain, BrainAnalysisError } from "@/server/brain/analyze"
 import { GithubImportError, parseGithubRepoUrl } from "@/server/brain/github";
 import { collectBrainSources } from "@/features/projects/lib/brain-sources";
 import type { ProjectBrainFacts } from "@/shared/lib/project-brain";
+import { requestT } from "@/server/i18n";
+import type { Messages } from "@/shared/i18n/messages/de";
+import { fmt } from "@/shared/i18n/format";
+import { LOCALE_ENGLISH_NAMES } from "@/shared/i18n/locales";
 
 export const runtime = "nodejs";
 // Wie /api/chat: eine Analyse liest bis zu 14 Repo-Dateien plus die
@@ -80,6 +84,8 @@ type Params = { params: Promise<{ id: string }> };
 // Verrechnung.
 
 export async function POST(req: Request, { params }: Params) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   const { id: projectId } = await params;
 
   // 1. Session vor dem Body (Security-Audit H-3).
@@ -87,25 +93,25 @@ export async function POST(req: Request, { params }: Params) {
   try {
     supabase = await createClient();
   } catch {
-    return problem(503, "Die Analyse ist gerade nicht erreichbar, bitte versuch es später erneut.");
+    return problem(503, m.brainUnavailable);
   }
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
+  if (!user) return problem(401, m.signInRequired);
   const userId = user.id;
 
   let body: unknown;
   try {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
   } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, "Die Anfrage ist zu gross.");
-    return problem(400, "Die Anfrage konnte nicht gelesen werden.");
+    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
+    return problem(400, m.unreadable);
   }
 
   const parsed = brainRequestSchema.safeParse(body ?? {});
-  if (!parsed.success) return problem(400, "Die Anfrage konnte nicht verarbeitet werden.");
+  if (!parsed.success) return problem(400, m.unprocessable);
 
   // 2. Eigentümerschaft. Explizites user_id neben RLS, hier nicht nur
   //    Defense-in-depth: die Schreibzugriffe unten laufen über den
@@ -119,7 +125,7 @@ export async function POST(req: Request, { params }: Params) {
     .maybeSingle<{ name: string }>();
   // Fremd und nicht vorhanden bekommen dieselbe Antwort — sonst verrät die
   // Route, welche Projekt-IDs existieren.
-  if (!project) return problem(404, "Projekt nicht gefunden.");
+  if (!project) return problem(404, m.projectNotFound);
 
   // 3. Repo-URL auflösen: mitgeschickte gewinnt, sonst die gespeicherte.
   const admin = createAdminClient();
@@ -138,7 +144,7 @@ export async function POST(req: Request, { params }: Params) {
     } else {
       const ref = parseGithubRepoUrl(raw);
       if (!ref) {
-        return problem(400, "Das sieht nicht nach einem öffentlichen GitHub-Repository aus.", {
+        return problem(400, m.repoInvalid, {
           code: "repo_invalid_url",
         });
       }
@@ -167,7 +173,7 @@ export async function POST(req: Request, { params }: Params) {
     if (limits.chatMessages <= 0) {
       return problem(
         403,
-        "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
+        m.byokRequired,
         { kind: "byokRequired", plan }
       );
     }
@@ -176,7 +182,7 @@ export async function POST(req: Request, { params }: Params) {
       await reservation.release();
       return problem(
         403,
-        `Monatslimit erreicht, dein Plan (${plan}) erlaubt ${limits.chatMessages} Modell-Aufrufe pro Monat. Nächsten Monat geht's weiter, oder hinterlege einen eigenen API-Key in den Einstellungen.`,
+        fmt(m.brainLimit, { plan, limit: limits.chatMessages }),
         { kind: "chatMessages", limit: limits.chatMessages, plan }
       );
     }
@@ -195,7 +201,7 @@ export async function POST(req: Request, { params }: Params) {
     });
     if (!rl.allowed) {
       await releaseReservations();
-      return problem(429, "Zu viele Analysen, bitte warte kurz und versuch es erneut.", {
+      return problem(429, m.brainTooMany, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
@@ -208,7 +214,7 @@ export async function POST(req: Request, { params }: Params) {
       await releaseReservations();
       return problem(
         503,
-        "Die Analyse ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen."
+        m.brainBudget
       );
     }
     if (budget) reservations.push(budget.release);
@@ -222,7 +228,7 @@ export async function POST(req: Request, { params }: Params) {
     await releaseReservations();
     return problem(
       503,
-      "Die Analyse ist gerade nicht eingerichtet. Hinterlege einen eigenen API-Key in den Einstellungen, dann läuft sie sofort."
+      m.brainNotConfigured
     );
   }
 
@@ -251,6 +257,8 @@ export async function POST(req: Request, { params }: Params) {
     const { facts, model } = await analyzeProjectBrain(collected.input, {
       override: override ?? undefined,
       signal: req.signal,
+      // Das Gedächtnis erscheint in der Rail, also in der Sprache der App.
+      language: LOCALE_ENGLISH_NAMES[requestT(req).locale],
     });
 
     const analyzedAt = new Date().toISOString();
@@ -312,25 +320,27 @@ export async function POST(req: Request, { params }: Params) {
       .eq("project_id", projectId)
       .eq("user_id", userId);
 
-    return problem(502, describeBrainFailure(code), { code });
+    return problem(502, describeBrainFailure(code, m), { code });
   }
 }
 
 /** Löscht das Gedächtnis eines Projekts wieder. */
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   const { id: projectId } = await params;
 
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
     supabase = await createClient();
   } catch {
-    return problem(503, "Gerade nicht erreichbar, bitte versuch es später erneut.");
+    return problem(503, m.unavailableShort);
   }
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
+  if (!user) return problem(401, m.signInRequired);
 
   // Auch hier zuerst die Eigentümerschaft über den RLS-gebundenen Client, weil
   // das Löschen darunter am Service-Role-Client hängt.
@@ -340,7 +350,7 @@ export async function DELETE(_req: Request, { params }: Params) {
     .eq("id", projectId)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!project) return problem(404, "Projekt nicht gefunden.");
+  if (!project) return problem(404, m.projectNotFound);
 
   const admin = createAdminClient();
   const { error } = await admin
@@ -351,7 +361,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   if (error) {
     captureError("brain.delete_failed", error, { userId: user.id, projectId });
-    return problem(500, "Konnte nicht gelöscht werden. Bitte versuch es erneut.");
+    return problem(500, m.deleteFailed);
   }
 
   return NextResponse.json({ status: "idle" as const });
@@ -364,22 +374,8 @@ function errorCode(err: unknown): string {
   return "analysis_failed";
 }
 
-/** Deutscher, nicht-leckender Text zum Code (dieselbe Linie wie QA-Befund U-4). */
-function describeBrainFailure(code: string): string {
-  switch (code) {
-    case "repo_not_found":
-      return "Das Repository konnte nicht gelesen werden. Ist es öffentlich und die Adresse richtig?";
-    case "repo_rate_limited":
-      return "GitHub lässt gerade keine weiteren Abfragen zu. Versuch es in einer Stunde nochmal.";
-    case "repo_empty":
-      return "In diesem Repository sind keine analysierbaren Dateien.";
-    case "repo_unavailable":
-      return "GitHub ist gerade nicht erreichbar. Versuch es in ein paar Minuten nochmal.";
-    case "analysis_no_sources":
-      return "Es gibt noch nichts zu analysieren. Lade Dateien hoch oder hinterlege ein GitHub-Repository.";
-    case "analysis_unparsable":
-      return "Die Analyse hat kein verwertbares Ergebnis geliefert. Versuch es nochmal.";
-    default:
-      return "Die Analyse ist fehlgeschlagen. Versuch es nochmal, oder später erneut.";
-  }
+/** Nicht-leckender Text zum Code in der App-Sprache (dieselbe Linie wie QA-Befund U-4). */
+function describeBrainFailure(code: string, m: Messages["api"]): string {
+  const known: Record<string, string> = m.brainErrors;
+  return known[code] ?? m.brainErrors.other;
 }

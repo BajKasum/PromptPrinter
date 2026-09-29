@@ -2,11 +2,13 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Mascot } from "@/shared/brand/mascot";
+import { getT } from "@/server/i18n";
 
 // Rendered by notFound() inside the authed shell, most often from the project
 // detail page when an id is malformed or the row belongs to another owner (RLS
 // returns no row). Keeps the sidebar mounted around it.
-export default function AppNotFound() {
+export default async function AppNotFound() {
+  const t = await getT();
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md text-center">
@@ -15,21 +17,20 @@ export default function AppNotFound() {
           404
         </div>
         <h1 className="mb-2 text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.02em] font-semibold text-foreground">
-          Nicht gefunden
+          {t.pages.notFound.title}
         </h1>
         <p className="text-[13.5px] text-secondary">
-          Diese Seite oder dieses Projekt existiert nicht, oder gehört nicht zu
-          deinem Konto.
+          {t.pages.notFound.body}
         </p>
         <div className="mt-6 flex items-center justify-center gap-2">
           <Button variant="primary" asChild>
             <Link href="/chats">
               <ArrowLeft className="h-4 w-4" />
-              Zu deinen Chats
+              {t.pages.notFound.toChats}
             </Link>
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/projects">Projekte</Link>
+            <Link href="/projects">{t.pages.notFound.projects}</Link>
           </Button>
         </div>
       </div>

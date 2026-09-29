@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Info, X } from "lucide-react";
 import { Mascot } from "@/shared/brand/mascot";
+import { useT } from "@/shared/i18n/provider";
 
 type ToastVariant = "default" | "success" | "error";
 
@@ -29,6 +30,7 @@ export function useToast(): ToastContextValue {
 const AUTO_DISMISS_MS = 4000;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const msg = useT();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const remove = useCallback((id: number) => {
@@ -83,7 +85,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => remove(t.id)}
-                  aria-label="Benachrichtigung schliessen"
+                  aria-label={msg.common.closeNotification}
                   className="shrink-0 text-muted-foreground transition-colors hover:text-foreground active:scale-90"
                 >
                   <X className="h-4 w-4" />

@@ -21,6 +21,8 @@ import {
   MAX_SIDEBAR_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
 } from "@/shell/hooks/use-sidebar-resize";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 // The sidebar is a product surface, not a link list (REDESIGN.md, Phase 1):
 // the two nav destinations (Chats, Projekte) double as section headers, and the
@@ -119,6 +121,7 @@ export function Sidebar({
   // Mobile-Drawer würde jede Navigation doppelt auslösen.
   useNavShortcuts();
 
+  const t = useT();
   const accountProps = { email, plan, isAdmin, displayName };
 
   return (
@@ -139,16 +142,16 @@ export function Sidebar({
         <Link
           href="/chats"
           className="inline-flex"
-          aria-label="PromptPrinter, zu deinen Chats"
+          aria-label={t.shell.homeLink}
         >
           {collapsed ? <LogoMark size={26} /> : <Logo accentWordmark />}
         </Link>
         <button
           type="button"
           onClick={toggle}
-          aria-label={collapsed ? "Seitenleiste ausklappen" : "Seitenleiste einklappen"}
+          aria-label={collapsed ? t.shell.expandSidebar : t.shell.collapseSidebar}
           aria-keyshortcuts="Control+B Meta+B"
-          title="Seitenleiste ein-/ausklappen (Strg/⌘ B)"
+          title={fmt(t.shell.toggleSidebarTitle, { shortcut: `${t.shell.ctrlKey}/⌘ B` })}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
         >
           {collapsed ? (
@@ -189,7 +192,7 @@ export function Sidebar({
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label="Seitenleisten-Breite"
+          aria-label={t.shell.sidebarWidth}
           aria-valuenow={Math.round(width)}
           aria-valuemin={MIN_SIDEBAR_WIDTH}
           aria-valuemax={MAX_SIDEBAR_WIDTH}
@@ -235,6 +238,7 @@ function Full({
   // other route (settings, billing) defaults to Chats.
   const tab: "chats" | "projects" =
     pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";
+  const t = useT();
 
   return (
     <>
@@ -249,12 +253,12 @@ function Full({
                 className="mx-1 mb-5 flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
               >
                 <Plus className="h-[15px] w-[15px]" strokeWidth={2} />
-                Neuer Chat
+                {t.nav.newChat}
               </Link>
               <div className="space-y-0.5">
                 {chats.length === 0 ? (
                   <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                    Dein erster Chat landet hier.
+                    {t.shell.firstChatHint}
                   </p>
                 ) : (
                   chats.map((c) => {
@@ -288,7 +292,7 @@ function Full({
               <div className="space-y-0.5">
                 {projects.length === 0 ? (
                   <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                    Noch kein Projekt angelegt.
+                    {t.shell.noProjectsHint}
                   </p>
                 ) : (
                   projects.map((p) => {
@@ -310,7 +314,7 @@ function Full({
                         <span className="min-w-0 flex-1 truncate">{p.name}</span>
                         {p.isFavorite && (
                           <Star
-                            aria-label="Angepinnt"
+                            aria-label={t.shell.pinned}
                             className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
                           />
                         )}
@@ -338,19 +342,20 @@ function Full({
 // plural "Chats"/"Projekte" (primaryNav, page titles, command palette).
 // Exported so the mobile drawer uses the exact same switcher, not a copy.
 export function TabSwitcher({ tab }: { tab: "chats" | "projects" }) {
+  const t = useT();
   return (
     <div className="mb-4 flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
       <TabPill
         href={primaryNav[0].href}
         active={tab === "chats"}
         Icon={primaryNav[0].Icon}
-        label="Chat"
+        label={t.nav.chatTab}
       />
       <TabPill
         href={primaryNav[1].href}
         active={tab === "projects"}
         Icon={primaryNav[1].Icon}
-        label="Projekt"
+        label={t.nav.projectTab}
       />
     </div>
   );
@@ -392,13 +397,14 @@ function TabPill({
 // ─── Collapsed: a quiet icon rail with the same destinations ────────────────
 
 function Rail({ pathname, ...account }: { pathname: string } & AccountProps) {
+  const t = useT();
   return (
     <>
       <div className="flex flex-1 flex-col items-center gap-1.5 px-2">
         <Link
           href="/chats/new"
-          aria-label="Neuer Chat"
-          title="Neuer Chat"
+          aria-label={t.nav.newChat}
+          title={t.nav.newChat}
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-transparent text-foreground/80 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.97]"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
@@ -415,7 +421,9 @@ function Rail({ pathname, ...account }: { pathname: string } & AccountProps) {
 }
 
 function RailLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
-  const { label, href, Icon } = nav;
+  const t = useT();
+  const { labelKey, href, Icon } = nav;
+  const label = t.nav[labelKey];
   const active = pathname === href || pathname.startsWith(href + "/");
   return (
     <Link

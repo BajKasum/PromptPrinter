@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
 import { Mascot } from "./mascot";
+import { useT } from "@/shared/i18n/provider";
 
 interface DolphinLoaderProps {
   /** Box size in px (the dolphin fills it; bubbles rise above). Default 36. */
@@ -21,13 +22,14 @@ interface DolphinLoaderProps {
  * Respects prefers-reduced-motion: renders the static mascot, no movement.
  */
 export function DolphinLoader({ size = 36, label, className }: DolphinLoaderProps) {
+  const t = useT();
   const reduceMotion = useReducedMotion();
   const bubble = Math.max(2, Math.round(size * 0.12));
 
   return (
     <span
       role="status"
-      aria-label={label ?? "Lädt…"}
+      aria-label={label ?? t.common.loading}
       className={cn("inline-flex items-center gap-2", className)}
     >
       <span className="relative inline-block shrink-0" style={{ width: size, height: size }}>

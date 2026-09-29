@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { FolderInput, FolderKanban, Loader2 } from "lucide-react";
 import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 // Lets a global chat become a project chat after the fact, when a free
 // conversation turns into real project work (REDESIGN.md, "In Projekt
@@ -24,6 +26,7 @@ export function MoveToProjectButton({
   userId: string;
   chatTitle: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -63,16 +66,16 @@ export function MoveToProjectButton({
     setMovingId(null);
     if (error) {
       toast({
-        title: "Verschieben fehlgeschlagen",
-        description: "Bitte versuch es erneut.",
+        title: t.chat.moveFailed,
+        description: t.chat.tryAgain,
         variant: "error",
       });
       return;
     }
     setOpen(false);
     toast({
-      title: "In Projekt verschoben",
-      description: `„${chatTitle}“ lebt jetzt in „${project.name}“.`,
+      title: t.chat.moved,
+      description: fmt(t.chat.movedBody, { chat: chatTitle, project: project.name }),
       variant: "success",
     });
     router.refresh();
@@ -83,7 +86,7 @@ export function MoveToProjectButton({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={`Chat „${chatTitle}“ in ein Projekt verschieben`}
+        aria-label={fmt(t.chat.moveLabel, { title: chatTitle })}
         aria-haspopup="true"
         aria-expanded={open}
         className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
@@ -94,13 +97,13 @@ export function MoveToProjectButton({
       {open && (
         <>
           <button
-            aria-label="Schliessen"
+            aria-label={t.common.close}
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
           <div className="absolute right-0 z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated">
             <div className="border-b border-border px-3.5 py-2.5 text-[12.5px] font-medium text-foreground">
-              In Projekt verschieben
+              {t.chat.moveTitle}
             </div>
             {!loaded ? (
               <div className="flex items-center justify-center py-6">
@@ -108,15 +111,15 @@ export function MoveToProjectButton({
               </div>
             ) : projects.length === 0 ? (
               <div className="px-3.5 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
-                Noch kein Projekt angelegt.{" "}
+                {t.chat.moveNoProjects}{" "}
                 <Link
                   href="/projects"
                   className="text-accent-text underline underline-offset-2 hover:text-accent-text"
                   onClick={() => setOpen(false)}
                 >
-                  Leg eins an
+                  {t.chat.moveCreateOne}
                 </Link>{" "}
-                und komm hierher zurück.
+                {t.chat.moveComeBack}
               </div>
             ) : (
               <div className="max-h-64 overflow-y-auto py-1">

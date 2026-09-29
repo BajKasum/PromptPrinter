@@ -7,6 +7,7 @@ vi.mock("@/server/llm", () => ({ analyzeComplete }));
 
 import {
   BrainAnalysisError,
+  analysisSystemPrompt,
   analyzeProjectBrain,
   buildAnalysisText,
   extractJsonObject,
@@ -199,5 +200,17 @@ describe("analyzeProjectBrain", () => {
     await expect(analyzeProjectBrain(input())).rejects.toMatchObject({
       code: "analysis_unparsable",
     });
+  });
+});
+
+describe("analysisSystemPrompt", () => {
+  it("writes in the app's language when one is given (Audit F-7)", () => {
+    const prompt = analysisSystemPrompt("English");
+    expect(prompt).toContain("Write the values in English, whatever language");
+    expect(prompt).not.toContain("{{LANGUAGE_RULE}}");
+  });
+
+  it("keeps the source-language rule without one", () => {
+    expect(analysisSystemPrompt()).toContain("Write the values in German when the project's own sources are German");
   });
 });

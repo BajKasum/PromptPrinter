@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { useT } from "@/shared/i18n/provider";
 
 // Shared accessible confirm dialog (portal, focus-on-open, Escape-to-cancel,
 // backdrop click, all gated on `busy` so a click can't interrupt the action
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [mounted, setMounted] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -94,7 +96,7 @@ export function ConfirmDialog({
 
             <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
               <Button ref={cancelRef} variant="ghost" onClick={close} disabled={busy}>
-                Abbrechen
+                {t.common.cancel}
               </Button>
               <Button variant="destructive" onClick={onConfirm} disabled={busy}>
                 {busy ? (

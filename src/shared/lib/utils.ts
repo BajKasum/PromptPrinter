@@ -5,9 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(iso: string | Date, opts?: Intl.DateTimeFormatOptions) {
+// `intlTag` seit der Sprachwahl (29.09.2026): die App gibt den Tag der
+// aktiven Sprache mit (LOCALE_TAGS in shared/i18n/locales.ts). Ohne Angabe
+// bleibt es de-CH, wie vorher.
+export function formatDate(
+  iso: string | Date,
+  opts?: Intl.DateTimeFormatOptions,
+  intlTag = "de-CH"
+) {
   const d = typeof iso === "string" ? new Date(iso) : iso;
-  return new Intl.DateTimeFormat("de-CH", {
+  return new Intl.DateTimeFormat(intlTag, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -15,17 +22,20 @@ export function formatDate(iso: string | Date, opts?: Intl.DateTimeFormatOptions
   }).format(d);
 }
 
-export function relativeTime(iso: string | Date) {
+// Intl.RelativeTimeFormat statt handgeschriebener deutscher Endungen: im
+// Deutschen (de-CH, "short") liefert es exakt die bisherigen Texte ("vor 5
+// Min.", "vor 2 Std.", "vor 1 Tag", "vor 3 Tagen"), und jede andere Sprache
+// bekommt ihre eigene Grammatik gratis mit. Nur "gerade eben" kommt vom
+// Aufrufer, Intl hat dafür nur ein steifes "jetzt".
+export function relativeTime(iso: string | Date, intlTag = "de-CH", justNow = "gerade eben") {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60) return "gerade eben";
-  if (diff < 3600) return `vor ${Math.floor(diff / 60)} Min.`;
-  if (diff < 86400) return `vor ${Math.floor(diff / 3600)} Std.`;
-  if (diff < 604800) {
-    const days = Math.floor(diff / 86400);
-    return `vor ${days} ${days === 1 ? "Tag" : "Tagen"}`;
-  }
-  return formatDate(d);
+  if (diff < 60) return justNow;
+  const rtf = new Intl.RelativeTimeFormat(intlTag, { style: "short", numeric: "always" });
+  if (diff < 3600) return rtf.format(-Math.floor(diff / 60), "minute");
+  if (diff < 86400) return rtf.format(-Math.floor(diff / 3600), "hour");
+  if (diff < 604800) return rtf.format(-Math.floor(diff / 86400), "day");
+  return formatDate(d, undefined, intlTag);
 }
 
 export function downloadFile(filename: string, content: string, mime = "text/plain") {

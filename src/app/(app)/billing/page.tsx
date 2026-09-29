@@ -4,31 +4,24 @@ import { Check, Clock } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
-import { PLANS } from "@/shared/lib/pricing";
+import { localizePlans } from "@/shared/lib/pricing";
 import { formatDate } from "@/shared/lib/utils";
 import { createClient } from "@/server/supabase/server";
 import type { PlanKey } from "@/shared/lib/plans";
 import { getConfiguredProviders } from "@/server/byok";
+import { getLocale, getT } from "@/server/i18n";
+import { fmt, rich } from "@/shared/i18n/format";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
-export const metadata = { title: "Abrechnung" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.billing };
+}
 
-/**
- * Lemon Squeezys Abo-Zustände auf Deutsch.
- *
- * Unvollständig zu sein ist hier eingeplant: kommt ein neuer Zustand dazu,
- * zeigt die Seite ihn im Original an, statt ihn zu verschweigen. Die
- * Zugangsentscheidung hängt ohnehin nicht an dieser Tabelle, sondern an
- * server/billing/lemonsqueezy.ts.
- */
-const SUBSCRIPTION_STATUS_LABEL: Record<string, string> = {
-  on_trial: "Testphase",
-  active: "Aktiv",
-  past_due: "Zahlung offen",
-  paused: "Pausiert",
-  unpaid: "Nicht bezahlt",
-  cancelled: "Gekündigt",
-  expired: "Abgelaufen",
-};
+// Lemon Squeezys Abo-Zustände stehen im Wörterbuch (t.pages.billing.status).
+// Unvollständig zu sein ist dort eingeplant: kommt ein neuer Zustand dazu,
+// zeigt die Seite ihn im Original an, statt ihn zu verschweigen. Die
+// Zugangsentscheidung hängt ohnehin nicht an dieser Tabelle, sondern an
+// server/billing/lemonsqueezy.ts.
 
 // Always reflect the latest plan, never a cached snapshot.
 export const dynamic = "force-dynamic";
@@ -43,7 +36,7 @@ export default async function BillingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, configuredProviders] = await Promise.all([
+  const [{ data: profile }, configuredProviders, t, locale] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -52,14 +45,23 @@ export default async function BillingPage() {
       .eq("id", user.id)
       .maybeSingle(),
     getConfiguredProviders(supabase, user.id),
+    getT(),
+    getLocale(),
   ]);
+  const statusLabels: Record<string, string> = t.pages.billing.status;
+  const intlTag = LOCALE_TAGS[locale].intl;
 
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
   const isAdmin = profile?.is_admin ?? false;
   const isFree = planKey === "free";
   const hasByok = configuredProviders.length > 0;
-  const apiAccessLabel = isAdmin || !isFree ? "Inklusive" : hasByok ? "Eigener Key" : "Kein Key hinterlegt";
+  const apiAccessLabel =
+    isAdmin || !isFree
+      ? t.pages.billing.apiIncluded
+      : hasByok
+        ? t.pages.billing.apiOwnKey
+        : t.pages.billing.apiNoKey;
 
   // Was der Webhook zuletzt gemeldet hat. Nur lesbar, geschrieben wird
   // ausschliesslich serverseitig (Migration 0039 vergibt kein UPDATE-Grant).
@@ -75,7 +77,7 @@ export default async function BillingPage() {
   // Wert erreicht den Browser nie.
   const activatesAutomatically = Boolean(process.env.LEMON_SQUEEZY_WEBHOOK_SECRET);
 
-  const pro = PLANS.find((p) => p.name === "Pro");
+  const pro = localizePlans(t, locale).find((p) => p.name === "Pro");
   // features[0] is "Alles aus Free", a meta-line, not something new, the
   // upgrade panel only cares about what's actually different.
   const proDelta = pro?.features.slice(1) ?? [];
@@ -86,22 +88,26 @@ export default async function BillingPage() {
         <div className="mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div>
             <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-              Abrechnung
+              {t.pages.billing.title}
             </h1>
             <p className="mt-1.5 text-[14px] text-secondary">
-              Dein Plan und dein Abo. Was du diesen Monat verbraucht hast, steht unter{" "}
-              <Link
-                href="/usage"
-                className="text-foreground underline underline-offset-2 transition-colors hover:text-accent-text"
-              >
-                Nutzung
-              </Link>
-              .
+              {rich(t.pages.billing.subtitle, {
+                usage: (
+                  <Link
+                    href="/usage"
+                    className="text-foreground underline underline-offset-2 transition-colors hover:text-accent-text"
+                  >
+                    {t.pages.billing.usageLink}
+                  </Link>
+                ),
+              })}
             </p>
           </div>
           <div className="flex items-center gap-2.5 pb-0.5">
             <PlanBadge plan={planKey} isAdmin={isAdmin} />
-            <span className="text-[12.5px] text-tertiary">API-Zugang: {apiAccessLabel}</span>
+            <span className="text-[12.5px] text-tertiary">
+              {fmt(t.pages.billing.apiAccess, { label: apiAccessLabel })}
+            </span>
           </div>
         </div>
       </FadeIn>
@@ -113,17 +119,21 @@ export default async function BillingPage() {
         <FadeIn delay={0.06}>
           <section className="mb-6 card-surface p-6 md:p-8">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-              <h2 className="text-[17px] font-semibold text-foreground">Dein Abo</h2>
+              <h2 className="text-[17px] font-semibold text-foreground">
+                {t.pages.billing.subscription}
+              </h2>
               <span className="text-[13px] text-secondary">
-                {SUBSCRIPTION_STATUS_LABEL[subscriptionStatus] ?? subscriptionStatus}
+                {statusLabels[subscriptionStatus] ?? subscriptionStatus}
               </span>
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed text-secondary">
               {isCancelled && endsAt
-                ? `Gekündigt. Pro bleibt bis zum ${formatDate(endsAt)} aktiv, danach geht es auf Free zurück.`
+                ? fmt(t.pages.billing.cancelledUntil, {
+                    date: formatDate(endsAt, undefined, intlTag),
+                  })
                 : renewsAt
-                  ? `Verlängert sich automatisch am ${formatDate(renewsAt)}.`
-                  : "Kündigen und Zahlungsmittel ändern kannst du über den Link in deiner Kaufbestätigung von Lemon Squeezy."}
+                  ? fmt(t.pages.billing.renewsOn, { date: formatDate(renewsAt, undefined, intlTag) })
+                  : t.pages.billing.manageHint}
             </p>
             {/* M-2 (Audit 06.09.2026): vorher stand hier, egal was oben
                 stand, nichts, worüber ein laufendes Abo tatsächlich
@@ -138,7 +148,7 @@ export default async function BillingPage() {
                 rel="noopener noreferrer"
                 className="mt-3 inline-flex items-center text-[13px] font-medium text-accent-text underline underline-offset-2 hover:text-accent-text/80"
               >
-                Abo verwalten
+                {t.pages.billing.manage}
               </a>
             )}
           </section>
@@ -153,7 +163,9 @@ export default async function BillingPage() {
           <section className="card-surface p-6 md:p-8">
             <div className="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
               <div className="max-w-sm">
-                <h2 className="text-[17px] font-semibold text-foreground">Mehr Spielraum mit Pro</h2>
+                <h2 className="text-[17px] font-semibold text-foreground">
+                  {t.pages.billing.upsellTitle}
+                </h2>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">
                   {pro.description}
                 </p>
@@ -161,7 +173,7 @@ export default async function BillingPage() {
                   href="/plans"
                   className="mt-2 inline-flex text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
                 >
-                  Free und Pro im Vergleich
+                  {t.pages.billing.compare}
                 </Link>
                 <div className="mt-4 flex items-baseline gap-1.5">
                   <span className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">
@@ -196,19 +208,17 @@ export default async function BillingPage() {
                 // Saetze gleichzeitig im selben Kasten. Beide haengen jetzt
                 // an derselben activatesAutomatically-Bedingung.
                 successMessage={
-                  activatesAutomatically
-                    ? "Danke! Deine Zahlung ist angekommen. Lad die Seite einmal neu, dann ist Pro aktiv."
-                    : "Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist."
+                  activatesAutomatically ? t.pages.billing.thanksAuto : t.pages.billing.thanksManual
                 }
               >
-                Pro holen, {pro.price} pro {pro.cadence}
+                {fmt(t.pages.billing.getPro, { price: pro.price, cadence: pro.cadence })}
               </LemonCheckoutButton>
               <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-relaxed text-tertiary">
                 <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
                 <span>
                   {activatesAutomatically
-                    ? "Sobald die Zahlung durch ist, schaltet sich Pro von selbst frei. Lad die Seite danach einmal neu."
-                    : "Nach der Zahlung schalte ich dein Konto von Hand auf Pro, in der Regel noch am selben Tag."}
+                    ? t.pages.billing.activatesAuto
+                    : t.pages.billing.activatesManual}
                 </span>
               </p>
             </div>

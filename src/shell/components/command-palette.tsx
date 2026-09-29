@@ -16,6 +16,8 @@ import { createClient } from "@/shared/supabase/client";
 import { plansNav, primaryNav, secondaryNav } from "@/shell/lib/nav";
 import { formatShortcut, isMacPlatform, type Shortcut } from "@/shell/lib/shortcuts";
 import { LIST_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 type Cmd = {
   id: string;
@@ -28,6 +30,7 @@ type Cmd = {
 };
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -106,24 +109,30 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const navCommands = useMemo<Cmd[]>(() => {
     const pages: Cmd[] = [...primaryNav, ...secondaryNav, plansNav].map((n) => ({
       id: n.href,
-      label: n.label,
-      group: "Seiten",
+      label: t.nav[n.labelKey],
+      group: t.palette.groupPages,
       Icon: n.Icon,
       perform: () => go(n.href),
       shortcut: n.shortcut,
     }));
     // One entry point, not two: there is only one chat (REDESIGN.md, Phase 2).
     const actions: Cmd[] = [
-      { id: "new-chat", label: "Neuer Chat", group: "Aktionen", Icon: MessageSquare, perform: () => go("/chats/new") },
+      {
+        id: "new-chat",
+        label: t.nav.newChat,
+        group: t.palette.groupActions,
+        Icon: MessageSquare,
+        perform: () => go("/chats/new"),
+      },
     ];
     return [...pages, ...actions];
-  }, [go]);
+  }, [go, t]);
 
   const results = useMemo<Cmd[]>(() => {
     const chatCommands: Cmd[] = chats.map((c) => ({
       id: `chat-${c.id}`,
       label: c.title,
-      group: "Chats",
+      group: t.palette.groupChats,
       Icon: MessageSquare,
       // A project chat lives at its workspace's own route, not /chats/[id].
       perform: () =>
@@ -132,7 +141,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     const projectCommands: Cmd[] = projects.map((p) => ({
       id: `project-${p.id}`,
       label: p.name,
-      group: "Projekte",
+      group: t.palette.groupProjects,
       Icon: FolderKanban,
       perform: () => go(`/projects/${p.id}`),
     }));
@@ -140,7 +149,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     const q = query.trim().toLowerCase();
     if (!q) return all;
     return all.filter((c) => c.label.toLowerCase().includes(q));
-  }, [navCommands, chats, projects, query, go]);
+  }, [navCommands, chats, projects, query, go, t]);
 
   // Keep the highlighted row valid as the result set shrinks/grows.
   useEffect(() => {
@@ -188,7 +197,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Suche"
+            aria-label={t.palette.dialog}
             initial={{ opacity: 0, scale: 0.98, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -8 }}
@@ -203,8 +212,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Wonach suchst du?"
-                aria-label="Suchen"
+                placeholder={t.palette.placeholder}
+                aria-label={t.palette.input}
                 className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
@@ -212,7 +221,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             <div className="max-h-[340px] overflow-y-auto p-1.5">
               {results.length === 0 ? (
                 <div className="px-3 py-8 text-center text-[13px] text-muted-foreground">
-                  Keine Treffer für „{query}“
+                  {fmt(t.palette.noResults, { query })}
                 </div>
               ) : (
                 results.map((c, i) => {
@@ -253,7 +262,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                               active ? "text-accent-text" : "text-tertiary"
                             )}
                           >
-                            {formatShortcut(c.shortcut, mac)}
+                            {formatShortcut(c.shortcut, mac, t.shell.ctrlKey)}
                           </kbd>
                         )}
                         {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-accent-text" />}
@@ -269,16 +278,16 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 <span className="flex items-center gap-1">
                   <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↑</kbd>
                   <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↓</kbd>
-                  navigieren
+                  {t.palette.navigate}
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↵</kbd>
-                  öffnen
+                  {t.palette.open}
                 </span>
               </span>
               <span className="flex items-center gap-1">
                 <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">esc</kbd>
-                schliessen
+                {t.palette.close}
               </span>
             </div>
           </motion.div>

@@ -81,8 +81,7 @@ Rules:
   than a README or a single screenshot.
 - Keep each string a single line, no markdown, no bullet characters.
 - At most 8 conventions and 12 stack entries, shortest useful phrasing.
-- Write the values in German when the project's own sources are German,
-  otherwise English. Field NAMES always stay exactly as above.
+- {{LANGUAGE_RULE}} Field NAMES always stay exactly as above.
 - Screenshots, when supplied, are evidence for "designSystem" (layout density,
   colour direction, component style) and nothing else. Do not infer a
   framework from how a UI looks.
@@ -240,9 +239,22 @@ function salvageFacts(object: Record<string, unknown>): ProjectBrainFacts | null
  * der Aufruf über den Server-Key — die Route hat davor bereits Plan-Kontingent,
  * Tagesbudget und Ratelimit geprüft, genau wie bei einem Chat-Zug.
  */
+/**
+ * Die Systemanweisung mit der Sprachregel. Mit `language` (englischer Name
+ * der App-Sprache, LOCALE_ENGLISH_NAMES) schreibt das Modell in der Sprache,
+ * in der der Nutzer die App liest; ohne bleibt die frühere Regel (Sprache der
+ * Quellen), damit ein Aufruf ohne Sprachangabe sich nicht still ändert.
+ */
+export function analysisSystemPrompt(language?: string): string {
+  const rule = language
+    ? `Write the values in ${language}, whatever language the project's own sources use.`
+    : "Write the values in German when the project's own sources are German, otherwise English.";
+  return ANALYSIS_SYSTEM_PROMPT.replace("{{LANGUAGE_RULE}}", rule);
+}
+
 export async function analyzeProjectBrain(
   input: BrainAnalysisInput,
-  options: { override?: LlmOverride; signal?: AbortSignal } = {}
+  options: { override?: LlmOverride; signal?: AbortSignal; language?: string } = {}
 ): Promise<{ facts: ProjectBrainFacts; model: string }> {
   if (input.documents.length === 0 && input.images.length === 0 && !input.repo) {
     throw new BrainAnalysisError("analysis_no_sources");
@@ -251,7 +263,7 @@ export async function analyzeProjectBrain(
   let result: { text: string; model: string };
   try {
     result = await analyzeComplete({
-      system: ANALYSIS_SYSTEM_PROMPT,
+      system: analysisSystemPrompt(options.language),
       text: buildAnalysisText(input),
       images: input.images.map((i) => ({ mediaType: i.mediaType, base64: i.base64 })),
       maxOutputTokens: ANALYSIS_MAX_OUTPUT_TOKENS,

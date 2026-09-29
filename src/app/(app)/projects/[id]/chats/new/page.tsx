@@ -6,10 +6,13 @@ import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { getT } from "@/server/i18n";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Neuer Projekt-Chat" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.newProjectChat };
+}
 
 type Params = Promise<{ id: string }>;
 
@@ -39,6 +42,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
     getSessionProfile(),
     getNeedsOwnKey(),
   ]);
+  const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
     (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
@@ -56,7 +60,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
           className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Zurück zur Übersicht
+          {t.pages.workspace.backToOverview}
         </Link>
       </FadeIn>
       <Chat

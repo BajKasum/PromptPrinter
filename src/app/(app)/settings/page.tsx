@@ -4,8 +4,11 @@ import { SettingsWorkspace } from "@/features/settings/components/settings-works
 import { createClient } from "@/server/supabase/server";
 import type { PlanKey } from "@/shared/lib/plans";
 import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
+import { getT } from "@/server/i18n";
 
-export const metadata = { title: "Einstellungen" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.settings };
+}
 
 // Always reflect the latest stored profile, never a cached snapshot.
 export const dynamic = "force-dynamic";
@@ -29,6 +32,7 @@ export default async function SettingsPage() {
       getActiveProvider(supabase, user.id),
     ]);
 
+  const t = await getT();
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
   const plan = (profile?.plan ?? "free") as PlanKey;
@@ -38,12 +42,12 @@ export default async function SettingsPage() {
     <div>
       <FadeIn>
         <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-          Einstellungen
+          {t.pages.settings.title}
         </h1>
         {/* M-18 (Audit 06.09.2026): "Standardwerte" nannte die inzwischen
             entfernte "Standard-Tools"-Karte (settings-workspace.tsx). */}
         <p className="mt-1.5 text-[14px] text-secondary mb-8">
-          Profil, Workspace und Sicherheit an einem Ort.
+          {t.pages.settings.subtitle}
         </p>
       </FadeIn>
 

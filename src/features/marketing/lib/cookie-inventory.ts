@@ -69,6 +69,18 @@ export const FIRST_PARTY_STORAGE: StorageEntry[] = [
     duration: "1 Jahr.",
   },
   {
+    // shared/i18n/locales.ts (LOCALE_COOKIE). Gesetzt von der Sprachwahl
+    // (use-change-locale.ts) und, auf einem neuen Gerät, vom I18nProvider,
+    // wenn die Sprache aus dem Profil kam.
+    name: "pp-locale",
+    kind: "Cookie",
+    setBy: "PromptPrinter",
+    purpose:
+      "Merkt sich die Sprache, die du für die App gewählt hast. Enthält nur ein Sprachkürzel wie de oder en.",
+    when: "Erst wenn du in der App eine Sprache wählst, oder beim ersten Aufruf auf einem neuen Gerät, wenn in deinem Konto schon eine gespeichert ist.",
+    duration: "1 Jahr.",
+  },
+  {
     // next-themes' Standard-storageKey, (app)/layout.tsx setzt keinen eigenen.
     name: "theme",
     kind: "Lokaler Speicher (localStorage)",

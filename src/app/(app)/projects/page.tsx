@@ -8,8 +8,12 @@ import { NewProjectButton } from "@/features/projects/components/new-project";
 import { createClient } from "@/server/supabase/server";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import type { ProjectTools } from "@/features/projects/types";
+import { getT } from "@/server/i18n";
+import { fmt } from "@/shared/i18n/format";
 
-export const metadata = { title: "Projekte" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.projects };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +59,7 @@ export default async function ProjectsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const t = await getT();
   const [{ data: rawProjects }, { data: rawSummaries }] = await Promise.all([
     // Capped + over-fetched by one (see LIST_LOAD_LIMIT): this was unbounded.
     // project_summaries stays uncapped on purpose — it returns one small
@@ -94,12 +99,8 @@ export default async function ProjectsPage() {
           every visit. */}
       <AppHeader
         mascot="delivering"
-        title="Deine Projekte"
-        subtitle={
-          items.length === 0
-            ? "Ein Projekt ist dein Arbeitsraum: Briefing, Struktur, Chats und Ergebnisse an einem Ort."
-            : undefined
-        }
+        title={t.pages.projects.title}
+        subtitle={items.length === 0 ? t.pages.projects.emptySubtitle : undefined}
         action={items.length > 0 ? <NewProjectButton /> : undefined}
       />
 
@@ -107,7 +108,9 @@ export default async function ProjectsPage() {
         <FadeIn>
           <div className="dash-continue relative overflow-hidden rounded-2xl border border-border p-8 md:p-10 text-center shadow-card">
             <AnimatedMascot state="building" size={92} priority className="mx-auto mb-4" />
-            <p className="text-[15px] font-semibold text-foreground">Noch kein Projekt angelegt</p>
+            <p className="text-[15px] font-semibold text-foreground">
+              {t.pages.projects.emptyTitle}
+            </p>
             {/* M-14 (Audit 06.09.2026): stand vorher "...heb dir das Ergebnis
                 als Projekt auf" — ein Chat erzeugt kein Projekt, das gab es
                 seit der Handoff-Entfernung (16.07.2026) nicht mehr. Was
@@ -115,9 +118,7 @@ export default async function ProjectsPage() {
                 move-to-project.tsx in ein (dann schon existierendes) Projekt
                 verschieben. */}
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
-              Leg direkt eins an, ein Name genügt, Briefing und Struktur wachsen
-              im Workspace. Oder beschreib deine Idee zuerst im Chat — gefällt
-              sie dir, verschiebst du den Chat später in ein Projekt.
+              {t.pages.projects.emptyBody}
             </p>
             <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
               <NewProjectButton />
@@ -125,7 +126,7 @@ export default async function ProjectsPage() {
                 href="/chats/new"
                 className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
               >
-                oder starte im Chat →
+                {t.pages.projects.orChat}
               </Link>
             </div>
           </div>
@@ -137,8 +138,7 @@ export default async function ProjectsPage() {
               list would make its "nothing found" quietly wrong. Say it. */}
           {hasMore && (
             <p className="mt-4 text-center text-[12.5px] text-tertiary">
-              Die zuletzt bearbeiteten {LIST_LOAD_LIMIT} Projekte. Ältere sind
-              über die Suche (⌘K) erreichbar.
+              {fmt(t.pages.projects.truncated, { count: LIST_LOAD_LIMIT })}
             </p>
           )}
         </FadeIn>

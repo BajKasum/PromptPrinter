@@ -101,6 +101,14 @@ export type Transcript = {
  * growing best guess for the current utterance, then replaces it with a final
  * result once the phrase settles.
  */
+/** Warum die Erkennung nicht läuft, als Code; den Text wählt VoiceBar (t.voice.errors). */
+export type SpeechError =
+  | "sttNotAllowed"
+  | "sttBrave"
+  | "sttUnavailable"
+  | "sttAborted"
+  | "sttStartFailed";
+
 export function useSpeechRecognition({
   active,
   lang = "de-DE",
@@ -110,10 +118,10 @@ export function useSpeechRecognition({
   lang?: string;
   /** Fires once per phrase the engine commits, for callers that want to react as it goes. */
   onFinalPhrase?: (text: string) => void;
-}): Transcript & { supported: boolean; error: string | null; reset: () => void } {
+}): Transcript & { supported: boolean; error: SpeechError | null; reset: () => void } {
   const [final, setFinal] = useState("");
   const [interim, setInterim] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SpeechError | null>(null);
   const supported = useRef(speechRecognitionSupported()).current;
 
   // Held in a ref so changing the callback doesn't tear down and restart the
@@ -172,17 +180,13 @@ export function useSpeechRecognition({
       // thinks for two seconds is worse than showing nothing.
       if (event.error === "no-speech" || event.error === "aborted") return;
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        setError("Ich darf nicht mithören. Erlaub den Mikrofonzugriff in der Adresszeile.");
+        setError("sttNotAllowed");
       } else if (event.error === "network") {
         void isBrave().then((brave) => {
-          setError(
-            brave
-              ? "Brave blockiert Googles Spracherkennungsdienst grundsätzlich. Nutz Chrome, Edge oder Safari, oder tipp einfach."
-              : "Die Spracherkennung ist gerade nicht erreichbar. Tipp solange einfach."
-          );
+          setError(brave ? "sttBrave" : "sttUnavailable");
         });
       } else {
-        setError("Die Spracherkennung hat abgebrochen.");
+        setError("sttAborted");
       }
     };
 
@@ -201,7 +205,7 @@ export function useSpeechRecognition({
     try {
       recognition.start();
     } catch {
-      setError("Die Spracherkennung liess sich nicht starten.");
+      setError("sttStartFailed");
     }
 
     return () => {

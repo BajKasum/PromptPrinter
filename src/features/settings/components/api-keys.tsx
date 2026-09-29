@@ -14,6 +14,8 @@ import {
   type NamedByokProvider,
 } from "@/shared/lib/byok-detect";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 type AnyProvider = NamedByokProvider | "custom";
 
@@ -40,6 +42,7 @@ export function ApiKeys({
   active: AnyProvider | null;
   customProvider: CustomProviderMeta | null;
 }) {
+  const t = useT();
   const [customFormOpen, setCustomFormOpen] = useState(false);
   const namedConfigured = configured.filter(
     (p): p is NamedByokProvider => p !== "custom"
@@ -77,7 +80,7 @@ export function ApiKeys({
             onClick={() => setCustomFormOpen(true)}
             className="text-[12px] text-tertiary underline-offset-2 transition-colors hover:text-foreground hover:underline"
           >
-            Anderer Anbieter? Eigenen Endpoint verbinden
+            {t.settings.keys.otherProvider}
           </button>
         ))}
     </div>
@@ -93,6 +96,7 @@ function PrimaryKeyField({
   configured: NamedByokProvider[];
   onUnrecognized: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [key, setKey] = useState("");
@@ -117,16 +121,16 @@ function PrimaryKeyField({
       const json = await res.json();
       if (!res.ok) {
         if (json.kind === "unknownProvider") onUnrecognized();
-        throw new Error(json.detail ?? "Key konnte nicht gespeichert werden.");
+        throw new Error(json.detail ?? t.settings.keys.saveFailed);
       }
-      const name = detected ? NAMED_PROVIDER_META[detected].name : "Key";
-      toast({ title: `${name} verbunden`, variant: "success" });
+      const name = detected ? NAMED_PROVIDER_META[detected].name : t.settings.keys.fallbackName;
+      toast({ title: fmt(t.settings.keys.connected, { name }), variant: "success" });
       setKey("");
       router.refresh();
     } catch (err) {
       toast({
-        title: "Konnte nicht gespeichert werden",
-        description: err instanceof Error ? err.message : "Unbekannter Fehler.",
+        title: t.settings.saveFailed,
+        description: err instanceof Error ? err.message : t.common.unknownError,
         variant: "error",
       });
     } finally {
@@ -145,30 +149,30 @@ function PrimaryKeyField({
             onKeyDown={(e) => {
               if (e.key === "Enter") void save();
             }}
-            placeholder="API-Key einfügen (Anthropic, OpenAI oder Gemini)"
-            aria-label="Eigener API-Key"
+            placeholder={t.settings.keys.placeholder}
+            aria-label={t.settings.keys.label}
             autoComplete="off"
             className="pr-9"
           />
           <button
             type="button"
             onClick={() => setShowKey((v) => !v)}
-            aria-label={showKey ? "Key verbergen" : "Key anzeigen"}
+            aria-label={showKey ? t.settings.keys.hide : t.settings.keys.show}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary transition-colors hover:text-foreground/70"
           >
             {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </button>
         </div>
         <Button size="sm" onClick={() => void save()} disabled={busy || !key.trim()}>
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Key hinzufügen"}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t.settings.keys.add}
         </Button>
       </div>
       {detected && (
         <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-tertiary">
           <ToolLogo name={NAMED_PROVIDER_META[detected].logo} size={13} />
           <span>
-            Erkannt: {NAMED_PROVIDER_META[detected].name}
-            {willReplace && " — ersetzt deinen bestehenden Key dafür"}
+            {fmt(t.settings.keys.detected, { name: NAMED_PROVIDER_META[detected].name })}
+            {willReplace && t.settings.keys.replaces}
           </span>
         </div>
       )}
@@ -186,6 +190,7 @@ function ConnectedProviderRow({
   isActive: boolean;
   canActivate: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -205,14 +210,14 @@ function ConnectedProviderRow({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.detail ?? "Key konnte nicht aktiviert werden.");
+        throw new Error(json.detail ?? t.settings.keys.activateFailed);
       }
-      toast({ title: `${meta.name} ist jetzt aktiv`, variant: "success" });
+      toast({ title: fmt(t.settings.keys.activated, { name: meta.name }), variant: "success" });
       router.refresh();
     } catch (err) {
       toast({
-        title: "Konnte nicht aktiviert werden",
-        description: err instanceof Error ? err.message : "Unbekannter Fehler.",
+        title: t.settings.keys.activateFailedTitle,
+        description: err instanceof Error ? err.message : t.common.unknownError,
         variant: "error",
       });
     } finally {
@@ -229,14 +234,14 @@ function ConnectedProviderRow({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.detail ?? "Key konnte nicht entfernt werden.");
+        throw new Error(json.detail ?? t.settings.keys.removeFailed);
       }
-      toast({ title: `${meta.name} entfernt`, variant: "success" });
+      toast({ title: fmt(t.settings.keys.removed, { name: meta.name }), variant: "success" });
       router.refresh();
     } catch (err) {
       toast({
-        title: "Konnte nicht entfernt werden",
-        description: err instanceof Error ? err.message : "Unbekannter Fehler.",
+        title: t.settings.keys.removeFailedTitle,
+        description: err instanceof Error ? err.message : t.common.unknownError,
         variant: "error",
       });
     } finally {
@@ -260,7 +265,7 @@ function ConnectedProviderRow({
         {isActive ? (
           <span className="flex items-center gap-1 text-[11px] font-medium text-success">
             <Check className="h-3 w-3" />
-            Aktiv
+            {t.settings.keys.active}
           </span>
         ) : canActivate ? (
           <Button
@@ -270,10 +275,12 @@ function ConnectedProviderRow({
             onClick={() => void activate()}
             disabled={busy}
           >
-            Aktivieren
+            {t.settings.keys.activate}
           </Button>
         ) : (
-          <span className="text-[11px] font-medium text-tertiary">Verbunden</span>
+          <span className="text-[11px] font-medium text-tertiary">
+            {t.settings.keys.connectedState}
+          </span>
         )}
         <Button
           variant="ghost"
@@ -281,7 +288,7 @@ function ConnectedProviderRow({
           className="h-7 w-7 text-tertiary hover:text-destructive"
           onClick={() => void remove()}
           disabled={busy}
-          aria-label={`${meta.name}-Key entfernen`}
+          aria-label={fmt(t.settings.keys.removeLabel, { name: meta.name })}
           data-testid={`remove-${provider}`}
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -293,6 +300,7 @@ function ConnectedProviderRow({
 
 /** The connected state of the generic "custom" endpoint slot. */
 function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -304,14 +312,14 @@ function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
       const res = await fetch("/api/settings/api-key?provider=custom", { method: "DELETE" });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.detail ?? "Key konnte nicht entfernt werden.");
+        throw new Error(json.detail ?? t.settings.keys.removeFailed);
       }
-      toast({ title: "Entfernt", variant: "success" });
+      toast({ title: t.settings.keys.removedPlain, variant: "success" });
       router.refresh();
     } catch (err) {
       toast({
-        title: "Konnte nicht entfernt werden",
-        description: err instanceof Error ? err.message : "Unbekannter Fehler.",
+        title: t.settings.keys.removeFailedTitle,
+        description: err instanceof Error ? err.message : t.common.unknownError,
         variant: "error",
       });
     } finally {
@@ -331,7 +339,7 @@ function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
       <div className="flex shrink-0 items-center gap-2">
         <span className="flex items-center gap-1 text-[11px] font-medium text-success">
           <Check className="h-3 w-3" />
-          Verbunden
+          {t.settings.keys.connectedState}
         </span>
         <Button
           variant="ghost"
@@ -339,7 +347,7 @@ function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
           className="h-7 w-7 text-tertiary hover:text-destructive"
           onClick={() => void remove()}
           disabled={busy}
-          aria-label="Custom-Key entfernen"
+          aria-label={t.settings.keys.removeCustomLabel}
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
         </Button>
@@ -356,6 +364,7 @@ function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
  * display), the endpoint URL, and the model id alongside the key.
  */
 function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [label, setLabel] = useState("");
@@ -395,15 +404,15 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.detail ?? "Key konnte nicht gespeichert werden.");
-      toast({ title: `${label.trim()} verbunden`, variant: "success" });
+      if (!res.ok) throw new Error(json.detail ?? t.settings.keys.saveFailed);
+      toast({ title: fmt(t.settings.keys.connected, { name: label.trim() }), variant: "success" });
       reset();
       onCancel();
       router.refresh();
     } catch (err) {
       toast({
-        title: "Konnte nicht gespeichert werden",
-        description: err instanceof Error ? err.message : "Unbekannter Fehler.",
+        title: t.settings.saveFailed,
+        description: err instanceof Error ? err.message : t.common.unknownError,
         variant: "error",
       });
     } finally {
@@ -418,10 +427,10 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
           <Plug className="h-4 w-4 text-tertiary" strokeWidth={1.8} />
         </span>
         <div className="min-w-0 flex-1 leading-tight">
-          <div className="truncate text-[13px] font-medium text-foreground">Anderer Anbieter</div>
-          <div className="truncate text-[11px] text-tertiary">
-            Jeder OpenAI-kompatible Endpoint, z. B. Z.ai
+          <div className="truncate text-[13px] font-medium text-foreground">
+            {t.settings.keys.otherTitle}
           </div>
+          <div className="truncate text-[11px] text-tertiary">{t.settings.keys.otherHint}</div>
         </div>
       </div>
 
@@ -430,24 +439,24 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="Name (z. B. Z.ai)"
-            aria-label="Name des Anbieters"
+            placeholder={t.settings.keys.namePlaceholder}
+            aria-label={t.settings.keys.nameLabel}
             autoComplete="off"
             autoFocus
           />
           <Input
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="Modell (z. B. glm-4.6)"
-            aria-label="Modell"
+            placeholder={t.settings.keys.modelPlaceholder}
+            aria-label={t.settings.keys.modelLabel}
             autoComplete="off"
           />
         </div>
         <Input
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
-          placeholder="API-Endpoint (z. B. https://api.z.ai/api/paas/v4/chat/completions)"
-          aria-label="API-Endpoint"
+          placeholder={t.settings.keys.endpointPlaceholder}
+          aria-label={t.settings.keys.endpointLabel}
           autoComplete="off"
         />
         <div className="flex items-center gap-2">
@@ -460,25 +469,25 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
                 if (e.key === "Enter") void save();
                 if (e.key === "Escape") cancel();
               }}
-              placeholder="API-Key"
-              aria-label="API-Key"
+              placeholder={t.settings.keys.keyPlaceholder}
+              aria-label={t.settings.keys.keyPlaceholder}
               autoComplete="off"
               className="pr-9"
             />
             <button
               type="button"
               onClick={() => setShowKey((v) => !v)}
-              aria-label={showKey ? "Key verbergen" : "Key anzeigen"}
+              aria-label={showKey ? t.settings.keys.hide : t.settings.keys.show}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary transition-colors hover:text-foreground/70"
             >
               {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
           </div>
           <Button size="sm" onClick={() => void save()} disabled={busy || !canSave}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Speichern"}
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t.common.save}
           </Button>
           <Button variant="ghost" size="sm" onClick={cancel} disabled={busy}>
-            Abbrechen
+            {t.common.cancel}
           </Button>
         </div>
       </div>

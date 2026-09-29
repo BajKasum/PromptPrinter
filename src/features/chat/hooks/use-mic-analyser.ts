@@ -7,11 +7,17 @@ import { readBands, speechBands } from "@/features/chat/lib/voice-engine";
 
 export type MicStatus = "idle" | "starting" | "running" | "denied" | "unsupported" | "failed";
 
+/**
+ * Warum das Mikrofon nicht läuft, als Code statt als Satz: den Text wählt
+ * VoiceBar aus dem Wörterbuch der aktiven Sprache (t.voice.errors).
+ */
+export type MicError = "micUnsupported" | "micDenied" | "micNotFound" | "micFailed";
+
 /** What the caller gets back; `readHalf` is safe to call every frame. */
 export type MicAnalyser = {
   status: MicStatus;
   /** Human-readable reason when status is denied/unsupported/failed. */
-  error: string | null;
+  error: MicError | null;
   /**
    * Fills `out` with one 0..1 level per half-bar for the current audio frame.
    * Returns false when nothing is running, so the caller can fall back to a
@@ -34,7 +40,7 @@ export type MicAnalyser = {
  */
 export function useMicAnalyser(active: boolean): MicAnalyser {
   const [status, setStatus] = useState<MicStatus>("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<MicError | null>(null);
 
   const analyserRef = useRef<AnalyserNode | null>(null);
   const freqRef = useRef<Uint8Array | null>(null);
@@ -54,7 +60,7 @@ export function useMicAnalyser(active: boolean): MicAnalyser {
     async function start() {
       if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
         setStatus("unsupported");
-        setError("Dieser Browser gibt keinen Zugriff auf das Mikrofon.");
+        setError("micUnsupported");
         return;
       }
       setStatus("starting");
@@ -112,15 +118,13 @@ export function useMicAnalyser(active: boolean): MicAnalyser {
         const name = e instanceof DOMException ? e.name : "";
         if (name === "NotAllowedError" || name === "SecurityError") {
           setStatus("denied");
-          setError(
-            "Ich brauche Zugriff auf dein Mikrofon. Erlaub ihn in der Adresszeile und versuch es nochmal."
-          );
+          setError("micDenied");
         } else if (name === "NotFoundError" || name === "OverconstrainedError") {
           setStatus("failed");
-          setError("Ich finde kein Mikrofon an diesem Gerät.");
+          setError("micNotFound");
         } else {
           setStatus("failed");
-          setError("Das Mikrofon liess sich nicht öffnen.");
+          setError("micFailed");
         }
       }
     }

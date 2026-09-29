@@ -4,6 +4,7 @@ import { Mascot } from "@/shared/brand/mascot";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
+import { useT } from "@/shared/i18n/provider";
 
 // The current result, first-class: a document-like panel (not a chat bubble)
 // that carries the newest assistant reply. Reading is calm and full-width,
@@ -25,12 +26,13 @@ export function ChatResultPanel({
   /** Prompt text of every result already saved (project-scoped, or every one of this user's for a global chat). */
   savedPrompts?: string[];
 }) {
+  const t = useT();
   const savablePrompt = extractPrompt(content);
   const alreadySaved = savablePrompt ? (savedPrompts?.includes(savablePrompt) ?? false) : false;
 
   return (
     <section
-      aria-label="Aktuelles Ergebnis"
+      aria-label={t.chat.resultLabel}
       className="overflow-hidden rounded-2xl border border-border-strong bg-surface-raised"
     >
       <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 md:px-7">
@@ -38,7 +40,7 @@ export function ChatResultPanel({
           {/* Finn's delivering pose, static, a quiet badge, not a performing
               character: this sits on screen for as long as you're reading. */}
           <Mascot state="delivering" size={22} className="shrink-0" />
-          <span className="text-[13px] font-medium text-foreground/75">Dein Ergebnis</span>
+          <span className="text-[13px] font-medium text-foreground/75">{t.chat.resultTitle}</span>
         </div>
         {savablePrompt && (
           <SavePromptButton

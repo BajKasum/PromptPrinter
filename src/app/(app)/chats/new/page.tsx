@@ -5,10 +5,13 @@ import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { getT } from "@/server/i18n";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Neuer Chat" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.newChat };
+}
 
 // The one way a chat starts (REDESIGN.md, Phase 2), and the login landing.
 // No mode choice, no page-level headline: Finn's empty state inside the chat

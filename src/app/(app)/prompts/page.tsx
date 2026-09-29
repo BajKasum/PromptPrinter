@@ -8,10 +8,14 @@ import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list
 import { createClient } from "@/server/supabase/server";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
+import { getLocale, getT } from "@/server/i18n";
+import { fmt, plural } from "@/shared/i18n/format";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Gespeicherte Prompts" };
+export async function generateMetadata() {
+  return { title: (await getT()).meta.savedPrompts };
+}
 
 type GenerationRow = {
   id: string;
@@ -57,7 +61,8 @@ export default async function SavedPromptsPage() {
     (rowsRaw as GenerationRow[] | null) ?? [],
     SAVED_PROMPTS_LOAD_LIMIT
   );
-  const prompts = mapGenerationRowsToSavedPrompts(rows);
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const prompts = mapGenerationRowsToSavedPrompts(rows, t.prompts.fallbackTitle);
 
   if (prompts.length === 0) {
     return (
@@ -65,26 +70,22 @@ export default async function SavedPromptsPage() {
         <FadeIn>
           <div className="mb-8">
             <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-              Gespeicherte Prompts
+              {t.pages.savedPrompts.title}
             </h1>
-            <p className="mt-1.5 text-[14px] text-secondary">
-              Jeder Prompt, den du aus einem Chat gesichert hast, an einem Ort.
-            </p>
+            <p className="mt-1.5 text-[14px] text-secondary">{t.pages.savedPrompts.subtitle}</p>
           </div>
           <div className="card-surface p-8 text-center">
             <AnimatedMascot state="waiting" size={72} priority className="mx-auto mb-3" />
             <p className="text-[14px] font-semibold text-foreground">
-              Noch keine Prompts gespeichert
+              {t.pages.results.noneTitle}
             </p>
             <p className="mx-auto mt-1 mb-5 max-w-sm text-[12.5px] leading-relaxed text-muted-foreground">
-              Wenn Finn dir im Chat einen Prompt schreibt, sicherst du ihn mit
-              „Speichern“ hierher. Den Namen nehme ich aus dem Prompt selbst,
-              ändern kannst du ihn jederzeit.
+              {t.pages.savedPrompts.noneBody}
             </p>
             <Button asChild size="sm">
               <Link href="/chats/new">
                 <MessageSquare className="h-4 w-4" />
-                Ersten Chat starten
+                {t.pages.results.startFirst}
               </Link>
             </Button>
           </div>
@@ -98,7 +99,7 @@ export default async function SavedPromptsPage() {
       <FadeIn>
         <div className="mb-8">
           <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
-            Gespeicherte Prompts
+            {t.pages.savedPrompts.title}
           </h1>
           {/* M-17 (Audit 06.09.2026): stand vorher immer als exakte
               Gesamtzahl da, auch wenn der Cap griff — "die neuesten N"
@@ -106,8 +107,8 @@ export default async function SavedPromptsPage() {
               die es so nicht gibt. */}
           <p className="mt-1.5 text-[14px] text-secondary">
             {hasMore
-              ? `Die neuesten ${SAVED_PROMPTS_LOAD_LIMIT} gespeicherten Prompts`
-              : `${prompts.length} ${prompts.length === 1 ? "gespeicherter Prompt" : "gespeicherte Prompts"}`}
+              ? fmt(t.pages.results.newest, { count: SAVED_PROMPTS_LOAD_LIMIT })
+              : plural(t.pages.results.count, prompts.length, locale)}
           </p>
         </div>
       </FadeIn>

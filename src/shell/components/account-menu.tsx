@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ChevronDown, Info, LogOut, Loader2 } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, Globe, Info, LogOut, Loader2 } from "lucide-react";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import { learnMoreLinks, plansNav, secondaryNav } from "@/shell/lib/nav";
 import { ariaShortcut, formatShortcut, isMacPlatform } from "@/shell/lib/shortcuts";
@@ -11,6 +11,9 @@ import { AccountSubmenu, SUBMENU_ROW } from "@/shell/components/account-submenu"
 import type { PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { LOCALES, LOCALE_NAMES } from "@/shared/i18n/locales";
+import { useChangeLocale } from "@/shared/i18n/use-change-locale";
 
 // ─── Account menu: identity + Konto-Ziele + Angebote + Abmelden ────────────
 // Lives at the bottom of the sidebar in both states (was previously a
@@ -40,7 +43,7 @@ const VIEWPORT_GUTTER = 8;
 const MENU_ROW =
   "flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground";
 
-type Submenu = "learn-more" | null;
+type Submenu = "language" | "learn-more" | null;
 
 export function AccountMenu({
   collapsed,
@@ -49,6 +52,9 @@ export function AccountMenu({
   isAdmin,
   displayName,
 }: { collapsed: boolean } & AccountProps) {
+  const t = useT();
+  const locale = useLocale();
+  const { change: changeLocale, pending: localePending } = useChangeLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submenu, setSubmenu] = useState<Submenu>(null);
@@ -96,7 +102,7 @@ export function AccountMenu({
     return () => window.removeEventListener("resize", measure);
   }, [open, collapsed]);
 
-  const label = displayName || email.split("@")[0] || "Konto";
+  const label = displayName || email.split("@")[0] || t.shell.fallbackName;
   const initial = (label[0] ?? "?").toUpperCase();
   // `plan` arrives as a raw DB string (Sidebar's own prop stays loosely typed),
   // narrow it the same way billing/settings already do before it reaches the
@@ -142,7 +148,7 @@ export function AccountMenu({
         ref={triggerRef}
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
-        aria-label="Kontomenü"
+        aria-label={t.shell.accountMenu}
         aria-haspopup="true"
         aria-expanded={open}
         className={cn(
@@ -166,7 +172,7 @@ export function AccountMenu({
         <>
           {/* click-away backdrop */}
           <button
-            aria-label="Menü schliessen"
+            aria-label={t.shell.closeMenu}
             className="fixed inset-0 z-40 cursor-default"
             onClick={close}
           />
@@ -197,7 +203,7 @@ export function AccountMenu({
               </div>
             </div>
             <div className="p-1.5">
-              {secondaryNav.map(({ label: navLabel, href, Icon, shortcut }) => (
+              {secondaryNav.map(({ labelKey, href, Icon, shortcut }) => (
                 <Link
                   key={href}
                   href={href}
@@ -207,7 +213,7 @@ export function AccountMenu({
                   className={MENU_ROW}
                 >
                   <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-                  <span className="min-w-0 flex-1 truncate">{navLabel}</span>
+                  <span className="min-w-0 flex-1 truncate">{t.nav[labelKey]}</span>
                   {/* Nur ein Hinweis fürs Auge, Screenreader bekommen das
                       Kürzel über aria-keyshortcuts am Link selbst. Das Menü
                       rendert erst nach einem Klick, also immer im Browser:
@@ -218,13 +224,43 @@ export function AccountMenu({
                       aria-hidden
                       className="shrink-0 font-sans text-[11.5px] tabular-nums tracking-wide text-tertiary"
                     >
-                      {formatShortcut(shortcut, mac)}
+                      {formatShortcut(shortcut, mac, t.shell.ctrlKey)}
                     </kbd>
                   )}
                 </Link>
               ))}
             </div>
             <div className="border-t border-border p-1.5">
+              {/* Sprache (29.09.2026). Jede Sprache steht in ihrem eigenen
+                  Namen, damit man seine findet, auch wenn man die aktuelle
+                  nicht lesen kann. Die Wahl bleibt im Menü sichtbar
+                  (Häkchen), das Menü schliesst sich deshalb nicht. */}
+              <AccountSubmenu
+                id="account-language"
+                label={t.nav.language}
+                Icon={Globe}
+                hint={LOCALE_NAMES[locale]}
+                open={submenu === "language"}
+                onOpenChange={(next) => setSubmenu(next ? "language" : null)}
+              >
+                {LOCALES.map((code) => {
+                  const active = code === locale;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      lang={code}
+                      aria-pressed={active}
+                      disabled={localePending}
+                      onClick={() => !active && void changeLocale(code)}
+                      className={cn(SUBMENU_ROW, active && "text-foreground")}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{LOCALE_NAMES[code]}</span>
+                      {active && <Check aria-hidden className="h-3.5 w-3.5 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </AccountSubmenu>
               <Link
                 href={plansNav.href}
                 onClick={close}
@@ -232,11 +268,11 @@ export function AccountMenu({
                 className={MENU_ROW}
               >
                 <plansNav.Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-                <span className="min-w-0 flex-1 truncate">{plansNav.label}</span>
+                <span className="min-w-0 flex-1 truncate">{t.nav[plansNav.labelKey]}</span>
               </Link>
               <AccountSubmenu
                 id="account-learn-more"
-                label="Mehr erfahren"
+                label={t.nav.learnMore}
                 Icon={Info}
                 open={submenu === "learn-more"}
                 onOpenChange={(next) => setSubmenu(next ? "learn-more" : null)}
@@ -254,9 +290,9 @@ export function AccountMenu({
                     onClick={close}
                     className={SUBMENU_ROW}
                   >
-                    <span className="min-w-0 flex-1 truncate">{l.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{t.nav[l.labelKey]}</span>
                     <ArrowUpRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-tertiary" />
-                    <span className="sr-only">(öffnet in neuem Tab)</span>
+                    <span className="sr-only">{t.common.opensInNewTab}</span>
                   </a>
                 ))}
               </AccountSubmenu>
@@ -273,7 +309,7 @@ export function AccountMenu({
                 ) : (
                   <LogOut className="h-4 w-4" strokeWidth={1.8} />
                 )}
-                Abmelden
+                {t.nav.signOut}
               </button>
             </div>
           </div>

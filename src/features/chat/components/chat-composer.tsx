@@ -6,6 +6,8 @@ import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/input";
 import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import { useVisualViewportInset } from "@/features/chat/hooks/use-visual-viewport-inset";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 // Caps how tall the composer can grow before it scrolls internally instead,
 // matches the Claude/ChatGPT feel: starts at one line, grows with content,
@@ -34,6 +36,7 @@ export function ChatComposer({
   /** Opens voice mode. Omitted where there's no chat to talk to. */
   onVoice?: () => void;
 }) {
+  const t = useT();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // QA finding K-1: keeps the sticky composer pinned above an on-screen
   // keyboard on iOS Safari instead of floating mid-screen or hiding behind
@@ -69,7 +72,7 @@ export function ChatComposer({
           rows={1}
           value={input}
           placeholder={placeholder}
-          aria-label="Nachricht an Finn"
+          aria-label={t.chat.composerLabel}
           maxLength={MAX_USER_MESSAGE_CHARS}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => {
@@ -92,7 +95,9 @@ export function ChatComposer({
                 : "pointer-events-none absolute bottom-3 right-24 text-[11px] tabular-nums text-muted-foreground"
             }
           >
-            {remaining === 0 ? "Maximale Länge erreicht" : `noch ${remaining} Zeichen`}
+            {remaining === 0
+              ? t.chat.maxLengthReached
+              : fmt(t.chat.charsLeft, { count: remaining })}
           </span>
         )}
         {/* Voice mode. Sits beside the send button rather than replacing it:
@@ -104,8 +109,8 @@ export function ChatComposer({
             onClick={onVoice}
             size="icon"
             variant="subtle"
-            aria-label="Sprachmodus öffnen"
-            title="Sprachmodus"
+            aria-label={t.chat.openVoice}
+            title={t.chat.voiceTitle}
             className="absolute bottom-2 right-12 h-9 w-9 shrink-0 rounded-full"
           >
             <AudioLines className="h-4 w-4" strokeWidth={1.8} />
@@ -116,7 +121,7 @@ export function ChatComposer({
             onClick={onStop}
             size="icon"
             variant="subtle"
-            aria-label="Generierung stoppen"
+            aria-label={t.chat.stop}
             className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
           >
             <Square className="h-3.5 w-3.5 fill-current" />
@@ -126,7 +131,7 @@ export function ChatComposer({
             onClick={onSend}
             disabled={!input.trim()}
             size="icon"
-            aria-label="Senden"
+            aria-label={t.chat.send}
             className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
           >
             <Send className="h-4 w-4" />
@@ -141,7 +146,7 @@ export function ChatComposer({
           Nachricht, und ist bewusst keine "Enter sendet"-Chrome (siehe oben):
           er ist eine Pflichtangabe (Rechts-Audit 28.09.2026). */}
       <p className="mt-2 text-center text-[11.5px] leading-snug text-tertiary">
-        Finn ist eine KI und kann Fehler machen. Prüf wichtige Angaben selbst.
+        {t.chat.aiDisclosure}
       </p>
     </div>
   );

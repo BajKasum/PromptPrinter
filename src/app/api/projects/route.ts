@@ -10,6 +10,8 @@ import {
   RequestBodyTooLargeError,
   readJsonBody,
 } from "@/server/http/request-body";
+import { requestT } from "@/server/i18n";
+import { fmt } from "@/shared/i18n/format";
 
 export const runtime = "nodejs";
 
@@ -23,6 +25,8 @@ const createProjectSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
+  const m = requestT(req).t.api;
   // Session first, body second (Security-Audit finding H-3): parsing before
   // authenticating let an unauthenticated caller make the server read and parse
   // an unbounded payload just to be told 401. readJsonBody caps the read too.
@@ -30,14 +34,14 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, "Anmeldung erforderlich.");
+  if (!user) return problem(401, m.signInRequired);
 
   let body: unknown;
   try {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
   } catch (err) {
     if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, "Die Anfrage ist zu gross.");
+      return problem(413, m.tooLarge);
     }
     return problem(400, "Invalid JSON body");
   }
@@ -68,7 +72,7 @@ export async function POST(req: Request) {
   if ((projectCount ?? 0) >= limits.projects) {
     return problem(
       403,
-      `Projekt-Limit erreicht, dein Plan (${plan}) erlaubt ${limits.projects} Projekte. Upgrade für mehr.`,
+      fmt(m.projectLimit, { plan, limit: limits.projects }),
       { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
     );
   }
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
       windowMs: 60 * 60 * 1000,
     });
     if (!rl.allowed) {
-      return problem(429, "Zu viele Anfragen, bitte warte kurz und versuch es erneut.", {
+      return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
       });
     }
@@ -100,7 +104,7 @@ export async function POST(req: Request) {
     captureError("projects.create_failed", error ?? new Error("insert returned no id"), {
       userId: user.id,
     });
-    return problem(500, "Projekt konnte nicht angelegt werden. Bitte versuch es erneut.");
+    return problem(500, m.projectCreateFailed);
   }
 
   return NextResponse.json({ projectId: project.id as string });

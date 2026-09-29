@@ -16,6 +16,8 @@ import {
   type ProjectFile,
 } from "@/features/projects/lib/project-files";
 import { formatBytes, randomId } from "@/shared/lib/utils";
+import { useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
 
 // Workspace-Dateien (REDESIGN.md, Phase 4): kleine Text-Kontextdateien, die
 // buildProjectContext direkt in jeden Projekt-Chat injiziert. Bewusst eng,
@@ -32,6 +34,7 @@ export function ProjectFiles({
   userId: string;
   initialFiles: ProjectFile[];
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,18 +58,18 @@ export function ProjectFiles({
 
     setError(null);
     if (atLimit) {
-      setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
+      setError(fmt(t.projects.filesMax, { max: MAX_FILES_PER_PROJECT }));
       return;
     }
     if (!hasAllowedExtension(file.name)) {
-      setError("Dieses Format kann ich nicht lesen.");
+      setError(t.projects.fileUnsupported);
       return;
     }
     // Pro Art, nicht pro Datei: ein Lockfile darf gross sein, ein Screenshot
     // noch groesser, eine Konfigurationsdatei nicht (maxBytesFor).
     const maxBytes = maxBytesFor(file.name);
     if (file.size > maxBytes) {
-      setError(`Diese Datei ist zu gross, höchstens ${formatBytes(maxBytes)}.`);
+      setError(fmt(t.projects.fileTooLarge, { size: formatBytes(maxBytes) }));
       return;
     }
     // Die Summe ist die eigentliche Schranke, seit Einzeldateien 2 MB gross
@@ -74,7 +77,7 @@ export function ProjectFiles({
     // 0038's Trigger haelt sie tatsaechlich (zwei Tabs zaehlen unabhaengig).
     const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
     if (usedBytes + file.size > MAX_PROJECT_FILE_BYTES) {
-      setError(`Speicherlimit des Projekts erreicht (${formatBytes(MAX_PROJECT_FILE_BYTES)}).`);
+      setError(fmt(t.projects.storageFull, { size: formatBytes(MAX_PROJECT_FILE_BYTES) }));
       return;
     }
 
@@ -100,7 +103,7 @@ export function ProjectFiles({
         .eq("project_id", projectId)
         .eq("user_id", user.id);
       if ((currentCount ?? 0) >= MAX_FILES_PER_PROJECT) {
-        setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
+        setError(fmt(t.projects.filesMax, { max: MAX_FILES_PER_PROJECT }));
         setUploading(false);
         return;
       }
@@ -153,15 +156,15 @@ export function ProjectFiles({
         err instanceof Error ? err.message : (err as { message?: unknown } | null)?.message;
       const message = typeof rawMessage === "string" ? rawMessage : "";
       if (message.includes("Projekt-Dateilimit erreicht")) {
-        setError(`Höchstens ${MAX_FILES_PER_PROJECT} Dateien pro Projekt.`);
+        setError(fmt(t.projects.filesMax, { max: MAX_FILES_PER_PROJECT }));
       } else if (message.includes("Dateityp nicht erlaubt")) {
-        setError("Dieses Format kann ich nicht lesen.");
+        setError(t.projects.fileUnsupported);
       } else if (message.includes("Datei zu gross")) {
-        setError(`Diese Datei ist zu gross, höchstens ${formatBytes(maxBytesFor(file.name))}.`);
+        setError(fmt(t.projects.fileTooLarge, { size: formatBytes(maxBytesFor(file.name)) }));
       } else if (message.includes("Projekt-Speicherlimit erreicht")) {
-        setError(`Speicherlimit des Projekts erreicht (${formatBytes(MAX_PROJECT_FILE_BYTES)}).`);
+        setError(fmt(t.projects.storageFull, { size: formatBytes(MAX_PROJECT_FILE_BYTES) }));
       } else {
-        setError("Upload fehlgeschlagen. Bitte versuch es erneut.");
+        setError(t.projects.uploadFailed);
       }
     } finally {
       setUploading(false);
@@ -211,8 +214,8 @@ export function ProjectFiles({
     } catch {
       restore();
       toast({
-        title: "Löschen fehlgeschlagen",
-        description: "Bitte versuche es erneut.",
+        title: t.projects.deleteFailed,
+        description: t.projects.tryAgain,
         variant: "error",
       });
     }
@@ -223,7 +226,7 @@ export function ProjectFiles({
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-[13px] font-medium text-foreground">
           <FileText className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
-          Dateien
+          {t.projects.files}
         </h2>
         <span className="text-[11px] text-muted-foreground">
           {files.length}/{MAX_FILES_PER_PROJECT}
@@ -249,7 +252,7 @@ export function ProjectFiles({
               <button
                 type="button"
                 onClick={() => setPendingDelete(f)}
-                aria-label={`${f.name} löschen`}
+                aria-label={fmt(t.projects.deleteFileLabel, { name: f.name })}
                 // Permanently visible below md (QA finding K-2), same reasoning
                 // as chat-list.tsx's row actions: a hover-only reveal leaves
                 // touch devices with no dependable way to see this button.
@@ -281,7 +284,7 @@ export function ProjectFiles({
         ) : (
           <Upload className="h-3.5 w-3.5" />
         )}
-        {atLimit ? "Limit erreicht" : "Datei hochladen"}
+        {atLimit ? t.projects.limitReached : t.projects.uploadFile}
       </Button>
 
       {/* Kein Format/Groessen-Hinweistext mehr (auf Zuruf, 2026-09-28): der
@@ -294,14 +297,12 @@ export function ProjectFiles({
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Datei löschen?"
+        title={t.projects.deleteFileTitle}
         description={
-          pendingDelete
-            ? `„${pendingDelete.name}“ wird aus dem Projekt entfernt und steht Finn danach nicht mehr als Kontext zur Verfügung. Das kann nicht rückgängig gemacht werden.`
-            : ""
+          pendingDelete ? fmt(t.projects.deleteFileBody, { name: pendingDelete.name }) : ""
         }
-        confirmLabel="Datei löschen"
-        busyLabel="Wird gelöscht…"
+        confirmLabel={t.projects.deleteFile}
+        busyLabel={t.common.deleting}
         // Never busy: handleDelete closes this dialog and removes the row
         // synchronously, so there is no in-flight window for it to report.
         busy={false}

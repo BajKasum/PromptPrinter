@@ -9,6 +9,9 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { cn, relativeTime } from "@/shared/lib/utils";
 import type { SavedPrompt } from "@/shared/lib/saved-prompts";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { fmt } from "@/shared/i18n/format";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
 // The Ergebnisse/Gespeicherte-Prompts list, newest first.
 //
@@ -112,6 +115,8 @@ function SavedPromptCard({
   /** Applies the new title immediately and returns the undo for a failed write. */
   onRename: (title: string) => () => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const { toast } = useToast();
   const { copied, copy } = useCopyToClipboard();
@@ -175,8 +180,8 @@ function SavedPromptCard({
       setTitle(next);
       setRenaming(true);
       toast({
-        title: "Umbenennen fehlgeschlagen",
-        description: "Bitte versuch es erneut.",
+        title: t.prompts.renameFailed,
+        description: t.prompts.tryAgain,
         variant: "error",
       });
       return;
@@ -195,13 +200,13 @@ function SavedPromptCard({
     if (error) {
       undo();
       toast({
-        title: "Löschen fehlgeschlagen",
-        description: "Der Prompt konnte nicht entfernt werden.",
+        title: t.prompts.deleteFailed,
+        description: t.prompts.deleteFailedBody,
         variant: "error",
       });
       return;
     }
-    toast({ title: "Prompt gelöscht", variant: "success" });
+    toast({ title: t.prompts.deleted, variant: "success" });
     router.refresh();
   }
 
@@ -218,7 +223,7 @@ function SavedPromptCard({
             autoFocus
             value={title}
             maxLength={80}
-            aria-label="Neuer Name für den Prompt"
+            aria-label={t.prompts.newNameLabel}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -236,7 +241,7 @@ function SavedPromptCard({
           <button
             type="button"
             onClick={() => void rename()}
-            aria-label="Namen speichern"
+            aria-label={t.prompts.saveName}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
           >
             <Check className="h-3.5 w-3.5" />
@@ -244,7 +249,7 @@ function SavedPromptCard({
           <button
             type="button"
             onClick={cancelRename}
-            aria-label="Umbenennen abbrechen"
+            aria-label={t.prompts.cancelRename}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
@@ -283,7 +288,9 @@ function SavedPromptCard({
           </pre>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
             <span className="px-1 text-[11.5px] text-tertiary">
-              Gespeichert {relativeTime(prompt.createdAt)}
+              {fmt(t.prompts.savedAgo, {
+                time: relativeTime(prompt.createdAt, LOCALE_TAGS[locale].intl, t.time.justNow),
+              })}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -296,13 +303,13 @@ function SavedPromptCard({
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
-                {copied ? "Kopiert" : "Kopieren"}
+                {copied ? t.common.copied : t.common.copy}
               </button>
               <button
                 type="button"
                 onClick={() => setRenaming(true)}
-                aria-label={`„${prompt.title}“ umbenennen`}
-                title="Umbenennen"
+                aria-label={fmt(t.prompts.renameLabel, { title: prompt.title })}
+                title={t.common.rename}
                 className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -311,8 +318,8 @@ function SavedPromptCard({
                 <button
                   type="button"
                   onClick={() => void exportPdf()}
-                  aria-label="Als PDF exportieren"
-                  title="Als PDF exportieren"
+                  aria-label={t.prompts.exportPdf}
+                  title={t.prompts.exportPdf}
                   className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
                 >
                   <FileDown className="h-3.5 w-3.5" />
@@ -321,8 +328,8 @@ function SavedPromptCard({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                aria-label="Prompt löschen"
-                title="Löschen"
+                aria-label={t.prompts.deleteLabel}
+                title={t.common.delete}
                 className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -336,10 +343,10 @@ function SavedPromptCard({
           der Liste, es bleibt also nichts uebrig, das drehen koennte. */}
       <ConfirmDialog
         open={confirmingDelete}
-        title="Prompt löschen?"
-        description={`„${prompt.title}“ wird endgültig entfernt. Das kann nicht rückgängig gemacht werden.`}
-        confirmLabel="Endgültig löschen"
-        busyLabel="Wird gelöscht…"
+        title={t.prompts.deleteConfirmTitle}
+        description={fmt(t.prompts.deleteConfirmBody, { title: prompt.title })}
+        confirmLabel={t.prompts.deleteConfirm}
+        busyLabel={t.common.deleting}
         onConfirm={() => {
           setConfirmingDelete(false);
           void remove();
