@@ -8,7 +8,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type NavItem = { label: string; href: string; Icon: LucideIcon };
+import type { Shortcut } from "@/shell/lib/shortcuts";
+
+export type NavItem = {
+  label: string;
+  href: string;
+  Icon: LucideIcon;
+  /** Globales Tastenkürzel, siehe shortcuts.ts. Nur die Kontomenü-Ziele haben eins. */
+  shortcut?: Shortcut;
+};
 
 // Single source of truth for the app navigation, shared by the desktop sidebar,
 // the mobile drawer and the command palette so they can never drift apart.
@@ -32,8 +40,13 @@ export const primaryNav: NavItem[] = [
 // Betriebszahlen sind jetzt ein Abschnitt derselben Seite, den sie selbst nur
 // fuer is_admin rendert, deshalb braucht das Menue keine Rollen mehr.
 export const secondaryNav: NavItem[] = [
-  { label: "Einstellungen", href: "/settings", Icon: Settings },
-  { label: "Nutzung", href: "/usage", Icon: Gauge },
-  { label: "Gespeicherte Prompts", href: "/prompts", Icon: Bookmark },
-  { label: "Abrechnung", href: "/billing", Icon: CreditCard },
+  { label: "Einstellungen", href: "/settings", Icon: Settings, shortcut: { key: ",", shift: false } },
+  { label: "Nutzung", href: "/usage", Icon: Gauge, shortcut: { key: "u", shift: true } },
+  {
+    label: "Gespeicherte Prompts",
+    href: "/prompts",
+    Icon: Bookmark,
+    shortcut: { key: "s", shift: true },
+  },
+  { label: "Abrechnung", href: "/billing", Icon: CreditCard, shortcut: { key: "b", shift: true } },
 ];

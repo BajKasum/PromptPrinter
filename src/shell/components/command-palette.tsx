@@ -14,9 +14,18 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { createClient } from "@/shared/supabase/client";
 import { primaryNav, secondaryNav } from "@/shell/lib/nav";
+import { formatShortcut, isMacPlatform, type Shortcut } from "@/shell/lib/shortcuts";
 import { LIST_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 
-type Cmd = { id: string; label: string; group: string; Icon: LucideIcon; perform: () => void };
+type Cmd = {
+  id: string;
+  label: string;
+  group: string;
+  Icon: LucideIcon;
+  perform: () => void;
+  /** Das globale Kürzel dieser Seite, falls sie eins hat (shell/lib/nav.ts). */
+  shortcut?: Shortcut;
+};
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -101,6 +110,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       group: "Seiten",
       Icon: n.Icon,
       perform: () => go(n.href),
+      shortcut: n.shortcut,
     }));
     // One entry point, not two: there is only one chat (REDESIGN.md, Phase 2).
     const actions: Cmd[] = [
@@ -161,6 +171,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }
 
   if (!mounted) return null;
+  // Erst nach dem Mount gelesen (siehe oben), also ohne Hydration-Risiko.
+  const mac = isMacPlatform();
 
   return createPortal(
     <AnimatePresence>
@@ -230,6 +242,20 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                           strokeWidth={1.8}
                         />
                         <span className="flex-1 truncate">{c.label}</span>
+                        {/* Die Palette ist der Ort, an dem man Kürzel lernt:
+                            wer hier "Einstellungen" sucht, sieht nebenbei,
+                            dass es auch ohne Palette geht. */}
+                        {c.shortcut && (
+                          <kbd
+                            aria-hidden
+                            className={cn(
+                              "shrink-0 font-sans text-[11.5px] tabular-nums tracking-wide",
+                              active ? "text-accent-text" : "text-tertiary"
+                            )}
+                          >
+                            {formatShortcut(c.shortcut, mac)}
+                          </kbd>
+                        )}
                         {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-accent-text" />}
                       </button>
                     </Fragment>

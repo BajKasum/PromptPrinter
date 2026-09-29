@@ -3,6 +3,7 @@
 import "client-only";
 
 import { useCallback, useEffect, useState } from "react";
+import { matchesShortcut } from "@/shell/lib/shortcuts";
 
 // The sidebar's collapse state persists in a cookie so the server-rendered
 // layout knows it on first paint, no flash/snap after hydration (see
@@ -22,9 +23,11 @@ export function useSidebarCollapse(initialCollapsed: boolean) {
   }, []);
 
   // Ctrl/⌘+B toggles the sidebar from anywhere, mirroring the ⌘K palette.
+  // Exakt, ohne Shift/Alt: Strg+Shift+B ist seit 29.09.2026 "Abrechnung"
+  // (shell/lib/shortcuts.ts), und Strg+Alt+B ist unter Windows AltGr+B.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+      if (matchesShortcut(e, { key: "b", shift: false })) {
         e.preventDefault();
         toggle();
       }

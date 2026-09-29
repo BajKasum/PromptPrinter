@@ -181,6 +181,58 @@ describe("Sidebar (expanded)", () => {
   });
 });
 
+describe("Sidebar account shortcuts", () => {
+  beforeEach(() => {
+    pathname = "/chats";
+    clearCookies();
+    push.mockClear();
+  });
+
+  function renderSidebar() {
+    render(
+      <Sidebar
+        initialCollapsed={false}
+        initialWidth={DEFAULT_SIDEBAR_WIDTH}
+        chats={chats}
+        projects={[]}
+      />
+    );
+  }
+
+  it("opens the settings on Ctrl+Comma", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    await user.keyboard("{Control>},{/Control}");
+    expect(push).toHaveBeenCalledWith("/settings");
+  });
+
+  it("opens usage, saved prompts and billing on Ctrl+Shift+U/S/B", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    await user.keyboard("{Control>}{Shift>}U{/Shift}{/Control}");
+    await user.keyboard("{Control>}{Shift>}S{/Shift}{/Control}");
+    await user.keyboard("{Control>}{Shift>}B{/Shift}{/Control}");
+    expect(push.mock.calls.map((c) => c[0])).toEqual(["/usage", "/prompts", "/billing"]);
+  });
+
+  it("does not collapse the sidebar on Ctrl+Shift+B (that one is billing)", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    await user.keyboard("{Control>}{Shift>}B{/Shift}{/Control}");
+    expect(screen.getByRole("button", { name: "Seitenleiste einklappen" })).toBeInTheDocument();
+  });
+
+  it("shows each shortcut next to its entry in the account menu", async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+    await user.click(screen.getByRole("button", { name: "Kontomenü" }));
+    const settings = screen.getByRole("link", { name: /Einstellungen/ });
+    expect(settings).toHaveAttribute("aria-keyshortcuts", "Control+, Meta+,");
+    expect(settings).toHaveTextContent("Strg+,");
+    expect(screen.getByRole("link", { name: /Nutzung/ })).toHaveTextContent("Strg+Shift+U");
+  });
+});
+
 describe("Sidebar (collapsed)", () => {
   beforeEach(() => {
     pathname = "/chats";

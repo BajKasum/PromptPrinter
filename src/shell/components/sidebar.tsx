@@ -22,6 +22,8 @@ import type { PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 import { useSidebarCollapse, SIDEBAR_COOKIE } from "@/shell/hooks/use-sidebar-collapse";
+import { useNavShortcuts } from "@/shell/hooks/use-nav-shortcuts";
+import { ariaShortcut, formatShortcut, isMacPlatform, matchesShortcut } from "@/shell/lib/shortcuts";
 import {
   useSidebarResize,
   SIDEBAR_WIDTH_COOKIE,
@@ -112,7 +114,7 @@ export function Sidebar({
   // but the listener itself doesn't need to be gated on that).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (matchesShortcut(e, { key: "k", shift: false })) {
         e.preventDefault();
         setCmdOpen(true);
       }
@@ -120,6 +122,12 @@ export function Sidebar({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Strg/⌘ + Komma und Co. für die Kontomenü-Ziele. Hier und nur hier
+  // registriert: die Sidebar ist in jedem (app)-Layout genau einmal gemountet
+  // (auf Mobile per CSS versteckt, aber gemountet), ein zweiter Listener im
+  // Mobile-Drawer würde jede Navigation doppelt auslösen.
+  useNavShortcuts();
 
   const accountProps = { email, plan, isAdmin, displayName };
 
@@ -455,7 +463,9 @@ function RailLink({ nav, pathname }: { nav: NavItem; pathname: string }) {
 // out of the rail mid-transition). An absolutely-positioned panel inside that
 // box gets cut off in both states, off the right edge of a narrow expanded
 // sidebar, and completely when collapsed, where it opens beside the rail.
-const ACCOUNT_MENU_WIDTH = 256;
+// 288 statt 256 seit den Kürzel-Hinweisen (29.09.2026): "Gespeicherte
+// Prompts" plus "Strg+Shift+S" passt in 256 nicht mehr ohne Abschneiden.
+const ACCOUNT_MENU_WIDTH = 288;
 const VIEWPORT_GUTTER = 8;
 
 function AccountMenu({
@@ -512,6 +522,7 @@ function AccountMenu({
   // narrow it the same way billing/settings already do before it reaches the
   // shared PlanBadge, which needs a real PlanKey.
   const planKey: PlanKey = plan === "pro" || plan === "team" ? plan : "free";
+  const mac = open && isMacPlatform();
 
   useEffect(() => {
     if (!open) return;
@@ -598,15 +609,29 @@ function AccountMenu({
               </div>
             </div>
             <div className="p-1.5">
-              {secondaryNav.map(({ label: navLabel, href, Icon }) => (
+              {secondaryNav.map(({ label: navLabel, href, Icon, shortcut }) => (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setOpen(false)}
+                  aria-keyshortcuts={shortcut ? ariaShortcut(shortcut) : undefined}
                   className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
                 >
-                  <Icon className="h-4 w-4" strokeWidth={1.8} />
-                  {navLabel}
+                  <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                  <span className="min-w-0 flex-1 truncate">{navLabel}</span>
+                  {/* Nur ein Hinweis fürs Auge, Screenreader bekommen das
+                      Kürzel über aria-keyshortcuts am Link selbst. Das Menü
+                      rendert erst nach einem Klick, also immer im Browser:
+                      isMacPlatform() kann hier keinen Hydration-Unterschied
+                      erzeugen. */}
+                  {shortcut && (
+                    <kbd
+                      aria-hidden
+                      className="shrink-0 font-sans text-[11.5px] tabular-nums tracking-wide text-tertiary"
+                    >
+                      {formatShortcut(shortcut, mac)}
+                    </kbd>
+                  )}
                 </Link>
               ))}
             </div>
