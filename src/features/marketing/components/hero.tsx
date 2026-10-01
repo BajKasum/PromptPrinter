@@ -51,6 +51,7 @@ export function Hero() {
                 state="welcoming"
                 motion="bob"
                 size={184}
+                sizes="(min-width: 768px) 184px, 132px"
                 priority
                 className="[&_img]:h-[132px] [&_img]:w-[132px] md:[&_img]:h-[184px] md:[&_img]:w-[184px]"
               />
@@ -69,25 +70,23 @@ export function Hero() {
           </div>
 
           <div className="max-w-2xl">
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-balance text-[32px] md:text-[54px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] font-semibold text-foreground"
-            >
+            {/* Überschrift und Unterzeile steigen per CSS ein (.enter-rise),
+                nicht per framer-motion: mit `opacity: 0` im HTML blieben die
+                zwei grössten Textblöcke der Seite unsichtbar, bis das
+                JavaScript lief. Finn, die Buttons und die Demo blenden
+                weiterhin ein, sie sind nicht das, worauf man wartet. */}
+            <h1 className="enter-rise text-balance text-[32px] md:text-[54px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] font-semibold text-foreground">
               Erzähl mir deine Idee.{" "}
               <span className="text-accent-text">Ich bau den Plan mit dir.</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-secondary"
+            <p
+              className="enter-rise mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-secondary"
+              style={{ animationDelay: "0.1s" }}
             >
               Erzähl mir, was du bauen willst. Ich bereite dir den fertigen
               Prompt auf.
-            </motion.p>
+            </p>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

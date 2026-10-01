@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FadeIn } from "@/shared/motion/fade-in";
+import { Rise } from "@/shared/motion/rise";
 
 // Shared chrome + typography for the legal pages (Impressum, Datenschutz, AGB)
 // so they share one header/footer and one prose style instead of drifting.
@@ -25,7 +25,7 @@ export function LegalShell({
         tabIndex={-1}
         className="container-x pt-32 md:pt-40 pb-10 text-center focus:outline-none"
       >
-        <FadeIn>
+        <Rise>
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 mb-6">
             <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
               {badge}
@@ -38,14 +38,14 @@ export function LegalShell({
           <p className="mt-4 text-[12px] font-mono uppercase tracking-[0.08em] text-tertiary">
             Stand: {updated}
           </p>
-        </FadeIn>
+        </Rise>
       </section>
       <section className="container-x pb-24">
-        <FadeIn>
+        <Rise>
           <div className="mx-auto max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-accent-text [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:text-foreground/90 [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5 [&_li]:marker:text-tertiary [&_strong]:font-medium [&_strong]:text-foreground/90">
             {children}
           </div>
-        </FadeIn>
+        </Rise>
       </section>
     </>
   );

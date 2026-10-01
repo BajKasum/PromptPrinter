@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { FadeIn } from "@/shared/motion/fade-in";
+import { Rise } from "@/shared/motion/rise";
 import {
   DOCS_GROUPS,
   DOCS_ORDER,
@@ -131,7 +131,7 @@ export function DocsShell({
             tabIndex={-1}
             className="min-w-0 flex-1 focus:outline-none"
           >
-            <FadeIn>
+            <Rise>
               {slug && (
                 <p className="mb-4 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
                   Schritt {step} von {DOCS_ORDER.length}
@@ -145,13 +145,13 @@ export function DocsShell({
                   {intro}
                 </p>
               )}
-            </FadeIn>
+            </Rise>
 
-            <FadeIn>
+            <Rise delay={0.1}>
               <div className="mt-10 max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_code]:rounded [&_code]:border [&_code]:border-border [&_code]:bg-surface [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[13px] [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:text-foreground/90 [&_li]:marker:text-tertiary [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-5 [&_p]:mb-4 [&_strong]:font-medium [&_strong]:text-foreground/90 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
                 {children}
               </div>
-            </FadeIn>
+            </Rise>
 
             {(prev || next) && (
               <nav

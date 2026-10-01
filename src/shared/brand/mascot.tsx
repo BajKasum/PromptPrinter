@@ -18,6 +18,11 @@ interface MascotProps {
   state?: MascotState;
   /** Manual artwork override (e.g. /mascot/dolphin-sad.png). Wins over `state`. */
   src?: string;
+  /**
+   * Only when CSS renders Finn at a different width than `size` (the hero
+   * shrinks him on phones). Defaults to `size` itself.
+   */
+  sizes?: string;
 }
 
 /**
@@ -33,6 +38,7 @@ export function Mascot({
   priority = false,
   state,
   src,
+  sizes,
 }: MascotProps) {
   const resolvedSrc = src ?? (state ? MASCOT_STATES[state].src : "/mascot/dolphin.png");
 
@@ -43,6 +49,11 @@ export function Mascot({
       height={size}
       alt={alt}
       priority={priority}
+      // Without `sizes`, next/image only offers a 1x and a 2x candidate from a
+      // coarse ladder (…256, 384, 640…): a 200px Finn on a phone was served the
+      // 640px file. With it, the browser picks the smallest file that covers
+      // the slot at its own pixel density.
+      sizes={sizes ?? `${size}px`}
       className={cn("select-none", className)}
     />
   );

@@ -433,6 +433,30 @@
   .text-balance {
     text-wrap: balance;
   }
+  /* Einstieg für Inhalt, der im ersten Bild schon lesbar sein muss
+     (Überschrift, erster Absatz). Nur transform, bewusst ohne opacity: der
+     vorige Einstieg lief über framer-motion mit `opacity: 0` im
+     ausgelieferten HTML, der Text wurde also erst sichtbar, nachdem das
+     JavaScript geladen und ausgeführt war. Lighthouse mass dafür mobil rund
+     1,7 s "element render delay" auf der h1, dem grössten Element der Seite
+     (LCP 3,0 bis 3,4 s bei FCP 1,0 s). Ein Element mit opacity 0 zählt nicht
+     als gemalt, eines mit versetztem transform schon. */
+  .enter-rise {
+    animation: enter-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes enter-rise {
+    from {
+      transform: translateY(16px);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .enter-rise {
+      animation: none;
+    }
+  }
   .mask-fade-b {
     mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);

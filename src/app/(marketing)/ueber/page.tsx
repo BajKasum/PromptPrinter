@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FadeIn } from "@/shared/motion/fade-in";
+import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { LEGAL } from "@/shared/lib/legal";
@@ -41,7 +42,7 @@ export default function UeberPage() {
         tabIndex={-1}
         className="container-x pt-32 md:pt-40 pb-4 focus:outline-none"
       >
-        <FadeIn>
+        <Rise>
           <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
               <p className="mb-5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
@@ -60,11 +61,11 @@ export default function UeberPage() {
               alt="Der Delfin Finn winkt"
             />
           </div>
-        </FadeIn>
+        </Rise>
       </section>
 
       <section className="container-x pb-20">
-        <FadeIn>
+        <Rise delay={0.1}>
           <div className="max-w-2xl text-[16px] leading-[1.75] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_p]:mb-5">
             <p>
               Ich heisse Kasum, ich lerne Informatik in Basel, und PromptPrinter
@@ -99,7 +100,7 @@ export default function UeberPage() {
               deswegen Zeit kostet.
             </p>
           </div>
-        </FadeIn>
+        </Rise>
       </section>
 
       <section className="container-x pb-20">
