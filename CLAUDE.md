@@ -946,6 +946,91 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 > sie nachträglich zählen zu lassen hiesse, `main` umzuschreiben und per
 > Force-Push hochzuladen, das ist bewusst nicht passiert.
 
+> **SEO-Durchgang (2026-10-01):** Kasum brachte eine Checkliste aus einem
+> TikTok mit (serverseitig rendern, Sitemap, robots, KI-Crawler, llms.txt,
+> eindeutige Titel, Canonicals, Überschriften-Hierarchie, Überschriften als
+> Fragen, interne Links, Textwände, Autorenzeile, JSON-LD, Vergleichsseiten,
+> Lighthouse, Search Console, tote Links). Zuerst gegen Code UND Live-Seite
+> gemessen, dann nur die echten Lücken behoben. Ein Branch pro Punkt, jeder
+> per PR mit "Rebase and merge" (PRs #12 bis #21).
+>
+> **Schon vorhanden und unverändert** (per `curl` gegen `promptprinter.app`
+> belegt): alle öffentlichen Seiten statisch und mit Inhalt im HTML, Sitemap,
+> robots.txt, llms.txt, eindeutige Titel, genau eine `h1` pro Seite,
+> Organization/WebSite/SoftwareApplication/HowTo/FAQPage/BreadcrumbList als
+> JSON-LD, kein einziger toter Link (59 Linkziele geprüft). GPTBot, ClaudeBot,
+> PerplexityBot und zehn weitere Crawler bekommen 200.
+>
+> **Behoben:**
+>
+> - `fix/seo-dead-urls-404`: jede tote Adresse ging per 307 auf `/login`
+>   (Status 200), nie auf ein 404. Die Middleware kennt jetzt drei Sorten
+>   Pfade: öffentlich, eingeloggte App (`APP_PREFIXES` in
+>   `shared/lib/app-routes.ts`, Login-Umleitung wie bisher) und alles andere,
+>   das abgemeldet per Rewrite die 404-Seite bekommt. "Unbekannt ist gesperrt"
+>   (M-7) bleibt. Die CSP-Wahl hängt seitdem an `isAppPath()`, nicht mehr an
+>   `requiresSession()`. **Neue App-Seite = Eintrag in `APP_PREFIXES`, neue
+>   öffentliche Seite = Eintrag in `PUBLIC_PREFIXES`**, beides erzwingt
+>   `tests/guards/route-access.test.ts` gegen die Ordner unter `src/app`.
+> - `fix/seo-auth-pages-noindex`: `/login`, `/signup` und die Passwort-Seiten
+>   trugen das Canonical der Startseite. Jetzt eigenes Canonical plus
+>   `noindex, follow` im `(auth)`-Layout.
+> - `perf/lcp-headlines-without-js`: framer-motion liefert für
+>   `initial={{ opacity: 0 }}` ein `opacity:0` im HTML aus, Überschrift und
+>   erster Absatz erschienen erst nach dem Hydrieren. Neu: CSS-Klasse
+>   `.enter-rise` (nur `transform`) und die Server-Komponente `<Rise>`
+>   (`shared/motion/rise.tsx`) für den Seitenkopf. **`FadeIn` und `motion.h1`
+>   gehören nicht mehr um eine `h1`** (`tests/guards/visible-headlines.test.ts`).
+>   `Mascot` setzt `sizes`. Gemessen gegen die Live-Seite, mobil: grösster
+>   Inhalt auf `/pricing` 1,79 s → 0,86 s und auf einem Hilfe-Artikel 1,39 s →
+>   0,68 s (jeweils beobachtet, jetzt gleichzeitig mit dem ersten Bild),
+>   Lighthouse-Performance 77 → 87 und 81 → 91. SEO, Barrierefreiheit und
+>   Best Practices stehen auf 100. Die Startseite bleibt bei 75 bis 80: dort
+>   bremst nicht mehr die Überschrift, sondern das JavaScript von
+>   framer-motion und der Hero-Demo (Total Blocking Time 480 bis 930 ms). Das
+>   ist ein Umbau am Hero und bewusst nicht Teil dieses Durchgangs.
+> - `feat/seo-page-metadata`: jede Unterseite trug `og:title`, Beschreibung
+>   und `og:url` der Startseite. **Öffentliche Seiten setzen ihre Metadaten
+>   über `pageMetadata()`** (`shared/lib/page-metadata.ts`): Titel,
+>   Beschreibung, Canonical, `openGraph` samt Bild, `twitter`. Der Guard
+>   `tests/guards/seo-metadata.test.ts` importiert die Seiten und prüft
+>   Canonical gleich Pfad, eigene Vorschau, eindeutige Titel und
+>   Beschreibungen, Titel höchstens 65 Zeichen, und dass die Sitemap genau die
+>   öffentlichen Seiten führt.
+> - `feat/seo-question-headings`: 54 `h2` der Hilfe von Stichworten auf Fragen
+>   umgestellt ("Konto löschen" → "Wie lösche ich mein Konto?").
+> - `feat/seo-docs-byline-article-schema`: Autorenzeile (`Byline`) und
+>   `TechArticle`-JSON-LD auf jedem Hilfe-Artikel, `ProfilePage` auf `/ueber`.
+>   `docs-nav.ts` trägt pro Artikel ein `updated`-Datum. **Wer den Text eines
+>   Artikels ändert, zieht dessen `updated` nach**, nicht bei Refactorings.
+> - `feat/seo-comparison-pages`: `/vergleich` plus drei Vergleichsseiten
+>   (ChatGPT oder Claude direkt fragen, Prompt-Vorlagen, direkt im Bau-Tool
+>   prompten), Inhalte in `features/marketing/lib/comparisons.ts`. Die Regeln
+>   stehen dort im Kopf und gelten für jede weitere Seite: Vergleich mit einer
+>   Arbeitsweise statt mit einem Produkt, keine Preise oder Funktionen Dritter
+>   (veralten, und eine falsche Angabe wäre unlautere vergleichende Werbung),
+>   jede Seite sagt, wann der andere Weg besser ist, der eigene Preis kommt
+>   aus `pricing.ts`. Stimme der Hilfe, nicht Finns Ich-Form.
+> - `feat/seo-search-console-verification`: `GOOGLE_SITE_VERIFICATION` und
+>   `BING_SITE_VERIFICATION` setzen den Inhaber-Nachweis im Root-Layout
+>   (`shared/lib/site-verification.ts`). **Offen, nur für Kasum:** Property in
+>   der Search Console anlegen, Wert in Vercel setzen, neu deployen,
+>   bestätigen, `/sitemap.xml` einreichen. Schritte stehen in `.env.example`.
+> - `fix/ci-audit-brace-expansion`: `npm audit` schlug wieder an (neues
+>   Advisory für `brace-expansion`), Override auf `^5.0.12`.
+>
+> **Geprüft und bewusst gelassen:** Textwände gibt es ausserhalb der
+> Rechtstexte keine (längster Absatz 81 Wörter auf `/ueber`, in der
+> Datenschutzerklärung sechs Absätze über 80 Wörter, die als Rechtstext so
+> bleiben). robots.txt behält eine einzige Gruppe für `*`: ein Crawler mit
+> eigener Gruppe ignoriert `*`, die Disallow-Liste müsste pro Bot wiederholt
+> werden.
+>
+> **Contributions, bestätigt:** direkt nach dem Rebase-Merge von PR #11 sprang
+> der 29.09. bei GitHub von 2 auf 3 gezählte Commits, und jeder der am 01.10.
+> per Rebase gemergten Commits wurde gezählt. Der Weg unter "Arbeitsregeln"
+> hält also, was er verspricht.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -1023,6 +1108,12 @@ waren am 23.09.2026 fünf Commits in Folge rot, obwohl das lokale Gate (damals
 noch ohne `npm audit`) grün war — ein neues `sharp`-Advisory war seit dem
 letzten Push erschienen. Deshalb gehört der Audit ins lokale Gate.
 
+**Die Schritte des Gates nie durch `| tail` oder `| head` leiten.** Eine Pipe
+gibt den Exit-Code des letzten Befehls zurück, also den von `tail`, und der
+ist immer 0: ein roter `npm audit` sah am 01.10.2026 so einen Lauf lang grün
+aus. Ausgabe in eine Datei schreiben und den Exit-Code des Schritts selbst
+prüfen.
+
 **Wenn der Build mit `ENOENT … .next/…` abbricht:** läuft parallel ein
 Dev-Server? `next dev` und `next build` teilen sich dasselbe `.next`-
 Verzeichnis, und während der Dev-Server kompiliert (vor allem direkt nach dem
@@ -1066,6 +1157,13 @@ startete und selbst noch schrieb. Deshalb bewusst **kein** `prebuild`, das
   haben andere IDs als auf dem Branch. Deshalb den nächsten Branch **nie**
   vom vorherigen Feature-Branch abzweigen, sondern immer von frisch
   gepulltem `main`, sonst trägt der neue PR die alten Commits noch einmal mit.
+
+  **Am 01.10.2026 nachgemessen:** jeder per "Rebase and merge" gemergte
+  Commit wurde gezählt, der erste (PR #11) innert Sekunden. Prüfen lässt sich
+  das über die GitHub-API (`contributionsCollection` →
+  `commitContributionsByRepository`), nicht nur am Profil. Ein Commit zählt am
+  Tag, an dem er geschrieben wurde (Autor-Datum), nicht am Tag des Merges.
+  Jeder PR zählt zusätzlich als ein eigener Beitrag.
 - **Nach jeder abgeschlossenen Änderung committen + pushen**, nicht auf Aufforderung warten.
 - **Secrets nie mit `NEXT_PUBLIC_*`** prefixen, landen sonst im Client-Bundle.
   Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.
@@ -1104,7 +1202,8 @@ src/server/    Nie im Browser, jede Datei mit `import "server-only"`.
                http/, supabase/, llm.ts, env.ts, byok.ts, project.ts
 src/shared/    Von überall nutzbar, kennt niemanden über sich:
                ui/ brand/ motion/ providers/ lib/ supabase/
-tests/guards/  Repo-weite Invarianten (Kontrast, server-only, Schichtgrenzen)
+tests/guards/  Repo-weite Invarianten (Kontrast, server-only, Schichtgrenzen,
+               Routenlisten, SEO-Metadaten, sichtbare Überschriften)
 supabase/migrations/  SQL, Schema, RLS, Grants, gehärtete Funktionen (0001→)
 ```
 
@@ -1178,6 +1277,13 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 > trug die eigentliche Erklärung, wer nie auf „Funktionen" klickte, sah nur
 > den Pitch). `next.config.ts` leitet `/features` dauerhaft auf
 > `/#funktionen` um; Navbar und Footer verlinken direkt den Anker.
+>
+> Gemeint sind die beiden Seiten, die das Produkt verkaufen. Daneben gibt es
+> die Hilfe (`/docs`, zehn Artikel), `/ueber`, `/kontakt`, die sechs
+> Rechtstexte und seit 2026-10-01 `/vergleich` mit drei Vergleichsseiten
+> (siehe "SEO-Durchgang" oben). Die Vergleiche sind wie die Hilfe geschrieben,
+> nicht in Finns Ich-Form, und nur über Footer, Hilfe-Übersicht, Sitemap und
+> `llms.txt` erreichbar, nicht über die Navbar.
 
 **Aktuelle Seiten-Reihenfolge** (`src/app/(marketing)/page.tsx`):
 ```
@@ -1213,7 +1319,7 @@ Eintrag unten. Beides lebt jetzt ausschliesslich auf `/pricing`.
 | `how-it-works.tsx` | 3-Schritt-Prozess (Idee → kurz klären → startklar) in flachen card-surface-Karten; Step 2 mit Chat-Bubble. Direkt nach Hero, vor ProductShowcase (`FeaturesGrid` stand hier zwischenzeitlich, am 2026-07-30 wieder entfernt, siehe unten). Trägt `id="funktionen"` + `scroll-mt-24`, das Sprungziel der Navbar. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau: Chats / Projekte. Mini-Sidebar nutzt denselben Pillen-Umschalter (`NavSwitcher`, "Chat"/"Projekt") wie die echte Sidebar, kein gefälschter „app.promptprinter.dev/…"-URL-Balken mehr (2026-07-16). Einziges verbleibendes „Schau es dir an"-Proof-Element auf der Landing Page. Seit 2026-07-17 mit `organizing`-Finn im Header (Brand-Audit #1). | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, "Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 11 Seiten, seit 2026-09-28 inkl. `/cookies`, seit 2026-09-29 inkl. `/nutzungsrichtlinie`, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie, darunter der kazuvate-Credit als eigener Block (kurze Linie, Oliv, seit 2026-09-29). Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
+| `footer.tsx` | Finn's Abschluss: kleiner Finn (nur das Bild, kein Text mehr seit 2026-08-05) + eine flache Link-Zeile daneben (alle 12 Seiten, seit 2026-09-28 inkl. `/cookies`, seit 2026-09-29 inkl. `/nutzungsrichtlinie`, seit 2026-10-01 inkl. `/vergleich`, keine Produkt/Legal-Gewichtung mehr), Copyright direkt darunter, nur noch eine Trennlinie, darunter der kazuvate-Credit als eigener Block (kurze Linie, Oliv, seit 2026-09-29). Links tragen dieselbe Wasser-Pille + Welle wie die Navbar (`NavWave` jetzt in `shared/ui/nav-wave.tsx`, von beiden geteilt). | `idle` |
 | `navbar.tsx` | Fix/blur-on-scroll, 2 Nav-Links: „Funktionen" (`/#funktionen`, natives `<a>`) und „Preise" (`/pricing`, `next/link`). Hover + aktive Seite: Wasser-Pille hinter dem Label + einschwimmende Welle (`.nav-pill`/`.nav-wave` in globals.css, `NavWave`-Komponente in `shared/ui/nav-wave.tsx`), aktive Seite behält beides an + `aria-current`. Mobile-Drawer: getönte Zeile + einblendendes Chevron. | Kein Finn |
 
 **`/pricing`** (`src/app/(marketing)/pricing/page.tsx`): `PageHeader` (nur
