@@ -1160,8 +1160,28 @@ startete und selbst noch schrieb. Deshalb bewusst **kein** `prebuild`, das
   1. Frischen Branch von aktuellem `main` anlegen (`git pull` vorher).
   2. Committen, Gate grün, Branch pushen.
   3. `gh pr create --base main` mit kurzer Beschreibung.
-  4. CI auf dem PR grün abwarten, dann `gh pr merge <nr> --rebase`.
+  4. CI auf dem PR grün abwarten, dann `gh pr merge <nr> --rebase`. **Ein
+     grüner Lauf, der älter als ein paar Stunden ist, zählt nicht:** vorher
+     `gh run rerun <id>` und das Ergebnis abwarten. Der Rebase-Merge schreibt
+     einen neuen Commit auf `main`, und dessen Lauf prüft den Stand von jetzt,
+     nicht von vorgestern.
   5. Lokal `git checkout main && git pull`, erst danach der nächste Branch.
+
+  **Warum die Regel in Schritt 4 steht:** am 01.10.2026 war PR #11 seit zwei
+  Tagen grün. Beim Merge lief `npm audit` gegen ein neues Advisory für
+  `brace-expansion` und färbte den Commit auf `main` rot (`df67d43`), obwohl
+  an dem PR nichts falsch war. Ein rotes Kreuz im Verlauf lässt sich nicht mehr
+  entfernen, ohne `main` umzuschreiben. Genauso entstanden 6 der 14 roten
+  Commits unter den neuesten 100 auf `main` (fünf am 23.09., einer am
+  01.10.), die übrigen 8 waren abgebrochene Läufe, siehe nächster Absatz.
+
+  **Abgebrochene Läufe:** bis 2026-10-01 brach die CI einen laufenden Lauf ab,
+  sobald auf derselben Ref ein neuer Push kam, auch auf `main`. Zwei Commits
+  kurz hintereinander auf `main` ergaben für den ersten ein rotes Kreuz
+  (06.09. und 01.10.). Auf `main` hat jeder Commit seit `fix/ci-main-runs-not-cancelled`
+  seine eigene Concurrency-Gruppe, auf Branches und PRs wird weiter abgebrochen.
+  Wer trotzdem ein Kreuz sieht: `gh run rerun <id>`, aber erst wenn auf `main`
+  kein anderer Lauf läuft (ältere Läufe teilen sich noch die alte Gruppe).
 
   **Warum kein lokales Fast-Forward mehr:** GitHub hat Commits, die zuerst
   auf einem Branch lagen und dann per Fast-Forward auf `main` geschoben
