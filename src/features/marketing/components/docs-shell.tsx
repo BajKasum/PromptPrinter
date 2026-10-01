@@ -2,9 +2,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Rise } from "@/shared/motion/rise";
+import { Byline } from "@/features/marketing/components/byline";
+import { articleJsonLd } from "@/features/marketing/lib/article-schema";
 import {
   DOCS_GROUPS,
   DOCS_ORDER,
+  DOCS_PUBLISHED,
+  docBySlug,
   docHref,
   docNeighbours,
   docStep,
@@ -93,9 +97,24 @@ export function DocsShell({
       }
     : null;
 
+  // Autor und Datum, sichtbar als Autorenzeile und maschinenlesbar als
+  // TechArticle. Beides aus demselben Eintrag in docs-nav.ts.
+  const article = slug ? docBySlug(slug) : undefined;
+  const articleSchema = article
+    ? articleJsonLd({
+        type: "TechArticle",
+        headline: article.title,
+        description: article.summary,
+        path: docHref(article.slug),
+        published: DOCS_PUBLISHED,
+        updated: article.updated,
+      })
+    : null;
+
   return (
     <>
       {breadcrumbJsonLd && <JsonLd data={breadcrumbJsonLd} />}
+      {articleSchema && <JsonLd data={articleSchema} />}
       <div className="container-x pt-28 md:pt-36 pb-24">
         <div className="flex flex-col gap-10 lg:flex-row lg:gap-14">
           {/* Desktop sidebar: sticky, clears the floating navbar pill. */}
@@ -145,6 +164,7 @@ export function DocsShell({
                   {intro}
                 </p>
               )}
+              {article && <Byline updated={article.updated} className="mt-5" />}
             </Rise>
 
             <Rise delay={0.1}>
