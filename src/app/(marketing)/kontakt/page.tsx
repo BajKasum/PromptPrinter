@@ -5,13 +5,14 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Kontakt",
   description:
     "Fehler melden, Fragen stellen, Datenschutzanfragen: alles läuft über eine E-Mail-Adresse, ohne Ticket-System.",
-  alternates: { canonical: "/kontakt" },
-};
+  path: "/kontakt",
+});
 
 // Deliberately no contact form: the project has no transactional mail setup,
 // so a form would either silently drop messages or need a whole delivery

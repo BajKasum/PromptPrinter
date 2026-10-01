@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Nutzungsrichtlinie",
   description:
     "Was du mit PromptPrinter tun darfst und was nicht: verbotene Inhalte, verbotene Nutzung, Folgen von Verstössen und wie du etwas meldest.",
-  alternates: { canonical: "/nutzungsrichtlinie" },
-};
+  path: "/nutzungsrichtlinie",
+});
 
 // Ergänzt Ziffer 7 der AGB ("Pflichten der Nutzer"), die nur eine kurze Liste
 // trug. Die AGB verweisen auf diese Seite und machen sie zu ihrem Bestandteil,

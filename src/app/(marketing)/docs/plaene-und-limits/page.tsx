@@ -3,14 +3,15 @@ import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
 import { docBySlug, docHref } from "@/shared/lib/docs-nav";
 import { PLAN_LIMITS } from "@/shared/lib/plans";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
 const doc = docBySlug("plaene-und-limits")!;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: doc.title,
   description: doc.summary,
-  alternates: { canonical: docHref(doc.slug) },
-};
+  path: docHref(doc.slug),
+});
 
 // Numbers come from the same module the server enforces them with, so this
 // page can't quietly drift away from the real limits.

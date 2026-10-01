@@ -5,6 +5,7 @@ import {
   MAX_FILES_PER_PROJECT,
   MAX_PROJECT_FILE_BYTES,
 } from "@/features/projects/lib/project-files";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
 // Die Dateigrenzen kommen aus project-files.ts, derselben Quelle, die Upload
 // und Migration 0038 durchsetzen. Bis 28.09.2026 stand hier von Hand
@@ -12,12 +13,12 @@ import {
 // Konfiguration und Bilder erlaubt sind.
 const MAX_PROJECT_MB = Math.round(MAX_PROJECT_FILE_BYTES / (1024 * 1024));
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Datenschutz",
   description:
     "Wie PromptPrinter deine Personendaten bearbeitet: Konto, Eingaben, KI-Verarbeitung und deine Rechte.",
-  alternates: { canonical: "/datenschutz" },
-};
+  path: "/datenschutz",
+});
 
 export default function DatenschutzPage() {
   return (

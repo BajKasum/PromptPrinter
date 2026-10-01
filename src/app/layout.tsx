@@ -56,6 +56,7 @@ export const metadata: Metadata = {
     url: BASE_URL,
     siteName: "PromptPrinter",
     type: "website",
+    locale: "de_CH",
   },
   twitter: {
     card: "summary_large_image",

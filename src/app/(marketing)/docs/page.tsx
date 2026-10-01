@@ -4,13 +4,14 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { DOCS_GROUPS, DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Hilfe",
   description:
     "Alles, was PromptPrinter kann: Chat mit Finn, Projekte, Dateien, eigene API-Keys, Pläne und Limits. Von vorne lesbar oder gezielt nachschlagen.",
-  alternates: { canonical: "/docs" },
-};
+  path: "/docs",
+});
 
 export default function DocsIndexPage() {
   // Continuous step numbers across groups: the list is one reading path, the

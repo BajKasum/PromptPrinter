@@ -7,14 +7,15 @@ import {
   MAX_FILES_PER_PROJECT,
   MAX_FILE_BYTES,
 } from "@/features/projects/lib/project-files";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
 const doc = docBySlug("dateien")!;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: doc.title,
   description: doc.summary,
-  alternates: { canonical: docHref(doc.slug) },
-};
+  path: docHref(doc.slug),
+});
 
 // Limits are read from the same module the upload UI enforces them with, so
 // this page can't drift away from the actual rule.

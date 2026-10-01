@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Impressum",
   description: "Anbieterkennzeichnung und Kontaktangaben zu PromptPrinter.",
-  alternates: { canonical: "/impressum" },
-};
+  path: "/impressum",
+});
 
 export default function ImpressumPage() {
   return (

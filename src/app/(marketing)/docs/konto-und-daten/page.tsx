@@ -3,14 +3,15 @@ import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
 import { docBySlug, docHref } from "@/shared/lib/docs-nav";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
 const doc = docBySlug("konto-und-daten")!;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: doc.title,
   description: doc.summary,
-  alternates: { canonical: docHref(doc.slug) },
-};
+  path: docHref(doc.slug),
+});
 
 export default function Page() {
   return (

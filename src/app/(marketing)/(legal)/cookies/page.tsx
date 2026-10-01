@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { FIRST_PARTY_STORAGE } from "@/features/marketing/lib/cookie-inventory";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Cookies",
   description:
     "Welche Cookies und Browser-Speicher PromptPrinter verwendet, wofür und wie lange, und warum es kein Cookie-Banner gibt.",
-  alternates: { canonical: "/cookies" },
-};
+  path: "/cookies",
+});
 
 // Die einzelnen Einträge kommen aus cookie-inventory.ts, nicht aus dieser
 // Datei: ein Guard (tests/guards/cookie-inventory.test.ts) prüft dort, dass
