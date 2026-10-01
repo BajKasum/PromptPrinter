@@ -10,6 +10,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh }),
 }));
 
+// Der Key-Hinweis enthaelt das Key-Feld, das Rueckmeldungen als Toast gibt.
+// In der App steht der ToastProvider im (app)-Layout, in diesem Test nicht.
+vi.mock("@/shared/ui/toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
+
 // Pre-flight failures (400/401/403/429) still return a plain JSON problem
 // response, unchanged by streaming, see /api/chat.
 function mockFetchOnce(body: unknown, ok = true) {
@@ -444,14 +448,37 @@ describe("Chat", () => {
   // account used to learn that only after sending its first idea, from a red
   // banner whose "Erneut senden" repeated the same 403 forever.
   describe("Free without an own key (Audit 23.09.2026, F-1)", () => {
-    it("says so before the first message, with the two ways forward", () => {
+    it("says so before the first message, with the ways forward", () => {
       render(<Chat needsKey />);
       expect(screen.getByText(/brauche ich deinen eigenen KI-Key/)).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Key hinterlegen" })).toHaveAttribute(
-        "href",
-        "/settings#api-keys"
-      );
+      expect(
+        screen.getByRole("link", { name: "Anderer Anbieter? Zu den Einstellungen" })
+      ).toHaveAttribute("href", "/settings#api-keys");
       expect(screen.getByRole("link", { name: "Pro ansehen" })).toHaveAttribute("href", "/billing");
+    });
+
+    // Audit 23.09.2026, P-1: der Weg zu einem Key war ein Raetselraten. Jetzt
+    // steht die Anleitung im Hinweis, und das Feld sitzt gleich darunter.
+    it("explains how to get a free Gemini key and takes the key right there", () => {
+      render(<Chat needsKey />);
+      const aiStudio = screen.getByRole("link", { name: /Google AI Studio öffnen/ });
+      expect(aiStudio).toHaveAttribute("href", "https://aistudio.google.com/apikey");
+      expect(aiStudio).toHaveAttribute("target", "_blank");
+      expect(aiStudio).toHaveAttribute("rel", expect.stringContaining("noopener"));
+      expect(screen.getByPlaceholderText(/API-Key einfügen/)).toBeInTheDocument();
+    });
+
+    it("drops the notice as soon as a key is connected, and keeps the typed idea", async () => {
+      mockFetchOnce({ ok: true });
+      render(<Chat needsKey />);
+      await userEvent.type(screen.getByRole("textbox"), "Baue mir eine Todo-App");
+      await userEvent.type(screen.getByPlaceholderText(/API-Key einfügen/), "AIzaSyExampleKey");
+      await userEvent.click(screen.getByRole("button", { name: "Key hinzufügen" }));
+
+      await waitFor(() =>
+        expect(screen.queryByText(/brauche ich deinen eigenen KI-Key/)).not.toBeInTheDocument()
+      );
+      expect(screen.getByRole("textbox")).toHaveValue("Baue mir eine Todo-App");
     });
 
     it("shows no key notice for an account that can chat", () => {

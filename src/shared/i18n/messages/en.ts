@@ -107,8 +107,8 @@ export const en: Messages = {
     resultTitle: "Your result",
     keyNoticeTitle: "Before we start, I need your own AI key.",
     keyNoticeBody:
-      "On Free, I run on your key from Anthropic, OpenAI or Gemini. Once it's added, the app is completely free for you. Don't want to deal with a key? With Pro, I take care of it for you.",
-    keyNoticeAddKey: "Add a key",
+      "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
+    keyNoticeSettings: "Another provider? Go to settings",
     keyNoticeSeePro: "See Pro",
     composerLabel: "Message to Finn",
     maxLengthReached: "Maximum length reached",
@@ -260,6 +260,18 @@ export const en: Messages = {
         analysis_unparsable: "Nothing usable came back. Please try again.",
       },
     },
+  },
+
+  keyGuide: {
+    summary: "No key yet? Here's how to get a free one",
+    step1: "Open Google AI Studio and sign in with your Google account.",
+    step1Link: "Open Google AI Studio",
+    step2: "Click “Create API key” and copy the key.",
+    step3Here: "Paste it here. I test it before I save it.",
+    step3Above: "Paste it into the field above. I test it before I save it.",
+    limits: "Google's free access has usage limits, which you can see in AI Studio.",
+    privacy: "About your data: in the EU, Switzerland and the UK, Google's terms apply the rules of its paid services to the free access too. Elsewhere, Google may use input from the free access to improve its products.",
+    privacyLink: "Google's terms",
   },
 
   settings: {

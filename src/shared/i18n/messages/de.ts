@@ -114,8 +114,8 @@ export const de = {
     resultTitle: "Dein Ergebnis",
     keyNoticeTitle: "Bevor wir loslegen, brauche ich deinen eigenen KI-Key.",
     keyNoticeBody:
-      "Auf Free laufe ich über deinen Key von Anthropic, OpenAI oder Gemini. Einmal hinterlegt, ist die App für dich komplett gratis. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
-    keyNoticeAddKey: "Key hinterlegen",
+      "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
+    keyNoticeSettings: "Anderer Anbieter? Zu den Einstellungen",
     keyNoticeSeePro: "Pro ansehen",
     composerLabel: "Nachricht an Finn",
     maxLengthReached: "Maximale Länge erreicht",
@@ -269,6 +269,18 @@ export const de = {
         analysis_unparsable: "Da kam kein verwertbares Ergebnis zurück. Versuch es nochmal.",
       },
     },
+  },
+
+  keyGuide: {
+    summary: "Noch keinen Key? So bekommst du einen kostenlosen",
+    step1: "Öffne Google AI Studio und melde dich mit deinem Google-Konto an.",
+    step1Link: "Google AI Studio öffnen",
+    step2: "Klicke auf „Create API key“ und kopiere den Key.",
+    step3Here: "Füge ihn hier ein. Ich teste ihn, bevor ich ihn speichere.",
+    step3Above: "Füge ihn oben ins Feld ein. Ich teste ihn, bevor ich ihn speichere.",
+    limits: "Der Gratis-Zugang von Google hat Limits, die du in AI Studio siehst.",
+    privacy: "Zu deinen Daten: In der EU, der Schweiz und Grossbritannien gelten laut Google die Regeln der bezahlten Dienste auch für den Gratis-Zugang. Anderswo darf Google Eingaben aus dem Gratis-Zugang zur Verbesserung seiner Produkte nutzen.",
+    privacyLink: "Googles Bedingungen",
   },
 
   settings: {
