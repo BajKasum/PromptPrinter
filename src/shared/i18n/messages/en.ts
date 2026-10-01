@@ -123,6 +123,7 @@ export const en: Messages = {
     copyReply: "Copy reply",
     exportReply: "Export",
     writing: "Writing…",
+    retrying: "This is taking a little longer than usual. Trying again…",
     finished: "Done, your prompt is ready to go.",
     promptLabel: "Prompt",
     copyPrompt: "Copy prompt",

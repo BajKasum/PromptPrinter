@@ -14,6 +14,7 @@ import {
 } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { chatCompleteStream, llmConfig, classifyLlmFailure, LlmEmptyReplyError } from "@/server/llm";
+import { attemptsOf } from "@/server/llm-retry";
 import { getUserOverride } from "@/server/byok";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { problem } from "@/server/http/api-problem";
@@ -481,6 +482,12 @@ export async function POST(req: Request) {
   //        Audit 06.09.2026): /chats/new und /chats/[id] sind zwei
   //        verschiedene Route-Segmente, eine sofortige Navigation wuerde die
   //        laufende Chat-Instanz und damit den Stream selbst abbrechen.
+  //      event: status data: {phase: "retrying", attempt, maxAttempts}
+  //        zero or more, only BEFORE the first delta: an attempt failed on
+  //        something transient (503, dropped connection, rate limit) and the
+  //        next one is about to start (llm-retry.ts). The client shows a calm
+  //        "this is taking a little longer", nothing else changes. Older
+  //        clients ignore events they don't know.
   //      event: delta  data: {"text": "..."}   zero or more, as text arrives
   //      event: done   data: {conversationId?, assistantMessageId?, persistError?}
   //        exactly one, on success. assistantMessageId (K-2) ist die echte
@@ -525,6 +532,8 @@ export async function POST(req: Request) {
             messages: collapseConsecutiveRoles(trimHistory(input.messages)),
             override: override ?? undefined,
             signal: req.signal,
+            onRetry: ({ failedAttempt, maxAttempts }) =>
+              send("status", { phase: "retrying", attempt: failedAttempt + 1, maxAttempts }),
           })) {
             reply += chunk;
             send("delta", { text: chunk });
@@ -582,6 +591,9 @@ export async function POST(req: Request) {
           latencyMs: Date.now() - startedAt,
           promptChars,
           partialReplyChars: reply.length,
+          // Wie oft der Anbieter gefragt wurde, bevor aufgegeben wurde. Fehlt
+          // bei einem Fehler, der gar nicht erst wiederholt wird (falscher Key).
+          attempts: attemptsOf(err),
         });
         send("error", { detail: describeLlmFailure(classifyLlmFailure(err), m) });
         closeQuietly();

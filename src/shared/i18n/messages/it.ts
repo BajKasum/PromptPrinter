@@ -123,6 +123,7 @@ export const it: Messages = {
     copyReply: "Copia la risposta",
     exportReply: "Esporta",
     writing: "Scrive…",
+    retrying: "Ci sta mettendo un po' più del solito. Riprovo…",
     finished: "Fatto, il tuo prompt è pronto.",
     promptLabel: "Prompt",
     copyPrompt: "Copia il prompt",

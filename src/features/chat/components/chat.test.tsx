@@ -143,6 +143,66 @@ describe("Chat", () => {
     );
   });
 
+  // The provider hiccuped on something transient and the server is already on
+  // its next attempt (llm-retry.ts, SSE `status`). The user sees a calm "this
+  // is taking a little longer" instead of a spinner that looks stuck, and it
+  // goes away again with the first word.
+  it("says it is taking longer while the server retries, and drops the hint at the first word", async () => {
+    let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    const encoder = new TextEncoder();
+    controllerRef.enqueue(encoder.encode(sseFrame("meta", { conversationId: "conv-1" })));
+    expect(await screen.findByText("Schreibt…")).toBeInTheDocument();
+
+    controllerRef.enqueue(
+      encoder.encode(sseFrame("status", { phase: "retrying", attempt: 2, maxAttempts: 3 }))
+    );
+    expect(await screen.findByText(/Das dauert gerade etwas länger/)).toBeInTheDocument();
+    expect(screen.queryByText("Schreibt…")).not.toBeInTheDocument();
+
+    controllerRef.enqueue(encoder.encode(sseFrame("delta", { text: "Da bin ich" })));
+    await screen.findByText("Da bin ich");
+    expect(screen.queryByText(/Das dauert gerade etwas länger/)).not.toBeInTheDocument();
+
+    controllerRef.enqueue(encoder.encode(sseFrame("done", { conversationId: "conv-1" })));
+    controllerRef.close();
+    await waitFor(() => expect(replace).toHaveBeenCalled());
+  });
+
+  it("ignores a status event it does not know", async () => {
+    let controllerRef!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controllerRef = controller;
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    const encoder = new TextEncoder();
+    controllerRef.enqueue(encoder.encode(sseFrame("status", { phase: "something-new" })));
+    expect(await screen.findByText("Schreibt…")).toBeInTheDocument();
+    expect(screen.queryByText(/Das dauert gerade etwas länger/)).not.toBeInTheDocument();
+
+    controllerRef.enqueue(encoder.encode(sseFrame("done", {})));
+    controllerRef.close();
+  });
+
   // If completeTurn itself failed, the DB has the question but not the
   // reply — navigating (and so remounting on a fresh initialMessages fetch)
   // would lose the on-screen answer immediately instead of "on the next

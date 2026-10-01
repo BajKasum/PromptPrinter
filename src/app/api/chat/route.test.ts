@@ -412,6 +412,33 @@ describe("POST /api/chat", () => {
       expect(body).not.toContain("Z.ai 429");
     });
 
+    // llm-retry.ts: a transient failure is retried inside the model call. The
+    // browser hears about it, so it can say "this is taking a little longer"
+    // instead of showing a spinner that looks stuck, and the turn still
+    // finishes normally.
+    it("tells the browser an attempt is being retried, before the first word", async () => {
+      chatCompleteStream.mockImplementation(async function* (opts: {
+        onRetry?: (e: { failedAttempt: number; maxAttempts: number }) => void;
+      }) {
+        opts.onRetry?.({ failedAttempt: 1, maxAttempts: 3 });
+        yield "Hallo";
+      });
+
+      const body = await readSse(await POST(req()));
+
+      expect(body).toContain("event: status");
+      expect(body).toContain('"phase":"retrying"');
+      expect(body).toContain('"attempt":2');
+      expect(body.indexOf("event: status")).toBeLessThan(body.indexOf("event: delta"));
+      expect(body).toContain("event: done");
+      expect(body).not.toContain("event: error");
+    });
+
+    it("never sends a status event when nothing needed a retry", async () => {
+      const body = await readSse(await POST(req()));
+      expect(body).not.toContain("event: status");
+    });
+
     it("maps an empty reply to German", async () => {
       chatCompleteStream.mockImplementation(async function* () {
         yield "";

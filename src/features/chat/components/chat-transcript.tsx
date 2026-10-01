@@ -153,12 +153,18 @@ export function ChatAssistantBubble({ content, index }: { content: string; index
   );
 }
 
-export function ChatTyping() {
+/**
+ * The waiting bubble before the first word of a reply. `retrying` is set when
+ * the provider hiccuped on something transient and the server is already on
+ * its next attempt (llm-retry.ts): the label then says so, calmly, instead of
+ * leaving a spinner that looks stuck. Nothing for the user to do either way.
+ */
+export function ChatTyping({ retrying = false }: { retrying?: boolean }) {
   const t = useT();
   return (
     <div className="flex justify-start">
-      <div className="inline-flex items-center rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-2.5">
-        <DolphinLoader size={30} label={t.chat.writing} />
+      <div className="inline-flex max-w-[88%] items-center rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-2.5">
+        <DolphinLoader size={30} label={retrying ? t.chat.retrying : t.chat.writing} />
       </div>
     </div>
   );
