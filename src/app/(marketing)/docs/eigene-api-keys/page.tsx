@@ -92,9 +92,13 @@ export default function Page() {
 
       <h2>Wie entferne ich meinen Key wieder?</h2>
       <p>
-        In denselben Einstellungen kannst du den Key jederzeit löschen. Danach
-        läuft alles wieder über meinen Zugang, samt des dazugehörigen
-        monatlichen Kontingents.
+        In denselben Einstellungen kannst du einen Key jederzeit löschen.
+        Löschst du den letzten, hängt es von deinem Plan ab. Mit{" "}
+        <strong>Pro</strong> läuft alles wieder über meinen Zugang, samt des
+        monatlichen Kontingents. Auf <strong>Free</strong> gibt es dieses
+        Kontingent nicht, ohne Key läuft dort also kein Chat mehr. Deine Chats
+        und Projekte bleiben dabei erhalten, und einen neuen Key kannst du
+        jederzeit wieder hinterlegen.
       </p>
     </DocsShell>
   );
