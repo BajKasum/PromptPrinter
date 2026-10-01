@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { MotionShell } from "@/shared/providers/motion-shell";
 import { siteUrl } from "@/shared/lib/site-url";
+import { siteVerification } from "@/shared/lib/site-verification";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,6 +35,9 @@ export const metadata: Metadata = {
   // (Vercel-Preview-Domain, spätere eigene Domain, ?utm_-Parameter) im Index
   // miteinander. Pro Seite überschreibbar, hier die Wurzel als Standard.
   alternates: { canonical: "/" },
+  // Inhaber-Nachweis für Search Console und Bing, nur wenn die Variablen
+  // gesetzt sind (shared/lib/site-verification.ts).
+  verification: siteVerification(),
   title: {
     default: "PromptPrinter, Aus rohen Ideen build-fertige Prompts",
     template: "%s · PromptPrinter",
