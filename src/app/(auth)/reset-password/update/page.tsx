@@ -4,7 +4,10 @@ import { UpdatePasswordExperience } from "@/features/auth/components/update-pass
 import { Mascot } from "@/shared/brand/mascot";
 import { createClient } from "@/server/supabase/server";
 
-export const metadata = { title: "Neues Passwort" };
+export const metadata = {
+  title: "Neues Passwort",
+  alternates: { canonical: "/reset-password/update" },
+};
 
 // The recovery session is established by the callback right before this loads,
 // so the page must always reflect the live cookie state, never a cached one.
