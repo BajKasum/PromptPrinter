@@ -19,7 +19,7 @@ export default function Page() {
       title="Chat mit Finn"
       intro="Finn liefert nicht sofort. Er fragt erst einmal nach, und genau das ist der Punkt."
     >
-      <h2>Warum erst eine Rückfrage kommt</h2>
+      <h2>Warum fragt Finn erst nach?</h2>
       <p>
         Bau-Tools wie Lovable, Cursor, v0 oder Bolt fangen sofort an zu bauen,
         auch wenn dein Prompt die Hälfte offen lässt. Was fehlt, erfinden sie,
@@ -56,7 +56,7 @@ export default function Page() {
         künstlich auf fünf Punkte aufgefüllt.
       </p>
 
-      <h2>Wie du am schnellsten antwortest</h2>
+      <h2>Wie beantworte ich die Rückfrage am schnellsten?</h2>
       <p>
         Alles in eine Nachricht, in beliebiger Reihenfolge, Stichworte reichen.
         Du musst nicht sauber pro Punkt gliedern, Finn sortiert das.
@@ -68,14 +68,14 @@ export default function Page() {
         dann später falsch im Bau-Tool landet.
       </p>
 
-      <h2>Das Ziel-Tool nennen</h2>
+      <h2>Wie sage ich Finn, für welches Tool der Prompt ist?</h2>
       <p>
         Es gibt bewusst kein Auswahlmenü dafür. Du sagst es einfach im Gespräch,
         „für Lovable“, „ich baue in Claude Code“, und der Prompt wird auf die
         Eigenheiten dieses Tools zugeschnitten. Sagst du nichts, fragt Finn.
       </p>
 
-      <h2>Weiterreden statt neu anfangen</h2>
+      <h2>Kann ich den Prompt im selben Chat ändern?</h2>
       <p>
         Ein Chat ist ein Gespräch, kein Formular. Du kannst jederzeit
         nachschieben: „mach es kürzer“, „nimm doch Postgres statt Supabase“,
@@ -90,14 +90,14 @@ export default function Page() {
         wird, in ein <Link href="/docs/projekte">Projekt verschieben</Link>.
       </p>
 
-      <h2>Wenn es kein Software-Projekt ist</h2>
+      <h2>Hilft Finn auch, wenn ich keine Software baue?</h2>
       <p>
         Finn ist auf Bau-Tools ausgerichtet, aber nicht stur. Fragst du nach
         etwas anderem, hilft er trotzdem, ohne dir Datenmodell- und
         Login-Fragen aufzuzwingen, die keinen Sinn ergeben.
       </p>
 
-      <h2>Antwort abbrechen</h2>
+      <h2>Wie breche ich eine Antwort ab?</h2>
       <p>
         Während Finn schreibt, siehst du die Antwort Wort für Wort entstehen.
         Merkst du unterwegs, dass du dich verrannt hast, brich mit dem

@@ -72,7 +72,7 @@ export default function Page() {
         das geänderte Stück.
       </p>
 
-      <h2>Und dann?</h2>
+      <h2>Wie geht es danach weiter?</h2>
       <p>
         Für einen einzelnen Prompt reicht ein normaler Chat völlig. Sobald du
         länger an derselben Sache arbeitest, lohnt sich ein{" "}

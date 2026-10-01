@@ -19,7 +19,7 @@ export default function Page() {
       title="Prompts speichern"
       intro="Ein Prompt, der funktioniert hat, soll nicht im Chat-Verlauf versanden. Ein Klick legt ihn in die Ergebnisse des Projekts."
     >
-      <h2>Speichern</h2>
+      <h2>Wie speichere ich einen Prompt?</h2>
       <p>
         In einem Projekt-Chat sitzt unter der aktuellen Antwort ein{" "}
         <strong>Speichern</strong>-Knopf. Der legt den fertigen Prompt aus dieser
@@ -32,7 +32,7 @@ export default function Page() {
         und ist in jedem Plan unbegrenzt.
       </p>
 
-      <h2>Wiederfinden</h2>
+      <h2>Wo finde ich gespeicherte Prompts?</h2>
       <p>
         Im Projekt führt der Reiter <strong>Ergebnisse</strong> zur Liste aller
         gespeicherten Prompts, neueste zuerst. Die Liste zeigt nur die Titel,
@@ -44,14 +44,14 @@ export default function Page() {
         ersten Zeile des Prompts. Passt er nicht, änderst du ihn jederzeit.
       </p>
 
-      <h2>Export als PDF</h2>
+      <h2>Kann ich einen Prompt als PDF exportieren?</h2>
       <p>
         Mit Pro lässt sich ein gespeicherter Prompt zusätzlich als PDF
         exportieren, praktisch, um ihn weiterzugeben oder in eine Dokumentation
         zu legen. Kopieren und der Markdown-Export sind in jedem Plan dabei.
       </p>
 
-      <h2>Was Speichern nicht ist</h2>
+      <h2>Erzeugt Speichern automatisch weitere Dokumente?</h2>
       <p>
         Es entsteht dabei kein Paket aus mehreren Dokumenten, kein Produktplan
         und keine automatisch erzeugte Sammlung. PromptPrinter erzeugt nichts im
@@ -60,7 +60,7 @@ export default function Page() {
         dir, du speicherst ihn.
       </p>
 
-      <h2>Gespeicherte Prompts als Kontext</h2>
+      <h2>Kennt Finn meine gespeicherten Prompts?</h2>
       <p>
         Der zuletzt gespeicherte Prompt eines Projekts wird künftigen Chats
         desselben Projekts als Referenz mitgegeben. Das hilft, wenn du an einer
@@ -68,7 +68,7 @@ export default function Page() {
         seid, ohne dass du es noch einmal einfügst.
       </p>
 
-      <h2>Nur in Projekten</h2>
+      <h2>Kann ich auch ausserhalb eines Projekts speichern?</h2>
       <p>
         Ergebnisse hängen immer an einem Projekt, in einem losen Chat gibt es
         den Speichern-Knopf nicht. Wenn du in einem normalen Chat etwas Gutes

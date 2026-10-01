@@ -25,7 +25,7 @@ export default function Page() {
       title="Pläne und Limits"
       intro="Zwei Pläne, zwei Grenzen, die wirklich zählen. Hier steht, was gemessen wird und was nicht."
     >
-      <h2>Free</h2>
+      <h2>Was enthält der Free-Plan?</h2>
       <p>
         Free hat <strong>keinen eigenen Zugang zu meinem Modell</strong>. Du
         brauchst zwingend einen{" "}
@@ -45,7 +45,7 @@ export default function Page() {
         <li>Kopieren und Markdown-Export</li>
       </ul>
 
-      <h2>Pro</h2>
+      <h2>Was enthält der Pro-Plan?</h2>
       <p>
         Pro läuft <strong>ohne eigenen Key</strong>, ich stelle meinen
         Modellzugang bereit.
@@ -66,7 +66,7 @@ export default function Page() {
         <Link href="/pricing">Preisseite</Link>.
       </p>
 
-      <h2>Was genau gezählt wird</h2>
+      <h2>Was zählt gegen mein Monatskontingent?</h2>
       <p>
         Gezählt wird <strong>eine Antwort von Finn</strong>, nicht deine eigene
         Nachricht und nicht das Gespräch als Ganzes. Ein Chat mit fünf Hin und
@@ -84,7 +84,7 @@ export default function Page() {
         null. Deinen Stand siehst du im Kontomenü unter Nutzung.
       </p>
 
-      <h2>Was nichts kostet</h2>
+      <h2>Was zählt nicht gegen das Kontingent?</h2>
       <p>Gar nicht gezählt werden:</p>
       <ul>
         <li>
@@ -95,7 +95,7 @@ export default function Page() {
         <li>Projekte anlegen, Dateien hochladen, Chats umbenennen</li>
       </ul>
 
-      <h2>Mit eigenem Key</h2>
+      <h2>Gilt das Monatslimit auch mit eigenem Key?</h2>
       <p>
         Hinterlegst du einen{" "}
         <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>, entfällt das
@@ -104,7 +104,7 @@ export default function Page() {
         Bonus, sondern die Voraussetzung, ohne Key läuft dort kein Chat.
       </p>
 
-      <h2>Der Schutz pro Stunde</h2>
+      <h2>Gibt es ein Limit pro Stunde?</h2>
       <p>
         Unabhängig vom Monatslimit gibt es eine stündliche Obergrenze. Die ist
         kein Sparmodell, sondern verhindert, dass ein Skript oder ein Fehler den
@@ -114,7 +114,7 @@ export default function Page() {
         versuchen.
       </p>
 
-      <h2>Wenn ein Limit erreicht ist</h2>
+      <h2>Was passiert, wenn ein Limit erreicht ist?</h2>
       <p>
         Du bekommst eine klare Meldung, die sagt, welches Limit es war und was du
         tun kannst. Nichts geht dabei verloren, deine Chats und Projekte bleiben
