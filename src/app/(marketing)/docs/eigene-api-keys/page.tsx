@@ -19,7 +19,7 @@ export default function Page() {
       title="Eigene API-Keys"
       intro="Du kannst PromptPrinter mit deinem eigenen Modell-Zugang betreiben. Dann läuft alles über dein Konto, und die Nachrichtenlimits fallen weg."
     >
-      <h2>Warum das eine gute Idee sein kann</h2>
+      <h2>Warum einen eigenen API-Key nutzen?</h2>
       <p>
         Standardmässig läuft der Chat über meinen Modellzugang, und dafür gibt es
         ein monatliches Nachrichtenkontingent, sonst wird das für ein
@@ -32,7 +32,7 @@ export default function Page() {
         nur eine Testphase: mit eigenem Key kostet dich PromptPrinter nichts.
       </p>
 
-      <h2>Einrichten</h2>
+      <h2>Wie richte ich meinen API-Key ein?</h2>
       <p>
         Unter <strong>Einstellungen → Eigene API-Keys</strong> fügst du einfach
         deinen Key ein, welcher Anbieter das ist, erkenne ich am Key selbst.
@@ -41,7 +41,7 @@ export default function Page() {
         Arbeiten.
       </p>
 
-      <h2>Welche Anbieter gehen</h2>
+      <h2>Welche Anbieter werden unterstützt?</h2>
       <ul>
         <li>
           <strong>Anthropic</strong> (Claude)
@@ -60,7 +60,7 @@ export default function Page() {
         </li>
       </ul>
 
-      <h2>Wie der Key gespeichert wird</h2>
+      <h2>Wie wird mein API-Key gespeichert?</h2>
       <p>
         Verschlüsselt, mit AES-256-GCM. Der Schlüssel dafür liegt ausserhalb der
         Datenbank auf dem Server, ein Datenbank-Abzug allein ergibt also keine
@@ -68,7 +68,7 @@ export default function Page() {
         du kannst ihn nur ersetzen oder entfernen.
       </p>
 
-      <h2>Was der eigene Key ändert</h2>
+      <h2>Was ändert sich mit einem eigenen Key?</h2>
       <ul>
         <li>Deine Anfragen laufen über dein Anbieterkonto, nicht über meines.</li>
         <li>
@@ -82,7 +82,7 @@ export default function Page() {
         <li>Die Modellkosten stehen auf deiner Rechnung beim Anbieter.</li>
       </ul>
 
-      <h2>Nur für eigene Endpunkte: was geprüft wird</h2>
+      <h2>Was wird bei einem eigenen Endpunkt geprüft?</h2>
       <p>
         Trägst du eine eigene Adresse ein, muss sie <code>https</code> sein und
         auf ein öffentlich erreichbares Ziel zeigen. Adressen, die in interne
@@ -90,7 +90,7 @@ export default function Page() {
         Missbrauch des Servers und lässt sich nicht umgehen.
       </p>
 
-      <h2>Wieder entfernen</h2>
+      <h2>Wie entferne ich meinen Key wieder?</h2>
       <p>
         In denselben Einstellungen kannst du den Key jederzeit löschen. Danach
         läuft alles wieder über meinen Zugang, samt des dazugehörigen

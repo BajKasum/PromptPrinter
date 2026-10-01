@@ -19,7 +19,7 @@ export default function Page() {
       title="Der fertige Prompt"
       intro="Was am Ende herauskommt, wie du ihn mitnimmst und wie du ihn änderst, ohne von vorne anzufangen."
     >
-      <h2>Was drinsteht</h2>
+      <h2>Was steht im fertigen Prompt?</h2>
       <p>
         Der Prompt kommt immer als ein Stück, in einem eigenen Codeblock. Er ist
         so gebaut, dass er für sich allein steht, das Bau-Tool braucht euer
@@ -41,7 +41,7 @@ export default function Page() {
         einfügen.
       </p>
 
-      <h2>Kopieren und exportieren</h2>
+      <h2>Wie kopiere oder exportiere ich den Prompt?</h2>
       <p>
         Über dem Codeblock sitzt der Kopieren-Knopf, das ist der übliche Weg.
         Zusätzlich kannst du jede Antwort als Ganzes kopieren oder als
@@ -54,7 +54,7 @@ export default function Page() {
         wiederfinden.
       </p>
 
-      <h2>Nachschärfen statt neu starten</h2>
+      <h2>Wie ändere ich den Prompt, ohne neu anzufangen?</h2>
       <p>
         Der häufigste Fehler ist, für jede Änderung einen neuen Chat
         aufzumachen. Bleib im selben Gespräch und sag einfach, was anders sein
@@ -72,7 +72,7 @@ export default function Page() {
         Versionen zusammensuchen.
       </p>
 
-      <h2>Wenn der Prompt Lücken enthält</h2>
+      <h2>Warum steht <code>[dein Wert]</code> im Prompt?</h2>
       <p>
         Steht irgendwo <code>[dein Wert]</code> oder etwas Ähnliches in eckigen
         Klammern, ist das Absicht: an der Stelle fehlte eine Information, und
@@ -80,7 +80,7 @@ export default function Page() {
         dort hingehört, dann kommt der Prompt vollständig zurück.
       </p>
 
-      <h2>Wie viel vom Gespräch zählt</h2>
+      <h2>Wie viel vom Gespräch berücksichtigt Finn?</h2>
       <p>
         Für die Antwort werden die letzten Nachrichten des Gesprächs
         berücksichtigt, nicht der komplette Verlauf. Das hält die Kosten unten

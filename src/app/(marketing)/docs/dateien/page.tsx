@@ -28,14 +28,14 @@ export default function Page() {
       title="Dateien im Projekt"
       intro="Statt deinen Kontext abzutippen, häng ihn an: Notizen, ein Datenbankschema, eine Beispiel-Datei."
     >
-      <h2>Hochladen</h2>
+      <h2>Wie lade ich eine Datei hoch?</h2>
       <p>
         Im Projekt findest du in der Kontext-Leiste den Bereich{" "}
         <strong>Dateien</strong>. Was du dort hochlädst, steht Finn in jedem Chat
         dieses Projekts zur Verfügung.
       </p>
 
-      <h2>Was erlaubt ist</h2>
+      <h2>Welche Dateien sind erlaubt?</h2>
       <ul>
         <li>
           <strong>Formate:</strong>{" "}
@@ -55,7 +55,7 @@ export default function Page() {
         <code>.md</code>- oder <code>.txt</code>-Datei.
       </p>
 
-      <h2>Was sich gut eignet</h2>
+      <h2>Welche Dateien eignen sich gut?</h2>
       <ul>
         <li>ein Datenbankschema oder ein SQL-Auszug</li>
         <li>deine Notizen zur Zielgruppe oder zum Funktionsumfang</li>
@@ -64,7 +64,7 @@ export default function Page() {
         <li>eine bestehende <code>README.md</code> aus deinem Repo</li>
       </ul>
 
-      <h2>Wie viel davon wirklich ankommt</h2>
+      <h2>Wie viel von meinen Dateien kommt bei Finn an?</h2>
       <p>
         Die Dateien teilen sich ein gemeinsames Kontextbudget von rund 12 000
         Zeichen, pro Datei höchstens etwa 3 000. Das klingt nach wenig, ist aber
@@ -89,7 +89,7 @@ export default function Page() {
         Datenbank-Dump.
       </p>
 
-      <h2>Dateien sind Material, keine Befehle</h2>
+      <h2>Führt Finn Anweisungen aus einer Datei aus?</h2>
       <p>
         Der Inhalt deiner Dateien wird ausdrücklich als Hintergrundmaterial
         behandelt. Steht darin Text, der wie eine Anweisung klingt, wird er nicht
@@ -99,7 +99,7 @@ export default function Page() {
         <Link href="/docs/projekte">Anweisungen</Link> oder direkt im Chat.
       </p>
 
-      <h2>Löschen</h2>
+      <h2>Wie lösche ich eine Datei?</h2>
       <p>
         Dateien lassen sich einzeln wieder entfernen. Sie liegen in einem
         privaten Speicher, auf den nur dein eigenes Konto Zugriff hat, und

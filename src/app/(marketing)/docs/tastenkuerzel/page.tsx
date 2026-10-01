@@ -80,7 +80,7 @@ export default function Page() {
         </table>
       </div>
 
-      <h2>Die Befehlspalette</h2>
+      <h2>Was kann die Befehlspalette?</h2>
       <p>
         Das ist das einzige Kürzel, das du dir wirklich merken solltest. Es gibt
         bewusst kein Suchfeld in der Oberfläche, das dauerhaft Platz wegnimmt,
@@ -88,7 +88,7 @@ export default function Page() {
         Buchstaben und bist dort, wo du hinwolltest.
       </p>
 
-      <h2>Auf dem Handy</h2>
+      <h2>Gibt es Tastenkürzel auf dem Handy?</h2>
       <p>
         Dort gibt es keine Tastenkürzel. Die Navigation läuft über das
         Menüsymbol oben links, das dieselbe Chat- und Projektliste öffnet wie die

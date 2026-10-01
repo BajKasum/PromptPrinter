@@ -19,7 +19,7 @@ export default function Page() {
       title="Projekte als Arbeitsplatz"
       intro="Ein Projekt ist der Ort, an dem PromptPrinter sich deinen Kontext merkt, damit du ihn nicht in jedem Chat neu erzählst."
     >
-      <h2>Wann sich ein Projekt lohnt</h2>
+      <h2>Wann lohnt sich ein Projekt?</h2>
       <p>
         Für einen einzelnen Prompt reicht ein normaler Chat. Sobald du aber
         mehrfach an derselben Sache arbeitest, wird das Wiederholen lästig:
@@ -27,7 +27,7 @@ export default function Page() {
         von vorne. Genau das nimmt dir ein Projekt ab.
       </p>
 
-      <h2>Anlegen</h2>
+      <h2>Wie lege ich ein Projekt an?</h2>
       <p>
         In der Seitenleiste auf <strong>Projekte</strong> wechseln und ein neues
         anlegen. Mehr als einen Namen brauchst du nicht, alles Weitere wächst
@@ -35,7 +35,7 @@ export default function Page() {
         Pro beliebig viele.
       </p>
 
-      <h2>Die Kontext-Leiste</h2>
+      <h2>Was ist die Kontext-Leiste?</h2>
       <p>
         Rechts im Projekt steht deine Kontext-Leiste. Was dort drinsteht, bekommt
         Finn in <em>jedem</em> Chat dieses Projekts automatisch mit.
@@ -72,7 +72,7 @@ export default function Page() {
         unter <Link href="/docs/dateien">Dateien im Projekt</Link>.
       </p>
 
-      <h2>Mehrere Chats pro Projekt</h2>
+      <h2>Kann ein Projekt mehrere Chats haben?</h2>
       <p>
         Ein Projekt kann beliebig viele Chats haben, und alle teilen sich
         denselben Kontext. Das lohnt sich, um Themen zu trennen: ein Chat für
@@ -85,7 +85,7 @@ export default function Page() {
         in der Seitenleiste.
       </p>
 
-      <h2>Wie der Kontext eingebaut wird</h2>
+      <h2>Wie baut PromptPrinter den Kontext ein?</h2>
       <p>
         Bei jedem Chat-Beitrag stellt PromptPrinter deinen Projektkontext in
         fester Reihenfolge zusammen: erst die Anweisungen, dann die Struktur,
@@ -95,7 +95,7 @@ export default function Page() {
         deshalb sind kurze, präzise Anweisungen wirksamer als lange.
       </p>
 
-      <h2>Ein Sicherheitshinweis</h2>
+      <h2>Kann eine Datei Finn Befehle geben?</h2>
       <p>
         Alles, was du an ein Projekt anhängst, insbesondere Dateien, behandelt
         Finn als Hintergrundmaterial, nie als Befehl. Wenn in einer hochgeladenen
@@ -104,7 +104,7 @@ export default function Page() {
         deine echten Chat-Nachrichten zählen als Anweisung.
       </p>
 
-      <h2>Löschen</h2>
+      <h2>Was passiert, wenn ich ein Projekt lösche?</h2>
       <p>
         Ein gelöschtes Projekt nimmt seine Chats, Dateien und gespeicherten
         Prompts mit, auch die hochgeladenen Dateien im Speicher werden dabei

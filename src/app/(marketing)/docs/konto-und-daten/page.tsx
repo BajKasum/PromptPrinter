@@ -20,14 +20,14 @@ export default function Page() {
       title="Konto und Daten"
       intro="Anmeldung, Profil, und die ehrliche Antwort darauf, was gespeichert wird und wie du alles wieder loswirst."
     >
-      <h2>Anmelden</h2>
+      <h2>Wie melde ich mich an?</h2>
       <p>
         Du kannst dich mit E-Mail und Passwort anmelden oder über Google oder
         GitHub. Wenn du dich einmal über einen dieser Dienste angemeldet hast,
         bleib am besten dabei, so landest du zuverlässig im selben Konto.
       </p>
 
-      <h2>Passwort vergessen oder ändern</h2>
+      <h2>Wie ändere ich mein Passwort oder setze es zurück?</h2>
       <p>
         Auf der Anmeldeseite gibt es den Weg über{" "}
         <Link href="/reset-password">Passwort zurücksetzen</Link>, du bekommst
@@ -36,7 +36,7 @@ export default function Page() {
         acht Zeichen.
       </p>
 
-      <h2>Profil</h2>
+      <h2>Was kann ich im Profil einstellen?</h2>
       <p>
         In den Einstellungen kannst du deinen Anzeigenamen setzen. Er ist auch
         das, womit Finn dich im leeren Chat begrüsst. Ohne Angabe wird der Teil
@@ -47,7 +47,7 @@ export default function Page() {
         nach Systemeinstellung.
       </p>
 
-      <h2>Was gespeichert wird</h2>
+      <h2>Welche Daten speichert PromptPrinter?</h2>
       <ul>
         <li>dein Konto: E-Mail, Anzeigename</li>
         <li>
@@ -70,7 +70,7 @@ export default function Page() {
         <Link href="/datenschutz">Datenschutzerklärung</Link>.
       </p>
 
-      <h2>Wer darauf zugreifen kann</h2>
+      <h2>Wer kann auf meine Daten zugreifen?</h2>
       <p>
         Deine Chats und Projekte sind auf dein Konto beschränkt, durchgesetzt auf
         Datenbankebene, nicht bloss in der Oberfläche. Es gibt aktuell keine
@@ -78,7 +78,7 @@ export default function Page() {
         sichtbar.
       </p>
 
-      <h2>Konto löschen</h2>
+      <h2>Wie lösche ich mein Konto?</h2>
       <p>
         Unter <strong>Einstellungen</strong> ganz unten kannst du dein Konto
         selbst löschen. Dabei werden dein Konto, deine Chats, deine Projekte,
@@ -92,7 +92,7 @@ export default function Page() {
         Markdown herunterladen.
       </p>
 
-      <h2>Fragen zu deinen Daten</h2>
+      <h2>An wen wende ich mich bei Fragen zu meinen Daten?</h2>
       <p>
         Auskunft, Berichtigung, Löschung: schreib einfach an{" "}
         <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>, oder nutz die{" "}
