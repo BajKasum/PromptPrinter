@@ -5,13 +5,14 @@ import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Über",
   description:
     "Wer hinter PromptPrinter steckt, warum es das gibt und was ich dir verspreche, solange ich es allein baue.",
-  alternates: { canonical: "/ueber" },
-};
+  path: "/ueber",
+});
 
 // The one page written in the founder's own voice rather than Finn's. The
 // brand rule (marketing copy speaks as Finn) is deliberately suspended here:

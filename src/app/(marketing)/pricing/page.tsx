@@ -1,20 +1,18 @@
+import type { Metadata } from "next";
 import { PricingGrid } from "@/features/marketing/components/pricing-grid";
 import { PageHeader } from "@/features/marketing/components/page-header";
 import { FAQ } from "@/features/marketing/components/faq";
 import { faqs } from "@/features/marketing/lib/faq-data";
 import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
 import { JsonLd } from "@/shared/ui/json-ld";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Preise",
-  description: `Free läuft mit deinem eigenen KI-Key komplett gratis. Ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`,
-  // Ohne eigenes `alternates` erbt jede Seite das Root-Layout-Canonical "/"
-  // unverändert (Next merged `alternates` nicht pro Feld) — /pricing zeigte
-  // damit Google "die Startseite ist die eigentliche URL dieser Seite",
-  // stille Selbst-Kannibalisierung. Jede indexierbare Seite braucht ihr
-  // eigenes Canonical.
-  alternates: { canonical: "/pricing" },
-};
+  description:
+    `Free läuft mit deinem eigenen KI-Key komplett gratis. Ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`,
+  path: "/pricing",
+});
 
 // A reassurance row (eigener Key / keine Kreditkarte / monatlich kündbar, each
 // with its own Finn) used to sit between the plan grid and the FAQ — removed

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "AGB",
-  description: "Allgemeine Geschäftsbedingungen (Nutzungsbedingungen) für PromptPrinter.",
-  alternates: { canonical: "/agb" },
-};
+  description:
+    "Allgemeine Geschäftsbedingungen (Nutzungsbedingungen) für PromptPrinter.",
+  path: "/agb",
+});
 
 export default function AgbPage() {
   return (

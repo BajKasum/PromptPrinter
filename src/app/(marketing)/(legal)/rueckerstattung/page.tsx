@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
 import { LEGAL } from "@/shared/lib/legal";
+import { pageMetadata } from "@/shared/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Rückerstattung",
   description:
     "Wann du dein Geld zurückbekommst, wie du eine Erstattung anforderst und was davon ausgenommen ist.",
-  alternates: { canonical: "/rueckerstattung" },
-};
+  path: "/rueckerstattung",
+});
 
 export default function RueckerstattungPage() {
   return (
