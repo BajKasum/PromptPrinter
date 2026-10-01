@@ -10,6 +10,7 @@ import { fmt } from "@/shared/i18n/format";
 // Speichern. Reine Darstellung. Aus chat.tsx herausgeloest (M7).
 export function ChatNotices({
   keyRequired,
+  onKeyConnected,
   error,
   retryAfter,
   input,
@@ -19,6 +20,7 @@ export function ChatNotices({
   persistWarning,
 }: {
   keyRequired: boolean;
+  onKeyConnected: () => void;
   error: string | null;
   retryAfter: number | null;
   input: string;
@@ -31,7 +33,7 @@ export function ChatNotices({
   const locale = useLocale();
   return (
     <>
-          {keyRequired && <ChatKeyNotice />}
+          {keyRequired && <ChatKeyNotice onConnected={onKeyConnected} />}
 
           {error && (
             <div

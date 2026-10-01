@@ -107,8 +107,8 @@ export const it: Messages = {
     resultTitle: "Il tuo risultato",
     keyNoticeTitle: "Prima di iniziare, mi serve la tua chiave IA.",
     keyNoticeBody:
-      "Con Free funziono con la tua chiave di Anthropic, OpenAI o Gemini. Una volta aggiunta, l'app è completamente gratuita per te. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
-    keyNoticeAddKey: "Aggiungi una chiave",
+      "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
+    keyNoticeSettings: "Un altro fornitore? Vai alle impostazioni",
     keyNoticeSeePro: "Scopri Pro",
     composerLabel: "Messaggio per Finn",
     maxLengthReached: "Lunghezza massima raggiunta",
@@ -274,6 +274,18 @@ export const it: Messages = {
         analysis_unparsable: "Non è tornato niente di utilizzabile. Riprova.",
       },
     },
+  },
+
+  keyGuide: {
+    summary: "Non hai ancora una chiave? Ecco come ottenerne una gratuita",
+    step1: "Apri Google AI Studio e accedi con il tuo account Google.",
+    step1Link: "Apri Google AI Studio",
+    step2: "Clicca su «Create API key» e copia la chiave.",
+    step3Here: "Incollala qui. La verifico prima di salvarla.",
+    step3Above: "Incollala nel campo qui sopra. La verifico prima di salvarla.",
+    limits: "L'accesso gratuito di Google ha dei limiti, che vedi in AI Studio.",
+    privacy: "Sui tuoi dati: nell'UE, in Svizzera e nel Regno Unito, secondo Google le regole dei servizi a pagamento valgono anche per l'accesso gratuito. Altrove Google può usare i contenuti dell'accesso gratuito per migliorare i suoi prodotti.",
+    privacyLink: "Condizioni di Google",
   },
 
   settings: {

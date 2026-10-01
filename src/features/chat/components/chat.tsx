@@ -108,6 +108,7 @@ export function Chat({
 
       <ChatNotices
         keyRequired={turn.keyRequired}
+        onKeyConnected={turn.dismissKeyNotice}
         error={turn.error}
         retryAfter={turn.retryAfter}
         input={input}

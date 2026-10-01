@@ -32,7 +32,9 @@ export default function Page() {
         <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>{" "}
         (Anthropic, OpenAI oder Gemini), um mit mir zu chatten, dafür läuft
         dann alles über deinen eigenen Zugang und kostet mich nichts, also
-        dich auch nichts extra.
+        dich auch nichts extra. Wie du einen kostenlosen Gemini-Key bekommst,
+        steht unter{" "}
+        <Link href="/docs/eigene-api-keys">Eigene API-Keys</Link>.
       </p>
       <ul>
         <li>

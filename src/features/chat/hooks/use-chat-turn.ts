@@ -289,6 +289,10 @@ export function useChatTurn({
     error,
     retryAfter,
     keyRequired,
+    // Nach dem Verbinden verschwindet der Key-Hinweis sofort. Der Zustand
+    // startet aus dem Server-Check und wird sonst nur durch einen 403 gesetzt,
+    // ein neues Prop käme nach router.refresh() nicht an.
+    dismissKeyNotice: () => setKeyRequired(false),
     persistWarning,
     pending,
     retrying,
