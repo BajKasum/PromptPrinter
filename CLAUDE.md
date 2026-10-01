@@ -1032,6 +1032,20 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 > per Rebase gemergten Commits wurde gezählt. Der Weg unter "Arbeitsregeln"
 > hält also, was er verspricht.
 
+> **README und Lizenz (2026-10-01, direkt auf `main`, von Kasum erlaubt):**
+> Das README ist bewusst kurz (Logo, Tagline, Screenshot, Funktionen, Stack,
+> Lizenz). **Alles Technische gehört nach [docs/SETUP.md](docs/SETUP.md)**
+> (Schnellstart, Scripts, Environment, Deploy-Checkliste, Struktur,
+> Projekt-Gedächtnis), nicht zurück ins README. Das README beschreibt, was das
+> Produkt kann: wer ein Feature streicht oder baut, zieht die Liste dort nach
+> (am 03.08. beschrieb es die entfernte Pipeline, und die Gedächtnis-Analyse
+> gab das falsch wieder). Bilder liegen in `docs/images/`, das Logo ist ein
+> 256-px-Ausschnitt von Finn (15 KB statt 2,6 MB). [LICENSE](LICENSE) ist
+> "All Rights Reserved", nur Ansehen, ein Entwurf ohne juristische Prüfung.
+> **Offen, nur Kasum:** die GitHub-Beschreibung des Repos (Zahnrad neben
+> "About") nennt noch "PRDs, technical specifications, and blueprints", also die
+> entfernte Pipeline.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
