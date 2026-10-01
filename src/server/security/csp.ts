@@ -43,9 +43,11 @@ import "server-only";
 // Nonce pro Anfrage einzigartig sein muss und eine statische Seite keine
 // Anfrage kennt.
 //
-// middleware.ts entscheidet anhand `requiresSession(pathname)` (bereits die
-// bestehende, einzige Quelle fuer "ist das eine (app)-Route"), welche der
-// beiden hier gilt — keine zweite, separat gepflegte Routenliste.
+// middleware.ts entscheidet anhand `isAppPath(pathname)`
+// (shared/lib/app-routes.ts, die eine Quelle fuer "ist das eine (app)-Route"),
+// welche der beiden hier gilt. Bis 2026-10-01 war das `requiresSession()`,
+// das auch jede tote Adresse traf: deren statische 404-Seite bekam die
+// Nonce-Policy und hydrierte aus demselben Grund nicht.
 
 // Lemon Squeezy braucht ZWEI Skript-Hosts, nicht einen.
 //

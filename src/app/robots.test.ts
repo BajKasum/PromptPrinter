@@ -36,4 +36,17 @@ describe("robots", () => {
       ])
     );
   });
+
+  // "Stop blocking AI crawlers": GPTBot, ClaudeBot, PerplexityBot und Co.
+  // lesen dieselbe `*`-Gruppe wie Google. Eine eigene Gruppe für einen Bot
+  // oder ein `Disallow: /` würde sie aussperren, und zwar unbemerkt.
+  it("sperrt keinen Crawler aus dem öffentlichen Teil aus", () => {
+    const { rules } = robots();
+    const groups = Array.isArray(rules) ? rules : [rules];
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].userAgent).toBe("*");
+    expect(groups[0].allow).toBe("/");
+    expect(groups[0].disallow).not.toContain("/");
+  });
 });

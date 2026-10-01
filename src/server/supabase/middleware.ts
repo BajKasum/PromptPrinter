@@ -3,8 +3,13 @@ import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { secureCookieOptions } from "@/server/supabase/cookie-options";
+import { isAppPath } from "@/shared/lib/app-routes";
 
 type CookieSet = { name: string; value: string; options: CookieOptions };
+
+// Ein Pfad, zu dem es garantiert keine Route gibt. Ein Rewrite dorthin lässt
+// Next die Root-not-found.tsx mit Status 404 ausliefern.
+const NOT_FOUND_PATH = "/__not-found";
 
 // Everything a signed-out visitor may reach. Anything not listed needs a
 // session (Security-Audit finding M-7).
@@ -14,8 +19,9 @@ type CookieSet = { name: string; value: string; options: CookieOptions };
 // drifted: /prompts was added without being listed, so it was guarded only by
 // the (app) layout's own check, one layer later than intended. Inverting the
 // default means the failure mode of forgetting an entry flips from "new page is
-// unguarded" to "new public page redirects to login", which is visible the
-// first time anyone opens it instead of silent.
+// unguarded" to "new public page answers 404 while signed out", which is
+// visible the first time anyone opens it instead of silent. Only the app's own
+// paths (shared/lib/app-routes.ts) redirect to /login; see updateSession.
 const PUBLIC_PREFIXES = [
   "/login",
   "/signup",
@@ -50,12 +56,10 @@ const PUBLIC_EXACT = [
 ] as const;
 
 /**
- * Exported additionally for `src/middleware.ts`, which reuses it to decide
- * between the two CSP variants (`server/security/csp.ts`) — the same
- * boundary ("is this an `(app)/*` route") happens to answer both questions,
- * and a second, separately maintained route list is exactly the drift this
- * function's own inverted-default design was built to avoid (see the comment
- * above `PUBLIC_PREFIXES`).
+ * "Needs a session" is NOT the same as "is an app page": it is also true for
+ * every address that matches no route at all. `updateSession` tells the two
+ * apart with `isAppPath()`, and so does the CSP choice in `src/middleware.ts`.
+ * Exported for tests/guards/route-access.test.ts.
  */
 export function requiresSession(pathname: string): boolean {
   // API routes answer for themselves. Every one of them already returns a 401
@@ -136,6 +140,18 @@ export async function updateSession(request: NextRequest, requestHeaders: Header
   const { pathname } = request.nextUrl;
 
   if (!user && requiresSession(pathname)) {
+    // Weder öffentlich noch Teil der App: eine tote Adresse. Bis 2026-10-01
+    // ging auch sie auf /login, also 307 auf eine Seite mit Status 200. Eine
+    // Suchmaschine sieht darin nie ein 404 und behält die Adresse im Index.
+    // Der Rewrite hält die Voreinstellung "unbekannt ist gesperrt" (M-7): auch
+    // eine vergessene App-Seite zeigt abgemeldet nur das 404, nie ihren Inhalt.
+    if (!isAppPath(pathname)) {
+      const notFound = request.nextUrl.clone();
+      notFound.pathname = NOT_FOUND_PATH;
+      notFound.search = "";
+      return NextResponse.rewrite(notFound, { request: { headers: requestHeaders } });
+    }
+
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";
     redirect.searchParams.set("next", pathname);
