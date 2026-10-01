@@ -45,13 +45,35 @@ function routeOf(file: string): string {
 
 type PublicPage = { route: string; metadata: Metadata | undefined };
 
+type Params = Record<string, string>;
+
+type PageModule = {
+  metadata?: Metadata;
+  generateStaticParams?: () => Params[] | Promise<Params[]>;
+  generateMetadata?: (props: { params: Promise<Params> }) => Promise<Metadata>;
+};
+
 const pages: PublicPage[] = [];
 
 beforeAll(async () => {
   vi.stubEnv("NEXT_PUBLIC_APP_URL", ORIGIN);
   for (const file of pagesIn(MARKETING_DIR)) {
-    const mod = (await import(/* @vite-ignore */ file)) as { metadata?: Metadata };
-    pages.push({ route: routeOf(file), metadata: mod.metadata });
+    const mod = (await import(/* @vite-ignore */ file)) as PageModule;
+    const route = routeOf(file);
+
+    // Eine dynamische Route (/vergleich/[slug]) steht für so viele Seiten,
+    // wie generateStaticParams nennt. Jede davon wird einzeln geprüft.
+    if (mod.generateStaticParams && mod.generateMetadata) {
+      for (const params of await mod.generateStaticParams()) {
+        pages.push({
+          route: route.replace(/\[(\w+)\]/g, (_, key: string) => params[key]),
+          metadata: await mod.generateMetadata({ params: Promise.resolve(params) }),
+        });
+      }
+      continue;
+    }
+
+    pages.push({ route, metadata: mod.metadata });
   }
 }, 120_000);
 
@@ -64,14 +86,24 @@ function subpages(): PublicPage[] {
   return pages.filter((page) => page.route !== "/");
 }
 
+/** Der Titel als Text, egal ob als String oder als `{ absolute }` gesetzt. */
+function titleOf(metadata: Metadata | undefined): string {
+  const title = metadata?.title;
+  if (typeof title === "string") return title;
+  if (title && "absolute" in title) return title.absolute;
+  return "";
+}
+
 function duplicates(values: string[]): string[] {
   return values.filter((value, index) => values.indexOf(value) !== index);
 }
 
 describe("SEO-Metadaten der öffentlichen Seiten", () => {
   it("findet die öffentlichen Seiten überhaupt", () => {
+    const routes = pages.map((page) => page.route);
     expect(pages.length).toBeGreaterThan(15);
-    expect(pages.map((page) => page.route)).toContain("/");
+    expect(routes).toContain("/");
+    expect(routes.filter((route) => route.includes("["))).toEqual([]);
   });
 
   it("gibt jeder Unterseite ihr eigenes Canonical", () => {
@@ -98,9 +130,24 @@ describe("SEO-Metadaten der öffentlichen Seiten", () => {
   });
 
   it("vergibt jeden Titel nur einmal", () => {
-    const titles = subpages().map((page) => String(page.metadata?.title));
-    expect(titles).not.toContain("undefined");
+    const titles = subpages().map((page) => titleOf(page.metadata));
+    expect(titles).not.toContain("");
     expect(duplicates(titles)).toEqual([]);
+  });
+
+  // Ab rund 60 Zeichen schneidet Google den Titel in der Trefferliste ab.
+  // Kurze Titel bekommen " · PromptPrinter" angehängt, das zählt mit.
+  it("hält jeden Titel so kurz, dass er in der Suche ganz zu lesen ist", () => {
+    const tooLong = subpages()
+      .map((page) => {
+        const title = page.metadata?.title;
+        const shown = typeof title === "string" ? `${title} · PromptPrinter` : titleOf(page.metadata);
+        return { route: page.route, shown };
+      })
+      .filter(({ shown }) => shown.length > 65)
+      .map(({ route, shown }) => `${route}: ${shown.length} Zeichen`);
+
+    expect(tooLong).toEqual([]);
   });
 
   it("vergibt jede Beschreibung nur einmal und lässt keine leer", () => {

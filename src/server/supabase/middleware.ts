@@ -40,6 +40,7 @@ const PUBLIC_PREFIXES = [
   "/kontakt",
   "/rueckerstattung",
   "/ueber",
+  "/vergleich",
 ] as const;
 
 // Metadata routes Next serves from the app directory. Exact matches only, so

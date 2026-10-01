@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { COMPARISONS } from "@/features/marketing/lib/comparisons";
 import { buildLlmsTxt } from "./build-llms-txt";
 
 // Same drift guard as robots.test.ts / sitemap.test.ts: every URL in here
@@ -31,5 +32,17 @@ describe("llms.txt", () => {
     expect(text).toContain("Free");
     expect(text).toContain("Pro");
     expect(text).toContain("/docs/erste-schritte");
+  });
+
+  it("lists the comparison pages with their question", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
+    const text = buildLlmsTxt();
+
+    expect(text).toContain("## Vergleiche");
+    for (const comparison of COMPARISONS) {
+      expect(text).toContain(
+        `[${comparison.question}](https://staging.example.com/vergleich/${comparison.slug})`
+      );
+    }
   });
 });

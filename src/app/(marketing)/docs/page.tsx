@@ -92,6 +92,16 @@ export default function DocsIndexPage() {
           ))}
 
           <FadeIn>
+            <p className="mb-3 text-[14px] text-secondary">
+              Noch am Überlegen, ob du das brauchst? Im{" "}
+              <Link
+                href="/vergleich"
+                className="text-accent-text underline underline-offset-2"
+              >
+                Vergleich
+              </Link>{" "}
+              steht, wann sich PromptPrinter lohnt und wann nicht.
+            </p>
             <p className="text-[14px] text-secondary">
               Etwas nicht gefunden oder etwas stimmt nicht?{" "}
               <Link
