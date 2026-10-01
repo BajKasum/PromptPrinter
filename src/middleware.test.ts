@@ -65,6 +65,18 @@ describe("middleware", () => {
     }
   );
 
+  // Die 404-Seite (src/app/not-found.tsx) ist statisch wie jede öffentliche
+  // Seite. Solange die CSP-Wahl an requiresSession() hing, bekam jede tote
+  // Adresse die Nonce-Policy, und die Seite hydrierte nicht.
+  it.each([false, true])(
+    "gibt einer toten Adresse die statische Policy (angemeldet: %s)",
+    async (signedIn) => {
+      if (signedIn) getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+      const csp = cspOf(await middleware(request("/gibt-es-nicht")));
+      expect(csp).not.toMatch(/'nonce-/);
+    }
+  );
+
   it("setzt für dieselbe Route bei jeder Anfrage einen anderen Nonce", async () => {
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     const first = cspOf(await middleware(request("/chats")));

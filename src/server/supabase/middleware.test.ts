@@ -20,6 +20,11 @@ function locationOf(res: Response): string | null {
   return res.headers.get("location");
 }
 
+/** Where NextResponse.rewrite() points; null for a pass-through or redirect. */
+function rewriteOf(res: Response): string | null {
+  return res.headers.get("x-middleware-rewrite");
+}
+
 describe("updateSession", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -49,10 +54,26 @@ describe("updateSession", () => {
 
     // The point of the inversion: a page nobody remembered to classify is
     // guarded, not exposed. This path does not exist today — that is the test.
-    it("guards an unknown path by default rather than letting it through", async () => {
+    // Guarded means a 404, not a trip to /login: a dead address that redirects
+    // to a page answering 200 never leaves a search index.
+    it("answers an unknown path with the 404 page instead of letting it through", async () => {
       const res = await updateSession(request("/some-future-page"), new Headers());
-      expect(locationOf(res)).toContain("/login");
+      expect(locationOf(res)).toBeNull();
+      expect(rewriteOf(res)).toBe("https://promptprinter.app/__not-found");
     });
+
+    it("drops the query string of a dead address from the rewrite", async () => {
+      const res = await updateSession(request("/some-future-page?ref=abc"), new Headers());
+      expect(rewriteOf(res)).toBe("https://promptprinter.app/__not-found");
+    });
+
+    it.each(["/chats", "/projects/abc", "/settings"])(
+      "does not turn the app path %s into a 404",
+      async (path) => {
+        const res = await updateSession(request(path), new Headers());
+        expect(rewriteOf(res)).toBeNull();
+      }
+    );
 
     it("remembers where the user was headed", async () => {
       const res = await updateSession(request("/projects"), new Headers());
@@ -102,7 +123,15 @@ describe("updateSession", () => {
     // A public PREFIX must not accidentally cover a longer, unrelated path.
     it("does not treat /docsomething as being under /docs", async () => {
       const res = await updateSession(request("/docsomething"), new Headers());
-      expect(locationOf(res)).toContain("/login");
+      expect(rewriteOf(res)).toBe("https://promptprinter.app/__not-found");
+    });
+
+    // Same for the app's own prefixes: /chatsomething is not an app page, so
+    // it must not send anyone to the login form either.
+    it("does not treat /chatsomething as being under /chats", async () => {
+      const res = await updateSession(request("/chatsomething"), new Headers());
+      expect(locationOf(res)).toBeNull();
+      expect(rewriteOf(res)).toBe("https://promptprinter.app/__not-found");
     });
   });
 
@@ -127,6 +156,14 @@ describe("updateSession", () => {
     it("does not redirect a password reset, which is not the login page", async () => {
       const res = await updateSession(request("/reset-password"), new Headers());
       expect(locationOf(res)).toBeNull();
+    });
+
+    // Signed in, a dead address simply falls through to Next, which answers
+    // with its own 404. No rewrite needed, nothing to hide.
+    it("leaves an unknown path to Next's own 404", async () => {
+      const res = await updateSession(request("/some-future-page"), new Headers());
+      expect(locationOf(res)).toBeNull();
+      expect(rewriteOf(res)).toBeNull();
     });
   });
 

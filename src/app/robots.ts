@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { APP_PREFIXES } from "@/shared/lib/app-routes";
 import { siteUrl } from "@/shared/lib/site-url";
 
 // Marketing pages are crawlable; the authenticated app and API are not.
@@ -15,22 +16,17 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Die ganze eingeloggte App. /admin leitet seit 2026-09-29 auf /usage
-      // um, bleibt aber gelistet, damit ein Crawler die alte Adresse gar
-      // nicht erst anfragt. /prompts fehlte hier bislang, obwohl es dieselbe
-      // auth-gated Fläche ist. robots.txt macht die Pfade nicht unsichtbar,
-      // hält brave Crawler aber davon ab, sie zu indexieren.
-      disallow: [
-        "/api/",
-        "/chats",
-        "/projects",
-        "/prompts",
-        "/settings",
-        "/usage",
-        "/billing",
-        "/plans",
-        "/admin",
-      ],
+      // Die ganze eingeloggte App, aus derselben Liste wie die Middleware
+      // (shared/lib/app-routes.ts). Vorher stand hier eine eigene Kopie, in
+      // der /prompts schon einmal fehlte. robots.txt macht die Pfade nicht
+      // unsichtbar, hält brave Crawler aber davon ab, sie zu indexieren.
+      //
+      // Bewusst EINE Gruppe für `*` und keine eigenen Gruppen für GPTBot,
+      // ClaudeBot, PerplexityBot und Co.: ein Crawler mit eigener Gruppe
+      // ignoriert `*` vollständig, die Disallow-Liste müsste dann pro Bot
+      // wiederholt werden. So gilt für KI-Crawler dasselbe wie für Google:
+      // alles Öffentliche ist erlaubt.
+      disallow: ["/api/", ...APP_PREFIXES],
     },
     sitemap: siteUrl("/sitemap.xml"),
   };

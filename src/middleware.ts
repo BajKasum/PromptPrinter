@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
-import { requiresSession, updateSession } from "@/server/supabase/middleware";
+import { updateSession } from "@/server/supabase/middleware";
 import { buildCsp, buildStaticCsp } from "@/server/security/csp";
+import { isAppPath } from "@/shared/lib/app-routes";
 
 export async function middleware(request: NextRequest) {
   // Base64-encode the UUID: CSP's nonce-source grammar is base64 alphabet
@@ -23,10 +24,11 @@ export async function middleware(request: NextRequest) {
   // andere Route ist seit Planpunkt B-2 statisch und threadet ihn nirgends
   // mehr durch, bekam bis eben aber trotzdem die strikte Nonce-only-Policy:
   // Next' eigene Hydration-Scripts hatten keinen passenden Nonce, die CSP
-  // blockierte sie, React hydrierte nie. `requiresSession()` ist bereits die
-  // einzige Quelle für "ist das eine (app)-Route" (siehe deren eigenen
-  // Kommentar) — hier wiederverwendet statt einer zweiten Routenliste.
-  const csp = requiresSession(request.nextUrl.pathname) ? buildCsp(nonce) : buildStaticCsp();
+  // blockierte sie, React hydrierte nie. `isAppPath()` ist die eine Quelle für
+  // "ist das eine (app)-Route" (shared/lib/app-routes.ts). Bis 2026-10-01
+  // stand hier `requiresSession()`: das traf auch jede tote Adresse, deren
+  // 404-Seite statisch ist und unter der Nonce-Policy genauso wenig hydrierte.
+  const csp = isAppPath(request.nextUrl.pathname) ? buildCsp(nonce) : buildStaticCsp();
   response.headers.set("Content-Security-Policy", csp);
   return response;
 }
