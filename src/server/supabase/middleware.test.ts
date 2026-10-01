@@ -96,6 +96,8 @@ describe("updateSession", () => {
       "/kontakt",
       "/rueckerstattung",
       "/ueber",
+      "/vergleich",
+      "/vergleich/prompt-vorlagen",
       "/robots.txt",
       "/sitemap.xml",
       "/llms.txt",

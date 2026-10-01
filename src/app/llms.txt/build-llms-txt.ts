@@ -1,3 +1,4 @@
+import { COMPARISONS, comparisonHref } from "@/features/marketing/lib/comparisons";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
 import { LEGAL } from "@/shared/lib/legal";
@@ -27,6 +28,11 @@ export function buildLlmsTxt(): string {
     (doc) => `- [${doc.title}](${base}${docHref(doc.slug)}): ${doc.summary}`
   ).join("\n");
 
+  const comparisons = COMPARISONS.map(
+    (comparison) =>
+      `- [${comparison.question}](${base}${comparisonHref(comparison.slug)}): ${comparison.summary}`
+  ).join("\n");
+
   return `# PromptPrinter
 
 > Ein KI-Chat, der nachfragt, bis deine Idee klar ist, und dir dann den fertigen, passenden Prompt liefert, zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.
@@ -44,6 +50,10 @@ ${plans}
 
 ## Dokumentation
 ${docs}
+
+## Vergleiche
+- [Vergleich und Alternativen](${base}/vergleich): Drei Wege zum Prompt im Vergleich, samt der Fälle, in denen PromptPrinter nicht der beste ist
+${comparisons}
 
 ## Recht
 - [Impressum](${base}/impressum)

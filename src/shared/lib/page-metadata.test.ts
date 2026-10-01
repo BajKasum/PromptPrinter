@@ -28,6 +28,19 @@ describe("pageMetadata", () => {
     expect(meta.twitter?.description).toBe(meta.description);
   });
 
+  it("hängt die Marke nicht an einen Titel, der sie schon nennt", () => {
+    const own = pageMetadata({
+      title: "PromptPrinter oder Prompt-Vorlagen?",
+      description: "Wo eine Vorlage reicht und wo eine Rückfrage mehr bringt.",
+      path: "/vergleich/prompt-vorlagen",
+      titleStandsAlone: true,
+    });
+
+    expect(own.title).toEqual({ absolute: "PromptPrinter oder Prompt-Vorlagen?" });
+    expect(own.openGraph?.title).toBe("PromptPrinter oder Prompt-Vorlagen?");
+    expect(own.twitter?.title).toBe("PromptPrinter oder Prompt-Vorlagen?");
+  });
+
   // Eine Seite mit eigenem openGraph erbt das Bild des Root-Layouts nicht
   // mehr. Ohne diese Angabe hätte jede geteilte Unterseite keine Vorschau.
   it("nennt das Vorschaubild selbst", () => {

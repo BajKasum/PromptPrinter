@@ -38,16 +38,23 @@ export function pageMetadata({
   title,
   description,
   path,
+  titleStandsAlone = false,
 }: {
   /** Kurz, ohne Markenname: das Root-Layout hängt " · PromptPrinter" an. */
   title: string;
   description: string;
   /** Der Pfad der Seite, z. B. "/pricing". */
   path: string;
+  /**
+   * Für Titel, die den Markennamen schon enthalten ("PromptPrinter oder
+   * Prompt-Vorlagen?"). Ohne das stünde er zweimal im Titel, einmal im Satz
+   * und einmal als Anhang, und der Titel würde in der Suche abgeschnitten.
+   */
+  titleStandsAlone?: boolean;
 }): Metadata {
-  const socialTitle = `${title} · ${SITE_NAME}`;
+  const socialTitle = titleStandsAlone ? title : `${title} · ${SITE_NAME}`;
   return {
-    title,
+    title: titleStandsAlone ? { absolute: title } : title,
     description,
     alternates: { canonical: path },
     openGraph: {

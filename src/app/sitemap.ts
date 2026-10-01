@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { COMPARISONS, comparisonHref } from "@/features/marketing/lib/comparisons";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import { siteUrl } from "@/shared/lib/site-url";
 
@@ -25,12 +26,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // (next.config.ts), and listing a redirect in a sitemap is a crawl error.
     { url: `${BASE}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/docs`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/vergleich`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/ueber`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
     { url: `${BASE}/kontakt`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
   ];
 
   const docs: MetadataRoute.Sitemap = DOCS_ORDER.map((article) => ({
     url: `${BASE}${docHref(article.slug)}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  // Same pattern as the docs: one array (comparisons.ts) drives the pages,
+  // the overview and this list.
+  const comparisons: MetadataRoute.Sitemap = COMPARISONS.map((comparison) => ({
+    url: `${BASE}${comparisonHref(comparison.slug)}`,
     lastModified: now,
     changeFrequency: "monthly" as const,
     priority: 0.6,
@@ -51,5 +62,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.3,
   }));
 
-  return [...marketing, ...docs, ...legal];
+  return [...marketing, ...docs, ...comparisons, ...legal];
 }

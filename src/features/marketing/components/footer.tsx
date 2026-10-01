@@ -18,6 +18,7 @@ const FOOTER_LINKS = [
   { href: "/#funktionen", label: "Funktionen" },
   { href: "/pricing", label: "Preise" },
   { href: "/docs", label: "Hilfe" },
+  { href: "/vergleich", label: "Vergleich" },
   { href: "/ueber", label: "Über" },
   { href: "/kontakt", label: "Kontakt" },
   { href: "/datenschutz", label: "Datenschutz" },
