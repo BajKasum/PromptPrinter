@@ -1,0 +1,40 @@
+Copyright (c) 2026 Kasum Bajrami. All Rights Reserved.
+
+PromptPrinter (the "Software") consists of all source code, documentation,
+text, design and artwork in this repository.
+
+VIEWING ONLY
+
+This source code is made available for viewing purposes only. No permission is
+granted to use, copy, modify, merge, publish, distribute, sublicense or sell
+copies of the Software or any part of it, or to create derivative works based
+on it, in whole or in part, for any purpose, commercial or non-commercial.
+
+This includes, without limitation:
+
+  - running, deploying or hosting the Software, or offering it as a service;
+  - copying code, text, design or artwork into other projects;
+  - using the Software or its contents to train or fine-tune machine learning
+    models.
+
+The only exception is what the GitHub Terms of Service grant to every user for
+public repositories: viewing the code and forking the repository on GitHub. A
+fork carries no further rights than this license.
+
+THIRD-PARTY COMPONENTS
+
+Third-party dependencies are licensed by their respective authors under their
+own terms. This license does not apply to them and does not change them.
+
+NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+CONTACT
+
+For permission requests, write to kasumbajrami7@gmail.com.
