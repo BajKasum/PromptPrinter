@@ -8,10 +8,18 @@ on:
     branches: ["**"]
   pull_request:
 
-# Cancel superseded runs on the same ref so pushes don't pile up.
+# Cancel superseded runs on a branch or pull request so pushes don't pile up,
+# but NEVER on main. Every commit on main keeps its own complete run.
+#
+# Until 2026-10-01 this was one group per ref with cancel-in-progress for all
+# of them. Two commits pushed on main within a few minutes meant the first
+# run was cancelled, and a cancelled run shows as a red cross in the commit
+# history: 8 of the 14 red commits among the newest 100 on main were
+# cancellations, not failures (06.09. and 01.10.2026). On main the group is
+# the commit's own SHA, so no other push can supersede it.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verify:
