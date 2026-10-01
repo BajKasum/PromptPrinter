@@ -4,6 +4,13 @@ import { GoogleGenAI } from "@google/genai";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { assertPublicHttpsUrl } from "@/server/security/url-safety";
+import {
+  extractStatusCode,
+  parseRetryAfter,
+  retryStream,
+  withRetry,
+  type RetryEvent,
+} from "@/server/llm-retry";
 import { captureError } from "@/shared/lib/observability";
 
 // The one place that talks to a model provider. /api/chat (chatCompleteStream,
@@ -75,25 +82,6 @@ export class LlmEmptyReplyError extends Error {
  */
 export type LlmFailure = "rate_limited" | "auth" | "unavailable" | "empty" | "unknown";
 
-// Covers both shapes actually thrown here: an SDK error object (Anthropic/
-// OpenAI both expose a numeric `.status`) and this file's own hand-thrown
-// transport errors, always formatted "<Provider> <status>: <detail>" (see
-// zaiComplete*/customComplete* above) — a Gemini call throws whatever
-// @google/genai throws, which doesn't reliably expose a status either way,
-// falling through to "unknown" is the honest answer for that case.
-function extractStatusCode(err: unknown): number | null {
-  if (err && typeof err === "object") {
-    const withStatus = err as { status?: unknown; statusCode?: unknown };
-    if (typeof withStatus.status === "number") return withStatus.status;
-    if (typeof withStatus.statusCode === "number") return withStatus.statusCode;
-  }
-  if (err instanceof Error) {
-    const match = err.message.match(/^\S+\s(\d{3}):/);
-    if (match) return Number(match[1]);
-  }
-  return null;
-}
-
 export function classifyLlmFailure(err: unknown): LlmFailure {
   if (err instanceof LlmEmptyReplyError) return "empty";
   const status = extractStatusCode(err);
@@ -135,6 +123,34 @@ const OPENAI_DEFAULT_MODEL = "gpt-5.1";
 // the other, see that file's own comment (QA finding F-2).
 const DEFAULT_MAX_OUTPUT_TOKENS = 6144;
 
+/**
+ * Der Fehler für eine nicht erfolgreiche HTTP-Antwort eines fetch-Wegs. Format
+ * wie bisher ("<Anbieter> <Status>: <Detail>", classifyLlmFailure liest den
+ * Status daraus), dazu die Wartezeit aus dem Retry-After-Header, damit der
+ * Retry (llm-retry.ts) einem Anbieter folgt, der selbst sagt, wie lange er
+ * braucht. `headers` fehlt in den Test-Attrappen, daher das vorsichtige Lesen.
+ */
+function providerHttpError(label: string, res: Response, detail: string): Error {
+  const error = new Error(`${label} ${res.status}: ${detail || res.statusText}`);
+  const retryAfterMs = parseRetryAfter(res.headers?.get?.("retry-after"));
+  if (retryAfterMs !== null) Object.assign(error, { retryAfterMs });
+  return error;
+}
+
+/**
+ * Die Anbieter-SDKs wiederholen von sich aus (Anthropic und OpenAI 2 Mal,
+ * Gemini bis zu 5). Das ist hier abgeschaltet: wiederholt wird zentral in
+ * llm-retry.ts, mit einer Regel für alle vier Anbieter und mit Rückmeldung an
+ * den Browser. Zwei wiederholende Schichten ergäben bis zu 3 x 3 Versuche.
+ */
+const SDK_NO_RETRY = { maxRetries: 0 } as const;
+const GEMINI_NO_RETRY = { httpOptions: { retryOptions: { attempts: 1 } } } as const;
+
+/** Der Anbieter dieses Aufrufs für die Logzeile eines Retries (kein Geheimnis). */
+function providerLabel(override: LlmOverride | undefined): string {
+  return override?.provider ?? llmConfig()?.provider ?? "stub";
+}
+
 /** Which provider is configured, if any, also the display name for storage. */
 export function llmConfig(): LlmConfig | null {
   if (process.env.ZAI_API_KEY) {
@@ -159,6 +175,15 @@ export function llmConfig(): LlmConfig | null {
  * to turn a failure into a German, non-leaking message instead (QA finding U-4).
  */
 export async function chatComplete(opts: {
+  system: string;
+  messages: LlmMessage[];
+  maxOutputTokens?: number;
+  override?: LlmOverride;
+}): Promise<LlmResult> {
+  return withRetry(() => chatCompleteOnce(opts), { label: providerLabel(opts.override) });
+}
+
+async function chatCompleteOnce(opts: {
   system: string;
   messages: LlmMessage[];
   maxOutputTokens?: number;
@@ -230,6 +255,26 @@ export async function chatComplete(opts: {
  * signal straight through.
  */
 export async function* chatCompleteStream(opts: {
+  system: string;
+  messages: LlmMessage[];
+  maxOutputTokens?: number;
+  override?: LlmOverride;
+  signal?: AbortSignal;
+  /**
+   * Wird gerufen, wenn ein Versuch an etwas Vorübergehendem gescheitert ist
+   * und gleich ein weiterer folgt (siehe llm-retry.ts). Die Chat-Route meldet
+   * daraufhin dem Browser, dass es etwas länger dauert.
+   */
+  onRetry?: (event: RetryEvent) => void;
+}): AsyncGenerator<string> {
+  yield* retryStream(() => chatCompleteStreamOnce(opts), {
+    signal: opts.signal,
+    onRetry: opts.onRetry,
+    label: providerLabel(opts.override),
+  });
+}
+
+async function* chatCompleteStreamOnce(opts: {
   system: string;
   messages: LlmMessage[];
   maxOutputTokens?: number;
@@ -347,7 +392,7 @@ async function zaiComplete(
     } catch {
       // keep the truncated raw text
     }
-    throw new Error(`Z.ai ${res.status}: ${detail || res.statusText}`);
+    throw providerHttpError("Z.ai", res, detail);
   }
 
   const json = (await res.json()) as OpenAiCompatibleResponse;
@@ -399,7 +444,7 @@ async function* zaiCompleteStream(
     } catch {
       // keep the truncated raw text
     }
-    throw new Error(`Z.ai ${res.status}: ${detail || res.statusText}`);
+    throw providerHttpError("Z.ai", res, detail);
   }
   if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
 
@@ -581,7 +626,7 @@ async function customComplete(
         bodyChars: raw.length,
       });
     }
-    throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
+    throw providerHttpError("Custom-Provider", res, detail);
   }
 
   const raw = await readCappedText(res, MAX_RESPONSE_BYTES);
@@ -642,7 +687,7 @@ async function* customCompleteStream(
         bodyChars: raw.length,
       });
     }
-    throw new Error(`Custom-Provider ${res.status}: ${detail || res.statusText}`);
+    throw providerHttpError("Custom-Provider", res, detail);
   }
   if (!res.body) throw new Error("Custom-Provider hat keinen Antwort-Stream geliefert.");
 
@@ -658,7 +703,7 @@ async function geminiComplete(
   maxOutputTokens: number,
   apiKey: string
 ): Promise<LlmResult> {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
   const res = await ai.models.generateContent({
     model,
     contents: messages.map((m) => ({
@@ -690,7 +735,7 @@ async function* geminiCompleteStream(
   apiKey: string,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
   const stream = await ai.models.generateContentStream({
     model,
     contents: messages.map((m) => ({
@@ -736,7 +781,7 @@ async function anthropicComplete(
   maxOutputTokens: number,
   apiKey: string
 ): Promise<LlmResult> {
-  const anthropic = new Anthropic({ apiKey });
+  const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const res = await anthropic.messages.create({
     model,
     system: anthropicSystemBlocks(system),
@@ -766,7 +811,7 @@ async function* anthropicCompleteStream(
   apiKey: string,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
-  const anthropic = new Anthropic({ apiKey });
+  const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const stream = await anthropic.messages.create(
     {
       model,
@@ -793,7 +838,7 @@ async function openaiComplete(
   maxOutputTokens: number,
   apiKey: string
 ): Promise<LlmResult> {
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const res = await client.chat.completions.create({
     model,
     messages: [{ role: "system", content: system }, ...messages],
@@ -818,7 +863,7 @@ async function* openaiCompleteStream(
   apiKey: string,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const stream = await client.chat.completions.create(
     {
       model,
@@ -883,6 +928,20 @@ function openAiParts(text: string, images: AnalysisImage[]): OpenAiContentPart[]
 }
 
 export async function analyzeComplete(opts: {
+  system: string;
+  text: string;
+  images?: AnalysisImage[];
+  maxOutputTokens?: number;
+  override?: LlmOverride;
+  signal?: AbortSignal;
+}): Promise<AnalysisResult> {
+  return withRetry(() => analyzeCompleteOnce(opts), {
+    signal: opts.signal,
+    label: providerLabel(opts.override),
+  });
+}
+
+async function analyzeCompleteOnce(opts: {
   system: string;
   text: string;
   images?: AnalysisImage[];
@@ -1025,7 +1084,7 @@ async function openAiCompatibleAnalyze(args: {
     } catch {
       // Nicht die erwartete Form — aus dem Body nichts weitergeben (S-1).
     }
-    throw new Error(`${args.label} ${res.status}: ${detail || res.statusText}`);
+    throw providerHttpError(args.label, res, detail);
   }
 
   const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
@@ -1052,7 +1111,7 @@ async function geminiAnalyze(
   apiKey: string,
   signal?: AbortSignal
 ): Promise<AnalysisResult> {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
   const res = await ai.models.generateContent({
     model,
     contents: [
@@ -1090,7 +1149,7 @@ async function anthropicAnalyze(
   apiKey: string,
   signal?: AbortSignal
 ): Promise<AnalysisResult> {
-  const anthropic = new Anthropic({ apiKey });
+  const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const res = await anthropic.messages.create(
     {
       model,
@@ -1141,7 +1200,7 @@ async function openaiAnalyze(
   apiKey: string,
   signal?: AbortSignal
 ): Promise<AnalysisResult> {
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const res = await client.chat.completions.create(
     {
       model,

@@ -1046,6 +1046,34 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 > "About") nennt noch "PRDs, technical specifications, and blueprints", also die
 > entfernte Pipeline.
 
+> **Vorübergehende Anbieterfehler werden wiederholt (2026-10-01,
+> `feat/llm-retry-transient-errors`):** Ein 503, ein abgerissener Aufruf oder ein
+> Ratenlimit des KI-Anbieters wurde bisher sofort als Fehlermeldung an den
+> Nutzer gereicht, obwohl derselbe Aufruf zwei Sekunden später klappt.
+> [`src/server/llm-retry.ts`](src/server/llm-retry.ts) wiederholt jetzt bis zu
+> zweimal (3 Versuche, Wartezeit 0,35 bis 0,7 s, dann 0,7 bis 1,4 s, mit
+> Zufallsanteil; ein `Retry-After` des Anbieters gilt bis 4 s). **Die Regel
+> steht an genau einer Stelle:** die drei Einstiegspunkte in `llm.ts`
+> (`chatComplete`, `chatCompleteStream`, `analyzeComplete`) sind Hüllen um die
+> bisherigen Funktionen (`…Once`), und in allen SDK-Konstruktoren sind die
+> eigenen Wiederholungen der Anbieter abgeschaltet (Anthropic/OpenAI `maxRetries:
+> 0`, Gemini `attempts: 1`; Gemini wiederholte vorher bis zu 5 Mal, sonst
+> wären es 3 x 3 Versuche geworden). **Wiederholt wird:** Netzwerkabbruch, 408,
+> 425, 429, 500, 502 bis 504, 520 bis 524, 529. **Nie:** 400, 401, 403, 404,
+> 422, ein 429 mit aufgebrauchtem Guthaben (`insufficient`, `balance`,
+> `billing`, `credit` im Text, Warten hilft dort nicht), Zeitlimit, leere
+> Antwort, Abbruch durch den Nutzer. **Streams werden nur bis zum ersten
+> Textstück wiederholt**, danach würde der Text von vorn beginnen und das
+> Gelesene verdoppeln. Ein Zug zählt weiterhin einmal gegen Kontingent und
+> Tagesbudget, egal wie viele Versuche er braucht. Die Route meldet jeden
+> Wiederholungsversuch als SSE-Event `status` (`{phase: "retrying", attempt,
+> maxAttempts}`), der Browser zeigt statt "Schreibt…" "Das dauert gerade etwas
+> länger" (`ChatTyping retrying`, Text in allen fünf Sprachen). Geloggt wird
+> jeder Versuch als `llm.retry` (Info, kein Alarm), ein endgültig
+> gescheiterter Zug trägt `attempts` im `chat.turn_failed`. **Neuer
+> Anbieter-Aufruf = durch `llm.ts` und damit durch die Hülle**, nie am
+> Retry vorbei ein SDK direkt aufrufen.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -1234,7 +1262,7 @@ src/shell/     App-Rahmen (Sidebar, Mobile-Nav, Command-Palette). Darf
 src/server/    Nie im Browser, jede Datei mit `import "server-only"`.
                security/ (crypto, csp, rate-limit, turnstile, url-safety),
                brain/ (github.ts, analyze.ts — Projekt-Gedaechtnis),
-               http/, supabase/, llm.ts, env.ts, byok.ts, project.ts
+               http/, supabase/, llm.ts, llm-retry.ts, env.ts, byok.ts, project.ts
 src/shared/    Von überall nutzbar, kennt niemanden über sich:
                ui/ brand/ motion/ providers/ lib/ supabase/
 tests/guards/  Repo-weite Invarianten (Kontrast, server-only, Schichtgrenzen,

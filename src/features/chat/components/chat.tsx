@@ -109,6 +109,10 @@ export function Chat({
   // a long prompt appear in one block exactly when the user was watching for
   // it to finish.
   const [pending, setPending] = useState<{ text: string; complete: boolean } | null>(null);
+  // The server reported a transient failure and is already on its next
+  // attempt (SSE `status`, see /api/chat). Only meaningful before the first
+  // word: it flips back off on the first delta and when the turn ends.
+  const [retrying, setRetrying] = useState(false);
   // Mirrors `pending` for event handlers (stop()) and for the commit guard;
   // synced in an effect rather than assigned during render.
   const pendingRef = useRef<{ text: string; complete: boolean } | null>(null);
@@ -320,6 +324,7 @@ export function Chat({
     pendingRef.current = null;
     pendingAssistantIdRef.current = null;
     setJustFinished(false);
+    setRetrying(false);
     setLoading(true);
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -435,8 +440,12 @@ export function Chat({
               )
             );
           }
+        } else if (event === "status") {
+          const { phase } = JSON.parse(data) as { phase?: string };
+          if (phase === "retrying") setRetrying(true);
         } else if (event === "delta") {
           const { text: chunk } = JSON.parse(data) as { text: string };
+          setRetrying(false);
           accumulated += chunk;
           setPending({ text: accumulated, complete: false });
         } else if (event === "error") {
@@ -534,6 +543,7 @@ export function Chat({
       // Only the request is over here. A completed reply that is still being
       // written out keeps `busy` true through `pending` until it commits.
       setLoading(false);
+      setRetrying(false);
     }
   }
 
@@ -546,6 +556,10 @@ export function Chat({
     -1
   );
 
+  // The "taking a little longer" hint is NOT repeated here: its bubble
+  // (DolphinLoader) is already a role="status" region, so it is announced from
+  // there, and a second announcement of the same sentence would read it twice.
+  //
   // What a screen reader actually needs to hear: that a reply started, and that
   // it finished — two discrete events, not the reply streaming in character by
   // character. The text itself stays readable at the user's own pace in the log
@@ -602,7 +616,7 @@ export function Chat({
                 <ChatAssistantBubble key={m.id} content={m.content} index={i} />
               )
             )}
-            {loading && pending === null && <ChatTyping />}
+            {loading && pending === null && <ChatTyping retrying={retrying} />}
             {pending !== null && (
               <ChatStreamingReply
                 text={pending.text}

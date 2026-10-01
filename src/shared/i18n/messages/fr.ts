@@ -124,6 +124,7 @@ export const fr: Messages = {
     copyReply: "Copier la réponse",
     exportReply: "Exporter",
     writing: "Écrit…",
+    retrying: "Ça prend un peu plus de temps que d'habitude. Je réessaie…",
     finished: "Terminé, ton prompt est prêt.",
     promptLabel: "Prompt",
     copyPrompt: "Copier le prompt",

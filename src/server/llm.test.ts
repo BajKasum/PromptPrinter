@@ -497,3 +497,204 @@ describe("classifyLlmFailure", () => {
     expect(classifyLlmFailure("not even an Error")).toBe("unknown");
   });
 });
+
+// ─── Wiederholung bei vorübergehenden Anbieterfehlern (llm-retry.ts) ─────────
+// Die Regeln selbst (was wiederholt wird, wie lange gewartet wird) prüft
+// llm-retry.test.ts. Hier geht es darum, dass sie an den echten Aufrufwegen
+// hängen: Z.ai und der Custom-Slot per fetch, im Stream und ohne.
+// Fake-Timer, damit ein Test nicht echte Sekunden wartet.
+describe("transient provider failures", () => {
+  const message = [{ role: "user" as const, content: "hi" }];
+  const custom = {
+    provider: "custom" as const,
+    apiKey: "k",
+    baseUrl: "https://example.test/v1/chat/completions",
+    model: "some-model",
+  };
+
+  function helloStream(): Response {
+    return streamResponse(
+      200,
+      sseBody(JSON.stringify({ choices: [{ delta: { content: "Hallo" } }] }), "[DONE]")
+    );
+  }
+
+  /** Ein Stream, der ein Textstück liefert und dann abreisst, wie eine gekappte Verbindung. */
+  function droppedStream(): Response {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(sseBody(JSON.stringify({ choices: [{ delta: { content: "Hallo " } }] })))
+        );
+      },
+      pull(controller) {
+        controller.error(new TypeError("terminated"));
+      },
+    });
+    return { ok: true, status: 200, statusText: "", body, text: async () => "" } as unknown as Response;
+  }
+
+  it("streams: a 503 before the first word is retried and the reply still arrives", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(streamResponse(503, JSON.stringify({ error: { message: "overloaded" } })))
+      .mockResolvedValueOnce(helloStream());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message }));
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toBe("Hallo");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("streams: tells the caller before it waits, so the browser can say it takes longer", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(streamResponse(502, "{}"))
+        .mockResolvedValueOnce(helloStream())
+    );
+    const onRetry = vi.fn();
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message, onRetry }));
+    await vi.runAllTimersAsync();
+    await result;
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(onRetry).toHaveBeenCalledWith(
+      expect.objectContaining({ failedAttempt: 1, maxAttempts: 3, reason: "http_502" })
+    );
+  });
+
+  it("streams: waits as long as the provider's Retry-After says", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const limited = {
+      ...streamResponse(429, JSON.stringify({ error: { message: "Rate limit reached" } })),
+      headers: new Headers({ "retry-after": "2" }),
+    } as unknown as Response;
+    const fetchMock = vi.fn().mockResolvedValueOnce(limited).mockResolvedValueOnce(helloStream());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message }));
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(result).resolves.toBe("Hallo");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("streams: retries a dropped connection (fetch failed)", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(helloStream());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message }));
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toBe("Hallo");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("streams: gives up after three attempts and keeps the provider's status for the failure bucket", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const fetchMock = vi.fn(async () => streamResponse(503, "{}"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message })).catch(
+      (e) => e
+    );
+    await vi.runAllTimersAsync();
+    const err = await result;
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(classifyLlmFailure(err)).toBe("unavailable");
+  });
+
+  it("streams: does not retry a rejected key, the user sees the message at once", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const fetchMock = vi.fn(async () =>
+      streamResponse(401, JSON.stringify({ error: { message: "invalid api key" } }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      collectStream(chatCompleteStream({ system: "sys", messages: message }))
+    ).rejects.toThrow("invalid api key");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("streams: does not start over once a word has arrived", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const fetchMock = vi.fn(async () => droppedStream());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const received: string[] = [];
+    const run = (async () => {
+      for await (const chunk of chatCompleteStream({ system: "sys", messages: message })) {
+        received.push(chunk);
+      }
+    })().catch((e) => e);
+    await vi.runAllTimersAsync();
+    const err = await run;
+
+    // Ein zweiter Versuch hätte "Hallo " noch einmal davor gesetzt.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(received).toEqual(["Hallo "]);
+    expect(err).toBeInstanceOf(TypeError);
+  });
+
+  it("one-off call: retries a 502 on the custom endpoint", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(mockResponse(502, JSON.stringify({ error: { message: "bad gateway" } })))
+      .mockResolvedValueOnce(mockResponse(200, OK_BODY));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = chatComplete({ system: "sys", messages: message, override: custom });
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toMatchObject({ text: "ok" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("one-off call: a wrong key still fails on the first try", async () => {
+    const fetchMock = vi.fn(async () =>
+      mockResponse(401, JSON.stringify({ error: { message: "invalid api key" } }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      chatComplete({ system: "sys", messages: message, override: custom })
+    ).rejects.toThrow("invalid api key");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not wait for an exhausted balance, even though it comes as a 429", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    const fetchMock = vi.fn(async () =>
+      streamResponse(429, JSON.stringify({ error: { message: "Insufficient balance. Please recharge." } }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      collectStream(chatCompleteStream({ system: "sys", messages: message }))
+    ).rejects.toThrow("Insufficient balance");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

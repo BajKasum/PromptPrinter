@@ -104,6 +104,19 @@ export default function Page() {
         Stopp-Knopf ab. Der bis dahin geschriebene Teil bleibt im Verlauf
         erhalten.
       </p>
+
+      <h2>Was passiert, wenn der KI-Anbieter kurz nicht antwortet?</h2>
+      <p>
+        Dann versucht PromptPrinter es von selbst bis zu zweimal nochmal, meist
+        innerhalb weniger Sekunden. Währenddessen steht im Chat „Das dauert gerade
+        etwas länger“. Du musst nichts tun.
+      </p>
+      <p>
+        Klappt es auch beim dritten Versuch nicht, bekommst du eine Meldung und
+        kannst die Nachricht erneut senden. Ein gescheiterter Versuch zählt nicht
+        gegen dein Kontingent. Hat die Antwort schon zu schreiben begonnen, wird
+        nicht von selbst neu angefangen, damit nichts doppelt dasteht.
+      </p>
     </DocsShell>
   );
 }

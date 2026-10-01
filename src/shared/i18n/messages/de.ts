@@ -130,6 +130,7 @@ export const de = {
     copyReply: "Antwort kopieren",
     exportReply: "Export",
     writing: "Schreibt…",
+    retrying: "Das dauert gerade etwas länger. Ich versuche es nochmal …",
     finished: "Fertig, dein Prompt ist startklar.",
     promptLabel: "Prompt",
     copyPrompt: "Prompt kopieren",
