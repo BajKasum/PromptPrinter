@@ -25,6 +25,24 @@ describe("ApiKeys", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
+  // Audit 23.09.2026, P-1: wer noch keinen Key hat, findet hier den Weg zu einem
+  // kostenlosen. Nur solange nichts verbunden ist, danach waere es Rauschen.
+  it("zeigt die Anleitung zu einem kostenlosen Key, solange nichts verbunden ist", () => {
+    render(<ApiKeys configured={[]} active={null} customProvider={null} />);
+    expect(screen.getByText("Noch keinen Key? So bekommst du einen kostenlosen")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Google AI Studio öffnen/ })).toHaveAttribute(
+      "href",
+      "https://aistudio.google.com/apikey"
+    );
+  });
+
+  it("blendet die Anleitung aus, sobald ein Key verbunden ist", () => {
+    render(<ApiKeys configured={["gemini"]} active="gemini" customProvider={null} />);
+    expect(
+      screen.queryByText("Noch keinen Key? So bekommst du einen kostenlosen")
+    ).not.toBeInTheDocument();
+  });
+
   it("fragt nicht nach dem Anbieter — es gibt ein einziges Eingabefeld", () => {
     render(<ApiKeys configured={[]} active={null} customProvider={null} />);
     expect(screen.getByPlaceholderText(/API-Key einfügen/)).toBeInTheDocument();

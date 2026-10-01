@@ -32,6 +32,46 @@ export default function Page() {
         nur eine Testphase: mit eigenem Key kostet dich PromptPrinter nichts.
       </p>
 
+      <h2>Wie bekomme ich einen kostenlosen Gemini-Key?</h2>
+      <p>
+        Wenn du noch keinen Key hast, ist der von Google der einfachste Weg.
+        So kommst du dazu:
+      </p>
+      <ol>
+        <li>
+          Öffne{" "}
+          <a
+            href="https://aistudio.google.com/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google AI Studio
+          </a>{" "}
+          und melde dich mit deinem Google-Konto an.
+        </li>
+        <li>
+          Klicke auf <strong>Create API key</strong> und kopiere den Key.
+        </li>
+        <li>
+          Füge ihn in PromptPrinter ein, wie im nächsten Abschnitt beschrieben.
+        </li>
+      </ol>
+      <p>
+        Der Gratis-Zugang von Google hat Limits, die du in AI Studio siehst.
+        Zu deinen Daten: In der EU, der Schweiz und Grossbritannien gelten laut
+        Googles{" "}
+        <a
+          href="https://ai.google.dev/gemini-api/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Bedingungen
+        </a>{" "}
+        die Regeln der bezahlten Dienste auch für den Gratis-Zugang.
+        Anderswo darf Google Eingaben aus dem Gratis-Zugang zur Verbesserung
+        seiner Produkte nutzen.
+      </p>
+
       <h2>Wie richte ich meinen API-Key ein?</h2>
       <p>
         Unter <strong>Einstellungen → Eigene API-Keys</strong> fügst du einfach
