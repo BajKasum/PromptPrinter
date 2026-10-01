@@ -59,19 +59,20 @@ export function PageHeader({ headline }: { headline: React.ReactNode }) {
           <AnimatedMascot state="explaining" size={112} alt="" />
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        <h1
           // No shrink-0 here, unlike the two mascots either side: at
           // narrower `lg` widths there isn't room for two 112px Finns AND a
           // full 768px headline, and the text is what should give — it wraps
           // to an extra line instead of pushing the mascots past the
           // container edge.
-          className="max-w-3xl text-balance text-[38px] font-semibold leading-[1.06] tracking-[-0.04em] text-foreground md:text-[60px] md:leading-[1.05]"
+          //
+          // `enter-rise` statt motion.h1: die Überschrift ist das grösste
+          // Element der Seite und muss ohne JavaScript sichtbar sein (siehe
+          // .enter-rise in globals.css).
+          className="enter-rise max-w-3xl text-balance text-[38px] font-semibold leading-[1.06] tracking-[-0.04em] text-foreground md:text-[60px] md:leading-[1.05]"
         >
           {headline}
-        </motion.h1>
+        </h1>
 
         <motion.div
           initial={{ opacity: 0, x: 12, scale: 0.94 }}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Bug, HelpCircle, Lightbulb, ShieldCheck } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
+import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { LEGAL } from "@/shared/lib/legal";
 
@@ -52,7 +53,7 @@ export default function KontaktPage() {
         tabIndex={-1}
         className="container-x pt-32 md:pt-40 pb-12 focus:outline-none"
       >
-        <FadeIn>
+        <Rise>
           <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
               <p className="mb-5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
@@ -80,7 +81,7 @@ export default function KontaktPage() {
               alt="Der Delfin hört zu"
             />
           </div>
-        </FadeIn>
+        </Rise>
       </section>
 
       <section className="container-x pb-16">

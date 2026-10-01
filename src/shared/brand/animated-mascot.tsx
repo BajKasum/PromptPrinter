@@ -18,6 +18,8 @@ interface AnimatedMascotProps {
   priority?: boolean;
   /** Override the state's default motion preset. */
   motion?: MascotMotion;
+  /** Passed through to <Mascot>, see there. */
+  sizes?: string;
 }
 
 type Preset = { animate: TargetAndTransition; transition: Transition };
@@ -74,6 +76,7 @@ export function AnimatedMascot({
   alt = "",
   priority = false,
   motion: motionOverride,
+  sizes,
 }: AnimatedMascotProps) {
   const reduce = useReducedMotion() ?? false;
   const preset = motionOverride ?? MASCOT_STATES[state].motion;
@@ -93,7 +96,7 @@ export function AnimatedMascot({
           exit={{ opacity: 0, scale: 0.92 }}
           transition={{ duration: swap, ease: "easeOut" }}
         >
-          <Mascot state={state} size={size} alt={alt} priority={priority} />
+          <Mascot state={state} size={size} alt={alt} priority={priority} sizes={sizes} />
         </motion.div>
       </AnimatePresence>
     </motion.div>
