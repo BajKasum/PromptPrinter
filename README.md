@@ -1,175 +1,82 @@
+<div align="center">
+
+<img src="docs/images/logo.png" alt="Finn, der Delfin von PromptPrinter" width="120" />
+
 # PromptPrinter
 
-> Der KI-Chat, der deinen Stack schon kennt. Finn stellt die Rückfragen, die
-> dein Bau-Tool nie stellt, und liefert dann den fertigen Prompt für Lovable,
-> Cursor, v0, Claude Code, Bolt & Co.
+**Der KI-Chat, der nachfragt, bevor du Credits verbrennst.**
 
-SaaS-Tool für Vibe-Coder, die Prompts in KI-Bau-Tools füttern. Kernversprechen:
-keine Credits verbrennen — die Vollständigkeits-Fragen (Ziel-Tool, Kern-Screens,
-Datenmodell, Auth, Design-Richtung) kommen einmal vorher statt als drei
-Nachbesserungs-Runden hinterher.
+Finn stellt die Rückfragen, die dein Bau-Tool nie stellt, und liefert dir den
+fertigen Prompt für Lovable, Cursor, v0, Claude Code, Bolt und Co.
 
-> **Hinweis (2026-08-03):** Dieser Abschnitt beschrieb bis eben noch
-> „Prompt-Pakete, Master-Prompt, PRD, Schema, API, UI, Tests" — die
-> Generierungs-Pipeline, die am 2026-07-17 ersatzlos entfernt wurde. Aufgefallen
-> ist das ausgerechnet beim ersten echten Lauf des Projekt-Gedächtnisses gegen
-> dieses Repo selbst: die Analyse fasste das Produkt korrekt so zusammen, wie
-> die README es beschrieb, also falsch.
+[**promptprinter.app**](https://promptprinter.app)
 
-## Projekt-Gedächtnis (AI Project Brain)
+[![Live](https://img.shields.io/badge/live-promptprinter.app-2f6a9e?style=flat-square)](https://promptprinter.app)
+[![CI](https://img.shields.io/github/actions/workflow/status/BajKasum/PromptPrinter/ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/BajKasum/PromptPrinter/actions/workflows/ci.yml)
+[![Lizenz](https://img.shields.io/badge/lizenz-all%20rights%20reserved-lightgrey?style=flat-square)](LICENSE)
 
-Ein Projekt kann Dateien tragen (README, `package.json`, Lockfile, `tsconfig`,
-`next.config`, SQL, API-Dokus, Screenshots) und ein öffentliches
-GitHub-Repository. Einmal analysieren, und PromptPrinter kennt danach
-Framework, Sprache, Architektur, Datenbank, Design-System, Coding-Style und
-Konventionen — jeder Chat des Projekts trägt das automatisch mit, der Stack
-muss nie wieder erklärt werden.
+</div>
 
-Der Kern ist die Ökonomie dahinter: die Rohdateien wanderten vorher bei *jedem*
-Chat-Zug erneut in den Systemprompt, damit das Modell den Stack jedes Mal aufs
-Neue ableitet. Jetzt passiert das einmal, und was mitreist, ist ein
-2500-Zeichen-Block. Das Datei-Budget sinkt dadurch von 12000 auf 6000 Zeichen —
-unterm Strich weniger Kontext pro Zug bei mehr Wissen.
+<p align="center">
+  <img src="docs/images/landing.png" alt="Die Startseite von PromptPrinter mit Finn und einem Beispiel-Prompt" width="860" />
+</p>
 
-- Analyse: [`src/server/brain/`](src/server/brain) (GitHub-Import, Destillation)
-- Quellensammlung: [`src/features/projects/lib/brain-sources.ts`](src/features/projects/lib/brain-sources.ts)
-- Injektion: [`src/features/projects/lib/project-context.ts`](src/features/projects/lib/project-context.ts)
-- Route: `POST/DELETE /api/projects/[id]/brain`
-- Tabelle: `project_brains` (Migration 0037), bewusst nur mit `select`-Grant —
-  geschrieben wird ausschliesslich serverseitig, sonst könnte sich jeder sein
-  „analysiertes" Ergebnis aus der Browser-Konsole schreiben.
+## Was ist PromptPrinter?
 
-**Keine Embeddings, bewusst.** Siehe [CLAUDE.md](CLAUDE.md) für die Begründung
-und die Bedingung, unter der sich das ändern würde.
+Wer eine App mit Lovable oder Cursor baut, tippt oft drei Sätze, und das Tool
+legt los. Es fragt nicht nach Datenbank, Login oder Design, es rät. Jede falsche
+Annahme kostet eine Korrekturrunde, und die kostet Credits.
+
+PromptPrinter setzt einen Schritt davor. Du erzählst Finn, was du bauen willst.
+Er stellt **eine** gebündelte Rückfrage und schreibt dir danach einen Prompt, der
+für sich steht.
+
+1. **Idee erzählen**, so grob, wie sie gerade ist.
+2. **Eine Rückfrage beantworten**: Ziel-Tool, Kern-Screens, Datenmodell, Login,
+   Design-Richtung.
+3. **Prompt kopieren** und ins Bau-Tool einfügen.
+
+## Funktionen
+
+- **Rückfrage statt Raten.** Finn fragt nur, was für deine Idee zählt, und lässt
+  Offenes als sichtbare Lücke stehen, statt etwas zu erfinden.
+- **Zugeschnitten auf dein Tool.** Lovable, Cursor, v0, Claude Code, Bolt oder
+  Replit. Nach jeder Änderung bekommst du den ganzen Prompt neu, nie nur einen
+  Ausschnitt.
+- **Projekte.** Anweisungen, Struktur, Dateien und mehrere Chats an einem Ort,
+  damit du nicht in jedem Chat von vorn erklärst.
+- **Projekt-Gedächtnis.** Dateien oder ein öffentliches GitHub-Repo einmal
+  analysieren lassen. Finn kennt danach Framework, Datenbank, Design-System und
+  Konventionen.
+- **Prompts speichern.** Gute Prompts im Projekt sichern, als Markdown oder (Pro)
+  als PDF exportieren.
+- **Sprachmodus.** Idee einsprechen statt tippen.
+- **Eigener API-Key.** Anthropic, OpenAI, Gemini oder jeder OpenAI-kompatible
+  Endpunkt. Mit eigenem Key ist der Free-Plan gratis, [Pro](https://promptprinter.app/pricing)
+  läuft ohne.
+- **Fünf Sprachen.** Die App gibt es auf Deutsch, Englisch, Französisch,
+  Italienisch und Spanisch, in hell und dunkel.
 
 ## Tech-Stack
 
-- **Next.js 15** (App Router) · **React 19** · **TypeScript** (strict)
-- **Supabase**, Auth, Postgres, Row-Level-Security
-- **Lemon Squeezy**, Billing (Checkout + Webhook live)
-- **Z.ai (GLM)**, Prompt-Generierung, Gemini als Zweit-Provider; ohne Key läuft der Stub-Modus
-- **Tailwind** mit HSL-Token-System · **Framer Motion** · **next-themes**
-- **Vitest** für Unit-Tests · **Docker** für Dev (Hot-Reload) und Prod (standalone)
+**Next.js 15** · **React 19** · **TypeScript** (strict) · **Supabase** (Auth,
+Postgres, Row-Level-Security) · **Tailwind** · **Framer Motion** · **Vitest** ·
+**Vercel**
 
-## Schnellstart
+Dazu Z.ai (GLM) und Gemini als Modelle, Lemon Squeezy für Zahlungen und Upstash
+für das Rate-Limiting. Über 1.200 Tests, dazu Guard-Tests, die Schichtgrenzen,
+Routen, Kontraste und SEO-Metadaten festhalten.
 
-```bash
-# 1. Abhängigkeiten
-npm install
+Setup, Deploy-Checkliste und Projektstruktur stehen in
+[docs/SETUP.md](docs/SETUP.md), die Design-Regeln in [docs/DESIGN.md](docs/DESIGN.md).
 
-# 2. Env anlegen (siehe „Environment" unten)
-cp .env.example .env.local
-#   → NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY und SUPABASE_SERVICE_ROLE_KEY eintragen
+## Lizenz
 
-# 3. Datenbank-Migrationen einspielen
-#    Supabase SQL-Editor oder CLI, ALLE Dateien in supabase/migrations/ der
-#    Reihe nach, von 0001 aufwärts (kein Endpunkt hier genannt, der sonst bei
-#    jeder neuen Migration erneut veraltet, M-23 im Audit vom 06.09.2026).
+Der Quellcode ist **nur zum Ansehen** veröffentlicht. Nutzen, Kopieren, Verändern
+und Weitergeben sind nicht erlaubt. Die Details stehen in [LICENSE](LICENSE).
 
-# 4. Dev-Server
-npm run dev          # http://localhost:3000
-```
+<div align="center">
 
-Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antwortet
-`/api/chat` im **Stub-Modus** (eine Demo-Antwort), der Flow bleibt testbar, ohne
-API-Quota zu verbrauchen. Der Modellzugriff ist in
-[`src/server/llm.ts`](src/server/llm.ts) gekapselt (Z.ai primär, Gemini
-sekundär).
+Gebaut von [Kasum Bajrami](https://github.com/BajKasum) in Basel.
 
-Die Gedächtnis-Analyse hat bewusst **keinen** Stub: eine erfundene Faktenliste
-wäre schlimmer als gar keine, weil sie danach in jeden Prompt dieses Projekts
-wandert. Ohne Provider-Key sagt sie ab, auch lokal.
-
-## Scripts
-
-| Befehl | Zweck |
-|---|---|
-| `npm run dev` | Dev-Server mit Hot-Reload |
-| `npm run build` | Production-Build (standalone) |
-| `npm run start` | Gebauten Build starten |
-| `npm run lint` | ESLint (`next lint`) |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run test` | Vitest (Unit-Tests) |
-| `node scripts/take-screenshots.mjs` | Screenshots aller Seiten in Light+Dark → `screenshots_Docs/` (braucht laufenden Dev-Server, Chrome und `SCREENSHOT_EMAIL`/`SCREENSHOT_PASSWORD` in `.env.local`) |
-
-## Environment
-
-Vorlage: [`.env.example`](.env.example). Welche Datei wo gelesen wird:
-
-| Datei | Wird gelesen von |
-|---|---|
-| `.env.local` | `npm run dev`, Dev-Docker (`docker-compose.yml`), Screenshot-Script |
-| `.env` | Prod-Docker (`docker-compose.prod.yml`, via `env_file`) |
-| `.env.example` | nur Vorlage (committed) |
-
-**Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen, die landen sonst im
-Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`,
-`LEMON_SQUEEZY_WEBHOOK_SECRET`) bleiben ohne Prefix.
-
-### Deploy-Checkliste
-
-Diese sieben Variablen sind in Produktion **Pflicht**, nicht optional. Fehlt eine,
-bricht der Start mit einer Meldung ab, die sie benennt (`src/server/env.ts`, geprüft
-beim Boot über `src/instrumentation.ts`):
-
-| Variable | Warum sie load-bearing ist |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Ohne Supabase keine Anmeldung, keine Daten |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | dito |
-| `SUPABASE_SERVICE_ROLE_KEY` | Kontolöschung (`/api/account`) braucht Admin-Rechte |
-| `NEXT_PUBLIC_APP_URL` | Sonst verlinken Bestätigungs- und Reset-Mails auf `localhost:3000` |
-| `API_KEY_ENCRYPTION_SECRET` | BYOK wirft beim Speichern eines eigenen Keys |
-| `UPSTASH_REDIS_REST_URL` | **Ohne Upstash antworten ALLE API-Routen mit 429** |
-| `UPSTASH_REDIS_REST_TOKEN` | dito |
-
-Der Upstash-Punkt ist der unangenehmste: `src/server/security/rate-limit.ts` scheitert in
-Produktion bewusst geschlossen, statt auf einen Limiter zurückzufallen, der über
-mehrere Instanzen hinweg gar nichts mehr begrenzt. Der resultierende 429 sieht
-nach Rate-Limit aus, nicht nach fehlender Konfiguration — deshalb der
-Start-Abbruch statt einer stillen Fehlfunktion.
-
-Ohne `ZAI_API_KEY`/`GEMINI_API_KEY` startet die App, warnt aber: der Chat läuft
-dann im Stub-Modus und liefert eine Demo-Antwort statt einer echten.
-
-## Docker
-
-Siehe [`DOCKER.md`](docs/DOCKER.md), Dev (Hot-Reload, Port 3000) und Prod (standalone,
-Port 3001) als jeweils ein Befehl.
-
-## Design
-
-Siehe [`DESIGN.md`](docs/DESIGN.md), Token-System, Theme-Regeln, Komponenten-Status.
-
-## Qualität
-
-Vor jedem Commit muss das volle Gate grün sein:
-
-```bash
-npm run typecheck && npm run lint && npm run test && npm run build
-```
-
-[CI](.github/workflows/ci.yml) (`.github/workflows/ci.yml`) führt genau dieselbe
-Kette bei jedem Push und PR aus.
-
-## Projektstruktur
-
-> M-24 (Audit 06.09.2026): dieser Abschnitt zeigte noch den Baum von vor der
-> Restrukturierung am 02.08.2026 — `src/lib/` und `src/components/` gibt es
-> nicht mehr, ebenso wenig `api/generate` (entfernt am 17.07.2026). Details
-> und Layer-Regeln: [CLAUDE.md](CLAUDE.md).
-
-```
-src/
-  app/            NUR Routing. (marketing) = öffentlich, (app) = eingeloggt,
-                  (auth) = Login/Signup, api/ = Route-Handler.
-  features/       Vertikale Schnitte, je components/ hooks/ lib/:
-                  auth · chat · marketing · projects · prompts · settings
-  shell/          App-Rahmen (Sidebar, Mobile-Nav, Command-Palette)
-  server/         Nie im Browser (`import "server-only"`): security/, brain/,
-                  http/, supabase/, llm.ts, env.ts, byok.ts
-  shared/         Von überall nutzbar: ui/ brand/ motion/ providers/ lib/
-tests/
-  guards/         Repo-weite Invarianten (Kontrast, Schichtgrenzen, …)
-supabase/
-  migrations/     SQL-Schema (RLS, Grants, gehärtete Funktionen)
-```
+</div>

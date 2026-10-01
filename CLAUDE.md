@@ -2,8 +2,9 @@
 
 Diese Datei wird bei jedem Session-Start automatisch geladen. Sie soll dir
 schnell Orientierung geben: was das Projekt ist, in welchem Zustand es steckt,
-und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](README.md),
-[DESIGN.md](docs/DESIGN.md) und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
+und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](README.md) (Überblick),
+[SETUP.md](docs/SETUP.md) (Setup, Deploy-Checkliste, Struktur), [DESIGN.md](docs/DESIGN.md)
+und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 
 > ⚠️ **Workspace-Redesign (2026-07): Phasen 1-4 + Wahrheits-Pass umgesetzt.**
 > [REDESIGN.md](docs/REDESIGN.md) ist das **verbindliche Zielmodell** und bleibt die
