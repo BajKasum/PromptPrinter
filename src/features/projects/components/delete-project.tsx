@@ -7,6 +7,10 @@ import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
+import {
+  attachmentPathsOfProject,
+  removeAttachmentObjects,
+} from "@/shared/lib/attachment-storage";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 
@@ -53,6 +57,10 @@ export function DeleteProjectButton({
     if (files && files.length > 0) {
       await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
     }
+    // Dasselbe fuer die Anhaenge der Chats dieses Projekts: ihre Zeilen
+    // kaskadieren mit dem Projekt weg, die Objekte nicht. Pfade jetzt, solange
+    // es die Zeilen noch gibt; entfernt wird erst nach dem Loeschen.
+    const attachmentPaths = await attachmentPathsOfProject(supabase, user.id, projectId);
 
     // Explizites user_id neben RLS, wie ueberall sonst (CLAUDE.mds
     // Defense-in-depth-Standard): `user` liegt hier ohnehin schon vor, es
@@ -71,6 +79,7 @@ export function DeleteProjectButton({
       });
       return;
     }
+    await removeAttachmentObjects(supabase, attachmentPaths);
     toast({
       title: t.projects.deleted,
       description: fmt(t.projects.deletedBody, { name: projectName }),

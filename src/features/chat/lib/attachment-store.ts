@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/server/supabase/admin";
 import type { createClient } from "@/server/supabase/server";
 import { removeAllPaths } from "@/shared/lib/storage-cleanup";
+import { ATTACHMENT_BUCKET } from "@/shared/lib/attachment-storage";
 import {
   TEXT_MEDIA_TYPE,
   attachmentKindOf,
@@ -31,7 +32,9 @@ import type { AttachmentRecord } from "@/features/chat/lib/attachment-model";
 
 type UserClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 
-export const ATTACHMENT_BUCKET = "chat-attachments";
+// Der Bucket-Name steht in shared/, weil auch das Löschen von Chat und Projekt
+// (zwei andere Features) ihn braucht.
+export { ATTACHMENT_BUCKET };
 
 /**
  * Wie lange eine signierte Adresse für eine Bildvorschau gilt. Eine Chat-Seite

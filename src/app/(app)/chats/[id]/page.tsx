@@ -5,7 +5,8 @@ import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
-import { MESSAGE_LOAD_LIMIT, SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { getT } from "@/server/i18n";
 
@@ -16,8 +17,6 @@ export async function generateMetadata() {
 }
 
 type Params = Promise<{ id: string }>;
-
-type DbMessage = { id: string; role: "user" | "assistant"; content: string };
 
 // The canonical home of one global chat (REDESIGN.md, Phase 2). Chats that
 // belong to a project live in their workspace instead, opening one here
@@ -41,16 +40,10 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [{ data: rows }, profile, { data: generationRows }, needsKey] = await Promise.all([
-    // Newest first + limit, then reversed below: with an unbounded chat, an
-    // ascending query + limit would keep the OLDEST rows and cut off exactly
-    // the turns the user is mid-conversation with.
-    supabase
-      .from("messages")
-      .select("id, role, content")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: false })
-      .limit(MESSAGE_LOAD_LIMIT),
+  const [initialMessages, profile, { data: generationRows }, needsKey] = await Promise.all([
+    // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
+    // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
+    loadConversationMessages(supabase, user.id, id),
     getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts.
@@ -64,7 +57,6 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   ]);
 
   const t = await getT();
-  const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
     (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
