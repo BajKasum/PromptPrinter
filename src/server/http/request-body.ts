@@ -1,6 +1,10 @@
 import "server-only";
 
-import { MAX_ASSISTANT_MESSAGE_CHARS, MAX_TRANSCRIPT_MESSAGES } from "@/shared/lib/chat-limits";
+import {
+  MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_ATTACHMENTS_REQUEST_BYTES,
+  MAX_TRANSCRIPT_MESSAGES,
+} from "@/shared/lib/chat-limits";
 
 // Bounded JSON body reading for the API routes (Security-Audit finding H-3).
 //
@@ -41,15 +45,22 @@ export class InvalidJsonBodyError extends Error {
  * Ceiling for /api/chat, derived from the request contract rather than picked:
  * the schema accepts at most MAX_TRANSCRIPT_MESSAGES entries, each at most
  * MAX_ASSISTANT_MESSAGE_CHARS long, and a UTF-8 character is at most 4 bytes.
- * 24 x 40000 x 4 = 3.84 MB, so 4 MB admits every request the schema itself
- * would accept — including a pathological all-astral-plane one — and nothing
- * beyond it. Raising either chat limit has to raise this with it.
+ * 24 x 40000 x 4 = 3.84 MB. On top of that, the newest message may carry
+ * attachments (chat-limits.ts): MAX_ATTACHMENTS_REQUEST_BYTES of raw bytes
+ * travel as Base64 (4/3 as long) plus a little JSON around them. Together
+ * that is every request the schema itself would accept — including a
+ * pathological all-astral-plane one — and nothing beyond it. Raising either
+ * chat limit has to raise this with it.
  *
  * Realistic traffic sits far below: the client trims to MAX_TRANSCRIPT_MESSAGES
  * before sending (chat.tsx), and a real reply is bounded by the provider's
- * ~6144 output tokens, so a typical full transcript is tens of KB.
+ * ~6144 output tokens, so a typical full transcript is tens of KB. The ceiling
+ * that actually binds in production is the platform's: Vercel rejects function
+ * request bodies above 4.5 MB before this code runs, which is why the
+ * attachment cap is 2 MB raw and not more.
  */
-export const MAX_CHAT_BODY_BYTES = 4 * 1024 * 1024;
+export const MAX_CHAT_BODY_BYTES =
+  4 * 1024 * 1024 + Math.ceil((MAX_ATTACHMENTS_REQUEST_BYTES * 4) / 3) + 64 * 1024;
 
 /**
  * Ceiling for the small-JSON routes (/api/projects, /api/settings/api-key).
@@ -65,7 +76,8 @@ export const MAX_SMALL_BODY_BYTES = 16 * 1024;
  * would turn a limit change into a failure at import time.
  */
 export const maxLegitimateChatBodyBytes = () =>
-  MAX_TRANSCRIPT_MESSAGES * MAX_ASSISTANT_MESSAGE_CHARS * 4;
+  MAX_TRANSCRIPT_MESSAGES * MAX_ASSISTANT_MESSAGE_CHARS * 4 +
+  Math.ceil((MAX_ATTACHMENTS_REQUEST_BYTES * 4) / 3);
 
 /**
  * Ceiling for the Lemon Squeezy webhook. Its payloads are a handful of KB
