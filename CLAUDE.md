@@ -1140,7 +1140,30 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 >   Nachrichten samt Anhängen per Embed und signiert Bild-URLs (4 h). Scheitert
 >   der Embed (Migration 0045 fehlt), fällt er auf den reinen Verlauf zurück.
 > - **Deploy-Reihenfolge: erst Migration 0045, dann der Code.** Davor geht der
->   Chat weiter, nur Nachrichten MIT Anhang scheitern.
+>   Chat weiter, nur Nachrichten MIT Anhang scheitern. **Eingehalten:** 0045
+>   wurde am 2026-10-02 als `chat_attachments` in die Produktions-Datenbank
+>   angewendet (Supabase-MCP, letzte Migration davor `drop_conversation_target`),
+>   danach PR #27 per Rebase-Merge nach `main`. 0043 (Stripe-Reste) ist
+>   weiterhin NICHT live, die beiden sind unabhängig.
+> - **Nach dem Anwenden lesend geprüft (2026-10-02):** `message_attachments`
+>   existiert mit RLS an und der Policy `message_attachments_owner_select`;
+>   `authenticated` hat nur `select`, `anon` gar nichts. Bucket `chat-attachments`
+>   ist privat, 2.097.152 Byte, erlaubt `image/png`, `image/jpeg`, `image/webp`,
+>   `text/plain`. Auf `storage.objects` gibt es für ihn nur `select` und
+>   `delete`, keine insert-Policy (die übrigen insert-Policies der Tabelle
+>   gelten `avatars` und `project-files`). `attachment_bytes_used()` ist für
+>   `authenticated` ausführbar, für `anon`/`public` nicht; der Trigger
+>   `message_attachments_limit` ist aktiv und seine Funktion für niemanden
+>   ausführbar. In einer Transaktion mit ROLLBACK als `authenticated` mit
+>   zufälliger UUID: Zählung 0, Insert scheitert mit `42501 permission denied`.
+>   Danach 0 Zeilen und 0 Objekte, es blieb nichts zurück. Advisors: keine neue
+>   Sicherheitswarnung. Neu in der Performance-Liste nur zwei INFO-Hinweise
+>   „Unused Index" für `message_attachments_message_idx` und
+>   `message_attachments_conversation_idx`, erwartbar bei einer leeren Tabelle,
+>   kein Handlungsbedarf (nach echter Nutzung noch einmal ansehen). Die übrigen
+>   Funde (`billing_events` ohne Policy und ohne FK-Index, Schutz vor geleakten
+>   Passwörtern in Supabase Auth nicht aktiviert, ältere ungenutzte Indizes)
+>   gab es schon vorher.
 > - **Datenschutz/Hilfe nachgezogen:** neuer Abschnitt „Anhänge im Chat" in der
 >   Datenschutzerklärung (`lastUpdated` auf den 2.10.2026), Anhänge in der
 >   Z.ai-/Supabase-Aufzählung, Speicherdauer und Löschen; Hilfe-Artikel
@@ -1151,8 +1174,9 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 >   Browser-Aufbereitung, Composer, Chat, Lösch-Pfade; Mutationstest am
 >   Zurückrollen), Composer in hell und dunkel im Browser-Pane (Hover-Tooltip,
 >   Datei-Auswahl, Verkleinern, Vorschau, abgeschickte Nachricht). **Nicht
->   verifiziert:** der ganze Ablauf gegen die echte Datenbank und den echten
->   Bucket mit eingeloggtem Konto (kein Login in der Sitzung), und die
+>   verifiziert:** der ganze Ablauf mit eingeloggtem Konto gegen die echte
+>   Datenbank und den echten Bucket (kein Login in der Sitzung; das Schema
+>   selbst ist seit dem 2026-10-02 live und geprüft, siehe oben), und die
 >   Übersetzungen in fr/it/es (von Muttersprachlern prüfen lassen).
 
 ## Was ist PromptPrinter?
