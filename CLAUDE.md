@@ -943,9 +943,10 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 > Fast-Forward nach `main`, und GitHub hat die meisten dieser Commits nicht in
 > Kasums Contributions gezählt (Messung und Begründung unter
 > "Arbeitsregeln"). Ab jetzt geht jeder Branch per PR und `gh pr merge
-> --rebase` nach `main`. Die bereits gemergten Commits bleiben, wie sie sind:
-> sie nachträglich zählen zu lassen hiesse, `main` umzuschreiben und per
-> Force-Push hochzuladen, das ist bewusst nicht passiert.
+> --rebase` nach `main`. Die bereits gemergten Commits bleiben, wie sie sind
+> (kein Force-Push auf `main`). **Nachträglich gezählt wurden sie am 01.10.2026
+> trotzdem**, ohne die Historie anzufassen, durch einen kurzen Wechsel des
+> Standard-Branches (Ablauf und Messung unter "Arbeitsregeln").
 
 > **SEO-Durchgang (2026-10-01):** Kasum brachte eine Checkliste aus einem
 > TikTok mit (serverseitig rendern, Sitemap, robots, KI-Crawler, llms.txt,
@@ -1199,6 +1200,30 @@ startete und selbst noch schrieb. Deshalb bewusst **kein** `prebuild`, das
   `commitContributionsByRepository`), nicht nur am Profil. Ein Commit zählt am
   Tag, an dem er geschrieben wurde (Autor-Datum), nicht am Tag des Merges.
   Jeder PR zählt zusätzlich als ein eigener Beitrag.
+
+  **Ungezählte Commits nachträglich zählen lassen (am 01.10.2026 getestet, hat
+  funktioniert):** Ein Wechsel des Standard-Branches lässt GitHub die Beiträge
+  des Repos neu einlesen. Die Historie bleibt dabei unberührt.
+  1. Spiegel-Branch auf den aktuellen `main`-HEAD legen
+     (`git branch contributions-reindex main && git push origin contributions-reindex`).
+     Er muss auf dem HEAD stehen, damit jeder Commit von `main` auch auf dem
+     neuen Standard-Branch erreichbar bleibt und nichts wegfallen kann.
+  2. `gh api -X PATCH repos/BajKasum/PromptPrinter -f default_branch=contributions-reindex`
+  3. Rund zwei Minuten warten, dann messen (`contributionsCollection`, siehe
+     oben). Am 01.10. zeigte die erste Messung nach 13 Sekunden noch nichts,
+     die zweite nach rund 90 Sekunden schon alles.
+  4. `gh api -X PATCH repos/BajKasum/PromptPrinter -f default_branch=main` und
+     nochmal messen, ob die Zahlen halten.
+
+  Gemessen: 28.09. 6 auf 37 Commits, 29.09. 3 auf 13, 01.10. 14 auf 15. Die
+  Zahlen standen nach dem Zurückstellen und auch einen Tag später unverändert.
+  Vercel deployte durch den Wechsel nichts. **Während des Wechsels (wenige
+  Minuten) nichts auf `main` pushen oder mergen:** ein Push auf einen
+  Nicht-Standard-Branch zählt laut GitHub nicht als Beitrag. Der Spiegel-Branch
+  bleibt stehen (Branches nie löschen). Warum das nötig war: die Commits waren
+  vorher schon auf einem Branch, und GitHub zählte sie beim Fast-Forward nach
+  `main` nicht. Ob das wirklich der Mechanismus ist, ist nicht belegt, belegt
+  ist nur, dass der Wechsel sie nachträglich zählt.
 - **Nach jeder abgeschlossenen Änderung committen + pushen**, nicht auf Aufforderung warten.
 - **Secrets nie mit `NEXT_PUBLIC_*`** prefixen, landen sonst im Client-Bundle.
   Server-Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`, …) ohne Prefix.
