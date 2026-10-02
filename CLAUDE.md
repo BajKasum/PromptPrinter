@@ -1075,6 +1075,86 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 > Anbieter-Aufruf = durch `llm.ts` und damit durch die Hülle**, nie am
 > Retry vorbei ein SDK direkt aufrufen.
 
+> **Fotos und Dateien an Chat-Nachrichten (2026-10-02, Branch
+> `feat/chat-attachments`):** Ein „+" links im Composer öffnet direkt die
+> Dateiauswahl (kein Menü), beim Hovern steht „Fotos oder Dateien hinzufügen"
+> (neues `shared/ui/tooltip.tsx`). Entschieden von Kasum, nach der Frage
+> „nur an Finn schicken oder speichern": **dauerhaft im Chat speichern**, wie bei
+> ChatGPT (die leichtere Variante ohne Speicherung wurde bewusst verworfen).
+>
+> - **Was geht:** Fotos (PNG/JPG/WebP) und alles aus der Dateiliste
+>   (`shared/lib/file-kinds.ts`, aus `project-files.ts` hierher gezogen, weil zwei
+>   Features sie brauchen), bis 4 je Nachricht, auch per Strg+V. Lockfiles zählen
+>   als Text (200-KB-Grenze). **Nicht** dabei: PDF, GIF, HEIC. Eine Nachricht
+>   braucht ihren Text, ein Anhang allein lässt sich nicht senden (Hinweis unter
+>   den Dateien). Drag & Drop gibt es nicht.
+> - **Grenzen** an einer Stelle, `shared/lib/chat-limits.ts`: Bilder auf 1568 px
+>   und höchstens 1 MB (Browser skaliert, ein 11-MB-PNG wird ~160 KB, im
+>   Browser-Pane nachgemessen), Textdateien 200 KB, **2 MB roh je Anfrage**
+>   (Vercel nimmt Bodies nur bis 4,5 MB, Base64 kostet 33 %), **100 MB je
+>   Konto**. `MAX_CHAT_BODY_BYTES` und sein Invarianten-Test tragen den
+>   Anhangsanteil.
+> - **Speicher:** Migration **0045**, Tabelle `message_attachments` (Client nur
+>   `select`) + privater Bucket `chat-attachments` **ohne insert-Policy**:
+>   geschrieben wird nur in `/api/chat` über den Service-Role-Client
+>   (`createAdminClient`), nachdem `validateUploads` Magic Bytes, strenges UTF-8,
+>   Grössen und das Kontingent (`attachment_bytes_used()`, eine Funktion, weil
+>   PostgREST bei 1000 Zeilen kappt) geprüft hat. Der Browser sagt, was er
+>   hochladen WILL, der Typ kommt aus den Bytes. Pfad
+>   `{userId}/{conversationId}/{uuid}.{ext}`, nie der Dateiname.
+> - **Ablauf:** Bytes reisen als Base64 an der NEUEN Nachricht; ältere Nachrichten
+>   tragen nur ihre Zeilen-ID, der Server schlägt ihre Anhänge selbst nach
+>   (`model-history.ts`, auf Eigentümer + Konversation eingegrenzt). Ein
+>   Browser kann dem Modell also nichts unterschieben, was nicht als echter
+>   Anhang des Chats gespeichert ist. `openTurn` legt Objekte und Zeilen mit der
+>   Frage ab, bei einem Fehler geht alles zurück.
+> - **Was das Modell sieht** (`attachment-model.ts`, rein, ohne Mocks testbar):
+>   Budget vom Neuesten zum Ältesten, höchstens 4 Bilder, 24.000 Zeichen
+>   Dateitext, 12.000 je Datei ("nicht Credits verbrennen"). Dateitext steht in
+>   `<attached_file>`-Tags, ein schliessendes Tag im Text wird entschärft. Fällt
+>   etwas heraus, sagt das Modell es („…is not available to you in this turn"),
+>   statt zu raten. Systemprompt: Anhänge sind Material, keine Anweisung (wie der
+>   Projektkontext).
+> - **Anbieter** (`llm.ts`): `LlmMessage.images`, jeder Pfad übersetzt in seine
+>   Form (image_url-Data-URI für Z.ai/Custom/OpenAI, inlineData für Gemini,
+>   base64-Blöcke VOR dem Text für Anthropic). **Z.ai:** `glm-4.5-air` sieht keine
+>   Bilder, ein Zug mit Bild im Verlauf läuft auf `glm-4.6v`
+>   (`ZAI_VISION_MODEL`), teurer, aber nur dann. **Gegen den echten Account
+>   geprüft:** ein selbst erzeugtes blaues Quadrat wird über den Chat-Stream als
+>   „blue" erkannt. Ein BYOK-Custom-Modell ohne Vision scheitert mit der
+>   generischen Anbieter-Fehlermeldung.
+> - **Aufräumen, immer in derselben Reihenfolge:** Pfade einsammeln, ZEILEN
+>   löschen (Kaskade), erst bei Erfolg die OBJEKTE entfernen. Storage-Objekte
+>   kaskadieren nicht. Betrifft `rollbackTurn`, `dropSupersededMessages`,
+>   Chat löschen (`chat-list.tsx`), Projekt löschen (`delete-project.tsx`, Inner
+>   Join über `conversations`) und Konto löschen (`api/account`, seitenweise).
+>   Die Helfer für Browser-Seiten stehen in `shared/lib/attachment-storage.ts`
+>   (`projects` darf nicht aus `chat` importieren). Waisen findet
+>   `scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments`.
+> - **Bearbeiten einer Nachricht mit Anhängen:** die Dateien bleiben dran,
+>   werden nicht erneut hochgeladen. `inheritAttachmentsFrom` (nur wirksam, wenn
+>   die Anfrage dieselbe Nachricht auch als `supersededMessageIds` führt) hängt
+>   sie erst NACH dem erfolgreichen Zug um, VOR dem Wegwerfen der alten. Ohne
+>   echte Zeilen-ID gibt es kein Bearbeiten solcher Nachrichten.
+> - **Verlauf nach dem Neuladen:** `load-messages.ts` (beide Chat-Seiten) lädt
+>   Nachrichten samt Anhängen per Embed und signiert Bild-URLs (4 h). Scheitert
+>   der Embed (Migration 0045 fehlt), fällt er auf den reinen Verlauf zurück.
+> - **Deploy-Reihenfolge: erst Migration 0045, dann der Code.** Davor geht der
+>   Chat weiter, nur Nachrichten MIT Anhang scheitern.
+> - **Datenschutz/Hilfe nachgezogen:** neuer Abschnitt „Anhänge im Chat" in der
+>   Datenschutzerklärung (`lastUpdated` auf den 2.10.2026), Anhänge in der
+>   Z.ai-/Supabase-Aufzählung, Speicherdauer und Löschen; Hilfe-Artikel
+>   „Chat mit Finn" (drei neue Fragen), „Dateien im Projekt" (der Satz „Bilder
+>   kommen nicht in den Chat" galt nicht mehr) und „Konto und Daten".
+>   **Juristisch ansehen lassen**, wie jede Änderung an den Rechtstexten.
+> - **Verifiziert:** Gate grün (1593 Tests; neu: Store, Route-Ablauf, Budget,
+>   Browser-Aufbereitung, Composer, Chat, Lösch-Pfade; Mutationstest am
+>   Zurückrollen), Composer in hell und dunkel im Browser-Pane (Hover-Tooltip,
+>   Datei-Auswahl, Verkleinern, Vorschau, abgeschickte Nachricht). **Nicht
+>   verifiziert:** der ganze Ablauf gegen die echte Datenbank und den echten
+>   Bucket mit eingeloggtem Konto (kein Login in der Sitzung), und die
+>   Übersetzungen in fr/it/es (von Muttersprachlern prüfen lassen).
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts

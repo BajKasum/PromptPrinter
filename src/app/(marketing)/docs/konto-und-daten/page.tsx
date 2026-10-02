@@ -55,7 +55,8 @@ export default function Page() {
         </li>
         <li>deine Projekte samt Anweisungen, Struktur und gespeicherten Prompts</li>
         <li>
-          hochgeladene <Link href="/docs/dateien">Dateien</Link> in einem
+          hochgeladene <Link href="/docs/dateien">Dateien</Link> und{" "}
+          <Link href="/docs/chat-mit-finn">Anhänge deiner Chats</Link> in einem
           privaten Speicher
         </li>
         <li>
@@ -82,9 +83,9 @@ export default function Page() {
       <p>
         Unter <strong>Einstellungen</strong> ganz unten kannst du dein Konto
         selbst löschen. Dabei werden dein Konto, deine Chats, deine Projekte,
-        gespeicherte Prompts, hochgeladene Dateien und ein hinterlegter API-Key
-        entfernt, auch die Dateien im Speicher, nicht nur ihre
-        Datenbankeinträge.
+        gespeicherte Prompts, hochgeladene Dateien, Chat-Anhänge und ein
+        hinterlegter API-Key entfernt, auch die Dateien im Speicher, nicht nur
+        ihre Datenbankeinträge.
       </p>
       <p>
         Das ist endgültig und lässt sich nicht rückgängig machen. Wenn du etwas

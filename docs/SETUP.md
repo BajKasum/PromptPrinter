@@ -165,3 +165,25 @@ unterm Strich weniger Kontext pro Zug bei mehr Wissen.
 
 **Keine Embeddings, bewusst.** Siehe [CLAUDE.md](../CLAUDE.md) für die Begründung
 und die Bedingung, unter der sich das ändern würde.
+
+## Anhänge im Chat
+
+Ein „+" im Composer hängt Fotos (PNG, JPG, WebP) und Text-, Code- oder
+Konfigurationsdateien an eine Nachricht, bis zu vier. Die Anhänge bleiben im Chat
+und gehen bei späteren Antworten erneut mit, soweit sie ins Modell-Budget passen.
+
+- Grenzen an einer Stelle: [`src/shared/lib/chat-limits.ts`](../src/shared/lib/chat-limits.ts)
+- Prüfen, ablegen, nachschlagen: [`src/features/chat/lib/attachment-store.ts`](../src/features/chat/lib/attachment-store.ts)
+- Was beim Modell ankommt (Budget, Kürzen): [`attachment-model.ts`](../src/features/chat/lib/attachment-model.ts), [`model-history.ts`](../src/features/chat/lib/model-history.ts)
+- Tabelle `message_attachments` und privater Bucket `chat-attachments`: **Migration 0045**.
+  Der Bucket hat bewusst **keine insert-Policy**, geschrieben wird nur in `/api/chat`
+  über den Service-Role-Client, nachdem Magic Bytes, Kodierung, Grössen und das
+  Speicherkontingent (100 MB je Konto) geprüft sind.
+- **Reihenfolge beim Deploy: erst Migration 0045 anwenden, dann den Code.** Läuft
+  der Code ohne die Migration, geht der Chat weiter (Verlauf ohne Anhänge), aber
+  jede Nachricht MIT Anhang scheitert mit "konnte nicht gespeichert werden".
+- Z.ai: ein Zug, dessen Verlauf ein Bild trägt, läuft auf dem sehenden Modell
+  (`ZAI_VISION_MODEL`, Default `glm-4.6v`) statt auf `glm-4.5-air`. Teurer, aber nur
+  für Züge mit Bild.
+- Verwaiste Objekte im Bucket (ein Aufräumschritt, der nach dem Löschen scheiterte):
+  `node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments`

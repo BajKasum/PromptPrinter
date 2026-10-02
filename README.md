@@ -43,6 +43,9 @@ für sich steht.
 - **Zugeschnitten auf dein Tool.** Lovable, Cursor, v0, Claude Code, Bolt oder
   Replit. Nach jeder Änderung bekommst du den ganzen Prompt neu, nie nur einen
   Ausschnitt.
+- **Fotos und Dateien anhängen.** Ein Screenshot oder eine Anforderungsliste an
+  die Nachricht, Finn sieht sie und baut den Prompt darauf. Die Anhänge bleiben
+  im Chat.
 - **Projekte.** Anweisungen, Struktur, Dateien und mehrere Chats an einem Ort,
   damit du nicht in jedem Chat von vorn erklärst.
 - **Projekt-Gedächtnis.** Dateien oder ein öffentliches GitHub-Repo einmal

@@ -6,12 +6,19 @@ import {
   MAX_PROJECT_FILE_BYTES,
 } from "@/features/projects/lib/project-files";
 import { pageMetadata } from "@/shared/lib/page-metadata";
+import {
+  MAX_ATTACHMENT_STORAGE_PER_USER,
+  MAX_ATTACHMENTS_PER_MESSAGE,
+} from "@/shared/lib/chat-limits";
 
 // Die Dateigrenzen kommen aus project-files.ts, derselben Quelle, die Upload
 // und Migration 0038 durchsetzen. Bis 28.09.2026 stand hier von Hand
 // ".md, .txt, .json, .csv", obwohl seit dem Projekt-Gedaechtnis auch Code,
 // Konfiguration und Bilder erlaubt sind.
 const MAX_PROJECT_MB = Math.round(MAX_PROJECT_FILE_BYTES / (1024 * 1024));
+// Dasselbe fuer die Anhaenge einer Chat-Nachricht: die Zahlen stehen in
+// chat-limits.ts, derselben Quelle, die der Composer und die Route durchsetzen.
+const MAX_ATTACHMENT_STORAGE_MB = Math.round(MAX_ATTACHMENT_STORAGE_PER_USER / (1024 * 1024));
 
 export const metadata: Metadata = pageMetadata({
   title: "Datenschutz",
@@ -72,6 +79,22 @@ export default function DatenschutzPage() {
         anhängst (Text-, Code- und Konfigurationsdateien sowie Bilder wie Screenshots, höchstens{" "}
         {MAX_FILES_PER_PROJECT} Dateien und {MAX_PROJECT_MB} MB pro Projekt). Diese Inhalte werden in
         deinem Workspace gespeichert, damit du sie wieder aufrufen kannst.
+      </p>
+      <h3>Anhänge im Chat (optional)</h3>
+      <p>
+        An eine Chat-Nachricht kannst du <strong>Fotos und Dateien</strong> hängen (Bilder wie
+        Screenshots sowie Text-, Code- und Konfigurationsdateien, höchstens{" "}
+        {MAX_ATTACHMENTS_PER_MESSAGE} je Nachricht). Fotos verkleinert dein Browser vor dem Senden.
+        Wir speichern sie in einem privaten Dateispeicher, auf den nur dein Konto Zugriff hat,
+        zusammen mit dem Dateinamen, und zeigen sie dir über kurzlebige Adressen im Chat wieder an.
+        Insgesamt kann ein Konto höchstens {MAX_ATTACHMENT_STORAGE_MB} MB an Anhängen belegen.
+      </p>
+      <p>
+        Damit das Modell sie berücksichtigen kann, gehen sie bei der Antwort an den Modellanbieter
+        (Ziffer 4). Das gilt auch für spätere Antworten im selben Chat, solange die Nachricht im
+        Verlauf steht: begrenzt auf die jüngsten Anhänge, Textdateien nur zu Beginn gekürzt. Wir
+        durchsuchen Anhänge nicht und werten sie nicht für andere Zwecke aus. Löschst du den Chat,
+        das Projekt oder dein Konto, werden die Dateien aus dem Speicher mit gelöscht.
       </p>
       <h3>Projekt-Gedächtnis (optional)</h3>
       <p>
@@ -164,7 +187,8 @@ export default function DatenschutzPage() {
       <ul>
         <li>
           <strong>Supabase</strong> (Supabase Inc.): Authentifizierung, Datenbank und Dateispeicher
-          für deine Konto- und Inhaltsdaten, einschliesslich hochgeladener Projektdateien.
+          für deine Konto- und Inhaltsdaten, einschliesslich hochgeladener Projektdateien und
+          Chat-Anhänge.
           Datenregion: {LEGAL.dataRegion}.
         </li>
         <li>
@@ -180,8 +204,9 @@ export default function DatenschutzPage() {
         <li>
           <strong>Z.ai</strong> (JINGSHENG HENGXING TECHNOLOGY PTE. LTD., Singapur, die internationale
           Plattform des chinesischen KI-Unternehmens Zhipu AI): deine Chat-Nachrichten und der
-          jeweilige Projektkontext, beim Projekt-Gedächtnis auch Projektdateien, Screenshots und
-          Repository-Inhalte, werden zur Erzeugung der Antwort an die Z.ai-API übermittelt. Nach
+          jeweilige Projektkontext, angehängte Fotos und Dateien, beim Projekt-Gedächtnis auch
+          Projektdateien, Screenshots und Repository-Inhalte, werden zur Erzeugung der Antwort an
+          die Z.ai-API übermittelt. Nach
           Angaben von Z.ai werden sie in der Regel in <strong>Singapur</strong> bearbeitet. Eine
           Bearbeitung durch Konzerngesellschaften in <strong>China</strong> können wir nicht
           ausschliessen.
@@ -293,8 +318,9 @@ export default function DatenschutzPage() {
       <h2>6. Speicherdauer</h2>
       <p>
         Wir speichern deine Konto- und Inhaltsdaten, solange dein Konto besteht. Löschst du dein
-        Konto, werden Profil, Chats, Projekte, gespeicherte Prompts sowie hochgeladene Projektdateien
-        gelöscht. Zähler für Rate-Limiting und Monatskontingente liegen in einem
+        Konto, werden Profil, Chats samt Anhängen, Projekte, gespeicherte Prompts sowie hochgeladene
+        Projektdateien gelöscht. Dasselbe gilt für Anhänge, wenn du einen einzelnen Chat oder ein
+        Projekt löschst. Zähler für Rate-Limiting und Monatskontingente liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
         und werden danach selbsttätig entfernt. Server- und Fehlerprotokolle unseres Hosting-Anbieters
         werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
@@ -328,8 +354,8 @@ export default function DatenschutzPage() {
       <p>
         Du kannst dein Konto jederzeit selbst löschen, direkt in der App unter{" "}
         <strong>Einstellungen</strong>. Dabei werden dein Profil, deine Chats und Nachrichten, deine
-        Projekte samt hochgeladenen Dateien und Projekt-Gedächtnis, deine gespeicherten Prompts sowie hinterlegte
-        API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
+        Projekte samt hochgeladenen Dateien und Projekt-Gedächtnis, alle Anhänge deiner Chats, deine
+        gespeicherten Prompts sowie hinterlegte API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
         einer Frist.
       </p>
 

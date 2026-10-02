@@ -46,7 +46,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Chat mit Finn",
         summary:
           "Warum Finn erst nachfragt statt sofort zu liefern, und wie du seine Rückfrage am schnellsten beantwortest.",
-        updated: "2026-10-01",
+        updated: "2026-10-02",
       },
       {
         slug: "der-fertige-prompt",
@@ -72,7 +72,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Dateien im Projekt",
         summary:
           "Lade Notizen, Schemas oder Exporte hoch, damit Finn deinen Kontext kennt, ohne dass du ihn tippst.",
-        updated: "2026-10-01",
+        updated: "2026-10-02",
       },
       {
         slug: "ergebnisse",
@@ -110,7 +110,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Konto und Daten",
         summary:
           "Passwort ändern, Anmeldewege, was gespeichert wird und wie du dein Konto restlos wieder löschst.",
-        updated: "2026-10-01",
+        updated: "2026-10-02",
       },
       {
         slug: "tastenkuerzel",

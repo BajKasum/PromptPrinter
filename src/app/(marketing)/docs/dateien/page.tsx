@@ -44,7 +44,9 @@ export default function Page() {
       <p>
         Im Projekt findest du in der Kontext-Leiste den Bereich{" "}
         <strong>Dateien</strong>. Was du dort hochlädst, steht Finn in jedem Chat
-        dieses Projekts zur Verfügung.
+        dieses Projekts zur Verfügung. Für eine einzelne Nachricht gibt es
+        den Plus-Knopf im Chat, siehe{" "}
+        <Link href="/docs/chat-mit-finn">Chat mit Finn</Link>.
       </p>
 
       <h2>Welche Dateien sind erlaubt?</h2>
@@ -83,9 +85,11 @@ export default function Page() {
         Projekt liegen, fliessen aber nicht ein.
       </p>
       <p>
-        In deine Chats kommen Bilder nicht mit. Finn sieht einen Screenshot
-        also nie direkt, sondern nur das, was die Analyse daraus festgehalten
-        hat. Ohne Analyse bleibt ein Bild für ihn unsichtbar.
+        In deine Chats kommen die Bilder eines Projekts nicht von selbst mit.
+        Finn sieht sie also nicht direkt, sondern nur das, was die Analyse
+        daraus festgehalten hat. Ohne Analyse bleibt ein Projektbild für ihn
+        unsichtbar. Soll Finn einen Screenshot wirklich ansehen, häng ihn mit
+        dem Plus-Knopf an eine Nachricht.
       </p>
 
       <h2>Was geht nicht?</h2>
@@ -147,7 +151,9 @@ export default function Page() {
           was gar nicht mehr ins Budget passt, wird Finn wenigstens noch
           namentlich genannt, damit er weiss, dass es existiert
         </li>
-        <li>Bilder zählen nicht mit, sie kommen gar nicht in den Chat</li>
+        <li>
+          Bilder aus dem Projekt zählen nicht mit, sie kommen nicht in den Chat
+        </li>
       </ul>
       <p>
         Praktische Folge: <strong>eine kurze, gezielte Datei schlägt einen
