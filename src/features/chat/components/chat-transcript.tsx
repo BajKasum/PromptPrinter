@@ -7,6 +7,8 @@ import { Button } from "@/shared/ui/button";
 import { DolphinLoader } from "@/shared/brand/dolphin-loader";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
+import { MessageAttachments } from "@/features/chat/components/attachment-chips";
+import type { AttachmentView } from "@/shared/lib/chat-attachments";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { useSmoothStream } from "@/features/chat/hooks/use-smooth-stream";
 import { downloadFile } from "@/shared/lib/utils";
@@ -20,9 +22,16 @@ import { useT } from "@/shared/i18n/provider";
 
 export function ChatUserBubble({
   content,
+  attachments,
   onEdit,
 }: {
   content: string;
+  /**
+   * Fotos und Dateien, die diese Nachricht mitgebracht hat. Sie stehen ÜBER der
+   * Sprechblase und nicht darin: ein Bild ist kein Text, und eine Vorschau in
+   * einer text-grossen Blase gäbe ihr die falsche Breite.
+   */
+  attachments?: AttachmentView[];
   /**
    * Bearbeiten der eigenen Frage (Planpunkt C-2). Fehlt, solange ein Zug
    * laeuft — mitten im Streamen die Frage umzuschreiben, auf die gerade
@@ -54,6 +63,12 @@ export function ChatUserBubble({
     return (
       <div className="flex justify-end">
         <div className="w-full max-w-[80%]">
+          {/* Bearbeitet wird nur der Text, die Dateien bleiben dran. */}
+          {attachments && attachments.length > 0 && (
+            <div className="mb-2">
+              <MessageAttachments attachments={attachments} />
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={draft}
@@ -111,8 +126,11 @@ export function ChatUserBubble({
           <Pencil className="h-3.5 w-3.5" strokeWidth={1.8} />
         </button>
       )}
-      <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-accent-subtle border border-accent/30 px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground whitespace-pre-wrap">
-        {content}
+      <div className="flex min-w-0 max-w-[80%] flex-col items-end gap-2">
+        {attachments && attachments.length > 0 && <MessageAttachments attachments={attachments} />}
+        <div className="rounded-2xl rounded-br-sm bg-accent-subtle border border-accent/30 px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground whitespace-pre-wrap">
+          {content}
+        </div>
       </div>
     </div>
   );

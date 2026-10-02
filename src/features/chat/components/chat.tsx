@@ -16,20 +16,89 @@ import {
 } from "@/features/chat/components/chat-transcript";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { VoiceBar } from "@/features/chat/components/voice-bar";
+import { useAttachments, type AttachRejection } from "@/features/chat/hooks/use-attachments";
+import type { DraftAttachment } from "@/features/chat/lib/prepare-attachment";
 import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-variants";
 import { parseSseEvents } from "@/features/chat/lib/sse-stream";
-import { MAX_TRANSCRIPT_MESSAGES } from "@/shared/lib/chat-limits";
+import {
+  MAX_ATTACHMENT_IMAGE_BYTES,
+  MAX_ATTACHMENTS_PER_MESSAGE,
+  MAX_ATTACHMENTS_REQUEST_BYTES,
+  MAX_TRANSCRIPT_MESSAGES,
+} from "@/shared/lib/chat-limits";
+import { formatBytes, type AttachmentView } from "@/shared/lib/chat-attachments";
 import { randomId } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { fmt, plural } from "@/shared/i18n/format";
 import type { Messages } from "@/shared/i18n/messages/de";
-import type { Locale } from "@/shared/i18n/locales";
+import { LOCALE_TAGS, type Locale } from "@/shared/i18n/locales";
 
 // A stable id per message (real DB id for history loaded from the server,
 // a client-generated one for anything created during this session) is the
 // React key below, an always-appending list would tolerate the array index
 // too, but a stable id survives if the transcript is ever edited/trimmed.
-type Msg = { id: string; role: "user" | "assistant"; content: string };
+type Msg = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  /** Fotos und Dateien, die eine Nutzer-Nachricht mitgebracht hat. */
+  attachments?: AttachmentView[];
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Wie ein Entwurfs-Anhang an der abgeschickten Nachricht aussieht: dieselben
+// Bytes als data:-Adresse, kein Netzwerk. Nach einem Neuladen kommen die
+// Vorschauen vom Server (signierte Adressen), bis dahin sind es diese.
+function viewOf(draft: DraftAttachment): AttachmentView {
+  return {
+    id: draft.id,
+    name: draft.name,
+    kind: draft.kind,
+    mediaType: draft.mediaType,
+    sizeBytes: draft.sizeBytes,
+    ...(draft.previewUrl ? { url: draft.previewUrl } : {}),
+  };
+}
+
+// Nur an der NEUEN Nachricht reisen die Bytes mit. Ältere Nachrichten tragen
+// ihre Zeilen-ID, der Server schlägt ihre Anhänge selbst nach, und der
+// Verlauf muss nie Bilder hin- und herschicken.
+function toWire(message: Msg, uploads?: DraftAttachment[]) {
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    ...(uploads && uploads.length > 0
+      ? { attachments: uploads.map((u) => ({ name: u.name, mediaType: u.mediaType, data: u.data })) }
+      : {}),
+  };
+}
+
+function describeRejection(r: AttachRejection, m: Messages["chat"], intlTag: string): string {
+  switch (r.reason) {
+    case "unsupported":
+      return fmt(m.attachUnsupported, { name: r.name });
+    case "tooLarge":
+      return fmt(m.attachTooLarge, {
+        name: r.name,
+        max: formatBytes(r.maxBytes ?? MAX_ATTACHMENT_IMAGE_BYTES, intlTag),
+      });
+    case "notText":
+      return fmt(m.attachNotText, { name: r.name });
+    case "unreadable":
+      return fmt(m.attachUnreadable, { name: r.name });
+    case "limit":
+      return fmt(m.attachLimit, { max: MAX_ATTACHMENTS_PER_MESSAGE });
+    case "totalTooLarge":
+      return fmt(m.attachTotalTooLarge, {
+        max: formatBytes(MAX_ATTACHMENTS_REQUEST_BYTES, intlTag),
+      });
+  }
+}
+
+/** Wie lange ein Hinweis zu einem abgelehnten Anhang stehen bleibt. */
+const ATTACH_NOTICE_MS = 8000;
 
 // Distinguishes an explicit "error" SSE event (the route/provider reporting a
 // real, actionable failure — rate-limited, model unavailable) from any other
@@ -89,6 +158,25 @@ export function Chat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  // Warum ein Anhang nicht dazukam. Inline über dem Composer, wie die anderen
+  // Hinweise des Chats, und kein Toast: so braucht der Chat keinen
+  // Toast-Provider um sich.
+  const [attachNotice, setAttachNotice] = useState<string | null>(null);
+  const attachments = useAttachments({
+    onReject: (rejection) => {
+      const text = describeRejection(rejection, t.chat, LOCALE_TAGS[locale].intl);
+      setAttachNotice((previous) => (previous ? `${previous} ${text}` : text));
+    },
+  });
+  useEffect(() => {
+    if (!attachNotice) return;
+    const timer = setTimeout(() => setAttachNotice(null), ATTACH_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [attachNotice]);
+  function addFiles(files: File[]) {
+    setAttachNotice(null);
+    void attachments.add(files);
+  }
   const [error, setError] = useState<string | null>(null);
   // Starts from the server's own check and flips on if the route answers
   // 403 byokRequired anyway (e.g. the key was deleted in another tab).
@@ -253,9 +341,28 @@ export function Chat({
   async function send(textArg?: string): Promise<string | null> {
     const text = (textArg ?? input).trim();
     if (!text || busy) return null;
-    const next: Msg[] = [...messages, { id: randomId(), role: "user", content: text }];
+    // Dateien, die noch verkleinert werden, würden sonst still zurückbleiben:
+    // die Nachricht ginge ohne sie raus. Der Senden-Knopf ist in dem Moment aus,
+    // das hier fängt Enter ab.
+    const useDrafts = textArg === undefined;
+    if (useDrafts && attachments.pending > 0) return null;
+    // Eine gesprochene Nachricht (textArg) nimmt die Anhänge des Composers nicht
+    // mit: er ist in dem Moment nicht zu sehen, es wäre ein Anhang, den der
+    // Nutzer nicht sieht.
+    const drafts = useDrafts ? attachments.items : [];
+    const next: Msg[] = [
+      ...messages,
+      {
+        id: randomId(),
+        role: "user",
+        content: text,
+        ...(drafts.length > 0 ? { attachments: drafts.map(viewOf) } : {}),
+      },
+    ];
     setInput("");
-    return run(next, text);
+    setAttachNotice(null);
+    if (drafts.length > 0) attachments.clear();
+    return run(next, text, undefined, undefined, { uploads: drafts });
   }
 
   /**
@@ -294,9 +401,20 @@ export function Chat({
     if (text === messages[index].content) return null;
 
     const base = messages.slice(0, index);
-    const edited: Msg = { id: randomId(), role: "user", content: text };
+    // Bearbeitet wird nur der Text, die Dateien bleiben an der Nachricht. Sie
+    // werden nicht noch einmal hochgeladen: der Server hängt sie nach dem
+    // erfolgreichen Zug an die neue Fassung um (inheritAttachmentsFrom).
+    const kept = messages[index].attachments ?? [];
+    const edited: Msg = {
+      id: randomId(),
+      role: "user",
+      content: text,
+      ...(kept.length > 0 ? { attachments: kept } : {}),
+    };
     const superseded = messages.slice(index).map((m) => m.id);
-    return run([...base, edited], text, undefined, superseded);
+    return run([...base, edited], text, undefined, superseded, {
+      inheritFrom: kept.length > 0 ? messages[index].id : undefined,
+    });
   }
 
   /**
@@ -309,7 +427,8 @@ export function Chat({
     next: Msg[],
     text: string,
     replaceMessageId?: string,
-    supersededMessageIds?: string[]
+    supersededMessageIds?: string[],
+    attach?: { uploads?: DraftAttachment[]; inheritFrom?: string }
   ): Promise<string | null> {
     // Der Stand VOR dem Zug, fuer den Fehlerfall. Frueher stand dort ein
     // `slice(0, -1)`, das die zuletzt angehaengte Nachricht wegnahm — beim
@@ -351,8 +470,11 @@ export function Chat({
     // and clamps anything longer than this itself, so replaying the full
     // history was pure payload — a long chat sent hundreds of KB per turn to
     // have most of it discarded server-side.
-    const wireMessages =
+    const windowed =
       next.length > MAX_TRANSCRIPT_MESSAGES ? next.slice(-MAX_TRANSCRIPT_MESSAGES) : next;
+    const wireMessages = windowed.map((m, i) =>
+      toWire(m, i === windowed.length - 1 ? attach?.uploads : undefined)
+    );
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -366,6 +488,7 @@ export function Chat({
           // Antwort erst wegnehmen, wenn die neue sicher steht.
           ...(replaceMessageId ? { replaceMessageId } : {}),
           ...(supersededMessageIds?.length ? { supersededMessageIds } : {}),
+          ...(attach?.inheritFrom ? { inheritAttachmentsFrom: attach.inheritFrom } : {}),
         }),
         signal: controller.signal,
       });
@@ -529,6 +652,10 @@ export function Chat({
         // failing. Nothing unsent stays in the transcript now.
         setMessages(before);
         setInput(text);
+        // Die Dateien kommen mit zurück: der Nutzer soll nach einem Fehler
+        // nichts neu auswählen müssen, und bei einem abgelehnten Anhang kann er
+        // den Übeltäter in der Vorschau selbst entfernen.
+        if (attach?.uploads && attach.uploads.length > 0) attachments.restore(attach.uploads);
         if (failureKind === "byokRequired") {
           // No banner, no "Erneut senden": resending can only fail the same
           // way. The key notice below names the two ways that do work.
@@ -599,10 +726,19 @@ export function Chat({
                 <ChatUserBubble
                   key={m.id}
                   content={m.content}
+                  attachments={m.attachments}
                   // Kein Bearbeiten waehrend eines laufenden Zugs: die Frage
                   // umzuschreiben, auf die gerade geantwortet wird, ergaebe
-                  // einen Verlauf, der nicht zusammenpasst.
-                  onEdit={busy ? undefined : (next) => void editMessage(m.id, next)}
+                  // einen Verlauf, der nicht zusammenpasst. Auch nicht, wenn
+                  // die Nachricht Anhaenge traegt und ihre echte Zeilen-ID noch
+                  // nicht bekannt ist: ohne sie liessen sich die Dateien nicht
+                  // an die neue Fassung umhaengen und gingen mit der alten
+                  // verloren.
+                  onEdit={
+                    busy || (m.attachments?.length && !UUID.test(m.id))
+                      ? undefined
+                      : (next) => void editMessage(m.id, next)
+                  }
                 />
               ) : i === lastAssistantIndex ? (
                 <div key={m.id} ref={resultRef} className="scroll-mt-24">
@@ -684,6 +820,15 @@ export function Chat({
         </div>
       )}
 
+      {attachNotice && (
+        <div
+          role="alert"
+          className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[13px] text-warning"
+        >
+          {attachNotice}
+        </div>
+      )}
+
       {persistWarning && (
         <div
           role="status"
@@ -709,6 +854,10 @@ export function Chat({
           onSend={() => send()}
           onStop={stop}
           onVoice={() => setVoiceOpen(true)}
+          attachments={attachments.items}
+          attachPending={attachments.pending}
+          onAddFiles={addFiles}
+          onRemoveAttachment={attachments.remove}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Chat } from "./chat";
 
@@ -628,6 +628,238 @@ describe("Chat", () => {
 
       const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
       expect(body).not.toHaveProperty("target");
+    });
+  });
+
+  // Fotos und Dateien (2026-10-02): vom "+" über die Vorschau im Composer bis
+  // zur Anfrage, und was danach mit den Dateien passiert.
+  describe("attachments", () => {
+    const NOTES = () => new File(["# Anforderungen"], "notes.md", { type: "text/markdown" });
+    const NOTES_BASE64 = Buffer.from("# Anforderungen").toString("base64");
+    const USER_ID = "11111111-1111-4111-8111-111111111111";
+    const REPLY_ID = "22222222-2222-4222-8222-222222222222";
+
+    async function attach(user: ReturnType<typeof userEvent.setup>, file: File) {
+      await user.upload(screen.getByTestId("attachment-input"), file);
+      // Auf den NAMEN warten, nicht auf die Liste: die erscheint schon mit dem
+      // Platzhalter, solange die Datei noch aufbereitet wird.
+      await screen.findByText(file.name);
+    }
+    const textbox = () => screen.getByRole("textbox");
+    const sentBody = (call = 0) =>
+      JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[call][1].body);
+
+    it("shows a chosen file in the composer before anything is sent", async () => {
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await attach(user, NOTES());
+
+      expect(screen.getByText("notes.md")).toBeInTheDocument();
+    });
+
+    it("sends the file's bytes with the new message and nothing else", async () => {
+      mockStreamingFetch(["Gelesen."], { conversationId: "conv-1" });
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await attach(user, NOTES());
+      await user.type(textbox(), "Bau das nach");
+      await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+      expect(sentBody().messages).toEqual([
+        {
+          id: expect.any(String),
+          role: "user",
+          content: "Bau das nach",
+          attachments: [{ name: "notes.md", mediaType: "text/plain", data: NOTES_BASE64 }],
+        },
+      ]);
+    });
+
+    it("moves the file from the composer into the sent message", async () => {
+      mockStreamingFetch(["Gelesen."], { conversationId: "conv-1" });
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await attach(user, NOTES());
+      await user.type(textbox(), "Bau das nach");
+      await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+      // Genau EINE Liste "Anhänge" bleibt: die an der Sprechblase. Die im
+      // Composer ist leer geräumt.
+      const lists = await screen.findAllByRole("list", { name: "Anhänge" });
+      expect(lists).toHaveLength(1);
+      expect(within(screen.getByRole("log")).getByText("notes.md")).toBeInTheDocument();
+    });
+
+    it("does not send a message that has files but no words", async () => {
+      mockStreamingFetch(["x"], {});
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await attach(user, NOTES());
+
+      expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+      await user.type(textbox(), "{Enter}");
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("clears the files with the text, the next message starts clean", async () => {
+      mockStreamingFetch(["Erste"], { conversationId: "conv-1" });
+      render(<Chat />);
+      const user = userEvent.setup();
+      await attach(user, NOTES());
+      await user.type(textbox(), "Bau das nach");
+      await user.click(screen.getByRole("button", { name: /Senden/ }));
+      await screen.findByRole("button", { name: /Senden/ });
+
+      mockStreamingFetch(["Zweite"], { conversationId: "conv-1" });
+      await user.type(textbox(), "Und jetzt dunkel");
+      await user.click(screen.getByRole("button", { name: /Senden/ }));
+      await screen.findByText("Zweite");
+
+      // Die zweite Nachricht trägt keine Dateien: die gingen mit der ersten raus.
+      const second = sentBody(0);
+      expect(second.messages.at(-1)).not.toHaveProperty("attachments");
+      // Und die erste, bereits verschickte, wird nicht noch einmal mitgeschickt.
+      expect(second.messages[0]).not.toHaveProperty("attachments");
+    });
+
+    it("puts the files back when the turn fails, so nothing has to be picked again", async () => {
+      mockFetchOnce({ detail: "Chat fehlgeschlagen" }, false);
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await attach(user, NOTES());
+      await user.type(textbox(), "Bau das nach");
+      await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Chat fehlgeschlagen");
+      expect(textbox()).toHaveValue("Bau das nach");
+      expect(screen.getByRole("list", { name: "Anhänge" })).toBeInTheDocument();
+      expect(screen.getByText("notes.md")).toBeInTheDocument();
+      // Und aus dem Verlauf ist die Nachricht samt Datei wieder weg.
+      expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    });
+
+    it("lets the user take a file out before sending", async () => {
+      mockStreamingFetch(["x"], { conversationId: "conv-1" });
+      render(<Chat />);
+      const user = userEvent.setup();
+      await attach(user, NOTES());
+
+      await user.click(screen.getByRole("button", { name: "„notes.md“ entfernen" }));
+      await user.type(textbox(), "Nur Text");
+      await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+      expect(sentBody().messages[0]).not.toHaveProperty("attachments");
+    });
+
+    it("says why a file was refused and still takes the others", async () => {
+      render(<Chat />);
+      const user = userEvent.setup({ applyAccept: false });
+
+      await user.upload(screen.getByTestId("attachment-input"), [
+        new File(["%PDF"], "report.pdf", { type: "application/pdf" }),
+        NOTES(),
+      ]);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("„report.pdf“ nehme ich nicht an");
+      expect(screen.getByText("notes.md")).toBeInTheDocument();
+    });
+
+    it("refuses a text file that is really binary", async () => {
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await user.upload(
+        screen.getByTestId("attachment-input"),
+        new File(["abc\u0000def"], "data.txt", { type: "text/plain" })
+      );
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("sieht nicht nach einer Textdatei aus");
+      expect(screen.queryByRole("list", { name: "Anhänge" })).not.toBeInTheDocument();
+    });
+
+    describe("a message that already carries files", () => {
+      const withFile = (id: string) => [
+        {
+          id,
+          role: "user" as const,
+          content: "Das ist mein Entwurf",
+          attachments: [
+            { id: "a1", name: "entwurf.md", kind: "text" as const, mediaType: "text/plain", sizeBytes: 900 },
+          ],
+        },
+        { id: REPLY_ID, role: "assistant" as const, content: "Schön." },
+      ];
+
+      it("shows its files above the bubble", () => {
+        render(<Chat initialMessages={withFile(USER_ID)} initialConversationId="conv-1" />);
+        expect(within(screen.getByRole("log")).getByText("entwurf.md")).toBeInTheDocument();
+      });
+
+      it("keeps the files when the text is edited, handing the server the id to carry them over", async () => {
+        mockStreamingFetch(["Neu."], { conversationId: "conv-1" });
+        render(<Chat initialMessages={withFile(USER_ID)} initialConversationId="conv-1" />);
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole("button", { name: "Nachricht bearbeiten" }));
+        const field = screen.getByRole("textbox", { name: "Nachricht bearbeiten" });
+        await user.clear(field);
+        await user.type(field, "Das ist mein neuer Entwurf");
+        await user.click(screen.getByRole("button", { name: "Neu senden" }));
+
+        await screen.findByText("Neu.");
+        const body = sentBody();
+        expect(body.inheritAttachmentsFrom).toBe(USER_ID);
+        expect(body.supersededMessageIds).toEqual([USER_ID, REPLY_ID]);
+        // Die Bytes werden NICHT noch einmal geschickt.
+        expect(body.messages.at(-1)).not.toHaveProperty("attachments");
+        // Und die neue Fassung zeigt die Datei weiterhin.
+        expect(within(screen.getByRole("log")).getByText("entwurf.md")).toBeInTheDocument();
+      });
+
+      // Ohne echte Zeilen-ID liesse sich die Datei nicht an die neue Fassung
+      // umhängen und ginge mit der alten verloren.
+      it("offers no edit while the message's real id is not known yet", () => {
+        render(<Chat initialMessages={withFile("client-side-id")} initialConversationId="conv-1" />);
+        expect(screen.queryByRole("button", { name: "Nachricht bearbeiten" })).not.toBeInTheDocument();
+      });
+
+      it("still offers editing for a message without files, whatever its id", () => {
+        render(
+          <Chat
+            initialMessages={[{ id: "client-side-id", role: "user", content: "Nur Text" }]}
+            initialConversationId="conv-1"
+          />
+        );
+        expect(screen.getByRole("button", { name: "Nachricht bearbeiten" })).toBeInTheDocument();
+      });
+
+      it("sends no inherit field when the edited message had no files", async () => {
+        mockStreamingFetch(["Neu."], { conversationId: "conv-1" });
+        render(
+          <Chat
+            initialMessages={[
+              { id: USER_ID, role: "user", content: "Nur Text" },
+              { id: REPLY_ID, role: "assistant", content: "Ok." },
+            ]}
+            initialConversationId="conv-1"
+          />
+        );
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole("button", { name: "Nachricht bearbeiten" }));
+        const field = screen.getByRole("textbox", { name: "Nachricht bearbeiten" });
+        await user.clear(field);
+        await user.type(field, "Anderer Text");
+        await user.click(screen.getByRole("button", { name: "Neu senden" }));
+
+        await screen.findByText("Neu.");
+        expect(sentBody()).not.toHaveProperty("inheritAttachmentsFrom");
+      });
     });
   });
 });
