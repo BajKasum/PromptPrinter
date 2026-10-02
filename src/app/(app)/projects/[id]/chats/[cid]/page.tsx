@@ -7,7 +7,7 @@ import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
-import { MESSAGE_LOAD_LIMIT } from "@/shared/lib/chat-limits";
+import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { getT } from "@/server/i18n";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +17,6 @@ export async function generateMetadata() {
 }
 
 type Params = Promise<{ id: string; cid: string }>;
-
-type DbMessage = { id: string; role: "user" | "assistant"; content: string };
 
 // Ein Projekt-Chat auf seiner kanonischen Subroute (REDESIGN.md, Phase 3).
 // Chat-vs-Workspace-Trennung: diese Route liegt bewusst ausserhalb der
@@ -47,18 +45,12 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [{ data: rows }, { data: generationRows, count: resultCount }, profile, needsKey] =
+  const [initialMessages, { data: generationRows, count: resultCount }, profile, needsKey] =
     await Promise.all([
-      // Newest first + limit, then reversed below (QA finding P-1): an
-      // ascending query + limit would keep the OLDEST rows on a long chat,
-      // cutting off exactly the turns the user is mid-conversation with.
-      supabase
-        .from("messages")
-        .select("id, role, content")
-        .eq("conversation_id", cid)
-        .eq("user_id", project.userId)
-        .order("created_at", { ascending: false })
-        .limit(MESSAGE_LOAD_LIMIT),
+      // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
+      // zuerst, mit Limit, dann umgedreht, QA-Befund P-1) steht in
+      // load-messages.ts.
+      loadConversationMessages(supabase, project.userId, cid),
       // Selecting `outputs` (not just a head-count) also gives the save
       // button the already-saved prompt texts, so it can start disabled for a
       // prompt that's already in the project's Ergebnisse (F-7). Explicit
@@ -75,7 +67,6 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       getNeedsOwnKey(),
     ]);
 
-  const initialMessages = ((rows as DbMessage[] | null) ?? []).slice().reverse();
   const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(

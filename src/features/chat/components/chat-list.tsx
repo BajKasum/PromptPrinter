@@ -7,6 +7,10 @@ import { Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
+import {
+  attachmentPathsOfConversation,
+  removeAttachmentObjects,
+} from "@/shared/lib/attachment-storage";
 import { relativeTime } from "@/shared/lib/utils";
 import { MoveToProjectButton } from "@/features/chat/components/move-to-project";
 import { useLocale, useT } from "@/shared/i18n/provider";
@@ -101,12 +105,19 @@ function ChatRow({
     if (busy) return;
     setBusy(true);
     const supabase = createClient();
-    // Messages cascade away with the conversation (FK on delete cascade).
+    // Die Dateien der Anhaenge kaskadieren NICHT mit (nur ihre Zeilen), also
+    // die Pfade einsammeln, solange die Zeilen noch da sind.
+    const attachmentPaths = await attachmentPathsOfConversation(supabase, userId, chat.id);
+    // Messages (and their attachment rows) cascade away with the conversation
+    // (FK on delete cascade).
     const { error } = await supabase
       .from("conversations")
       .delete()
       .eq("id", chat.id)
       .eq("user_id", userId);
+    // Objekte erst entfernen, wenn die Zeilen wirklich weg sind: bei einem
+    // Fehler stehen sie noch und zeigen auf diese Dateien.
+    if (!error) await removeAttachmentObjects(supabase, attachmentPaths);
     setBusy(false);
     if (error) {
       toast({
