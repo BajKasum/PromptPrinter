@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { STORAGE_REMOVE_BATCH, chunkPaths, removeAllPaths } from "@/features/projects/lib/storage-cleanup";
+import { STORAGE_REMOVE_BATCH, chunkPaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
 
 describe("chunkPaths", () => {
   it("splits into batches of the given size", () => {

@@ -1,6 +1,13 @@
 import { truncate, MAX_ASSISTANT_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import type { ChatRequest } from "@/shared/lib/schemas";
 import type { createClient } from "@/server/supabase/server";
+import {
+  collectAttachmentPaths,
+  removeStoredObjects,
+  storeAttachments,
+  type ValidatedAttachment,
+} from "@/features/chat/lib/attachment-store";
+import type { AttachmentRecord } from "@/features/chat/lib/attachment-model";
 
 // Persistenz eines Chat-Zugs fuer /api/chat, in zwei Haelften (Planpunkt C-1).
 //
@@ -50,6 +57,12 @@ export type OpenedTurn = {
    * einen laengst bestehenden Chat ab.
    */
   createdConversation: boolean;
+  /**
+   * Die Anhänge, die in DIESEM Zug abgelegt wurden (leer, wenn keine kamen).
+   * rollbackTurn braucht ihre Pfade, damit eine zurückgenommene Frage ihre
+   * Dateien nicht im Bucket zurücklässt.
+   */
+  attachments: AttachmentRecord[];
 };
 
 /**
@@ -68,7 +81,10 @@ export async function openTurn(
   // the wire. Callers pass the value buildProjectContext already confirmed
   // exists and belongs to this user (or null, for a global chat / an
   // unowned-or-missing project, which this treats identically).
-  verifiedProjectId: string | null
+  verifiedProjectId: string | null,
+  // Die geprüften Anhänge der neuen Nachricht (attachment-store.ts). Wird beim
+  // Neu-Erzeugen nicht übergeben: dort gibt es keine neue Nachricht.
+  uploads: readonly ValidatedAttachment[] = []
 ): Promise<OpenedTurn> {
   // The client appends the user message before posting, so the last entry is
   // always the new user turn. route.ts enforces this as a real validation
@@ -131,7 +147,7 @@ export async function openTurn(
     // Nichts zu schreiben. `userMessageId` bleibt leer, damit ein
     // Zuruecknehmen keine fremde Zeile trifft — beim Neu-Erzeugen gibt es
     // ohnehin nichts zurueckzunehmen, die Frage stand schon vorher da.
-    return { conversationId, userMessageId: null, createdConversation };
+    return { conversationId, userMessageId: null, createdConversation, attachments: [] };
   }
 
   const { data: inserted, error: msgErr } = await supabase
@@ -149,7 +165,32 @@ export async function openTurn(
   const userMessageId = inserted?.id as string | undefined;
   if (!userMessageId) throw new Error("message insert returned no id");
 
-  return { conversationId, userMessageId, createdConversation };
+  // Die Anhänge gehören zur Frage: erst jetzt, wo die Zeile steht, auf die sie
+  // zeigen. Scheitert das Ablegen, gibt es die Frage ohne ihre Dateien nicht
+  // (eine Nachricht, die sich auf ein Bild bezieht, das fehlt, wäre eine andere
+  // Nachricht), also geht sie wieder weg. storeAttachments räumt dabei selbst,
+  // was es schon abgelegt hatte.
+  let attachments: AttachmentRecord[] = [];
+  if (uploads.length > 0) {
+    try {
+      attachments = await storeAttachments({
+        userId,
+        conversationId,
+        messageId: userMessageId,
+        attachments: uploads,
+      });
+    } catch (err) {
+      await rollbackTurn(supabase, userId, {
+        conversationId,
+        userMessageId,
+        createdConversation,
+        attachments: [],
+      });
+      throw err;
+    }
+  }
+
+  return { conversationId, userMessageId, createdConversation, attachments };
 }
 
 /**
@@ -247,12 +288,22 @@ export async function dropSupersededMessages(
 ): Promise<void> {
   if (messageIds.length === 0) return;
   try {
-    await supabase
+    // Die Pfade VOR dem Löschen: danach sind die Zeilen (und mit ihnen die
+    // Pfade) weg, und die Objekte blieben als Waisen im Bucket zurück. Die
+    // Anhänge einer bearbeiteten Nachricht hängen zu diesem Zeitpunkt schon an
+    // ihrer neuen Fassung (adoptAttachments) und sind nicht dabei.
+    const paths = await collectAttachmentPaths(supabase, userId, conversationId, messageIds).catch(
+      () => []
+    );
+    const { error } = await supabase
       .from("messages")
       .delete()
       .in("id", messageIds)
       .eq("conversation_id", conversationId)
       .eq("user_id", userId);
+    // Objekte nur entfernen, wenn die Zeilen wirklich weg sind: bei einem
+    // Fehler stehen sie noch und zeigen auf diese Dateien.
+    if (!error) await removeStoredObjects(paths);
   } catch {
     // siehe oben: best effort
   }
@@ -274,23 +325,29 @@ export async function rollbackTurn(
   opened: OpenedTurn
 ): Promise<void> {
   try {
+    let error: unknown = null;
     if (opened.createdConversation) {
-      // Nimmt die Nachricht per ON DELETE CASCADE gleich mit.
-      await supabase
+      // Nimmt die Nachricht (und ihre Anhangs-Zeilen) per ON DELETE CASCADE
+      // gleich mit.
+      ({ error } = await supabase
         .from("conversations")
         .delete()
         .eq("id", opened.conversationId)
-        .eq("user_id", userId);
+        .eq("user_id", userId));
+    } else if (opened.userMessageId) {
+      ({ error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", opened.userMessageId)
+        .eq("user_id", userId));
+    } else {
+      // Beim Neu-Erzeugen wurde keine Frage geschrieben, also gibt es hier auch
+      // nichts zurueckzunehmen.
       return;
     }
-    // Beim Neu-Erzeugen wurde keine Frage geschrieben, also gibt es hier auch
-    // nichts zurueckzunehmen.
-    if (!opened.userMessageId) return;
-    await supabase
-      .from("messages")
-      .delete()
-      .eq("id", opened.userMessageId)
-      .eq("user_id", userId);
+    // Die Dateien gehen mit der Zeile, aber nur, wenn die Zeile wirklich weg
+    // ist: Objekte sind das Einzige, was die Kaskade nicht mitnimmt.
+    if (!error) await removeStoredObjects(opened.attachments.map((a) => a.storagePath));
   } catch {
     // siehe oben: best effort
   }
