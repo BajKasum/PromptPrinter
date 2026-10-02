@@ -5,6 +5,10 @@ import {
   llmConfig,
   LlmEmptyReplyError,
   classifyLlmFailure,
+  toAnthropicMessages,
+  toGeminiContents,
+  toOpenAiSdkMessages,
+  zaiModelFor,
 } from "@/server/llm";
 
 // customComplete (the 'custom' BYOK provider) resolves its endpoint through
@@ -456,6 +460,195 @@ describe("chatCompleteStream", () => {
         })
       )
     ).rejects.toThrow("überschreitet das Limit");
+  });
+});
+
+// Bilder im Chat (Anhänge, 2026-10-02). Jeder Anbieter-Pfad übersetzt die
+// Bilder einer Nachricht in seine eigene Form, ohne Bilder bleibt alles
+// byte-genau beim Alten (die schlichte String-Form).
+describe("chat messages with images", () => {
+  const image = { mediaType: "image/png", base64: "QUJD" };
+  const withImage = [
+    { role: "user" as const, content: "Bau das nach", images: [image] },
+  ];
+
+  describe("zaiModelFor", () => {
+    it("keeps the cheap text model while no image is in the history", () => {
+      expect(zaiModelFor("glm-4.5-air", [{ role: "user", content: "hi" }])).toBe("glm-4.5-air");
+    });
+
+    it("switches to the vision model for a turn that carries an image", () => {
+      expect(zaiModelFor("glm-4.5-air", withImage)).toBe("glm-4.6v");
+    });
+
+    it("looks at the whole history, not just the newest message", () => {
+      expect(
+        zaiModelFor("glm-4.5-air", [
+          ...withImage,
+          { role: "assistant", content: "Alles klar" },
+          { role: "user", content: "Und jetzt dunkel" },
+        ])
+      ).toBe("glm-4.6v");
+    });
+
+    it("honors the ZAI_VISION_MODEL override", () => {
+      vi.stubEnv("ZAI_VISION_MODEL", "glm-4.5v");
+      expect(zaiModelFor("glm-4.5-air", withImage)).toBe("glm-4.5v");
+    });
+  });
+
+  it("sends Z.ai the vision model and the image as an image_url data URI", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    let capturedBody = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedBody = init.body as string;
+        return streamResponse(200, sseBody("[DONE]"));
+      })
+    );
+
+    await collectStream(chatCompleteStream({ system: "sys", messages: withImage }));
+    const body = JSON.parse(capturedBody);
+    expect(body.model).toBe("glm-4.6v");
+    expect(body.messages[0]).toEqual({ role: "system", content: "sys" });
+    expect(body.messages[1]).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "Bau das nach" },
+        { type: "image_url", image_url: { url: "data:image/png;base64,QUJD" } },
+      ],
+    });
+  });
+
+  it("stays on the text model, with plain string content, when no image is attached", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    let capturedBody = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedBody = init.body as string;
+        return streamResponse(200, sseBody("[DONE]"));
+      })
+    );
+
+    await collectStream(
+      chatCompleteStream({ system: "sys", messages: [{ role: "user", content: "hi" }] })
+    );
+    const body = JSON.parse(capturedBody);
+    expect(body.model).toBe("glm-4.5-air");
+    expect(body.messages[1]).toEqual({ role: "user", content: "hi" });
+  });
+
+  it("sends the custom endpoint the same image_url form, with the user's own model", async () => {
+    let capturedBody = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedBody = init.body as string;
+        return streamResponse(200, sseBody("[DONE]"));
+      })
+    );
+
+    await collectStream(
+      chatCompleteStream({
+        system: "sys",
+        messages: withImage,
+        override: {
+          provider: "custom",
+          apiKey: "user-key",
+          baseUrl: "https://example.test/v1/chat/completions",
+          model: "my-vision-model",
+        },
+      })
+    );
+    const body = JSON.parse(capturedBody);
+    // Der Custom-Slot behält SEIN Modell: ob es Bilder sieht, weiss nur der Nutzer.
+    expect(body.model).toBe("my-vision-model");
+    expect(body.messages[1].content).toEqual([
+      { type: "text", text: "Bau das nach" },
+      { type: "image_url", image_url: { url: "data:image/png;base64,QUJD" } },
+    ]);
+  });
+
+  it("also supports the non-streaming call", async () => {
+    vi.stubEnv("ZAI_API_KEY", "test-key");
+    let capturedBody = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        capturedBody = init.body as string;
+        return mockResponse(200, OK_BODY);
+      })
+    );
+    await chatComplete({ system: "sys", messages: withImage });
+    const body = JSON.parse(capturedBody);
+    expect(body.model).toBe("glm-4.6v");
+    expect(Array.isArray(body.messages[1].content)).toBe(true);
+  });
+
+  describe("toOpenAiSdkMessages", () => {
+    it("puts the system prompt first and leaves text-only messages as strings", () => {
+      expect(
+        toOpenAiSdkMessages("sys", [
+          { role: "user", content: "hi" },
+          { role: "assistant", content: "hallo" },
+        ])
+      ).toEqual([
+        { role: "system", content: "sys" },
+        { role: "user", content: "hi" },
+        { role: "assistant", content: "hallo" },
+      ]);
+    });
+
+    it("turns images into image_url parts after the text", () => {
+      expect(toOpenAiSdkMessages("sys", withImage)[1]).toEqual({
+        role: "user",
+        content: [
+          { type: "text", text: "Bau das nach" },
+          { type: "image_url", image_url: { url: "data:image/png;base64,QUJD" } },
+        ],
+      });
+    });
+  });
+
+  describe("toGeminiContents", () => {
+    it("maps roles and keeps text-only parts as before", () => {
+      expect(
+        toGeminiContents([
+          { role: "user", content: "hi" },
+          { role: "assistant", content: "hallo" },
+        ])
+      ).toEqual([
+        { role: "user", parts: [{ text: "hi" }] },
+        { role: "model", parts: [{ text: "hallo" }] },
+      ]);
+    });
+
+    it("adds each image as inlineData next to the text", () => {
+      expect(toGeminiContents(withImage)[0].parts).toEqual([
+        { text: "Bau das nach" },
+        { inlineData: { mimeType: "image/png", data: "QUJD" } },
+      ]);
+    });
+  });
+
+  describe("toAnthropicMessages", () => {
+    it("keeps text-only messages as plain strings", () => {
+      expect(toAnthropicMessages([{ role: "user", content: "hi" }])).toEqual([
+        { role: "user", content: "hi" },
+      ]);
+    });
+
+    it("puts the images before the text, as base64 blocks", () => {
+      expect(toAnthropicMessages(withImage)[0]).toEqual({
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: "image/png", data: "QUJD" } },
+          { type: "text", text: "Bau das nach" },
+        ],
+      });
+    });
   });
 });
 

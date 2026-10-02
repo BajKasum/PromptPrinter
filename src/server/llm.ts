@@ -50,7 +50,17 @@ export type LlmOverride =
   | { provider: "anthropic" | "openai" | "gemini"; apiKey: string }
   | { provider: "custom"; apiKey: string; baseUrl: string; model: string };
 
-export type LlmMessage = { role: "user" | "assistant"; content: string };
+export type LlmMessage = {
+  role: "user" | "assistant";
+  content: string;
+  /**
+   * Bilder, die zu dieser Nachricht gehören (Chat-Anhänge). Nur Nutzer-
+   * Nachrichten tragen welche. Jeder Anbieter-Pfad unten übersetzt sie in seine
+   * eigene Form; ein Z.ai-Zug mit Bildern läuft auf dem sehenden Modell
+   * (zaiModelFor), alle anderen Anbieter sind ohnehin multimodal.
+   */
+  images?: AnalysisImage[];
+};
 
 export type LlmResult = {
   text: string;
@@ -222,7 +232,7 @@ async function chatCompleteOnce(opts: {
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {
-    return zaiComplete(config.model, opts.system, opts.messages, maxOutputTokens);
+    return zaiComplete(zaiModelFor(config.model, opts.messages), opts.system, opts.messages, maxOutputTokens);
   }
   return geminiComplete(
     config.model,
@@ -334,7 +344,13 @@ async function* chatCompleteStreamOnce(opts: {
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {
-    yield* zaiCompleteStream(config.model, opts.system, opts.messages, maxOutputTokens, opts.signal);
+    yield* zaiCompleteStream(
+      zaiModelFor(config.model, opts.messages),
+      opts.system,
+      opts.messages,
+      maxOutputTokens,
+      opts.signal
+    );
     return;
   }
   yield* geminiCompleteStream(
@@ -371,7 +387,7 @@ async function zaiComplete(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiMessages(system, messages),
       max_tokens: maxOutputTokens,
       stream: false,
       // GLM models decide on their own whether to "think"; for a chat turn
@@ -428,7 +444,7 @@ async function* zaiCompleteStream(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiMessages(system, messages),
       max_tokens: maxOutputTokens,
       stream: true,
       thinking: { type: "disabled" },
@@ -601,7 +617,7 @@ async function customComplete(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiMessages(system, messages),
       max_tokens: maxOutputTokens,
       stream: false,
     }),
@@ -666,7 +682,7 @@ async function* customCompleteStream(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiMessages(system, messages),
       max_tokens: maxOutputTokens,
       stream: true,
     }),
@@ -706,10 +722,7 @@ async function geminiComplete(
   const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
   const res = await ai.models.generateContent({
     model,
-    contents: messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    })),
+    contents: toGeminiContents(messages),
     config: { systemInstruction: system, maxOutputTokens },
   });
 
@@ -738,10 +751,7 @@ async function* geminiCompleteStream(
   const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
   const stream = await ai.models.generateContentStream({
     model,
-    contents: messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    })),
+    contents: toGeminiContents(messages),
     config: { systemInstruction: system, maxOutputTokens, abortSignal: signal },
   });
   for await (const chunk of stream) {
@@ -786,7 +796,7 @@ async function anthropicComplete(
     model,
     system: anthropicSystemBlocks(system),
     max_tokens: maxOutputTokens,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: toAnthropicMessages(messages),
   });
 
   const text = res.content
@@ -817,7 +827,7 @@ async function* anthropicCompleteStream(
       model,
       system: anthropicSystemBlocks(system),
       max_tokens: maxOutputTokens,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: toAnthropicMessages(messages),
       stream: true,
     },
     { signal }
@@ -841,7 +851,7 @@ async function openaiComplete(
   const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const res = await client.chat.completions.create({
     model,
-    messages: [{ role: "system", content: system }, ...messages],
+    messages: toOpenAiSdkMessages(system, messages),
     max_completion_tokens: maxOutputTokens,
   });
 
@@ -867,7 +877,7 @@ async function* openaiCompleteStream(
   const stream = await client.chat.completions.create(
     {
       model,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiSdkMessages(system, messages),
       max_completion_tokens: maxOutputTokens,
       stream: true,
     },
@@ -907,6 +917,103 @@ export type AnalysisResult = LlmResult & {
  * ZAI_MODEL.
  */
 const ZAI_VISION_DEFAULT_MODEL = "glm-4.6v";
+
+/**
+ * Welches Z.ai-Modell antwortet auf diesen Verlauf?
+ *
+ * Das Kosten-Standardmodell glm-4.5-air sieht keine Bilder. Trägt der Verlauf
+ * eines, geht GENAU DIESER Zug an das sehende Modell: teurer, aber nur, wenn
+ * jemand ein Bild geschickt hat. Zeigt ein späterer Zug ohne Bild keines mehr
+ * (die Anhänge fallen aus dem Modell-Budget, siehe attachment-model.ts), läuft
+ * er wieder auf dem günstigen Modell.
+ */
+export function zaiModelFor(textModel: string, messages: readonly LlmMessage[]): string {
+  return messages.some((m) => m.images?.length)
+    ? (process.env.ZAI_VISION_MODEL ?? ZAI_VISION_DEFAULT_MODEL)
+    : textModel;
+}
+
+function imageDataUrl(image: AnalysisImage): string {
+  return `data:${image.mediaType};base64,${image.base64}`;
+}
+
+/** Verlauf für Z.ai und den Custom-Slot (OpenAI-kompatibles JSON). */
+function toOpenAiMessages(system: string, messages: readonly LlmMessage[]) {
+  return [
+    { role: "system" as const, content: system },
+    ...messages.map((m) => ({
+      role: m.role,
+      // Ohne Bilder die schlichte String-Form, siehe openAiParts.
+      content: m.images?.length ? openAiParts(m.content, m.images) : m.content,
+    })),
+  ];
+}
+
+/** Verlauf für das OpenAI-SDK (streng typisiert, Bildteile nur an Nutzer-Nachrichten). */
+export function toOpenAiSdkMessages(
+  system: string,
+  messages: readonly LlmMessage[]
+): OpenAI.Chat.ChatCompletionMessageParam[] {
+  return [
+    { role: "system", content: system },
+    ...messages.map((m): OpenAI.Chat.ChatCompletionMessageParam => {
+      if (m.role === "user" && m.images?.length) {
+        return {
+          role: "user",
+          content: [
+            { type: "text", text: m.content },
+            ...m.images.map((image) => ({
+              type: "image_url" as const,
+              image_url: { url: imageDataUrl(image) },
+            })),
+          ],
+        };
+      }
+      return { role: m.role, content: m.content };
+    }),
+  ];
+}
+
+/** Verlauf für Gemini: Bilder als inlineData neben dem Text. */
+export function toGeminiContents(messages: readonly LlmMessage[]) {
+  return messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [
+      { text: m.content },
+      ...(m.images ?? []).map((image) => ({
+        inlineData: { mimeType: image.mediaType, data: image.base64 },
+      })),
+    ],
+  }));
+}
+
+/**
+ * Verlauf für Anthropic. Bilder stehen VOR dem Text: Anthropics eigene
+ * Empfehlung, das Modell liest das Bild dann als Kontext der Frage.
+ */
+export function toAnthropicMessages(messages: readonly LlmMessage[]): Anthropic.MessageParam[] {
+  return messages.map((m): Anthropic.MessageParam => {
+    if (m.role === "user" && m.images?.length) {
+      return {
+        role: "user",
+        content: [
+          ...m.images.map(
+            (image): Anthropic.ImageBlockParam => ({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: image.mediaType as Anthropic.Base64ImageSource["media_type"],
+                data: image.base64,
+              },
+            })
+          ),
+          { type: "text", text: m.content },
+        ],
+      };
+    }
+    return { role: m.role, content: m.content };
+  });
+}
 
 /** OpenAI-kompatibler Inhaltsblock, von Z.ai und dem Custom-Slot geteilt. */
 type OpenAiContentPart =
