@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatComposer } from "./chat-composer";
-import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
+import { MAX_ATTACHMENTS_PER_MESSAGE, MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
+import type { DraftAttachment } from "@/features/chat/lib/prepare-attachment";
 
 function setup(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
   const onInputChange = vi.fn();
@@ -198,5 +199,165 @@ describe("ChatComposer", () => {
       act(() => vv.resize(800));
       expect(stickyWrapper(container)?.style.bottom).toBe("");
     });
+  });
+});
+
+// Fotos und Dateien hinzufügen (2026-10-02): ein "+" links im Composer, direkt
+// zur Dateiauswahl, kein Menü. Die Tests prüfen, was der Nutzer sieht und was
+// beim Composer ankommt: der Rest (Aufbereiten, Limits) gehört dem Hook.
+describe("ChatComposer, attachments", () => {
+  const draft = (id: string, name = `${id}.md`, kind: "image" | "text" = "text"): DraftAttachment => ({
+    id,
+    name,
+    kind,
+    mediaType: kind === "image" ? "image/png" : "text/plain",
+    sizeBytes: 1024,
+    data: "QUJD",
+    ...(kind === "image" ? { previewUrl: "data:image/png;base64,QUJD" } : {}),
+  });
+
+  function setupAttach(overrides: Partial<React.ComponentProps<typeof ChatComposer>> = {}) {
+    const onAddFiles = vi.fn();
+    const onRemoveAttachment = vi.fn();
+    const utils = setup({ onAddFiles, onRemoveAttachment, ...overrides });
+    return { onAddFiles, onRemoveAttachment, ...utils };
+  }
+
+  it("offers no plus button where attachments are not wired up", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "Fotos oder Dateien hinzufügen" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("attachment-input")).not.toBeInTheDocument();
+  });
+
+  it("offers a plus button named after what it does", () => {
+    setupAttach();
+    expect(screen.getByRole("button", { name: "Fotos oder Dateien hinzufügen" })).toBeEnabled();
+  });
+
+  it("also shows that name as a tooltip", () => {
+    setupAttach();
+    // Das Tooltip ist aria-hidden, der Knopf trägt den Namen selbst.
+    expect(screen.getByText("Fotos oder Dateien hinzufügen")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("opens the file dialog directly when the plus is pressed", async () => {
+    const user = userEvent.setup();
+    setupAttach();
+    const input = screen.getByTestId("attachment-input") as HTMLInputElement;
+    const click = vi.spyOn(input, "click");
+
+    await user.click(screen.getByRole("button", { name: "Fotos oder Dateien hinzufügen" }));
+
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the dialog pick several files, photos and documents", () => {
+    setupAttach();
+    const input = screen.getByTestId("attachment-input");
+    expect(input).toHaveAttribute("type", "file");
+    expect(input).toHaveAttribute("multiple");
+    const accept = input.getAttribute("accept") ?? "";
+    expect(accept).toContain(".png");
+    expect(accept).toContain("image/webp");
+    expect(accept).toContain(".md");
+  });
+
+  it("hands the chosen files over, and forgets them so the same file can be picked again", async () => {
+    const user = userEvent.setup();
+    const { onAddFiles } = setupAttach();
+    const file = new File(["# Hi"], "notes.md", { type: "text/markdown" });
+    const input = screen.getByTestId("attachment-input") as HTMLInputElement;
+
+    await user.upload(input, file);
+
+    expect(onAddFiles).toHaveBeenCalledWith([file]);
+    expect(input.value).toBe("");
+  });
+
+  it("does not call onAddFiles when the dialog is cancelled", () => {
+    const { onAddFiles } = setupAttach();
+    fireEvent.change(screen.getByTestId("attachment-input"), { target: { files: [] } });
+    expect(onAddFiles).not.toHaveBeenCalled();
+  });
+
+  it("adds files pasted from the clipboard, and keeps the paste from also inserting text", () => {
+    const { onAddFiles } = setupAttach();
+    const shot = new File(["x"], "screen.png", { type: "image/png" });
+
+    const notPrevented = fireEvent.paste(screen.getByRole("textbox"), {
+      clipboardData: { files: [shot], getData: () => "" },
+    });
+
+    expect(onAddFiles).toHaveBeenCalledWith([shot]);
+    expect(notPrevented).toBe(false);
+  });
+
+  it("leaves an ordinary text paste alone", () => {
+    const { onAddFiles } = setupAttach();
+
+    const notPrevented = fireEvent.paste(screen.getByRole("textbox"), {
+      clipboardData: { files: [], getData: () => "nur Text" },
+    });
+
+    expect(onAddFiles).not.toHaveBeenCalled();
+    expect(notPrevented).toBe(true);
+  });
+
+  it("shows the waiting attachments above the text field", () => {
+    setupAttach({ attachments: [draft("a", "screen.png", "image"), draft("b", "notes.md")] });
+    expect(screen.getByRole("list", { name: "Anhänge" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "screen.png" })).toBeInTheDocument();
+    expect(screen.getByText("notes.md")).toBeInTheDocument();
+  });
+
+  it("removes one attachment by its own button", async () => {
+    const user = userEvent.setup();
+    const { onRemoveAttachment } = setupAttach({ attachments: [draft("a"), draft("b")] });
+
+    await user.click(screen.getByRole("button", { name: "„b.md“ entfernen" }));
+
+    expect(onRemoveAttachment).toHaveBeenCalledWith("b");
+  });
+
+  it("disables the plus at the limit and says why in the tooltip", () => {
+    setupAttach({
+      attachments: Array.from({ length: MAX_ATTACHMENTS_PER_MESSAGE }, (_, i) => draft(`f${i}`)),
+    });
+    expect(screen.getByRole("button", { name: "Fotos oder Dateien hinzufügen" })).toBeDisabled();
+    expect(
+      screen.getByText(`Höchstens ${MAX_ATTACHMENTS_PER_MESSAGE} Anhänge pro Nachricht`)
+    ).toBeInTheDocument();
+  });
+
+  it("counts files still being prepared against the limit", () => {
+    setupAttach({ attachments: [draft("a")], attachPending: MAX_ATTACHMENTS_PER_MESSAGE - 1 });
+    expect(screen.getByRole("button", { name: "Fotos oder Dateien hinzufügen" })).toBeDisabled();
+  });
+
+  it("tells the user what is missing when files are attached but there is no text", () => {
+    setupAttach({ attachments: [draft("a")], input: "" });
+    expect(screen.getByText("Schreib noch kurz dazu, was ich damit tun soll.")).toBeInTheDocument();
+  });
+
+  it("drops that hint once there is text", () => {
+    setupAttach({ attachments: [draft("a")], input: "Bau das nach" });
+    expect(
+      screen.queryByText("Schreib noch kurz dazu, was ich damit tun soll.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps send disabled for files without text", () => {
+    setupAttach({ attachments: [draft("a")], input: "" });
+    expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+  });
+
+  it("keeps send disabled while a file is still being prepared", () => {
+    setupAttach({ input: "Bau das nach", attachPending: 1 });
+    expect(screen.getByRole("button", { name: /Senden/ })).toBeDisabled();
+  });
+
+  it("leaves room for the plus button in front of the text", () => {
+    setupAttach();
+    expect(screen.getByRole("textbox").className).toContain("pl-[3.25rem]");
   });
 });
