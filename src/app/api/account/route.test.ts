@@ -4,6 +4,7 @@ import { DELETE } from "./route";
 const getUser = vi.fn();
 const signOut = vi.fn();
 const projectFilesSelect = vi.fn();
+const attachmentsRange = vi.fn();
 const profileSelect = vi.fn();
 const storageRemove = vi.fn();
 const deleteUser = vi.fn();
@@ -16,6 +17,12 @@ vi.mock("@/server/supabase/server", () => ({
     auth: { getUser, signOut },
     from: (table: string) => {
       if (table === "project_files") return { select: () => ({ eq: () => projectFilesSelect() }) };
+      if (table === "message_attachments")
+        return {
+          select: () => ({
+            eq: () => ({ range: (from: number, to: number) => attachmentsRange(from, to) }),
+          }),
+        };
       if (table === "profiles")
         return { select: () => ({ eq: () => ({ maybeSingle: () => profileSelect() }) }) };
       throw new Error(`unexpected table ${table}`);
@@ -55,6 +62,7 @@ describe("DELETE /api/account", () => {
     getUser.mockReset();
     signOut.mockReset();
     projectFilesSelect.mockReset();
+    attachmentsRange.mockReset();
     profileSelect.mockReset();
     storageRemove.mockReset();
     deleteUser.mockReset();
@@ -63,6 +71,7 @@ describe("DELETE /api/account", () => {
     cancelSubscriptionImmediately.mockReset();
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     projectFilesSelect.mockResolvedValue({ data: [] });
+    attachmentsRange.mockResolvedValue({ data: [], error: null });
     profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: null } });
     storageRemove.mockResolvedValue({ error: null });
     deleteUser.mockResolvedValue({ error: null });
@@ -115,6 +124,64 @@ describe("DELETE /api/account", () => {
     expect(storageRemove).not.toHaveBeenCalledWith("project-files", expect.anything());
     // The avatar path is always attempted, removing a never-uploaded path is a no-op.
     expect(storageRemove).toHaveBeenCalledWith("avatars", ["user-1/avatar"]);
+  });
+
+  describe("chat attachments (migration 0045)", () => {
+    it("removes the objects of every attachment before deleting the account", async () => {
+      attachmentsRange.mockResolvedValue({
+        data: [{ storage_path: "user-1/conv-a/1.png" }, { storage_path: "user-1/conv-b/2.txt" }],
+        error: null,
+      });
+
+      const res = await DELETE(req());
+
+      expect(storageRemove).toHaveBeenCalledWith("chat-attachments", [
+        "user-1/conv-a/1.png",
+        "user-1/conv-b/2.txt",
+      ]);
+      expect(deleteUser).toHaveBeenCalledWith("user-1");
+      expect(res.status).toBe(200);
+    });
+
+    it("reads past the first page, so a large account is not left half cleaned", async () => {
+      const page = (n: number, prefix: string) =>
+        Array.from({ length: n }, (_, i) => ({ storage_path: `user-1/c/${prefix}${i}.txt` }));
+      attachmentsRange
+        .mockResolvedValueOnce({ data: page(1000, "a"), error: null })
+        .mockResolvedValueOnce({ data: page(3, "b"), error: null });
+
+      await DELETE(req());
+
+      expect(attachmentsRange).toHaveBeenNthCalledWith(1, 0, 999);
+      expect(attachmentsRange).toHaveBeenNthCalledWith(2, 1000, 1999);
+      const removed = storageRemove.mock.calls
+        .filter(([bucket]) => bucket === "chat-attachments")
+        .flatMap(([, paths]) => paths as string[]);
+      expect(removed).toHaveLength(1003);
+    });
+
+    it("makes no removal call when there are no attachments", async () => {
+      await DELETE(req());
+      expect(storageRemove).not.toHaveBeenCalledWith("chat-attachments", expect.anything());
+    });
+
+    // Eine fehlende Tabelle (Migration noch nicht angewendet) darf weder die
+    // Projektdateien noch das Löschen des Kontos aufhalten.
+    it("still removes project files and deletes the account when the attachment lookup fails", async () => {
+      attachmentsRange.mockResolvedValue({ data: null, error: new Error("relation does not exist") });
+      projectFilesSelect.mockResolvedValue({ data: [{ storage_path: "user-1/p/f.md" }] });
+
+      const res = await DELETE(req());
+
+      expect(captureError).toHaveBeenCalledWith(
+        "account.attachment_cleanup_failed",
+        expect.any(Error),
+        { userId: "user-1" }
+      );
+      expect(storageRemove).toHaveBeenCalledWith("project-files", ["user-1/p/f.md"]);
+      expect(deleteUser).toHaveBeenCalledWith("user-1");
+      expect(res.status).toBe(200);
+    });
   });
 
   it("still deletes the account when storage cleanup throws", async () => {

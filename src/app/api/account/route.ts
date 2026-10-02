@@ -4,7 +4,7 @@ import { createAdminClient } from "@/server/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { captureError } from "@/shared/lib/observability";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
-import { removeAllPaths } from "@/features/projects/lib/storage-cleanup";
+import { removeAllPaths } from "@/shared/lib/storage-cleanup";
 import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
 import { requestT } from "@/server/i18n";
 
@@ -84,6 +84,45 @@ export async function DELETE(req: Request) {
         subscriptionId: profile.subscription_id,
       });
     }
+  }
+
+  // Fotos und Dateien aus Chats (Migration 0045). Eigener Schritt mit eigenem
+  // try: ein Fehler hier (zum Beispiel eine noch nicht angewendete Migration)
+  // darf weder die Projektdateien noch das Loeschen des Kontos aufhalten.
+  //
+  // Seitenweise, weil PostgREST eine Antwort bei 1000 Zeilen kappt und ein
+  // Konto beliebig viele Anhaenge haben kann (bis zu seinem Speicherkontingent,
+  // bei lauter kleinen Textdateien weit mehr als tausend). Wuerde hier nach
+  // der ersten Seite aufgehoert, blieben die uebrigen Objekte fuer immer im
+  // Bucket, ohne dass noch irgendeine Zeile auf sie zeigt.
+  try {
+    const ATTACHMENT_PAGE = 1000;
+    const attachmentPaths: string[] = [];
+    for (let from = 0; ; from += ATTACHMENT_PAGE) {
+      const { data, error } = await supabase
+        .from("message_attachments")
+        .select("storage_path")
+        .eq("user_id", user.id)
+        .range(from, from + ATTACHMENT_PAGE - 1);
+      if (error) throw error;
+      attachmentPaths.push(...(data ?? []).map((r) => r.storage_path as string));
+      if (!data || data.length < ATTACHMENT_PAGE) break;
+    }
+    if (attachmentPaths.length > 0) {
+      const { failed } = await removeAllPaths(
+        (paths) => supabase.storage.from("chat-attachments").remove(paths),
+        attachmentPaths
+      );
+      if (failed > 0) {
+        captureError(
+          "account.attachment_cleanup_partial",
+          new Error(`${failed} chat attachment(s) could not be removed`),
+          { userId: user.id }
+        );
+      }
+    }
+  } catch (err) {
+    captureError("account.attachment_cleanup_failed", err, { userId: user.id });
   }
 
   try {

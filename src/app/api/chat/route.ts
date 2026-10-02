@@ -1,10 +1,13 @@
 import { chatRequestSchema, type ChatMessage } from "@/shared/lib/schemas";
 import {
   MAX_ASSISTANT_MESSAGE_CHARS,
+  MAX_ATTACHMENT_STORAGE_PER_USER,
+  MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_TRANSCRIPT_MESSAGES,
   MAX_USER_MESSAGE_CHARS,
   truncate,
 } from "@/shared/lib/chat-limits";
+import { formatBytes } from "@/shared/lib/chat-attachments";
 import {
   chatQuotaKey,
   rateLimit,
@@ -13,7 +16,13 @@ import {
   reserveServerKeyCall,
 } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
-import { chatCompleteStream, llmConfig, classifyLlmFailure, LlmEmptyReplyError } from "@/server/llm";
+import {
+  chatCompleteStream,
+  llmConfig,
+  classifyLlmFailure,
+  LlmEmptyReplyError,
+  type LlmMessage,
+} from "@/server/llm";
 import { attemptsOf } from "@/server/llm-retry";
 import { getUserOverride } from "@/server/byok";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
@@ -35,6 +44,15 @@ import {
   type OpenedTurn,
 } from "@/features/chat/lib/chat-persistence";
 import { stubReply } from "@/features/chat/lib/chat-stub";
+import {
+  AttachmentError,
+  adoptAttachments,
+  attachmentBytesUsed,
+  validateUploads,
+  type AttachmentErrorCode,
+  type ValidatedAttachment,
+} from "@/features/chat/lib/attachment-store";
+import { buildModelHistory } from "@/features/chat/lib/model-history";
 import { createSseWriter } from "@/server/http/sse-writer";
 import { requestT } from "@/server/i18n";
 import type { Messages } from "@/shared/i18n/messages/de";
@@ -91,11 +109,20 @@ function trimHistory(messages: ChatMessage[]): ChatMessage[] {
 //
 // Applied to the model-facing copy only: persistence keeps whatever actually
 // happened, this just makes it something every provider accepts.
-function collapseConsecutiveRoles(messages: ChatMessage[]): ChatMessage[] {
-  return messages.reduce<ChatMessage[]>((acc, message) => {
+//
+// Laeuft seit den Anhaengen auf den fertigen Modell-Nachrichten (Text samt
+// Datei-Bloecken, dazu die Bilder) und fuehrt deren Bilder mit zusammen, sonst
+// verschwaenden sie beim Verschmelzen.
+function collapseConsecutiveRoles(messages: LlmMessage[]): LlmMessage[] {
+  return messages.reduce<LlmMessage[]>((acc, message) => {
     const previous = acc[acc.length - 1];
     if (previous && previous.role === message.role) {
-      acc[acc.length - 1] = { ...previous, content: `${previous.content}\n\n${message.content}` };
+      const images = [...(previous.images ?? []), ...(message.images ?? [])];
+      acc[acc.length - 1] = {
+        ...previous,
+        content: `${previous.content}\n\n${message.content}`,
+        ...(images.length > 0 ? { images } : {}),
+      };
       return acc;
     }
     acc.push(message);
@@ -181,6 +208,25 @@ function describeValidationFailure(
     return fmt(m.messageTooLong, { max: MAX_USER_MESSAGE_CHARS.toLocaleString(intlTag) });
   }
   return m.unprocessableReload;
+}
+
+// Wie ein abgelehnter Anhang beim Nutzer ankommt. Der Dateiname steht bewusst
+// NICHT in der Meldung: die Oberflaeche kennt ihn und prueft Format und Groesse
+// ohnehin schon vor dem Senden, hier landet nur, was ein direkter POST oder ein
+// alter Tab an dieser Pruefung vorbeigeschmuggelt hat.
+function describeAttachmentError(code: AttachmentErrorCode, m: Messages["api"]): string {
+  switch (code) {
+    case "unsupported":
+      return m.attachmentUnsupported;
+    case "invalid":
+      return m.attachmentInvalid;
+    case "tooLarge":
+      return m.attachmentTooLarge;
+    case "tooLargeTotal":
+      return m.attachmentTotalTooLarge;
+    case "tooMany":
+      return fmt(m.attachmentTooMany, { max: MAX_ATTACHMENTS_PER_MESSAGE });
+  }
 }
 
 // German, non-leaking text for a failed model call (QA finding U-4). The
@@ -286,6 +332,50 @@ export async function POST(req: Request) {
       400,
       m.unprocessableReload
     );
+  }
+
+  // 2b. Die Anhaenge der neuen Nachricht pruefen, BEVOR irgendetwas reserviert
+  //     oder geschrieben wird: ein kaputter Anhang kostet weder Kontingent noch
+  //     Ratelimit, und es entsteht keine halbe Frage in der Datenbank.
+  //     Beim Neu-Erzeugen gibt es keine neue Nachricht, also auch keine neuen
+  //     Anhaenge (die der bestehenden Frage hat openTurn damals abgelegt).
+  const newest = input.messages[input.messages.length - 1];
+  const rawUploads =
+    newest.role === "user" && !input.replaceMessageId ? (newest.attachments ?? []) : [];
+  let uploads: ValidatedAttachment[] = [];
+  if (rawUploads.length > 0) {
+    try {
+      uploads = validateUploads(rawUploads);
+    } catch (err) {
+      if (err instanceof AttachmentError) {
+        const tooLarge = err.code === "tooLarge" || err.code === "tooLargeTotal";
+        return problem(tooLarge ? 413 : 400, describeAttachmentError(err.code, m), {
+          kind: "attachment",
+          reason: err.code,
+        });
+      }
+      throw err;
+    }
+
+    // Speicherplatz des Kontos. Der Bucket gehoert dem Betreiber, ohne diese
+    // Grenze waere er pro Konto unbegrenzt. Wie die Pruefung oben VOR den
+    // Reservierungen: eine abgelehnte Nachricht kostet nichts.
+    const incoming = uploads.reduce((sum, u) => sum + u.bytes.length, 0);
+    try {
+      const used = await attachmentBytesUsed(supabase);
+      if (used + incoming > MAX_ATTACHMENT_STORAGE_PER_USER) {
+        return problem(
+          403,
+          fmt(m.attachmentStorageFull, {
+            limit: formatBytes(MAX_ATTACHMENT_STORAGE_PER_USER, LOCALE_TAGS[locale].intl),
+          }),
+          { kind: "attachmentStorage", limit: MAX_ATTACHMENT_STORAGE_PER_USER, current: used }
+        );
+      }
+    } catch (err) {
+      captureError("chat.attachment_quota_failed", err, { userId });
+      return problem(503, m.chatPersistFailed);
+    }
   }
 
   // 3. Enforce the monthly chat allowance, unless the caller configured their
@@ -459,11 +549,50 @@ export async function POST(req: Request) {
   //    sofort mit einem Fehlerereignis endet.
   let opened: OpenedTurn;
   try {
-    opened = await openTurn(supabase, userId, input, verifiedProjectId);
+    opened = await openTurn(supabase, userId, input, verifiedProjectId, uploads);
   } catch (err) {
     await releaseReservations();
     captureError("chat.open_turn_failed", err, { userId, projectId: verifiedProjectId });
     return problem(503, m.chatPersistFailed);
+  }
+
+  // 6b. Was das Modell sieht: der Verlauf samt den Anhaengen seiner Nachrichten.
+  //     Vor dem Stream und nicht darin, weil dabei Bytes aus dem Bucket geholt
+  //     werden koennen und ein Fehler hier noch eine ehrliche JSON-Antwort sein
+  //     soll, kein abgebrochener Stream. Die Stub-Antwort braucht nichts davon.
+  //
+  //     `inheritAttachmentsFrom` zaehlt nur, wenn die Anfrage dieselbe Nachricht
+  //     auch als ueberholt fuehrt (supersededMessageIds): so ist es genau der
+  //     Bearbeiten-Fall (C-2) und keine frei waehlbare Zeile.
+  const inheritFrom =
+    input.inheritAttachmentsFrom && input.supersededMessageIds?.includes(input.inheritAttachmentsFrom)
+      ? input.inheritAttachmentsFrom
+      : undefined;
+  const modelWindow = trimHistory(input.messages);
+  let modelMessages: LlmMessage[] = [];
+  let attachmentStats = { images: 0, files: 0 };
+  if (llmConfig() || override) {
+    try {
+      const history = await buildModelHistory({
+        supabase,
+        userId,
+        conversationId: opened.conversationId,
+        window: modelWindow,
+        newMessageId: opened.userMessageId,
+        inheritFrom,
+        preloaded: new Map(uploads.map((u) => [u.id, u.bytes])),
+      });
+      modelMessages = collapseConsecutiveRoles(history.messages);
+      attachmentStats = history.stats;
+    } catch (err) {
+      // Defensiv: buildModelHistory faengt seine eigenen Lesefehler schon ab.
+      // Kommt trotzdem etwas durch, antwortet Finn auf den reinen Text, statt
+      // dass der Zug nach bereits geoeffneter Frage ausfaellt.
+      captureError("chat.model_history_failed", err, { userId });
+      modelMessages = collapseConsecutiveRoles(
+        modelWindow.map((msg) => ({ role: msg.role, content: msg.content }))
+      );
+    }
   }
 
   // 7. Produce the reply and persist it, streamed to the client as it's
@@ -515,7 +644,10 @@ export async function POST(req: Request) {
       const startedAt = Date.now();
       const promptChars =
         systemInstruction.length +
-        trimHistory(input.messages).reduce((sum, m) => sum + m.content.length, 0);
+        (modelMessages.length > 0 ? modelMessages : modelWindow).reduce(
+          (sum, m) => sum + m.content.length,
+          0
+        );
 
       let reply = "";
       let mode: "stub" | "generated";
@@ -529,7 +661,7 @@ export async function POST(req: Request) {
           mode = "generated";
           for await (const chunk of chatCompleteStream({
             system: systemInstruction,
-            messages: collapseConsecutiveRoles(trimHistory(input.messages)),
+            messages: modelMessages,
             override: override ?? undefined,
             signal: req.signal,
             onRetry: ({ failedAttempt, maxAttempts }) =>
@@ -627,9 +759,29 @@ export async function POST(req: Request) {
         if (input.replaceMessageId) {
           await dropReplacedReply(supabase, userId, conversationId, input.replaceMessageId);
         }
+        // Bearbeitete Frage mit Anhaengen: die Dateien wandern jetzt an die
+        // neue Fassung, VOR dem Wegwerfen der alten. Andersherum wuerde die
+        // Kaskade sie mit der alten Zeile loeschen, und dropSupersededMessages
+        // raeumte auch noch ihre Objekte weg. Scheitert das Umhaengen, bleibt
+        // die alte Fassung samt Anhaengen stehen: ein doppelter Eintrag im
+        // Verlauf ist harmlos, verlorene Dateien nicht.
+        let adopted = true;
+        if (inheritFrom && opened.userMessageId) {
+          try {
+            await adoptAttachments({
+              userId,
+              conversationId,
+              fromMessageId: inheritFrom,
+              toMessageId: opened.userMessageId,
+            });
+          } catch (err) {
+            adopted = false;
+            captureError("chat.attachments_adopt_failed", err, { userId });
+          }
+        }
         // Bearbeitete Frage (C-2): die alte Fassung und alles, was ihr folgte,
         // faellt jetzt weg — aus demselben Grund erst hier.
-        if (input.supersededMessageIds?.length) {
+        if (adopted && input.supersededMessageIds?.length) {
           await dropSupersededMessages(
             supabase,
             userId,
@@ -649,6 +801,9 @@ export async function POST(req: Request) {
         provider: override?.provider ?? llmConfig()?.provider,
         inProject: Boolean(verifiedProjectId),
         turns: input.messages.length,
+        // Nur Zaehler, nie Namen oder Inhalte (observability.ts).
+        attachmentsAdded: uploads.length,
+        attachmentImages: attachmentStats.images,
         promptChars,
         replyChars: reply.length,
         latencyMs: Date.now() - startedAt,
