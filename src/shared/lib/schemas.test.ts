@@ -128,3 +128,72 @@ describe("chatRequestSchema", () => {
     });
   });
 });
+
+// Anhänge (2026-10-02). Das Schema prüft nur die Form, den Inhalt prüft die
+// Route (attachment-store.ts). Wichtig ist auch, was NICHT scheitern darf.
+describe("chatRequestSchema, attachments", () => {
+  const png = { name: "screen.png", mediaType: "image/png", data: "iVBORw0KGgo=" };
+
+  it("accepts attachments on the newest message", () => {
+    const parsed = chatRequestSchema.safeParse(
+      request({ messages: [{ role: "user", content: "Bau das nach", attachments: [png] }] })
+    );
+    expect(parsed.success).toBe(true);
+  });
+
+  it("caps the number of attachments per message", () => {
+    const parsed = chatRequestSchema.safeParse(
+      request({
+        messages: [{ role: "user", content: "x", attachments: Array.from({ length: 5 }, () => png) }],
+      })
+    );
+    expect(parsed.success).toBe(false);
+  });
+
+  it("rejects an attachment with no data", () => {
+    const parsed = chatRequestSchema.safeParse(
+      request({ messages: [{ role: "user", content: "x", attachments: [{ ...png, data: "" }] }] })
+    );
+    expect(parsed.success).toBe(false);
+  });
+
+  it("rejects data longer than any allowed attachment could be", () => {
+    const parsed = chatRequestSchema.safeParse(
+      request({
+        messages: [
+          { role: "user", content: "x", attachments: [{ ...png, data: "A".repeat(3_000_000) }] },
+        ],
+      })
+    );
+    expect(parsed.success).toBe(false);
+  });
+
+  it("keeps a real message id", () => {
+    const id = "6f1f5a52-3a52-4b1c-9f55-2b7d0c1a9e11";
+    const parsed = chatRequestSchema.parse(
+      request({ messages: [{ role: "user", content: "x", id }] })
+    );
+    expect(parsed.messages[0]).toMatchObject({ id });
+  });
+
+  // Nachrichten aus dieser Sitzung tragen kurz eine clientseitige ID. Die darf
+  // nie die ganze Anfrage kippen, sie heisst nur "keine Anhänge zum Nachschlagen".
+  it("turns a malformed message id into no id instead of failing the request", () => {
+    const parsed = chatRequestSchema.safeParse(
+      request({ messages: [{ role: "user", content: "x", id: "not-a-uuid" }] })
+    );
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.messages[0]).not.toHaveProperty("id", "not-a-uuid");
+  });
+
+  it("accepts inheritAttachmentsFrom only as a uuid", () => {
+    expect(
+      chatRequestSchema.safeParse(
+        request({ inheritAttachmentsFrom: "6f1f5a52-3a52-4b1c-9f55-2b7d0c1a9e11" })
+      ).success
+    ).toBe(true);
+    expect(chatRequestSchema.safeParse(request({ inheritAttachmentsFrom: "nope" })).success).toBe(
+      false
+    );
+  });
+});

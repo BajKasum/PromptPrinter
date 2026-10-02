@@ -119,3 +119,56 @@ export function splitAtLimit<T>(rows: T[], limit: number = LIST_LOAD_LIMIT): {
 export function truncate(s: string, max: number): string {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
+
+// ─── Anhänge einer Chat-Nachricht (Fotos und Dateien) ─────────────────────
+//
+// Wie die Grenzen oben an mehreren Stellen erzwungen: Composer (damit nichts
+// Unzulässiges überhaupt erst hochgeladen wird), Zod-Schema (Vertrag der
+// Route) und die Route selbst (Magic Bytes, Speicherkontingent). Migration
+// 0045 spiegelt die Spaltengrenzen und die des Buckets.
+
+/** Wie viele Anhänge eine einzelne Nachricht tragen darf. */
+export const MAX_ATTACHMENTS_PER_MESSAGE = 4;
+
+/**
+ * Längste Kante eines Bildes, wie es an das Modell geht. Der Browser skaliert
+ * grössere Bilder vor dem Senden herunter: Modelle verkleinern ohnehin selbst
+ * (Anthropic empfiehlt höchstens ~1568 px), alles darüber kostet nur Upload
+ * und Eingabe-Token, ohne dass Finn mehr erkennt.
+ */
+export const MAX_ATTACHMENT_IMAGE_EDGE = 1568;
+
+/** Ein Bild nach dem Skalieren. Ein Screenshot liegt typischerweise bei 150-500 KB. */
+export const MAX_ATTACHMENT_IMAGE_BYTES = 1024 * 1024; // 1 MB
+
+/** Eine Textdatei, in Bytes. Gleiche Grenze wie Textdateien im Projekt. */
+export const MAX_ATTACHMENT_TEXT_BYTES = 200 * 1024; // 200 KB
+
+/**
+ * Summe aller Anhänge EINER Nachricht, Rohbytes. Die Anhänge reisen als
+ * Base64 im JSON-Body (+33 %), und Vercel nimmt Funktionen höchstens 4,5 MB
+ * Body ab: 2 MB roh sind rund 2,7 MB Base64, der Rest bleibt dem Verlauf.
+ */
+export const MAX_ATTACHMENTS_REQUEST_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Wie viel Anhang-Speicher ein Konto insgesamt belegen darf. Der Bucket ist
+ * privat und gehört dem Betreiber, ohne diese Grenze wäre er pro Konto
+ * unbegrenzt (bei 100 MB sind das rund 300 Screenshots). Beim Löschen von
+ * Chats wird der Platz wieder frei.
+ */
+export const MAX_ATTACHMENT_STORAGE_PER_USER = 100 * 1024 * 1024;
+
+/** Höchstens so viele Bilder gehen in EINEN Modellaufruf, neueste zuerst. */
+export const MAX_MODEL_IMAGES = 4;
+
+/**
+ * Wie viel einer Textdatei Finn liest. Das Modell bezahlt jedes Zeichen bei
+ * jedem Zug erneut, wo die Datei noch im Verlauf liegt, und "nicht Credits
+ * verbrennen" ist das Versprechen dieses Produkts: ein 200-KB-Log wird
+ * gekürzt statt jedes Mal in voller Länge mitgeschickt.
+ */
+export const ATTACHMENT_TEXT_CHARS_PER_FILE = 12_000;
+
+/** Obergrenze für allen Anhangs-Text in einem einzigen Modellaufruf. */
+export const ATTACHMENT_TEXT_CHARS_TOTAL = 24_000;

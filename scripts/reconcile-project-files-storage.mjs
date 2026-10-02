@@ -1,7 +1,16 @@
 /**
- * Lists (and, only with --delete, removes) objects in the "project-files"
- * storage bucket that no `project_files` row points at anymore (QA finding
- * P-6).
+ * Lists (and, only with --delete, removes) objects in a private storage bucket
+ * that no table row points at anymore. Two buckets, same shape
+ * (`{userId}/{folder}/{file}`, exactly two levels deep):
+ *   --bucket=project-files      (default) vs. `project_files`        (QA finding P-6)
+ *   --bucket=chat-attachments   vs. `message_attachments`      (Chat-Anhänge, 0045)
+ *
+ * The rest of this comment describes project-files, the chat-attachments case
+ * is the same story: Storage objects don't cascade with a DB row, so every
+ * cleanup that runs after the row is gone is best-effort and may leave an
+ * orphan. Chat deletion (chat-list.tsx), project deletion, account deletion
+ * and the edit/regenerate drop of superseded messages all remove their objects
+ * AFTER the rows, never blocking the user-facing action.
  *
  * Three paths can leave this kind of orphan behind, all deliberately
  * best-effort rather than transactional, because none of them may block the
@@ -21,8 +30,9 @@
  * automatic deletion.
  *
  * Usage:
- *   node scripts/reconcile-project-files-storage.mjs            # list only
- *   node scripts/reconcile-project-files-storage.mjs --delete   # then delete
+ *   node scripts/reconcile-project-files-storage.mjs                              # list only
+ *   node scripts/reconcile-project-files-storage.mjs --delete                      # then delete
+ *   node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments     # the other bucket
  *
  * Needs the same service-role access as src/lib/supabase/admin.ts, read here
  * from .env.local (dev) or .env (prod) — whichever exists, .env.local first,
@@ -35,7 +45,18 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
-const BUCKET = "project-files";
+// Bucket → die Tabelle, deren storage_path-Spalte die lebenden Objekte nennt.
+const BUCKETS = {
+  "project-files": "project_files",
+  "chat-attachments": "message_attachments",
+};
+const bucketArg = process.argv.find((a) => a.startsWith("--bucket="))?.slice("--bucket=".length);
+const BUCKET = bucketArg ?? "project-files";
+const TABLE = BUCKETS[BUCKET];
+if (!TABLE) {
+  console.error(`Unbekannter Bucket "${BUCKET}". Erlaubt: ${Object.keys(BUCKETS).join(", ")}.`);
+  process.exit(1);
+}
 
 function loadEnv() {
   for (const file of [".env.local", ".env"]) {
@@ -101,14 +122,14 @@ async function main() {
 
   const [objectPaths, { data: rows, error: rowsError }] = await Promise.all([
     listAllObjects(supabase),
-    supabase.from("project_files").select("storage_path"),
+    supabase.from(TABLE).select("storage_path"),
   ]);
   if (rowsError) throw rowsError;
 
   const known = new Set((rows ?? []).map((r) => r.storage_path));
   const orphans = objectPaths.filter((path) => !known.has(path));
 
-  console.log(`${objectPaths.length} Objekte im Bucket, ${known.size} Zeilen in project_files.`);
+  console.log(`${objectPaths.length} Objekte im Bucket "${BUCKET}", ${known.size} Zeilen in ${TABLE}.`);
   if (orphans.length === 0) {
     console.log("Keine verwaisten Objekte gefunden.");
     return;
