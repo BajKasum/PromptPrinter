@@ -654,7 +654,12 @@ export function Chat({
         )}
       </div>
 
-      {keyRequired && <ChatKeyNotice />}
+      {keyRequired && (
+        // Nach dem Verbinden verschwindet der Hinweis sofort. Der Zustand
+        // startet aus dem Server-Check und wird sonst nur durch einen
+        // 403 gesetzt, ein neues Prop käme nach router.refresh() nicht an.
+        <ChatKeyNotice onConnected={() => setKeyRequired(false)} />
+      )}
 
       {error && (
         <div
