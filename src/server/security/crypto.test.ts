@@ -37,6 +37,90 @@ describe("encrypt/decrypt", () => {
   });
 });
 
+// Rotation (Betriebs-Audit 04.10.2026): ohne API_KEY_ENCRYPTION_SECRET_PREVIOUS
+// machte jede Änderung des Secrets alle gespeicherten Keys unlesbar, und
+// getUserOverride() stuft einen unlesbaren Key stillschweigend auf "kein eigener
+// Key" zurück, also auf den Server-Key.
+describe("Rotation mit API_KEY_ENCRYPTION_SECRET_PREVIOUS", () => {
+  const prevCurrent = process.env.API_KEY_ENCRYPTION_SECRET;
+  const prevPrevious = process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
+  const PLAIN = "sk-ant-api03-abc123";
+
+  function use(current: string | undefined, previous?: string) {
+    if (current === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET;
+    else process.env.API_KEY_ENCRYPTION_SECRET = current;
+    if (previous === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
+    else process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS = previous;
+  }
+
+  afterEach(() => {
+    use(prevCurrent, prevPrevious);
+  });
+
+  it("liest eine Zeile mit dem alten Secret weiter, sobald es als PREVIOUS gesetzt ist", () => {
+    use("old-secret");
+    const blob = encrypt(PLAIN);
+
+    use("new-secret");
+    expect(() => decrypt(blob)).toThrow(); // ohne PREVIOUS: die alte Lage
+
+    use("new-secret", "old-secret");
+    expect(decrypt(blob)).toBe(PLAIN);
+  });
+
+  it("schreibt nach der Umstellung nur noch unter dem NEUEN Secret", () => {
+    use("new-secret", "old-secret");
+    const blob = encrypt(PLAIN);
+
+    use("new-secret"); // PREVIOUS weg: die neue Zeile muss trotzdem lesbar sein
+    expect(decrypt(blob)).toBe(PLAIN);
+
+    use("old-secret"); // und das alte Secret allein öffnet sie nicht mehr
+    expect(() => decrypt(blob)).toThrow();
+  });
+
+  it("zieht das aktuelle Secret vor, wenn beide eine Zeile öffnen könnten", () => {
+    use("same-everywhere");
+    const blob = encrypt(PLAIN);
+    use("same-everywhere", "another-one");
+    expect(decrypt(blob)).toBe(PLAIN);
+  });
+
+  it("wirft weiter, wenn weder das aktuelle noch das alte Secret die Zeile öffnet", () => {
+    use("some-third-secret");
+    const blob = encrypt(PLAIN);
+    use("new-secret", "old-secret");
+    expect(() => decrypt(blob)).toThrow();
+  });
+
+  it("lässt eine manipulierte Zeile auch mit PREVIOUS nicht durch (GCM-Tag)", () => {
+    use("old-secret");
+    const raw = Buffer.from(encrypt(PLAIN), "base64");
+    raw[raw.length - 1] ^= 0xff;
+    use("new-secret", "old-secret");
+    expect(() => decrypt(raw.toString("base64"))).toThrow();
+  });
+
+  it("ignoriert ein PREVIOUS, das dem aktuellen Secret gleicht", () => {
+    use("same", "same");
+    expect(decrypt(encrypt(PLAIN))).toBe(PLAIN);
+  });
+
+  it("macht aus PREVIOUS allein keinen Ersatz für ein fehlendes aktuelles Secret", () => {
+    // Das alte Secret ist ein Rotationspartner, kein Standardwert: ohne ein
+    // echtes aktuelles Secret darf es die Dev-Rückfallstufe nicht verdrängen.
+    use("old-secret");
+    const blob = encrypt(PLAIN);
+    use(undefined, "old-secret");
+    expect(() => decrypt(blob)).toThrow();
+  });
+
+  it("verschlüsselt jeden Wert neu mit zufälligem IV, auch mit zwischengespeichertem Schlüssel", () => {
+    use("new-secret", "old-secret");
+    expect(encrypt(PLAIN)).not.toBe(encrypt(PLAIN));
+  });
+});
+
 // isProduction is a module-level singleton resolved from process.env at
 // import time (same convention as rate-limit.ts), so exercising both
 // configurations needs a fresh module instance per test (vi.resetModules() +

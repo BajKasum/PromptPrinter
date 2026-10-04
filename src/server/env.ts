@@ -162,6 +162,22 @@ export function hasCheckoutWithoutWebhook(env: EnvLike = process.env): boolean {
 }
 
 /**
+ * True while a secret rotation is open: a previous encryption secret is set and
+ * differs from the current one (Betriebs-Audit 04.10.2026).
+ *
+ * Not an error, it is the intended state DURING a rotation. It is a warning
+ * because the state is meant to be temporary: with the previous secret still
+ * set, the old secret stays valid for every row that was not re-encrypted yet,
+ * which defeats the point of rotating if it is left there. Without a reminder at
+ * boot, "temporary" tends to become permanent.
+ */
+export function hasOpenEncryptionRotation(env: EnvLike = process.env): boolean {
+  const previous = env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
+  if (isBlank(previous)) return false;
+  return previous !== env.API_KEY_ENCRYPTION_SECRET;
+}
+
+/**
  * Checks the environment once at server startup (wired up in
  * src/instrumentation.ts).
  *
@@ -213,9 +229,19 @@ export function assertEnv(env: EnvLike = process.env): void {
     );
   }
 
+  if (hasOpenEncryptionRotation(env)) {
+    console.warn(
+      "[env] API_KEY_ENCRYPTION_SECRET_PREVIOUS ist gesetzt: eine Rotation des " +
+        "BYOK-Secrets ist offen. Die App liest damit noch Keys, die unter dem alten " +
+        "Secret liegen, und das alte Secret bleibt gültig, bis es entfernt ist. " +
+        "Mit scripts/rotate-byok-secret.mjs umschlüsseln, dann die Variable löschen " +
+        "(Ablauf im Kopfkommentar des Skripts)."
+    );
+  }
+
   if (missing.length === 0) return;
 
-  const detail = missing.map((m) => `  - ${m.name}: ${m.why}`).join("\n");
+  const detail =missing.map((m) => `  - ${m.name}: ${m.why}`).join("\n");
   const summary = `${missing.length} erforderliche Umgebungsvariable(n) fehlen:\n${detail}`;
 
   if (isProduction) {

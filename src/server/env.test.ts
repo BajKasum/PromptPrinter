@@ -5,6 +5,7 @@ import {
   hasInsecureAppUrl,
   hasInvalidCheckoutUrl,
   hasNoModelProvider,
+  hasOpenEncryptionRotation,
   missingProductionEnv,
 } from "@/server/env";
 
@@ -205,6 +206,57 @@ describe("hasCheckoutWithoutWebhook", () => {
     expect(
       hasCheckoutWithoutWebhook({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "kaputt" })
     ).toBe(false);
+  });
+});
+
+// Eine offene Rotation des BYOK-Secrets ist waehrend der Umstellung gewollt und
+// danach ein Fehler: das alte Secret bleibt fuer jede nicht umgeschluesselte
+// Zeile gueltig, solange die Variable steht. Der Hinweis beim Start sorgt dafuer,
+// dass "vorlaeufig" nicht stillschweigend "dauerhaft" wird.
+describe("hasOpenEncryptionRotation", () => {
+  it("meldet eine offene Rotation, wenn ein anderes altes Secret gesetzt ist", () => {
+    expect(
+      hasOpenEncryptionRotation({
+        API_KEY_ENCRYPTION_SECRET: "new",
+        API_KEY_ENCRYPTION_SECRET_PREVIOUS: "old",
+      })
+    ).toBe(true);
+  });
+
+  it("schweigt ohne altes Secret und bei leerem Wert", () => {
+    expect(hasOpenEncryptionRotation({ API_KEY_ENCRYPTION_SECRET: "new" })).toBe(false);
+    expect(
+      hasOpenEncryptionRotation({
+        API_KEY_ENCRYPTION_SECRET: "new",
+        API_KEY_ENCRYPTION_SECRET_PREVIOUS: "  ",
+      })
+    ).toBe(false);
+  });
+
+  it("schweigt, wenn das alte Secret dem aktuellen gleicht (nichts offen)", () => {
+    expect(
+      hasOpenEncryptionRotation({
+        API_KEY_ENCRYPTION_SECRET: "same",
+        API_KEY_ENCRYPTION_SECRET_PREVIOUS: "same",
+      })
+    ).toBe(false);
+  });
+
+  it("assertEnv warnt beim Start, ohne den Start zu verhindern, und nennt kein Secret", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() =>
+      assertEnv({
+        ...complete,
+        NODE_ENV: "production",
+        API_KEY_ENCRYPTION_SECRET: "the-new-secret",
+        API_KEY_ENCRYPTION_SECRET_PREVIOUS: "the-old-secret",
+      })
+    ).not.toThrow();
+    const lines = warn.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes("API_KEY_ENCRYPTION_SECRET_PREVIOUS"))).toBe(true);
+    expect(lines.join(" | ")).not.toContain("the-new-secret");
+    expect(lines.join(" | ")).not.toContain("the-old-secret");
+    warn.mockRestore();
   });
 });
 
