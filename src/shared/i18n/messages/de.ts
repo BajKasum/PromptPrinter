@@ -356,6 +356,12 @@ export const de = {
       endpointLabel: "API-Endpoint",
       keyPlaceholder: "API-Key",
     },
+    dataExport: {
+      title: "Deine Daten",
+      hint: "Eine Kopie von allem, was zu deinem Konto gehört.",
+      body: "Projekte, Chats, gespeicherte Prompts und Einstellungen als eine JSON-Datei. Hochgeladene Dateien und Bilder sind nur mit Namen dabei, deine API-Keys gar nicht.",
+      button: "Daten herunterladen",
+    },
     deleteAccount: {
       title: "Konto löschen",
       body: "Entfernt dein Konto und alles darin unwiderruflich: Projekte, Chats, Dateien, gespeicherte Prompts und hinterlegte API-Keys.",
@@ -682,6 +688,8 @@ export const de = {
     accountNotSignedIn: "Nicht angemeldet.",
     accountConfigIncomplete: "Server-Konfiguration unvollständig, Service-Role-Key fehlt.",
     accountDeleteFailed: "Konto konnte nicht gelöscht werden.",
+    accountExportNote: "Export deiner PromptPrinter-Daten. Hochgeladene Dateien und Bilder sind nur mit Name, Typ und Größe enthalten, nicht ihr Inhalt. API-Keys sind nie enthalten.",
+    accountExportFailed: "Der Export konnte nicht erstellt werden. Bitte versuch es erneut.",
   },
 
   /**

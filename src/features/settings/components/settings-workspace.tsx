@@ -10,6 +10,7 @@ import {
   Building2,
   KeyRound,
   Lock,
+  Database,
   ShieldAlert,
   ArrowUpRight,
   Loader2,
@@ -22,6 +23,7 @@ import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { DeleteAccount } from "@/features/settings/components/delete-account";
 import { ChangePassword } from "@/features/settings/components/change-password";
+import { DataExport } from "@/features/settings/components/data-export";
 import { ThemePreference } from "@/features/settings/components/theme-preference";
 import { ApiKeys } from "@/features/settings/components/api-keys";
 import { PlanBadge } from "@/shared/ui/plan-badge";
@@ -246,6 +248,16 @@ export function SettingsWorkspace({
           description={t.settings.securityHint}
         >
           <ChangePassword />
+        </SettingsCard>
+
+        {/* Your data: self-service export (Betriebs-Audit 04.10.2026) */}
+        <SettingsCard
+          Icon={Database}
+          accent="--accent"
+          title={t.settings.dataExport.title}
+          description={t.settings.dataExport.hint}
+        >
+          <DataExport />
         </SettingsCard>
 
         {/* Danger zone */}
