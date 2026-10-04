@@ -11,7 +11,7 @@ import {
 } from "@/server/http/request-body";
 import { isMailCooldownError, mailCooldownMessage, translateAuthError } from "@/shared/lib/auth-errors";
 import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
-import { MIN_PASSWORD_LENGTH } from "@/shared/lib/password";
+import { MIN_PASSWORD_LENGTH, weakPasswordMessage, weakPasswordReason } from "@/shared/lib/password";
 import { logWarning } from "@/shared/lib/observability";
 
 export const runtime = "nodejs";
@@ -148,6 +148,18 @@ export async function POST(req: Request) {
     }
 
     case "sign-up": {
+      // Bekannte und naheliegende Passwörter (password.ts, Betriebs-Audit
+      // 04.10.2026): Supabases Prüfung gegen geleakte Passwörter ist auf dem
+      // Free-Tarif aus, die Länge allein hält "password123" nicht auf. Hier, nicht
+      // nur im Formular, weil das Formular ein Rat ist und diese Route die
+      // Schranke: wer sie direkt aufruft, kommt an der Prüfung nicht vorbei. Der
+      // Fehler trägt `kind`, damit die Oberfläche ihn von einem Supabase-Fehler
+      // unterscheiden kann.
+      const weak = weakPasswordReason(input.password, input.email);
+      if (weak) {
+        return problem(400, weakPasswordMessage(weak), { kind: "weak-password", reason: weak });
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: input.email,
         password: input.password,

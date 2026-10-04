@@ -14,7 +14,12 @@ import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/features/auth/components/
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
-import { MIN_PASSWORD_LENGTH, PASSWORD_RULE_HINT } from "@/shared/lib/password";
+import {
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_RULE_HINT,
+  weakPasswordMessage,
+  weakPasswordReason,
+} from "@/shared/lib/password";
 
 const schema = z.object({
   email: z.string().email("Bitte eine gültige Email eingeben"),
@@ -65,6 +70,14 @@ export function SignUpExperience() {
     const parsed = schema.safeParse({ email, password });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Ungültige Eingabe");
+      return;
+    }
+    // Vor dem Captcha und vor dem Netz: der Token ist einmalig gültig, ein
+    // abgelehntes Passwort soll ihn nicht verbrennen. Die Route prüft dasselbe
+    // noch einmal, das hier ist nur die schnelle Rückmeldung.
+    const weak = weakPasswordReason(password, email);
+    if (weak) {
+      setError(weakPasswordMessage(weak));
       return;
     }
     if (!termsAccepted) {

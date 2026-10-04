@@ -66,15 +66,32 @@ describe("UpdatePasswordExperience", () => {
 
   it("rejects mismatched passwords", async () => {
     render(<UpdatePasswordExperience email="user@example.com" />);
-    await fillAndSubmit("password123", "password124");
+    await fillAndSubmit("Fensterbank-77x", "Fensterbank-78x");
     expect(screen.getByRole("alert")).toHaveTextContent("stimmen nicht überein");
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it.each(["Password123456", "P@ssw0rd2024!"])(
+    "weist das bekannte Passwort %s ab, ohne Supabase zu fragen",
+    async (password) => {
+      render(<UpdatePasswordExperience email="user@example.com" />);
+      await fillAndSubmit(password, password);
+      expect(screen.getByRole("alert")).toHaveTextContent(/bekannt/);
+      expect(updateUser).not.toHaveBeenCalled();
+    }
+  );
+
+  it("weist ein Passwort mit der eigenen Adresse ab", async () => {
+    render(<UpdatePasswordExperience email="kasumbajrami7@example.com" />);
+    await fillAndSubmit("xx-kasumbajrami-xx-9", "xx-kasumbajrami-xx-9");
+    expect(screen.getByRole("alert")).toHaveTextContent(/E-Mail/);
     expect(updateUser).not.toHaveBeenCalled();
   });
 
   it("maps a stale-session error to friendly copy", async () => {
     updateUser.mockResolvedValue({ error: { message: "JWT expired" } });
     render(<UpdatePasswordExperience email="user@example.com" />);
-    await fillAndSubmit("password123", "password123");
+    await fillAndSubmit("Fensterbank-77x", "Fensterbank-77x");
     expect(await screen.findByRole("alert")).toHaveTextContent("Sitzung ist abgelaufen");
   });
 
@@ -83,16 +100,16 @@ describe("UpdatePasswordExperience", () => {
       error: { message: "New password should be different from the old password" },
     });
     render(<UpdatePasswordExperience email="user@example.com" />);
-    await fillAndSubmit("password123", "password123");
+    await fillAndSubmit("Fensterbank-77x", "Fensterbank-77x");
     expect(await screen.findByRole("alert")).toHaveTextContent("muss sich vom alten unterscheiden");
   });
 
   it("celebrates and redirects to /chats/new on success", async () => {
     updateUser.mockResolvedValue({ error: null });
     render(<UpdatePasswordExperience email="user@example.com" />);
-    await fillAndSubmit("password123", "password123");
+    await fillAndSubmit("Fensterbank-77x", "Fensterbank-77x");
 
-    expect(updateUser).toHaveBeenCalledWith({ password: "password123" });
+    expect(updateUser).toHaveBeenCalledWith({ password: "Fensterbank-77x" });
     expect(await screen.findByRole("status")).toHaveTextContent("Passwort aktualisiert");
 
     await userEvent.setup().click(screen.getByRole("button", { name: "weiter" }));

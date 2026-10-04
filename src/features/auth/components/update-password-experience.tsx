@@ -10,6 +10,8 @@ import {
   MIN_PASSWORD_LENGTH,
   PASSWORD_TOO_SHORT_MESSAGE,
   isPasswordLongEnough,
+  weakPasswordMessage,
+  weakPasswordReason,
 } from "@/shared/lib/password";
 
 function translatePasswordError(message: string): string {
@@ -48,6 +50,14 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
     }
     if (next !== confirm) {
       setError("Die beiden Passwörter stimmen nicht überein.");
+      return;
+    }
+    // Hier geht die Eingabe direkt an Supabase (updateUser), nicht durch
+    // /api/auth: diese Prüfung bindet also die App, nicht jemanden, der die
+    // Supabase-API selbst ruft. Dasselbe gilt schon für die Mindestlänge.
+    const weak = weakPasswordReason(next, email);
+    if (weak) {
+      setError(weakPasswordMessage(weak));
       return;
     }
 
