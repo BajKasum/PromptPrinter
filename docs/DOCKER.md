@@ -91,6 +91,30 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 
 ---
 
+## Wird das noch geprüft?
+
+Ja, seit dem 04.10.2026 ([`.github/workflows/docker.yml`](../.github/workflows/docker.yml)).
+Produktion läuft auf Vercel, nicht in diesem Container; dieser Pfad ist der Weg für
+eine eigene Installation, und genau deshalb verrottet er still, wenn ihn nichts baut.
+
+Der Lauf baut das Produktions-Image mit `docker-compose.prod.yml` so, wie oben
+beschrieben, startet es mit Platzhalter-Werten (keine echten Zugangsdaten, es
+werden keine Verbindungen zu Supabase oder Upstash aufgebaut) und wartet, bis der
+Healthcheck des Containers grün ist und `/api/health` `"status":"ok"` sagt. Dabei
+prüft er nebenbei, dass im Image keine Env-Datei liegt, dass der Container nicht
+als root läuft und dass `docker-compose.yml` (der Dev-Stack) gültig ist.
+
+Er läuft bei Änderungen an `Dockerfile`, `.dockerignore`, den Compose-Dateien,
+`package.json`, `package-lock.json` und `next.config.ts` sowie **jeden Montag auf
+`main`**, weil auch ein unverändertes Repository verrottet, wenn sich das
+Basis-Image (`node:22-alpine`) unter ihm ändert. Von Hand: im Actions-Reiter
+"Docker" → "Run workflow".
+
+Rot heißt: die dokumentierten Befehle oben funktionieren so nicht mehr. Die Logs
+des Containers stehen im Lauf unter "Container-Logs bei Fehler".
+
+---
+
 ## Spickzettel
 
 | Was | Befehl |
