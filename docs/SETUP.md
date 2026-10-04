@@ -114,11 +114,13 @@ Siehe [`DESIGN.md`](DESIGN.md), Token-System, Theme-Regeln, Komponenten-Status.
 Vor jedem Commit muss das volle Gate grün sein:
 
 ```bash
-npm audit --audit-level=high && npm run typecheck && npm run lint && npm run test && npm run build
+npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
 [CI](../.github/workflows/ci.yml) führt genau dieselbe Kette bei jedem Push auf
-jeden Branch und bei jedem Pull Request aus.
+jeden Branch und bei jedem Pull Request aus. `audit:gate` ist
+`npm audit --audit-level=high` plus eine kurze, befristete Ausnahmeliste für
+Funde ohne gepatchte Version (`scripts/audit-gate.mjs`).
 
 ## Projektstruktur
 

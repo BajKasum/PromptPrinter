@@ -1246,15 +1246,28 @@ npm run build        # Production-Build (standalone)
 **Quality-Gate, vor JEDEM Commit muss das komplett grün sein:**
 
 ```bash
-npm audit --audit-level=high && npm run typecheck && npm run lint && npm run test && npm run build
+npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
 Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push auf
-**jeden** Branch und bei jedem PR. `npm audit` steht dort VOR allem anderen:
+**jeden** Branch und bei jedem PR. Der Audit steht dort VOR allem anderen:
 schlägt er an, laufen Typecheck, Lint, Test und Build gar nicht erst. Genau so
 waren am 23.09.2026 fünf Commits in Folge rot, obwohl das lokale Gate (damals
-noch ohne `npm audit`) grün war — ein neues `sharp`-Advisory war seit dem
+noch ohne Audit) grün war — ein neues `sharp`-Advisory war seit dem
 letzten Push erschienen. Deshalb gehört der Audit ins lokale Gate.
+
+**`audit:gate` ist `npm audit --audit-level=high` mit einer Ausnahmeliste**
+([`scripts/audit-gate.mjs`](scripts/audit-gate.mjs), seit 2026-10-04). Am
+04.10.2026 erschien GHSA-vfj7-8cjw-p6xm für `braces` ohne gepatchte Version
+(betroffen sind alle bis 3.0.3), also gab es nichts, auf das ein `overrides`-
+Eintrag hätte heben können, und jede CI wäre rot geblieben. `braces` hängt nur
+an `tailwindcss` 3.4 und `eslint-config-next`; im ausgelieferten
+`.next/standalone` ist es nicht enthalten (geprüft). Die Liste `ACCEPTED` im
+Skript nimmt genau diesen Fund heraus, **befristet bis 2026-11-04**, mit
+Begründung; alles andere ab `high` scheitert wie zuvor. Danach scheitert das Gate
+wieder und jemand muss neu entscheiden: Upstream-Fix abwarten, auf Tailwind 4
+springen (Breaking Change) oder mit neuer Begründung verlängern. Einträge nur
+mit Beleg, dass der Fund die ausgelieferte App nicht erreicht, nie "später".
 
 **Die Schritte des Gates nie durch `| tail` oder `| head` leiten.** Eine Pipe
 gibt den Exit-Code des letzten Befehls zurück, also den von `tail`, und der

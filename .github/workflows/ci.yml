@@ -49,8 +49,14 @@ jobs:
       # anything high or critical should be a decision, not a surprise.
       # Failures are fixed by bumping, or by an explicit `overrides` entry in
       # package.json with a comment saying why.
+      #
+      # Runs through scripts/audit-gate.mjs, which is `npm audit` at the same
+      # `high` threshold plus a short, named, EXPIRING list of accepted findings
+      # (04.10.2026: GHSA-vfj7-8cjw-p6xm for `braces` has no patched version at
+      # all, so there was nothing to bump to and no override to write). Every
+      # other high or critical finding fails exactly as before.
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: node scripts/audit-gate.mjs
 
       - name: Typecheck
         run: npm run typecheck
