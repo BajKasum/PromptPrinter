@@ -55,6 +55,7 @@ wandert. Ohne Provider-Key sagt sie ab, auch lokal.
 | `npm run lint` | ESLint (`next lint`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest (Unit-Tests) |
+| `npm run test:e2e` | Playwright-Smoketests im Browser gegen einen lokalen Supabase-Stack (siehe „Ende-zu-Ende-Tests", braucht Docker) |
 | `node scripts/take-screenshots.mjs` | Screenshots aller Seiten in Light+Dark → `screenshots_Docs/` (braucht laufenden Dev-Server, Chrome und `SCREENSHOT_EMAIL`/`SCREENSHOT_PASSWORD` in `.env.local`) |
 
 ## Environment
@@ -149,9 +150,117 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 ```
 
 [CI](../.github/workflows/ci.yml) führt genau dieselbe Kette bei jedem Push auf
-jeden Branch und bei jedem Pull Request aus. `audit:gate` ist
+jeden Branch und bei jedem Pull Request aus. Die Smoketests laufen getrennt in
+[`e2e.yml`](../.github/workflows/e2e.yml) (nur wenn etwas Betroffenes geändert wird,
+dazu wöchentlich), und `docker.yml` hält den Docker-Pfad am Leben. `audit:gate` ist
 `npm audit --audit-level=high` plus eine kurze, befristete Ausnahmeliste für
 Funde ohne gepatchte Version (`scripts/audit-gate.mjs`).
+
+## Ende-zu-Ende-Tests
+
+Die Unit-Tests prüfen Bausteine, nicht, ob ein eingeloggter Nutzer durch das
+Produkt kommt. Die Smoketests in [`e2e/`](../e2e) bedienen die App im echten
+Browser (Playwright, Chromium) gegen einen **lokalen Supabase-Stack**, nie gegen
+ein gehostetes Projekt.
+
+### Ablauf
+
+Voraussetzungen: Docker und die Supabase-CLI (Version wie in
+[`e2e.yml`](../.github/workflows/e2e.yml), derzeit 2.119.0).
+
+```bash
+supabase start          # baut die Datenbank aus supabase/migrations/ neu auf
+npm run test:e2e        # startet einen eigenen Dev-Server auf Port 3100
+supabase stop           # danach (optional, --no-backup verwirft die Daten)
+```
+
+Ohne installierte CLI geht es auch so (Windows, Git Bash):
+
+```bash
+export E2E_SUPABASE_CLI="npx --yes supabase@2.119.0"
+npx --yes supabase@2.119.0 start
+npm run test:e2e
+```
+
+Einmalig: `npx playwright install chromium`. Ein einzelner Test:
+`npx playwright test e2e/chat.spec.ts --project desktop`; mit Browserfenster
+`--headed`; einen fehlgeschlagenen Lauf sieht man mit
+`npx playwright show-report`.
+
+### Was geprüft wird
+
+| Datei | Prüft |
+|---|---|
+| `smoke.spec.ts` | der Test-Server spricht nur mit dem lokalen Stack (kein Supabase-Projekt, kein Turnstile aus `.env.local`), öffentliche Seiten antworten, Unbekanntes ist 404, die App ist ohne Anmeldung zu |
+| `auth.spec.ts` | Registrieren, Abmelden, Anmelden über die Formulare, falsches Passwort, schwaches Passwort wird im Server abgewiesen |
+| `chat.spec.ts` | Frage senden und Antwort, nach dem Neuladen noch da; Textanhang landet in Tabelle UND Speicher, byte-gleich; ein Free-Konto sieht den Key-Hinweis vor dem Tippen |
+| `projects.spec.ts` | Projekt anlegen, Anweisungen speichern, Datei hochladen, Chat im Projekt, Löschen räumt Zeilen und Dateien im Speicher auf |
+| `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
+| `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
+
+### Was bewusst NICHT geprüft wird
+
+- **Eine echte KI-Antwort.** Es ist kein Modell-Anbieter konfiguriert, der Chat
+  antwortet mit der Demo-Antwort (Stub-Modus, nur in Entwicklung erlaubt, daher
+  läuft der Test-Server im Dev-Modus). Dass die Antwort gut ist, prüft kein Test.
+- **Der Sprachmodus.** Die Web Speech API gibt es in einem automatisierten
+  Chromium nicht verlässlich, und ein Mikrofon gibt es nicht.
+- **Zahlungen und Webhooks** (Lemon Squeezy), **Turnstile**, **Upstash/Redis**,
+  **E-Mail-Bestätigung und Passwort-Reset-Mails**, **OAuth** (Google/GitHub).
+  Der lokale Stack hat die Bestätigungsmail ausgeschaltet
+  (`supabase/config.toml`), das ist der einzige gewollte Unterschied beim Auth.
+- **Den Produktions-Build.** `next start` verweigert den Stub-Chat, deshalb
+  läuft hier der Dev-Server. CSP und statische Seiten im Produktions-Build
+  prüfen `tests/guards/` und `docker.yml`.
+- **Last, andere Browser, Tastatur-Barrierefreiheit.** Nur Chromium, ein Nutzer.
+- **fr/it/es.** Die Tests laufen auf Deutsch, der Sprachwechsel nur auf Englisch.
+
+### Wie nah der lokale Stack an der Produktion ist
+
+Am 05.10.2026 gemessen: nach `supabase start` stimmen Spalten, Richtlinien,
+RLS-Stand, Indizes, Buckets sowie Tabellen- und Spaltenrechte für `anon` und
+`authenticated` mit der Produktions-Datenbank überein (Hash über die sortierte
+Liste, Zahl der Zeilen gleich). Die einzigen Unterschiede sind bekannt:
+
+- Migration 0043 ist in Produktion noch nicht angewendet (Tabelle
+  `subscriptions` und Spalte `profiles.stripe_customer_id` gibt es dort noch).
+- `public.rls_auto_enable()` legt Supabase nur auf gehosteten Projekten an.
+- Migration 0046 (`set_active_byok_provider` nicht mehr für `anon`) ist dort
+  ebenfalls noch offen.
+
+Dafür waren zwei Eingriffe im Repository nötig, und beide sind Absicht:
+
+1. **`0003_harden_functions.sql`** setzte ein `REVOKE` auf `rls_auto_enable()`
+   voraus, die es lokal nicht gibt: das Schema war aus dem Repository nicht
+   nachbaubar. Das `REVOKE` ist jetzt bedingt (`to_regprocedure`), die Wirkung
+   auf einem gehosteten Projekt ist unverändert.
+2. **`supabase/roles.sql`** nimmt `anon` und `authenticated` die automatischen
+   Rechte auf neu angelegte Tabellen (`alter default privileges`). Der lokale
+   Stack vergibt sie von sich aus, Produktion nicht. Ohne diese Datei fiele ein
+   vergessenes `GRANT` in einer Migration lokal nie auf und wäre in Produktion
+   ein „permission denied": genau der Fehler, den 0002 einmal behoben hat.
+
+### Sperren
+
+- `e2e/support/env.ts` verweigert jede Datenbank-Adresse außer `127.0.0.1` und
+  `localhost`. Die Tests legen Konten an und löschen sie wieder.
+- Der Test-Server bekommt seine Umgebung vollständig vom Test: alle Dienste, die
+  er nicht nutzen darf (Modell-Anbieter, Upstash, Turnstile, Zahlung,
+  Alarm-Webhook, GitHub-Token), stehen auf leer und schlagen damit die echte
+  `.env.local`. `smoke.spec.ts` prüft das an Werten, die dort wirklich stehen.
+- Der Test-Server läuft auf Port 3100 und nie auf einem schon laufenden Server
+  (`reuseExistingServer: false`), damit ihn kein Dev-Server mit echten
+  Zugangsdaten ersetzt.
+
+### Neuer Test, neue Migration
+
+Ein neuer Test bekommt sein Konto aus `support/fixtures.ts` (`signedIn`,
+`makePro` für den Chat) und räumt es selbst weg. Eine neue Migration braucht
+nichts: `supabase start` wendet sie an, und fehlt ihr ein `GRANT`, fällt das hier
+auf. Die Tests wurden einmal gegengeprüft, indem je ein Fehler in die App
+eingebaut wurde (Projekt-Löschen ohne Speicher-Aufräumen, Export mit internem
+Pfad, Schranke gegen schwache Passwörter aus): jeder machte genau den
+zuständigen Test rot.
 
 ## Projektstruktur
 
