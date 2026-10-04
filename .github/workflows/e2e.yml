@@ -1,0 +1,126 @@
+name: E2E
+
+# Ende-zu-Ende-Smoketests gegen einen lokalen Supabase-Stack (Betriebs-Audit
+# 04.10.2026, M1/M2). Was sie abdecken und was nicht: docs/SETUP.md, Abschnitt
+# "Ende-zu-Ende-Tests".
+#
+# Was dieser Lauf beweist, über die Tests selbst hinaus: dass sich die
+# Datenbank allein aus supabase/migrations/ nachbauen lässt. `supabase start`
+# wendet 0001 bis zur neuesten Migration auf eine leere Datenbank an, und bricht
+# eine einzige davon, scheitert der Lauf, bevor ein Test startet.
+#
+# Eigener Workflow mit Pfadfilter statt ein Schritt in ci.yml: der Stack zieht
+# einige Container-Images, und der Lauf dauert mehrere Minuten. Das gehört nicht
+# in jeden Push, der nur Dokumentation ändert. Er läuft, wenn etwas geändert
+# wird, das die Tests betrifft, und wöchentlich auf main, weil auch ein
+# unverändertes Repository verrottet, wenn sich ein Supabase-Image unter ihm
+# ändert.
+#
+# Kein Geheimnis im Spiel: der Stack ist ein Wegwerf-Container auf dem Runner,
+# seine Schlüssel sind die öffentlich bekannten Demo-Schlüssel des lokalen
+# Stacks. Es gibt keine Verbindung zur Produktion, und e2e/support/env.ts
+# verweigert jede andere Adresse als localhost.
+
+# Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker,
+# aus demselben Grund wie in docker.yml: eine Liste, die ein Workflow-Parser
+# nicht versteht, lässt den Lauf stumm ausfallen.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "supabase/**"
+      - playwright.config.ts
+      - next.config.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/e2e.yml
+  pull_request:
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "supabase/**"
+      - playwright.config.ts
+      - next.config.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/e2e.yml
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+# Wie ci.yml: ein neuer Push bricht den laufenden Lauf desselben Branches ab,
+# auf main nie (ein abgebrochener Lauf zeigt sich dort als rotes Kreuz).
+concurrency:
+  group: e2e-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  smoke:
+    name: Smoketests im Browser (Chromium, lokaler Supabase-Stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Dieselbe Version wie in docs/SETUP.md, damit lokal und in der CI derselbe
+      # Stack läuft.
+      - name: Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.119.0
+
+      # Wendet supabase/roles.sql (Standardrechte wie in Produktion) und danach
+      # alle Migrationen an. Schlägt eine Migration fehl, endet der Lauf hier.
+      - name: Lokalen Supabase-Stack starten
+        run: supabase start
+
+      # Adresse und Schlüssel liest e2e/support/env.ts selbst aus
+      # `supabase status -o env`. Hier nur sichtbar machen, dass der Stack steht.
+      - name: Stack prüfen
+        run: supabase status
+
+      - name: Playwright-Browser (Cache)
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Chromium installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Mit gecachtem Browser fehlen trotzdem die Systembibliotheken.
+      - name: Systembibliotheken für Chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Tests
+        run: npx playwright test
+
+      # Bei einem Fehler Bericht und Spuren zum Nachsehen (Screenshot, Trace).
+      - name: Bericht sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Stack beenden
+        if: always()
+        run: supabase stop --no-backup

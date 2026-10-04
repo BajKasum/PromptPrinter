@@ -58,3 +58,9 @@ screenshots_Docs/
 # Scratch-Verzeichnis fuer Zwischenergebnisse (PDF-/Bildvergleiche u. a.).
 # Nicht versioniert: reine Arbeitsspuren, teils binaer, ohne Wert fuer andere.
 tmp/
+
+# Playwright (e2e/): Berichte, Spuren, Browser-Cache
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
