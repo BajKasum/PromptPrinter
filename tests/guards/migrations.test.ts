@@ -139,6 +139,39 @@ describe("Migrations-Konventionen", () => {
     ).toEqual([]);
   });
 
+  // Postgres gibt CREATE FUNCTION das Recht EXECUTE an PUBLIC, und jede Rolle
+  // (anon eingeschlossen) gehoert implizit dazu. Ein blosses `grant execute ...
+  // to authenticated` macht die Funktion also trotzdem fuer anon aufrufbar.
+  // Zweimal erst beim Nachmessen bemerkt: project_summaries() (0032) und
+  // set_active_byok_provider() (0046). Hier fest: wer eine Funktion an
+  // authenticated vergibt, muss sie irgendwo von PUBLIC entziehen.
+  it("entzieht jeder an authenticated vergebenen Funktion das Recht von PUBLIC", () => {
+    const granted = new Set<string>();
+    const revokedFromPublic = new Set<string>();
+
+    for (const file of migrationFiles()) {
+      const sql = withoutComments(read(file));
+      for (const m of sql.matchAll(
+        /^grant\s+execute\s+on\s+function\s+([\w.]+)\s*\([^)]*\)\s+to\s+[^;]*\bauthenticated\b/gim
+      )) {
+        granted.add(m[1]);
+      }
+      for (const m of sql.matchAll(
+        /^revoke\s+execute\s+on\s+function\s+([\w.]+)\s*\([^)]*\)\s+from\s+[^;]*\bpublic\b/gim
+      )) {
+        revokedFromPublic.add(m[1]);
+      }
+    }
+
+    const offenders = [...granted].filter((fn) => !revokedFromPublic.has(fn));
+    expect(
+      offenders,
+      "An authenticated vergeben, aber nie von PUBLIC entzogen (dann ist die " +
+        "Funktion auch fuer anon aufrufbar):\n  " +
+        offenders.join("\n  ")
+    ).toEqual([]);
+  });
+
   it("fuehrt keine Ausnahme, die es nicht mehr braucht", () => {
     const stale = [
       ...Object.keys(EXEMPT_SEARCH_PATH).filter((file) => {
