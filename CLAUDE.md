@@ -1179,6 +1179,70 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 >   selbst ist seit dem 2026-10-02 live und geprüft, siehe oben), und die
 >   Übersetzungen in fr/it/es (von Muttersprachlern prüfen lassen).
 
+> **Betriebs-Audit (2026-10-04):** Prüfung gegen die sechs Punkte eines
+> "Senior Engineer vor Production"-Videos (Fundament, Sicherheit, Randfälle,
+> Datenbank, Test unter echten Bedingungen, Betrieb), Code UND Infrastruktur
+> (Supabase- und Vercel-MCP, nur lesend). Ergebnis: der Code ist sauber, die
+> Hebel liegen im **Betrieb**. Liste mit Belegen im Second Brain:
+> `02 Projekte/PromptPrinter/PromptPrinter Betriebs-Audit 2026-10-04.md`; der
+> Prompt zum Abarbeiten der offenen Punkte steht daneben (`Prompt Folgesitzung
+> Betriebs-Audit 2026-10-04.md`).
+>
+> **Die sieben niedrigen Punkte sind erledigt**, ein Branch und ein PR je Punkt
+> (#30 bis #36), dazu #29 als Blocker. Was daraus für die Arbeit hier folgt:
+>
+> - **Gate-Kommando ist `npm run audit:gate`** statt `npm audit`: dasselbe mit
+>   Schwelle `high`, plus eine befristete Ausnahmeliste
+>   ([`scripts/audit-gate.mjs`](scripts/audit-gate.mjs)). Anlass: GHSA-vfj7-8cjw-p6xm
+>   (`braces`) hat keine gepatchte Version und hängt nur an Build-Werkzeugen
+>   (im ausgelieferten `.next/standalone` nicht enthalten). Die Ausnahme **läuft
+>   am 2026-11-04 ab**, danach scheitert die CI wieder (Entscheid dann: Upstream-
+>   Fix, Tailwind 4 oder Verlängerung mit Begründung).
+> - **Migration 0046** (`set_active_byok_provider` nicht mehr für `anon`
+>   ausführbar) liegt im Repo, ist aber wie 0043 **NICHT in der Produktions-DB**.
+>   Neuer Guard in `migrations.test.ts`: jede an `authenticated` vergebene
+>   Funktion muss von `PUBLIC` entzogen werden.
+> - **CSP pro Route:** `thirdPartiesFor(pathname)` in `server/security/csp.ts` gibt
+>   Turnstile und Lemon Squeezy nur den Routen frei, die sie einbinden, dazu
+>   `script-src-attr 'none'`. `'unsafe-inline'` bleibt auf statischen Seiten (Next-
+>   Inline-Skripte tragen dort keinen Nonce). **Neue Seite mit Captcha oder
+>   Checkout = Eintrag dort**; `tests/guards/csp-third-parties.test.ts` folgt den
+>   Importen und erzwingt es in beide Richtungen.
+> - **BYOK-Secret rotieren:** `API_KEY_ENCRYPTION_SECRET_PREVIOUS` +
+>   [`scripts/rotate-byok-secret.mjs`](scripts/rotate-byok-secret.mjs), Ablauf in
+>   `docs/SETUP.md`. Blob-Format unverändert (Zurückrollen bleibt sicher). Das
+>   Skript ist eine Kopie der Verschlüsselung; ein Guard hält beide gleich.
+> - **Passwortprüfung:** `weakPasswordReason()` in `shared/lib/password.ts` weist
+>   bekannte Passwörter, Leetspeak-Varianten, Muster und die eigene E-Mail ab
+>   (Registrierung serverseitig in `/api/auth`, Formulare als Sofort-Rückmeldung).
+>   **Anmelden prüft nicht** (bestehende Konten sollen nicht ausgesperrt werden).
+>   Bewusst ohne Drittdienst (HaveIBeenPwned bräuchte einen Eintrag in der
+>   Datenschutzerklärung); echte Abdeckung gibt es nur mit Supabase Pro.
+> - **Datenexport:** `GET /api/account/export` + Karte "Deine Daten" in den
+>   Einstellungen. Positivliste je Abschnitt (`server/account-export.ts`), nie
+>   `select *`, nie API-Keys, nie Dateiinhalte. Texte in fr/it/es ungeprüft.
+> - **`docker.yml`:** baut und startet den Produktions-Container wöchentlich und
+>   bei Änderungen an Dockerfile/Compose/`package*.json` und prüft `/api/health`.
+>   Beim ersten Lauf grün: der Docker-Pfad war nicht verrottet.
+> - **`/api/chat` zählt lazy:** die monatliche Zählabfrage läuft nur noch, wenn
+>   Redis nicht entscheiden kann oder eine Ablehnung die Zahl nennen muss.
+>
+> **Vor dem Gate zwischen Branches `.next` leeren** (`rm -rf .next`): es hält Typen
+> für Routen, die es auf dem anderen Branch nicht gibt, und der Typecheck scheitert
+> daran. Hängt das Gate und die Testzeiten stehen plötzlich in Minuten statt
+> Millisekunden, zuerst den Rechner prüfen (Standby), nicht den Code.
+>
+> **Offen, Details im Prompt:** kritisch K1 Supabase/Vercel auf Gratis-Tarifen
+> ohne Backup, K2 `ALERT_WEBHOOK_URL` fehlt (die Alarmierung ist gebaut, aber aus),
+> K3 der Bezahlweg ist nie real gelaufen (`billing_events` leer); mittel: kein
+> E2E-Test und kein Staging, kein Umschalten auf einen zweiten Modell-Anbieter,
+> `GITHUB_TOKEN` fehlt, tote `STRIPE_*`-Variablen, Auth-Mails vermutlich über den
+> Standardversand, kein Fehler-Tracker, Wartbarkeit (`llm.ts`, `chat/route.ts`,
+> `chat.tsx`, diese Datei), Node 24 (Vercel) gegen 22 (CI), Dependabot.
+> **Korrektur zur ersten Fassung des Audits:** `llmConfig()` wählt Gemini nur,
+> wenn `ZAI_API_KEY` FEHLT. Das ist eine Auswahl beim Start, kein Umschalten bei
+> einem Z.ai-Ausfall; einen `GEMINI_API_KEY` zu setzen ändert dort nichts.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
