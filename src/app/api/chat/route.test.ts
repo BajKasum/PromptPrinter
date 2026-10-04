@@ -34,6 +34,13 @@ const insertCalls: Record<string, unknown[]> = {};
 // wieder zurueck, und ohne diesen Zaehler wuerde ein fehlendes delete im
 // Stub stillschweigend durch rollbackTurns try/catch fallen.
 const deleteCalls: Record<string, number> = {};
+// Und fuer die Argumente von select(): die monatliche Zaehlabfrage
+// (`select("id", { count: "exact", head: true })`) ist die einzige mit
+// head:true, und Betriebs-Audit 04.10.2026 hat sie auf "nur bei Bedarf"
+// umgestellt. Ohne diese Aufzeichnung liesse sich das nicht pruefen.
+const selectCalls: Record<string, unknown[][]> = {};
+const monthlyCountQueries = () =>
+  (selectCalls.messages ?? []).filter((args) => (args[1] as { head?: boolean } | undefined)?.head === true);
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null, count: 0 };
@@ -45,6 +52,10 @@ function builder(table: string) {
   for (const method of ["select", "eq", "gte", "is", "order", "limit", "update"]) {
     chain[method] = vi.fn(() => chain);
   }
+  chain.select = vi.fn((...args: unknown[]) => {
+    (selectCalls[table] ??= []).push(args);
+    return chain;
+  });
   chain.insert = vi.fn((row: unknown) => {
     (insertCalls[table] ??= []).push(row);
     return chain;
@@ -110,6 +121,7 @@ describe("POST /api/chat", () => {
     vi.clearAllMocks();
     for (const table of Object.keys(insertCalls)) delete insertCalls[table];
     for (const table of Object.keys(deleteCalls)) delete deleteCalls[table];
+    for (const table of Object.keys(selectCalls)) delete selectCalls[table];
     createClient.mockResolvedValue(supabaseStub);
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 });
@@ -299,6 +311,74 @@ describe("POST /api/chat", () => {
 
       expect(res.status).toBe(403);
       expect(chatCompleteStream).not.toHaveBeenCalled();
+    });
+
+    // Betriebs-Audit 04.10.2026: die Zaehlabfrage lief bei JEDEM Zug, fuer jedes
+    // Konto, und ihr Ergebnis wurde an genau zwei Stellen gebraucht. Sie waechst
+    // mit der Nutzung (ein viel genutztes Konto zaehlt tausende Zeilen pro Zug).
+    describe("die monatliche Zaehlabfrage laeuft nur bei Bedarf", () => {
+      it("laeuft NICHT, wenn Redis die Reservierung entscheidet und das Konto im Limit liegt", async () => {
+        reserveMonthlyQuota.mockResolvedValue({ allowed: true, release: vi.fn() });
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(200);
+        expect(monthlyCountQueries()).toHaveLength(0);
+      });
+
+      it("laeuft NICHT fuer einen BYOK-Nutzer, der die Grenze ohnehin nicht hat", async () => {
+        getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(200);
+        expect(monthlyCountQueries()).toHaveLength(0);
+      });
+
+      it("laeuft NICHT fuer Free ohne Key, der vorher abgewiesen wird", async () => {
+        tableResults.profiles = { data: { plan: "free", is_admin: false } };
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(403);
+        expect(monthlyCountQueries()).toHaveLength(0);
+      });
+
+      it("laeuft, wenn Redis nicht entscheiden kann: dann IST sie die Durchsetzung", async () => {
+        reserveMonthlyQuota.mockResolvedValue(null);
+        tableResults.messages = { data: { id: "msg-1" }, error: null, count: 3 };
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(200);
+        expect(monthlyCountQueries()).toHaveLength(1);
+      });
+
+      it("laeuft genau einmal, wenn eine Ablehnung die Zahl nennen muss, und gibt die Reservierung zurueck", async () => {
+        const release = vi.fn().mockResolvedValue(undefined);
+        reserveMonthlyQuota.mockResolvedValue({ allowed: false, release });
+        tableResults.messages = { data: { id: "msg-1" }, error: null, count: 400 };
+
+        const res = await POST(req());
+        const json = (await res.json()) as { kind: string; current: number; limit: number };
+
+        expect(res.status).toBe(403);
+        expect(json).toMatchObject({ kind: "chatMessages", current: 400, limit: 400 });
+        expect(release).toHaveBeenCalled();
+        expect(monthlyCountQueries()).toHaveLength(1);
+        expect(chatCompleteStream).not.toHaveBeenCalled();
+      });
+
+      it("fragt im Redis-losen Fall nach einer Ablehnung nicht ein zweites Mal", async () => {
+        reserveMonthlyQuota.mockResolvedValue(null);
+        tableResults.messages = { data: { id: "msg-1" }, error: null, count: 400 };
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(403);
+        expect((await res.json()).current).toBe(400);
+        expect(monthlyCountQueries()).toHaveLength(1);
+      });
     });
 
     it("skips the monthly allowance entirely for a BYOK user on a paid plan too", async () => {
