@@ -123,6 +123,18 @@ describe("POST /api/auth", () => {
       });
     });
 
+    // Die Passwortprüfung gilt für NEUE Passwörter. Wer sich vor ihr mit einem
+    // inzwischen als bekannt geltenden Passwort registriert hat, muss sich
+    // weiter anmelden können, sonst sperrt eine Sicherheitsmassnahme Nutzer aus.
+    it("lässt ein Passwort der Liste beim Anmelden durch", async () => {
+      const res = await POST(req({ ...signIn, password: "Password123456" }));
+      expect(res.status).toBe(200);
+      expect(signInWithPassword).toHaveBeenCalledWith({
+        email: "du@example.com",
+        password: "Password123456",
+      });
+    });
+
     it("translates Supabase's message instead of passing it through raw", async () => {
       signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
       const res = await POST(req(signIn));
@@ -156,6 +168,44 @@ describe("POST /api/auth", () => {
       const res = await POST(req({ ...body, password: "kurz" }));
       expect(res.status).toBe(400);
       expect(signUp).not.toHaveBeenCalled();
+    });
+
+    // Betriebs-Audit 04.10.2026: Supabases Prüfung gegen geleakte Passwörter ist
+    // auf dem Free-Tarif aus. Diese Route ist die Schranke, das Formular nur der
+    // Rat: wer sie direkt aufruft, kommt an der Prüfung nicht vorbei.
+    it.each(["Password123456", "P@ssw0rd2024!", "1234567890", "qwertyuiop"])(
+      "weist das bekannte Passwort %s ab, ohne Supabase zu fragen",
+      async (password) => {
+        const res = await POST(req({ ...body, password }));
+        expect(res.status).toBe(400);
+        const json = await res.json();
+        expect(json.kind).toBe("weak-password");
+        expect(json.reason).toBe("common");
+        expect(json.detail).toMatch(/bekannt/);
+        expect(signUp).not.toHaveBeenCalled();
+      }
+    );
+
+    it("weist ein Passwort ab, das die eigene Adresse enthält", async () => {
+      const res = await POST(
+        req({ ...body, email: "kasumbajrami7@example.com", password: "xx-kasumbajrami-xx-9" })
+      );
+      expect(res.status).toBe(400);
+      expect((await res.json()).reason).toBe("personal");
+      expect(signUp).not.toHaveBeenCalled();
+    });
+
+    it("lässt ein gutes Passwort durch", async () => {
+      const res = await POST(req({ ...body, password: "Fensterbank-77x-Basel" }));
+      expect(res.status).toBe(200);
+      expect(signUp).toHaveBeenCalledTimes(1);
+    });
+
+    it("prüft erst NACH dem Captcha: ein Aufruf ohne gültigen Token erfährt nichts über die Liste", async () => {
+      verifyTurnstileToken.mockResolvedValue({ ok: false, reason: "invalid-input-response" });
+      const res = await POST(req({ ...body, password: "Password123456" }));
+      expect(res.status).toBe(403);
+      expect((await res.json()).kind).toBe("captcha");
     });
   });
 

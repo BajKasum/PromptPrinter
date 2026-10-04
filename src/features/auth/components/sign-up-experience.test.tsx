@@ -95,7 +95,7 @@ describe("SignUpExperience", () => {
 
   it("rejects an invalid email without calling the auth endpoint", async () => {
     render(<SignUpExperience />);
-    await fillAndSubmit("not-an-email", "password123");
+    await fillAndSubmit("not-an-email", "Fensterbank-77x");
     expect(screen.getByRole("alert")).toHaveTextContent("gültige Email");
     expect(postAuthAction).not.toHaveBeenCalled();
   });
@@ -107,9 +107,29 @@ describe("SignUpExperience", () => {
     expect(postAuthAction).not.toHaveBeenCalled();
   });
 
+  // Betriebs-Audit 04.10.2026: bekannte Passwörter werden schon im Formular
+  // abgewiesen, vor dem Captcha und vor dem Netz, damit der einmalig gültige
+  // Token nicht verbrennt. Die Route prüft dasselbe noch einmal.
+  it.each(["Password123456", "P@ssw0rd2024!", "qwertyuiop"])(
+    "weist das bekannte Passwort %s ab, ohne die Route zu rufen",
+    async (password) => {
+      render(<SignUpExperience />);
+      await fillAndSubmit("user@example.com", password);
+      expect(screen.getByRole("alert")).toHaveTextContent(/bekannt/);
+      expect(postAuthAction).not.toHaveBeenCalled();
+    }
+  );
+
+  it("weist ein Passwort mit der eigenen Adresse ab", async () => {
+    render(<SignUpExperience />);
+    await fillAndSubmit("kasumbajrami7@example.com", "xx-kasumbajrami-xx-9");
+    expect(screen.getByRole("alert")).toHaveTextContent(/E-Mail/);
+    expect(postAuthAction).not.toHaveBeenCalled();
+  });
+
   it("blocks submission until the terms checkbox is accepted", async () => {
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123", false);
+    await fillAndSubmit("user@example.com", "Fensterbank-77x", false);
     expect(screen.getByRole("alert")).toHaveTextContent("AGB");
     expect(postAuthAction).not.toHaveBeenCalled();
   });
@@ -134,7 +154,7 @@ describe("SignUpExperience", () => {
       captchaFailed: false,
     });
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
     expect(await screen.findByRole("alert")).toHaveTextContent("bereits registriert");
   });
 
@@ -145,7 +165,7 @@ describe("SignUpExperience", () => {
       captchaFailed: true,
     });
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
     expect(await screen.findByRole("alert")).toHaveTextContent("Mensch-Prüfung");
     expect(screen.queryByText("Email unterwegs")).not.toBeInTheDocument();
   });
@@ -153,7 +173,7 @@ describe("SignUpExperience", () => {
   it("shows the confirmation-email state when signup returns no session", async () => {
     postAuthAction.mockResolvedValue({ ok: true, session: false });
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
 
     expect(await screen.findByText("Email unterwegs")).toBeInTheDocument();
     // The confirmation link's absolute URL is built server-side now, so what
@@ -162,7 +182,7 @@ describe("SignUpExperience", () => {
       {
         action: "sign-up",
         email: "user@example.com",
-        password: "password123",
+        password: "Fensterbank-77x",
         next: "/chats/new",
       },
       null
@@ -172,7 +192,7 @@ describe("SignUpExperience", () => {
   it("resends the confirmation email from the sent state", async () => {
     postAuthAction.mockResolvedValue({ ok: true, session: false });
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
     await screen.findByText("Email unterwegs");
 
     const user = userEvent.setup();
@@ -187,7 +207,7 @@ describe("SignUpExperience", () => {
 
   it("celebrates and redirects immediately when a session comes back", async () => {
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
 
     expect(await screen.findByRole("status")).toHaveTextContent("Konto erstellt");
     await userEvent.setup().click(screen.getByRole("button", { name: "weiter" }));
@@ -198,7 +218,7 @@ describe("SignUpExperience", () => {
   it("never redirects to an attacker-supplied next target", async () => {
     searchParams = new URLSearchParams({ next: "https://evil.example/phish" });
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
     await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
     expect(push).toHaveBeenCalledWith("/chats/new");
   });
@@ -206,7 +226,7 @@ describe("SignUpExperience", () => {
   it("never redirects to a protocol-relative next target", async () => {
     searchParams = new URLSearchParams({ next: "//evil.example" });
     render(<SignUpExperience />);
-    await fillAndSubmit("user@example.com", "password123");
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
     await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
     expect(push).toHaveBeenCalledWith("/chats/new");
   });
