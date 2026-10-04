@@ -389,21 +389,34 @@ export async function POST(req: Request) {
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
   ).toISOString();
-  const [{ data: profile }, { count: chatCount }, override] = await Promise.all([
+  const [{ data: profile }, override] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
-    // One row per turn, completeTurn always inserts exactly one assistant
-    // reply alongside the user message, so counting only that role avoids
-    // double-counting a turn as two units. Still the number shown in
-    // settings/billing either way; also the enforcement fallback below
-    // when Redis isn't configured.
-    supabase
+    getUserOverride(userId),
+  ]);
+
+  // One row per turn, completeTurn always inserts exactly one assistant reply
+  // alongside the user message, so counting only that role avoids
+  // double-counting a turn as two units. Still the number shown in
+  // settings/billing either way.
+  //
+  // LAZY, since the Betriebs-Audit 04.10.2026. This used to run on EVERY turn,
+  // alongside the profile read, for every account: a COUNT over the user's
+  // assistant messages of the month, whose result was needed in exactly two
+  // places and otherwise thrown away. It grows with usage (a heavy account
+  // counts thousands of rows per turn) and was paid by accounts that never use
+  // it: a BYOK user skips the quota entirely, a Free account is turned away
+  // before it, and an account whose Redis reservation succeeds doesn't need it
+  // either. Now it runs only (a) when Redis cannot decide, where it IS the
+  // enforcement, and (b) when a refusal has to name the figure.
+  const countAssistantMessagesThisMonth = async (): Promise<number> => {
+    const { count } = await supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("role", "assistant")
-      .gte("created_at", monthStart),
-    getUserOverride(userId),
-  ]);
+      .gte("created_at", monthStart);
+    return count ?? 0;
+  };
   const isAdmin = profile?.is_admin ?? false;
   const rawPlan = (profile?.plan as string | undefined) ?? "free";
   const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
@@ -436,13 +449,20 @@ export async function POST(req: Request) {
     }
 
     const reservation = await reserveMonthlyQuota(chatQuotaKey(userId, now), limits.chatMessages);
+    // null = Redis could not decide (unconfigured or unreachable): the database
+    // count is then the enforcement itself, as before.
+    let chatCount: number | null = null;
+    if (!reservation) chatCount = await countAssistantMessagesThisMonth();
     const overLimit = reservation ? !reservation.allowed : (chatCount ?? 0) >= limits.chatMessages;
     if (overLimit) {
       if (reservation) await reservation.release();
+      // The figure goes into the refusal; the one place the count is still read
+      // on the Redis path, and a rare one (the user is at their limit).
+      chatCount ??= await countAssistantMessagesThisMonth();
       return problem(
         403,
         fmt(m.chatLimit, { plan, limit: limits.chatMessages }),
-        { kind: "chatMessages", limit: limits.chatMessages, current: chatCount ?? 0, plan }
+        { kind: "chatMessages", limit: limits.chatMessages, current: chatCount, plan }
       );
     }
     if (reservation) reservations.push(reservation.release);
