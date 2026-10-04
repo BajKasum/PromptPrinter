@@ -1,0 +1,81 @@
+# Lokaler Supabase-Stack für die Ende-zu-Ende-Tests (Betriebs-Audit, M1/M2).
+#
+# Das ist KEINE Abbildung der Produktion, sondern der kleinste Stack, der die
+# Tests tragen kann. Die Datenbank wird allein aus supabase/migrations/ gebaut:
+# jeder Lauf beweist damit nebenbei, dass sich das Schema aus dem Repository
+# nachbauen lässt (0001_init fehlt in der Migrationsliste der Produktions-DB,
+# weil die Datei vor der Verfolgung von Hand eingespielt wurde).
+#
+# Gestartet wird mit `supabase start`, die Zugangsdaten liefert
+# `supabase status -o env`. Es sind die öffentlich bekannten Demo-Schlüssel des
+# lokalen Stacks, keine Geheimnisse. Ablauf und Gegenstück zur Produktion:
+# docs/SETUP.md, Abschnitt "Ende-zu-Ende-Tests".
+
+project_id = "PromptPrinter"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Wie Produktion (PostgreSQL 17.6, geprüft 05.10.2026).
+major_version = 17
+
+[db.migrations]
+enabled = true
+
+# Es gibt keine Seed-Datei: jeder Test legt sein Konto selbst an.
+[db.seed]
+enabled = false
+
+# Wird gebraucht: Anhänge und Projektdateien liegen in Buckets, die die
+# Migrationen anlegen.
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+# Der einzige Unterschied zur Produktion, der die Tests betrifft: keine
+# Bestätigungsmail. Mit ihr bräuchte jeder Test ein Postfach, und die Mail
+# selbst ist nicht, was hier geprüft wird.
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = true
+max_frequency = "1s"
+
+# Alles Weitere, was die App nicht nutzt, ist aus: weniger Container, kürzerer
+# Start, weniger, was in der CI schiefgehen kann.
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[local_smtp]
+enabled = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false
+
+[storage.s3_protocol]
+enabled = false
+
+[storage.analytics]
+enabled = false
+
+[storage.vector]
+enabled = false
