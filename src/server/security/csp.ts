@@ -72,6 +72,46 @@ const LEMONSQUEEZY_SCRIPT_HOSTS = [
 // einbettbar sein.
 const LEMONSQUEEZY_FRAME_HOST = "https://*.lemonsqueezy.com";
 
+// ─── Drittanbieter nur dort, wo eine Seite sie wirklich einbindet ──────────
+// (Betriebs-Audit 04.10.2026, Punkt "unsafe-inline auf öffentlichen Seiten")
+//
+// Die Policy für statische Seiten kommt nicht ohne `'unsafe-inline'` aus (siehe
+// oben: Nexts eigene Inline-Skripte tragen keinen Nonce, ein Hash pro Build
+// und Seite ist mit statischen Seiten nicht machbar). Das lässt sich nicht
+// wegdiskutieren, aber seine Wirkung begrenzen:
+//
+// 1. Cloudflare Turnstile und Lemon Squeezy standen bisher in JEDER Policy,
+//    also auch auf /agb, in der Hilfe und auf der Startseite, die keines von
+//    beiden laden. Ein eingeschleustes Skript hätte dort zwei fremde Hosts
+//    mehr zum Nachladen gehabt, ohne dass die Seite sie je braucht. Jetzt
+//    bekommt eine Route nur, was sie einbindet (`thirdPartiesFor`).
+// 2. `script-src-attr 'none'` sperrt Inline-Event-Handler (`onerror=`,
+//    `onclick=`): der übliche Weg, eine HTML-Injektion in Code zu verwandeln.
+//    `'unsafe-inline'` in `script-src` erlaubt sie sonst mit. React hängt
+//    Handler per addEventListener an, lemon.js und Turnstile ebenso (beide
+//    geprüft: kein Inline-Handler in ihrem Quelltext). `<script>`-Blöcke bleiben
+//    erlaubt, das ist die Grenze, die diese Variante nicht überschreitet.
+export type ThirdParties = { turnstile: boolean; lemonSqueezy: boolean };
+
+const NO_THIRD_PARTIES: ThirdParties = { turnstile: false, lemonSqueezy: false };
+
+const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
+// Exakte Pfade, keine Präfixe: /reset-password/update bindet Turnstile NICHT
+// ein (update-password-experience.tsx), /reset-password schon. Dass die Liste
+// zu den Seiten passt, hält csp.test.ts gegen den Quelltext fest.
+const TURNSTILE_PATHS: readonly string[] = ["/login", "/signup", "/reset-password"];
+const LEMON_SQUEEZY_PATHS: readonly string[] = ["/pricing", "/billing", "/plans"];
+
+/** Welche Drittanbieter die Seite unter diesem Pfad einbindet. */
+export function thirdPartiesFor(pathname: string): ThirdParties {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return {
+    turnstile: TURNSTILE_PATHS.includes(path),
+    lemonSqueezy: LEMON_SQUEEZY_PATHS.includes(path),
+  };
+}
+
 /** Next.js dev mode (webpack, not Turbopack) uses eval() for Fast Refresh's source maps. */
 function devEvalSource(): string {
   return process.env.NODE_ENV !== "production" ? "'unsafe-eval'" : "";
@@ -83,10 +123,17 @@ function supabaseOrigin(): string {
 }
 
 /** Alles ausser `script-src`, identisch für beide Varianten. */
-function sharedDirectives(scriptSrc: string): string[] {
-  const connectSrc = ["'self'", "https://challenges.cloudflare.com", supabaseOrigin()]
+function sharedDirectives(scriptSrc: string, parties: ThirdParties): string[] {
+  const connectSrc = ["'self'", parties.turnstile ? TURNSTILE_ORIGIN : "", supabaseOrigin()]
     .filter(Boolean)
     .join(" ");
+  // Ohne eingebundenen Drittanbieter bleibt `frame-src` nicht leer stehen
+  // (eine fehlende Direktive fällt auf default-src zurück, also 'self'),
+  // sondern wird ausdrücklich zu 'none'.
+  const frameSrc =
+    [parties.turnstile ? TURNSTILE_ORIGIN : "", parties.lemonSqueezy ? LEMONSQUEEZY_FRAME_HOST : ""]
+      .filter(Boolean)
+      .join(" ") || "'none'";
   // M-1 (Audit 06.09.2026): fehlte hier, obwohl `supabaseOrigin()` zwei
   // Zeilen darueber schon fuer connect-src berechnet wird. Jeder hochgeladene
   // Avatar (avatar-upload.tsx laedt ihn oeffentlich in den "avatars"-Bucket)
@@ -103,13 +150,17 @@ function sharedDirectives(scriptSrc: string): string[] {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
+    // Inline-Event-Handler gibt es in dieser App nicht (siehe oben), und sie
+    // sind der übliche Weg, eine HTML-Injektion in Code zu verwandeln, auch
+    // wo `script-src` selbst `'unsafe-inline'` führt.
+    "script-src-attr 'none'",
     // Tailwind/Framer Motion set inline `style` attributes at runtime;
     // limiting this further isn't practical without breaking layout.
     "style-src 'self' 'unsafe-inline'",
     `img-src ${imgSrc}`,
     "font-src 'self'",
     `connect-src ${connectSrc}`,
-    `frame-src https://challenges.cloudflare.com ${LEMONSQUEEZY_FRAME_HOST}`,
+    `frame-src ${frameSrc}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -118,19 +169,25 @@ function sharedDirectives(scriptSrc: string): string[] {
   ];
 }
 
-/** Für `(app)/*` — dynamisch, `headers()` threadet den Nonce bis zu next-themes durch. */
-export function buildCsp(nonce: string): string {
+/**
+ * Für `(app)/*` — dynamisch, `headers()` threadet den Nonce bis zu next-themes durch.
+ *
+ * `parties` nennt die Drittanbieter, die die Seite einbindet (`thirdPartiesFor`).
+ * Ohne Angabe bekommt sie keinen: sicher als Voreinstellung, und eine Seite, die
+ * einen braucht, merkt es sofort (der Checkout oder das Captcha laden nicht).
+ */
+export function buildCsp(nonce: string, parties: ThirdParties = NO_THIRD_PARTIES): string {
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
-    "https://challenges.cloudflare.com",
-    ...LEMONSQUEEZY_SCRIPT_HOSTS,
+    parties.turnstile ? TURNSTILE_ORIGIN : "",
+    ...(parties.lemonSqueezy ? LEMONSQUEEZY_SCRIPT_HOSTS : []),
     devEvalSource(),
   ]
     .filter(Boolean)
     .join(" ");
 
-  return sharedDirectives(scriptSrc).join("; ");
+  return sharedDirectives(scriptSrc, parties).join("; ");
 }
 
 /**
@@ -138,18 +195,20 @@ export function buildCsp(nonce: string): string {
  *
  * Kein Nonce (siehe Kommentar oben, warum keiner ankäme), dafür
  * `'unsafe-inline'` in `script-src`. Vertretbar hier, weil keine dieser
- * Seiten Nutzer- oder Drittinhalt als HTML rendert.
+ * Seiten Nutzer- oder Drittinhalt als HTML rendert. Die Wirkung ist begrenzt
+ * durch `script-src-attr 'none'` und dadurch, dass nur die Routen Drittanbieter
+ * zugelassen bekommen, die sie einbinden (`thirdPartiesFor`).
  */
-export function buildStaticCsp(): string {
+export function buildStaticCsp(parties: ThirdParties = NO_THIRD_PARTIES): string {
   const scriptSrc = [
     "'self'",
-    "https://challenges.cloudflare.com",
-    ...LEMONSQUEEZY_SCRIPT_HOSTS,
+    parties.turnstile ? TURNSTILE_ORIGIN : "",
+    ...(parties.lemonSqueezy ? LEMONSQUEEZY_SCRIPT_HOSTS : []),
     "'unsafe-inline'",
     devEvalSource(),
   ]
     .filter(Boolean)
     .join(" ");
 
-  return sharedDirectives(scriptSrc).join("; ");
+  return sharedDirectives(scriptSrc, parties).join("; ");
 }
