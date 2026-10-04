@@ -33,11 +33,48 @@ const DEV_FALLBACK_SECRET =
 
 let warnedDevFallback = false;
 
+// scrypt is deliberately slow (tens of milliseconds of CPU). getKey() used to
+// derive on EVERY call, i.e. once per chat turn of every BYOK user, for a value
+// that only changes when the secret does. Keyed by the secret itself, so a test
+// (or a rotation) that swaps the env var is still honoured on the next call.
+// Kept in memory only, never logged or serialised.
+const derivedKeys = new Map<string, Buffer>();
+
+function deriveKey(secret: string): Buffer {
+  let key = derivedKeys.get(secret);
+  if (!key) {
+    key = scryptSync(secret, SALT, 32);
+    derivedKeys.set(secret, key);
+  }
+  return key;
+}
+
+/**
+ * The previous secret during a rotation, or null when none is in progress.
+ *
+ * Rotating API_KEY_ENCRYPTION_SECRET used to be impossible: every stored key was
+ * encrypted under the one secret, so changing it made all of them unreadable —
+ * and getUserOverride degrades an unreadable key to "no override", i.e. silently
+ * drops every BYOK user back onto the server's key and its plan limits. With
+ * API_KEY_ENCRYPTION_SECRET_PREVIOUS set, decrypt() still reads the old rows
+ * while encrypt() already writes under the new secret; scripts/rotate-byok-secret.mjs
+ * then re-encrypts what is left, after which the variable is removed again.
+ *
+ * Ignored when it equals the current secret (nothing to fall back to) and
+ * outside a real secret setup: the dev fallback is not a rotation partner.
+ */
+function previousKey(): Buffer | null {
+  const previous = process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
+  const current = process.env.API_KEY_ENCRYPTION_SECRET;
+  if (!previous || !current || previous === current) return null;
+  return deriveKey(previous);
+}
+
 function getKey(): Buffer {
   const secret = process.env.API_KEY_ENCRYPTION_SECRET;
   // scrypt derives a proper 32-byte key regardless of the secret's own length/
   // shape, so the env var can be any reasonably long random string.
-  if (secret) return scryptSync(secret, SALT, 32);
+  if (secret) return deriveKey(secret);
 
   if (isProduction) {
     throw new Error("API_KEY_ENCRYPTION_SECRET is not configured");
@@ -58,7 +95,7 @@ function getKey(): Buffer {
         "den Start ohne einen echten Wert."
     );
   }
-  return scryptSync(DEV_FALLBACK_SECRET, SALT, 32);
+  return deriveKey(DEV_FALLBACK_SECRET);
 }
 
 /**
@@ -73,17 +110,37 @@ export function encrypt(plaintext: string): string {
   return Buffer.concat([iv, authTag, ciphertext]).toString("base64");
 }
 
-/**
- * Reverses `encrypt`. Throws if the secret is wrong or the blob was tampered
- * with (GCM's auth tag check), callers should treat any throw as "this key
- * is unusable," not attempt to recover a partial value.
- */
-export function decrypt(blob: string): string {
+function decryptWith(key: Buffer, blob: string): string {
   const raw = Buffer.from(blob, "base64");
   const iv = raw.subarray(0, IV_LENGTH);
   const authTag = raw.subarray(IV_LENGTH, IV_LENGTH + 16);
   const ciphertext = raw.subarray(IV_LENGTH + 16);
-  const decipher = createDecipheriv(ALGORITHM, getKey(), iv);
+  const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
+}
+
+/**
+ * Reverses `encrypt`. Throws if the secret is wrong or the blob was tampered
+ * with (GCM's auth tag check), callers should treat any throw as "this key
+ * is unusable," not attempt to recover a partial value.
+ *
+ * During a rotation (API_KEY_ENCRYPTION_SECRET_PREVIOUS set) a blob the current
+ * secret cannot open is tried against the previous one. GCM's auth tag makes
+ * that safe: a wrong key never yields a wrong plaintext, it fails. If neither
+ * opens the blob, the error from the CURRENT secret is the one thrown, so a
+ * leftover PREVIOUS never changes what a genuinely broken row looks like.
+ */
+export function decrypt(blob: string): string {
+  try {
+    return decryptWith(getKey(), blob);
+  } catch (error) {
+    const previous = previousKey();
+    if (!previous) throw error;
+    try {
+      return decryptWith(previous, blob);
+    } catch {
+      throw error;
+    }
+  }
 }

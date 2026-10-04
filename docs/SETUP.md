@@ -100,6 +100,37 @@ Optional, aber für die Suche nützlich: `GOOGLE_SITE_VERIFICATION` und
 `BING_SITE_VERIFICATION` (Inhaber-Nachweis für Search Console und Bing, siehe
 `.env.example`).
 
+### BYOK-Secret rotieren
+
+`API_KEY_ENCRYPTION_SECRET` verschlüsselt die Keys, die Nutzer in den
+Einstellungen hinterlegen. Bis zum 04.10.2026 hing jeder Key an genau diesem
+einen Wert: wer ihn änderte, machte alle Keys unlesbar, und `getUserOverride()`
+stuft einen unlesbaren Key stillschweigend auf "kein eigener Key" zurück. Jeder
+BYOK-Nutzer lief dann unbemerkt auf dem Server-Key und unter den Plan-Grenzen.
+Eine Rotation geht jetzt so:
+
+1. Neues Secret erzeugen (lang, zufällig).
+2. In Vercel `API_KEY_ENCRYPTION_SECRET_PREVIOUS` = altes Secret,
+   `API_KEY_ENCRYPTION_SECRET` = neues Secret. Deployen. Die App liest ab jetzt
+   Keys unter beiden Secrets und schreibt nur noch unter dem neuen. Beim Start
+   erscheint eine Warnung, solange die Rotation offen ist.
+3. `scripts/rotate-byok-secret.mjs` im Probelauf (ohne `--apply`): zählt, wie
+   viele Zeilen noch nur das alte Secret öffnet. Schreibt nichts.
+4. Dasselbe mit `--apply`: schlüsselt diese Zeilen unter dem neuen Secret neu.
+   Es schreibt nur, solange noch der alte Chiffretext in der Zeile steht (hat
+   ein Nutzer zwischendurch neu gespeichert, gewinnt sein Wert), und gibt nie
+   einen Key oder ein Secret aus.
+5. Probelauf noch einmal: "nur altes Secret: 0".
+6. `API_KEY_ENCRYPTION_SECRET_PREVIOUS` in Vercel löschen, deployen. **Erst jetzt
+   ist das alte Secret wirklich ungültig**, solange die Variable steht, öffnet
+   es alles, was noch nicht umgeschlüsselt ist.
+
+Zeilen, die weder das alte noch das neue Secret öffnet, meldet das Skript mit
+Exit 3 und Zeilen-ID. Es löscht nie etwas; der Nutzer muss den Key neu eingeben.
+Das Skript liest die Werte bewusst nur aus der Umgebung, nie aus einer
+`.env`-Datei (Aufruf im Kopfkommentar), damit eine Rotation nicht versehentlich
+gegen die falsche Datenbank läuft.
+
 ## Docker
 
 Siehe [`DOCKER.md`](DOCKER.md), Dev (Hot-Reload, Port 3000) und Prod (standalone,
