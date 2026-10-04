@@ -28,6 +28,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "audit:gate": "node scripts/audit-gate.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "docker:dev": "node scripts/check-env.mjs dev && docker compose up --build",
