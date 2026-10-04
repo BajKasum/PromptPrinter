@@ -305,6 +305,22 @@ unterm Strich weniger Kontext pro Zug bei mehr Wissen.
   geschrieben wird ausschliesslich serverseitig, sonst könnte sich jeder sein
   „analysiertes" Ergebnis aus der Browser-Konsole schreiben.
 
+**GitHub-Kontingent und `GITHUB_TOKEN`.** Der Import braucht zwei Anfragen an
+`api.github.com` je Analyse (Metadaten, Dateibaum), die Dateiinhalte kommen vom
+Raw-CDN und zählen nicht mit. Ohne Token gilt das Limit von 60 Anfragen pro Stunde
+und IP, also 30 Analysen, und auf einer geteilten Server-IP teilen sich alle
+Nutzer es (am 05.10.2026 gegen `octocat/Hello-World` und dieses Repository
+gemessen: zwei zählende Anfragen je Import, die zehn bis vierzehn Raw-Anfragen
+ohne `x-ratelimit`-Header). Mit einem Token ohne Scopes sind es 5000 pro Stunde
+(GitHub → Settings → Developer settings → Fine-grained tokens, nur öffentliche
+Repositories, keine Berechtigungen), gesetzt als `GITHUB_TOKEN`.
+
+Ob er in Produktion greift, steht im Log: jede Anfrage an `api.github.com` schreibt
+`brain.github_quota` mit `authenticated`, `limit` und `remaining` (nie den Token
+selbst). Mit Token steht dort `limit: 5000`, ohne `limit: 60`. Ist das Kontingent
+aufgebraucht, kommt zusätzlich `brain.github_rate_limited` als Warnung (geht an
+den Alarm-Webhook, wenn einer gesetzt ist).
+
 **Keine Embeddings, bewusst.** Siehe [CLAUDE.md](../CLAUDE.md) für die Begründung
 und die Bedingung, unter der sich das ändern würde.
 

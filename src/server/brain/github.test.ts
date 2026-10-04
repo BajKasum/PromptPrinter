@@ -298,6 +298,91 @@ describe("fetchRepoSnapshot", () => {
     );
   });
 
+  // Betriebs-Audit M4 (05.10.2026): ohne diese Zeile liess sich in Produktion
+  // nicht sehen, ob GITHUB_TOKEN greift.
+  describe("Kontingent im Log", () => {
+    const quotaHeaders = { "x-ratelimit-limit": "60", "x-ratelimit-remaining": "57" };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllEnvs();
+    });
+
+    function loggedEvents(spy: { mock: { calls: unknown[][] } }, event: string) {
+      return spy.mock.calls
+        .map((call) => JSON.parse(String(call[0])) as Record<string, unknown>)
+        .filter((line) => line.event === event);
+    }
+
+    it("meldet Limit und Rest beider API-Anfragen, ohne Token als unauthentifiziert", async () => {
+      vi.stubEnv("GITHUB_TOKEN", "");
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }, { headers: quotaHeaders }))
+        .mockResolvedValueOnce(jsonResponse({ tree: [] }, { headers: { ...quotaHeaders, "x-ratelimit-remaining": "56" } }));
+
+      await fetchRepoSnapshot(ref).catch(() => undefined); // repo_empty, uns geht es um das Log
+
+      const lines = loggedEvents(log, "brain.github_quota");
+      expect(lines).toHaveLength(2);
+      expect(lines[0]).toMatchObject({ authenticated: false, limit: 60, remaining: 57 });
+      expect(lines[1]).toMatchObject({ authenticated: false, limit: 60, remaining: 56 });
+    });
+
+    it("sagt mit gesetztem Token 'authenticated', loggt aber nie den Token selbst", async () => {
+      vi.stubEnv("GITHUB_TOKEN", "ghp_geheimer_testwert_123");
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      fetchMock
+        .mockResolvedValueOnce(
+          jsonResponse(
+            { default_branch: "main" },
+            { headers: { "x-ratelimit-limit": "5000", "x-ratelimit-remaining": "4999" } }
+          )
+        )
+        .mockResolvedValueOnce(jsonResponse({ tree: [] }));
+
+      await fetchRepoSnapshot(ref).catch(() => undefined);
+
+      const lines = loggedEvents(log, "brain.github_quota");
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toMatchObject({ authenticated: true, limit: 5000, remaining: 4999 });
+      expect(JSON.stringify(log.mock.calls)).not.toContain("ghp_geheimer_testwert_123");
+    });
+
+    it("loggt nichts, wenn die Antwort keine Kontingent-Header traegt (Raw-Dateien vom CDN)", async () => {
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }))
+        .mockResolvedValueOnce(jsonResponse({ tree: [] }));
+
+      await fetchRepoSnapshot(ref).catch(() => undefined);
+
+      expect(loggedEvents(log, "brain.github_quota")).toHaveLength(0);
+    });
+
+    it("warnt (und damit alarmiert) nur, wenn das Kontingent wirklich aufgebraucht ist", async () => {
+      vi.stubEnv("GITHUB_TOKEN", "");
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      vi.spyOn(console, "log").mockImplementation(() => {});
+
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse({}, { status: 403, headers: { "x-ratelimit-limit": "60", "x-ratelimit-remaining": "0" } })
+      );
+      await expect(fetchRepoSnapshot(ref)).rejects.toMatchObject({ code: "repo_rate_limited" });
+      expect(loggedEvents(warn, "brain.github_rate_limited")).toEqual([
+        expect.objectContaining({ authenticated: false }),
+      ]);
+
+      // Ein 403 mit Rest ist ein privates Repo, kein Betriebszustand.
+      warn.mockClear();
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse({}, { status: 403, headers: { "x-ratelimit-limit": "60", "x-ratelimit-remaining": "58" } })
+      );
+      await expect(fetchRepoSnapshot(ref)).rejects.toMatchObject({ code: "repo_not_found" });
+      expect(loggedEvents(warn, "brain.github_rate_limited")).toHaveLength(0);
+    });
+  });
+
   it("maps a missing repo to a stable code", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ message: "Not Found" }, { status: 404 }));
     await expect(fetchRepoSnapshot(ref)).rejects.toMatchObject({ code: "repo_not_found" });

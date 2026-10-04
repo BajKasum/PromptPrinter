@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logEvent, logWarning } from "@/shared/lib/observability";
+
 // GitHub-Import für das Projekt-Gedächtnis.
 //
 // ─── Warum hier kein SSRF-Risiko entsteht ──────────────────────────────────
@@ -228,6 +230,32 @@ function githubHeaders(): HeadersInit {
   return headers;
 }
 
+/**
+ * Meldet, wie viel vom GitHub-Kontingent noch da ist (Betriebs-Audit M4,
+ * 05.10.2026). Ohne diese Zeile liess sich nicht sehen, ob GITHUB_TOKEN in
+ * Produktion wirklich greift: der Header steht nur in GitHubs Antwort, und die
+ * Route reicht ihn nicht weiter. Mit Token steht hier `limit: 5000`, ohne
+ * `limit: 60` (pro IP, auf einer geteilten Server-IP schnell aufgebraucht).
+ *
+ * Nie der Token selbst, nur ob einer gesetzt ist. Eine Antwort ohne diese Header
+ * (die Raw-Dateien vom CDN) loggt nichts.
+ */
+function logQuota(res: Response): void {
+  // Number(null) ist 0: erst auf das Vorhandensein pruefen, sonst meldete jede
+  // Antwort ohne die Header "Limit 0".
+  const rawLimit = res.headers.get("x-ratelimit-limit");
+  const rawRemaining = res.headers.get("x-ratelimit-remaining");
+  if (rawLimit === null || rawRemaining === null) return;
+  const limit = Number(rawLimit);
+  const remaining = Number(rawRemaining);
+  if (!Number.isFinite(limit) || !Number.isFinite(remaining)) return;
+  logEvent("brain.github_quota", {
+    authenticated: Boolean(process.env.GITHUB_TOKEN),
+    limit,
+    remaining,
+  });
+}
+
 async function githubJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
   try {
@@ -243,14 +271,20 @@ async function githubJson<T>(url: string, signal?: AbortSignal): Promise<T> {
     throw new GithubImportError("repo_unavailable");
   }
 
+  logQuota(res);
+
   if (res.status === 404) throw new GithubImportError("repo_not_found");
   if (res.status === 403 || res.status === 429) {
     // GitHub setzt bei aufgebrauchtem Kontingent x-ratelimit-remaining: 0;
     // ein 403 ohne das ist eher „privates Repo, kein Zugriff", und das ist
     // aus Nutzersicht dasselbe wie „gibt es nicht".
-    throw new GithubImportError(
-      res.headers.get("x-ratelimit-remaining") === "0" ? "repo_rate_limited" : "repo_not_found"
-    );
+    const exhausted = res.headers.get("x-ratelimit-remaining") === "0";
+    // Fuer den Nutzer nur "in einer Stunde nochmal", fuer den Betreiber ein
+    // Alarm: das Kontingent ist ein Betriebszustand, kein Nutzerfehler.
+    if (exhausted) {
+      logWarning("brain.github_rate_limited", { authenticated: Boolean(process.env.GITHUB_TOKEN) });
+    }
+    throw new GithubImportError(exhausted ? "repo_rate_limited" : "repo_not_found");
   }
   if (!res.ok) throw new GithubImportError("repo_unavailable");
 
