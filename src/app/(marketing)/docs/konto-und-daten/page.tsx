@@ -79,6 +79,22 @@ export default function Page() {
         sichtbar.
       </p>
 
+      <h2>Kann ich meine Daten herunterladen?</h2>
+      <p>
+        Ja, unter <strong>Einstellungen</strong> in der Karte{" "}
+        <strong>Deine Daten</strong> mit einem Klick auf{" "}
+        <strong>Daten herunterladen</strong>. Du bekommst eine JSON-Datei mit
+        deinem Konto, deinen Projekten samt Gedächtnis, deinen Chats mit allen
+        Nachrichten, deinen gespeicherten Prompts und den Einstellungen.
+      </p>
+      <p>
+        Nicht dabei sind deine API-Keys, weder im Klartext noch verschlüsselt:
+        die Datei darf gefahrlos in einer Mail landen. Hochgeladene Dateien und
+        Chat-Bilder stehen nur mit Name, Typ und Größe darin, nicht mit ihrem
+        Inhalt; die Originale hast du ohnehin selbst. Pro Stunde sind es
+        höchstens fünf Downloads.
+      </p>
+
       <h2>Wie lösche ich mein Konto?</h2>
       <p>
         Unter <strong>Einstellungen</strong> ganz unten kannst du dein Konto
@@ -89,8 +105,8 @@ export default function Page() {
       </p>
       <p>
         Das ist endgültig und lässt sich nicht rückgängig machen. Wenn du etwas
-        behalten willst, exportier es vorher, jede Antwort lässt sich als
-        Markdown herunterladen.
+        behalten willst, lade vorher deine Daten herunter (siehe oben), jede
+        einzelne Antwort lässt sich außerdem als Markdown herunterladen.
       </p>
 
       <h2>An wen wende ich mich bei Fragen zu meinen Daten?</h2>

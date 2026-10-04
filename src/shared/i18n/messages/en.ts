@@ -347,6 +347,12 @@ export const en: Messages = {
       endpointLabel: "API endpoint",
       keyPlaceholder: "API key",
     },
+    dataExport: {
+      title: "Your data",
+      hint: "A copy of everything that belongs to your account.",
+      body: "Projects, chats, saved prompts and settings as one JSON file. Uploaded files and images are included by name only, your API keys not at all.",
+      button: "Download data",
+    },
     deleteAccount: {
       title: "Delete account",
       body: "Permanently removes your account and everything in it: projects, chats, files, saved prompts and stored API keys.",
@@ -661,6 +667,8 @@ export const en: Messages = {
     accountNotSignedIn: "Not signed in.",
     accountConfigIncomplete: "Server configuration incomplete, service role key missing.",
     accountDeleteFailed: "The account couldn't be deleted.",
+    accountExportNote: "Export of your PromptPrinter data. Uploaded files and images are included by name, type and size only, not their content. API keys are never included.",
+    accountExportFailed: "The export could not be created. Please try again.",
   },
 
   planCopy: {

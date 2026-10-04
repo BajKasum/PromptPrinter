@@ -347,6 +347,12 @@ export const es: Messages = {
       endpointLabel: "Endpoint de la API",
       keyPlaceholder: "Clave API",
     },
+    dataExport: {
+      title: "Tus datos",
+      hint: "Una copia de todo lo que pertenece a tu cuenta.",
+      body: "Proyectos, chats, prompts guardados y ajustes en un único archivo JSON. Los archivos e imágenes subidos solo se incluyen con su nombre; tus claves API no se incluyen en absoluto.",
+      button: "Descargar datos",
+    },
     deleteAccount: {
       title: "Eliminar la cuenta",
       body: "Elimina de forma irreversible tu cuenta y todo lo que contiene: proyectos, chats, archivos, prompts guardados y claves API.",
@@ -664,6 +670,8 @@ export const es: Messages = {
     accountNotSignedIn: "No has iniciado sesión.",
     accountConfigIncomplete: "Configuración del servidor incompleta, falta la clave service role.",
     accountDeleteFailed: "No se ha podido eliminar la cuenta.",
+    accountExportNote: "Exportación de tus datos de PromptPrinter. Los archivos e imágenes subidos solo se incluyen con su nombre, tipo y tamaño, no su contenido. Las claves API nunca se incluyen.",
+    accountExportFailed: "No se pudo crear la exportación. Inténtalo de nuevo.",
   },
 
   planCopy: {
