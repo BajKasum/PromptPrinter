@@ -1,0 +1,126 @@
+name: Docker
+
+# Hält den Docker-Pfad am Leben (Betriebs-Audit 04.10.2026).
+#
+# Produktion läuft auf Vercel, nicht in diesem Container. Der Docker-Pfad
+# (Dockerfile, docker-compose.yml, docker-compose.prod.yml, docs/DOCKER.md) ist
+# der Weg für eine eigene Installation, und genau deshalb verrottet er still:
+# nichts im normalen CI-Lauf baut ihn, und wer ihn nicht benutzt, merkt erst bei
+# der ersten eigenen Installation, dass er seit Wochen nicht mehr startet.
+#
+# Dieser Lauf baut das Produktions-Image so, wie docs/DOCKER.md es beschreibt,
+# startet es mit Platzhalter-Werten und wartet, bis der Healthcheck des
+# Containers grün ist und /api/health "ok" sagt. Das prüft nebenbei, dass der
+# Start in Produktion (env.ts) mit den dokumentierten Pflichtvariablen durchläuft.
+# Keine echten Zugangsdaten: es werden keine Verbindungen zu Supabase oder
+# Upstash aufgebaut, /api/health prüft nur, dass die Konfiguration da ist.
+#
+# Eigener Workflow mit Pfadfilter statt ein Schritt in ci.yml: ein Image-Build
+# kostet einige Minuten und gehört nicht in jeden Push, der nur Quelltext
+# ändert. Er läuft, wenn etwas geändert wird, das den Container betrifft, und
+# wöchentlich auf main, weil auch ein unverändertes Repository verrottet, wenn
+# sich das Basis-Image (node:22-alpine) unter ihm ändert.
+
+# Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker:
+# eine Liste, die ein Workflow-Parser nicht versteht, lässt den Lauf stumm
+# ausfallen, und das wäre genau die Sorte Fehler, die dieser Workflow melden soll.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose.yml
+      - docker-compose.prod.yml
+      - package.json
+      - package-lock.json
+      - next.config.ts
+      - .github/workflows/docker.yml
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose.yml
+      - docker-compose.prod.yml
+      - package.json
+      - package-lock.json
+      - next.config.ts
+      - .github/workflows/docker.yml
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+# Wie ci.yml: ein neuer Push bricht den laufenden Lauf desselben Branches ab,
+# auf main nie (ein abgebrochener Lauf zeigt sich dort als rotes Kreuz).
+concurrency:
+  group: docker-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  image:
+    name: Produktions-Image baut und antwortet auf /api/health
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Platzhalter, keine Geheimnisse. docker-compose.prod.yml liest die
+      # Laufzeit-Variablen aus `.env` (env_file) UND die NEXT_PUBLIC_*-Build-
+      # Argumente per --env-file: hier ist es dieselbe Datei für beides. Die
+      # Datei steht nur im Arbeitsverzeichnis dieses Laufs und ist gitignored.
+      - name: Platzhalter-Umgebung anlegen
+        run: |
+          cat > .env <<'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+          NEXT_PUBLIC_APP_URL=https://example.test
+          SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          API_KEY_ENCRYPTION_SECRET=placeholder-secret-for-ci-only
+          UPSTASH_REDIS_REST_URL=https://placeholder.upstash.io
+          UPSTASH_REDIS_REST_TOKEN=placeholder-token
+          EOF
+
+      - name: Produktions-Stack bauen und starten
+        run: docker compose -f docker-compose.prod.yml --env-file .env up --build -d
+
+      - name: Auf den Healthcheck des Containers warten
+        run: |
+          for i in $(seq 1 45); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' promptprinter-prod 2>/dev/null || echo missing)
+            echo "Versuch $i: $status"
+            if [ "$status" = "healthy" ]; then exit 0; fi
+            if [ "$status" = "unhealthy" ]; then break; fi
+            sleep 2
+          done
+          echo "Der Container wurde nicht gesund."
+          exit 1
+
+      - name: /api/health von aussen
+        run: |
+          body=$(curl -fsS http://localhost:3001/api/health)
+          echo "$body"
+          echo "$body" | grep -q '"status":"ok"'
+
+      # Die Env-Dateien dürfen nicht im Image landen (.dockerignore); die
+      # Laufzeit-Werte kommen über env_file als Umgebungsvariablen, nicht als Datei.
+      - name: Keine Env-Datei im Image
+        run: docker exec promptprinter-prod sh -c 'test ! -e /app/.env && test ! -e /app/.env.local'
+
+      - name: Läuft nicht als root
+        run: test "$(docker exec promptprinter-prod id -u)" != "0"
+
+      # Der Dev-Stack wird hier nicht gestartet (Hot-Reload, Volumes), aber seine
+      # Datei muss gültig sein: `docker compose up` ohne -f startet genau diese.
+      - name: Dev-Compose-Datei ist gültig
+        run: |
+          touch .env.local
+          docker compose -f docker-compose.yml config --quiet
+
+      - name: Container-Logs bei Fehler
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --no-color
+
+      - name: Aufräumen
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
