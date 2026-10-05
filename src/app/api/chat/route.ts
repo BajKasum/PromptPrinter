@@ -671,6 +671,10 @@ export async function POST(req: Request) {
 
       let reply = "";
       let mode: "stub" | "generated";
+      // Der Anbieter, auf dem der Zug WIRKLICH lief: bei einem Failover von Z.ai
+      // auf Gemini (llm-failover.ts) ist das nicht der, den llmConfig() nennt, und
+      // fuer eine Kostenauswertung im Log ist genau das der Unterschied.
+      let usedProvider: string | undefined = override?.provider ?? llmConfig()?.provider;
       try {
         if (!llmConfig() && !override) {
           const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
@@ -686,6 +690,9 @@ export async function POST(req: Request) {
             signal: req.signal,
             onRetry: ({ failedAttempt, maxAttempts }) =>
               send("status", { phase: "retrying", attempt: failedAttempt + 1, maxAttempts }),
+            onProvider: (provider) => {
+              usedProvider = provider;
+            },
           })) {
             reply += chunk;
             send("delta", { text: chunk });
@@ -739,7 +746,7 @@ export async function POST(req: Request) {
         captureError("chat.turn_failed", err, {
           userId,
           byok: Boolean(override),
-          provider: override?.provider ?? llmConfig()?.provider,
+          provider: usedProvider,
           latencyMs: Date.now() - startedAt,
           promptChars,
           partialReplyChars: reply.length,
@@ -818,7 +825,7 @@ export async function POST(req: Request) {
         userId,
         mode,
         byok: Boolean(override),
-        provider: override?.provider ?? llmConfig()?.provider,
+        provider: usedProvider,
         inProject: Boolean(verifiedProjectId),
         turns: input.messages.length,
         // Nur Zaehler, nie Namen oder Inhalte (observability.ts).

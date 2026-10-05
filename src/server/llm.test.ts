@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  analyzeComplete,
   chatComplete,
   chatCompleteStream,
   llmConfig,
@@ -9,7 +10,9 @@ import {
   toGeminiContents,
   toOpenAiSdkMessages,
   zaiModelFor,
+  ZAI_FIRST_CHUNK_TIMEOUT_MS,
 } from "@/server/llm";
+import { __resetServerBreakerForTests } from "@/server/llm-failover";
 
 // customComplete (the 'custom' BYOK provider) resolves its endpoint through
 // url-safety.ts's SSRF check before every fetch; stub DNS to a public address
@@ -21,6 +24,22 @@ const lookupMock = vi.fn<(...args: unknown[]) => Promise<{ address: string; fami
 );
 vi.mock("node:dns", () => ({
   promises: { lookup: (...args: unknown[]) => lookupMock(...args) },
+}));
+
+// Der Gemini-SDK ist hier ersetzt: der Failover-Test unten braucht einen
+// Ausweich-Anbieter, der antwortet oder nicht, ohne Netz. Sonst fasst diese Datei
+// den SDK nicht an (die SDK-Anbieter sind auf dieser Ebene bewusst nicht getestet).
+const geminiMocks = vi.hoisted(() => ({
+  generateContentStream: vi.fn(),
+  generateContent: vi.fn(),
+}));
+vi.mock("@google/genai", () => ({
+  GoogleGenAI: class {
+    models = {
+      generateContentStream: (...args: unknown[]) => geminiMocks.generateContentStream(...args),
+      generateContent: (...args: unknown[]) => geminiMocks.generateContent(...args),
+    };
+  },
 }));
 
 // llmConfig reads process.env at call time, so stubbing per test is enough,
@@ -889,5 +908,190 @@ describe("transient provider failures", () => {
       collectStream(chatCompleteStream({ system: "sys", messages: message }))
     ).rejects.toThrow("Insufficient balance");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Umschalten auf Gemini bei einem Ausfall von Z.ai (Betriebs-Audit M3). Die
+// Regeln selbst (was ein Ausfall ist, der Leistungsschalter, das Budget) prueft
+// llm-failover.test.ts; hier geht es darum, dass llm.ts sie an den richtigen
+// Stellen anschliesst: nur mit beiden Keys, nie bei BYOK, mit echten Anbieter-Antworten.
+describe("Failover auf Gemini", () => {
+  const message = [{ role: "user" as const, content: "hi" }];
+  const custom = {
+    provider: "custom" as const,
+    apiKey: "k",
+    baseUrl: "https://example.test/v1/chat/completions",
+    model: "some-model",
+  };
+
+  beforeEach(() => {
+    __resetServerBreakerForTests();
+    geminiMocks.generateContentStream.mockReset();
+    geminiMocks.generateContent.mockReset();
+    geminiMocks.generateContentStream.mockImplementation(async () =>
+      (async function* () {
+        yield { text: "Gemini " };
+        yield { text: "antwortet" };
+      })()
+    );
+  });
+
+  function bothKeys() {
+    vi.stubEnv("ZAI_API_KEY", "zai-key");
+    vi.stubEnv("GEMINI_API_KEY", "gemini-key");
+  }
+
+  /** Ein Z.ai, das nie antwortet und nur auf einen Abbruch reagiert, wie ein haengender Anbieter. */
+  function hangingFetch() {
+    return vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        })
+    );
+  }
+
+  it("ein Z.ai-Ausfall nach den drei Versuchen liefert die Antwort von Gemini", async () => {
+    vi.useFakeTimers();
+    bothKeys();
+    const fetchMock = vi.fn(async () => streamResponse(503, JSON.stringify({ error: { message: "overloaded" } })));
+    vi.stubGlobal("fetch", fetchMock);
+    const providers: string[] = [];
+
+    const result = collectStream(
+      chatCompleteStream({ system: "sys", messages: message, onProvider: (p) => providers.push(p) })
+    );
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toBe("Gemini antwortet");
+    expect(fetchMock).toHaveBeenCalledTimes(3); // erst die Versuche bei Z.ai, dann der Wechsel
+    expect(providers).toEqual(["zai", "gemini"]);
+    expect(geminiMocks.generateContentStream).toHaveBeenCalledTimes(1);
+    expect(geminiMocks.generateContentStream.mock.calls[0][0]).toMatchObject({
+      model: "gemini-3.5-flash",
+    });
+  });
+
+  it("ein falscher Z.ai-Key schaltet NICHT um, der Fehler kommt sofort an", async () => {
+    bothKeys();
+    const fetchMock = vi.fn(async () =>
+      streamResponse(401, JSON.stringify({ error: { message: "invalid api key" } }))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(collectStream(chatCompleteStream({ system: "sys", messages: message }))).rejects.toThrow(
+      "invalid api key"
+    );
+    expect(geminiMocks.generateContentStream).not.toHaveBeenCalled();
+  });
+
+  it("ein BYOK-Zug landet nie auf dem Gemini-Konto des Betreibers, auch bei einem Ausfall", async () => {
+    vi.useFakeTimers();
+    bothKeys();
+    vi.stubGlobal("fetch", vi.fn(async () => streamResponse(503, "{}")));
+    const onProvider = vi.fn();
+
+    const result = collectStream(
+      chatCompleteStream({ system: "sys", messages: message, override: custom, onProvider })
+    ).catch((e) => e);
+    await vi.runAllTimersAsync();
+
+    expect(classifyLlmFailure(await result)).toBe("unavailable");
+    expect(geminiMocks.generateContentStream).not.toHaveBeenCalled();
+    expect(onProvider).not.toHaveBeenCalled();
+  });
+
+  it("ohne Gemini-Key gibt es nichts, auf das umzuschalten waere", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "zai-key");
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubGlobal("fetch", vi.fn(async () => streamResponse(503, "{}")));
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message })).catch((e) => e);
+    await vi.runAllTimersAsync();
+
+    expect(classifyLlmFailure(await result)).toBe("unavailable");
+    expect(geminiMocks.generateContentStream).not.toHaveBeenCalled();
+  });
+
+  it("ein haengendes Z.ai wird nach 30 Sekunden ohne erstes Textstueck aufgegeben und Gemini antwortet", async () => {
+    vi.useFakeTimers();
+    bothKeys();
+    const fetchMock = hangingFetch();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message }));
+    await vi.advanceTimersByTimeAsync(ZAI_FIRST_CHUNK_TIMEOUT_MS - 1);
+    expect(geminiMocks.generateContentStream).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2);
+
+    await expect(result).resolves.toBe("Gemini antwortet");
+    // Ein Zeitlimit wird nicht wiederholt: jeder Versuch kostete sonst wieder 30 Sekunden.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("ohne Ausweich-Anbieter endet das haengende Z.ai mit einem Zeitlimit-Fehler statt nach Minuten", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "zai-key");
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubGlobal("fetch", hangingFetch());
+
+    const result = collectStream(chatCompleteStream({ system: "sys", messages: message })).catch((e) => e);
+    await vi.advanceTimersByTimeAsync(ZAI_FIRST_CHUNK_TIMEOUT_MS + 1);
+
+    const err = await result;
+    expect(err).toBeInstanceOf(DOMException);
+    expect((err as DOMException).name).toBe("TimeoutError");
+    expect(classifyLlmFailure(err)).toBe("unavailable");
+  });
+
+  it("der Abbruch des Nutzers ist kein Zeitlimit und schaltet nicht auf Gemini um", async () => {
+    vi.useFakeTimers();
+    bothKeys();
+    vi.stubGlobal("fetch", hangingFetch());
+    const controller = new AbortController();
+
+    const result = collectStream(
+      chatCompleteStream({ system: "sys", messages: message, signal: controller.signal })
+    ).catch((e) => e);
+    await vi.advanceTimersByTimeAsync(1000);
+    controller.abort();
+    const err = await result;
+
+    expect((err as Error).name).toBe("AbortError");
+    expect(geminiMocks.generateContentStream).not.toHaveBeenCalled();
+  });
+
+  it("das Zeitlimit endet mit dem ersten Textstueck: eine lange, stetige Antwort ist kein Ausfall", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("ZAI_API_KEY", "zai-key");
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        streamResponse(200, sseBody(JSON.stringify({ choices: [{ delta: { content: "Hallo" } }] }), "[DONE]"))
+      )
+    );
+
+    const text = await collectStream(chatCompleteStream({ system: "sys", messages: message }));
+
+    expect(text).toBe("Hallo");
+    // Kein Zeitgeber bleibt zurueck, der spaeter einen laufenden Stream abbraeche.
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("die Projekt-Analyse schaltet ebenfalls um und nennt das Modell, das wirklich geantwortet hat", async () => {
+    vi.useFakeTimers();
+    bothKeys();
+    vi.stubGlobal("fetch", vi.fn(async () => mockResponse(503, "{}")));
+    geminiMocks.generateContent.mockResolvedValue({
+      text: "Fakten von Gemini",
+      usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
+    });
+
+    const result = analyzeComplete({ system: "sys", text: "quellen" });
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toMatchObject({ text: "Fakten von Gemini", model: "gemini-3.5-flash" });
   });
 });
