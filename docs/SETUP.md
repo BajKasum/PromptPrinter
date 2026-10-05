@@ -324,6 +324,56 @@ den Alarm-Webhook, wenn einer gesetzt ist).
 **Keine Embeddings, bewusst.** Siehe [CLAUDE.md](../CLAUDE.md) für die Begründung
 und die Bedingung, unter der sich das ändern würde.
 
+## Anbieter-Ausfall (Failover auf Gemini)
+
+Fällt Z.ai länger aus, ist der Chat für jeden ohne eigenen Key tot, wenn nichts
+umschaltet. Mit **beiden** Server-Keys (`ZAI_API_KEY` und `GEMINI_API_KEY`) tut es
+[`src/server/llm-failover.ts`](../src/server/llm-failover.ts). Ohne `GEMINI_API_KEY`
+bleibt alles wie bisher.
+
+**Wann umgeschaltet wird.** Nur nach den drei Versuchen von `llm-retry.ts`, nur bei
+einem Ausfall (Netzabbruch, 408/425/5xx, 429 ohne Guthaben-Text, oder 30 Sekunden
+ohne erstes Textstück), nie bei 400/401/403/404/422, leerer Antwort oder
+aufgebrauchtem Guthaben (das soll jemand sehen, nicht still auf eine teurere
+Rechnung umleiten), nie bei einem Zug mit eigenem Key (BYOK), und bei einem Stream
+nur, solange noch kein Textstück beim Nutzer angekommen ist.
+
+**Leistungsschalter.** Drei gescheiterte Züge in Folge innerhalb von zwei Minuten
+öffnen ihn (Redis, gilt für alle Instanzen). Dann gehen die Züge 60 Sekunden direkt
+zu Gemini, statt erst dreimal gegen den toten Anbieter zu laufen. Danach versucht
+ein Zug Z.ai wieder: gelingt er, ist der Schalter zu, scheitert er, ist er sofort
+wieder offen. Fällt Redis aus, gilt er als zu (wie bisher zuerst Z.ai).
+
+**Kosten.** Laut Preis-Übersicht (Stand 03.09.2026) kostet `gemini-3.5-flash`
+$1,50/$9,00 je Million Tokens gegen $0,20/$1,10 bei `glm-4.5-air`, also etwa das
+Achtfache: ein Zug mit 6k rein und 1,5k raus rund $0,0225 statt $0,0029. Darum ein
+eigenes Tagesbudget (`LLM_FAILOVER_DAILY_CALLS`, Vorgabe 200 Züge, rund $4,50). Jeder
+Zug zählt außerdem weiter einmal gegen Monatskontingent und `LLM_DAILY_CALL_BUDGET`.
+Ist das Failover-Budget aufgebraucht, laufen keine Züge mehr auf Gemini.
+
+**Datenschutz.** Im Ausfall gehen Nachrichten, Anhänge und Projektdateien an Google.
+Der Key muss deshalb aus einem Projekt mit **aktivierter Abrechnung** stammen: auf
+dem Gratis-Tarif darf Google Prompts zur Produktverbesserung nutzen, auf der
+bezahlten Stufe nicht. Die Datenschutzerklärung nennt Gemini als „Ausweich-Anbieter,
+falls Z.ai nicht verfügbar ist“; erst mit diesem Failover stimmt der Satz. Ob die
+Formulierung alle Fälle trägt (Anhänge, Projektdateien), sollte juristisch angesehen
+werden.
+
+**Was du im Log siehst.** `llm.retry` (jeder Wiederholungsversuch), `llm.failover`
+(Warnung, geht an den Alarm-Webhook: `from`, `to`, `reason`, `attempts`),
+`llm.breaker_open` (Warnung) und `llm.breaker_closed`,
+`spend_guard.failover_budget_exhausted` (Warnung). `chat.turn` und
+`chat.turn_failed` tragen den Anbieter, auf dem der Zug WIRKLICH lief (`provider`).
+
+**Zeitlimit.** Der Z.ai-Stream hat jetzt ein Zeitlimit bis zum ersten Textstück
+(30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm.ts`). Vorher hatte er keines: ein
+hängender Anbieter blockierte den Zug bis zur `maxDuration` der Route (300
+Sekunden). Das gilt auch ohne Gemini-Key; danach läuft ein Stream beliebig lange.
+
+**Aktivieren.** `GEMINI_API_KEY` (bezahlte Stufe) in Vercel setzen, neu deployen.
+Ohne Key tut der Code nichts. Geprüft ist er mit simulierten Ausfällen
+(`llm-failover.test.ts`, `llm.test.ts`), **nicht** gegen den echten Gemini-Dienst.
+
 ## Anhänge im Chat
 
 Ein „+" im Composer hängt Fotos (PNG, JPG, WebP) und Text-, Code- oder

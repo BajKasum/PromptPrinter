@@ -11,6 +11,12 @@ import {
   withRetry,
   type RetryEvent,
 } from "@/server/llm-retry";
+import {
+  callWithFailover,
+  failoverEnabled,
+  streamWithFailover,
+  type ServerProvider,
+} from "@/server/llm-failover";
 import { captureError } from "@/shared/lib/observability";
 
 // The one place that talks to a model provider. /api/chat (chatCompleteStream,
@@ -25,6 +31,10 @@ import { captureError } from "@/shared/lib/observability";
 //   2. Gemini: GEMINI_API_KEY (kept as secondary: the code existed and works)
 //   3. none: the routes fall back to their stub responses, so the whole
 //      flow stays testable without any key (deliberate, see CLAUDE.md).
+// With BOTH server keys set, Gemini is also the fallback when Z.ai is DOWN, not
+// just the choice when Z.ai is missing: llm-failover.ts decides when (after the
+// retries, only for an outage, never for a BYOK call) and keeps the circuit
+// breaker. This file only passes the provider through (`serverProvider`).
 //
 // BYOK (settings → "Eigene API-Keys"): a signed-in user can store their own
 // Anthropic/OpenAI/Gemini key (encrypted, src/lib/crypto.ts) and have their
@@ -157,8 +167,24 @@ const SDK_NO_RETRY = { maxRetries: 0 } as const;
 const GEMINI_NO_RETRY = { httpOptions: { retryOptions: { attempts: 1 } } } as const;
 
 /** Der Anbieter dieses Aufrufs für die Logzeile eines Retries (kein Geheimnis). */
-function providerLabel(override: LlmOverride | undefined): string {
-  return override?.provider ?? llmConfig()?.provider ?? "stub";
+function providerLabel(override: LlmOverride | undefined, serverProvider?: ServerProvider): string {
+  return override?.provider ?? serverProvider ?? llmConfig()?.provider ?? "stub";
+}
+
+/**
+ * Der Server-Anbieter, auf den ein Aufruf GENAU laufen soll (Failover,
+ * llm-failover.ts), statt dessen, den llmConfig() von sich aus waehlt. Ohne den
+ * Key dieses Anbieters gibt es null: ein Failover auf einen nicht konfigurierten
+ * Anbieter faellt nicht still auf den anderen zurueck.
+ */
+function serverConfigFor(provider: ServerProvider): LlmConfig | null {
+  if (provider === "zai" && process.env.ZAI_API_KEY) {
+    return { provider: "zai", model: process.env.ZAI_MODEL ?? ZAI_DEFAULT_MODEL };
+  }
+  if (provider === "gemini" && process.env.GEMINI_API_KEY) {
+    return { provider: "gemini", model: process.env.GEMINI_MODEL ?? GEMINI_DEFAULT_MODEL };
+  }
+  return null;
 }
 
 /** Which provider is configured, if any, also the display name for storage. */
@@ -190,6 +216,13 @@ export async function chatComplete(opts: {
   maxOutputTokens?: number;
   override?: LlmOverride;
 }): Promise<LlmResult> {
+  if (!opts.override && failoverEnabled()) {
+    return callWithFailover((serverProvider) =>
+      withRetry(() => chatCompleteOnce({ ...opts, serverProvider }), {
+        label: providerLabel(undefined, serverProvider),
+      })
+    );
+  }
   return withRetry(() => chatCompleteOnce(opts), { label: providerLabel(opts.override) });
 }
 
@@ -198,6 +231,7 @@ async function chatCompleteOnce(opts: {
   messages: LlmMessage[];
   maxOutputTokens?: number;
   override?: LlmOverride;
+  serverProvider?: ServerProvider;
 }): Promise<LlmResult> {
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
 
@@ -228,7 +262,7 @@ async function chatCompleteOnce(opts: {
     return geminiComplete(GEMINI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
   }
 
-  const config = llmConfig();
+  const config = opts.serverProvider ? serverConfigFor(opts.serverProvider) : llmConfig();
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {
@@ -276,7 +310,25 @@ export async function* chatCompleteStream(opts: {
    * daraufhin dem Browser, dass es etwas länger dauert.
    */
   onRetry?: (event: RetryEvent) => void;
+  /**
+   * Wird gerufen, bevor ein Server-Anbieter gefragt wird, wenn ein Failover
+   * moeglich ist (llm-failover.ts). Die Route erfaehrt so, auf welchem Anbieter
+   * der Zug wirklich lief, fuer das Log. Nie bei einem BYOK-Aufruf.
+   */
+  onProvider?: (provider: ServerProvider) => void;
 }): AsyncGenerator<string> {
+  if (!opts.override && failoverEnabled()) {
+    yield* streamWithFailover(
+      (serverProvider) =>
+        retryStream(() => chatCompleteStreamOnce({ ...opts, serverProvider }), {
+          signal: opts.signal,
+          onRetry: opts.onRetry,
+          label: providerLabel(undefined, serverProvider),
+        }),
+      { signal: opts.signal, onProvider: opts.onProvider }
+    );
+    return;
+  }
   yield* retryStream(() => chatCompleteStreamOnce(opts), {
     signal: opts.signal,
     onRetry: opts.onRetry,
@@ -290,6 +342,7 @@ async function* chatCompleteStreamOnce(opts: {
   maxOutputTokens?: number;
   override?: LlmOverride;
   signal?: AbortSignal;
+  serverProvider?: ServerProvider;
 }): AsyncGenerator<string> {
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
 
@@ -340,7 +393,7 @@ async function* chatCompleteStreamOnce(opts: {
     return;
   }
 
-  const config = llmConfig();
+  const config = opts.serverProvider ? serverConfigFor(opts.serverProvider) : llmConfig();
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {
@@ -428,6 +481,42 @@ async function zaiComplete(
   return { text, usage };
 }
 
+/**
+ * So lange darf Z.ai bis zum ERSTEN Textstueck brauchen (Betriebs-Audit M3).
+ *
+ * Dieser Weg hatte bisher gar kein Zeitlimit: ein haengender Anbieter, der weder
+ * antwortet noch die Verbindung schliesst, blockierte den Zug bis zur maxDuration
+ * der Route (300 Sekunden), und weder Retry noch Failover bekamen je einen Fehler
+ * zu sehen. glm-4.5-air liefert das erste Textstueck normalerweise in wenigen
+ * Sekunden (Denken ist ausgeschaltet); 30 Sekunden sind grosszuegig genug fuer
+ * einen langen Projektkontext oder ein Bild und kurz genug, dass ein toter
+ * Anbieter nicht die ganze Wartezeit kostet.
+ *
+ * Nur bis zum ersten Textstueck: danach laeuft ein Stream beliebig lange weiter
+ * (eine langsam, aber stetig schreibende Antwort ist kein Ausfall).
+ */
+export const ZAI_FIRST_CHUNK_TIMEOUT_MS = 30_000;
+
+/**
+ * Ein Signal, das zusaetzlich zu dem des Aufrufers nach `ms` mit einem
+ * TimeoutError abbricht, solange `stop()` nicht gerufen wurde. Ein TimeoutError
+ * ist fuer llm-retry.ts kein "gleich nochmal" (jeder Versuch kostete sonst
+ * wieder die ganze Frist), fuer llm-failover.ts aber genau der Fall, in dem ein
+ * anderer Anbieter die richtige Antwort ist. Der Abbruch des Nutzers bleibt ein
+ * AbortError und loest nichts davon aus.
+ */
+function firstChunkGuard(signal: AbortSignal | undefined, ms: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort(new DOMException(`no first chunk within ${ms} ms`, "TimeoutError"));
+  }, ms);
+  return {
+    signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
+    /** Das erste Textstueck ist da (oder der Aufruf ist vorbei): kein Zeitlimit mehr. */
+    stop: () => clearTimeout(timer),
+  };
+}
+
 async function* zaiCompleteStream(
   model: string,
   system: string,
@@ -435,36 +524,44 @@ async function* zaiCompleteStream(
   maxOutputTokens: number,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
-  const res = await fetch(ZAI_ENDPOINT, {
-    method: "POST",
-    signal,
-    headers: {
-      authorization: `Bearer ${process.env.ZAI_API_KEY}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: toOpenAiMessages(system, messages),
-      max_tokens: maxOutputTokens,
-      stream: true,
-      thinking: { type: "disabled" },
-    }),
-  });
+  const guard = firstChunkGuard(signal, ZAI_FIRST_CHUNK_TIMEOUT_MS);
+  try {
+    const res = await fetch(ZAI_ENDPOINT, {
+      method: "POST",
+      signal: guard.signal,
+      headers: {
+        authorization: `Bearer ${process.env.ZAI_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: toOpenAiMessages(system, messages),
+        max_tokens: maxOutputTokens,
+        stream: true,
+        thinking: { type: "disabled" },
+      }),
+    });
 
-  if (!res.ok) {
-    const raw = await res.text().catch(() => "");
-    let detail = raw.slice(0, 300);
-    try {
-      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
-      if (parsed.error?.message) detail = parsed.error.message;
-    } catch {
-      // keep the truncated raw text
+    if (!res.ok) {
+      const raw = await res.text().catch(() => "");
+      let detail = raw.slice(0, 300);
+      try {
+        const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
+        if (parsed.error?.message) detail = parsed.error.message;
+      } catch {
+        // keep the truncated raw text
+      }
+      throw providerHttpError("Z.ai", res, detail);
     }
-    throw providerHttpError("Z.ai", res, detail);
-  }
-  if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
+    if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
 
-  yield* readOpenAiCompatibleSse(res.body);
+    for await (const chunk of readOpenAiCompatibleSse(res.body)) {
+      guard.stop();
+      yield chunk;
+    }
+  } finally {
+    guard.stop();
+  }
 }
 
 type OpenAiStreamChunk = {
@@ -1042,6 +1139,16 @@ export async function analyzeComplete(opts: {
   override?: LlmOverride;
   signal?: AbortSignal;
 }): Promise<AnalysisResult> {
+  if (!opts.override && failoverEnabled()) {
+    return callWithFailover(
+      (serverProvider) =>
+        withRetry(() => analyzeCompleteOnce({ ...opts, serverProvider }), {
+          signal: opts.signal,
+          label: providerLabel(undefined, serverProvider),
+        }),
+      { signal: opts.signal }
+    );
+  }
   return withRetry(() => analyzeCompleteOnce(opts), {
     signal: opts.signal,
     label: providerLabel(opts.override),
@@ -1055,6 +1162,7 @@ async function analyzeCompleteOnce(opts: {
   maxOutputTokens?: number;
   override?: LlmOverride;
   signal?: AbortSignal;
+  serverProvider?: ServerProvider;
 }): Promise<AnalysisResult> {
   const maxOutputTokens = opts.maxOutputTokens ?? 1500;
   const images = opts.images ?? [];
@@ -1110,7 +1218,7 @@ async function analyzeCompleteOnce(opts: {
     );
   }
 
-  const config = llmConfig();
+  const config = opts.serverProvider ? serverConfigFor(opts.serverProvider) : llmConfig();
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {

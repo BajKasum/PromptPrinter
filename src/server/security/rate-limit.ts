@@ -402,6 +402,75 @@ export async function reserveServerKeyCall(): Promise<{
   }
 }
 
+/**
+ * Eigenes Tagesbudget fuer Zuege, die wegen eines Ausfalls von Z.ai auf Gemini
+ * laufen (Betriebs-Audit M3, llm-failover.ts).
+ *
+ * Eigene Zahl statt derselben wie oben, weil Gemini je Zug deutlich mehr kostet
+ * als glm-4.5-air (grob das Achtfache, Stand 03.09.2026: $1,50/$9,00 gegen
+ * $0,20/$1,10 je Mio. Tokens). Wuerde ein Ausfall die ganzen 1000 Zuege des
+ * normalen Budgets auf Gemini schieben, kaeme die Rechnung etwa auf das
+ * Achtfache. Mit 200 Zuegen (rund $4,50 im Beobachtungsfall von 6k rein, 1,5k
+ * raus) bleibt der Ausfall eine begrenzte Ausgabe, und der Zug zaehlt ausserdem
+ * weiter gegen das normale Budget (er hat dort schon seinen Platz reserviert).
+ *
+ * Ist es aufgebraucht, laeuft kein Zug mehr auf Gemini, und der Nutzer bekommt
+ * die ehrliche Fehlermeldung des Ausfalls: das ist die gewollte Obergrenze, kein
+ * Fehler. Anpassbar ueber LLM_FAILOVER_DAILY_CALLS.
+ */
+const DEFAULT_DAILY_FAILOVER_CALLS = 200;
+
+function dailyFailoverBudget(): number {
+  const raw = Number(process.env.LLM_FAILOVER_DAILY_CALLS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_DAILY_FAILOVER_CALLS;
+}
+
+let warnedFailoverBudgetExhausted = false;
+
+/**
+ * Reserviert einen Failover-Zug fuer heute (UTC). Gleiche Form wie
+ * reserveServerKeyCall: `null` ohne Redis oder bei einem Redis-Fehler (dann gilt
+ * keine Obergrenze, ein Zug auf dem Ausweich-Anbieter ist besser als keiner), und
+ * `release()` gibt den Platz zurueck, wenn auch Gemini scheitert.
+ */
+export async function reserveFailoverCall(): Promise<{
+  allowed: boolean;
+  release: () => Promise<void>;
+} | null> {
+  if (!redis) return null;
+
+  const day = new Date().toISOString().slice(0, 10);
+  const key = `llm-failover-calls:${day}`;
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, 2 * 24 * 60 * 60);
+    }
+    const budget = dailyFailoverBudget();
+    if (count > budget && !warnedFailoverBudgetExhausted) {
+      warnedFailoverBudgetExhausted = true;
+      logWarning("spend_guard.failover_budget_exhausted", {
+        day,
+        used: count,
+        budget,
+        note: "Ausweich-Anbieter gesperrt, solange Z.ai ausfaellt antworten Zuege mit einem Fehler. LLM_FAILOVER_DAILY_CALLS pruefen.",
+      });
+    }
+    return {
+      allowed: count <= budget,
+      release: async () => {
+        try {
+          await redis!.decr(key);
+        } catch {
+          // Best effort wie bei reserveServerKeyCall.
+        }
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function rateLimitKey(req: Request, userId?: string | null): string {
   if (userId) return `u:${userId}`;
   return `ip:${clientIp(req)}`;
