@@ -1243,6 +1243,74 @@ und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 > wenn `ZAI_API_KEY` FEHLT. Das ist eine Auswahl beim Start, kein Umschalten bei
 > einem Z.ai-Ausfall; einen `GEMINI_API_KEY` zu setzen ändert dort nichts.
 
+> **Betriebs-Audit, Folgesitzung M1 bis M6 (2026-10-05, PR #38 bis #40):**
+> Nur diese sechs Punkte, K1 bis K3 und M7 bis M10 sind unberührt (siehe den
+> Prompt im 2nd-brain).
+>
+> - **M1/M2, Smoketests im Browser (#38):** `npm run test:e2e`, 17 Playwright-
+>   Tests (Chromium, Desktop und Pixel 7) gegen den **lokalen Supabase-Stack**,
+>   nie gegen ein gehostetes Projekt. Eigener Workflow `e2e.yml` (Pfadfilter,
+>   wöchentlich). Ablauf, Abdeckung und was bewusst NICHT geprüft wird:
+>   [docs/SETUP.md](docs/SETUP.md), "Ende-zu-Ende-Tests". Der Lauf beweist nebenbei,
+>   dass sich die Datenbank aus `supabase/migrations/` nachbauen lässt: nach dem
+>   Neuaufbau stimmen Spalten, Richtlinien, RLS, Indizes, Buckets sowie Tabellen-
+>   und Spaltenrechte mit Produktion überein (Hash-Vergleich, einziger Unterschied
+>   ist die Plattformfunktion `rls_auto_enable()`). Dafür waren zwei Eingriffe
+>   nötig: **`0003` setzt das `REVOKE` auf `rls_auto_enable()` jetzt bedingt** (die
+>   Funktion legt nur Supabase auf gehosteten Projekten an, lokal fehlte sie und
+>   brach die Kette), und **`supabase/roles.sql`** nimmt `anon`/`authenticated` die
+>   automatischen Rechte auf neue Tabellen (der lokale Stack vergibt sie, Produktion
+>   nicht, ein vergessenes `GRANT` fiele sonst lokal nie auf). Sperren: `e2e/support/
+>   env.ts` verweigert jede andere Datenbank-Adresse als localhost, der Test-Server
+>   bekommt seine Umgebung vollständig vom Test und schlägt damit die echte
+>   `.env.local`, Port 3100, kein Wiederverwenden eines laufenden Servers. Läuft im
+>   Dev-Modus mit Stub-Chat (`next start` verweigert den Stub). Mutationstest:
+>   drei eingebaute Fehler machten je den zuständigen Test rot (lokal, nicht in der
+>   CI). **Nie ausprobiert:** der Browser-Pfad mit echter KI, Sprachmodus, Zahlung,
+>   Turnstile, Redis, Mails, fr/it/es, andere Browser, Last.
+> - **M2, Vorschau-Secrets (Vercel, mit Kasums Ja):** `SUPABASE_SERVICE_ROLE_KEY`,
+>   `API_KEY_ENCRYPTION_SECRET` und `LEMON_SQUEEZY_WEBHOOK_SECRET` sind jetzt
+>   Production-only; Preview trägt eigene Platzhalter bzw. Zufallswerte (bootet,
+>   kann aber keine Admin-Aktionen, und eigene Keys aus Produktion nicht
+>   entschlüsseln). Alle anderen Variablen sind weiter für beide Ziele gesetzt. Ein
+>   Vorschau-Deployment nach der Änderung antwortet auf `/api/health` mit ok, das
+>   Produktions-Deployment danach ebenfalls. **Kein Staging-Projekt:** Supabase Free
+>   erlaubt zwei Projekte, die Vorschau teilt sich weiter die Produktions-
+>   **Datenbank** (mit RLS, ohne Admin-Rechte).
+> - **M3, Failover Z.ai → Gemini (#40):** [`src/server/llm-failover.ts`](src/server/llm-failover.ts).
+>   Nur mit beiden Server-Keys, nach den 3 Versuchen, nur bei einem Ausfall
+>   (Netz, 408/425/5xx, 429 ohne Guthaben-Text, 30 s ohne erstes Textstück), nie
+>   bei 400/401/403/404/422, leerer Antwort, leerem Guthaben, BYOK oder Nutzerabbruch,
+>   bei Streams nur vor dem ersten Textstück. Leistungsschalter in Redis (3 Züge in
+>   Folge in 2 Minuten, 60 s offen, Probeaufruf), eigenes Tagesbudget
+>   `LLM_FAILOVER_DAILY_CALLS` (200), weil Gemini rund das Achtfache kostet. `chat.turn`
+>   loggt den Anbieter, auf dem der Zug WIRKLICH lief. **Verhaltensänderung für den
+>   bestehenden Pfad:** der Z.ai-Stream hat jetzt ein Zeitlimit bis zum ersten
+>   Textstück (30 s, vorher keines, ein hängender Anbieter blockierte bis 300 s).
+>   **Nie gegen den echten Gemini-Dienst geprüft**, nur mit simulierten Ausfällen und
+>   sieben Mutationstests. **Wartet auf Kasum:** bezahlter `GEMINI_API_KEY` (auf dem
+>   Gratis-Tarif darf Google Prompts zur Produktverbesserung nutzen), und die
+>   Datenschutzerklärung juristisch ansehen (der Satz "Ausweich-Anbieter" stimmt erst
+>   jetzt, ob er Anhänge und Projektdateien trägt, ist offen). Ohne den Key ändert
+>   sich im Betrieb nichts außer dem Zeitlimit.
+> - **M4, GitHub-Kontingent (#39):** gemessen, 2 zählende Anfragen je Analyse, ohne
+>   Token 60/h pro IP = 30 Analysen (ob Vercels Egress-IP geteilt wird, ist lokal
+>   nicht messbar). Neu `brain.github_quota` (`authenticated`, `limit`, `remaining`,
+>   nie das Token) und `brain.github_rate_limited` als Warnung. **Wartet auf Kasum:**
+>   Token ohne Scopes anlegen, `GITHUB_TOKEN` in Vercel setzen, eine Analyse
+>   auslösen, im Log `limit: 5000` prüfen.
+> - **M5, Migrationen live (mit Kasums Ja, 05.10.2026):** 0043 (Stripe-Reste) und
+>   0046 (`anon` nicht mehr auf `set_active_byok_provider`) sind in der
+>   Produktions-DB, lesend verifiziert (Tabelle/Spalte/Index weg, `anon` ohne
+>   Funktionsrecht), Advisors ohne neuen Fund. **Wartet auf Kasum:** die vier
+>   `STRIPE_*`-Variablen in Vercel löschen und im Stripe-Dashboard die Schlüssel
+>   widerrufen, falls das Konto noch existiert (im Code steht nichts mehr davon).
+> - **M6, Fehler-Tracker (nur Vorschlag):** nichts gebaut, kein Dienst verbunden.
+>   Gewählt: Fehler-Tracker (EU). Vorschlag samt Textentwurf für die
+>   Datenschutzerklärung im 2nd-brain (`PromptPrinter Fehler-Tracker Vorschlag
+>   2026-10-05`). Der Textentwurf trägt Platzhalter für Aufbewahrung und
+>   Übermittlungsgrundlage, weil beides nicht belegt ist.
+
 ## Was ist PromptPrinter?
 
 SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
@@ -1305,6 +1373,7 @@ npm run typecheck    # tsc --noEmit
 npm run lint         # next lint
 npm run test         # vitest run
 npm run build        # Production-Build (standalone)
+npm run test:e2e     # Browser-Smoketests, braucht Docker + `supabase start` (docs/SETUP.md)
 ```
 
 **Quality-Gate, vor JEDEM Commit muss das komplett grün sein:**
