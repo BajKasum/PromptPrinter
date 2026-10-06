@@ -59,8 +59,10 @@ gegenüber dem Original: die Pfade der Links sind jetzt relativ zu `docs/`.
 >
 > **Auf der Vorschau von PR #60 im Browser geprüft (06.10.2026):** das Skript
 > kommt über den zufälligen Pfad der "Resilient Intake" von der eigenen Domain
-> (`/<16 Hex-Zeichen>/script.js`, Messwerte an `/<…>/vitals`, der Präfix ändert
-> sich mit jedem Build) und antwortet auch einem Abgemeldeten mit 200. Die
+> (`/<16 Hex-Zeichen>/script.js`, Messwerte an `/<…>/vitals`; die Vercel-Doku
+> spricht von einem Zufallswert "zur Build-Zeit", beobachtet wurde aber derselbe
+> Präfix auf der Vorschau und in Produktion, von einem Wechsel mit jedem Build
+> sollte man also nicht ausgehen) und antwortet auch einem Abgemeldeten mit 200. Die
 > Middleware steht nicht im Weg: ein unbekannter Pfad unter demselben Präfix
 > landet in unserer App (HTML-404 mit unserer CSP), `/vitals` antwortet mit der
 > JSON-404 der Vercel-Plattform, die Route gehört also der Plattform. Kein
@@ -70,6 +72,11 @@ gegenüber dem Original: die Pfade der Links sind jetzt relativ zu `docs/`.
 > Preview-Deployments gibt. Die `beforeSend`-Funktion wurde im echten Bundle
 > aufgerufen: UUID, Query und Fragment fallen weg, eine unlesbare Adresse wird
 > zu `null`.
+> **Nach dem Merge auf `promptprinter.app` wiederholt:** dasselbe Skript und
+> derselbe Pfad, Status 200, keine Cookies, kein Browser-Speicher, keine
+> Konsolenmeldung; Datenschutzerklärung und `/cookies` zeigen die neuen Abschnitte,
+> die alten Aussagen ("keine Webanalyse", "keine Drittanbieter zu solchen Zwecken")
+> sind weg.
 > **Nicht geprüft:** dass Messwerte im Dashboard ankommen. Das braucht echte
 > Besuche auf `promptprinter.app`, und das Senden selbst ist ein `no-cors`-Request
 > ohne lesbare Antwort. Das Skript misst außerdem nicht, wenn `navigator.webdriver`
