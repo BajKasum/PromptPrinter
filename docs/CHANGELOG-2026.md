@@ -11,6 +11,52 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+**Abschluss und Dependabot-Durchgang (2026-10-06 abends, PR #66, #67, Dependabot #44, #45, #46,
+#49, #56):** Ziel war ein sauberer, grüner, deployter `main`. Jeder Dependabot-PR wurde vor dem
+Merge von Dependabot auf den neuen `main` rebased (`@dependabot rebase`), danach lief die CI
+frisch durch (Tests, Browser-Tests, Docker).
+
+- **#67.** Beim Kürzen von `CLAUDE.md` auf 450 Zeilen (#66) war die Regel zum Vercel-Bot-Branch
+  (Web Analytics nie mergen) verschwunden, obwohl `docs/SETUP.md` darauf verweist. Sie steht
+  wieder unter "Arbeitsregeln". `CLAUDE.md` blieb bei 450 Zeilen: zwei Stellen gestrafft, die
+  Grenze nicht angehoben.
+- **Gemergt, Actions:** #44 `supabase/setup-cli` 1 auf 3 (v3 installiert die CLI über npm statt
+  aus GitHub-Releases, die feste Version 2.119.0 geht, der E2E-Lauf belegt es), #45
+  `actions/cache` 4 auf 6 (ESM-Umstellung), #46 `actions/upload-artifact` 4 auf 7 (neuer optionaler
+  Parameter `archive`). Der Schritt in #46 läuft nur bei Fehlern und lief in keinem grünen Lauf,
+  ein Fehler dort ändert das Ergebnis des Laufs nicht.
+- **Gemergt, #56 (Sammel-PR, 17 Updates).** "Minor und Patch" täuscht: React 19.0.0 auf 19.3.0
+  (fest gepinnt), `@supabase/ssr` 0.5.2 auf 0.12.7, `@anthropic-ai/sdk` 0.111 auf 0.131 und
+  `@google/genai` 2.8 auf 2.27 sind bei 0.x-Versionen große Sprünge. Release Notes gelesen: bei
+  `@supabase/ssr` eine neue Cookie-Zerlegung (0.6.0) und `cache`-Header an `setAll` (0.10.0),
+  nichts davon bricht den Aufrufer; der Anthropic-Code nutzt nur `messages.create` und drei Typen,
+  die Änderungen betreffen Beta-Endpunkte und eingestellte Modelle. Gate lokal grün (138
+  Testdateien, 2018 Tests), CI inklusive E2E gegen den lokalen Supabase-Stack. **Nicht belegt:**
+  ein Login mit echtem Konto in Produktion und ein echter Anbieter-Aufruf mit den neuen
+  SDK-Versionen (kein Login in der Sitzung, die Tests mocken die Anbieter). Vermutung, nicht
+  geprüft: im ungünstigsten Fall müssen sich bestehende Nutzer wegen des neuen Cookie-Formats
+  neu anmelden.
+- **Gemergt, #49 `jsdom` 29 auf 30.** Nur Entwicklungsabhängigkeit. Einziger Breaking Change
+  laut Release Notes: Node mindestens `^22.22.2 || ^24.15.0 || >=26`. Die CI läuft auf Node
+  24.21.0, Kasums lokales Node war am 2026-10-06 24.14.0 und damit darunter. Lokal gemessen: die
+  Tests laufen trotzdem (138 Dateien, 2018 Tests grün), `npm ci` meldet nur `EBADENGINE`.
+  `.nvmrc` (`24`) und `engines` (`24.x`) erzwingen die Minor-Version nicht.
+- **Nicht gemergt, mit Grund:** #50 `zod` 3.25.76 auf 4.6.5 (Typfehler in
+  `src/app/api/chat/route.ts` Zeile 314, `$ZodIssue[]` passt nicht; Zod 4 ist ein Umbau von
+  `src/shared/lib/schemas.ts` und jeder Route, Laufzeitunterschiede ungeprüft), #51
+  `lucide-react` 0.474 auf 1.51 (das Symbol `Github` ist entfernt, einzige Stelle
+  `project-brain.tsx` Zeile 227; ein Ersatz ist ein eigenes SVG oder ein anderes Symbol, eine
+  Gestaltungsentscheidung), #24 Key-Assistent (Kasum entschied: heute liegen lassen; 49 Commits
+  hinter `main`, nach dem Umbau von `llm.ts` und Chat fast ein Neubau; vorher den
+  Datenschutz-Punkt zum kostenlosen Gemini-Tarif klären), #1 Vercel-Bot (Draft, bleibt ungemergt).
+- **Produktion:** Deployment auf `e5fa7d1` `READY`, `/api/health` ok, die öffentlichen Seiten
+  200, `/chats/new` leitet abgemeldet auf `/login` um, CI, E2E und Docker auf `main` grün. Das
+  Laufzeit-Log der neuen Deployments hat keine Einträge (kaum Verkehr).
+- **Stashes** (`chat-persistence` vom 2026-08-05, `project-brain` vom 2026-08-03) gelesen: ihr
+  Inhalt steckt in `main` (Neu-Erzeugen mit `dropReplacedReply`, die Gedächtnis-Dateien, dort
+  weiterentwickelt). Nicht gelöscht, das entscheidet Kasum. Der Worktree `speed-insights` war
+  sauber und vollständig in `main` und wurde entfernt.
+
 **Betriebs-Audit, Folgesitzung M7 bis M10 (2026-10-06, PR #42 bis #65):**
 Nur diese vier Punkte, K1 bis K3 blieben unberührt. Der Nachlauf zu M1 bis M6 entfiel:
 Kasum hatte bis dahin nichts davon erledigt (GITHUB_TOKEN, GEMINI_API_KEY, STRIPE_*-Variablen,
