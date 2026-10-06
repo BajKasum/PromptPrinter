@@ -347,6 +347,17 @@ Mails pro Tag) vor der Buchung auf brevo.com selbst prüfen. Ein anderer Anbiete
    die Route nur diese Form und den PKCE-`code` kennt.
    `tests/guards/auth-mail-templates.test.ts` hält die Dateien fest; **er sieht
    das Dashboard nicht**: wer eine Datei ändert, fügt sie dort neu ein.
+
+   **Warum `token_hash` und nicht Supabases `ConfirmationURL`:** der Link geht auf
+   jedem Gerät (Mail am Handy öffnen, Reset am Rechner angefordert). Die
+   `ConfirmationURL` ist ein PKCE-Link und geht nur in dem Browser, der den Reset
+   angefordert hat. Der `token_hash`-Weg stellt bei GoTrue immer die
+   Anmeldemethode `otp` aus (nicht `recovery`), und die Seite "Neues Passwort"
+   (`src/features/auth/lib/recovery-session.ts`) lässt eine frische `otp`-Sitzung
+   (höchstens 10 Minuten alt) deshalb durch. Bis zum 06.10.2026 tat sie das nicht:
+   jeder Reset über diese Vorlage endete bei "Link ungültig". Gefunden hat es
+   `e2e/password-reset.spec.ts`. Steht im Dashboard noch die Standardvorlage mit
+   `ConfirmationURL`, funktioniert der Reset weiter (dann nur im selben Browser).
 7. **Mit einer echten Registrierung und einem echten Reset prüfen** (Kasum, mit
    einem Postfach, das nicht zum Team gehört): Passwort-Reset anfordern, Mail im
    Postfach (und nicht im Spam?) öffnen, neues Passwort setzen, einloggen. Danach
