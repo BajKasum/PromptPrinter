@@ -1,0 +1,98 @@
+name: Audit
+
+# Täglicher Abhängigkeits-Audit auf main (Betriebs-Audit 04.10.2026, M10).
+#
+# Warum: `npm audit` lief nur bei Pushes. Ein neues Advisory (23.09. und
+# 01.10.2026, am 06.10. source-map-js) färbte deshalb den nächsten, völlig
+# unbeteiligten Push rot, und an einer Stelle sogar main. Dieser Lauf findet es
+# am selben Tag, an dem es erscheint, ohne dass jemand pusht.
+#
+# Ein geplanter Lauf färbt keinen Commit. Damit Kasum den Fund trotzdem SIEHT,
+# legt scripts/audit-issue.mjs ein GitHub-Issue an (einmal, bei Folgefehlern
+# wird es ergänzt statt vervielfacht, bei einem sauberen Lauf geschlossen). Das
+# Issue meldet auch eine Ausnahme aus scripts/audit-gate.mjs, die in höchstens 7
+# Tagen abläuft: sonst fiele der Audit am Ablauftag überraschend um.
+#
+# Gleiches Gate wie ci.yml (`scripts/audit-gate.mjs`), keine eigene Schwelle.
+# Kein Geheimnis außer dem Token, das GitHub jedem Lauf gibt (nur Issues).
+#
+# Läuft nur auf dem Standard-Branch: geplante Läufe kennt GitHub nur dort.
+# `workflow_dispatch` mit `simulate_failure` prüft den Meldeweg, ohne dass es
+# einen echten Fund geben muss (siehe docs/SETUP.md, "Täglicher Audit").
+on:
+  schedule:
+    - cron: "37 4 * * *"
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Test: Audit-Schritt künstlich scheitern lassen, um den Issue-Weg zu prüfen"
+        type: boolean
+        default: false
+
+# Zwei Läufe gleichzeitig würden beide "kein offenes Issue" sehen und zwei
+# anlegen. Ein zweiter Lauf wartet, statt den ersten abzubrechen.
+concurrency:
+  group: audit
+  cancel-in-progress: false
+
+# Mehr als nötig ist verboten: Quelltext lesen, Issues schreiben.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: npm audit (Gate) und Meldung
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Die Version steht in .nvmrc, nicht noch einmal hier: ein Ort weniger,
+      # an dem sie auseinanderlaufen kann.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # continue-on-error, damit der Meldeschritt danach laufen darf. Das
+      # Ergebnis (`outcome`) bleibt "failure"; der letzte Schritt färbt den Lauf
+      # rot. Das Protokoll geht in eine Datei UND ins Log, der Exit-Code des
+      # Audits bleibt der des Schritts (keine Pipe, die ihn verschluckt).
+      - name: Audit (scripts/audit-gate.mjs)
+        id: audit
+        continue-on-error: true
+        env:
+          SIMULATE: ${{ inputs.simulate_failure }}
+        run: |
+          code=0
+          if [ "$SIMULATE" = "true" ]; then
+            echo "SIMULATION: der Audit-Schritt wurde künstlich zum Scheitern gebracht." > audit.log
+            code=1
+          else
+            node scripts/audit-gate.mjs > audit.log 2>&1 || code=$?
+          fi
+          cat audit.log
+          exit "$code"
+
+      # always(): auch wenn `npm ci` scheiterte. Dann lief der Audit nie
+      # (outcome "skipped"), und das zählt als Fehlschlag.
+      - name: Ergebnis als Issue melden
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_STATUS: ${{ steps.audit.outcome }}
+          AUDIT_LOG: audit.log
+          AUDIT_SIMULATED: ${{ inputs.simulate_failure }}
+        run: node scripts/audit-issue.mjs
+
+      - name: Lauf als gescheitert markieren
+        if: steps.audit.outcome != 'success'
+        run: |
+          echo "Der Audit ist nicht sauber durchgelaufen, siehe Protokoll oben und das Issue." >&2
+          exit 1
