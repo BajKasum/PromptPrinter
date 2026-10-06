@@ -336,6 +336,14 @@ Wert zurück; die Reihenfolge der Schritte und die Rückgabe der Reservierungen 
 Ausstieg hält `route.exits.test.ts` fest. Was keine Reservierung und kein Feature braucht
 (Verlauf kürzen, deutsche Fehlertexte), liegt in `features/chat/lib/turn-*.ts`.
 
+**Der Chat im Browser** (`features/chat/`): `components/chat.tsx` setzt nur zusammen
+(Verlauf `chat-thread.tsx`, Hinweise `chat-notices.tsx`, Composer, Sprachleiste). Der
+Zustandsautomat eines Zugs steht in `hooks/use-chat-turn.ts` (Verlauf, Senden, Abbruch,
+Neu erzeugen, Bearbeiten), die Anfrage samt Stromlesen in `hooks/run-chat-turn.ts`, das
+Scrollen in `use-chat-scroll.ts`, die Anhänge in `use-attach-notice.ts`, die reinen
+Bausteine (Nachrichtenform, Ablehnungstexte) in `lib/chat-wire.ts`. `chat.turn.test.tsx`
+hält den Automaten fest, `chat.test.tsx` die Oberfläche.
+
 Die Schichtgrenzen erzwingt [tests/guards/layer-boundaries.test.ts](tests/guards/layer-boundaries.test.ts),
 nicht ESLint: `no-restricted-imports` mit `patterns` läuft über minimatch, und
 das ist hier durch den `brace-expansion`-Security-Override kaputt
