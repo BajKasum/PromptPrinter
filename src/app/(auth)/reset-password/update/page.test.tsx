@@ -60,6 +60,34 @@ describe("UpdatePasswordPage", () => {
     expect(screen.queryByTestId("update-password-experience")).not.toBeInTheDocument();
   });
 
+  // Der Weg unserer Mail-Vorlage (token_hash + verifyOtp): GoTrue stellt dafür
+  // IMMER `otp` aus, nie `recovery` (e2e/password-reset.spec.ts zeigt es am
+  // echten Stack). Ohne diesen Fall lief jeder Reset bei "Link ungültig" aus.
+  it("zeigt das Formular nach dem token_hash-Link: frische otp-Anmeldung", async () => {
+    getUser.mockResolvedValue({ data: { user: { email: "kasum@example.test" } } });
+    getClaims.mockResolvedValue({
+      data: { claims: { amr: [{ method: "otp", timestamp: Math.floor(Date.now() / 1000) }] } },
+      error: null,
+    });
+
+    render(await UpdatePasswordPage());
+
+    expect(screen.getByTestId("update-password-experience")).toBeInTheDocument();
+  });
+
+  it("zeigt den Fehler bei einer otp-Sitzung von vor Stunden (gestohlenes Cookie, M-7)", async () => {
+    getUser.mockResolvedValue({ data: { user: { email: "kasum@example.test" } } });
+    getClaims.mockResolvedValue({
+      data: { claims: { amr: [{ method: "otp", timestamp: Math.floor(Date.now() / 1000) - 3 * 60 * 60 }] } },
+      error: null,
+    });
+
+    render(await UpdatePasswordPage());
+
+    expect(screen.getByText("Link ungültig oder abgelaufen")).toBeInTheDocument();
+    expect(screen.queryByTestId("update-password-experience")).not.toBeInTheDocument();
+  });
+
   it("akzeptiert auch das RFC-8176-Stringformat der AMR-Liste", async () => {
     getUser.mockResolvedValue({ data: { user: { email: "kasum@example.test" } } });
     getClaims.mockResolvedValue({

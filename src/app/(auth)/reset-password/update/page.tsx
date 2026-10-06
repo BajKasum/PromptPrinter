@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { UpdatePasswordExperience } from "@/features/auth/components/update-password-experience";
+import { isRecoverySession } from "@/features/auth/lib/recovery-session";
 import { Mascot } from "@/shared/brand/mascot";
 import { createClient } from "@/server/supabase/server";
 
@@ -13,35 +14,21 @@ export const metadata = {
 // so the page must always reflect the live cookie state, never a cached one.
 export const dynamic = "force-dynamic";
 
-// M-7 (Audit 06.09.2026): getUser() bestaetigt nur "irgendeine gueltige
-// Sitzung", nicht dass sie aus einem Recovery-Link stammt. Wer aus einem
-// anderen Grund eine Sitzung hat (offener Rechner, geteiltes Geraet, ein
-// gestohlenes Session-Cookie — das bewusst nicht httpOnly ist, weil
-// createBrowserClient es lesen muss), konnte damit das Passwort ohne das
-// alte zu kennen und ohne Postfachzugriff aendern — das Gegenteil dessen,
-// was ein Passwort-Reset verspricht. GoTrue traegt in jedem JWT eine AMR-
-// Liste (Authentication Methods Reference) ein, die verifyOtp({type:
-// "recovery"}) im Callback um genau den Eintrag "recovery" ergaenzt.
-function hasRecoveryAmr(amr: unknown): boolean {
-  if (!Array.isArray(amr)) return false;
-  return amr.some((entry) =>
-    typeof entry === "string" ? entry === "recovery" : entry?.method === "recovery"
-  );
-}
-
 export default async function UpdatePasswordPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isRecoverySession =
-    Boolean(user) && hasRecoveryAmr((await supabase.auth.getClaims())?.data?.claims.amr);
+  // M-7: nur eine Sitzung aus einem Reset-Link darf das Passwort ohne das alte
+  // ändern. Welche Sitzungen das sind, steht in recovery-session.ts.
+  const fromResetLink =
+    Boolean(user) && isRecoverySession((await supabase.auth.getClaims())?.data?.claims.amr);
 
   // Reached without a valid recovery session (link expired, opened directly,
   // already used, or — seit M-7 — eine Sitzung, die nicht aus einem
   // Reset-Link stammt). Guide the user back to request a fresh link.
-  if (!user || !isRecoverySession) {
+  if (!user || !fromResetLink) {
     return (
       <AuthExperienceShell>
         <Mascot state="sad" size={128} priority className="mx-auto" />
