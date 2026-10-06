@@ -38,7 +38,7 @@ npm run dev          # http://localhost:3000
 Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antwortet
 `/api/chat` im **Stub-Modus** (eine Demo-Antwort), der Flow bleibt testbar, ohne
 API-Quota zu verbrauchen. Der Modellzugriff ist in
-[`src/server/llm.ts`](../src/server/llm.ts) gekapselt (Z.ai primär, Gemini
+[`src/server/llm/`](../src/server/llm/index.ts) gekapselt (Z.ai primär, Gemini
 sekundär).
 
 Die Gedächtnis-Analyse hat bewusst **keinen** Stub: eine erfundene Faktenliste
@@ -499,7 +499,7 @@ src/
                   auth · chat · marketing · projects · prompts · settings
   shell/          App-Rahmen (Sidebar, Mobile-Nav, Command-Palette)
   server/         Nie im Browser (`import "server-only"`): security/, brain/,
-                  http/, supabase/, llm.ts, env.ts, byok.ts
+                  http/, supabase/, llm/, env.ts, byok.ts
   shared/         Von überall nutzbar: ui/ brand/ motion/ providers/ lib/
 tests/
   guards/         Repo-weite Invarianten (Kontrast, Schichtgrenzen, Routen, SEO, …)
@@ -600,7 +600,7 @@ werden.
 `chat.turn_failed` tragen den Anbieter, auf dem der Zug WIRKLICH lief (`provider`).
 
 **Zeitlimit.** Der Z.ai-Stream hat jetzt ein Zeitlimit bis zum ersten Textstück
-(30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm.ts`). Vorher hatte er keines: ein
+(30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm/zai.ts`). Vorher hatte er keines: ein
 hängender Anbieter blockierte den Zug bis zur `maxDuration` der Route (300
 Sekunden). Das gilt auch ohne Gemini-Key; danach läuft ein Stream beliebig lange.
 
