@@ -244,6 +244,129 @@ Dependabot gesperrt, siehe `dependabot.yml`), die Vercel-Einstellung angleichen,
 dann Gate, `npm run test:e2e` und ein Produktions-Deployment mit
 `/api/health` abwarten.
 
+## Auth-Mails (eigener Versand)
+
+Die App löst zwei Mails aus: die **Bestätigung** bei der Registrierung (samt
+"erneut senden") und den **Passwort-Reset**. Beide laufen über Supabase Auth, und
+ohne eigenen SMTP-Server über dessen Standardversand. Das ist für Produktion
+nicht gedacht ([Supabase-Doku](https://supabase.com/docs/guides/auth/auth-smtp),
+gelesen am 06.10.2026):
+
+- **Nur Adressen aus dem Team des Projekts.** Ohne eigenen SMTP verweigert
+  Supabase Auth die Zustellung an jede andere Adresse ("Email address not
+  authorized").
+- Ein niedriges Limit, das sich ohne Ankündigung ändern kann.
+- Keine Zusage zu Zustellung oder Verfügbarkeit.
+
+### Stand (06.10.2026), und was daran nicht belegt ist
+
+Belegt (Auth-Logs und `auth.users`, nur Zähler gelesen):
+
+- **Registrierungen laufen ohne Mail.** Eine Registrierung vom 05.10.2026 wurde
+  sofort eingeloggt (`immediate_login_after_signup`), und bei keinem der 5 Konten
+  wurde je eine Bestätigung ausgelöst. "E-Mail bestätigen" ist in Produktion also
+  aus. Das ist auch eine Lücke: wer sich mit fremder Adresse anmeldet, muss sie
+  nicht besitzen. Einschalten geht erst mit funktionierendem Versand (sonst kommt
+  niemand mehr ins Konto).
+- **Passwort-Reset trifft jeden außer dem Team.** Wer sein Passwort vergisst,
+  bekäme die Mail nicht, solange kein eigener SMTP eingetragen ist.
+- **Die DNS-Zone von `promptprinter.app` liegt bei Vercel** (`ns1/ns2.vercel-dns.com`)
+  und trägt **weder MX noch SPF, DKIM oder DMARC**. Die Kontaktadresse der Seite
+  ist eine Gmail-Adresse (`legal.ts`), es gibt also kein Postfach unter der Domain.
+
+**Nicht belegt, nur das Dashboard zeigt es:** ob ein eigener SMTP eingetragen ist
+(im Repository und in den Logs deutet nichts darauf hin), die Vorlagen, die dort
+heute stehen, und die dort gesetzten Limits. Nachsehen (nur lesen):
+
+1. *Authentication → Emails → SMTP Settings*: Schalter "Enable custom SMTP" (aus
+   = Standardversand), Absender, Host.
+2. *Authentication → Rate Limits*: "Rate limit for sending emails".
+3. *Authentication → Sign In / Providers → Email*: "Confirm email".
+4. *Authentication → Emails → Templates*: Text und Link von "Confirm signup" und
+   "Reset Password".
+5. *Authentication → URL Configuration*: Site URL `https://promptprinter.app`,
+   Redirect URLs enthalten `https://promptprinter.app/**` (ohne sie ignoriert
+   Supabase das `redirectTo` der App und schickt auf die Site URL).
+
+### Einrichten (Brevo)
+
+Brevo ist nur der Vorschlag (französische Firma, EU-Datenhaltung als Standard,
+SMTP-Relay), **gebucht ist nichts**. Die Gratis-Konditionen (laut Drittquellen 300
+Mails pro Tag) vor der Buchung auf brevo.com selbst prüfen. Ein anderer Anbieter
+ändert nur die Werte in den Schritten 2 bis 4.
+
+1. **Konto** bei Brevo anlegen. Der Anbieter ist neuer Auftragsverarbeiter:
+   Auftragsverarbeitungsvertrag annehmen, und der Datenschutz-Text muss vor dem
+   ersten Versand stehen (Entwurf im Vault, juristisch ansehen lassen).
+2. **Absender-Domain** `promptprinter.app` in Brevo hinzufügen (*Senders, Domains
+   & Dedicated IPs → Domains*). Brevo zeigt dann **drei DNS-Einträge** an
+   ([Anleitung von Brevo](https://help.brevo.com/hc/en-us/articles/12163873383186-Authenticate-your-domain-with-Brevo-Brevo-code-DKIM-DMARC)):
+
+   | Eintrag | Zweck | Wert |
+   |---|---|---|
+   | TXT "Brevo code" | beweist, dass die Domain dir gehört | von Brevo angezeigt |
+   | DKIM (1 TXT oder 2 CNAME) | signiert jede Mail | von Brevo angezeigt |
+   | TXT `_dmarc` | sagt Empfängern, was mit unsignierten Mails passiert | Brevo schlägt `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` vor |
+
+   Die Werte **nicht raten, nicht abtippen**: von Brevo kopieren. Einen SPF-Eintrag
+   nennt Brevo nicht als Pflicht, die Domain hat heute keinen. DMARC mit `p=none`
+   beobachtet nur; erst wenn die Berichte nach einigen Wochen sauber sind, auf
+   `quarantine` heben.
+
+   **Wo eintragen:** Vercel → *Domains* → `promptprinter.app` → *DNS Records* →
+   *Add*, oder `vercel dns add promptprinter.app <Name> TXT "<Wert>"`. Ein TXT-
+   oder CNAME-Eintrag berührt die A-Einträge der Webseite nicht. Danach in Brevo
+   "Authenticate" drücken und auf grünes Häkchen warten. Absender:
+   `noreply@promptprinter.app`, ein Absender in der Domain **ohne Postfach**.
+   Antworten gehen ins Leere, und Supabases SMTP-Maske kennt kein Reply-To. Die
+   Vorlagen bitten deshalb nie um eine Antwort, und der Impressum-Link darin
+   führt zur Kontaktadresse.
+3. **SMTP-Zugang** in Brevo (*SMTP & API → SMTP*): Host `smtp-relay.brevo.com`,
+   Port `587`, Benutzer = der dort angezeigte SMTP-Login, Passwort = ein neu
+   erzeugter **SMTP-Schlüssel**. Der Schlüssel gehört nur in das Supabase-
+   Dashboard, nie in dieses Repository, nie in Vercel, nie in einen Chat.
+4. **Supabase** (*Authentication → Emails → SMTP Settings*): "Enable custom SMTP"
+   einschalten, Host, Port, Benutzer, Passwort aus Schritt 3, Absenderadresse
+   `noreply@promptprinter.app`, Absendername `PromptPrinter`.
+5. **Limit anheben** (*Authentication → Rate Limits → Rate limit for sending
+   emails*): Mit eigenem SMTP gilt laut Supabase zunächst ein niedriges Limit (30
+   Mails pro Stunde). Auf einen Wert stellen, der zu Brevos Tageslimit passt.
+6. **Vorlagen einfügen** (*Authentication → Emails → Templates*). Die Quelle sind
+   die Dateien im Repository, Betreff und Text jeweils kopieren:
+
+   | Vorlage im Dashboard | Datei | Betreff | Löst die App aus? |
+   |---|---|---|---|
+   | Confirm signup | `supabase/templates/confirmation.html` | Bestätige deine E-Mail-Adresse für PromptPrinter | ja |
+   | Reset Password | `supabase/templates/recovery.html` | Passwort zurücksetzen bei PromptPrinter | ja |
+   | Change Email Address | `supabase/templates/email_change.html` | Bestätige deine neue E-Mail-Adresse | nein (gibt es nicht) |
+   | Invite user | `supabase/templates/invite.html` | Du wurdest zu PromptPrinter eingeladen | nein (nur über das Dashboard) |
+
+   *Magic Link* und *Reauthentication* lösen weder App noch Dashboard aus, ihr
+   englischer Standardtext bleibt, wie er ist. **Jeder Link in den Vorlagen läuft
+   über `/auth/callback`** (`token_hash` + `type`, kein `ConfirmationURL`), weil
+   die Route nur diese Form und den PKCE-`code` kennt.
+   `tests/guards/auth-mail-templates.test.ts` hält die Dateien fest; **er sieht
+   das Dashboard nicht**: wer eine Datei ändert, fügt sie dort neu ein.
+7. **Mit einer echten Registrierung und einem echten Reset prüfen** (Kasum, mit
+   einem Postfach, das nicht zum Team gehört): Passwort-Reset anfordern, Mail im
+   Postfach (und nicht im Spam?) öffnen, neues Passwort setzen, einloggen. Danach
+   in den Auth-Logs nach Fehlern sehen (nur lesen):
+
+   ```sql
+   select timestamp, event_message from logs
+   where source = 'auth_logs'
+     and (event_message ilike '%smtp%' or event_message ilike '%authorized%'
+          or event_message ilike '%rate%' or event_message ilike '%mail%')
+   order by timestamp desc limit 30
+   ```
+
+   Gesucht: `Email address not authorized` (SMTP nicht aktiv), `over_email_send_rate_limit`
+   (Limit aus Schritt 5), SMTP-Verbindungsfehler (falscher Host, Port oder Schlüssel).
+   Die Logs behalten auf dem Gratis-Tarif nur einen Tag.
+8. **Erst danach** (und nur wenn gewollt): "Confirm email" einschalten. Dann
+   bekommt jedes neue Konto die Bestätigungsmail, und der Registrierungs-
+   Bildschirm zeigt "Schau in dein Postfach" statt des Sofort-Logins.
+
 ## Ende-zu-Ende-Tests
 
 Die Unit-Tests prüfen Bausteine, nicht, ob ein eingeloggter Nutzer durch das

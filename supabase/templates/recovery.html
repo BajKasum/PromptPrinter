@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de">
+  <body style="margin:0;padding:24px;background:#f6f4ef;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#1c1b19;">
+    <div style="max-width:480px;margin:0 auto;padding:32px;background:#ffffff;border-radius:12px;">
+      <p style="margin:0 0 20px;font-size:15px;font-weight:600;">PromptPrinter</p>
+      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.25;">Neues Passwort festlegen</h1>
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.55;">
+        Für dein Konto wurde ein neues Passwort angefordert. Der Link ist nur kurz gültig und lässt sich einmal benutzen.
+      </p>
+      <p style="margin:0 0 24px;">
+        <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery" style="display:inline-block;padding:12px 20px;background:#1c1b19;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;">Passwort ändern</a>
+      </p>
+      <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#5f5c55;">
+        Der Knopf geht nicht? Kopiere diesen Link in deinen Browser:
+      </p>
+      <p style="margin:0 0 24px;font-size:13px;line-height:1.5;word-break:break-all;">
+        <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery" style="color:#1c1b19;">{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery</a>
+      </p>
+      <p style="margin:0 0 16px;font-size:13px;line-height:1.5;color:#5f5c55;">
+        Das warst nicht du? Dann ignoriere diese Mail. Dein Passwort bleibt, wie es ist.
+      </p>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#8a867d;">
+        <a href="{{ .SiteURL }}/impressum" style="color:#8a867d;">Impressum</a>
+      </p>
+    </div>
+  </body>
+</html>
