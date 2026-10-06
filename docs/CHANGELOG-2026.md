@@ -10,6 +10,84 @@ gegenüber dem Original: die Pfade der Links sind jetzt relativ zu `docs/`.
 
 ---
 
+> **Vercel Speed Insights (2026-10-06, PR #60):**
+> Auf Kasums Wunsch Ladezeiten (Web Vitals) echter Besucher in Vercel
+> auswertbar. `@vercel/speed-insights` ^2.0.0, eingebunden als
+> `<SiteSpeedInsights />` im Root-Layout
+> ([`src/shared/providers/site-speed-insights.tsx`](../src/shared/providers/site-speed-insights.tsx)),
+> also auf öffentlichen Seiten wie in der App. Kein Env-Wert, kein Schalter im
+> Dashboard (laut Vercel-Doku vom 06.10.2026 reicht das Paket, die Pfade
+> `/_vercel/speed-insights/*` stellt Vercel bereit). Ansehen: Vercel → Projekt →
+> Speed Insights. Details, Kosten und Grenzen: `docs/SETUP.md`, "Geschwindigkeitsmessung".
+>
+> **Drei Entscheidungen, die nicht im Quickstart stehen:**
+>
+> - **Eigene Wrapper-Komponente statt `<SpeedInsights />` direkt im Layout.**
+>   `beforeSend` ist eine Funktion und kommt nicht als Prop vom Server- in einen
+>   Client-Component. Außerdem rendert der Wrapper **nur im Produktions-Build**:
+>   in der Entwicklung lädt das Paket ein Debug-Skript von
+>   `va.vercel-scripts.com`, das unsere CSP zu Recht blockiert (und damit auch
+>   `npm run test:e2e` mit Konsolenfehlern gefüllt hätte). Statt die Policy zu
+>   lockern, misst die Entwicklung nicht.
+> - **Adressen werden vor dem Senden gekürzt**
+>   ([`speed-insights-event.ts`](../src/shared/lib/speed-insights-event.ts)). Das
+>   Vercel-Skript schickt `location.href` vollständig (im ausgelieferten Skript
+>   nachgelesen). Bei uns stehen darin Chat- und Projekt-UUIDs im Pfad und, bei
+>   Anmelde-/Bestätigungslinks, Einmalwerte in der Query. Query und Fragment
+>   fallen weg, jede UUID wird zu `[id]`, eine nicht lesbare Adresse wird gar
+>   nicht gesendet.
+> - **Keine CSP-Änderung**: das Skript liegt auf unserer eigenen Adresse, die
+>   Messwerte gehen dorthin zurück (`'self'` in `script-src` und `connect-src`,
+>   auch in der Nonce-Policy der App). `csp.test.ts` hält fest, dass es dabei
+>   bleibt: wer `scriptSrc`/`endpoint` auf einen fremden Host stellt, muss
+>   `csp.ts` mitziehen. Die öffentlichen Seiten bleiben statisch (die
+>   Komponente nutzt weder `headers()` noch `cookies()`).
+>
+> **Rechtstexte mitgezogen, nicht optional:** die Datenschutzerklärung sagte
+> wörtlich "wir betreiben keine Webanalyse" und `/cookies` "wir binden keine
+> Drittanbieter zu solchen Zwecken ein". Beides stimmte mit dem Einbau nicht
+> mehr. Neu: Abschnitt "Messung der Ladegeschwindigkeit" (Ziffer 2), Rechtsgrundlage
+> berechtigtes Interesse (Ziffer 3), Vercel Speed Insights als Empfänger
+> (Ziffer 4), Speicherdauer nach Vercels Fristen (Ziffer 6); `/cookies` Ziffer 1
+> und 3. `LEGAL.lastUpdated` auf den 06.10.2026 (gilt für alle Rechtstexte
+> gemeinsam). Die Angaben stammen aus Vercels Dokumentation
+> (<https://vercel.com/docs/speed-insights/privacy-policy>) und sind als
+> "nach Angaben von Vercel" gekennzeichnet. **Juristisch ansehen lassen**, wie
+> jede Änderung an den Rechtstexten. **Nicht belegt:** wie lange Vercel die
+> Messwerte aufbewahrt (steht in der Dokumentation nicht), deshalb nennt der Text
+> keine Zahl.
+>
+> **Auf der Vorschau von PR #60 im Browser geprüft (06.10.2026):** das Skript
+> kommt über den zufälligen Pfad der "Resilient Intake" von der eigenen Domain
+> (`/<16 Hex-Zeichen>/script.js`, Messwerte an `/<…>/vitals`, der Präfix ändert
+> sich mit jedem Build) und antwortet auch einem Abgemeldeten mit 200. Die
+> Middleware steht nicht im Weg: ein unbekannter Pfad unter demselben Präfix
+> landet in unserer App (HTML-404 mit unserer CSP), `/vitals` antwortet mit der
+> JSON-404 der Vercel-Plattform, die Route gehört also der Plattform. Kein
+> Cookie, nichts in `localStorage`/`sessionStorage`, keine Antwort mit
+> `Set-Cookie`, kein CSP-Verstoß durch das Skript. Die einzige Konsolenmeldung
+> (`vercel.live/_next-live/feedback`) ist Vercels Vorschau-Leiste, die es nur auf
+> Preview-Deployments gibt. Die `beforeSend`-Funktion wurde im echten Bundle
+> aufgerufen: UUID, Query und Fragment fallen weg, eine unlesbare Adresse wird
+> zu `null`.
+> **Nicht geprüft:** dass Messwerte im Dashboard ankommen. Das braucht echte
+> Besuche auf `promptprinter.app`, und das Senden selbst ist ein `no-cors`-Request
+> ohne lesbare Antwort. Das Skript misst außerdem nicht, wenn `navigator.webdriver`
+> gesetzt ist oder der User-Agent "Headless" enthält, automatisierte Browser
+> (Playwright, Lighthouse im Headless-Modus) erzeugen also keine Daten.
+>
+> **Nicht dasselbe wie Web Analytics.** Der Vermerk im
+> Rechts-Audit-Block vom 28.09.2026 ("Nicht mergen: den Vercel-Bot-Branch
+> `vercel/install-vercel-web-analytics-…`") gilt unverändert, siehe `CLAUDE.md`: Web Analytics (`@vercel/analytics`, Besucherzahlen und
+> Herkunft) ist ein anderes Produkt, in den Rechtstexten nicht genannt und nicht
+> eingebaut. Speed Insights misst nur Ladezeiten.
+>
+> **Kosten:** kostenlos auf allen Tarifen, 10.000 Ereignisse in 30 Tagen
+> (rollend, geteilt über das Team); bei Erreichen pausiert Vercel die Messung für
+> mindestens 14 Tage, es gibt keine Rechnung. Im kostenlosen Tarif nur Real
+> Experience Score und Zähler je Seite, alle Core Web Vitals erst mit Speed
+> Insights Plus (nur Pro).
+
 ⚠️ **Workspace-Redesign (2026-07): Phasen 1-4 + Wahrheits-Pass umgesetzt.**
 [REDESIGN.md](REDESIGN.md) ist das **verbindliche Zielmodell** und bleibt die
 Detailquelle (Datenmodell, Kontext-Injektions-Budget, offene Nachschritte).
