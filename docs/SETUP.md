@@ -208,6 +208,42 @@ dem Hinweis "Simulation"; danach von Hand schließen. Den Lauf ohne Haken
 startet man ebenso, um nach einem Fix zu sehen, dass das Issue sich schließt.
 Die Node-Version holt sich der Workflow aus `.nvmrc`.
 
+### Node-Version
+
+Eine Hauptversion für alles, was wir testen und ausliefern: **Node 24**. Bis zum
+06.10.2026 lief Produktion auf 24 (Vercel), während CI, E2E, Docker und `.nvmrc`
+auf 22 standen, getestet war also nie das, was ausgeliefert wurde.
+
+Stand laut dem [offiziellen Release-Plan](https://github.com/nodejs/Release)
+(`schedule.json`), geprüft am 06.10.2026: Node 24 ist Active LTS bis zum
+20.10.2026, danach Maintenance, Support bis **30.04.2028**. Node 22 ist seit dem
+21.10.2025 nur noch Maintenance (Support bis 30.04.2027), Node 20 ist seit dem
+30.04.2026 abgekündigt. Node 26 wird am 28.10.2026 LTS, Vercel bietet laut seiner
+API aber nur 24.x, 22.x und 20.x an.
+
+Wo die Version steht (`tests/guards/node-version.test.ts` scheitert, wenn eine
+Stelle abweicht):
+
+| Stelle | Inhalt |
+|---|---|
+| `.nvmrc` | `24`, die Quelle der Wahrheit |
+| `ci.yml`, `e2e.yml`, `audit.yml` | `setup-node` liest `.nvmrc` |
+| `Dockerfile` | `node:24-alpine` in allen drei Stufen |
+| `package.json` | `engines.node` = `24.x`, und `@types/node` auf `^24` |
+| **Vercel-Projekt** | Einstellung "Node.js Version" = `24.x` (**außerhalb des Repositories, der Test kann sie nicht prüfen**) |
+
+Vercel liest `engines.node` aus `package.json`, und das **übersteuert** die
+Projekt-Einstellung. Entscheidend ist also die `engines`-Zeile, die der Test
+prüft. Die Vercel-Einstellung trotzdem auf dieselbe Version zu stellen vermeidet,
+dass sie bei einem späteren Löschen der `engines`-Zeile still etwas anderes
+liefert.
+
+**Hauptversion wechseln:** `.nvmrc`, `engines.node`, die drei `FROM` im
+`Dockerfile`, `docs/DOCKER.md` und `@types/node` anheben (der Major ist für
+Dependabot gesperrt, siehe `dependabot.yml`), die Vercel-Einstellung angleichen,
+dann Gate, `npm run test:e2e` und ein Produktions-Deployment mit
+`/api/health` abwarten.
+
 ## Ende-zu-Ende-Tests
 
 Die Unit-Tests prüfen Bausteine, nicht, ob ein eingeloggter Nutzer durch das

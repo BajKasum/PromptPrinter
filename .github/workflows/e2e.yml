@@ -68,7 +68,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Aus .nvmrc, wie ci.yml: eine Version für alles, was wir testen und
+          # ausliefern (tests/guards/node-version.test.ts).
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies

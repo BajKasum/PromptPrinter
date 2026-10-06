@@ -2,8 +2,15 @@
   "name": "promptprinter",
   "version": "0.1.0",
   "private": true,
+  "//engines": [
+    "One Node major for everything we test and ship (audit M8, 06.10.2026):",
+    "this field, .nvmrc, the setup-node steps (they read .nvmrc), the Dockerfile and",
+    "@types/node. Vercel reads `engines.node` and it OVERRIDES the project setting,",
+    "so this line is what production runs. tests/guards/node-version.test.ts fails",
+    "when any of them drifts. To change the major, see docs/SETUP.md, \"Node-Version\"."
+  ],
   "engines": {
-    "node": ">=20.3.0"
+    "node": "24.x"
   },
   "//overrides": [
     "Security-Audit finding H-2. Each entry is the MINIMAL in-range bump that",
@@ -73,7 +80,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^22.10.7",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^5.0.4",

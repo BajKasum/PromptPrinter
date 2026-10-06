@@ -32,12 +32,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          # Matches the Docker image (node:22-alpine, see Dockerfile) and
-          # .nvmrc, so CI, prod, and local dev all run the same major (QA
-          # finding K-3). Was 20 while the image and package.json's `engines`
-          # both say >=20.3/22 — three unpinned targets that happened to agree
-          # by coincidence, not by anything enforcing it.
-          node-version: 22
+          # The version lives in .nvmrc and nowhere else in the workflows
+          # (audit.yml and e2e.yml read it the same way). It is the version
+          # Vercel runs in production (engines in package.json, the Vercel
+          # project setting) and the Docker image (node:24-alpine). Until
+          # 06.10.2026 CI tested 22 while production ran 24, so what shipped
+          # was never what was tested (audit M8). tests/guards/node-version.test.ts
+          # fails when any of these places drifts.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
