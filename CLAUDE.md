@@ -138,6 +138,25 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 > Messwerte aufbewahrt (steht in der Dokumentation nicht), deshalb nennt der Text
 > keine Zahl.
 >
+> **Auf der Vorschau von PR #60 im Browser geprüft (06.10.2026):** das Skript
+> kommt über den zufälligen Pfad der "Resilient Intake" von der eigenen Domain
+> (`/<16 Hex-Zeichen>/script.js`, Messwerte an `/<…>/vitals`, der Präfix ändert
+> sich mit jedem Build) und antwortet auch einem Abgemeldeten mit 200. Die
+> Middleware steht nicht im Weg: ein unbekannter Pfad unter demselben Präfix
+> landet in unserer App (HTML-404 mit unserer CSP), `/vitals` antwortet mit der
+> JSON-404 der Vercel-Plattform, die Route gehört also der Plattform. Kein
+> Cookie, nichts in `localStorage`/`sessionStorage`, keine Antwort mit
+> `Set-Cookie`, kein CSP-Verstoß durch das Skript. Die einzige Konsolenmeldung
+> (`vercel.live/_next-live/feedback`) ist Vercels Vorschau-Leiste, die es nur auf
+> Preview-Deployments gibt. Die `beforeSend`-Funktion wurde im echten Bundle
+> aufgerufen: UUID, Query und Fragment fallen weg, eine unlesbare Adresse wird
+> zu `null`.
+> **Nicht geprüft:** dass Messwerte im Dashboard ankommen. Das braucht echte
+> Besuche auf `promptprinter.app`, und das Senden selbst ist ein `no-cors`-Request
+> ohne lesbare Antwort. Das Skript misst außerdem nicht, wenn `navigator.webdriver`
+> gesetzt ist oder der User-Agent "Headless" enthält, automatisierte Browser
+> (Playwright, Lighthouse im Headless-Modus) erzeugen also keine Daten.
+>
 > **Nicht dasselbe wie Web Analytics.** Der Vermerk weiter oben ("Nicht
 > mergen: den Vercel-Bot-Branch `vercel/install-vercel-web-analytics-…`")
 > gilt unverändert: Web Analytics (`@vercel/analytics`, Besucherzahlen und
