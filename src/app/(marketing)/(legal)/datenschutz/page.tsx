@@ -135,6 +135,20 @@ export default function DatenschutzPage() {
         automatisch unkenntlich gemacht werden. Diese Daten dienen ausschliesslich dem sicheren
         Betrieb und werden nicht zur Profilbildung verwendet.
       </p>
+      <h3>Messung der Ladegeschwindigkeit</h3>
+      <p>
+        Damit wir sehen, wie schnell PromptPrinter bei dir lädt und wo es hakt, messen wir mit{" "}
+        <strong>Vercel Speed Insights</strong> die Ladezeiten der Seiten (die sogenannten Web
+        Vitals). Dein Browser meldet dazu bei jedem Seitenaufruf Messwerte an Vercel. Mit jedem
+        Messwert werden gespeichert: die aufgerufene Seite, die Netzwerkgeschwindigkeit, Browser,
+        Gerätetyp und Betriebssystem, das Land, die Art des Messwerts samt dem betroffenen
+        Seitenelement, die Version der Messbibliothek und der Zeitpunkt des Empfangs. Adressen mit
+        einer Kennung, etwa die eines einzelnen Chats oder Projekts, kürzen wir vor dem Senden auf ein
+        Muster, und Angaben hinter einem Fragezeichen oder Doppelkreuz in der Adresse senden wir gar
+        nicht erst mit. Nach Angaben von Vercel sind die Messwerte weder einer einzelnen Person noch
+        einer IP-Adresse zugeordnet und erlauben es nicht, einen Besuch über mehrere Seiten hinweg
+        nachzuvollziehen. Dafür werden weder Cookies gesetzt noch Daten in deinem Browser gespeichert.
+      </p>
       <h3>Cookies</h3>
       <p>
         Wir setzen ausschliesslich <strong>technisch notwendige Cookies</strong> ein: Anmelde-Cookies
@@ -142,8 +156,9 @@ export default function DatenschutzPage() {
         aufrechterhalten, und zwei Cookies für die Seitenleiste (<code>pp-sidebar</code>,{" "}
         <code>pp-sidebar-width</code>), die keine Personendaten enthalten. Deine Theme-Einstellung
         (hell/dunkel) liegt im lokalen Speicher deines Browsers und wird nicht an uns übertragen. Es
-        kommen <strong>keine Tracking-, Analyse- oder Werbe-Cookies</strong> zum Einsatz, wir
-        betreiben keine Webanalyse und kein Drittanbieter-Tracking. Weil alle eingesetzten Cookies
+        kommen <strong>keine Tracking-, Analyse- oder Werbe-Cookies</strong> zum Einsatz und wir
+        betreiben kein Drittanbieter-Tracking; die oben beschriebene Messung der Ladegeschwindigkeit
+        arbeitet ohne Cookies. Weil alle eingesetzten Cookies
         technisch notwendig sind, ist dafür keine Einwilligung erforderlich, es gibt daher bewusst
         kein Cookie-Banner. Jeden Eintrag mit Zweck und Speicherdauer sowie den Weg, Cookies
         abzulehnen, findest du in der <a href="/cookies">Cookie-Richtlinie</a>.
@@ -161,6 +176,11 @@ export default function DatenschutzPage() {
           Anmeldeformularen, Protokolle), aufgrund unseres berechtigten Interesses am stabilen und
           sicheren Betrieb und am Schutz vor automatisierten Angriffen (Art. 6 Abs. 1 lit. f DSGVO;
           Art. 31 Abs. 1 revDSG).
+        </li>
+        <li>
+          <strong>Messung der Ladegeschwindigkeit</strong> (Vercel Speed Insights), aufgrund unseres
+          berechtigten Interesses, den Dienst schnell zu halten und Leistungsprobleme zu erkennen
+          (Art. 6 Abs. 1 lit. f DSGVO; Art. 31 Abs. 1 revDSG).
         </li>
         <li>
           <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Antworten im Chat und,
@@ -194,6 +214,11 @@ export default function DatenschutzPage() {
         <li>
           <strong>{LEGAL.appHost}</strong>: Betrieb und Auslieferung der Anwendung. Dabei fallen
           serverseitige Zugriffs- und Fehlerprotokolle an.
+        </li>
+        <li>
+          <strong>Vercel Speed Insights</strong> (Vercel Inc., USA): Messung der Ladegeschwindigkeit,
+          siehe Ziffer 2. Das Messskript wird über unsere eigene Adresse ausgeliefert, die Messwerte
+          gehen an Vercel.
         </li>
         <li>
           <strong>Cloudflare</strong> (Cloudflare, Inc.): Captcha (Turnstile) auf den Formularen für
@@ -323,7 +348,7 @@ export default function DatenschutzPage() {
         Projekt löschst. Zähler für Rate-Limiting und Monatskontingente liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
         und werden danach selbsttätig entfernt. Server- und Fehlerprotokolle unseres Hosting-Anbieters
-        werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
+        sowie die Messwerte zur Ladegeschwindigkeit werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
         insbesondere für Rechnungsunterlagen aus der Zahlungsabwicklung, bleiben vorbehalten.
         Sprachaufnahmen aus dem Sprachmodus durchlaufen unsere Server nicht und werden von uns
         nicht gespeichert (Ziffer 4); wie lange dein Browser-Anbieter sie bei sich verarbeitet,

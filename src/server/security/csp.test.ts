@@ -134,6 +134,19 @@ describe("Drittanbieter pro Route", () => {
     expect(directive(buildCsp("n", BOTH), "script-src-attr")).toBe("script-src-attr 'none'");
     expect(directive(buildStaticCsp(BOTH), "script-src-attr")).toBe("script-src-attr 'none'");
   });
+
+  // Vercel Speed Insights (shared/providers/site-speed-insights.tsx) braucht
+  // keinen Eintrag: das Skript liegt unter /_vercel/speed-insights/ auf unserer
+  // eigenen Adresse, die Messwerte gehen dorthin zurück. Das gilt nur, solange
+  // niemand scriptSrc/endpoint auf einen fremden Host stellt. Dann scheitert
+  // dieser Test und erinnert daran, dass csp.ts mitziehen muss.
+  it("lässt Speed Insights ohne Fremd-Host zu, Skript und Messwerte laufen über 'self'", () => {
+    for (const csp of [buildCsp("n"), buildStaticCsp()]) {
+      expect(directive(csp, "script-src")).toContain("'self'");
+      expect(directive(csp, "connect-src")).toContain("'self'");
+      expect(csp).not.toContain("vercel");
+    }
+  });
 });
 
 describe("thirdPartiesFor", () => {
