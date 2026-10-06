@@ -152,7 +152,8 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 [CI](../.github/workflows/ci.yml) führt genau dieselbe Kette bei jedem Push auf
 jeden Branch und bei jedem Pull Request aus. Die Smoketests laufen getrennt in
 [`e2e.yml`](../.github/workflows/e2e.yml) (nur wenn etwas Betroffenes geändert wird,
-dazu wöchentlich), und `docker.yml` hält den Docker-Pfad am Leben. `audit:gate` ist
+dazu wöchentlich), `docker.yml` hält den Docker-Pfad am Leben, und `audit.yml`
+prüft täglich die Abhängigkeiten (siehe "Täglicher Audit" unten). `audit:gate` ist
 `npm audit --audit-level=high` plus eine kurze, befristete Ausnahmeliste für
 Funde ohne gepatchte Version (`scripts/audit-gate.mjs`).
 
@@ -178,6 +179,34 @@ Zwei Versionen sieht Dependabot **nicht**:
 *Settings → Code security* "Dependabot security updates" einschalten. Dann
 öffnet GitHub auch außerhalb des Montags einen PR, sobald ein Advisory eine
 Abhängigkeit trifft. Stand 06.10.2026: ausgeschaltet.
+
+### Täglicher Audit
+
+`npm audit` lief nur bei Pushes, ein neues Advisory färbte deshalb den nächsten,
+unbeteiligten Push rot (23.09., 01.10., 06.10.2026). Der Workflow
+[`audit.yml`](../.github/workflows/audit.yml) führt täglich um 4:37 UTC auf `main`
+dasselbe Gate aus wie die CI (`node scripts/audit-gate.mjs`) und findet ein neues
+Advisory am selben Tag. Ein geplanter Lauf färbt keinen Commit, deshalb meldet
+[`scripts/audit-issue.mjs`](../scripts/audit-issue.mjs) das Ergebnis als
+**GitHub-Issue** (Label `audit`, Titel "Audit: Abhängigkeiten brauchen eine
+Entscheidung"):
+
+- Audit gescheitert (offener Fund, abgelaufene Ausnahme, Registry nicht
+  erreichbar, oder der Lauf kam gar nicht bis zum Audit): Issue wird **einmal
+  angelegt**, jeder weitere Fehlschlag ergänzt es um einen Kommentar.
+- Eine Ausnahme in `ACCEPTED` (`scripts/audit-gate.mjs`) läuft in höchstens 7
+  Tagen ab: dasselbe Issue, obwohl der Audit noch grün ist. So kommt die Frist
+  des `braces`-Funds (2026-11-04) mit Vorwarnung statt als rotes `main`.
+- Wieder sauber und keine Ausnahme in Sicht: das Issue wird mit einem Kommentar
+  geschlossen.
+
+Der Lauf selbst wird bei einem Fehlschlag rot (Actions-Übersicht), ohne einen
+Commit zu färben. **Meldeweg prüfen**, ohne dass es einen echten Fund gibt:
+*Actions → Audit → Run workflow* mit `simulate_failure` angehakt (oder
+`gh workflow run audit.yml -f simulate_failure=true`). Es entsteht ein Issue mit
+dem Hinweis "Simulation"; danach von Hand schließen. Den Lauf ohne Haken
+startet man ebenso, um nach einem Fix zu sehen, dass das Issue sich schließt.
+Die Node-Version holt sich der Workflow aus `.nvmrc`.
 
 ## Ende-zu-Ende-Tests
 
