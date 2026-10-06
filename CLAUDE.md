@@ -326,6 +326,16 @@ Projektdateien und den GitHub-Import, deshalb liegt es in
 `features/projects/lib/`, und `server/brain/analyze.ts` bekommt fertige Daten
 übergeben statt selbst zu laden.
 
+**Eine Ausnahme von "app/ nur Routing":** `src/app/api/chat/` trägt neben `route.ts` die
+Schritte des Chat-Zugs (`gate.ts`, `allowance.ts`, `turn.ts`, `reply-stream.ts`). Sie
+mounten das Chat-Feature, das Projekt-Feature (`buildProjectContext`) UND `server/`,
+und das darf nur `app/`: ein Feature dürfte das Projekt-Feature nicht kennen. Die
+Dateien importieren einander **relativ** (der Schicht-Guard verbietet `@/app/…`). Ein
+Schritt gibt ENTWEDER eine `Response` (die Route antwortet damit sofort) ODER seinen
+Wert zurück; die Reihenfolge der Schritte und die Rückgabe der Reservierungen an jedem
+Ausstieg hält `route.exits.test.ts` fest. Was keine Reservierung und kein Feature braucht
+(Verlauf kürzen, deutsche Fehlertexte), liegt in `features/chat/lib/turn-*.ts`.
+
 Die Schichtgrenzen erzwingt [tests/guards/layer-boundaries.test.ts](tests/guards/layer-boundaries.test.ts),
 nicht ESLint: `no-restricted-imports` mit `patterns` läuft über minimatch, und
 das ist hier durch den `brace-expansion`-Security-Override kaputt
