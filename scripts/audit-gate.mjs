@@ -14,7 +14,7 @@
  * den Sprung auf tailwindcss 4 vor, einen Major mit Breaking Change.
  *
  * Ohne diese Datei wäre jeder Push auf jeden Branch rot gewesen, bis Upstream
- * nachzieht. Genau die Lage, die CLAUDE.md beschreibt (23.09. und 01.10.2026),
+ * nachzieht. Genau die Lage, die docs/CHANGELOG-2026.md beschreibt (23.09. und 01.10.2026),
  * nur ohne Ausweg.
  *
  * ─── Warum eine Liste und nicht `--omit=dev` oder eine höhere Schwelle ──────

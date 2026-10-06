@@ -342,7 +342,7 @@ export function VoiceBar({
       {/* Hinweis im Moment der Erhebung, nicht nur in der Datenschutzerklaerung:
           Chrome und Edge erkennen Sprache nicht auf dem Geraet, sondern
           streamen das Mikrofon an den Dienst ihres Herstellers. Das stand seit
-          dem Bau des Sprachmodus (30.07.2026) als offener Punkt in CLAUDE.md,
+          dem Bau des Sprachmodus (30.07.2026) als offener Punkt im Changelog,
           die Datenschutzerklaerung nennt es seit 06.09., hier fehlte es
           (Rechts-Audit 28.09.2026). Nur wenn die Erkennung ueberhaupt laeuft;
           ohne Unterstuetzung steht oben schon, dass nichts passiert. Neuer Tab,

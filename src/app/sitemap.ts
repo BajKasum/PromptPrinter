@@ -8,8 +8,8 @@ import { siteUrl } from "@/shared/lib/site-url";
 // from, so a new article shows up here without a second edit.
 //
 // BASE used to be the literal string "https://promptprinter.app" — a domain
-// that isn't actually assigned yet (CLAUDE.md: appHost in legal.ts is still a
-// placeholder pending the hosting decision), so a real crawler following this
+// that isn't actually assigned yet (docs/CHANGELOG-2026.md, "Rechtstexte ausgefüllt":
+// appHost in legal.ts was still a placeholder pending the hosting decision), so a real crawler following this
 // sitemap would have hit a domain nobody serves this app from, or someone
 // else's. siteUrl() is the project's own canonical-origin helper (already
 // used for auth-redirect links); reusing it here closes the gap between what
