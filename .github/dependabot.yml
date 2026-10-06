@@ -1,0 +1,65 @@
+# Dependabot (Betriebs-Audit 04.10.2026, M10).
+#
+# Wozu: ein neues Advisory färbte den nächsten, unbeteiligten PR oder gar main
+# rot (23.09. und 01.10.2026), weil niemand die Abhängigkeiten regelmäßig
+# anfasste. Dependabot hebt sie in kleinen, wöchentlichen Schritten an, sodass
+# ein Advisory auf einen frischen Stand trifft statt auf ein Jahr Rückstand.
+#
+# KEIN Auto-Merge, und es gibt bewusst keinen Workflow dafür: jeder Dependabot-PR
+# wartet auf Kasums Entscheidung. Hält `tests/guards/pinned-versions.test.ts`
+# fest (sucht in den Workflows nach einer Auto-Merge-Verdrahtung).
+#
+# Was ein Dependabot-PR auslöst: ci.yml, e2e.yml (Pfadfilter package*.json) und
+# eine Vercel-Vorschau. Keiner davon braucht ein Repository-Secret (ci.yml und
+# e2e.yml lesen keines, geprüft am 06.10.2026; Dependabot-PRs bekommen ohnehin
+# keine der Repo-Secrets). Die Vorschau trägt seit M2 weder den Service-Role-
+# Key noch das Verschlüsselungs-Secret der Produktion.
+#
+# Was Dependabot NICHT sieht und deshalb ein Test festhält
+# (tests/guards/pinned-versions.test.ts):
+#   - die Supabase-CLI-Version: `version:` in e2e.yml, dieselbe Zahl in
+#     docs/SETUP.md und e2e/support/env.ts. Eine Eingabe einer Action ist für
+#     Dependabot ein Text, kein Paket.
+#   - der Playwright-Browser: folgt dem Lockfile (Cache-Schlüssel in e2e.yml),
+#     also über den npm-Eintrag unten.
+# Kein "docker"-Eintrag: die Node-Version ist eine Entscheidung (M8), kein
+# Dependabot-Vorschlag, und das Basis-Image soll nicht allein vorspringen.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Zurich
+    # Höchstens fünf offene PRs: ein Major pro PR, dazu die eine Sammel-PR.
+    # Mehr hieße, dass sich Vorschläge stapeln, die niemand mehr durchsieht.
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Minor und Patch in einem PR (ein Gate-Lauf statt zehn). Majors sind in
+      # keiner Gruppe und kommen deshalb einzeln: ein Sprung mit Breaking Change
+      # soll für sich beurteilt und für sich zurückgenommen werden können.
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch
