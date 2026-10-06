@@ -6,7 +6,8 @@ Was heute gilt, steht in [CLAUDE.md](../CLAUDE.md), Abschnitt "IST-Zustand".
 Ein Block darf also etwas als offen oder noch nicht angewendet bezeichnen, das später
 erledigt wurde (z. B. die Migrationen 0043 und 0046, am 2026-10-05 angewendet).
 Neue Einträge kommen **oben** unter diesen Kopf, jeder mit Datum im Titel. Einzige Änderung
-gegenüber dem Original: die Pfade der Links sind jetzt relativ zu `docs/`.
+gegenüber dem Original: die Pfade der Links sind relativ zu `docs/`, und ein Link auf eine
+verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server/llm/index.ts`).
 
 ---
 
@@ -1327,7 +1328,7 @@ mischten. Die Regeln selbst stehen weiter in `CLAUDE.md`; hier steht, wie es daz
 ### Wichtig zu wissen (Fassung vom 2026-10-05)
 
 1. **Modell-Provider ist Z.ai (GLM), plus BYOK.** Der komplette Modellzugriff
-   ist in [`src/server/llm.ts`](../src/server/llm.ts) gekapselt, Server-seitig:
+   ist in [`src/server/llm.ts`](../src/server/llm/index.ts) gekapselt, Server-seitig:
    `ZAI_API_KEY` (Z.ai, Default-Modell `glm-4.5-air`, Kosten-Tier, via
    `ZAI_MODEL` überschreibbar) → `GEMINI_API_KEY` (Zweit-Provider) →
    **Stub-Modus** (Templates kommen unverändert zurück, ganzer Flow bleibt

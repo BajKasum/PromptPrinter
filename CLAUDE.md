@@ -46,7 +46,7 @@ Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 
 **Technik**
 
-- **Modellzugang** nur in `src/server/llm.ts`. Z.ai (Standard `glm-4.5-air`) und
+- **Modellzugang** nur in `src/server/llm/` (Einstieg `index.ts`). Z.ai (Standard `glm-4.5-air`) und
   Gemini auf dem Server, Anthropic und OpenAI nur per BYOK. Ohne Key antwortet der
   Chat im Stub-Modus, nur in Entwicklung (`next start` verweigert ihn).
   `llm-retry.ts` wiederholt vorübergehende Fehler (3 Versuche), `llm-failover.ts`
@@ -117,7 +117,7 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
 
 1. **Modell-Provider: Z.ai (GLM) ist der Standard, Gemini der Zweit-Provider und
    Failover, dazu BYOK.** Der komplette Modellzugriff steckt in
-   [`src/server/llm.ts`](src/server/llm.ts). Auswahl: eigener Key des Nutzers →
+   [`src/server/llm/`](src/server/llm/index.ts). Auswahl: eigener Key des Nutzers →
    `ZAI_API_KEY` (Standard `glm-4.5-air`, über `ZAI_MODEL` änderbar) →
    `GEMINI_API_KEY` → **Stub-Modus** (nur in Entwicklung, der Flow bleibt ohne Key
    testbar). Ein eigener Key ([`byok.ts`](src/server/byok.ts), Tabelle
@@ -256,7 +256,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | Text eines Hilfe-Artikels geändert | `updated` in `docs-nav.ts` nachziehen |
 | UI-Text | Wörterbuch `shared/i18n/messages/`, alle fünf Sprachen (fr/it/es sind nie von Muttersprachlern geprüft: im PR kennzeichnen) |
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
-| Aufruf eines Modell-Anbieters | durch `llm.ts` (und damit Retry und Failover), nie ein SDK direkt |
+| Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
 | Datei in `src/server/` | `import "server-only"` |
 | Mail-Vorlage | `supabase/templates/`, Link über `/auth/callback`; im Dashboard neu einfügen |
 | Node-Version ändern | alle Stellen, siehe [SETUP.md](docs/SETUP.md), "Node-Version" |
@@ -286,7 +286,7 @@ src/shell/     App-Rahmen (Sidebar, Mobile-Nav, Command-Palette). Darf
 src/server/    Nie im Browser, jede Datei mit `import "server-only"`.
                security/ (crypto, csp, rate-limit, turnstile, url-safety),
                brain/ (github.ts, analyze.ts — Projekt-Gedaechtnis),
-               billing/, observability/, http/, supabase/, llm.ts, llm-retry.ts,
+               billing/, observability/, http/, supabase/, llm/ (je Anbieter eine Datei), llm-retry.ts,
                llm-failover.ts, env.ts, byok.ts, project.ts, system-prompt.ts
 src/shared/    Von überall nutzbar, kennt niemanden über sich:
                ui/ brand/ motion/ providers/ lib/ supabase/
