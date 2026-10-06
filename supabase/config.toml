@@ -54,6 +54,25 @@ enable_confirmations = false
 double_confirm_changes = true
 max_frequency = "1s"
 
+# Die deutschen Mail-Vorlagen der Produktion. Dieselben Dateien fuegt man im
+# Dashboard ein (docs/SETUP.md, "Auth-Mails"), lokal liest sie der Stack von hier.
+# tests/guards/auth-mail-templates.test.ts haelt Datei, Betreff und Link fest.
+[auth.email.template.confirmation]
+subject = "Bestätige deine E-Mail-Adresse für PromptPrinter"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Passwort zurücksetzen bei PromptPrinter"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Bestätige deine neue E-Mail-Adresse"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.invite]
+subject = "Du wurdest zu PromptPrinter eingeladen"
+content_path = "./supabase/templates/invite.html"
+
 # Alles Weitere, was die App nicht nutzt, ist aus: weniger Container, kürzerer
 # Start, weniger, was in der CI schiefgehen kann.
 [realtime]
