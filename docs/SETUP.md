@@ -156,6 +156,29 @@ dazu wöchentlich), und `docker.yml` hält den Docker-Pfad am Leben. `audit:gate
 `npm audit --audit-level=high` plus eine kurze, befristete Ausnahmeliste für
 Funde ohne gepatchte Version (`scripts/audit-gate.mjs`).
 
+### Abhängigkeiten (Dependabot)
+
+[`.github/dependabot.yml`](../.github/dependabot.yml) schlägt montags um 5 Uhr
+(Zürich) Updates für npm und GitHub Actions vor: Minor und Patch zusammen in
+**einem** PR je Ökosystem, jeder Major einzeln, höchstens 5 (npm) bzw. 3
+(Actions) offene PRs. Es gibt **keinen Auto-Merge**: jeder Dependabot-PR läuft
+durch dieselbe CI wie jeder andere (CI, bei Änderung an `package*.json` auch
+E2E, dazu eine Vercel-Vorschau) und wartet auf eine Entscheidung. Keiner dieser
+Läufe braucht ein Repository-Secret.
+
+Zwei Versionen sieht Dependabot **nicht**:
+
+- **Supabase-CLI** (`2.119.0`): `version:` in `e2e.yml`, dieselbe Zahl in dieser
+  Datei und in `e2e/support/env.ts`. Anheben heißt an allen Stellen.
+  `tests/guards/pinned-versions.test.ts` scheitert, wenn sie auseinanderlaufen.
+- **Playwright-Browser**: folgt dem Lockfile (Cache-Schlüssel in `e2e.yml`), also
+  dem npm-Eintrag von `@playwright/test`.
+
+**Einmalig in den Repository-Einstellungen** (kein Code, nur ein Klick): unter
+*Settings → Code security* "Dependabot security updates" einschalten. Dann
+öffnet GitHub auch außerhalb des Montags einen PR, sobald ein Advisory eine
+Abhängigkeit trifft. Stand 06.10.2026: ausgeschaltet.
+
 ## Ende-zu-Ende-Tests
 
 Die Unit-Tests prüfen Bausteine, nicht, ob ein eingeloggter Nutzer durch das
