@@ -30,7 +30,8 @@ export default function CookiesPage() {
         Einstellungen an der Oberfläche erhalten bleiben und damit die Anmeldeformulare vor
         automatisierten Zugriffen geschützt sind. Es gibt{" "}
         <strong>keine Analyse-, Tracking- oder Werbe-Cookies</strong>, und wir binden keine
-        Drittanbieter zu solchen Zwecken ein.
+        Drittanbieter für Werbung oder Tracking ein. Einzig die Ladegeschwindigkeit der Seiten
+        messen wir (siehe Ziffer 3), ebenfalls ohne Cookies und ohne etwas im Browser zu speichern.
       </p>
       <p>
         Wer nur die öffentlichen Seiten besucht, also Startseite, Preise, Hilfe und Rechtstexte,
@@ -62,6 +63,17 @@ export default function CookiesPage() {
       ))}
 
       <h2>3. Dienste von Drittanbietern</h2>
+      <h3>Vercel Speed Insights (Messung der Ladegeschwindigkeit)</h3>
+      <p>
+        Auf allen Seiten, auch den öffentlichen, misst ein kleines Skript, wie schnell die Seite bei
+        dir geladen wurde, und meldet die Messwerte an Vercel, unseren Hosting-Anbieter. Das Skript
+        wird über unsere eigene Adresse ausgeliefert. Es setzt keine Cookies und speichert nichts in
+        deinem Browser. Gemeldet werden die aufgerufene Seite (ohne Angaben hinter einem
+        Fragezeichen und mit gekürzten Kennungen), Netzwerkgeschwindigkeit, Browser, Gerätetyp,
+        Betriebssystem, Land und der Messwert selbst. Nach Angaben von Vercel sind diese Daten
+        keiner einzelnen Person und keiner IP-Adresse zugeordnet. Einzelheiten stehen in der{" "}
+        <a href="/datenschutz">Datenschutzerklärung</a>.
+      </p>
       <h3>Cloudflare Turnstile (Schutz vor Bots)</h3>
       <p>
         Auf den Formularen für Anmeldung, Registrierung und Passwort-Zurücksetzen prüft das Captcha

@@ -606,3 +606,34 @@ und gehen bei späteren Antworten erneut mit, soweit sie ins Modell-Budget passe
   für Züge mit Bild.
 - Verwaiste Objekte im Bucket (ein Aufräumschritt, der nach dem Löschen scheiterte):
   `node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments`
+
+## Geschwindigkeitsmessung (Vercel Speed Insights)
+
+`<SiteSpeedInsights />` im Root-Layout ([`src/shared/providers/site-speed-insights.tsx`](../src/shared/providers/site-speed-insights.tsx))
+misst die Ladezeiten (Web Vitals) echter Besucher, auf den öffentlichen Seiten
+genauso wie in der App. Es braucht keinen Env-Wert und keinen Schalter im Dashboard:
+das Paket `@vercel/speed-insights` hängt das Skript an, Vercel stellt
+`/_vercel/speed-insights/*` selbst bereit. Ansehen: Vercel → Projekt → **Speed Insights**.
+
+- **Nur im Produktions-Build.** In `npm run dev` und `npm run test:e2e` lädt das Paket
+  ein Debug-Skript von `va.vercel-scripts.com`, das die CSP zu Recht blockiert.
+  Vorschau-Deployments auf Vercel sind Produktions-Builds, dort ist die Komponente drin.
+- **Adressen werden vor dem Senden gekürzt** ([`speed-insights-event.ts`](../src/shared/lib/speed-insights-event.ts)):
+  Das Skript schickt `location.href`. Query und Fragment fallen weg (Anmeldelinks
+  hängen Einmalwerte an), jede UUID im Pfad wird zu `[id]` (`/chats/<uuid>` →
+  `/chats/[id]`).
+- **Keine CSP-Änderung**: Skript und Messwerte laufen über `'self'`. Stellt jemand
+  `scriptSrc` oder `endpoint` auf einen fremden Host, muss `csp.ts` mitziehen, ein
+  Test in `csp.test.ts` erinnert daran.
+- **Kosten**: kostenlos auf allen Tarifen, 10.000 Ereignisse in 30 Tagen. Wird die
+  Grenze erreicht, pausiert Vercel die Messung für mindestens 14 Tage, es gibt keine
+  Rechnung. Der kostenlose Tarif zeigt nur den Real Experience Score und Zähler je
+  Seite. Alle Core Web Vitals (LCP, INP, CLS, FCP, TTFB) gibt es erst mit Speed
+  Insights Plus (nur Pro, 10 $ je Projekt und Monat plus Ereignisse). Stand der
+  Vercel-Dokumentation vom 06.10.2026. Mit `sampleRate` an `<SpeedInsights />` lassen
+  sich weniger Ereignisse senden.
+- **Datenschutz**: genannt in der Datenschutzerklärung (Ziffern 2, 3, 4, 6) und auf
+  `/cookies` (Ziffer 3). Ändert sich, was gesendet wird, beide Texte mitziehen.
+- **Nicht dasselbe wie Web Analytics** (`@vercel/analytics`, Besucherzahlen und
+  Herkunft). Das ist nicht eingebaut und in den Rechtstexten nicht genannt, siehe den
+  Vermerk zum Vercel-Bot-Branch in `CLAUDE.md`.

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { MotionShell } from "@/shared/providers/motion-shell";
+import { SiteSpeedInsights } from "@/shared/providers/site-speed-insights";
 import { siteUrl } from "@/shared/lib/site-url";
 import { siteVerification } from "@/shared/lib/site-verification";
 import "./globals.css";
@@ -112,6 +113,11 @@ export const viewport: Viewport = {
  * MotionShell bleibt hier oben — `prefers-reduced-motion` ist
  * Barrierefreiheit und muss auch oeffentlich gelten. Eine Client-Komponente
  * macht die Seite nicht dynamisch, nur `headers()`/`cookies()` taeten das.
+ *
+ * SiteSpeedInsights (Vercel Speed Insights) steht aus demselben Grund hier:
+ * es soll die oeffentlichen Seiten messen, auf denen Besucher ankommen, nicht
+ * nur die App. Ob und was es sendet, steht in der Komponente und in
+ * datenschutz/page.tsx.
  */
 export default function RootLayout({
   children,
@@ -124,6 +130,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <MotionShell>{children}</MotionShell>
+        <SiteSpeedInsights />
       </body>
     </html>
   );
