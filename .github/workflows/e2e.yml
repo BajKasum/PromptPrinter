@@ -79,7 +79,7 @@ jobs:
       # Dieselbe Version wie in docs/SETUP.md, damit lokal und in der CI derselbe
       # Stack läuft.
       - name: Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v3
         with:
           version: 2.119.0
 
