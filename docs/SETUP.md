@@ -415,6 +415,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 |---|---|
 | `smoke.spec.ts` | der Test-Server spricht nur mit dem lokalen Stack (kein Supabase-Projekt, kein Turnstile aus `.env.local`), öffentliche Seiten antworten, Unbekanntes ist 404, die App ist ohne Anmeldung zu |
 | `auth.spec.ts` | Registrieren, Abmelden, Anmelden über die Formulare, falsches Passwort, schwaches Passwort wird im Server abgewiesen |
+| `password-reset.spec.ts` | Passwort-Reset über die **echte Mail** (lokales Postfach, Mailpit): Vorlage aus `supabase/templates/`, Link über `/auth/callback` mit `token_hash`, neues Passwort gilt, altes nicht, der Link ist nur einmal gültig |
 | `chat.spec.ts` | Frage senden und Antwort, nach dem Neuladen noch da; Textanhang landet in Tabelle UND Speicher, byte-gleich; ein Free-Konto sieht den Key-Hinweis vor dem Tippen |
 | `projects.spec.ts` | Projekt anlegen, Anweisungen speichern, Datei hochladen, Chat im Projekt, Löschen räumt Zeilen und Dateien im Speicher auf |
 | `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
@@ -428,9 +429,11 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 - **Der Sprachmodus.** Die Web Speech API gibt es in einem automatisierten
   Chromium nicht verlässlich, und ein Mikrofon gibt es nicht.
 - **Zahlungen und Webhooks** (Lemon Squeezy), **Turnstile**, **Upstash/Redis**,
-  **E-Mail-Bestätigung und Passwort-Reset-Mails**, **OAuth** (Google/GitHub).
-  Der lokale Stack hat die Bestätigungsmail ausgeschaltet
-  (`supabase/config.toml`), das ist der einzige gewollte Unterschied beim Auth.
+  die **Bestätigungsmail bei der Registrierung**, **OAuth** (Google/GitHub).
+  Der lokale Stack hat die Bestätigungsmail ausgeschaltet (`supabase/config.toml`),
+  und Produktion läuft laut Auth-Logs (06.10.2026) ebenfalls ohne. Die Mail des
+  Passwort-Resets dagegen wird geprüft (`password-reset.spec.ts`), **nicht aber**
+  was im Dashboard der Produktion als Vorlage oder SMTP steht.
 - **Den Produktions-Build.** `next start` verweigert den Stub-Chat, deshalb
   läuft hier der Dev-Server. CSP und statische Seiten im Produktions-Build
   prüfen `tests/guards/` und `docker.yml`.

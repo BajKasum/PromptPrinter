@@ -42,12 +42,16 @@ file_size_limit = "50MiB"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+# Der Next-Server der Tests laeuft auf Port 3100 (e2e/support/env.ts). Ohne diesen
+# Eintrag verwirft GoTrue das redirectTo der App und schickt die Mail-Links an die
+# Site-URL, und der Reset-Test liefe gegen die falsche Adresse.
+additional_redirect_urls = ["http://localhost:3000/auth/callback", "http://localhost:3100/**"]
 jwt_expiry = 3600
 enable_signup = true
-# Der einzige Unterschied zur Produktion, der die Tests betrifft: keine
-# Bestätigungsmail. Mit ihr bräuchte jeder Test ein Postfach, und die Mail
-# selbst ist nicht, was hier geprüft wird.
+# Keine Bestätigungsmail bei der Registrierung. Mit ihr bräuchte jeder Test ein
+# Postfach. Produktion läuft laut Auth-Logs (06.10.2026) ebenfalls ohne: eine
+# Registrierung wurde sofort eingeloggt. Die Mail des Passwort-Resets dagegen
+# prüft e2e/password-reset.spec.ts über das lokale Postfach (Mailpit).
 [auth.email]
 enable_signup = true
 enable_confirmations = false
@@ -81,8 +85,11 @@ enabled = false
 [studio]
 enabled = false
 
+# Das Postfach des Stacks (Mailpit, Web-Oberflaeche und API auf Port 54324). Mails,
+# die Supabase Auth lokal verschickt, landen dort. e2e/support/mailbox.ts liest sie.
 [local_smtp]
-enabled = false
+enabled = true
+port = 54324
 
 [edge_runtime]
 enabled = false
