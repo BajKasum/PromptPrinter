@@ -6,7 +6,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ─── deps ────────────────────────────────────────────────────────────────────
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -91,7 +91,7 @@ EXPOSE 3000
 CMD ["sh", "-c", "npm install --no-audit --no-fund && npm run dev:docker -- -H 0.0.0.0"]
 
 # ─── builder ─────────────────────────────────────────────────────────────────
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # NEXT_PUBLIC_* vars are inlined into the client bundle at build time.
@@ -121,7 +121,7 @@ RUN --mount=type=cache,target=/app/.next/cache \
     npm run build
 
 # ─── runner ──────────────────────────────────────────────────────────────────
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \

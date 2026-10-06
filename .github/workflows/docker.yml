@@ -19,7 +19,7 @@ name: Docker
 # kostet einige Minuten und gehört nicht in jeden Push, der nur Quelltext
 # ändert. Er läuft, wenn etwas geändert wird, das den Container betrifft, und
 # wöchentlich auf main, weil auch ein unverändertes Repository verrottet, wenn
-# sich das Basis-Image (node:22-alpine) unter ihm ändert.
+# sich das Basis-Image (node:24-alpine) unter ihm ändert.
 
 # Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker:
 # eine Liste, die ein Workflow-Parser nicht versteht, lässt den Lauf stumm

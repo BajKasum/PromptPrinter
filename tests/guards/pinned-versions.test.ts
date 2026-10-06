@@ -71,10 +71,15 @@ describe("Dependabot", () => {
   });
 
   it("gruppiert nur Minor und Patch, Majors kommen einzeln", () => {
-    expect(config.match(/update-types:/g)).toHaveLength(2);
-    // Ein "major" in einer Gruppe würde Sprünge mit Breaking Change in einen
-    // Sammel-PR legen, der sich nicht teilweise zurücknehmen lässt.
-    expect(config).not.toMatch(/-\s*major\b/);
+    // Nur die `groups:`-Blöcke zählen (ein `ignore:` nennt auch update-types).
+    const blocks = [...config.replaceAll("\r\n", "\n").matchAll(/^ {4}groups:\n((?: {6,}.*\n?)+)/gm)].map((m) => m[1]);
+    expect(blocks, "je Ökosystem ein groups-Block").toHaveLength(2);
+    for (const block of blocks) {
+      const types = [...block.matchAll(/^\s*-\s*(\w+)\s*$/gm)].map((m) => m[1]);
+      // Ein "major" in einer Gruppe würde Sprünge mit Breaking Change in einen
+      // Sammel-PR legen, der sich nicht teilweise zurücknehmen lässt.
+      expect(types.sort()).toEqual(["minor", "patch"]);
+    }
   });
 
   it("begrenzt die offenen PRs", () => {

@@ -39,6 +39,15 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # @types/node folgt der Node-Version, die wir testen und ausliefern
+      # (.nvmrc), nicht dem neuesten Node: Typen für ein Node 26 würden APIs
+      # zulassen, die in Produktion (Node 24) fehlen. Minor und Patch kommen
+      # weiter; den Sprung macht, wer die Node-Version hebt (docs/SETUP.md,
+      # "Node-Version"). Hält tests/guards/node-version.test.ts fest.
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
     groups:
       # Minor und Patch in einem PR (ein Gate-Lauf statt zehn). Majors sind in
       # keiner Gruppe und kommen deshalb einzeln: ein Sprung mit Breaking Change
