@@ -82,7 +82,7 @@ Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `tests/guards/` (Schichten, Routen, Cookies, SEO, Kontrast, Node-Version,
   Mail-Vorlagen, Dependabot), Browser-Smoketests `e2e/` gegen einen lokalen
   Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch), `e2e.yml`, `docker.yml`,
-  `audit.yml` (täglich, meldet per Issue). Dependabot wöchentlich, kein Auto-Merge.
+  `audit.yml` (täglich, meldet per Issue). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
   ändern würde: [docs/SETUP.md](docs/SETUP.md), Abschnitt "Projekt-Gedächtnis".
 
@@ -92,21 +92,19 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 - **Kritisch, nicht Teil der M-Punkte:** K1 Backup und Tarife (Supabase Free, Vercel),
   K2 `ALERT_WEBHOOK_URL`, K3 der Bezahlweg lief nie mit einem echten Ereignis.
 - **Wartet auf Kasum:** `GITHUB_TOKEN` setzen, bezahlter `GEMINI_API_KEY`, die vier
-  `STRIPE_*`-Variablen in Vercel löschen, Entscheid zum Fehler-Tracker, Auth-Mails
-  (Dashboard nachsehen, Mail-Anbieter, DNS), "Dependabot security updates" in den
-  Repo-Einstellungen, die `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am
-  2026-11-04 ab).
+  `STRIPE_*`-Variablen in Vercel löschen, Entscheid zum Fehler-Tracker; **Auth-Mails**:
+  Dashboard nachsehen (Klickliste in SETUP.md), Mail-Anbieter buchen, DNS, erst dann
+  "Confirm email" erwägen; "Dependabot security updates" in den Repo-Einstellungen; die
+  offenen Dependabot-PRs durchsehen; die `braces`-Ausnahme in `scripts/audit-gate.mjs`
+  (läuft am 2026-11-04 ab, das tägliche Issue warnt ab dem 28.10.).
 - **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO),
-  Sprachmodus (Browser-Dienste von Google/Microsoft), der Satz zum
-  Ausweich-Anbieter, der Abschnitt zu Speed Insights (Aufbewahrungsdauer bei Vercel
-  nicht belegt, der Text nennt keine Zahl), jeder neue Empfänger (Mail-Anbieter,
-  Fehler-Tracker).
-- **Messwerte von Speed Insights:** dass sie im Dashboard ankommen, ist noch nicht
-  gesehen (braucht echte Besuche auf `promptprinter.app`). Automatisierte Browser
-  erzeugen keine Daten, das Skript misst bei `navigator.webdriver` und "Headless" nicht.
-- **Nicht mergen:** der Vercel-Bot-Branch `vercel/install-vercel-web-analytics-…`.
-  Web Analytics (`@vercel/analytics`, Besucherzahlen und Herkunft) ist ein anderes
-  Produkt als Speed Insights und steht nicht in Datenschutz und `/cookies`.
+  Sprachmodus (Browser-Dienste von Google/Microsoft), der Satz zum Ausweich-Anbieter,
+  Speed Insights (Aufbewahrungsdauer bei Vercel nicht belegt), jeder neue Empfänger
+  (Mail-Anbieter, Fehler-Tracker).
+- **Speed Insights:** dass Messwerte im Dashboard ankommen, ist noch nicht gesehen (braucht
+  echte Besuche; automatisierte Browser erzeugen keine Daten).
+- **Über 400 Zeilen** (Liste mit Obergrenzen: `tests/guards/file-size.test.ts`): `hero.tsx`,
+  `rate-limit.ts`, `github.ts`, `api-keys.tsx`, `sidebar.tsx` und drei kleinere.
 
 ## Was ist PromptPrinter?
 
@@ -337,12 +335,11 @@ Ausstieg hält `route.exits.test.ts` fest. Was keine Reservierung und kein Featu
 (Verlauf kürzen, deutsche Fehlertexte), liegt in `features/chat/lib/turn-*.ts`.
 
 **Der Chat im Browser** (`features/chat/`): `components/chat.tsx` setzt nur zusammen
-(Verlauf `chat-thread.tsx`, Hinweise `chat-notices.tsx`, Composer, Sprachleiste). Der
-Zustandsautomat eines Zugs steht in `hooks/use-chat-turn.ts` (Verlauf, Senden, Abbruch,
-Neu erzeugen, Bearbeiten), die Anfrage samt Stromlesen in `hooks/run-chat-turn.ts`, das
-Scrollen in `use-chat-scroll.ts`, die Anhänge in `use-attach-notice.ts`, die reinen
-Bausteine (Nachrichtenform, Ablehnungstexte) in `lib/chat-wire.ts`. `chat.turn.test.tsx`
-hält den Automaten fest, `chat.test.tsx` die Oberfläche.
+(`chat-thread.tsx`, `chat-notices.tsx`, Composer, Sprachleiste). Der Zustandsautomat
+eines Zugs steht in `hooks/use-chat-turn.ts`, die Anfrage samt Stromlesen in
+`hooks/run-chat-turn.ts`, dazu `use-chat-scroll.ts`, `use-attach-notice.ts` und
+`lib/chat-wire.ts`. `chat.turn.test.tsx` hält den Automaten fest, `chat.test.tsx` die
+Oberfläche.
 
 Die Schichtgrenzen erzwingt [tests/guards/layer-boundaries.test.ts](tests/guards/layer-boundaries.test.ts),
 nicht ESLint: `no-restricted-imports` mit `patterns` läuft über minimatch, und

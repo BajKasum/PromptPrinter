@@ -11,6 +11,77 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+**Betriebs-Audit, Folgesitzung M7 bis M10 (2026-10-06, PR #42 bis #65):**
+Nur diese vier Punkte, K1 bis K3 blieben unberührt. Der Nachlauf zu M1 bis M6 entfiel:
+Kasum hatte bis dahin nichts davon erledigt (GITHUB_TOKEN, GEMINI_API_KEY, STRIPE_*-Variablen,
+Fehler-Tracker-Entscheid).
+
+- **M10, Abhängigkeiten.** Gleich zu Beginn färbte ein neues Advisory (GHSA-68fv-2mgg-jv7q,
+  `source-map-js`, CVSS 7.5, gepatcht in 1.2.2) jeden Branch rot: der Fall, den M10 verhindern
+  soll. Behoben mit einem Lockfile-Update (#42, kein `overrides`-Eintrag nötig). **Dependabot**
+  (#43): npm und Actions montags, Minor und Patch in einem PR je Ökosystem, jeder Major einzeln,
+  höchstens 5 bzw. 3 offene PRs, **kein Auto-Merge**; er öffnete sofort 8 PRs, genau nach
+  Konfiguration. Die Supabase-CLI-Version (die Dependabot nicht sieht) steht in e2e.yml,
+  SETUP.md und env.ts, `pinned-versions.test.ts` hält sie gleich (6 Mutationen). **Täglicher
+  Audit** (#52, `audit.yml`, 4:37 UTC): meldet per **einmaligem GitHub-Issue** (anlegen, bei
+  Folgefehlern ergänzen, bei sauberem Lauf schließen) und warnt 7 Tage vor Ablauf einer
+  Ausnahme. Alle drei Zweige gegen echtes GitHub geprüft (Test-Issue #53, danach geschlossen),
+  12 Mutationen. Dabei fiel ein **echter Fehler** auf: Dependabots Gruppen-Refresh scheiterte
+  mit `Override for postcss@8.5.28 conflicts with direct dependency` (`EOVERRIDE`), weil
+  `postcss` direkte Abhängigkeit UND Override mit derselben Spanne war. Reproduziert und mit
+  `"postcss": "$postcss"` behoben (#54), ein Guard hält es fest. Danach lief der Refresh
+  (Sammel-PR #56 grün), und ein `ignore` für den `@types/node`-Major schloss den PR mit
+  Version 26. **braces** (GHSA-vfj7-8cjw-p6xm): am 2026-10-06 weiter **ohne gepatchte Version**
+  (`first_patched_version: null`, `npm view braces`: neueste 3.0.3, betroffen alle bis 3.0.3).
+  Die Ausnahme läuft am 2026-11-04 ab, das tägliche Issue warnt ab dem 28.10. Entscheid dann:
+  Upstream-Fix, Tailwind 4 (Breaking Change) oder Verlängerung mit Beleg.
+- **M8, Node-Version.** Produktion lief auf 24 (Vercel), CI, E2E, Docker und `.nvmrc` auf 22.
+  Laut nodejs/Release `schedule.json` (06.10.2026): 20 abgekündigt, 22 nur noch Maintenance
+  (bis 2027-04-30), 24 Active LTS bis 2026-10-20, danach Maintenance bis **2028-04-30**, 26 wird
+  am 2026-10-28 LTS, **Vercel bietet 26 gar nicht an** (nur 24.x, 22.x, 20.x). Kasum wählte
+  **Node 24**. `.nvmrc` ist die Quelle, die drei Workflows lesen sie, Dockerfile `node:24-alpine`,
+  `engines.node` `24.x`, `@types/node` `^24` (#55). `engines.node` **übersteuert** laut Vercel-Doku
+  die Projekt-Einstellung, die ohnehin auf `24.x` stand: eine Änderung an Vercel war nicht nötig.
+  `node-version.test.ts` liest alle Stellen (14 Mutationen) und prüft in der CI zusätzlich die
+  echte Laufzeit. CI, E2E und Docker-Image unter 24 grün, Produktions-Deployment READY,
+  `/api/health` ok. **Nicht belegt:** die Node-Version der Laufzeit selbst (das Build-Log nennt
+  sie nicht). **Lokal nicht gelaufen:** `npm run test:e2e` (Docker Desktop startete nicht,
+  die CI belegt denselben Commit).
+- **M9, Auth-Mails.** Laut Supabase-Doku liefert der Standardversand **nur an Adressen aus dem
+  Projekt-Team** aus ("Email address not authorized"). Registrierungen laufen heute ohne Mail
+  (Sofort-Login, bei keinem der 5 Konten je eine Bestätigung ausgelöst), betroffen wäre der
+  **Passwort-Reset**. Die DNS-Zone liegt bei Vercel und trägt weder MX noch SPF, DKIM oder
+  DMARC. **Nicht belegt:** ob im Dashboard ein eigener SMTP steht (Kasum hat noch nicht
+  nachgesehen). Gebaut: vier deutsche Vorlagen in `supabase/templates/` samt Guard (#57),
+  Anleitung für Brevo in SETUP.md (gewählt, **nichts gebucht, kein DNS geändert**), Datenschutz-
+  Entwurf im Vault. Der neue Browser-Test für den Reset mit **echter Mail** (Mailpit, #58) fand
+  einen Fehler, den kein Unit-Test sah: `verifyOtp({ token_hash, type })`, der Weg der Vorlage und
+  der Route, stellt bei GoTrue IMMER die Anmeldemethode `otp` aus (supabase/auth, `verify.go`,
+  `verifyPost`), die Seite "Neues Passwort" verlangte seit M-7 aber `recovery`: **jeder Reset
+  über die Vorlage endete bei "Link ungültig"**. Kasum entschied: `token_hash` behalten, Seite
+  lockern (#59): `otp` zählt nur frisch (10 Minuten), `recovery` wie bisher. Was in Produktion
+  gilt, hängt am Text der Vorlage im Dashboard und ist nicht belegt (Standard-`ConfirmationURL`
+  → `recovery`, ging; `token_hash` → `otp`, ging nicht).
+- **M7, Wartbarkeit.** Je Datei ein PR, je PR zwei Commits (erst Tests gegen den alten Code, dann
+  der Schnitt mit unveränderten Tests), die Dateien skriptgesteuert aus Zeilenbereichen des
+  Originals erzeugt. `CLAUDE.md` 1739 → 418 Zeilen, der Verlauf wörtlich hierher (#61, mit
+  Link-Guard `doc-links.test.ts`). `llm.ts` 1451 Zeilen → `src/server/llm/` mit 12 Dateien (#63,
+  26 neue Charakterisierungstests, 16 Mutationen, 1295 von 1295 Codezeilen wörtlich). `POST
+  /api/chat` 860 → 94 Zeilen in `route.ts` plus vier Schritt-Dateien in `app/api/chat/` (#64,
+  23 Tests zur Reihenfolge und Rückgabe der Reservierungen an jedem Ausstieg, 14 Mutationen).
+  `chat.tsx` 865 → 144 Zeilen mit Hooks und Teilkomponenten (#65, 16 Tests, 18 Mutationen, 17
+  gefangen, eine äquivalent). **Grenze:** Code-Dateien höchstens 400 Zeilen (alle neuen Dateien
+  liegen darunter, die größte hat 327), `CLAUDE.md` höchstens 450. Noch darüber, nicht Teil
+  dieses Durchgangs: `hero.tsx` (590), `rate-limit.ts` (504), die Wörterbücher (Daten).
+- **Aufgefallen, nicht angefasst:** ein **leer gesetztes** `ZAI_MODEL` (`ZAI_MODEL=`) ergibt wegen
+  `??` ein leeres Modell statt des Standards. Und der Mutations-Läufer ersetzte einmal ein
+  Verzeichnis durch eine Datei (ein altes Backup gleichen Namens); wiederhergestellt, die
+  Läufer sichern seitdem in einmalige Ordner.
+- **Offen:** Kasum: Dashboard zu Auth-Mails nachsehen, Mail-Anbieter buchen und DNS (nur mit seinem
+  Ja), "Dependabot security updates" einschalten, die offenen Dependabot-PRs durchsehen, die
+  `braces`-Entscheidung, die vier Punkte aus M1 bis M6. Juristisch: Datenschutz zu Brevo und zum
+  Ausweich-Anbieter.
+
 > **Vercel Speed Insights (2026-10-06, PR #60):**
 > Auf Kasums Wunsch Ladezeiten (Web Vitals) echter Besucher in Vercel
 > auswertbar. `@vercel/speed-insights` ^2.0.0, eingebunden als
