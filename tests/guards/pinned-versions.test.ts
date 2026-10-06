@@ -86,6 +86,29 @@ describe("Dependabot", () => {
     }
   });
 
+  it("kommt mit den Overrides zurecht: ein Override auf eine direkte Abhängigkeit folgt ihr per $name", () => {
+    // Steht ein Paket in `overrides` UND als direkte Abhängigkeit, muss der
+    // Override `$paket` sein. Eine Kopie der Spanne bricht, sobald Dependabot
+    // den direkten Eintrag anhebt: npm antwortet mit EOVERRIDE ("Override for
+    // postcss@8.5.28 conflicts with direct dependency"), und Dependabot kann
+    // diese Abhängigkeit nie mehr aktualisieren (06.10.2026 so passiert).
+    const pkg = JSON.parse(read("package.json")) as {
+      overrides?: Record<string, unknown>;
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+    };
+    const direct = new Set([
+      ...Object.keys(pkg.dependencies ?? {}),
+      ...Object.keys(pkg.devDependencies ?? {}),
+      ...Object.keys(pkg.optionalDependencies ?? {}),
+    ]);
+    const overlapping = Object.keys(pkg.overrides ?? {}).filter((name) => direct.has(name));
+    for (const name of overlapping) {
+      expect(pkg.overrides![name], `overrides.${name}`).toBe(`$${name}`);
+    }
+  });
+
   it("hat keinen Auto-Merge: kein Workflow dafür, jeder Merge ist Kasums Entscheidung", () => {
     const dir = join(ROOT, ".github", "workflows");
     for (const file of readdirSync(dir).filter((f) => /\.ya?ml$/.test(f))) {

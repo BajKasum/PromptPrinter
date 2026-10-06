@@ -12,12 +12,17 @@
     "`audit fix` proposal for this tree was `next@9.3.3`, i.e. a five-year",
     "downgrade, which is why these are pinned by hand instead.",
     "Re-check on every dependency bump: an override that outlives its advisory",
-    "is just an unexplained version pin. `npm audit` in CI is what catches that."
+    "is just an unexplained version pin. `npm audit` in CI is what catches that.",
+    "postcss is ALSO a direct devDependency, so its override is `$postcss` (npm:",
+    "\"use the direct dependency's own range\") and not a copy of the range. A copy",
+    "makes npm fail with EOVERRIDE the moment Dependabot raises the direct entry",
+    "(06.10.2026: its group refresh failed with \"Override for postcss@8.5.28",
+    "conflicts with direct dependency\")."
   ],
   "overrides": {
     "brace-expansion": "^5.0.12",
     "js-yaml": "^4.3.0",
-    "postcss": "^8.5.24",
+    "postcss": "$postcss",
     "protobufjs": "^7.6.5",
     "sharp": "^0.35.4",
     "vite": "^8.1.5"
