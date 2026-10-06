@@ -546,8 +546,17 @@ selbst). Mit Token steht dort `limit: 5000`, ohne `limit: 60`. Ist das Kontingen
 aufgebraucht, kommt zusätzlich `brain.github_rate_limited` als Warnung (geht an
 den Alarm-Webhook, wenn einer gesetzt ist).
 
-**Keine Embeddings, bewusst.** Siehe [CLAUDE.md](../CLAUDE.md) für die Begründung
-und die Bedingung, unter der sich das ändern würde.
+**Keine Embeddings, und das ist eine Entscheidung, kein Rückstand.** Das Gedächtnis
+ist ein rund 2 KB großes, destilliertes Artefakt, das ohnehin bei jedem Zug vollständig
+mitreist: es gibt nichts zu *finden*, also nichts abzurufen. Die Rohquellen sind auf 20
+Dateien plus 14 Repo-Dateien gedeckelt und werden zum Analysezeitpunkt einmal gelesen,
+nicht pro Zug durchsucht. pgvector würde eine Extension, einen Embedding-Anbieter
+(keiner der vier verdrahteten Anbieter ist dafür angebunden), eine Chunking-Pipeline und
+Retrieval-Latenz pro Zug kosten, für ein Korpus, das vollständig ins Budget passt.
+**Erst dann neu bewerten,** wenn ein Projekt Quellen tragen soll, die *nicht* mehr
+komplett destillierbar sind (ganze Codebasen statt Manifeste, oder Chat-Verläufe als
+durchsuchbares Archiv). (Entscheidung vom 2026-08-03, Wortlaut im
+[Changelog](CHANGELOG-2026.md), Block "Projekt-Gedächtnis".)
 
 ## Anbieter-Ausfall (Failover auf Gemini)
 
