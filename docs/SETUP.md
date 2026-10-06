@@ -658,5 +658,5 @@ das Paket `@vercel/speed-insights` hängt das Skript an, Vercel stellt
 - **Datenschutz**: genannt in der Datenschutzerklärung (Ziffern 2, 3, 4, 6) und auf
   `/cookies` (Ziffer 3). Ändert sich, was gesendet wird, beide Texte mitziehen.
 - **Nicht dasselbe wie Web Analytics** (`@vercel/analytics`, Besucherzahlen und
-  Herkunft). Das ist nicht eingebaut und in den Rechtstexten nicht genannt, siehe den
-  Vermerk zum Vercel-Bot-Branch in `CLAUDE.md`.
+  Herkunft). Das ist nicht eingebaut und in den Rechtstexten nicht genannt, siehe in
+  `CLAUDE.md`, "Arbeitsregeln", den Punkt zu den Dependabot-PRs (Vercel-Bot-Branch).
