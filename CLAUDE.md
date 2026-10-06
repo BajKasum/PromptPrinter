@@ -71,13 +71,12 @@ Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout
   (`src/shared/providers/site-speed-insights.tsx`), nur im Produktions-Build. Adressen
   werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
-  Fragment weg, jede UUID wird `[id]`). Keine CSP-Änderung, Skript und Messwerte
-  laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen fremden Host
-  stellt, zieht `src/server/security/csp.ts` mit** (`csp.test.ts` erinnert daran).
-  Genannt in Datenschutz (Ziffern 2, 3, 4, 6) und `/cookies` (Ziffern 1, 3), wer
-  ändert, was gesendet wird, zieht beide Texte mit. Kein Env-Wert, kein Schalter im
-  Dashboard. Kosten, Grenzen, Prüfung auf der Vorschau: `docs/SETUP.md`,
-  "Geschwindigkeitsmessung", und der Changelog-Eintrag vom 2026-10-06.
+  Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`;
+  **wer `scriptSrc` oder `endpoint` auf einen fremden Host stellt, zieht
+  `src/server/security/csp.ts` mit** (`csp.test.ts`). Genannt in Datenschutz (Ziffern
+  2, 3, 4, 6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide
+  Texte mit. Kein Env-Wert, kein Dashboard-Schalter. Kosten, Grenzen, Prüfung:
+  `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
 - **Qualität:** das Gate (siehe "Befehle"), rund 130 Testdateien, Guards in
   `tests/guards/` (Schichten, Routen, Cookies, SEO, Kontrast, Node-Version,
   Mail-Vorlagen, Dependabot), Browser-Smoketests `e2e/` gegen einen lokalen
@@ -101,8 +100,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   Sprachmodus (Browser-Dienste von Google/Microsoft), der Satz zum Ausweich-Anbieter,
   Speed Insights (Aufbewahrungsdauer bei Vercel nicht belegt), jeder neue Empfänger
   (Mail-Anbieter, Fehler-Tracker).
-- **Speed Insights:** dass Messwerte im Dashboard ankommen, ist noch nicht gesehen (braucht
-  echte Besuche; automatisierte Browser erzeugen keine Daten).
+- **Speed Insights:** Messwerte im Dashboard noch nicht gesehen (braucht echte Besuche).
 - **Über 400 Zeilen** (Liste mit Obergrenzen: `tests/guards/file-size.test.ts`): `hero.tsx`,
   `rate-limit.ts`, `github.ts`, `api-keys.tsx`, `sidebar.tsx` und drei kleinere.
 
@@ -244,7 +242,9 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 - **Nach jeder abgeschlossenen Änderung committen und pushen**, nicht auf Aufforderung
   warten.
 - **Dependabot-PRs** (wöchentlich) nie ohne Kasums Entscheidung mergen, es gibt
-  bewusst keinen Auto-Merge.
+  bewusst keinen Auto-Merge. **Nie mergen:** der Vercel-Bot-Branch
+  `vercel/install-vercel-web-analytics-…` (PR #1, Draft). Web Analytics ist ein anderes
+  Produkt als Speed Insights und steht nicht in Datenschutz und `/cookies`.
 - **Mutationstest für jede neue Schranke:** Schranke kaputt machen, der Test muss
   anschlagen, danach den Quelltext aus der Sicherung wiederherstellen (nicht
   `git checkout` auf Dateien mit eigenen ungesicherten Änderungen).
