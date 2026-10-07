@@ -8,6 +8,7 @@ import {
   DEFAULT_MAX_OUTPUT_TOKENS,
   GEMINI_DEFAULT_MODEL,
   OPENAI_DEFAULT_MODEL,
+  geminiApiKey,
   llmConfig,
   providerLabel,
   serverConfigFor,
@@ -97,7 +98,7 @@ async function chatCompleteOnce(opts: {
     opts.system,
     opts.messages,
     maxOutputTokens,
-    process.env.GEMINI_API_KEY ?? ""
+    geminiApiKey() ?? ""
   );
 }
 
@@ -235,7 +236,7 @@ async function* chatCompleteStreamOnce(opts: {
     opts.system,
     opts.messages,
     maxOutputTokens,
-    process.env.GEMINI_API_KEY ?? "",
+    geminiApiKey() ?? "",
     opts.signal
   );
 }

@@ -298,6 +298,68 @@ describe("fetchRepoSnapshot", () => {
     );
   });
 
+  // Folgesitzung 2026-10-07: GITHUB_TOKEN wird in Vercel von Hand eingetragen. Ein
+  // Zeilenumbruch hinter dem Token macht den Header ungueltig (fetch wirft, jeder
+  // Import endet als "repo_unavailable"), ein Wert aus nur Leerzeichen ergibt
+  // "Bearer " und von GitHub ein 401.
+  describe("GITHUB_TOKEN", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllEnvs();
+    });
+
+    async function authorizationOfFirstRequest(token: string): Promise<string | undefined> {
+      vi.stubEnv("GITHUB_TOKEN", token);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }))
+        .mockResolvedValueOnce(jsonResponse({ tree: [] }));
+      await fetchRepoSnapshot(ref).catch(() => undefined); // repo_empty, uns geht es um den Header
+      const init = fetchMock.mock.calls[0][1] as RequestInit;
+      return (init.headers as Record<string, string>).authorization;
+    }
+
+    it("schickt ein gesetztes Token als Bearer, ohne Leerraum drumherum", async () => {
+      expect(await authorizationOfFirstRequest("ghp_abc123\n")).toBe("Bearer ghp_abc123");
+    });
+
+    it("schickt keinen Authorization-Header, wenn das Token leer ist", async () => {
+      expect(await authorizationOfFirstRequest("")).toBeUndefined();
+    });
+
+    it("schickt keinen Authorization-Header, wenn das Token nur aus Leerzeichen besteht", async () => {
+      expect(await authorizationOfFirstRequest("   ")).toBeUndefined();
+    });
+
+    it("meldet ein aufgebrauchtes Kontingent mit einem Token aus nur Leerzeichen als nicht authentifiziert", async () => {
+      vi.stubEnv("GITHUB_TOKEN", "   ");
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      vi.spyOn(console, "log").mockImplementation(() => {});
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse({}, { status: 403, headers: { "x-ratelimit-limit": "60", "x-ratelimit-remaining": "0" } })
+      );
+      await expect(fetchRepoSnapshot(ref)).rejects.toMatchObject({ code: "repo_rate_limited" });
+      const lines = warn.mock.calls
+        .map((call) => JSON.parse(String(call[0])) as Record<string, unknown>)
+        .filter((line) => line.event === "brain.github_rate_limited");
+      expect(lines).toEqual([expect.objectContaining({ authenticated: false })]);
+    });
+
+    it("meldet ein Token aus nur Leerzeichen im Log als nicht authentifiziert", async () => {
+      vi.stubEnv("GITHUB_TOKEN", "   ");
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      fetchMock
+        .mockResolvedValueOnce(
+          jsonResponse({ default_branch: "main" }, { headers: { "x-ratelimit-limit": "60", "x-ratelimit-remaining": "59" } })
+        )
+        .mockResolvedValueOnce(jsonResponse({ tree: [] }));
+      await fetchRepoSnapshot(ref).catch(() => undefined);
+      const quota = log.mock.calls
+        .map((call) => JSON.parse(String(call[0])) as Record<string, unknown>)
+        .filter((line) => line.event === "brain.github_quota");
+      expect(quota[0]).toMatchObject({ authenticated: false });
+    });
+  });
+
   // Betriebs-Audit M4 (05.10.2026): ohne diese Zeile liess sich in Produktion
   // nicht sehen, ob GITHUB_TOKEN greift.
   describe("Kontingent im Log", () => {

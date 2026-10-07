@@ -5,8 +5,12 @@
 // the unreachable `http://0.0.0.0:3000` into the email. Falls back to the live
 // browser origin, then a localhost default for SSR without the env var.
 export function siteUrl(path = ""): string {
+  // `||` und trim, nicht `??`: ein leer gesetztes `NEXT_PUBLIC_APP_URL=` ergab die
+  // Basis "", also "/auth/callback" statt einer absoluten Adresse (redirect() wirft
+  // darauf, eine Reset-Mail verlinkte ins Leere). Das Literal `process.env.NEXT_PUBLIC_APP_URL`
+  // muss stehen bleiben, nur so ersetzt Next es im Client-Bundle.
   const base =
-    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
   const trimmed = base.replace(/\/+$/, "");
   if (!path) return trimmed;

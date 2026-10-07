@@ -123,4 +123,43 @@ describe("alertingConfigured", () => {
     const { alertingConfigured } = await loadAlerting({ ALERT_WEBHOOK_URL: WEBHOOK });
     expect(alertingConfigured()).toBe(true);
   });
+
+  // Folgesitzung 2026-10-07: ein Wert aus nur Leerzeichen liess die Admin-Seite
+  // "Alarm eingerichtet" melden, obwohl jeder Aufruf still scheiterte (fetch(" ")).
+  it("is false for an empty or whitespace-only value", async () => {
+    for (const blank of ["", "   ", "\n"]) {
+      const { alertingConfigured } = await loadAlerting({ ALERT_WEBHOOK_URL: blank });
+      expect(alertingConfigured(), JSON.stringify(blank)).toBe(false);
+    }
+  });
+});
+
+describe("dispatchAlert mit einem Wert aus nur Leerzeichen", () => {
+  it("ruft nichts auf", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { dispatchAlert } = await loadAlerting({
+      ALERT_WEBHOOK_URL: "   ",
+      UPSTASH_REDIS_REST_URL: undefined,
+      UPSTASH_REDIS_REST_TOKEN: undefined,
+    });
+
+    await dispatchAlert("error", "chat.turn_failed", {});
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("schneidet Leerraum um eine echte Adresse ab", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
+    vi.stubGlobal("fetch", fetchMock);
+    const { dispatchAlert } = await loadAlerting({
+      ALERT_WEBHOOK_URL: `${WEBHOOK}\n`,
+      UPSTASH_REDIS_REST_URL: undefined,
+      UPSTASH_REDIS_REST_TOKEN: undefined,
+    });
+
+    await dispatchAlert("error", "chat.turn_failed", {});
+
+    expect(fetchMock.mock.calls[0][0]).toBe(WEBHOOK);
+  });
 });

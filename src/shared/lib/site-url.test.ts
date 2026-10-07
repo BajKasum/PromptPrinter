@@ -1,5 +1,35 @@
-import { describe, expect, it } from "vitest";
-import { safeNextPath } from "@/shared/lib/site-url";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { safeNextPath, siteUrl } from "@/shared/lib/site-url";
+
+// Folgesitzung 2026-10-07: ein leer gesetztes `NEXT_PUBLIC_APP_URL=` ergab wegen `??` die
+// Basis "", also "/auth/callback" statt einer absoluten Adresse. `NextResponse.redirect`
+// wirft darauf, und eine Reset-Mail verlinkte ins Leere. Leer zählt wie "nicht gesetzt".
+describe("siteUrl", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("baut aus der gesetzten Adresse eine absolute (ohne doppelten Schrägstrich)", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://promptprinter.app/");
+    expect(siteUrl("/auth/callback")).toBe("https://promptprinter.app/auth/callback");
+    expect(siteUrl()).toBe("https://promptprinter.app");
+  });
+
+  it("fällt ohne Wert auf localhost zurück (Server ohne window)", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
+    expect(siteUrl("/login")).toBe("http://localhost:3000/login");
+  });
+
+  it("behandelt einen leeren Wert wie einen fehlenden, nie als Basis \"\"", () => {
+    for (const blank of ["", "   ", "\n"]) {
+      vi.stubEnv("NEXT_PUBLIC_APP_URL", blank);
+      expect(siteUrl("/login"), JSON.stringify(blank)).toBe("http://localhost:3000/login");
+    }
+  });
+
+  it("schneidet Leerraum um eine echte Adresse ab", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", " https://promptprinter.app\n");
+    expect(siteUrl("/login")).toBe("https://promptprinter.app/login");
+  });
+});
 
 describe("safeNextPath", () => {
   it("passes through a plain in-app path", () => {

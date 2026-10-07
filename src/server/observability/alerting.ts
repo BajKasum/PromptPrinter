@@ -2,6 +2,8 @@ import "server-only";
 
 import { Redis } from "@upstash/redis";
 
+import { optionalEnv } from "@/server/env-value";
+
 // Delivery for the events that should wake someone up (Security-Audit finding
 // M-4).
 //
@@ -22,7 +24,9 @@ import { Redis } from "@upstash/redis";
 // Unset ALERT_WEBHOOK_URL (the default) means alerting is off and nothing here
 // runs — same posture as Upstash being optional in dev.
 
-const WEBHOOK_URL = process.env.ALERT_WEBHOOK_URL;
+// optionalEnv: ein Wert aus nur Leerzeichen zählte als "eingerichtet", und jeder
+// Aufruf scheiterte still (fetch(" ")).
+const WEBHOOK_URL = optionalEnv("ALERT_WEBHOOK_URL");
 
 /** How long one event key stays muted after an alert goes out. */
 const THROTTLE_SECONDS = 15 * 60;
