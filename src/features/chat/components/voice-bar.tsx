@@ -12,6 +12,8 @@ import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import { useVisualViewportInset } from "@/features/chat/hooks/use-visual-viewport-inset";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { WordStream } from "@/features/chat/components/word-stream";
+import { pickVoice } from "@/features/chat/lib/pick-voice";
 
 /** Silence after a committed phrase before the turn is sent on its own. */
 const AUTO_SEND_SILENCE_MS = 1500;
@@ -24,21 +26,6 @@ const MASCOT_FOR_MODE: Record<SpokenMode, MascotState> = {
   thinking: "thinking",
   speaking: "explaining",
 };
-
-/**
- * Picks a voice in the app's language if the platform has one (preferring an
- * on-device one), else whatever is default. `lang` is a BCP-47 tag like
- * "de-DE"; only its language part has to match.
- */
-function pickVoice(voices: SpeechSynthesisVoice[], lang: string): SpeechSynthesisVoice | null {
-  if (voices.length === 0) return null;
-  const prefix = lang.slice(0, 2).toLowerCase();
-  return (
-    voices.find((v) => v.lang.toLowerCase().startsWith(prefix) && v.localService) ??
-    voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ??
-    null
-  );
-}
 
 /**
  * The voice bar: recording happens inline, right where the composer normally
@@ -361,43 +348,5 @@ export function VoiceBar({
         </p>
       )}
     </motion.div>
-  );
-}
-
-/**
- * Renders text word by word, fading each new word in as it arrives.
- *
- * Keyed by position + word so only genuinely new words animate: the recogniser
- * revises the tail of the current phrase constantly, and keying by index alone
- * would re-run the animation on every already-settled word each time it does.
- */
-function WordStream({
-  text,
-  className,
-  reduced,
-}: {
-  text: string;
-  className?: string;
-  reduced: boolean;
-}) {
-  const words = text.split(/\s+/).filter(Boolean);
-  return (
-    <span className={className}>
-      {words.map((word, i) => (
-        <motion.span
-          key={`${i}-${word}`}
-          initial={reduced ? false : { opacity: 0, y: 4, filter: "blur(2px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          // Word gap as a right margin rather than a character between the
-          // spans: an inline-block collapses a trailing normal space, and a
-          // non-breaking one stops the transcript wrapping at all, which
-          // overflows the moment a sentence gets long on a phone.
-          className="mr-[0.26em] inline-block"
-        >
-          {word}
-        </motion.span>
-      ))}
-    </span>
   );
 }

@@ -19,7 +19,6 @@ const MAX_CLAUDE_MD_LINES = 450;
 
 /** Heute über 400 Zeilen, mit Obergrenze (etwas über dem heutigen Stand). Eintrag löschen, sobald die Datei kleiner wird. */
 const OVER_LIMIT: Record<string, number> = {
-  "src/features/chat/components/voice-bar.tsx": 420,
   "src/features/chat/lib/attachment-store.ts": 440,
   "src/shell/components/sidebar.tsx": 460,
   "src/features/settings/components/api-keys.tsx": 510,
