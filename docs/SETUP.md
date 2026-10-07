@@ -378,6 +378,50 @@ Mails pro Tag) vor der Buchung auf brevo.com selbst prüfen. Ein anderer Anbiete
    bekommt jedes neue Konto die Bestätigungsmail, und der Registrierungs-
    Bildschirm zeigt "Schau in dein Postfach" statt des Sofort-Logins.
 
+## Zahlungen: Webhook (Lemon Squeezy)
+
+`/api/webhooks/lemonsqueezy` schaltet Pro frei und nimmt es zurück. Im Lemon-Squeezy-
+Dashboard (*Settings → Webhooks*) muss ein Webhook auf
+`https://promptprinter.app/api/webhooks/lemonsqueezy` zeigen, sein Signing Secret steht als
+`LEMON_SQUEEZY_WEBHOOK_SECRET` in Vercel. **Test- und Live-Modus haben getrennte Webhooks**
+([Doku](https://docs.lemonsqueezy.com/guides/developer-guide/testing-going-live)): wer im
+Testmodus prüft, legt dort einen eigenen an (mit eigenem Secret).
+
+Gegen die Doku gelesen und geprüft am 07.10.2026 (Quellen im Kopf von
+`src/server/billing/lemonsqueezy.docs.test.ts`):
+
+- **Anzuhakende Ereignisse**, alle anderen quittiert der Code mit 200 und protokolliert sie als
+  ignoriert: `order_created`, `order_refunded`, `subscription_created`, `subscription_updated`,
+  `subscription_cancelled`, `subscription_resumed`, `subscription_expired`, `subscription_paused`,
+  `subscription_unpaused`, `subscription_payment_success`, `subscription_payment_recovered`,
+  `subscription_payment_refunded`. Unnötig: `subscription_payment_failed` (der Zustand `past_due`
+  kommt über das Abo), `customer_updated`, `license_key_*`, `affiliate_activated`.
+- **Signatur:** `X-Signature`, HMAC-SHA256 hexadezimal über den rohen Rumpf. Der Code prüft genau das,
+  zeitkonstant.
+- **Wiederholungen:** bei jeder anderen Antwort als 200 stellt Lemon Squeezy bis zu **dreimal** erneut
+  zu (5, 25 und 125 Sekunden später), also rund zweieinhalb Minuten lang. Danach kommt dieselbe
+  Zustellung nicht mehr von selbst: die Zeile in `billing_events` bleibt auf `failed`, und es hilft nur
+  ein erneutes Senden aus dem Dashboard (nicht belegt, ob es dort einen Knopf dafür gibt) oder die
+  Freischaltung von Hand.
+- **Entscheidungen:** Abo-Status `on_trial`, `active`, `past_due`, `cancelled` → Pro; `paused`,
+  `unpaid`, `expired` → Free. Erstattung: **voll** (`refunded`) → Free, **teilweise** (`partial_refund`)
+  → Pro bleibt (die Doku sagt, `order_refunded` feuert bei beidem). Zuordnung: Konto-ID aus dem Checkout
+  (`custom_data.user_id`, nur für eine Gutschrift, gegen `profiles` geprüft) oder Kundennummer (jeder
+  Entzug).
+- **Testmodus:** `test_mode` steht an Order, Abo und Rechnung (nicht in `meta`). Der Code ändert dafür
+  nichts, ein Testkauf schaltet Pro frei, damit sich der Weg prüfen lässt. Im Log trägt
+  `billing.webhook_applied` (und `_unmatched`, `_ignored`) `testMode: true` oder `false`.
+- **Nicht belegt, nur mit einem echten Ereignis zu sehen:** welche Ereignisse bei einem echten Kauf
+  zusammen eintreffen und in welcher Reihenfolge, ob `subscription_paused` und `subscription_updated`
+  beide kommen, die Adresse des Testmodus-Webhooks, Preise brutto oder netto.
+- **Kundenportal-Adresse:** `urls.customer_portal` ist laut Beispiel der Doku eine signierte Adresse mit
+  `expires=…` und `signature=…`; wie lange sie gilt, nennt die Doku nicht. Die App speichert sie beim Abo-
+  Ereignis (`subscription_portal_url`), und die Abrechnungsseite (`/billing`) verlinkt genau diese gespeicherte
+  Adresse, sie holt nie eine frische (`LEMON_SQUEEZY_API_KEY` dient nur dem Beenden eines Abos beim Löschen
+  des Kontos und ist in Produktion nicht gesetzt). **Ist die Adresse abgelaufen, führt "Abo verwalten" ins
+  Leere:** das ist am ersten echten Abo zu prüfen. Die feste Adresse des Portals ist
+  `https://<shop>.lemonsqueezy.com/billing` (der Kunde meldet sich dort per Link an die Mail an).
+
 ## Ende-zu-Ende-Tests
 
 Die Unit-Tests prüfen Bausteine, nicht, ob ein eingeloggter Nutzer durch das
@@ -419,6 +463,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `chat.spec.ts` | Frage senden und Antwort, nach dem Neuladen noch da; Textanhang landet in Tabelle UND Speicher, byte-gleich; ein Free-Konto sieht den Key-Hinweis vor dem Tippen |
 | `projects.spec.ts` | Projekt anlegen, Anweisungen speichern, Datei hochladen, Chat im Projekt, Löschen räumt Zeilen und Dateien im Speicher auf |
 | `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
+| `billing-webhook.spec.ts` | der Zahlungsweg mit **selbst signierten** Lemon-Squeezy-Ereignissen gegen die lokale Datenbank: Abo wird Pro, dieselbe Zustellung zweimal wirkt nur einmal, Kündigung und Ablauf, falsche Signatur wird abgewiesen, Konto-Übernahme gelingt nicht, Teilerstattung lässt Pro stehen |
 | `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
 
 ### Was bewusst NICHT geprüft wird
@@ -428,7 +473,9 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
   läuft der Test-Server im Dev-Modus). Dass die Antwort gut ist, prüft kein Test.
 - **Der Sprachmodus.** Die Web Speech API gibt es in einem automatisierten
   Chromium nicht verlässlich, und ein Mikrofon gibt es nicht.
-- **Zahlungen und Webhooks** (Lemon Squeezy), **Turnstile**, **Upstash/Redis**,
+- **Ein echtes Ereignis von Lemon Squeezy** (der Webhook selbst wird mit selbst
+  signierten Ereignissen geprüft, siehe oben), der Checkout, die Testmodus-Adresse
+  im Dashboard und die Preise inklusive Mehrwertsteuer. **Turnstile**, **Upstash/Redis**,
   die **Bestätigungsmail bei der Registrierung**, **OAuth** (Google/GitHub).
   Der lokale Stack hat die Bestätigungsmail ausgeschaltet (`supabase/config.toml`),
   und Produktion läuft laut Auth-Logs (06.10.2026) ebenfalls ohne. Die Mail des

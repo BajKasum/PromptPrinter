@@ -299,6 +299,136 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
         USER_ID
       );
     });
+
+    // Folgesitzung 2026-10-07: laut Doku feuert order_refunded auch bei einer TEILerstattung
+    // (Status "partial_refund"). Die nahm dem zahlenden Kunden bisher den Zugang.
+    it.each([
+      ["order_refunded", "orders", { status: "partial_refund", customer_id: 42 }],
+      [
+        "subscription_payment_refunded",
+        "subscription-invoices",
+        { subscription_id: 555, status: "partial_refund", customer_id: 42 },
+      ],
+    ])("%s mit Teilerstattung lässt Pro stehen, quittiert mit 200 und protokolliert es als ignoriert", async (event, type, attributes) => {
+      const res = await POST(req(body(event, { type, attributes }, { user_id: USER_ID })));
+
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ received: true, ignored: true });
+      expect(profileUpdate).not.toHaveBeenCalled();
+      expect(eventUpdate).toHaveBeenLastCalledWith(
+        { status: "ignored", detail: expect.stringContaining("Teilerstattung"), user_id: null },
+        "evt_1"
+      );
+    });
+  });
+
+  // Folgesitzung 2026-10-07: Ereignisse der Doku, die bisher ignoriert wurden.
+  describe("Pausieren und Fortsetzen", () => {
+    it("nimmt Pro weg, wenn das Abo pausiert wird (Auflösung über die Kundennummer, wie jeder Entzug)", async () => {
+      const res = await POST(
+        req(body("subscription_paused", { id: "sub_1", attributes: { status: "paused", customer_id: 42 } }))
+      );
+
+      expect(res.status).toBe(200);
+      expect(profileSelect).toHaveBeenCalledWith("subscription_customer_id", "42");
+      expect(profileUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ plan: "free", subscription_status: "paused" }),
+        USER_ID
+      );
+    });
+
+    it("gibt Pro zurück, wenn das Abo fortgesetzt wird", async () => {
+      await POST(
+        req(body("subscription_resumed", { id: "sub_1", attributes: { status: "active", customer_id: 42 } }, { user_id: USER_ID }))
+      );
+      await POST(
+        req(
+          body("subscription_unpaused", { id: "sub_1", attributes: { status: "active", customer_id: 42 } }, { user_id: USER_ID }),
+          undefined,
+          { "x-event-name": "subscription_unpaused" }
+        )
+      );
+
+      expect(profileUpdate).toHaveBeenCalledTimes(2);
+      for (const call of profileUpdate.mock.calls) {
+        expect(call[0]).toMatchObject({ plan: "pro", subscription_status: "active" });
+      }
+    });
+
+    it("eine gelungene Abbuchung nach einer gescheiterten (subscription_payment_recovered) gibt Pro", async () => {
+      await POST(
+        req(
+          body(
+            "subscription_payment_recovered",
+            { id: "invoice_9", type: "subscription-invoices", attributes: { subscription_id: 555, status: "paid", customer_id: 42 } },
+            { user_id: USER_ID }
+          )
+        )
+      );
+      expect(profileUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ plan: "pro", subscription_id: "555" }),
+        USER_ID
+      );
+    });
+
+    it("eine gescheiterte Abbuchung (subscription_payment_failed) ändert nichts und wird quittiert", async () => {
+      const res = await POST(
+        req(body("subscription_payment_failed", { type: "subscription-invoices", attributes: { status: "pending", customer_id: 42 } }, { user_id: USER_ID }))
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ received: true, ignored: true });
+      expect(profileUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  // Folgesitzung 2026-10-07: `test_mode` steht laut Doku am Objekt (Order, Abo, Rechnung). Es ändert
+  // keine Entscheidung (ein Testkauf schaltet Pro frei, so lässt sich der Weg prüfen), steht aber im
+  // Protokoll, damit man am ersten echten Ereignis sieht, ob es ein Test war.
+  describe("Testmodus im Protokoll", () => {
+    const appliedContext = () =>
+      logEvent.mock.calls.find((call) => call[0] === "billing.webhook_applied")?.[1] as Record<string, unknown>;
+
+    it("nennt testMode: true, schaltet aber trotzdem frei", async () => {
+      await POST(
+        req(body("subscription_created", { attributes: { status: "active", test_mode: true } }, { user_id: USER_ID }))
+      );
+      expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({ plan: "pro" }), USER_ID);
+      expect(appliedContext()).toMatchObject({ testMode: true });
+    });
+
+    it("nennt testMode: false für einen echten Kauf", async () => {
+      await POST(
+        req(body("subscription_created", { attributes: { status: "active", test_mode: false } }, { user_id: USER_ID }))
+      );
+      expect(appliedContext()).toMatchObject({ testMode: false });
+    });
+
+    it("lässt den Schlüssel weg, wenn die Nutzlast nichts sagt", async () => {
+      await POST(req(body("subscription_created", { attributes: { status: "active" } }, { user_id: USER_ID })));
+      expect(appliedContext().testMode).toBeUndefined();
+    });
+
+    it("steht auch an der Warnung für einen Kauf ohne Konto und am ignorierten Ereignis", async () => {
+      profileSelect.mockResolvedValue({ data: null });
+      await POST(
+        req(body("order_created", { type: "orders", attributes: { status: "paid", customer_id: 7, test_mode: true } }))
+      );
+      expect(logWarning).toHaveBeenCalledWith("billing.webhook_unmatched", expect.objectContaining({ testMode: true }));
+
+      await POST(req(body("customer_updated", { type: "customers", attributes: { test_mode: true } })));
+      expect(logEvent).toHaveBeenCalledWith(
+        "billing.webhook_ignored",
+        expect.objectContaining({ eventName: "customer_updated", testMode: true })
+      );
+    });
+
+    it("ein test_mode unerwarteten Typs weist das Ereignis nicht ab", async () => {
+      const res = await POST(
+        req(body("subscription_created", { attributes: { status: "active", test_mode: "ja" } }, { user_id: USER_ID }))
+      );
+      expect(res.status).toBe(200);
+      expect(profileUpdate).toHaveBeenCalled();
+    });
   });
 
   describe("Konto finden", () => {
