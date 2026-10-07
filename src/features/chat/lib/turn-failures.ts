@@ -12,7 +12,7 @@ import { fmt } from "@/shared/i18n/format";
 // U-4 (raw provider error text reaching the client) is handled by
 // describeLlmFailure below.
 export function describeValidationFailure(
-  issues: { code: string; path: (string | number)[] }[],
+  issues: { code: string; path: readonly PropertyKey[] }[],
   m: Messages["api"],
   intlTag: string
 ): string {

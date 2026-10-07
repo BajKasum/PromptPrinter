@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { z } from "zod";
+import { z } from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { safeNextPath } from "@/shared/lib/site-url";

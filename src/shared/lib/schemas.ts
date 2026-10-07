@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/shared/lib/zod";
 import {
   MAX_ASSISTANT_MESSAGE_CHARS,
   MAX_ATTACHMENTS_PER_MESSAGE,
@@ -41,7 +41,7 @@ export const chatMessageSchema = z.discriminatedUnion("role", [
     // `.catch` macht aus einem ungültigen Wert `undefined`, statt die ganze
     // Anfrage zu verwerfen (Nachrichten aus dieser Sitzung tragen kurz eine
     // clientseitige ID, siehe randomId()).
-    id: z.string().uuid().optional().catch(undefined),
+    id: z.guid().optional().catch(undefined),
     // Nur an der LETZTEN Nachricht einer Anfrage ausgewertet, ältere tragen
     // nichts mit (die Route ignoriert sie dort).
     attachments: z.array(attachmentUploadSchema).max(MAX_ATTACHMENTS_PER_MESSAGE).optional(),
@@ -56,10 +56,10 @@ export const chatRequestSchema = z.object({
   // Set once the conversation has been persisted; the client echoes it back on
   // every following turn so the route appends to the same row instead of
   // creating a new chat each time. Absent on the very first turn.
-  conversationId: z.string().uuid().optional(),
+  conversationId: z.guid().optional(),
   // Present when the chat refines a specific project's build packet (Code mode).
   // The route loads that project's context and links the conversation to it.
-  projectId: z.string().uuid().optional(),
+  projectId: z.guid().optional(),
   // Not a wall: /api/chat clamps an over-long transcript down to the newest
   // MAX_TRANSCRIPT_MESSAGES entries before it ever gets here, so exceeding this
   // is normalized away rather than rejected. See chat-limits.ts for why that
@@ -81,7 +81,7 @@ export const chatRequestSchema = z.object({
    * und die Konversation eingegrenzt, trifft also entweder die eigene Zeile
    * oder gar keine.
    */
-  replaceMessageId: z.string().uuid().optional(),
+  replaceMessageId: z.guid().optional(),
   /**
    * "Diese Nachricht bearbeiten" (Planpunkt C-2): die Zeilen-IDs, die durch
    * diesen Zug ueberholt sind — die alte Fassung der Frage und alles, was ihr
@@ -98,7 +98,7 @@ export const chatRequestSchema = z.object({
    * Konversation eingegrenzt, eine erfundene Liste trifft also hoechstens
    * eigene Zeilen desselben Chats.
    */
-  supersededMessageIds: z.array(z.string().uuid()).max(MAX_TRANSCRIPT_MESSAGES).optional(),
+  supersededMessageIds: z.array(z.guid()).max(MAX_TRANSCRIPT_MESSAGES).optional(),
   /**
    * "Diese Nachricht bearbeiten" mit Anhängen: die Zeilen-ID der Nachricht,
    * deren Anhänge die bearbeitete Fassung übernimmt.
@@ -109,7 +109,7 @@ export const chatRequestSchema = z.object({
    * dann, wie bei `supersededMessageIds`: scheitert der Anbieter-Aufruf, bleibt
    * die alte Nachricht samt ihren Anhängen unberührt.
    */
-  inheritAttachmentsFrom: z.string().uuid().optional(),
+  inheritAttachmentsFrom: z.guid().optional(),
 });
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

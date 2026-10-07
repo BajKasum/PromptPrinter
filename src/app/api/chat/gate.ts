@@ -23,6 +23,7 @@ import {
 import type { Messages } from "@/shared/i18n/messages/de";
 import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS, type Locale } from "@/shared/i18n/locales";
+import { responseIssues } from "@/shared/lib/zod";
 
 // Die Schritte 1 bis 2b von POST /api/chat: Sitzung, Body, Anhaenge. Jeder Schritt gibt ENTWEDER eine
 // Response zurueck (die Route antwortet damit sofort, Statuszeile und Text unveraendert gegenueber vor
@@ -98,7 +99,7 @@ export async function readTranscript(
   const parsed = chatRequestSchema.safeParse(clampStoredReplies(normalizeTranscript(body)));
   if (!parsed.success) {
     return problem(400, describeValidationFailure(parsed.error.issues, m, LOCALE_TAGS[locale].intl), {
-      issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
+      issues: responseIssues(parsed.error.issues),
     });
   }
   const input = parsed.data;

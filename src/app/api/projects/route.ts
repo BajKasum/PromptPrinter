@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z, responseIssues } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const parsed = createProjectSchema.safeParse(body);
   if (!parsed.success) {
     return problem(400, "Invalid request", {
-      issues: parsed.error.issues.map((i) => ({ path: i.path, message: i.message })),
+      issues: responseIssues(parsed.error.issues),
     });
   }
 
