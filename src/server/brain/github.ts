@@ -1,5 +1,6 @@
 import "server-only";
 
+import { optionalEnv } from "@/server/env-value";
 import { logEvent, logWarning } from "@/shared/lib/observability";
 
 // GitHub-Import für das Projekt-Gedächtnis.
@@ -224,8 +225,11 @@ function githubHeaders(): HeadersInit {
   };
   // Optional: hebt das Kontingent von 60/h auf 5000/h. Ohne Token
   // funktioniert alles, nur eben seltener (siehe Kopfkommentar).
-  if (process.env.GITHUB_TOKEN) {
-    headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  // optionalEnv: ein leer gesetztes Token oder ein Zeilenumbruch dahinter (beim
+  // Einfügen in Vercel mitgenommen) machte aus jedem Import ein "repo_unavailable".
+  const token = optionalEnv("GITHUB_TOKEN");
+  if (token) {
+    headers.authorization = `Bearer ${token}`;
   }
   return headers;
 }
@@ -250,7 +254,7 @@ function logQuota(res: Response): void {
   const remaining = Number(rawRemaining);
   if (!Number.isFinite(limit) || !Number.isFinite(remaining)) return;
   logEvent("brain.github_quota", {
-    authenticated: Boolean(process.env.GITHUB_TOKEN),
+    authenticated: Boolean(optionalEnv("GITHUB_TOKEN")),
     limit,
     remaining,
   });
@@ -282,7 +286,7 @@ async function githubJson<T>(url: string, signal?: AbortSignal): Promise<T> {
     // Fuer den Nutzer nur "in einer Stunde nochmal", fuer den Betreiber ein
     // Alarm: das Kontingent ist ein Betriebszustand, kein Nutzerfehler.
     if (exhausted) {
-      logWarning("brain.github_rate_limited", { authenticated: Boolean(process.env.GITHUB_TOKEN) });
+      logWarning("brain.github_rate_limited", { authenticated: Boolean(optionalEnv("GITHUB_TOKEN")) });
     }
     throw new GithubImportError(exhausted ? "repo_rate_limited" : "repo_not_found");
   }

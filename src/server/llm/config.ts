@@ -1,5 +1,6 @@
 import "server-only";
 
+import { optionalEnv } from "@/server/env-value";
 import type { ServerProvider } from "@/server/llm-failover";
 import type { LlmConfig, LlmMessage, LlmOverride } from "@/server/llm/types";
 
@@ -58,24 +59,35 @@ export function providerLabel(override: LlmOverride | undefined, serverProvider?
  * Anbieter faellt nicht still auf den anderen zurueck.
  */
 export function serverConfigFor(provider: ServerProvider): LlmConfig | null {
-  if (provider === "zai" && process.env.ZAI_API_KEY) {
-    return { provider: "zai", model: process.env.ZAI_MODEL ?? ZAI_DEFAULT_MODEL };
+  if (provider === "zai" && zaiApiKey()) {
+    return { provider: "zai", model: optionalEnv("ZAI_MODEL") ?? ZAI_DEFAULT_MODEL };
   }
-  if (provider === "gemini" && process.env.GEMINI_API_KEY) {
-    return { provider: "gemini", model: process.env.GEMINI_MODEL ?? GEMINI_DEFAULT_MODEL };
+  if (provider === "gemini" && geminiApiKey()) {
+    return { provider: "gemini", model: optionalEnv("GEMINI_MODEL") ?? GEMINI_DEFAULT_MODEL };
   }
   return null;
 }
 
 /** Which provider is configured, if any, also the display name for storage. */
 export function llmConfig(): LlmConfig | null {
-  if (process.env.ZAI_API_KEY) {
-    return { provider: "zai", model: process.env.ZAI_MODEL ?? ZAI_DEFAULT_MODEL };
+  if (zaiApiKey()) {
+    return { provider: "zai", model: optionalEnv("ZAI_MODEL") ?? ZAI_DEFAULT_MODEL };
   }
-  if (process.env.GEMINI_API_KEY) {
-    return { provider: "gemini", model: process.env.GEMINI_MODEL ?? GEMINI_DEFAULT_MODEL };
+  if (geminiApiKey()) {
+    return { provider: "gemini", model: optionalEnv("GEMINI_MODEL") ?? GEMINI_DEFAULT_MODEL };
   }
   return null;
+}
+
+// Die Server-Schlüssel, so wie sie an den Anbieter gehen. Leer und nur Leerzeichen
+// zählen als nicht gesetzt (env.ts und llm-failover.ts sehen es ebenso), und ein
+// Zeilenumbruch hinter dem eingefügten Schlüssel macht den Header nicht ungültig.
+export function zaiApiKey(): string | undefined {
+  return optionalEnv("ZAI_API_KEY");
+}
+
+export function geminiApiKey(): string | undefined {
+  return optionalEnv("GEMINI_API_KEY");
 }
 
 /**
@@ -98,7 +110,10 @@ export const ZAI_VISION_DEFAULT_MODEL = "glm-4.6v";
  * er wieder auf dem günstigen Modell.
  */
 export function zaiModelFor(textModel: string, messages: readonly LlmMessage[]): string {
-  return messages.some((m) => m.images?.length)
-    ? (process.env.ZAI_VISION_MODEL ?? ZAI_VISION_DEFAULT_MODEL)
-    : textModel;
+  return messages.some((m) => m.images?.length) ? zaiVisionModel() : textModel;
+}
+
+/** Das sehende Z.ai-Modell: `ZAI_VISION_MODEL`, sonst der Standard (auch bei leerem Wert). */
+export function zaiVisionModel(): string {
+  return optionalEnv("ZAI_VISION_MODEL") ?? ZAI_VISION_DEFAULT_MODEL;
 }

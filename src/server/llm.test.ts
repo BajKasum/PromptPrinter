@@ -1095,3 +1095,44 @@ describe("Failover auf Gemini", () => {
     await expect(result).resolves.toMatchObject({ text: "Fakten von Gemini", model: "gemini-3.5-flash" });
   });
 });
+
+// Folgesitzung 2026-10-07: ein beim Einfügen mitgenommener Zeilenumbruch hinter dem
+// Schlüssel machte den Authorization-Header ungültig (fetch wirft). Beide Z.ai-Wege
+// (Antwort am Stück und Stream) schicken den Schlüssel ohne Leerraum.
+describe("Z.ai-Schlüssel mit Leerraum", () => {
+  const message = [{ role: "user" as const, content: "hi" }];
+
+  it("chatComplete schickt ihn ohne Leerraum als Bearer", async () => {
+    vi.stubEnv("ZAI_API_KEY", "zk\n");
+    const fetchMock = vi.fn(async () => mockResponse(200, OK_BODY));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await chatComplete({ system: "sys", messages: message });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer zk");
+  });
+
+  it("chatCompleteStream schickt ihn ohne Leerraum als Bearer", async () => {
+    vi.stubEnv("ZAI_API_KEY", " zk \n");
+    const fetchMock = vi.fn(async () => streamResponse(200, sseBody("[DONE]")));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await collectStream(chatCompleteStream({ system: "sys", messages: message }));
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer zk");
+  });
+
+  it("chatComplete schickt ein leer gesetztes ZAI_MODEL nie als leeres Modell", async () => {
+    vi.stubEnv("ZAI_API_KEY", "zk");
+    vi.stubEnv("ZAI_MODEL", "");
+    const fetchMock = vi.fn(async () => mockResponse(200, OK_BODY));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await chatComplete({ system: "sys", messages: message });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string).model).toBe("glm-4.5-air");
+  });
+});

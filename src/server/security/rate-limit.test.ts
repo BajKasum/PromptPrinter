@@ -380,6 +380,48 @@ describe("getMonthlyQuotaUsage", () => {
   });
 });
 
+// reserveFailoverCall: das eigene Tagesbudget fuer Zuege auf dem Ausweich-Anbieter
+// (Betriebs-Audit M3). Bisher nur in llm-failover.test.ts als Attrappe getestet; die
+// Zahl selbst (Standard 200, LLM_FAILOVER_DAILY_CALLS) nie. Folgesitzung 2026-10-07.
+describe("reserveFailoverCall", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.doUnmock("@upstash/redis");
+    vi.resetModules();
+  });
+
+  async function withRedis(incr: ReturnType<typeof vi.fn>) {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
+    const redis = { incr, decr: vi.fn(), expire: vi.fn() };
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => redis } }));
+    vi.resetModules();
+    return await import("@/server/security/rate-limit");
+  }
+
+  it("erlaubt bis zum Standardbudget von 200 und sperrt danach", async () => {
+    vi.stubEnv("LLM_FAILOVER_DAILY_CALLS", undefined);
+    const atLimit = await withRedis(vi.fn().mockResolvedValue(200));
+    expect((await atLimit.reserveFailoverCall())?.allowed).toBe(true);
+    const over = await withRedis(vi.fn().mockResolvedValue(201));
+    expect((await over.reserveFailoverCall())?.allowed).toBe(false);
+  });
+
+  it("nimmt LLM_FAILOVER_DAILY_CALLS statt des Standards", async () => {
+    vi.stubEnv("LLM_FAILOVER_DAILY_CALLS", "5");
+    const { reserveFailoverCall } = await withRedis(vi.fn().mockResolvedValue(6));
+    expect((await reserveFailoverCall())?.allowed).toBe(false);
+  });
+
+  it("behandelt einen leeren, leerzeichenhaltigen oder unsinnigen Wert wie einen fehlenden (Standard 200), nie als 0", async () => {
+    for (const bad of ["", "   ", "keine-zahl", "0", "-3"]) {
+      vi.stubEnv("LLM_FAILOVER_DAILY_CALLS", bad);
+      const { reserveFailoverCall } = await withRedis(vi.fn().mockResolvedValue(199));
+      expect((await reserveFailoverCall())?.allowed, JSON.stringify(bad)).toBe(true);
+    }
+  });
+});
+
 // reserveServerKeyCall is the global circuit breaker from QA finding S-1,
 // step 4: a ceiling on the operator's own provider key per UTC day, whoever
 // runs it up. Same fresh-module-per-test pattern as above.
@@ -427,6 +469,25 @@ describe("reserveServerKeyCall", () => {
     vi.stubEnv("LLM_DAILY_CALL_BUDGET", "keine-zahl");
     const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(999));
     expect((await reserveServerKeyCall())?.allowed).toBe(true);
+  });
+
+  // Folgesitzung 2026-10-07: Number("") ist 0. Ein leer gesetztes Budget darf nicht
+  // "kein Aufruf erlaubt" heissen (die App antwortete dann jedem Pro-Nutzer mit "Tagesbudget
+  // aufgebraucht"), sondern den Standard.
+  it("treats an empty or blank budget like an unset one (default 1000), not as zero", async () => {
+    for (const blank of ["", "   "]) {
+      vi.stubEnv("LLM_DAILY_CALL_BUDGET", blank);
+      const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(999));
+      expect((await reserveServerKeyCall())?.allowed, JSON.stringify(blank)).toBe(true);
+    }
+  });
+
+  it("refuses a zero or negative budget value too, and uses the default instead", async () => {
+    for (const bad of ["0", "-5"]) {
+      vi.stubEnv("LLM_DAILY_CALL_BUDGET", bad);
+      const { reserveServerKeyCall } = await withRedis(vi.fn().mockResolvedValue(999));
+      expect((await reserveServerKeyCall())?.allowed, bad).toBe(true);
+    }
   });
 
   it("keys by UTC day and sets a cleanup expiry on the first call of that day", async () => {
