@@ -16,7 +16,6 @@ import {
   Loader2,
   Check,
   SunMoon,
-  type LucideIcon,
 } from "lucide-react";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
@@ -30,10 +29,11 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import type { PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
-import { cn, hslVar } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
 import { LanguagePreference } from "@/features/settings/components/language-preference";
+import { Field, InfoRow, SettingsCard } from "@/features/settings/components/settings-card";
 type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";
 
 export function SettingsWorkspace({
@@ -322,89 +322,3 @@ export function SettingsWorkspace({
     </>
   );
 }
-
-/* ─── Presentational pieces ─────────────────────────────────────────────── */
-
-function SettingsCard({
-  id,
-  Icon,
-  accent,
-  title,
-  description,
-  badge,
-  headerRight,
-  className,
-  children,
-}: {
-  /** Sprunganker, z. B. fuer den Key-Hinweis im Chat (/settings#api-keys). */
-  id?: string;
-  Icon: LucideIcon;
-  /** A design-token CSS variable name (e.g. "--accent"), not a literal color — see hslVar. */
-  accent: string;
-  title: string;
-  description: string;
-  badge?: string;
-  headerRight?: React.ReactNode;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      id={id}
-      className={cn(
-        "relative scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-surface-raised p-6 md:p-7",
-        className
-      )}
-    >
-      {/* top hairline highlight */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
-      {/* soft accent glow in the corner */}
-      <div
-        className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full opacity-[0.10] blur-3xl"
-        style={{ background: hslVar(accent) }}
-      />
-
-      <header className="mb-5 flex items-start gap-2.5">
-        <Icon
-          className="mt-0.5 h-[18px] w-[18px] shrink-0"
-          style={{ color: hslVar(accent) }}
-          strokeWidth={1.8}
-        />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
-          <p className="mt-0.5 text-[13px] text-secondary">{description}</p>
-        </div>
-        {badge ? (
-          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-tertiary">
-            {badge}
-          </span>
-        ) : (
-          headerRight
-        )}
-      </header>
-
-      {children}
-    </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <span className="block text-[13px] font-medium text-foreground/70">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="flex items-center justify-between py-2.5">
-      <span className="text-[13px] text-tertiary">{label}</span>
-      <span className={cn("text-[13px] text-foreground/85", mono && "font-mono text-foreground/70")}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
