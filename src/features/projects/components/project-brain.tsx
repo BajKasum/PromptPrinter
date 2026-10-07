@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Brain,
   ChevronRight,
-  Github,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { GithubIcon } from "@/shared/ui/github-icon";
 import { Mascot } from "@/shared/brand/mascot";
 import { useToast } from "@/shared/ui/toast";
 import { cn, relativeTime } from "@/shared/lib/utils";
@@ -224,7 +224,7 @@ export function ProjectBrainCard({
             htmlFor="brain-repo"
             className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
           >
-            <Github className="h-3.5 w-3.5" strokeWidth={1.8} />
+            <GithubIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
             {t.projects.brain.repoLabel}
           </label>
           <input
