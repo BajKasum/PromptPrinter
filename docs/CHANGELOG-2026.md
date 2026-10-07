@@ -11,6 +11,89 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+**Reste ohne Kasum (2026-10-07, PR #70 bis #84, Dependabot #50):** zwei Sitzungen, die erste
+erreichte bei Teil C das Nutzungslimit, die zweite prüfte alles Gemergte unabhängig nach (Webhook gegen
+die Doku, `optionalEnv`, die Schnitte Zeile für Zeile) und arbeitete weiter. Ausgangslage: `main` =
+`057a376`, Produktion `READY`, keine andere Sitzung lief.
+
+- **A, Dashboards (nur lesend, Kasums Chrome, nichts gespeichert, keine Geheimnisse gelesen).**
+  *Supabase* (Free): **kein eigener SMTP** (Standardversand, nach Supabases Doku nur an Adressen des
+  Projekt-Teams, 2 Mails je Stunde für alle), "Confirm email" **aus**, Vorlage "Reset password" =
+  **Supabase-Standard** (`{{ .ConfirmationURL }}`, die Vorlagen aus `supabase/templates/` sind nicht
+  eingefügt), Site URL `https://promptprinter.app`, eine Redirect-URL `https://promptprinter.app/**`.
+  Aus dem Code abgeleitet, nicht mit einem echten Ereignis belegt: der Standard-Link läuft über
+  `/auth/v1/verify` und den `code`-Weg von `/auth/callback`, die Seite "Neues Passwort" nimmt ihn an, nur
+  im Browser, der den Reset angefordert hat; das Nadelöhr ist der Versand. *Vercel* (Hobby): Speed
+  Insights ohne Messwerte (Desktop und Mobile, 7 Tage), in Production die vier `STRIPE_*` noch da, es
+  fehlen `ALERT_WEBHOOK_URL`, `GITHUB_TOKEN`, `GEMINI_API_KEY` (nur Namen gelesen, nichts entschlüsselt).
+  *Lemon Squeezy:* nicht angemeldet, nicht prüfbar (Testmodus oder Live, Webhook-URL, Preise brutto oder
+  netto bleiben offen).
+- **#70, neues Advisory vorweg.** `audit.yml` meldete GHSA-wq5f-xc86-pv6w (`sharp` < 0.35.5, CVSS 8.9,
+  librsvg): jeder Branch hatte einen roten `audit:gate`. Override auf `^0.35.5`; im Repo importiert
+  niemand `sharp`, es hängt an `next/image`.
+- **B, #72, leer gesetzte optionale Umgebungswerte.** `optionalEnv()` (`src/server/env-value.ts`): leer
+  und nur Leerzeichen sind nicht gesetzt. Angewendet auf `ZAI_MODEL`, `GEMINI_MODEL`, `ZAI_VISION_MODEL`,
+  die Server-Schlüssel, `GITHUB_TOKEN`, `ALERT_WEBHOOK_URL` und `siteUrl()`; die beiden Tagesbudgets waren
+  schon sicher. 28 Tests rot gegen den alten Code, 27 Mutationen gefangen.
+- **C, #71 und #51.** `GithubIcon` als eigene Komponente (Pfade unverändert aus lucide 0.474, ISC).
+  **#51 (`lucide-react` 1.x) bleibt offen**, denn "kein Symbol sichtbar geändert" lässt sich nicht
+  behaupten: die erste Sitzung rendert 70 genutzte Symbole beider Versionen und vergleicht Pixel (53
+  gleich, 8 kaum, **9 sichtbar anders**: `Menu`, `Moon`, `SunMoon`, `MessageSquare`, `Settings`, `Bookmark`,
+  `Building2`, `Sparkles`, `SkipForward`); die zweite vergleicht das Markup der 70 Symbole (**23** anders
+  gezeichnet). Dazu setzt 1.x `aria-hidden` standardmäßig. Entscheid ist Kasums.
+- **D, #73, Zahlungsweg (K3, Teil).** Webhook gegen die Lemon-Squeezy-Doku gehalten (in der zweiten
+  Sitzung erneut gelesen: drei Wiederholungen nach 5, 25 und 125 Sekunden, `order_refunded` bei voller **und**
+  teilweiser Erstattung, Status `partial_refund` bei Bestellung und Abo-Rechnung). Behoben: eine
+  Teilerstattung stufte auf Free zurück; `subscription_resumed`, `_paused`, `_unpaused` und
+  `subscription_payment_recovered` wurden ignoriert; `test_mode` steht jetzt im Protokoll. Browser-Test
+  `e2e/billing-webhook.spec.ts` mit selbst signierten Ereignissen (7 Tests). Zwei Mutationsbranches
+  (`test/e2e-webhook-mutation-a` und `-b`, ohne PR, "nicht mergen", bleiben bestehen) machten den Test in
+  der CI gezielt rot: A (fünf Schranken gebrochen) fünf von sieben, B (Schutz gegen fremde Kundennummer)
+  genau "Konto-Übernahme". **Nicht belegt:** ein echtes Ereignis, die Testmodus-Adresse, Preise inklusive
+  Mehrwertsteuer, ob `subscription_payment_refunded` auch bei Teilerstattung feuert (der Code behandelt
+  `partial_refund` an beiden Stellen gleich, vorsichtig).
+- **E, Dateien über 400 Zeilen** (je Datei: Test-Commit, dann der Schnitt mit unveränderten Tests,
+  Mutationen vor und nach dem Schnitt, Rebase-Merge, frische CI): `voice-bar.tsx` 403 auf 352 (#74),
+  `settings-workspace.tsx` 410 auf 324 (#76), `attachment-store.ts` 422 auf 299 (#77), `sidebar.tsx` 444
+  auf 339 (#79), `github.ts` 501 auf 366 (#80), `api-keys.tsx` 496 auf 324 (#82), `rate-limit.ts` 504 auf
+  328 (#83). `hero.tsx` (590) bleibt unangetastet (Nicht-anfassen-Liste); sein Eintrag in
+  `tests/guards/file-size.test.ts` ist der letzte. Bei `rate-limit.ts` (Ratenlimit, Kontingent,
+  Tagesbudgets) hielten vorab 18 neue Tests fest, was kein Test sah (`readDailyServerKeyUsage` gar nicht,
+  die einmaligen Warnsignale, `reserveFailoverCall` im Detail, die Tagesgrenze in UTC, Redis nur bei URL
+  **und** Token); Reihenfolge der Schranken und Rückgabe der Reservierungen sind unverändert (ein
+  Zeilenvergleich vor und nach dem Schnitt zeigt als einzige Änderung `export` vor `const redis`). Der
+  lange Kommentar zu `rateLimitKey` stand dort über dem falschen Abschnitt und steht jetzt über seiner
+  Funktion. Mutationen: 7 (Seitenleiste), 18 + 18 (`api-keys`), 23 + 25 (`github`), 30 + 34
+  (`rate-limit`), alle gefangen, die Dateien aus einmaligen Sicherungen per Hash wiederhergestellt.
+  **Zeitfresser gefunden:** jede Testdatei fährt eine jsdom-Umgebung hoch (rund 90 Sekunden je Lauf auf
+  diesem Rechner); Servercode läuft mit `vitest --environment=node` in 2 Sekunden.
+  **Konflikte im Größen-Guard:** zwei PRs, die benachbarte Zeilen streichen, kollidieren nach dem ersten
+  Merge, und GitHub verweigert "Rebase and merge" für einen Branch mit Merge-Commit oder Konflikt (#75
+  und #81 mussten als `-v2`-Branch per Cherry-Pick neu eröffnet werden, #76 und #82). Künftig: solche PRs
+  nacheinander mergen und den nächsten Branch erst danach anlegen, oder den Guard erst am Ende bereinigen.
+- **F, zod 4 (#78, #84, löst Dependabot #50 ab).** #78 nagelt 356 Fälle fest (Statuscode und die ganze
+  Antwort je Eingabe, aufgenommen gegen zod 3.25.76). Das bloße Anheben auf 4.6.5 gab **173
+  Abweichungen**: **11** durch strenge UUIDs (zod 4 prüft Version und Variante, zod 3 nahm jede
+  8-4-4-4-12-Form; eine lockere `conversationId` wäre mit 400 abgewiesen worden), **2** durch
+  Zeitstempel im Webhook (zod 4 verlangt Sekunden und `+02:00`, zod 3 nahm `+0200` und Minutengenauigkeit;
+  ein abgewiesener Webhook kostet nach drei Wiederholungen die bezahlte Zustellung), **158** nur im
+  Wortlaut von `issues[].message`, **2** durch die Vereinigung im API-Key-Endpunkt (zod 3 meldete mehrere
+  weiche Fehler einzeln mit eigenem Pfad). Gegenmaßnahmen: `z.guid()`, der Ausdruck von zod 3.25.76 für den
+  Zeitstempel, `src/shared/lib/zod.ts` (Meldungsfunktion mit den zod-3-Texten, `responseIssues()` für
+  die 400-Antworten) und ein Guard (`tests/guards/zod-import.test.ts`, `z` nur von dort). **Kein
+  bestehender Test geändert**, alle 362 Fest-Tests unverändert grün, 48 Mutationen gefangen. Rückbau, falls
+  die neuen Texte gewollt sind: `zod.ts` löschen, Importe zurück auf `"zod"`, Fälle neu aufnehmen
+  (`RECORD_VALIDATION=1`); das wäre eine sichtbare Änderung der Antworten und gehört Kasum. Nebenfund:
+  `src/shared/lib/project-brain.ts` enthält ein rohes NUL-Byte in einem String-Literal, Git behandelt die
+  Datei deshalb als binär.
+- **Fehler und Korrekturen.** Im Commit-Text von #80 steht "152 Testdateien (2236 Tests)", das war vorab
+  eingesetzt und ist falsch (gemessen 158 und 2588); der Commit ist veröffentlicht (kein Force-Push), der
+  PR-Text enthält die Korrektur. Ein Kommentar in der Webhook-Route nennt bei einem Datenbankfehler noch
+  "500", die Route antwortet mit 503. Beim Pushen neuer Branches lieferte GitHub rund 20 Minuten lang
+  "Internal Server Error" (die Status-Seite meldete nichts), danach ging es ohne Änderung durch.
+- **Rechner:** `npm run test` lief lokal teils mit Zeitfenster-Fehlern (5-Sekunden-Frist kalter jsdom-Dateien),
+  deshalb `--testTimeout=60000 --maxWorkers=4`; die CI war immer grün.
+
 **Abschluss und Dependabot-Durchgang (2026-10-06 abends, PR #66, #67, Dependabot #44, #45, #46,
 #49, #56):** Ziel war ein sauberer, grüner, deployter `main`. Jeder Dependabot-PR wurde vor dem
 Merge von Dependabot auf den neuen `main` rebased (`@dependabot rebase`), danach lief die CI

@@ -6,12 +6,11 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 [SETUP.md](docs/SETUP.md) (Setup, Deploy-Checkliste, Struktur), [DESIGN.md](docs/DESIGN.md)
 und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 
-## IST-Zustand (Stand 2026-10-06)
+## IST-Zustand (Stand 2026-10-07)
 
-Gegenwart, keine Historie. Der Verlauf steht datiert in
-[docs/CHANGELOG-2026.md](docs/CHANGELOG-2026.md): wer wissen will, *warum* etwas so
-ist (Entscheidungen, Messungen, entfernte Features), sucht dort nach dem Stichwort.
-Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
+Gegenwart, keine Historie. Der Verlauf steht datiert in [docs/CHANGELOG-2026.md](docs/CHANGELOG-2026.md)
+(*warum* etwas so ist: Entscheidungen, Messungen, entfernte Features; nach dem Stichwort suchen). Das
+Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 
 **Produkt**
 
@@ -61,9 +60,8 @@ Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`.
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role).
-  Migrationen 0001 bis 0046 in `supabase/migrations/`, alle in Produktion
-  angewendet (0001 wurde von Hand eingespielt und fehlt in der Migrationsliste der
-  Datenbank).
+  Migrationen 0001 bis 0046 in `supabase/migrations/`, alle in Produktion angewendet
+  (0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, aber
@@ -77,9 +75,9 @@ Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   2, 3, 4, 6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide
   Texte mit. Kein Env-Wert, kein Dashboard-Schalter. Kosten, Grenzen, Prüfung:
   `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
-- **Qualität:** das Gate (siehe "Befehle"), rund 130 Testdateien, Guards in
+- **Qualität:** das Gate (siehe "Befehle"), rund 160 Testdateien, Guards in
   `tests/guards/` (Schichten, Routen, Cookies, SEO, Kontrast, Node-Version,
-  Mail-Vorlagen, Dependabot), Browser-Smoketests `e2e/` gegen einen lokalen
+  Mail-Vorlagen, Dependabot, zod-Import), Browser-Smoketests `e2e/` gegen einen lokalen
   Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch), `e2e.yml`, `docker.yml`,
   `audit.yml` (täglich, meldet per Issue). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
@@ -88,21 +86,22 @@ Das Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 **Offen** (Quellen: Vault, `02 Projekte/PromptPrinter/`: Betriebs-Audit 2026-10-04,
 Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 
-- **Kritisch, nicht Teil der M-Punkte:** K1 Backup und Tarife (Supabase Free, Vercel),
-  K2 `ALERT_WEBHOOK_URL`, K3 der Bezahlweg lief nie mit einem echten Ereignis.
-- **Wartet auf Kasum:** `GITHUB_TOKEN` setzen, bezahlter `GEMINI_API_KEY`, die vier
-  `STRIPE_*`-Variablen in Vercel löschen, Entscheid zum Fehler-Tracker; **Auth-Mails**:
-  Dashboard nachsehen (Klickliste in SETUP.md), Mail-Anbieter buchen, DNS, erst dann
-  "Confirm email" erwägen; "Dependabot security updates" in den Repo-Einstellungen; die
-  offenen Dependabot-PRs durchsehen; die `braces`-Ausnahme in `scripts/audit-gate.mjs`
-  (läuft am 2026-11-04 ab, das tägliche Issue warnt ab dem 28.10.).
-- **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO),
-  Sprachmodus (Browser-Dienste von Google/Microsoft), der Satz zum Ausweich-Anbieter,
-  Speed Insights (Aufbewahrungsdauer bei Vercel nicht belegt), jeder neue Empfänger
-  (Mail-Anbieter, Fehler-Tracker).
-- **Speed Insights:** Messwerte im Dashboard noch nicht gesehen (braucht echte Besuche).
-- **Über 400 Zeilen** (Liste mit Obergrenzen: `tests/guards/file-size.test.ts`): `hero.tsx`,
-  `rate-limit.ts`, `github.ts`, `api-keys.tsx`, `sidebar.tsx` und drei kleinere.
+- **Kritisch, nicht Teil der M-Punkte:** K1 Backup und Tarife (Supabase Free, Vercel Hobby),
+  K2 `ALERT_WEBHOOK_URL`, K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
+  signierten Ereignissen belegt (#73), ein echtes Ereignis steht aus.
+- **Wartet auf Kasum:** `GITHUB_TOKEN`, bezahlter `GEMINI_API_KEY`, die vier `STRIPE_*`-Variablen
+  in Vercel löschen, Entscheid zum Fehler-Tracker; **Auth-Mails** (Befund 2026-10-07 im Changelog:
+  kein eigener SMTP, "Confirm email" aus, Standard-Vorlage): Mail-Anbieter buchen, DNS, Vorlagen aus
+  `supabase/templates/` einfügen; **Lemon Squeezy** nachsehen (Testmodus oder Live, Webhook-URL,
+  Preise brutto oder netto); "Dependabot security updates" einschalten; Entscheid zu #51
+  (`lucide-react` 1.x, 23 von 70 Symbolen anders gezeichnet) und #24 (Key-Assistent); die
+  `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
+- **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
+  (Google/Microsoft), der Satz zum Ausweich-Anbieter, Speed Insights (Aufbewahrung bei Vercel
+  nicht belegt), jeder neue Empfänger (Mail-Anbieter, Fehler-Tracker).
+- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche).
+- **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste), Obergrenzen in
+  `tests/guards/file-size.test.ts`.
 
 ## Was ist PromptPrinter?
 
@@ -273,6 +272,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
 | Datei in `src/server/` | `import "server-only"` |
+| Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3, `zod-import.test.ts`) |
 | Mail-Vorlage | `supabase/templates/`, Link über `/auth/callback`; im Dashboard neu einfügen |
 | Node-Version ändern | alle Stellen, siehe [SETUP.md](docs/SETUP.md), "Node-Version" |
 
