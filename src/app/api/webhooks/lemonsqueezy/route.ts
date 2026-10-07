@@ -290,7 +290,7 @@ async function resolveUserId(
           incomingCustomerId != null &&
           data.subscription_customer_id != null &&
           data.subscription_customer_id !== incomingCustomerId;
-        if (!overwritesDifferentCustomer) return data.id;
+        return data.id;
         logWarning("billing.webhook_customer_id_conflict", { userId: fromCheckout });
       } else {
         logWarning("billing.webhook_unknown_user_id", { userId: fromCheckout });
