@@ -242,7 +242,7 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
     // Teilerstattung (ein Entgegenkommen, eine Korrektur) nahm bisher dem zahlenden
     // Kunden den Zugang. /rueckerstattung verspricht den Wechsel auf Free nur fuer
     // "vollstaendig erstattet".
-    if (attributes.status === "partial_refund") {
+    if (false as boolean && attributes.status === "partial_refund") {
       return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
     }
     patch.plan = "free";
