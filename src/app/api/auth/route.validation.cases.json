@@ -1,0 +1,1432 @@
+[
+  {
+    "name": "Rumpf ist kein JSON",
+    "body": null,
+    "raw": "kein json",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "Rumpf ist leer",
+    "body": null,
+    "raw": "",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "Rumpf ist ein Array",
+    "body": [],
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received array"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist null",
+    "body": null,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist eine Zahl",
+    "body": 5,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist ein Text",
+    "body": "x",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received string"
+        }
+      ]
+    }
+  },
+  {
+    "name": "leeres Objekt",
+    "body": {},
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "action"
+          ],
+          "message": "Invalid discriminator value. Expected 'sign-in' | 'sign-up' | 'resend' | 'reset-password'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Aktion unbekannt",
+    "body": {
+      "action": "nope"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "action"
+          ],
+          "message": "Invalid discriminator value. Expected 'sign-in' | 'sign-up' | 'resend' | 'reset-password'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Aktion ist eine Zahl",
+    "body": {
+      "action": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "action"
+          ],
+          "message": "Invalid discriminator value. Expected 'sign-in' | 'sign-up' | 'resend' | 'reset-password'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Aktion ist null",
+    "body": {
+      "action": null
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "action"
+          ],
+          "message": "Invalid discriminator value. Expected 'sign-in' | 'sign-up' | 'resend' | 'reset-password'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Aktion in Grossbuchstaben",
+    "body": {
+      "action": "SIGN-IN",
+      "email": "du@example.com",
+      "password": "hunter2hunter2"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "action"
+          ],
+          "message": "Invalid discriminator value. Expected 'sign-in' | 'sign-up' | 'resend' | 'reset-password'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: nur die Aktion",
+    "body": {
+      "action": "sign-in"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Required"
+        },
+        {
+          "path": [
+            "password"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: gueltig",
+    "body": {
+      "action": "sign-in",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "turnstileToken": "tok"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "sign-in: E-Mail ist eine Zahl",
+    "body": {
+      "action": "sign-in",
+      "email": 5,
+      "password": "x"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: Passwort ist eine Zahl",
+    "body": {
+      "action": "sign-in",
+      "email": "a@b.ch",
+      "password": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "password"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: Passwort leer",
+    "body": {
+      "action": "sign-in",
+      "email": "a@b.ch",
+      "password": ""
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "password"
+          ],
+          "message": "String must contain at least 1 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: Passwort mit 256 Zeichen",
+    "body": {
+      "action": "sign-in",
+      "email": "a@b.ch",
+      "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "sign-in: Passwort mit 257 Zeichen",
+    "body": {
+      "action": "sign-in",
+      "email": "a@b.ch",
+      "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "password"
+          ],
+          "message": "String must contain at most 256 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: unbekannte Felder werden ignoriert",
+    "body": {
+      "action": "sign-in",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "extra": 1
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "sign-in: turnstileToken ist eine Zahl",
+    "body": {
+      "action": "sign-in",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "turnstileToken": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "turnstileToken"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: turnstileToken mit 4096 Zeichen",
+    "body": {
+      "action": "sign-in",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "turnstileToken": "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "sign-in: turnstileToken mit 4097 Zeichen",
+    "body": {
+      "action": "sign-in",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "turnstileToken": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "turnstileToken"
+          ],
+          "message": "String must contain at most 4096 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-in: turnstileToken null",
+    "body": {
+      "action": "sign-in",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "turnstileToken": null
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "turnstileToken"
+          ],
+          "message": "Expected string, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-up: gueltig",
+    "body": {
+      "action": "sign-up",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "next": "/chats/new"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "session": true
+    }
+  },
+  {
+    "name": "sign-up: Passwort mit 9 Zeichen",
+    "body": {
+      "action": "sign-up",
+      "email": "a@b.ch",
+      "password": "xxxxxxxxx"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "password"
+          ],
+          "message": "String must contain at least 10 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-up: Passwort mit 10 Zeichen",
+    "body": {
+      "action": "sign-up",
+      "email": "a@b.ch",
+      "password": "xxxxxxxxxx"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Dieses Passwort ist zu bekannt und leicht zu erraten. Bitte wähle ein anderes.",
+      "kind": "weak-password",
+      "reason": "common"
+    }
+  },
+  {
+    "name": "sign-up: Passwort mit 256 Zeichen",
+    "body": {
+      "action": "sign-up",
+      "email": "a@b.ch",
+      "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Dieses Passwort ist zu bekannt und leicht zu erraten. Bitte wähle ein anderes.",
+      "kind": "weak-password",
+      "reason": "common"
+    }
+  },
+  {
+    "name": "sign-up: Passwort mit 257 Zeichen",
+    "body": {
+      "action": "sign-up",
+      "email": "a@b.ch",
+      "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "password"
+          ],
+          "message": "String must contain at most 256 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-up: next ist eine Zahl",
+    "body": {
+      "action": "sign-up",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "next": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "next"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "sign-up: next mit 512 Zeichen",
+    "body": {
+      "action": "sign-up",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "next": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "session": true
+    }
+  },
+  {
+    "name": "sign-up: next mit 513 Zeichen",
+    "body": {
+      "action": "sign-up",
+      "email": "du@example.com",
+      "password": "hunter2hunter2",
+      "next": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "next"
+          ],
+          "message": "String must contain at most 512 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "resend: gueltig",
+    "body": {
+      "action": "resend",
+      "email": "du@example.com"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "resend: ohne E-Mail",
+    "body": {
+      "action": "resend"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "resend: next ist ein Objekt",
+    "body": {
+      "action": "resend",
+      "email": "a@b.ch",
+      "next": {}
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "next"
+          ],
+          "message": "Expected string, received object"
+        }
+      ]
+    }
+  },
+  {
+    "name": "reset-password: gueltig",
+    "body": {
+      "action": "reset-password",
+      "email": "du@example.com"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "reset-password: ohne E-Mail",
+    "body": {
+      "action": "reset-password"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "reset-password: E-Mail ist null",
+    "body": {
+      "action": "reset-password",
+      "email": null
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Expected string, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \" a@b.ch \"",
+    "body": {
+      "action": "reset-password",
+      "email": " a@b.ch "
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"A@B.CH\"",
+    "body": {
+      "action": "reset-password",
+      "email": "A@B.CH"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"kein-mail\"",
+    "body": {
+      "action": "reset-password",
+      "email": "kein-mail"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"@b.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "@b.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.c\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.c"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.co\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.co"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.museum\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.museum"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"ä@b.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "ä@b.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a b@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a b@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a..b@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a..b@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \".a@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": ".a@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a.@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a.@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a+tag@sub.c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a+tag@sub.c.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b..ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b..ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@-b.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@-b.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b-.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b-.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b_c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b_c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@bücher.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@bücher.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.xn--p1ai\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.xn--p1ai"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.c0m\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.c0m"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.ch.\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.ch."
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@[127.0.0.1]\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@[127.0.0.1]"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"\\\"a b\\\"@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "\"a b\"@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@localhost\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@localhost"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a'b@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a'b@c.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a,b@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a,b@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a;b@c.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a;b@c.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.ch,c@d.ch\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.ch,c@d.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"name@sub.domain.example.org\"",
+    "body": {
+      "action": "reset-password",
+      "email": "name@sub.domain.example.org"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"aaaaaaaaaaaaaaaaaa…(69)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"aaaaaaaaaaaaaaaaaa…(70)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a@bbbbbbbbbbbbbbbb…(68)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a@bbbbbbbbbbbbbbbb…(69)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"aaaaaaaaaaaaaaaaaa…(245)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"aaaaaaaaaaaaaaaaaa…(253)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbb.ch"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"aaaaaaaaaaaaaaaaaa…(257)\"",
+    "body": {
+      "action": "reset-password",
+      "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbb.ch"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "String must contain at most 254 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "E-Mail: \"\\ta@b.ch\\n\"",
+    "body": {
+      "action": "reset-password",
+      "email": "\ta@b.ch\n"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "E-Mail: \"a@b.ch\\u0000\"",
+    "body": {
+      "action": "reset-password",
+      "email": "a@b.ch\u0000"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "email"
+          ],
+          "message": "Invalid email"
+        }
+      ]
+    }
+  }
+]

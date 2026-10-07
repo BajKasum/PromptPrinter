@@ -1,0 +1,1396 @@
+[
+  {
+    "name": "POST: Rumpf ist kein JSON",
+    "method": "POST",
+    "body": null,
+    "raw": "kein json",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "POST: Rumpf ist leer",
+    "method": "POST",
+    "body": null,
+    "raw": "",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "POST: Rumpf ist ein Array",
+    "method": "POST",
+    "body": [],
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: Rumpf ist null",
+    "method": "POST",
+    "body": null,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: Rumpf ist eine Zahl",
+    "method": "POST",
+    "body": 5,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: leeres Objekt",
+    "method": "POST",
+    "body": {},
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: apiKey fehlt, anderes Feld",
+    "method": "POST",
+    "body": {
+      "foo": 1
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: apiKey ist eine Zahl",
+    "method": "POST",
+    "body": {
+      "apiKey": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: apiKey ist null",
+    "method": "POST",
+    "body": {
+      "apiKey": null
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: apiKey leer",
+    "method": "POST",
+    "body": {
+      "apiKey": ""
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "apiKey"
+          ],
+          "message": "Key darf nicht leer sein"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: apiKey nur Leerzeichen",
+    "method": "POST",
+    "body": {
+      "apiKey": "     "
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "apiKey"
+          ],
+          "message": "Key darf nicht leer sein"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: apiKey mit 300 Zeichen",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-ant-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST: apiKey mit 301 Zeichen",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-ant-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "apiKey"
+          ],
+          "message": "String must contain at most 300 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: Anthropic-Key",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-ant-api03-abcdefghijklmnop"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST: OpenAI-Key",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-proj-abcdefghijklmnopqrstuvwxyz"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST: Gemini-Key",
+    "method": "POST",
+    "body": {
+      "apiKey": "AIzaSyabcdefghijklmnopqrstuvwxyz0123456"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST: Key mit unbekanntem Format",
+    "method": "POST",
+    "body": {
+      "apiKey": "irgendwas-12345"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Konnte den Anbieter nicht erkennen. Nutze die erweiterte Option für andere Anbieter (z. B. Z.ai, DeepSeek, Groq).",
+      "kind": "unknownProvider"
+    }
+  },
+  {
+    "name": "POST: Key mit Leerzeichen am Rand wird getrimmt",
+    "method": "POST",
+    "body": {
+      "apiKey": "  sk-ant-api03-abcdefghijklmnop  "
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST: zusaetzliches Feld provider (strict)",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-ant-api03-abcdefghijklmnop",
+      "provider": "anthropic"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: zusaetzliches unbekanntes Feld (strict)",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-ant-api03-abcdefghijklmnop",
+      "extra": true
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'extra'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST: zwei zusaetzliche Felder (strict)",
+    "method": "POST",
+    "body": {
+      "apiKey": "sk-ant-api03-abcdefghijklmnop",
+      "a": 1,
+      "b": 2
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'a', 'b'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: gueltig",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: provider custom ohne weitere Felder",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "k"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: Name fehlt",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: Modell fehlt",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl fehlt",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: Name leer",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: Name mit 60 Zeichen",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: Name mit 61 Zeichen",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: Modell leer",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": ""
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: Modell mit 100 Zeichen",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: Modell mit 101 Zeichen",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: apiKey leer",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "apiKey"
+          ],
+          "message": "Key darf nicht leer sein"
+        },
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: apiKey mit 301 Zeichen",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "apiKey"
+          ],
+          "message": "String must contain at most 300 character(s)"
+        },
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: unbekanntes Feld wird ignoriert",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6",
+      "extra": true
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: provider ist ein anderer Wert",
+    "method": "POST",
+    "body": {
+      "provider": "other",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: label und Modell leer",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": ""
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://api.example.test/v1/chat\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://api.example.test/v1/chat",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"http://api.example.test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "http://api.example.test",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"http://localhost:3000\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "http://localhost:3000",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"http://127.0.0.1:8080/v1\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://[::1]/v1\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://[::1]/v1",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"ftp://x.test/a\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "ftp://x.test/a",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"file:///etc/passwd\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "file:///etc/passwd",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"javascript:alert(1)\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "javascript:alert(1)",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"data:text/plain;base64,QQ==\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "data:text/plain;base64,QQ==",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"mailto:a@b.ch\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "mailto:a@b.ch",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"nicht-url\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "nicht-url",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"//x.test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "//x.test",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https:/x.test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https:/x.test",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https:x.test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https:x.test",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"x.test/path\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "x.test/path",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x.test:99999\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x.test:99999",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://user:pass@x.test/\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://user:pass@x.test/",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \" https://x.test \"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": " https://x.test ",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"HTTPS://X.TEST\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "HTTPS://X.TEST",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x .test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x .test",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x.test/a b\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x.test/a b",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://bücher.ch/v1\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://bücher.ch/v1",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://xn--bcher-kva.ch\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://xn--bcher-kva.ch",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x_y.test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x_y.test",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://-x.test\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://-x.test",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x.test.\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x.test.",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x.test?q=1#f\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x.test?q=1#f",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://aaaaaaaaaaaa…(263)\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.test",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x.test/ppppp…(295)\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x.test/pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+      "model": "glm-4.6"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "POST custom: baseUrl \"https://x.test/ppppp…(305)\"",
+    "method": "POST",
+    "body": {
+      "provider": "custom",
+      "apiKey": "sk-test-key",
+      "label": "Z.ai",
+      "baseUrl": "https://x.test/pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+      "model": "glm-4.6"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'provider', 'label', 'baseUrl', 'model'"
+        }
+      ]
+    }
+  },
+  {
+    "name": "PATCH: Rumpf ist kein JSON",
+    "method": "PATCH",
+    "body": null,
+    "raw": "kein json",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "PATCH: leeres Objekt",
+    "method": "PATCH",
+    "body": {},
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  },
+  {
+    "name": "PATCH: provider ist eine Zahl",
+    "method": "PATCH",
+    "body": {
+      "provider": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  },
+  {
+    "name": "PATCH: provider ist null",
+    "method": "PATCH",
+    "body": {
+      "provider": null
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  },
+  {
+    "name": "PATCH: provider unbekannt",
+    "method": "PATCH",
+    "body": {
+      "provider": "x"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  },
+  {
+    "name": "PATCH: provider in Grossbuchstaben",
+    "method": "PATCH",
+    "body": {
+      "provider": "GEMINI"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  },
+  {
+    "name": "PATCH: provider gueltig (gespeichert)",
+    "method": "PATCH",
+    "body": {
+      "provider": "gemini"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "PATCH: provider custom",
+    "method": "PATCH",
+    "body": {
+      "provider": "custom"
+    },
+    "status": 200,
+    "response": {
+      "ok": true
+    }
+  },
+  {
+    "name": "PATCH: provider mit Leerzeichen",
+    "method": "PATCH",
+    "body": {
+      "provider": " gemini"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  },
+  {
+    "name": "PATCH: Rumpf ist ein Array",
+    "method": "PATCH",
+    "body": [],
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Unbekannter Provider."
+    }
+  }
+]

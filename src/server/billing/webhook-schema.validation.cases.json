@@ -1,0 +1,1858 @@
+[
+  {
+    "name": "leeres Objekt",
+    "body": {},
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta"
+          ],
+          "message": "Required"
+        },
+        {
+          "path": [
+            "data"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "meta und data leer",
+    "body": {
+      "meta": {},
+      "data": {}
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "event_name"
+          ],
+          "message": "Required"
+        },
+        {
+          "path": [
+            "data",
+            "id"
+          ],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist ein Array",
+    "body": [],
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received array"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist null",
+    "body": null,
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist ein Text",
+    "body": "x",
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received string"
+        }
+      ]
+    }
+  },
+  {
+    "name": "nur meta",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "nur data",
+    "body": {
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "event_name leer",
+    "body": {
+      "meta": {
+        "event_name": ""
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "event_name"
+          ],
+          "message": "String must contain at least 1 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "event_name mit 100 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "event_name mit 101 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "event_name"
+          ],
+          "message": "String must contain at most 100 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "event_name ist eine Zahl",
+    "body": {
+      "meta": {
+        "event_name": 5
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "event_name"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "data.id ist eine Zahl",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": 9001
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x"
+        },
+        "data": {
+          "id": "9001"
+        }
+      }
+    }
+  },
+  {
+    "name": "data.id ist ein Text",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": "sub_9001"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x"
+        },
+        "data": {
+          "id": "sub_9001"
+        }
+      }
+    }
+  },
+  {
+    "name": "data.id fehlt",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {}
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "id"
+          ],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "data.id ist ein Objekt",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": {}
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "id"
+          ],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "data.id ist null",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": null
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "id"
+          ],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "data.id ist ein Wahrheitswert",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": true
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "id"
+          ],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "data.type mit 101 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": "1",
+        "type": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "type"
+          ],
+          "message": "String must contain at most 100 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_data.user_id \"9b2f1f7e-3c1a-4d5e-8f10-2a6b7c8d9e0f\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": "9b2f1f7e-3c1a-4d5e-8f10-2a6b7c8d9e0f"
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x",
+          "custom_data": {
+            "user_id": "9b2f1f7e-3c1a-4d5e-8f10-2a6b7c8d9e0f"
+          }
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "custom_data.user_id \"11111111-2222-3333-4444-555555555555\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": "11111111-2222-3333-4444-555555555555"
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x",
+          "custom_data": {
+            "user_id": "11111111-2222-3333-4444-555555555555"
+          }
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "custom_data.user_id \"x\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": "x"
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "custom_data",
+            "user_id"
+          ],
+          "message": "Invalid uuid"
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_data.user_id \"\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": ""
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "custom_data",
+            "user_id"
+          ],
+          "message": "Invalid uuid"
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_data.user_id 5",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": 5
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "custom_data",
+            "user_id"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_data.user_id null",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": null
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "custom_data",
+            "user_id"
+          ],
+          "message": "Expected string, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_data.user_id \"9b2f1f7e-3c1a-4d5e-0f10-2a6b7c8d9e0f\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": "9b2f1f7e-3c1a-4d5e-0f10-2a6b7c8d9e0f"
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x",
+          "custom_data": {
+            "user_id": "9b2f1f7e-3c1a-4d5e-0f10-2a6b7c8d9e0f"
+          }
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "custom_data.user_id \"00000000-0000-0000-0000-000000000000\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": "00000000-0000-0000-0000-000000000000"
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x",
+          "custom_data": {
+            "user_id": "00000000-0000-0000-0000-000000000000"
+          }
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "custom_data.user_id \"9B2F1F7E-3C1A-4D5E-8F10-2A6B7C8D9E0F\"",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "user_id": "9B2F1F7E-3C1A-4D5E-8F10-2A6B7C8D9E0F"
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x",
+          "custom_data": {
+            "user_id": "9B2F1F7E-3C1A-4D5E-8F10-2A6B7C8D9E0F"
+          }
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "custom_data ohne user_id",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": {
+          "anderes": 1
+        }
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x",
+          "custom_data": {
+            "anderes": 1
+          }
+        },
+        "data": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  {
+    "name": "custom_data ist ein Text",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": "x"
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "custom_data"
+          ],
+          "message": "Expected object, received string"
+        }
+      ]
+    }
+  },
+  {
+    "name": "custom_data ist null",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "custom_data": null
+      },
+      "data": {
+        "id": "1"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "meta",
+            "custom_data"
+          ],
+          "message": "Expected object, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "status mit 50 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "status": "ssssssssssssssssssssssssssssssssssssssssssssssssss"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "status": "ssssssssssssssssssssssssssssssssssssssssssssssssss"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "status mit 51 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "status": "sssssssssssssssssssssssssssssssssssssssssssssssssss"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "status"
+          ],
+          "message": "String must contain at most 50 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "status ist eine Zahl",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "status": 5
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "status"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "customer_id ist eine Zahl",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "customer_id": 42
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "customer_id": "42"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "customer_id ist ein Text",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "customer_id": "42"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "customer_id": "42"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "customer_id ist ein Array",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "customer_id": []
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "customer_id"
+          ],
+          "message": "Invalid input"
+        }
+      ]
+    }
+  },
+  {
+    "name": "user_email mit 320 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "user_email": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "user_email": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "user_email mit 321 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "user_email": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "user_email"
+          ],
+          "message": "String must contain at most 320 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "subscription_id ist eine Zahl",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "subscription_id": 555
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "subscription_id": "555"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "test_mode true",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "test_mode": true
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "test_mode": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "test_mode false",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "test_mode": false
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "test_mode": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "test_mode ist ein Text (wird verworfen)",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "test_mode": "ja"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {}
+        }
+      }
+    }
+  },
+  {
+    "name": "test_mode ist null (wird verworfen)",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "test_mode": null
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {}
+        }
+      }
+    }
+  },
+  {
+    "name": "urls.customer_portal mit 2000 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "urls": {
+            "customer_portal": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+          }
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "urls": {
+              "customer_portal": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "urls.customer_portal mit 2001 Zeichen",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "urls": {
+            "customer_portal": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+          }
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "urls",
+            "customer_portal"
+          ],
+          "message": "String must contain at most 2000 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "urls ist ein Text",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "urls": "x"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "urls"
+          ],
+          "message": "Expected object, received string"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00.000000Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00.000000Z"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": "2022-11-12T00:00:00.000000Z"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": "2022-11-12T00:00:00Z"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00.123Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00.123Z"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": "2022-11-12T00:00:00.123Z"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00+02:00\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00+02:00"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": "2022-11-12T00:00:00+02:00"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00.000+0200\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00.000+0200"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": "2022-11-12T00:00:00.000+0200"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": "2022-11-12T00:00Z"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12 00:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12 00:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-13-12T00:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-13-12T00:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-02-30T00:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-02-30T00:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T24:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T24:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:60Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:60Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"nicht-datum\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "nicht-datum"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": ""
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \" 2022-11-12T00:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": " 2022-11-12T00:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12t00:00:00z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12t00:00:00z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"+002022-11-12T00:00:00Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "+002022-11-12T00:00:00Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at \"2022-11-12T00:00:00.Z\"",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": "2022-11-12T00:00:00.Z"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "renews_at null",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": null
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "renews_at": null
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "renews_at ist eine Zahl",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "renews_at": 1668211200
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "renews_at"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "ends_at gueltig",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "ends_at": "2022-12-12T00:00:00.000000Z"
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "subscription_created"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "ends_at": "2022-12-12T00:00:00.000000Z"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "ends_at ungueltig",
+    "body": {
+      "meta": {
+        "event_name": "subscription_created"
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "ends_at": "morgen"
+        }
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes",
+            "ends_at"
+          ],
+          "message": "Invalid datetime"
+        }
+      ]
+    }
+  },
+  {
+    "name": "attributes ist ein Text",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": "1",
+        "attributes": "x"
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes"
+          ],
+          "message": "Expected object, received string"
+        }
+      ]
+    }
+  },
+  {
+    "name": "attributes ist null",
+    "body": {
+      "meta": {
+        "event_name": "x"
+      },
+      "data": {
+        "id": "1",
+        "attributes": null
+      }
+    },
+    "result": {
+      "ok": false,
+      "issues": [
+        {
+          "path": [
+            "data",
+            "attributes"
+          ],
+          "message": "Expected object, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unbekannte Felder bleiben erhalten (passthrough)",
+    "body": {
+      "meta": {
+        "event_name": "x",
+        "neu": 1
+      },
+      "data": {
+        "id": "1",
+        "attributes": {
+          "status": "active",
+          "neues_feld": [
+            1,
+            2
+          ]
+        }
+      }
+    },
+    "result": {
+      "ok": true,
+      "data": {
+        "meta": {
+          "event_name": "x"
+        },
+        "data": {
+          "id": "1",
+          "attributes": {
+            "status": "active",
+            "neues_feld": [
+              1,
+              2
+            ]
+          }
+        }
+      }
+    }
+  }
+]

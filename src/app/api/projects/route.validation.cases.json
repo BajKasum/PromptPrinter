@@ -1,0 +1,335 @@
+[
+  {
+    "name": "leeres Objekt: Name fehlt",
+    "body": {},
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name fehlt, anderes Feld",
+    "body": {
+      "foo": 1
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Required"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name ist eine Zahl",
+    "body": {
+      "name": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Expected string, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name ist null",
+    "body": {
+      "name": null
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Expected string, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name ist ein Array",
+    "body": {
+      "name": [
+        "a",
+        "b"
+      ]
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Expected string, received array"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name mit einem Zeichen",
+    "body": {
+      "name": "a"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Name muss mindestens 2 Zeichen haben"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name aus Leerzeichen",
+    "body": {
+      "name": "      "
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Name muss mindestens 2 Zeichen haben"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name mit Leerzeichen und einem Zeichen",
+    "body": {
+      "name": "  a  "
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "Name muss mindestens 2 Zeichen haben"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name mit zwei Zeichen",
+    "body": {
+      "name": "ab"
+    },
+    "status": 200,
+    "response": {
+      "projectId": "proj-1"
+    }
+  },
+  {
+    "name": "Name mit Leerzeichen am Rand wird getrimmt",
+    "body": {
+      "name": "  ok  "
+    },
+    "status": 200,
+    "response": {
+      "projectId": "proj-1"
+    }
+  },
+  {
+    "name": "Name mit 80 Zeichen",
+    "body": {
+      "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 200,
+    "response": {
+      "projectId": "proj-1"
+    }
+  },
+  {
+    "name": "Name mit 81 Zeichen",
+    "body": {
+      "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [
+            "name"
+          ],
+          "message": "String must contain at most 80 character(s)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Name mit Umlauten und Emoji",
+    "body": {
+      "name": "Übung 🚀"
+    },
+    "status": 200,
+    "response": {
+      "projectId": "proj-1"
+    }
+  },
+  {
+    "name": "Rumpf ist ein Array",
+    "body": [],
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received array"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist null",
+    "body": null,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received null"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist eine Zahl",
+    "body": 5,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received number"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist ein Text",
+    "body": "hallo",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid request",
+      "issues": [
+        {
+          "path": [],
+          "message": "Expected object, received string"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Rumpf ist kein JSON",
+    "body": null,
+    "raw": "das ist kein json",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "Rumpf ist leer",
+    "body": null,
+    "raw": "",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Invalid JSON body"
+    }
+  },
+  {
+    "name": "unbekannte Felder werden ignoriert",
+    "body": {
+      "name": "Mein Projekt",
+      "extra": true
+    },
+    "status": 200,
+    "response": {
+      "projectId": "proj-1"
+    }
+  }
+]
