@@ -1,6 +1,6 @@
 import "server-only";
 
-import { ZAI_ENDPOINT } from "@/server/llm/config";
+import { ZAI_ENDPOINT, zaiApiKey } from "@/server/llm/config";
 import {
   providerHttpError,
   readOpenAiCompatibleSse,
@@ -22,7 +22,7 @@ export async function zaiComplete(
   const res = await fetch(ZAI_ENDPOINT, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${process.env.ZAI_API_KEY}`,
+      authorization: `Bearer ${zaiApiKey()}`,
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -117,7 +117,7 @@ export async function* zaiCompleteStream(
       method: "POST",
       signal: guard.signal,
       headers: {
-        authorization: `Bearer ${process.env.ZAI_API_KEY}`,
+        authorization: `Bearer ${zaiApiKey()}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({

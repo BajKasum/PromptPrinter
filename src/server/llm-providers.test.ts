@@ -419,6 +419,31 @@ describe("Gemini", () => {
     expect(sdk.generateContent.mock.calls[0][0].model).toBe("gemini-test-model");
   });
 
+  it("als Server-Anbieter im Stream und in der Analyse: der Schlüssel geht ohne Leerraum an den SDK", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "\tenv-gem \n");
+    sdk.generateContentStream.mockResolvedValue(events([{ text: "A" }]));
+    sdk.generateContent.mockResolvedValue({ text: "Fakten" });
+
+    await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }));
+    await analyzeComplete({ system: "S", text: "T" });
+
+    expect(sdk.geminiCtor).toHaveBeenCalledTimes(2);
+    for (const call of sdk.geminiCtor.mock.calls) {
+      expect(call[0]).toEqual({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
+    }
+  });
+
+  it("als Server-Anbieter: leer gesetztes GEMINI_MODEL ergibt das Standardmodell, der Schlüssel geht ohne Leerraum an den SDK", async () => {
+    vi.stubEnv("GEMINI_API_KEY", " env-gem\n");
+    vi.stubEnv("GEMINI_MODEL", "");
+    sdk.generateContent.mockResolvedValue({ text: "ok" });
+
+    await chatComplete({ system: "S", messages: [{ role: "user", content: "x" }] });
+
+    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
+    expect(sdk.generateContent.mock.calls[0][0].model).toBe("gemini-3.5-flash");
+  });
+
   it("analyzeComplete: Text und Bilder in EINER Nutzer-Nachricht, 1500 Token, Signal, Modell im Ergebnis", async () => {
     const controller = new AbortController();
     sdk.generateContent.mockResolvedValue({
@@ -521,6 +546,32 @@ describe("analyzeComplete über fetch", () => {
 
     const models = fetchMock.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string).model);
     expect(models).toEqual(["glm-text-x", "glm-vision-x"]);
+  });
+
+  // Folgesitzung 2026-10-07: ein leer gesetztes `ZAI_MODEL=` ging als "model": "" an Z.ai.
+  it("Z.ai: leer gesetzte ZAI_MODEL und ZAI_VISION_MODEL ergeben die Standardmodelle, nie ein leeres", async () => {
+    vi.stubEnv("ZAI_API_KEY", "zk");
+    vi.stubEnv("ZAI_MODEL", "");
+    vi.stubEnv("ZAI_VISION_MODEL", "  ");
+    const fetchMock = vi.fn(async () => respond(200, OK));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await analyzeComplete({ system: "S", text: "T" });
+    await analyzeComplete({ system: "S", text: "T", images: [IMG] });
+
+    const models = fetchMock.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string).model);
+    expect(models).toEqual(["glm-4.5-air", "glm-4.6v"]);
+  });
+
+  it("Z.ai: der Schlüssel geht ohne Leerraum an den Anbieter (ein eingefügter Zeilenumbruch bräche den Header)", async () => {
+    vi.stubEnv("ZAI_API_KEY", "zk\n");
+    const fetchMock = vi.fn(async () => respond(200, OK));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await analyzeComplete({ system: "S", text: "T" });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.headers).toEqual({ authorization: "Bearer zk", "content-type": "application/json" });
   });
 
   it("Custom-Slot: eigene Adresse und eigenes Modell, trotzdem thinking aus (festgehalten wie es ist)", async () => {

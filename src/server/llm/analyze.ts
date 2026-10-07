@@ -9,10 +9,12 @@ import {
   GEMINI_DEFAULT_MODEL,
   OPENAI_DEFAULT_MODEL,
   ZAI_ENDPOINT,
-  ZAI_VISION_DEFAULT_MODEL,
+  geminiApiKey,
   llmConfig,
   providerLabel,
   serverConfigFor,
+  zaiApiKey,
+  zaiVisionModel,
 } from "@/server/llm/config";
 import { geminiAnalyze } from "@/server/llm/gemini";
 import {
@@ -140,14 +142,13 @@ async function analyzeCompleteOnce(opts: {
     // Nur wenn wirklich Bilder dabei sind auf das (teurere) sehende Modell
     // wechseln. Eine Analyse aus reinen Textquellen — der Normalfall — läuft
     // weiter auf dem Kosten-Standardmodell.
-    const model =
-      images.length > 0 ? (process.env.ZAI_VISION_MODEL ?? ZAI_VISION_DEFAULT_MODEL) : config.model;
+    const model = images.length > 0 ? zaiVisionModel() : config.model;
     return openAiCompatibleAnalyze({
       endpoint: ZAI_ENDPOINT,
       model,
       label: "Z.ai",
       checkUrl: false,
-      apiKey: process.env.ZAI_API_KEY ?? "",
+      apiKey: zaiApiKey() ?? "",
       system: opts.system,
       text: opts.text,
       images,
@@ -162,7 +163,7 @@ async function analyzeCompleteOnce(opts: {
     opts.text,
     images,
     maxOutputTokens,
-    process.env.GEMINI_API_KEY ?? "",
+    geminiApiKey() ?? "",
     opts.signal
   );
 }
