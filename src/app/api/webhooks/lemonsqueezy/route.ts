@@ -3,6 +3,7 @@ import {
   customUserId,
   decideBillingUpdate,
   eventKey,
+  isTestMode,
   verifyWebhookSignature,
   webhookPayloadSchema,
   type ProfileBillingPatch,
@@ -30,13 +31,19 @@ export const runtime = "nodejs";
  * Obergrenze in readCappedText ab.
  *
  * ─── Warum fast alles mit 200 endet ────────────────────────────────────────
- * Lemon Squeezy stellt bei jedem Nicht-2xx erneut zu, tagelang. Ein 4xx ist
- * deshalb nur richtig, wenn eine Wiederholung etwas ändern könnte — also bei
- * kaputter Signatur oder unlesbarer Nutzlast. Ein Ereignis, das korrekt
- * ankommt und uns nichts angeht (oder keinem Konto zuzuordnen ist), wird
- * quittiert und protokolliert, sonst hämmert der Anbieter tagelang gegen eine
- * Wand, die sich nicht bewegen wird. Umgekehrt IST 500 richtig, wenn die
- * Datenbank klemmt: dann soll er es nochmal versuchen.
+ * Lemon Squeezy stellt bei jeder anderen Antwort als 200 erneut zu: bis zu
+ * dreimal, mit wachsendem Abstand (5, 25 und 125 Sekunden später; Doku
+ * help/webhooks/webhook-requests, gelesen am 2026-10-07). Ein 4xx ist deshalb
+ * nur richtig, wenn eine Wiederholung etwas ändern könnte — also bei kaputter
+ * Signatur oder unlesbarer Nutzlast. Ein Ereignis, das korrekt ankommt und uns
+ * nichts angeht (oder keinem Konto zuzuordnen ist), wird quittiert und
+ * protokolliert, sonst hämmert der Anbieter dreimal gegen eine Wand, die sich
+ * nicht bewegen wird. Umgekehrt IST 503 richtig, wenn die Datenbank klemmt: dann
+ * soll er es nochmal versuchen. Wichtig dabei: das Fenster ist kurz (rund zweieinhalb
+ * Minuten). Dauert der Ausfall länger, kommt dieselbe Zustellung nicht mehr von
+ * selbst, und die Zeile in `billing_events` bleibt auf "failed" stehen. Dann hilft
+ * nur ein erneutes Senden aus dem Lemon-Squeezy-Dashboard (nicht belegt, ob es dort
+ * einen solchen Knopf gibt) oder die Freischaltung von Hand.
  *
  * ─── Warum der Service-Role-Client schreibt ───────────────────────────────
  * Es gibt keine Sitzung, in deren Namen geschrieben werden könnte, und
@@ -94,6 +101,10 @@ export async function POST(req: Request): Promise<Response> {
   // im Log: ausgerechnet die Angabe weg, nach der man greppt, und den
   // Unit-Tests nicht anzusehen, weil die nur den Kontext prüfen.
   const event = payload.meta.event_name;
+  // Folgesitzung 2026-10-07: stammt das Ereignis aus dem Testmodus des Shops? Nur fürs
+  // Protokoll (undefined, wenn die Nutzlast es nicht sagt, dann fehlt der Schlüssel): am
+  // ersten echten Ereignis soll man sehen können, ob es ein Test war.
+  const testMode = isTestMode(payload) ?? undefined;
   const key = eventKey(raw);
   const admin = createAdminClient();
 
@@ -162,7 +173,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const decision = decideBillingUpdate(payload);
     if (decision.kind === "ignore") {
-      logEvent("billing.webhook_ignored", { eventName: event, reason: decision.reason });
+      logEvent("billing.webhook_ignored", { eventName: event, reason: decision.reason, testMode });
       await finish("ignored", decision.reason, null);
       return NextResponse.json({ received: true, ignored: true });
     }
@@ -180,6 +191,7 @@ export async function POST(req: Request): Promise<Response> {
         customerId: decision.patch.subscription_customer_id ?? null,
         email: payload.data.attributes?.user_email ?? null,
         resourceId: payload.data.id,
+        testMode,
       });
       await finish("ignored", "Kein Konto zu diesem Kauf gefunden", null);
       return NextResponse.json({ received: true, unmatched: true });
@@ -196,6 +208,7 @@ export async function POST(req: Request): Promise<Response> {
       userId,
       plan: decision.patch.plan ?? null,
       subscriptionStatus: decision.patch.subscription_status ?? null,
+      testMode,
     });
     await finish("processed", null, userId);
     return NextResponse.json({ received: true });

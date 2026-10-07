@@ -89,6 +89,15 @@ export function localSupabase(): LocalSupabase {
   return cached;
 }
 
+/**
+ * Signing-Secret des Webhook-Tests (e2e/billing-webhook.spec.ts), ein Wert nur für diesen
+ * Test: der Next-Server der Tests und der Test selbst lesen ihn von hier, das echte Secret
+ * aus dem Lemon-Squeezy-Dashboard kommt nirgends vor. Er schaltet nichts frei, was ein
+ * Fremder nutzen könnte: der Server lauscht nur auf localhost und schreibt in den lokalen
+ * Stack.
+ */
+export const E2E_WEBHOOK_SECRET = "e2e-only-webhook-signing-secret-0123456789";
+
 /** Port des Next-Servers der Tests, bewusst nicht 3000: dort läuft oft der eigene Dev-Server. */
 export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100);
 export const E2E_ORIGIN = `http://localhost:${E2E_PORT}`;
@@ -124,7 +133,10 @@ export function serverEnv(): Record<string, string> {
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
     TURNSTILE_SECRET: "",
     NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "",
-    LEMON_SQUEEZY_WEBHOOK_SECRET: "",
+    // Kein Checkout und kein Lemon-Squeezy-Konto, aber der Webhook lauscht: der Test
+    // schickt selbst signierte Ereignisse (e2e/billing-webhook.spec.ts).
+    LEMON_SQUEEZY_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
+    LEMON_SQUEEZY_API_KEY: "",
     ALERT_WEBHOOK_URL: "",
     GITHUB_TOKEN: "",
     GOOGLE_SITE_VERIFICATION: "",
