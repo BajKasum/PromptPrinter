@@ -80,6 +80,9 @@ const isoDate = z.string().datetime({ offset: true });
 const attributesSchema = z
   .object({
     status: z.string().max(50).optional(),
+    // Das Kennzeichen des Testmodus steht laut Doku an Order, Abo und Rechnung (nicht in
+    // `meta`). `catch`: ein unerwarteter Typ darf ein bezahltes Ereignis nicht abweisen.
+    test_mode: z.boolean().optional().catch(undefined),
     customer_id: identifier.optional(),
     user_email: z.string().max(320).optional(),
     // Nur auf Abo-Objekten. `null` ist ein echter Wert (ein gekündigtes Abo
@@ -120,8 +123,21 @@ export type LemonSqueezyWebhookPayload = z.infer<typeof webhookPayloadSchema>;
  * Die Ereignisse, auf die dieser Endpunkt reagiert.
  *
  * Alles andere wird bewusst mit 200 quittiert und als "ignored" protokolliert:
- * ein 4xx würde Lemon Squeezy tagelang wiederholen lassen, für ein Ereignis,
- * das korrekt angekommen ist und uns nur nichts angeht.
+ * jede andere Antwort lässt Lemon Squeezy dreimal erneut zustellen (5, 25 und
+ * 125 Sekunden später, laut Doku vom 2026-10-07), für ein Ereignis, das korrekt
+ * angekommen ist und uns nur nichts angeht.
+ *
+ * Die Liste folgt den Ereignissen der Doku (docs.lemonsqueezy.com/help/webhooks/
+ * event-types). Nicht dabei, mit Absicht: `subscription_payment_failed` (der
+ * Zustand `past_due` kommt über das Abo selbst, und er behält den Zugang),
+ * `customer_updated`, `license_key_*` und `affiliate_activated` (gehen uns nichts an).
+ *
+ * `subscription_resumed`, `_paused` und `_unpaused` tragen das Abo-Objekt und folgen
+ * derselben Regel wie die übrigen Abo-Ereignisse: ohne sie blieb ein pausiertes Abo
+ * Pro, bis zufällig ein `subscription_updated` kam, obwohl `paused` unten nicht zu
+ * den Zuständen mit Zugang zählt. `subscription_payment_recovered` ist eine gelungene
+ * Abbuchung nach einer gescheiterten und wirkt wie `subscription_payment_success`.
+ * Beides ist aus der Doku gelesen, nicht an einem echten Ereignis gesehen.
  */
 export const SUPPORTED_EVENTS = [
   "order_created",
@@ -129,8 +145,12 @@ export const SUPPORTED_EVENTS = [
   "subscription_created",
   "subscription_updated",
   "subscription_cancelled",
+  "subscription_resumed",
   "subscription_expired",
+  "subscription_paused",
+  "subscription_unpaused",
   "subscription_payment_success",
+  "subscription_payment_recovered",
   "subscription_payment_refunded",
 ] as const;
 
@@ -213,13 +233,23 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
     // der Webhook ignorierte das Ereignis, das Konto blieb Pro. /rueckerstattung
     // verspricht woertlich "der Betrag wird vollstaendig erstattet, und dein
     // Konto wechselt zurueck auf den Free-Plan" -- kein Codepfad tat das.
-    // Unbedingt auf "free", unabhaengig vom sonstigen Status: erstattet ist
+    // Auf "free", unabhaengig vom sonstigen Status: voll erstattet ist
     // erstattet, das Geld ist zurueck.
+    //
+    // Folgesitzung 2026-10-07: nur bei VOLLER Erstattung. Laut Doku feuert
+    // order_refunded "when a full or partial refund is made", und der Status der
+    // Bestellung unterscheidet beides ("refunded" gegen "partial_refund"). Eine
+    // Teilerstattung (ein Entgegenkommen, eine Korrektur) nahm bisher dem zahlenden
+    // Kunden den Zugang. /rueckerstattung verspricht den Wechsel auf Free nur fuer
+    // "vollstaendig erstattet".
+    if (attributes.status === "partial_refund") {
+      return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
+    }
     patch.plan = "free";
     return { kind: "apply", patch };
   }
 
-  if (event === "subscription_payment_success") {
+  if (event === "subscription_payment_success" || event === "subscription_payment_recovered") {
     // Hier ist data.id die RECHNUNG. Die Abo-Nummer steht in den Attributen —
     // data.id zu nehmen wäre der stille Fehler, der erst auffällt, wenn eine
     // Kündigung das falsche Abo sucht.
@@ -238,7 +268,11 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
     // Kuendigung selbst laeuft weiterhin ueber subscription_cancelled/
     // _expired unten -- dieses Ereignis betrifft nur das Geld einer
     // einzelnen Rechnung, nicht das Abo als Ganzes, deshalb bleiben
-    // subscription_status/_id/_renews_at/_ends_at unangetastet.
+    // subscription_status/_id/_renews_at/_ends_at unangetastet. Auch hier nur
+    // bei voller Erstattung (Rechnungs-Status "refunded", nicht "partial_refund").
+    if (attributes.status === "partial_refund") {
+      return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
+    }
     patch.plan = "free";
     return { kind: "apply", patch };
   }
@@ -265,6 +299,18 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
   }
 
   return { kind: "apply", patch };
+}
+
+/**
+ * Stammt dieses Ereignis aus dem Testmodus des Shops? `null`, wenn die Nutzlast es nicht sagt.
+ *
+ * Lemon Squeezy trennt Test- und Live-Webhooks (gleiche Nutzlast, getrennte Webhooks im
+ * Dashboard); `test_mode` am Objekt zeigt, welche Seite geliefert hat. Das Ergebnis ändert
+ * keine Entscheidung (ein Testkauf schaltet Pro frei, so lässt sich der Weg prüfen), es
+ * steht nur im Protokoll: am ersten echten Ereignis soll man sehen, ob es ein Test war.
+ */
+export function isTestMode(payload: LemonSqueezyWebhookPayload): boolean | null {
+  return payload.data.attributes?.test_mode ?? null;
 }
 
 /** Die Konto-ID aus dem Checkout, falls sie mitgereist ist. */

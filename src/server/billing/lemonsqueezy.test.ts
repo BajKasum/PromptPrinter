@@ -124,9 +124,10 @@ describe("webhookPayloadSchema", () => {
 
 describe("isSupportedEvent", () => {
   it("knows every event this endpoint subscribes to", () => {
-    // 8, seit K-4 (Audit 06.09.2026) order_refunded und
-    // subscription_payment_refunded dazukamen (vorher 6).
-    expect(SUPPORTED_EVENTS).toHaveLength(8);
+    // 8, seit K-4 (Audit 06.09.2026) order_refunded und subscription_payment_refunded
+    // dazukamen (vorher 6); 12, seit der Folgesitzung 2026-10-07 subscription_resumed,
+    // _paused, _unpaused und subscription_payment_recovered dazukamen (siehe lemonsqueezy.ts).
+    expect(SUPPORTED_EVENTS).toHaveLength(12);
     for (const name of SUPPORTED_EVENTS) expect(isSupportedEvent(name)).toBe(true);
   });
 
