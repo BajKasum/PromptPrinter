@@ -19,7 +19,6 @@ const MAX_CLAUDE_MD_LINES = 450;
 
 /** Heute über 400 Zeilen, mit Obergrenze (etwas über dem heutigen Stand). Eintrag löschen, sobald die Datei kleiner wird. */
 const OVER_LIMIT: Record<string, number> = {
-  "src/features/settings/components/api-keys.tsx": 510,
   "src/server/security/rate-limit.ts": 520,
   "src/features/marketing/components/hero.tsx": 610,
 };
