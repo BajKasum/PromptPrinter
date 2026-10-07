@@ -1,0 +1,253 @@
+[
+  {
+    "name": "Rumpf ist kein JSON",
+    "body": null,
+    "raw": "kein json",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht gelesen werden."
+    }
+  },
+  {
+    "name": "Rumpf ist leer",
+    "body": null,
+    "raw": "",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht gelesen werden."
+    }
+  },
+  {
+    "name": "Rumpf ist null (gilt als leeres Objekt)",
+    "body": null,
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "leeres Objekt",
+    "body": {},
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "Rumpf ist ein Array",
+    "body": [],
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "Rumpf ist eine Zahl",
+    "body": 5,
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "Rumpf ist ein Text",
+    "body": "x",
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "repoUrl ist null (Repo entfernen)",
+    "body": {
+      "repoUrl": null
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "repoUrl ist eine Zahl",
+    "body": {
+      "repoUrl": 5
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "repoUrl ist ein Objekt",
+    "body": {
+      "repoUrl": {}
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "repoUrl ist ein Array",
+    "body": {
+      "repoUrl": [
+        "a"
+      ]
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "repoUrl ist ein Wahrheitswert",
+    "body": {
+      "repoUrl": true
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "repoUrl leer",
+    "body": {
+      "repoUrl": ""
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "repoUrl nur Leerzeichen",
+    "body": {
+      "repoUrl": "    "
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "repoUrl mit Leerzeichen am Rand",
+    "body": {
+      "repoUrl": "  https://github.com/vercel/next.js  "
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "repoUrl mit 300 Zeichen",
+    "body": {
+      "repoUrl": "https://github.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "repoUrl mit 301 Zeichen",
+    "body": {
+      "repoUrl": "https://github.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": 400,
+    "response": {
+      "type": "about:blank",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Die Anfrage konnte nicht verarbeitet werden."
+    }
+  },
+  {
+    "name": "repoUrl mit 300 Zeichen plus Leerzeichen am Rand",
+    "body": {
+      "repoUrl": " https://github.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa "
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "repoUrl kein URL-Text (wird nicht von zod geprueft)",
+    "body": {
+      "repoUrl": "irgendwas"
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  },
+  {
+    "name": "unbekanntes Feld wird ignoriert",
+    "body": {
+      "repoUrl": "vercel/next.js",
+      "extra": true
+    },
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
+  }
+]
