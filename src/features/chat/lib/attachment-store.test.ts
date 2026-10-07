@@ -97,6 +97,87 @@ describe("sniffImageType", () => {
   });
 });
 
+// Folgesitzung 2026-10-07 (Dateigroesse, attachment-store.ts wird zerlegt): Mutationen gegen die
+// Pruefung zeigten Luecken an den Raendern. Hier festgenagelt, bevor sich die Datei aendert.
+describe("sniffImageType: Raender der Signaturen", () => {
+  it("nimmt ein JPEG schon an den ersten drei Bytes", () => {
+    expect(sniffImageType(Buffer.from([0xff, 0xd8, 0xff]))).toBe("image/jpeg");
+  });
+
+  it("weist ein JPEG ab, dem ein Byte fehlt oder das falsch beginnt", () => {
+    expect(sniffImageType(Buffer.from([0xff, 0xd8]))).toBeNull();
+    expect(sniffImageType(Buffer.from([0xff, 0xd8, 0x00, 0xe0]))).toBeNull(); // drittes Byte falsch
+    expect(sniffImageType(Buffer.from([0x00, 0xd8, 0xff, 0xe0]))).toBeNull(); // erstes Byte falsch
+    expect(sniffImageType(Buffer.from([0xff, 0x00, 0xff, 0xe0]))).toBeNull(); // zweites Byte falsch
+  });
+
+  it("weist ein PNG ab, dessen Signatur an irgendeiner Stelle abweicht oder zu kurz ist", () => {
+    for (let i = 0; i < PNG_HEAD.length; i++) {
+      const broken = [...PNG_HEAD, 1, 1];
+      broken[i] ^= 0xff;
+      expect(sniffImageType(Buffer.from(broken)), `Byte ${i}`).toBeNull();
+    }
+    expect(sniffImageType(Buffer.from(PNG_HEAD.slice(0, 7)))).toBeNull();
+    expect(sniffImageType(Buffer.from(PNG_HEAD))).toBe("image/png"); // genau die acht Bytes
+  });
+
+  it("weist ein WebP ab, dessen Container nicht RIFF heisst oder dessen Typ nicht WEBP ist", () => {
+    const body = Buffer.concat([Buffer.from([1, 0, 0, 0])]);
+    expect(sniffImageType(Buffer.concat([Buffer.from("XXXX"), body, Buffer.from("WEBPVP8 ")]))).toBeNull();
+    expect(sniffImageType(Buffer.concat([Buffer.from("RIFF"), body, Buffer.from("WEBQVP8 ")]))).toBeNull();
+    expect(sniffImageType(Buffer.concat([Buffer.from("RIFF"), body, Buffer.from("WEBP")]))).toBe("image/webp"); // genau 12 Bytes
+    expect(sniffImageType(Buffer.concat([Buffer.from("RIFF"), body, Buffer.from("WEB")]))).toBeNull(); // 11 Bytes
+  });
+});
+
+describe("validateUploads: Raender und Einzelheiten", () => {
+  it("nimmt genau so viele Anhaenge, wie eine Nachricht tragen darf", () => {
+    const exactly = Array.from({ length: MAX_ATTACHMENTS_PER_MESSAGE }, (_, i) => textFile(`n${i}.txt`));
+    expect(validateUploads(exactly)).toHaveLength(MAX_ATTACHMENTS_PER_MESSAGE);
+  });
+
+  it("nimmt genau die Summe, die eine Anfrage tragen darf, und weist ein Byte mehr ab", () => {
+    // Zwei Bilder von genau 1 MB (Einzelgrenze) sind genau die Anfragegrenze (2 MB).
+    const edge = png(MAX_ATTACHMENT_IMAGE_BYTES - PNG_HEAD.length);
+    expect(edge.length).toBe(MAX_ATTACHMENT_IMAGE_BYTES);
+    const exactly = [image("a.png", edge), image("b.png", edge)];
+    expect(exactly.reduce((sum, u) => sum + Buffer.from(u.data, "base64").length, 0)).toBe(MAX_ATTACHMENTS_REQUEST_BYTES);
+    expect(validateUploads(exactly)).toHaveLength(2);
+
+    expect(codeOf(() => validateUploads([...exactly, textFile("one-more.txt", "x")]))).toBe("tooLargeTotal");
+  });
+
+  it("weist Base64 mit zu vielen Fuellzeichen ab, auch wenn es sich dekodieren liesse", () => {
+    // "QUJD" = "ABC"; vier Fuellzeichen dahinter sind kein gueltiges Base64 (hoechstens zwei).
+    expect(codeOf(() => validateUploads([{ name: "a.txt", mediaType: "text/plain", data: "QUJD====" }]))).toBe("invalid");
+    expect(codeOf(() => validateUploads([{ name: "a.txt", mediaType: "text/plain", data: "QUJDQQ==" }]))).toBeUndefined();
+  });
+
+  it("weist Base64 mit Leerzeichen mittendrin ab (das Alphabet kennt keine)", () => {
+    expect(codeOf(() => validateUploads([{ name: "a.txt", mediaType: "text/plain", data: "QUJD QUJ" }]))).toBe("invalid");
+    expect(codeOf(() => validateUploads([{ name: "a.txt", mediaType: "text/plain", data: "QUJD\nQUJD" }]))).toBe("invalid");
+  });
+
+  it("weist eine leere Datei ab (Base64 ohne Zeichen)", () => {
+    expect(codeOf(() => validateUploads([{ name: "a.txt", mediaType: "text/plain", data: "" }]))).toBe("invalid");
+  });
+
+  it("nennt in jedem Fehler den bereinigten Dateinamen, ausser bei zu vielen Anhaengen", () => {
+    const err = (fn: () => unknown) => {
+      try {
+        fn();
+      } catch (e) {
+        return e as AttachmentError;
+      }
+      throw new Error("kein Fehler");
+    };
+    expect(err(() => validateUploads([textFile("dir/report.pdf")])).attachmentName).toBe("report.pdf");
+    expect(err(() => validateUploads([image("x/fake.png", Buffer.from("no"))])).attachmentName).toBe("fake.png");
+    expect(err(() => validateUploads([textFile("big.txt", "x".repeat(MAX_ATTACHMENT_TEXT_BYTES + 1))])).attachmentName).toBe("big.txt");
+    expect(err(() => validateUploads(Array.from({ length: MAX_ATTACHMENTS_PER_MESSAGE + 1 }, () => textFile()))).attachmentName).toBeUndefined();
+  });
+});
+
 describe("validateUploads", () => {
   it("accepts a screenshot and a text file and gives each an id, a clean name and its real type", () => {
     const out = validateUploads([image("a/b/shot.png"), textFile()]);
