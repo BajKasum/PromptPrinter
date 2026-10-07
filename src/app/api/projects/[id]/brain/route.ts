@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "@/shared/lib/zod";
 import {
   chatQuotaKey,
   rateLimit,

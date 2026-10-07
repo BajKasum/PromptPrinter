@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { z } from "zod";
+import { z } from "@/shared/lib/zod";
 
 /**
  * Lemon Squeezys Webhook: Echtheit prüfen, Nutzlast lesen, entscheiden.
@@ -70,7 +70,17 @@ export function eventKey(rawBody: string): string {
 /** Zahlen und Strings gleichermassen — Lemon Squeezy schickt IDs mal so, mal so. */
 const identifier = z.union([z.string(), z.number()]).transform((v) => String(v));
 
-const isoDate = z.string().datetime({ offset: true });
+// Ein Zeitstempel, so locker wie unter zod 3: auch ohne Sekunden ("…T00:00Z") und mit Abweichung ohne
+// Doppelpunkt ("+0200"). zod 4 verlangt bei `datetime({ offset: true })` Sekunden und "+02:00". Lemon Squeezy
+// schickt "…:00.000000Z" (Doku, gelesen 2026-10-07); trotzdem soll ein Webhook nicht wegen eines Zeitformats mit
+// 400 abgewiesen werden, denn nach drei Wiederholungen ist die bezahlte Zustellung verloren. Der Ausdruck ist
+// der von zod 3.25.76 (MIT) für `datetime({ offset: true })`.
+const ISO_DATE_PART =
+  "((\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|(0[469]|11)-(0[1-9]|[12]\\d|30)|(02)-(0[1-9]|1\\d|2[0-8])))";
+const ISO_TIME_PART = "([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d(\\.\\d+)?)?";
+const isoDate = z
+  .string()
+  .regex(new RegExp(`^${ISO_DATE_PART}T${ISO_TIME_PART}(Z|([+-]\\d{2}:?\\d{2}))$`), "Invalid datetime");
 
 /**
  * Nur was hier tatsächlich gebraucht wird. `passthrough` ist Absicht: die
@@ -106,7 +116,7 @@ export const webhookPayloadSchema = z.object({
   meta: z.object({
     event_name: z.string().min(1).max(100),
     custom_data: z
-      .object({ user_id: z.string().uuid().optional() })
+      .object({ user_id: z.guid().optional() })
       .passthrough()
       .optional(),
   }),

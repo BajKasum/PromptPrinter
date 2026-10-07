@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { z } from "zod";
+import { z } from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
