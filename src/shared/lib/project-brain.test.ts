@@ -129,6 +129,28 @@ describe("sourceDigest", () => {
   it("produces a short, storable hex string", () => {
     expect(sourceDigest(["x"])).toMatch(/^[0-9a-f]{8}$/);
   });
+
+  // Der Fingerabdruck liegt in `project_brains.source_digest`. Ändert sich ein
+  // Wert hier, gilt jedes gespeicherte Gedächtnis als veraltet und wird neu
+  // analysiert, also Modellkosten für alle Nutzer. Die Werte stammen aus einer
+  // unabhängigen FNV-1a-Referenz (Math.imul, UTF-16-Codeeinheiten).
+  it.each([
+    [[], "811c9dc5"],
+    [["x"], "fd0c5087"],
+    [["a", "b"], "10f3abd2"],
+    [["ab"], "4d2505ca"],
+    [["a:1", "b:2"], "ebb33b43"],
+    [["readme.md:120", "package.json:800"], "e73c7229"],
+    [["readme.md:120", "package.json:800", "tsconfig.json:90"], "ccb9d927"],
+    [["ü:1", "日本:2"], "a0e5a213"],
+  ])("keeps the stored digest for %j at %s", (parts, digest) => {
+    expect(sourceDigest(parts)).toBe(digest);
+  });
+
+  it("joins the sources with a NUL character, so ['a', 'b'] and ['ab'] differ", () => {
+    expect(sourceDigest(["a", "b"])).toBe(sourceDigest(["a\u0000b"]));
+    expect(sourceDigest(["a", "b"])).not.toBe(sourceDigest(["ab"]));
+  });
 });
 
 describe("isAnalysisRunning", () => {
