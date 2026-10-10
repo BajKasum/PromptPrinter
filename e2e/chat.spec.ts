@@ -92,10 +92,11 @@ test.describe("Chat", () => {
   }) => {
     await page.goto("/chats/new");
     await expect(page.getByText("Bevor wir loslegen, brauche ich deinen eigenen KI-Key.")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Key hinterlegen" })).toHaveAttribute(
-      "href",
-      "/settings#api-keys"
-    );
+    // Der Hinweis nimmt den Key seit dem Key-Assistenten gleich selbst an. Der Link
+    // zu den Einstellungen ist der Weg für einen anderen Anbieter.
+    await expect(
+      page.getByRole("link", { name: "Anderer Anbieter? Zu den Einstellungen" })
+    ).toHaveAttribute("href", "/settings#api-keys");
 
     // Sendet es trotzdem, lehnt der Server mit 403 ab (byokRequired). Die Seite
     // zeigt dann denselben Hinweis, keinen "Erneut versuchen"-Knopf, der denselben
