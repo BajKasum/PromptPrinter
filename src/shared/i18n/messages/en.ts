@@ -394,7 +394,7 @@ export const en: Messages = {
     skip: "Skip",
     submit: "Send",
     oneMoment: "One moment…",
-    prompt: "Just tell me what you want to build.",
+    prompt: "Just tell me what you need.",
     close: "Close voice mode",
     privacyNotice:
       "Chrome and Edge send your recording to Google or Microsoft for recognition, Safari recognizes it on your device.",
@@ -691,7 +691,7 @@ export const en: Messages = {
         "Your own AI key required (Anthropic, OpenAI or Gemini)",
         "With your key: no monthly limit, the app itself stays free",
         "Up to {projects} projects",
-        "Tailored to your build tool",
+        "Prompts for any AI and any task",
         "Markdown export",
       ],
     },

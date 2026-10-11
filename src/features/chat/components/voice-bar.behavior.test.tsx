@@ -497,7 +497,7 @@ describe("Mitschrift (WordStream)", () => {
 
   it("ohne gesprochenen Text steht die Aufforderung", () => {
     render(<VoiceBar onClose={vi.fn()} onSubmit={vi.fn(async () => null)} />);
-    expect(screen.getByText("Sag einfach, was du bauen willst.")).toBeInTheDocument();
+    expect(screen.getByText("Sag einfach, was du brauchst.")).toBeInTheDocument();
   });
 
   it("beim Sprechen steht die Antwort statt der Mitschrift", async () => {

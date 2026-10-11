@@ -398,7 +398,7 @@ export const fr: Messages = {
     skip: "Passer",
     submit: "Envoyer",
     oneMoment: "Un instant…",
-    prompt: "Dis-moi simplement ce que tu veux construire.",
+    prompt: "Dis-moi simplement ce dont tu as besoin.",
     close: "Fermer le mode vocal",
     privacyNotice:
       "Chrome et Edge envoient ton enregistrement à Google ou Microsoft pour la reconnaissance, Safari reconnaît sur l'appareil.",
@@ -698,7 +698,7 @@ export const fr: Messages = {
         "Ta propre clé d'IA requise (Anthropic, OpenAI ou Gemini)",
         "Avec ta clé : sans limite mensuelle, l'appli elle-même reste gratuite",
         "Jusqu'à {projects} projets",
-        "Adapté à ton outil de construction",
+        "Des prompts pour toute IA et toute tâche",
         "Export Markdown",
       ],
     },

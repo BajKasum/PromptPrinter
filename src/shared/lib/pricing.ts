@@ -94,7 +94,7 @@ export const PLANS: MarketingPlan[] = [
       // damit eine Zusage, die der Code nicht haelt (Rechts-Audit 28.09.2026).
       "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
       `Bis zu ${PLAN_LIMITS.free.projects} Projekte`,
-      "Zugeschnitten auf dein Bau-Tool",
+      "Prompts für jede KI und jede Aufgabe",
       "Markdown-Export",
     ],
   },
