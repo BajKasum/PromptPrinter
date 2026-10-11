@@ -5,18 +5,20 @@
 product
 
 ## Users
-"Vibe-coders": people who build by feeding prompts into AI build tools (Lovable, Cursor,
-v0, Claude Code, Bolt, Replit). Technical enough to paste a prompt into a build tool, and
-paying for every wasted iteration in credits. On the Billing page specifically: an
+Anyone who wants something done by an AI and needs a good prompt for it: a letter or
+report, a website or app, a database design, a security review, a plan. Not a developer
+audience and not tied to any AI tool. What they share: a first prompt that leaves things
+out costs them time, and often credits, in correction rounds. On the Billing page specifically: an
 already-signed-up user checking their plan, their usage against monthly limits, and whether
 upgrading or adding their own API key (BYOK) changes anything for them.
 
 ## Product Purpose
-PromptPrinter is a chat with an in-app mascot ("Finn") that makes the FIRST prompt into a
-build tool count. Finn asks one bundled clarifying question covering the things the build
-tool itself never asks (target tool, core screens, data model, auth, design direction), then
-delivers one finished, paste-ready prompt tailored to that tool. The value is not burning
-credits on iterations a complete prompt would have avoided.
+PromptPrinter is a chat with an in-app mascot ("Finn") that makes the FIRST prompt into
+any AI count. Finn asks one bundled clarifying question covering only what matters for
+this task (for a text: reader, tone, length; for software: screens, data, login; for a
+database or a security review: the system, the scope), then delivers one finished,
+paste-ready prompt that works in any AI, tailored to a specific one when the user names it.
+The value is not losing time and credits on iterations a complete prompt would have avoided.
 
 A project can additionally carry files and a public GitHub repository, analysed once into a
 "project brain" — after that every chat in the project already knows the stack (framework,

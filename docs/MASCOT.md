@@ -36,7 +36,7 @@ Alternativen, falls gewünscht:
 | Eigenschaft | So ist Finn | So ist Finn **nicht** |
 |---|---|---|
 | Tonfall | freundlich, ruhig, kompetent | aufdringlich, kindisch |
-| Rolle | erfahrener Bau-Buddy an deiner Seite | belehrender Lehrer, nerviger Clippy |
+| Rolle | erfahrener Prompt-Buddy an deiner Seite | belehrender Lehrer, nerviger Clippy |
 | Sprache | „du", knapp, ein Hauch Humor | Fachjargon, Walltext, Emoji-Spam |
 | Auftritt | erscheint **wenn er hilft**, tritt dann zurück | ständig im Weg, blockiert Inhalt |
 | Stil | passt zur Marke (Linear/Vercel-clean) | Cartoon-Overload |
@@ -275,7 +275,7 @@ hektisch. Nie mehr als eine bewegte Finn-Instanz pro Viewport.
 ## 8. Storytelling-Ideen
 
 1. **„Die Reise mit Finn"**, durchgehender Bogen (siehe §5). Roter Faden:
-   Finn ist dein *Bau-Buddy von der Idee bis zum Launch*, exakt die
+   Finn ist dein *Prompt-Buddy von der Idee bis zum fertigen Prompt*, exakt die
    `Idee → Plan → Build → Launch`-Leiste aus dem Hero.
 2. **Das Ideen-Objekt wächst mit.** Ein wiederkehrendes Motiv: aus einem
    Funken (Hero) wird ein Stapel (Organizing) wird ein Paket (Delivering). Finn

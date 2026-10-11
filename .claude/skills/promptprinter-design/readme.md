@@ -1,6 +1,6 @@
 # PromptPrinter Design System
 
-**PromptPrinter** turns a rough app idea into a complete, structured, build-ready prompt package (product plan, AI instructions, app design, database schema, security checklist) through a guided chat with an in-app dolphin mascot, **Finn**. The audience is solo/indie developers and "vibe-coders" — technical enough to paste a prompt into Claude, ChatGPT, Cursor, Lovable or Stitch, not looking to write the scaffolding prose themselves. The product and all UI copy are German-first (`lang="de"`).
+**PromptPrinter** turns a rough idea into one finished, paste-ready prompt for any AI and any task (a document, a website, a database, a security review) through a guided chat with an in-app dolphin mascot, **Finn**. The audience is anyone who wants something done by an AI and needs a good prompt for it, not a developer audience and not tied to any AI tool. The product and all UI copy are German-first (`lang="de"`).
 
 Brand direction: **"Refined Dev-Brand"** — closest real references are **Linear, Vercel, and Raycast**: monochrome chrome, a single restrained accent (baby blue), flat surfaces with hairline borders instead of glassmorphism, quiet confident typography (Geist Sans/Mono). Layered on top is **"Finn's World"**: a calm, light-filled ocean atmosphere (sky-blue by day, deep ocean-blue by night, one living accent, generous whitespace, gentle floaty motion). Premium, creative, intelligent, trustworthy — never a SaaS template, never a children's app.
 
@@ -10,7 +10,7 @@ This system was built by reading the product's own Next.js codebase directly (bo
 
 ## Content Fundamentals
 
-- **Voice:** Finn speaks in first person ("**Ich** wandle deine Idee um", never "PromptPrinter wandelt..."). Copy is warm, calm, competent — a build-buddy beside you, never a lecturing teacher or a nagging Clippy. Casual "du", short sentences, a hint of humor.
+- **Voice:** Finn speaks in first person ("**Ich** wandle deine Idee um", never "PromptPrinter wandelt..."). Copy is warm, calm, competent — a prompt-buddy beside you, never a lecturing teacher or a nagging Clippy. Casual "du", short sentences, a hint of humor.
 - **No jargon on the public site.** Words like PRD, Blueprint, Schema, Long-Context, Artefakt are cut from marketing copy (allowed in-app and in the FAQ where precision matters).
 - **No SaaS-template patterns.** DESIGN.md explicitly bans: identical-size feature-grid tiles, numbered cards, corporate four-column footers, status-pulse indicators. PRODUCT.md adds: no gradient-text pricing, no hero-metric-plus-sparkline blocks, no colored left-border "stripe" stat cards, no vaporware features.
 - **Whitespace is intentional.** Less structure reads as more emotional impact; a tighter rhythm reads as more emotion (the "Litany" principle).
