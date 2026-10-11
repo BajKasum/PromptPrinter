@@ -6,7 +6,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 [SETUP.md](docs/SETUP.md) (Setup, Deploy-Checkliste, Struktur), [DESIGN.md](docs/DESIGN.md)
 und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 
-## IST-Zustand (Stand 2026-10-07)
+## IST-Zustand (Stand 2026-10-11)
 
 Gegenwart, keine Historie. Der Verlauf steht datiert in [docs/CHANGELOG-2026.md](docs/CHANGELOG-2026.md)
 (*warum* etwas so ist: Entscheidungen, Messungen, entfernte Features; nach dem Stichwort suchen). Das
@@ -28,7 +28,8 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   **Gedächtnis** (einmalige Analyse von Dateien und einem öffentlichen GitHub-Repo,
   Tabelle `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne
   Auto-Generieren).
-- **Pläne:** Free chattet nur mit eigenem Key, Pro mit Server-Key und Kontingent.
+- **Pläne:** Free chattet nur mit eigenem Key (der Key-Assistent führt im Chat-Hinweis und in
+  den Einstellungen zu einem Gratis-Gemini-Key), Pro mit Server-Key und Kontingent.
   **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder
   OpenAI-kompatible Endpunkt) hebt das Chat-Limit auf. Zahlung über Lemon Squeezy
   (Webhook `/api/webhooks/lemonsqueezy`).
@@ -65,7 +66,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, aber
-  ohne URL.
+  ohne URL. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout
   (`src/shared/providers/site-speed-insights.tsx`), nur im Produktions-Build. Adressen
   werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
@@ -93,12 +94,14 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   in Vercel löschen, Entscheid zum Fehler-Tracker; **Auth-Mails** (Befund 2026-10-07 im Changelog:
   kein eigener SMTP, "Confirm email" aus, Standard-Vorlage): Mail-Anbieter buchen, DNS, Vorlagen aus
   `supabase/templates/` einfügen; **Lemon Squeezy** nachsehen (Testmodus oder Live, Webhook-URL,
-  Preise brutto oder netto); "Dependabot security updates" einschalten; Entscheid zu #51
-  (`lucide-react` 1.x, 23 von 70 Symbolen anders gezeichnet) und #24 (Key-Assistent); die
+  Preise brutto oder netto); Dependabot alerts und security updates einschalten (beide aus,
+  am 2026-10-11 geprüft); Entscheid zu #51 (`lucide-react` 1.x, 23 von 70 Symbolen anders
+  gezeichnet); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
 - **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
   (Google/Microsoft), der Satz zum Ausweich-Anbieter, Speed Insights (Aufbewahrung bei Vercel
-  nicht belegt), jeder neue Empfänger (Mail-Anbieter, Fehler-Tracker).
+  nicht belegt), jeder neue Empfänger (Mail-Anbieter, Fehler-Tracker); AGB Ziffer 2 und
+  Nutzungsrichtlinie Ziffer 2 nennen noch Lovable und Cursor (Vorschlag in #88).
 - **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche).
 - **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste), Obergrenzen in
   `tests/guards/file-size.test.ts`.
