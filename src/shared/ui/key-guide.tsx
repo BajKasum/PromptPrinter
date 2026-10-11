@@ -19,8 +19,8 @@ const GEMINI_TERMS_URL = "https://ai.google.dev/gemini-api/terms";
 /**
  * Die Anleitung zu einem kostenlosen Gemini-Key (Audit 23.09.2026, P-1).
  *
- * Free chattet nur mit eigenem Key, und die Zielgruppe hat meist ein Lovable-
- * oder ChatGPT-Abo, aber keinen API-Key. Der Weg dahin war bisher ein
+ * Free chattet nur mit eigenem Key, und wer herkommt, hat meist ein ChatGPT-
+ * oder Claude-Abo, aber keinen API-Key. Der Weg dahin war bisher ein
  * Rätselraten. Drei Schritte, der dritte ist das Einfügen: im Chat steht das
  * Feld direkt darunter (`field`), in den Einstellungen steht es schon darüber.
  */

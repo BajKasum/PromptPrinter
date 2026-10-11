@@ -15,7 +15,7 @@ export type LibraryItem = {
   updatedAt: string; // ISO, drives the "Kürzlich verwendet" filter + the footer's relative time
   savedPromptCount: number; // prompts kept in this project's Ergebnisse
   chatCount: number; // conversations living inside this workspace
-  toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "Lovable"]
+  toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "ChatGPT"]
   isFavorite: boolean;
 };
 

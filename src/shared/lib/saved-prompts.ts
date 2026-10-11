@@ -28,7 +28,7 @@ const FENCE = /```([^\n`]*)\n([\s\S]*?)```/g;
  * reason — an example JSON payload, a schema sketch, a shell command,
  * anything a model tends to append alongside its main answer — got that
  * second block silently folded into the saved prompt. The user would only
- * find out once they pasted a "prompt" into Lovable/Cursor and it made no
+ * find out once they pasted a "prompt" into their AI and it made no
  * sense, which is exactly the moment this product exists to prevent.
  *
  * Selection instead of concatenation: prefer a block tagged ```text (what the

@@ -7,7 +7,7 @@
 //
 // CommonMark erkennt eine schliessende Fence nur auf einer eigenen Zeile. Der
 // Block bleibt dann offen bis zum Ende der Antwort, die drei Backticks stehen
-// sichtbar im Prompt, und "Prompt kopieren" kopiert sie mit ins Bau-Tool.
+// sichtbar im Prompt, und "Prompt kopieren" kopiert sie mit in die KI.
 // "Speichern" war davon nie betroffen, extractPrompt (saved-prompts.ts) sucht
 // mit einer Regex, die das Ende auch mitten in der Zeile findet — Kopieren und
 // Speichern lieferten also verschiedene Texte.

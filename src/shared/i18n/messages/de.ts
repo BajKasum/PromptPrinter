@@ -404,7 +404,7 @@ export const de = {
     skip: "Überspringen",
     submit: "Absenden",
     oneMoment: "Einen Moment…",
-    prompt: "Sag einfach, was du bauen willst.",
+    prompt: "Sag einfach, was du brauchst.",
     close: "Sprachmodus schliessen",
     privacyNotice:
       "Chrome und Edge schicken deine Aufnahme zur Erkennung an Google bzw. Microsoft, Safari erkennt auf dem Gerät.",
@@ -717,7 +717,7 @@ export const de = {
         "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
         "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
         "Bis zu {projects} Projekte",
-        "Zugeschnitten auf dein Bau-Tool",
+        "Prompts für jede KI und jede Aufgabe",
         "Markdown-Export",
       ],
     },

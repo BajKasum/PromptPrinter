@@ -33,8 +33,8 @@ const factField = z.string().trim().max(400).default("");
 /**
  * Was die Analyse über ein Projekt herausfindet.
  *
- * Die sieben Kernfelder sind exakt die, die ein Bau-Tool sonst bei jedem
- * neuen Prompt neu erklärt bekommen müsste. `stack` und `conventions` sind
+ * Die sieben Kernfelder sind exakt die, die eine KI sonst bei jedem
+ * neuen Prompt für ein Softwareprojekt neu erklärt bekommen müsste. `stack` und `conventions` sind
  * die zwei Listen, die sich nicht sinnvoll in eine Zeile pressen lassen.
  * `confidence` ist die ehrliche Selbsteinschätzung des Modells: bei nur einem
  * README ist „low" die richtige Antwort, und die UI sagt das dann auch.
