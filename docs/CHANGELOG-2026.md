@@ -11,6 +11,40 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+**Neuausrichtung: Prompts für jede KI und jede Aufgabe (2026-10-11, Branch `feat/positionierung-jede-ki`):**
+Kasums Entscheid. PromptPrinter ist kein Werkzeug für Vibe-Coder und Bau-Tools (Lovable, Cursor, v0,
+Claude Code, Bolt, Replit) mehr, sondern gibt Prompts für jede KI und jede Aufgabe: Dokument, Webseite,
+Datenbank, Sicherheitsprüfung, Plan. Kasums Begründung: "Vibe-Coder" kommt bei Besuchern nicht gut an,
+es ist ein Werkzeug, das Prompts gibt. Die Positionierung vom 2026-07-22 (eine Nische statt
+zwei) ist damit ersetzt, nicht ergänzt.
+
+- **Finn (Produkt).** `src/server/system-prompt.ts` neu: gilt für jede Aufgabe, nimmt den Nutzer nicht als
+  Entwickler an, fragt je nach Aufgabe etwas anderes (Text: Leser, Ton, Länge, Format; Software: Screens,
+  Daten, Login, Look; Datenbank, Analyse, Prüfung: System, Technik, Umfang, Maßstab für ein gutes Ergebnis).
+  **Das Ziel-Tool ist keine feste Eröffnungsfrage mehr**, nur noch, wenn es den Prompt verändert (Code- oder
+  Bildwerkzeug). Ohne Angabe wird der Prompt so geschrieben, dass er in jeder KI läuft. Neu: Finn schreibt den
+  Prompt und erledigt die Aufgabe nicht selbst (eine Zeile, dann der Prompt). Die Schutzabsätze gegen
+  Anweisungen in Anhängen und Projektkontext sind unverändert. `system-prompt.test.ts` hält die Ausrichtung
+  fest (keine Bau-Tool-Namen, jede Aufgabe, Ziel-Tool keine feste Frage, Form der Antwort, Schutzabsätze).
+- **Texte der App** (fünf Sprachen): Sprachmodus "Sag einfach, was du brauchst", Free-Merkmal "Prompts für
+  jede KI und jede Aufgabe" statt "Zugeschnitten auf dein Bau-Tool" (auch `pricing.ts`). fr, it und es sind
+  nicht von Muttersprachlern geprüft.
+- **Öffentliche Seiten.** Hero (Überschrift "Sag mir, was du brauchst. Ich schreib dir den Prompt.", Sprechblase
+  "Prompt-Buddy", drei Demo-Durchläufe aus verschiedenen Bereichen: Sicherheitsprüfung, Bewerbung, Datenbank),
+  die drei Schritte, die FAQ, die Beispiel-Chats und -Projekte der Produktvorschau, die Über-Seite, Titel und
+  Beschreibung (`layout.tsx`, Vorschaubild, `llms.txt`), vier Hilfe-Artikel (`updated` auf 2026-10-11).
+- **Vergleiche.** Der dritte Vergleich hieß "Direkt im Bau-Tool prompten" und fiel mit der Prämisse. Er heißt
+  jetzt `/vergleich/direkt-in-die-ki-tippen`; die alte Adresse leitet dauerhaft um (`next.config.ts`). Die
+  anderen beiden sind umgeschrieben, ohne Lovable und Cursor.
+- **Doku.** README, `CLAUDE.md` ("Was ist PromptPrinter?" und der Chat-Eintrag im IST-Zustand), `docs/PRODUCT.md`
+  (Nutzer und Zweck), `docs/MASCOT.md` ("Prompt-Buddy"), Lesetext des Design-Skills unter
+  `.claude/skills/promptprinter-design/`.
+- **Bewusst nicht angefasst.** *Rechtstexte* (AGB Ziffer 2 nennt noch "Lovable, Cursor" als Beispiele,
+  Nutzungsrichtlinie Ziffer 2 sagt "KI-Bau-Tools wie Lovable, Cursor oder Claude Code"): Vorschlag liegt bei
+  Kasum, juristisch prüfen. *Projekt-Gedächtnis und Struktur-Felder* (Stack, Frontend, Backend) sind weiter auf
+  Softwareprojekte zugeschnitten, das ist ein Funktionsthema und kein Textthema. *Die visuelle Marke* heißt in
+  `PRODUCT.md` weiter "Refined Dev-Brand". Frühere Changelog-Einträge und Audits bleiben wörtlich.
+
 **Reste ohne Kasum (2026-10-07, PR #70 bis #84, Dependabot #50):** zwei Sitzungen, die erste
 erreichte bei Teil C das Nutzungslimit, die zweite prüfte alles Gemergte unabhängig nach (Webhook gegen
 die Doku, `optionalEnv`, die Schnitte Zeile für Zeile) und arbeitete weiter. Ausgangslage: `main` =

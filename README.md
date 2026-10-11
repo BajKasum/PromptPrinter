@@ -4,10 +4,11 @@
 
 # PromptPrinter
 
-**Der KI-Chat, der nachfragt, bevor du Credits verbrennst.**
+**Beschreib deine Idee. Finn schreibt dir den Prompt.**
 
-Finn stellt die Rückfragen, die dein Bau-Tool nie stellt, und liefert dir den
-fertigen Prompt für Lovable, Cursor, v0, Claude Code, Bolt und Co.
+Für jede KI und jede Aufgabe: ein Dokument, eine Webseite, eine Datenbank, eine
+Sicherheitsprüfung. Finn fragt kurz nach, was fehlt, und liefert dir den
+fertigen Prompt.
 
 [**promptprinter.app**](https://promptprinter.app)
 
@@ -23,26 +24,26 @@ fertigen Prompt für Lovable, Cursor, v0, Claude Code, Bolt und Co.
 
 ## Was ist PromptPrinter?
 
-Wer eine App mit Lovable oder Cursor baut, tippt oft drei Sätze, und das Tool
-legt los. Es fragt nicht nach Datenbank, Login oder Design, es rät. Jede falsche
-Annahme kostet eine Korrekturrunde, und die kostet Credits.
+Die meisten Prompts scheitern daran, dass etwas Wichtiges fehlt: für wen es
+ist, in welchem Format, was die KI nicht tun soll. Die KI fragt nicht, sie rät.
+Jede falsche Annahme kostet eine Korrekturrunde, und je nach Tool auch Credits.
 
-PromptPrinter setzt einen Schritt davor. Du erzählst Finn, was du bauen willst.
-Er stellt **eine** gebündelte Rückfrage und schreibt dir danach einen Prompt, der
-für sich steht.
+PromptPrinter setzt einen Schritt davor. Du erzählst Finn, was du brauchst. Er
+stellt **eine** gebündelte Rückfrage, nur zu dem, was für deine Aufgabe zählt, und
+schreibt dir danach einen Prompt, der für sich steht.
 
-1. **Idee erzählen**, so grob, wie sie gerade ist.
-2. **Eine Rückfrage beantworten**: Ziel-Tool, Kern-Screens, Datenmodell, Login,
-   Design-Richtung.
-3. **Prompt kopieren** und ins Bau-Tool einfügen.
+1. **Beschreiben**, so grob, wie es gerade ist.
+2. **Eine Rückfrage beantworten**, zum Beispiel wer den Text liest, welche Technik
+   dahintersteckt oder wie weit die Aufgabe reicht.
+3. **Prompt kopieren** und in die KI deiner Wahl einfügen.
 
 ## Funktionen
 
-- **Rückfrage statt Raten.** Finn fragt nur, was für deine Idee zählt, und lässt
-  Offenes als sichtbare Lücke stehen, statt etwas zu erfinden.
-- **Zugeschnitten auf dein Tool.** Lovable, Cursor, v0, Claude Code, Bolt oder
-  Replit. Nach jeder Änderung bekommst du den ganzen Prompt neu, nie nur einen
-  Ausschnitt.
+- **Rückfrage statt Raten.** Finn fragt nur, was für deine Aufgabe zählt, und
+  lässt Offenes als sichtbare Lücke stehen, statt etwas zu erfinden.
+- **Für jede KI.** Der Prompt läuft in jeder KI, die Text annimmt. Sagst du Finn,
+  für welche er gedacht ist, schneidet er ihn darauf zu. Nach jeder Änderung
+  bekommst du den ganzen Prompt neu, nie nur einen Ausschnitt.
 - **Fotos und Dateien anhängen.** Ein Screenshot oder eine Anforderungsliste an
   die Nachricht, Finn sieht sie und baut den Prompt darauf. Die Anhänge bleiben
   im Chat.

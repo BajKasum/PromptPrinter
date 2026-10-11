@@ -19,11 +19,11 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Nutzung, Gespeicherte Prompts, Abrechnung, Sprache, Hilfe). ⌘K ist die
   Befehlspalette, ohne sichtbaren Button. Login landet auf `/chats/new`; `/chat` und
   `/dashboard` leiten um.
-- **Ein Chat (Finn):** eine gebündelte Rückfrage (Ziel-Tool, Kern-Screens, Datenmodell,
-  Auth, Design), dann ein fertiger, aufs Ziel-Tool zugeschnittener Prompt im
-  Codeblock. Systemprompt: `src/server/system-prompt.ts`. Streaming per SSE, Antwort
-  neu erzeugen, eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und
-  Dateien als Anhänge (dauerhaft gespeichert).
+- **Ein Chat (Finn):** eine gebündelte Rückfrage, nur zu dem, was für die Aufgabe zählt
+  (Text: Leser, Ton, Länge; Software: Screens, Daten, Login), dann ein fertiger Prompt
+  im Codeblock, der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit
+  Test). Streaming per SSE, Antwort neu erzeugen, eigene Frage bearbeiten, Sprachmodus
+  (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert).
 - **Projekte sind Workspaces:** Anweisungen, Struktur, Dateien, mehrere Chats, das
   **Gedächtnis** (einmalige Analyse von Dateien und einem öffentlichen GitHub-Repo,
   Tabelle `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne
@@ -105,21 +105,16 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 
 ## Was ist PromptPrinter?
 
-SaaS-Tool mit einem **KI-gestützten Chat** (Finn) für Vibe-Coder, die Prompts
-in KI-Bau-Tools füttern (Lovable, Cursor, v0, Claude Code, Bolt, Replit &
-Co.). Kernversprechen: nicht Credits verbrennen — Finn stellt in einer
-gebündelten Rückfrage die Dinge, die das Bau-Tool selbst nicht abfragt
-(Ziel-Tool, Kern-Screens, Datenmodell, Auth, Design-Richtung), bevor der
-fertige, aufs Ziel-Tool zugeschnittene Prompt kommt. Solo-/Indie-Projekt,
-ein Gründer.
+SaaS-Tool mit einem **KI-gestützten Chat** (Finn), das aus einer Idee den fertigen
+Prompt macht, für **jede KI und jede Aufgabe** (Dokument, Webseite, Datenbank,
+Sicherheitsprüfung, Plan, ...). Kernversprechen: ein guter erster Prompt statt
+Nachbesserungsrunden. Finn stellt in einer gebündelten Rückfrage nur die Dinge, die
+für diese Aufgabe zählen (die Ziel-KI nur, wenn sie den Prompt verändert), danach
+kommt der fertige Prompt. Solo-/Indie-Projekt, ein Gründer.
 
-> Bis 2026-07-16 lautete die Beschreibung hier „verwandelt Ideen in
-> build-fertige Prompt-Pakete" — das setzte den Chat→Ergebnis-Handoff
-> voraus, der an diesem Tag ersatzlos entfernt wurde (siehe oben). Am
-> 2026-07-22 die Positionierung nach einer Grill-me-Session bewusst
-> geschärft (vorher „Developer und Vibe-Coder" allgemein + „everyday
-> goals" im System-Prompt, siehe „Finn-Umbau" unten): eine Nische statt
-> zwei Zielgruppen gleichzeitig zu bedienen.
+> **Seit 2026-10-11 keine Zielgruppe "Vibe-Coder" und keine Bau-Tools (Lovable,
+> Cursor, v0 ...) mehr als Versprechen**, weder in Texten noch im Systemprompt.
+> Kasums Entscheid, Begründung im Changelog. Neue Texte nennen keine Bau-Tools.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
 (Auth/DB/RLS) · Z.ai/GLM (primär) + Gemini (`@google/genai`, sekundär) ·
