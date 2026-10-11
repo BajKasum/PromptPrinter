@@ -91,14 +91,15 @@ export default function UeberPage() {
               Büro. Abende und Wochenenden.
             </p>
             <p>
-              Angefangen hat es mit einer Beobachtung an mir selbst. Ich habe mit
-              Lovable, Cursor und Claude Code gebaut und dabei jedes Mal
-              denselben Fehler gemacht: Ich tippe drei Sätze, drücke Enter, und
-              das Tool legt sofort los. Es fragt nicht, welche Datenbank ich
-              will. Es fragt nicht, ob es Login geben soll. Es fragt gar nichts,
-              es <em>rät</em>. Und wenn es falsch rät, merke ich das erst am
-              Ergebnis und darf die Runde nochmal drehen. Jede dieser Runden
-              kostet Credits.
+              Angefangen hat es mit einer Beobachtung an mir selbst. Ich
+              arbeite viel mit KI und habe dabei jedes Mal denselben Fehler
+              gemacht: Ich tippe drei Sätze, drücke Enter, und die KI legt
+              sofort los. Sie fragt nicht, für wen der Text sein soll. Sie
+              fragt nicht, wie ausführlich es werden darf oder was sie
+              weglassen soll. Sie fragt gar nichts, sie <em>rät</em>. Und wenn
+              sie falsch rät, merke ich das erst am Ergebnis und darf die Runde
+              nochmal drehen. Jede dieser Runden kostet Zeit, und je nach Tool
+              auch Credits.
             </p>
             <p>
               Das Ärgerliche daran: Die fehlenden Angaben hätte ich alle liefern
@@ -107,10 +108,11 @@ export default function UeberPage() {
             <p>
               Genau das macht Finn. Er ist der Delfin, mit dem du hier redest,
               und sein ganzer Job besteht darin, einmal ordentlich nachzufragen,
-              bevor du den Prompt in dein Bau-Tool kippst. Eine gebündelte
-              Rückfrage: Ziel-Tool, die wichtigsten Screens, was gespeichert
-              wird, ob es Konten gibt, wie es aussehen soll. Danach bekommst du
-              einen Prompt, der für sich steht.
+              bevor du den Prompt in deine KI kippst. Eine gebündelte
+              Rückfrage, nur zu dem, was für deine Aufgabe zählt: bei einem
+              Text zum Beispiel, für wen er ist und wie er klingen soll, bei
+              einer Datenbank, was gespeichert wird und wie es zusammenhängt.
+              Danach bekommst du einen Prompt, der für sich steht.
             </p>
             <p>
               Das ist kein grosses technisches Kunststück. Es ist der Schritt,

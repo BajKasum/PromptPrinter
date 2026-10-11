@@ -15,7 +15,7 @@ import { JsonLd } from "@/shared/ui/json-ld";
 export const metadata: Metadata = pageMetadata({
   title: "Vergleich und Alternativen",
   description:
-    "PromptPrinter im Vergleich mit dem, was du stattdessen tun könntest: ChatGPT direkt fragen, eine Prompt-Vorlage nehmen oder gleich ins Bau-Tool tippen.",
+    "PromptPrinter im Vergleich mit dem, was du stattdessen tun könntest: ChatGPT direkt fragen, eine Prompt-Vorlage nehmen oder die Aufgabe gleich in eine KI tippen.",
   path: "/vergleich",
 });
 
@@ -97,8 +97,8 @@ export default function VergleichPage() {
             </h2>
             <p>
               Im Kern drei: ein allgemeiner KI-Chat, eine Prompt-Vorlage oder der direkte Weg
-              ins Bau-Tool. Keine davon ist falsch. Sie unterscheiden sich darin, wer merkt, was
-              im Prompt fehlt: du selbst, niemand, oder das Bau-Tool erst beim Bauen.
+              in die KI. Keine davon ist falsch. Sie unterscheiden sich darin, wer merkt, was
+              im Prompt fehlt: du selbst, niemand, oder die KI erst bei der Arbeit.
             </p>
             <p>
               Wie PromptPrinter selbst arbeitet, steht in der <Link href="/docs">Hilfe</Link>. Was

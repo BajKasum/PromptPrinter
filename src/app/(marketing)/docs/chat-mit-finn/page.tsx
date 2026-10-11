@@ -33,39 +33,41 @@ export default function Page() {
     >
       <h2>Warum fragt Finn erst nach?</h2>
       <p>
-        Bau-Tools wie Lovable, Cursor, v0 oder Bolt fangen sofort an zu bauen,
-        auch wenn dein Prompt die Hälfte offen lässt. Was fehlt, erfinden sie,
-        und du merkst es erst, wenn das Ergebnis danebenliegt. Jede
-        Korrekturrunde kostet dich Credits und Zeit.
+        Eine KI fängt sofort an, auch wenn dein Prompt die Hälfte offen lässt.
+        Was fehlt, erfindet sie, und du merkst es erst, wenn das Ergebnis
+        danebenliegt. Jede Korrekturrunde kostet dich Zeit, und je nach Tool
+        auch Credits.
       </p>
       <p>
         Deshalb macht Finn vorher den Vollständigkeits-Durchgang: eine einzige
-        gebündelte Nachricht mit den Punkten, die für <em>deine</em> Idee
-        wirklich zählen. Typischerweise:
+        gebündelte Nachricht mit den Punkten, die für <em>deine</em> Aufgabe
+        wirklich zählen. Welche das sind, hängt davon ab, worum es geht:
       </p>
       <ul>
         <li>
-          <strong>Ziel-Tool</strong>, falls du es noch nicht gesagt hast
+          <strong>Bei einem Text:</strong> für wen er ist, in welchem Ton, wie
+          lang und in welchem Format
         </li>
         <li>
-          <strong>Kern-Screens oder Abläufe</strong>, also was man in der App
-          überhaupt tun kann
+          <strong>Bei einer Webseite oder App:</strong> die wichtigsten Seiten
+          oder Abläufe, was gespeichert wird, ob es Konten gibt und in welche
+          Design-Richtung es gehen soll
         </li>
         <li>
-          <strong>Datenmodell</strong>, was gespeichert wird und wie die Dinge
-          zusammenhängen
+          <strong>Bei einer Datenbank, einer Analyse oder einer
+          Sicherheitsprüfung:</strong> um welches System es geht, welche Technik
+          dahintersteckt, wie weit die Aufgabe reicht und woran du ein gutes
+          Ergebnis erkennst
         </li>
         <li>
-          <strong>Login</strong>, ob es Konten gibt und wie man sich anmeldet
-        </li>
-        <li>
-          <strong>Design-Richtung</strong>, damit nicht der Standard-Look
-          herauskommt
+          <strong>Die KI, für die der Prompt gedacht ist:</strong> nur, wenn es
+          den Prompt verändert, zum Beispiel bei einem Code- oder
+          Bild-Werkzeug
         </li>
       </ul>
       <p>
-        Was auf deine Idee nicht zutrifft, lässt Finn weg. Die Frage wird nicht
-        künstlich auf fünf Punkte aufgefüllt.
+        Was auf deine Aufgabe nicht zutrifft, lässt Finn weg. Die Frage wird
+        nicht künstlich aufgefüllt.
       </p>
 
       <h2>Wie beantworte ich die Rückfrage am schnellsten?</h2>
@@ -77,14 +79,16 @@ export default function Page() {
         Unklarheiten darfst du offen lassen. Schreib ruhig „weiss ich noch
         nicht“, dann setzt Finn an der Stelle eine sichtbare Lücke wie{" "}
         <code>[dein Wert]</code> in den Prompt, statt sich etwas zu erfinden, das
-        dann später falsch im Bau-Tool landet.
+        das später falsch in der Antwort der KI landet.
       </p>
 
-      <h2>Wie sage ich Finn, für welches Tool der Prompt ist?</h2>
+      <h2>Wie sage ich Finn, für welche KI der Prompt ist?</h2>
       <p>
-        Es gibt bewusst kein Auswahlmenü dafür. Du sagst es einfach im Gespräch,
-        „für Lovable“, „ich baue in Claude Code“, und der Prompt wird auf die
-        Eigenheiten dieses Tools zugeschnitten. Sagst du nichts, fragt Finn.
+        Du musst nicht. Ohne Angabe schreibt Finn den Prompt so, dass er in
+        jeder KI funktioniert. Willst du ihn auf eine bestimmte zuschneiden,
+        sagst du es einfach im Gespräch, etwa „für ChatGPT“ oder „für ein
+        Bild-Werkzeug“, und der Prompt wird auf deren Eigenheiten angepasst. Es
+        gibt bewusst kein Auswahlmenü dafür.
       </p>
 
       <h2>Kann ich Screenshots und Dateien an eine Nachricht hängen?</h2>
@@ -146,8 +150,8 @@ export default function Page() {
       <h2>Kann ich den Prompt im selben Chat ändern?</h2>
       <p>
         Ein Chat ist ein Gespräch, kein Formular. Du kannst jederzeit
-        nachschieben: „mach es kürzer“, „nimm doch Postgres statt Supabase“,
-        „ergänze Login mit Google“. Du bekommst jedes Mal den{" "}
+        nachschieben: „mach es kürzer“, „schreib es förmlicher“, „nimm doch
+        Postgres statt Supabase“. Du bekommst jedes Mal den{" "}
         <strong>vollständigen aktualisierten Prompt</strong> zurück, nie nur den
         geänderten Ausschnitt, damit du immer ein Stück Text hast, das du am
         Stück kopieren kannst.
@@ -158,11 +162,12 @@ export default function Page() {
         wird, in ein <Link href="/docs/projekte">Projekt verschieben</Link>.
       </p>
 
-      <h2>Hilft Finn auch, wenn ich keine Software baue?</h2>
+      <h2>Für welche Aufgaben ist Finn gedacht?</h2>
       <p>
-        Finn ist auf Bau-Tools ausgerichtet, aber nicht stur. Fragst du nach
-        etwas anderem, hilft er trotzdem, ohne dir Datenmodell- und
-        Login-Fragen aufzuzwingen, die keinen Sinn ergeben.
+        Für alles, wofür du eine KI einsetzen willst: Texte und Dokumente,
+        Webseiten und Apps, Datenbanken, Analysen, Sicherheitsprüfungen,
+        Lernpläne. Finn schreibt den Prompt dafür. Die Aufgabe selbst erledigt
+        die KI, in die du ihn einfügst.
       </p>
 
       <h2>Wie breche ich eine Antwort ab?</h2>

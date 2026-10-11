@@ -127,10 +127,10 @@ export function HowItWorks() {
                     {chat && (
                       <div className="mt-4 space-y-2.5">
                         <div className="max-w-[88%] rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-[12.5px] leading-relaxed text-foreground/70">
-                          Welche Datenbank nutzt du, und brauchst du von Anfang an Login?
+                          Für wen ist der Text, und wie lang darf er werden?
                         </div>
                         <div className="ml-auto max-w-[88%] rounded-2xl rounded-br-sm border border-accent/30 bg-accent-subtle px-3.5 py-2 text-[12.5px] leading-relaxed text-foreground">
-                          Supabase, und ja, E-Mail plus Google.
+                          Für meine Chefin, eine halbe Seite.
                         </div>
                       </div>
                     )}

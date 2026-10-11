@@ -35,9 +35,9 @@ export function buildLlmsTxt(): string {
 
   return `# PromptPrinter
 
-> Ein KI-Chat, der nachfragt, bis deine Idee klar ist, und dir dann den fertigen, passenden Prompt liefert, zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.
+> Ein KI-Chat, der nachfragt, bis klar ist, was du brauchst, und dir dann den fertigen Prompt liefert, für jede KI und jede Aufgabe.
 
-PromptPrinter richtet sich an Vibe-Coder, die Prompts in KI-Bau-Tools füttern. Bevor du in Lovable, Cursor oder Claude Code tippst, stellt der Chat-Assistent Finn eine gebündelte Rückfrage zu dem, was dein Bau-Tool selbst nicht abfragt, Ziel-Tool, Kern-Screens, Datenmodell, Auth, Design-Richtung, und liefert danach den fertigen, aufs Ziel-Tool zugeschnittenen Prompt. Solo-Projekt von ${LEGAL.operator}, ${LEGAL.postalCity}, ${LEGAL.country}.
+PromptPrinter ist für alle, die eine KI für etwas einsetzen wollen und dafür einen guten Prompt brauchen, ob für ein Dokument, eine Webseite, eine Datenbank oder eine Sicherheitsprüfung. Bevor der Prompt entsteht, stellt der Chat-Assistent Finn eine gebündelte Rückfrage zu dem, was für die Aufgabe zählt, und liefert danach den fertigen Prompt, der in jeder KI funktioniert und auf Wunsch auf eine bestimmte zugeschnitten ist. Solo-Projekt von ${LEGAL.operator}, ${LEGAL.postalCity}, ${LEGAL.country}.
 
 ## Preise
 ${plans}

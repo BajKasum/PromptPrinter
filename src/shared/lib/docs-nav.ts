@@ -39,21 +39,21 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Erste Schritte",
         summary:
           "Konto anlegen, ersten Chat öffnen und in ein paar Minuten den ersten fertigen Prompt in der Hand halten.",
-        updated: "2026-10-01",
+        updated: "2026-10-11",
       },
       {
         slug: "chat-mit-finn",
         title: "Chat mit Finn",
         summary:
           "Warum Finn erst nachfragt statt sofort zu liefern, und wie du seine Rückfrage am schnellsten beantwortest.",
-        updated: "2026-10-02",
+        updated: "2026-10-11",
       },
       {
         slug: "der-fertige-prompt",
         title: "Der fertige Prompt",
         summary:
           "Kopieren, exportieren, nachschärfen: was im Prompt steht und wie du ihn ohne Neustart änderst.",
-        updated: "2026-10-01",
+        updated: "2026-10-11",
       },
     ],
   },
@@ -64,8 +64,8 @@ export const DOCS_GROUPS: DocGroup[] = [
         slug: "projekte",
         title: "Projekte als Arbeitsplatz",
         summary:
-          "Wenn du länger an einer Sache baust: ein Projekt hält Anweisungen, Struktur und mehrere Chats zusammen.",
-        updated: "2026-10-01",
+          "Wenn du länger an einer Sache arbeitest: ein Projekt hält Anweisungen, Struktur und mehrere Chats zusammen.",
+        updated: "2026-10-11",
       },
       {
         slug: "dateien",

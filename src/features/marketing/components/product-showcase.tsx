@@ -152,9 +152,9 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
 // finished prompt lives inside the conversation itself. ────────────────────
 
 const CHATS: { title: string; when: string; messages: number }[] = [
-  { title: "KI-Habit-Tracker mit Streaks", when: "vor 2 Std.", messages: 8 },
+  { title: "Sicherheitsprüfung für meine Web-App", when: "vor 2 Std.", messages: 8 },
   { title: "Bewerbungsschreiben für UX-Rolle", when: "vor 5 Std.", messages: 4 },
-  { title: "Rezept-App für Resteverwertung", when: "vor 1 Std.", messages: 3 },
+  { title: "Datenbank für den Sportverein", when: "vor 1 Std.", messages: 3 },
 ];
 
 function ChatsView() {
@@ -198,9 +198,9 @@ function ChatsView() {
 const PROJECT_FILTERS = ["Alle", "Favoriten", "Kürzlich verwendet"];
 
 const PROJECTS = [
-  { name: "Streak Coach", chats: 3, fav: true, when: "vor 2 Std." },
-  { name: "Hundesitter-Markt", chats: 2, fav: false, when: "vor 1 Tag" },
-  { name: "Artlokal", chats: 1, fav: false, when: "vor 3 Tagen" },
+  { name: "Bewerbungen 2027", chats: 3, fav: true, when: "vor 2 Std." },
+  { name: "Vereinsportal", chats: 2, fav: false, when: "vor 1 Tag" },
+  { name: "Sicherheitscheck", chats: 1, fav: false, when: "vor 3 Tagen" },
 ];
 
 function ProjectsView() {

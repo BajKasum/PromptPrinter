@@ -7,7 +7,7 @@ const SOCIAL_IMAGE = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "PromptPrinter, Aus rohen Ideen build-fertige Prompts",
+  alt: "PromptPrinter, Aus deiner Idee der fertige Prompt",
 };
 
 /**

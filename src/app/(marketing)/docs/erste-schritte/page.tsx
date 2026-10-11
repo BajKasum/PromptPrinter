@@ -31,10 +31,17 @@ export default function Page() {
         Einrichtungsassistent, keine Fragebögen, es geht sofort los.
       </p>
 
-      <h2>2. Beschreib, was du bauen willst</h2>
+      <h2>2. Beschreib, was du brauchst</h2>
       <p>
         Schreib in den Chat, was dir vorschwebt, so wie du es einem Kollegen
-        erzählen würdest. Ganze Sätze, kein Stichwortstil nötig, und ruhig grob:
+        erzählen würdest. Ganze Sätze, kein Stichwortstil nötig, und ruhig grob.
+        Zwei Beispiele:
+      </p>
+      <p>
+        <em>
+          „Ich brauche ein Bewerbungsschreiben für ein Praktikum als Entwickler,
+          höchstens eine Seite.“
+        </em>
       </p>
       <p>
         <em>
@@ -44,19 +51,19 @@ export default function Page() {
         </em>
       </p>
       <p>
-        Wenn du schon weisst, in welches Tool der Prompt am Ende soll, sag es
-        gleich dazu, also etwa „für Lovable“ oder „ich baue das in Cursor“. Wenn
-        nicht, fragt Finn von selbst nach.
+        Wenn du schon weisst, in welche KI der Prompt am Ende soll, sag es
+        gleich dazu, also etwa „für ChatGPT“ oder „für ein Bild-Werkzeug“. Sagst
+        du nichts, schreibt Finn den Prompt so, dass er in jeder KI funktioniert.
       </p>
 
       <h2>3. Beantworte die eine Rückfrage</h2>
       <p>
         Statt sofort loszuschreiben, stellt Finn dir <strong>eine gebündelte
-        Rückfrage</strong>: meist zu Ziel-Tool, den wichtigsten Screens, den
-        Daten, die du speicherst, ob es Login geben soll, und in welche
-        Design-Richtung es gehen soll. Das ist genau der Durchgang, den ein
-        Bau-Tool wie Lovable oder Cursor selbst nie macht, und der Grund, warum
-        du danach weniger Korrekturrunden brauchst.
+        Rückfrage</strong>, nur zu dem, was für deine Aufgabe zählt: bei einem
+        Text zum Beispiel, für wen er ist, in welchem Ton und wie lang, bei einer
+        App, welche Seiten es gibt und was gespeichert wird. Das ist genau der
+        Durchgang, den eine KI bei einem schnell getippten Prompt selbst nicht
+        macht, und der Grund, warum du danach weniger Korrekturrunden brauchst.
       </p>
       <p>
         Antworte in einer Nachricht. Was du nicht weisst, kannst du offen lassen,
@@ -67,7 +74,7 @@ export default function Page() {
       <h2>4. Nimm den Prompt mit</h2>
       <p>
         Danach kommt der fertige Prompt in einem Codeblock. Ein Klick auf
-        Kopieren, ab damit in dein Bau-Tool. Passt etwas nicht, sag es einfach im
+        Kopieren, ab damit in die KI deiner Wahl. Passt etwas nicht, sag es einfach im
         Chat, du bekommst den kompletten überarbeiteten Prompt zurück, nicht nur
         das geänderte Stück.
       </p>

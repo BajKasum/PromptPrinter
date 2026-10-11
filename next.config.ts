@@ -103,10 +103,20 @@ const nextConfig: NextConfig = {
   // ("Nutzung"), sichtbar nur für is_admin. Die Umleitung hält alte
   // Lesezeichen am Leben; ein Nicht-Admin landet auf seiner eigenen
   // Nutzungsseite, wie jeder andere Weg dorthin auch.
+  //
+  // /vergleich/direkt-im-bau-tool-prompten heisst seit der Neuausrichtung
+  // vom 11.10.2026 (Prompts für jede KI, nicht nur für Bau-Tools)
+  // /vergleich/direkt-in-die-ki-tippen. Die alte Adresse war öffentlich und in
+  // der Sitemap, sie bleibt über die Umleitung erreichbar.
   async redirects() {
     return [
       { source: "/features", destination: "/#funktionen", permanent: true },
       { source: "/admin", destination: "/usage", permanent: true },
+      {
+        source: "/vergleich/direkt-im-bau-tool-prompten",
+        destination: "/vergleich/direkt-in-die-ki-tippen",
+        permanent: true,
+      },
     ];
   },
 };
