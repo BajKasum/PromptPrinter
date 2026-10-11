@@ -12,20 +12,20 @@ export const steps = [
   {
     n: "01",
     Icon: Pencil,
-    title: "Erzähl mir deine Idee",
-    body: "Sag mir in einem Satz, was du bauen willst, egal wie grob. Ein paar Notizen reichen. Ich hol dich da ab, wo du gerade stehst.",
+    title: "Sag mir, was du brauchst",
+    body: "Sag mir in einem Satz, wofür du eine KI brauchst, egal wie grob. Ein Dokument, eine Webseite, eine Datenbank, eine Sicherheitsprüfung: ein paar Notizen reichen. Ich hol dich da ab, wo du gerade stehst.",
   },
   {
     n: "02",
     Icon: MessageSquare,
     title: "Wir klären es kurz",
-    body: "Ich stell dir ein paar einfache Fragen und helf dir auch, wenn du Zielgruppe oder Technik noch gar nicht kennst.",
+    body: "Ich stell dir ein paar einfache Fragen, nur zu dem, was für deine Aufgabe zählt, und helf dir beim Entscheiden, wenn du etwas noch nicht weisst.",
     chat: true,
   },
   {
     n: "03",
     Icon: Copy,
     title: "Du bekommst deinen Prompt, startklar",
-    body: "Fertig formuliert, zugeschnitten auf dein Tool, direkt im Chat. Ein Klick, kopiert, und du legst los.",
+    body: "Fertig formuliert, direkt im Chat, und er funktioniert in jeder KI. Ein Klick, kopiert, und du legst los.",
   },
 ];

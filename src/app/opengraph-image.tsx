@@ -10,7 +10,7 @@ export const runtime = "edge";
 
 // Branded 1200×630 social card. Next auto-injects this into the OpenGraph and
 // Twitter tags defined in the root layout, so shares finally show a preview.
-export const alt = "PromptPrinter, Aus rohen Ideen build-fertige Prompts";
+export const alt = "PromptPrinter, Aus deiner Idee der fertige Prompt";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -78,8 +78,8 @@ export default function OpengraphImage() {
             letterSpacing: "-0.03em",
           }}
         >
-          <span style={{ color: "#E8EBEF" }}>Aus rohen Ideen&nbsp;</span>
-          <span style={{ color: "#8FCDF2" }}>build-fertige Prompts.</span>
+          <span style={{ color: "#E8EBEF" }}>Aus deiner Idee&nbsp;</span>
+          <span style={{ color: "#8FCDF2" }}>der fertige Prompt.</span>
         </div>
 
         <div

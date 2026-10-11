@@ -76,16 +76,17 @@ export function Hero() {
                 JavaScript lief. Finn, die Buttons und die Demo blenden
                 weiterhin ein, sie sind nicht das, worauf man wartet. */}
             <h1 className="enter-rise text-balance text-[32px] md:text-[54px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] font-semibold text-foreground">
-              Erzähl mir deine Idee.{" "}
-              <span className="text-accent-text">Ich bau den Plan mit dir.</span>
+              Sag mir, was du brauchst.{" "}
+              <span className="text-accent-text">Ich schreib dir den Prompt.</span>
             </h1>
 
             <p
               className="enter-rise mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-secondary"
               style={{ animationDelay: "0.1s" }}
             >
-              Erzähl mir, was du bauen willst. Ich bereite dir den fertigen
-              Prompt auf.
+              Ob Dokument, Webseite, Datenbank oder Sicherheitsprüfung: Ich
+              frag kurz nach, was fehlt, und gib dir den fertigen Prompt für
+              jede KI.
             </p>
 
         <motion.div
@@ -165,7 +166,7 @@ function BubbleDesktop() {
         >
           <p className="text-[13.5px] leading-snug text-foreground/90">
             Schön, dass du da bist. Ich bin{" "}
-            <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
+            <span className="font-semibold text-foreground">Finn</span>, dein Prompt-Buddy.
           </p>
         </div>
       </div>
@@ -209,7 +210,7 @@ function BubbleMobile() {
         >
           <p className="text-[13.5px] leading-snug text-foreground/90">
             Schön, dass du da bist. Ich bin{" "}
-            <span className="font-semibold text-foreground">Finn</span>, dein Bau-Buddy.
+            <span className="font-semibold text-foreground">Finn</span>, dein Prompt-Buddy.
           </p>
         </div>
       </div>
@@ -226,58 +227,58 @@ const STAGES: { key: StageKey; label: string }[] = [
   { key: "prompt", label: "Prompt" },
 ];
 
-// Each demo is a real, plain-language idea that walks through what actually
-// happens today: Finn asks only what this specific idea needs clarifying
-// (here, one thing each), then delivers the finished, paste-ready prompt.
-// This mirrors src/prompts/system.ts's
-// CHAT_SYSTEM_PROMPT (a bundled question covering only what applies, not a
-// fixed checklist), not an invented pipeline.
+// Each demo is a real, plain-language request from a different corner (a
+// security check, a letter, a database) to show that the task can be anything.
+// It walks through what actually happens: Finn asks only what this specific
+// task needs clarifying (here, one thing each), then delivers the finished,
+// paste-ready prompt. This mirrors src/server/system-prompt.ts
+// (a bundled question covering only what applies, not a fixed checklist),
+// not an invented pipeline.
 const DEMOS = [
   {
-    idea: "Airbnb für Hundesitter",
-    question: "Für wen zuerst, Hundebesitzer oder Sitter?",
-    answer: "Für Besitzer, die kurzfristig jemanden brauchen.",
+    idea: "Sicherheitsprüfung für meine Web-App",
+    question: "Soll ich nur den Code prüfen, oder auch Login und Datenbank?",
+    answer: "Vor allem Login und Datenbank.",
     prompt: [
-      "Rolle: erfahrener Product Engineer.",
-      "Baue einen Marktplatz, der Hundebesitzer mit",
-      "verfügbaren Sittern in der Nähe verbindet.",
-      "Kernfunktionen: Suche, Buchung, Bezahlung,",
-      "Bewertungen nach dem Termin.",
-      "Zielgruppe: Besitzer, die kurzfristig",
-      "Betreuung suchen.",
+      "Rolle: erfahrener Sicherheitsprüfer.",
+      "Prüfe meine Web-App auf Schwachstellen,",
+      "mit Fokus auf Login und Datenbank.",
+      "Ordne jeden Fund nach Risiko und",
+      "schlage eine konkrete Lösung vor.",
+      "Was du nicht prüfen kannst, nennst du",
+      "offen, statt es zu raten.",
     ],
   },
   {
-    idea: "KI-Habit-Tracker mit Streaks",
-    question: "Sollen die KI-Anstupser eher locker-witzig oder ernsthaft-coachig klingen?",
-    answer: "Locker und ein bisschen witzig.",
+    idea: "Bewerbung für ein Praktikum",
+    question: "Welche Stärke soll auffallen, und wie förmlich darf es klingen?",
+    answer: "Ich lerne schnell, gern direkt statt steif.",
     prompt: [
-      "Rolle: Produkt-Coach, locker und ein",
-      "bisschen witzig im Ton.",
-      "Baue eine Habit-Tracking-App mit Streaks",
-      "und kurzen KI-Anstupsern nach jedem Check-in.",
-      "Kernfunktionen: Habits anlegen, tägliche",
-      "Check-ins, Streak-Zähler, Mikro-Belohnungen.",
+      "Rolle: Karriereberater, genau und ehrlich.",
+      "Schreibe ein Bewerbungsschreiben für ein",
+      "Praktikum als Entwickler, max. eine Seite.",
+      "Ton: direkt, nicht steif.",
+      "Stärke, die auffallen soll: lernt schnell.",
+      "Keine Floskeln, keine erfundenen Erfolge.",
     ],
   },
   {
-    idea: "Marktplatz für lokale Künstler",
-    question: "Verkaufen die Künstler direkt in der App, oder erstmal nur ein Schaufenster?",
-    answer: "Erstmal nur Schaufenster, Verkauf kommt später.",
+    idea: "Datenbank für einen Sportverein",
+    question: "Geht es nur um Mitglieder und Beiträge, oder auch um Trainingszeiten?",
+    answer: "Mitglieder, Beiträge und Trainingszeiten.",
     prompt: [
-      "Rolle: erfahrener Product Engineer.",
-      "Baue ein Schaufenster für lokale Künstler,",
-      "noch ohne eingebauten Checkout.",
-      "Kernfunktionen: Profile, Werk-Galerien,",
-      "Entdecken-Feed nach Stadt.",
-      "Zielgruppe: lokale Künstler und ihre",
-      "Sammler.",
+      "Rolle: erfahrener Datenbank-Architekt.",
+      "Entwirf die Datenbank für einen Sportverein:",
+      "Mitglieder, Beiträge und Trainingszeiten.",
+      "Gib Tabellen, Schlüssel und Beziehungen an",
+      "und erkläre kurz, warum du sie so wählst.",
+      "Nutze PostgreSQL.",
     ],
   },
 ];
 
 const NARRATION: Record<StageKey, { state: MascotState; line: string }> = {
-  idea: { state: "curious", line: "Erzähl mir, was du bauen willst …" },
+  idea: { state: "curious", line: "Erzähl mir, was du brauchst …" },
   clarify: { state: "listening", line: "Nur kurz nachgefragt, damit's wirklich passt …" },
   prompt: { state: "delivering", line: "Fertig, kopier ihn dir direkt …" },
 };

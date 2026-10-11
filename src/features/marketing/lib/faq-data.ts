@@ -11,6 +11,6 @@ export const faqs = [
   },
   {
     q: "Was bringt mir das, statt eine KI einfach direkt zu fragen?",
-    a: "Bevor du in Lovable, Cursor oder Claude Code überhaupt tippst, frag ich dich genau das, was dein Bau-Tool selbst nicht abfragt, Datenmodell, Auth, wie's aussehen soll. Das spart dir die Credits und Nachbesserungs-Runden, die ein zu vager erster Prompt sonst kostet. Der Prompt selbst ist ausserdem zugeschnitten, Lovable bekommt etwas anderes als Cursor. Und jedes Gespräch bleibt gespeichert, du erklärst nicht jedes Mal neu, woran du arbeitest.",
+    a: "Ein zu vager erster Prompt kostet dich Nachbesserungs-Runden, und je nach Tool auch Credits. Bevor ich schreibe, frag ich dich deshalb genau das, was für deine Aufgabe zählt: bei einem Text zum Beispiel, für wen er ist und wie er klingen soll, bei einer Datenbank oder einer Sicherheitsprüfung, was genau dazugehört. Der Prompt funktioniert in jeder KI, und sagst du mir, in welche er soll, schreibe ich ihn darauf zu. Und jedes Gespräch bleibt gespeichert, du erklärst nicht jedes Mal neu, woran du arbeitest.",
   },
 ];

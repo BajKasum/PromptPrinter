@@ -40,24 +40,22 @@ export const metadata: Metadata = {
   // gesetzt sind (shared/lib/site-verification.ts).
   verification: siteVerification(),
   title: {
-    default: "PromptPrinter, Aus rohen Ideen build-fertige Prompts",
+    default: "PromptPrinter, Aus deiner Idee der fertige Prompt",
     template: "%s · PromptPrinter",
   },
   description:
-    "Ein KI-Chat, der nachfragt, bis deine Idee klar ist, und dir dann den fertigen, passenden Prompt liefert, zugeschnitten auf Claude, ChatGPT, Lovable, Cursor, Stitch und mehr.",
+    "Ein KI-Chat, der nachfragt, bis klar ist, was du brauchst, und dir dann den fertigen Prompt liefert, für jede KI und jede Aufgabe.",
   keywords: [
     "KI-Prompts",
+    "Prompt-Generator",
     "Prompt-Engineering",
-    "Claude",
     "ChatGPT",
-    "Cursor",
-    "Lovable",
-    "v0",
-    "Stitch",
+    "Claude",
+    "Gemini",
   ],
   openGraph: {
     title: "PromptPrinter",
-    description: "Aus rohen Ideen build-fertige Prompts.",
+    description: "Aus deiner Idee der fertige Prompt.",
     url: BASE_URL,
     siteName: "PromptPrinter",
     type: "website",
@@ -66,7 +64,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "PromptPrinter",
-    description: "Aus rohen Ideen build-fertige Prompts.",
+    description: "Aus deiner Idee der fertige Prompt.",
   },
 };
 

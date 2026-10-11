@@ -5,7 +5,7 @@ import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
 //
 // ─── Regeln für den Inhalt ─────────────────────────────────────────────────
 // 1. Verglichen wird mit einer ARBEITSWEISE, nicht mit einem einzelnen
-//    Produkt. Über ChatGPT, Claude, Lovable oder Cursor steht hier nur, was
+//    Produkt. Über ChatGPT, Claude oder Gemini steht hier nur, was
 //    für die ganze Gattung gilt und sich nicht mit dem nächsten Update ändert.
 //    Preise, Limits und Funktionen fremder Produkte gehören nicht hierher:
 //    sie veralten, und eine falsche Angabe über einen Mitbewerber ist
@@ -49,7 +49,7 @@ export type Comparison = {
 };
 
 /** Wann die Vergleiche zuletzt inhaltlich geprüft wurden. */
-export const COMPARISONS_UPDATED = "2026-10-01";
+export const COMPARISONS_UPDATED = "2026-10-11";
 
 const PRICE_ROW = `Free mit eigenem API-Key, sonst Pro für ${PRO_PRICE_LABEL} im Monat`;
 
@@ -59,15 +59,15 @@ export const COMPARISONS: Comparison[] = [
     question: "PromptPrinter oder ChatGPT direkt fragen?",
     label: "ChatGPT oder Claude direkt fragen",
     summary:
-      "Wann ein allgemeiner KI-Chat für deinen Bau-Prompt reicht und wann sich die gebündelte Rückfrage von PromptPrinter lohnt.",
+      "Wann ein allgemeiner KI-Chat für deinen Prompt reicht und wann sich die gebündelte Rückfrage von PromptPrinter lohnt.",
     answer:
-      "Ein allgemeiner KI-Chat wie ChatGPT oder Claude schreibt dir einen Prompt, wenn du ihn darum bittest. Ob er vorher nachfragt, hängt davon ab, wie du fragst. PromptPrinter ist auf genau diese eine Aufgabe eingestellt: Finn fragt zuerst gebündelt nach dem, was deinem Bau-Tool fehlen würde, und liefert dann einen Prompt, der für sich steht.",
+      "Ein allgemeiner KI-Chat wie ChatGPT oder Claude schreibt dir einen Prompt, wenn du ihn darum bittest. Ob er vorher nachfragt, hängt davon ab, wie du fragst. PromptPrinter ist auf genau diese eine Aufgabe eingestellt: Finn fragt zuerst gebündelt nach dem, was deiner Aufgabe sonst fehlen würde, und liefert dann einen Prompt, der für sich steht.",
     other: "Allgemeiner KI-Chat",
     rows: [
       {
         topic: "Rückfrage vor dem Prompt",
         promptprinter:
-          "Von sich aus, in einer gebündelten Nachricht: Ziel-Tool, Kern-Screens, Datenmodell, Login und Design-Richtung, soweit es für deine Idee zählt",
+          "Von sich aus, in einer gebündelten Nachricht, nur zu dem, was für deine Aufgabe zählt",
         other: "Wenn du es verlangst oder das Modell von sich aus nachfragt",
       },
       {
@@ -88,7 +88,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         topic: "Wofür gebaut",
-        promptprinter: "Prompts für Bau-Tools wie Lovable, Cursor, v0 oder Claude Code",
+        promptprinter: "Prompts für jede Aufgabe und jede KI: Texte, Webseiten, Datenbanken, Sicherheitsprüfungen und mehr",
         other: "Alles: Schreiben, Recherche, Code, Prompts",
       },
       {
@@ -101,15 +101,15 @@ export const COMPARISONS: Comparison[] = [
       {
         question: "Wann reicht ChatGPT oder Claude?",
         paragraphs: [
-          "Wenn du schon weisst, welche Angaben ein guter Bau-Prompt braucht, kommst du mit einem allgemeinen KI-Chat ans selbe Ziel. Bitte ihn ausdrücklich, vor dem Schreiben nachzufragen, und nenn ihm dein Ziel-Tool.",
+          "Wenn du schon weisst, welche Angaben ein guter Prompt für deine Aufgabe braucht, kommst du mit einem allgemeinen KI-Chat ans selbe Ziel. Bitte ihn ausdrücklich, vor dem Schreiben nachzufragen, und nenn ihm, wofür der Prompt gedacht ist.",
           "Für einen einzelnen kleinen Prompt ist das der kürzeste Weg, vor allem, wenn du dort ohnehin ein Abo hast.",
         ],
       },
       {
         question: "Wann lohnt sich PromptPrinter?",
         paragraphs: [
-          "Wenn du nicht jedes Mal selbst daran denken willst, was fehlt. Finn stellt die Fragen zu Datenmodell, Login und Aufbau von sich aus, bevor du Credits in deinem Bau-Tool verbrauchst.",
-          "Arbeitest du länger an derselben Sache, merkt sich ein Projekt deinen Stack und deine Regeln. Du erklärst sie nicht in jedem Chat neu.",
+          "Wenn du nicht jedes Mal selbst daran denken willst, was fehlt. Finn stellt die Fragen, die für deine Aufgabe zählen, von sich aus, bevor du Zeit mit Nachbesserungen verbrauchst.",
+          "Arbeitest du länger an derselben Sache, merkt sich ein Projekt deinen Kontext und deine Regeln. Du erklärst sie nicht in jedem Chat neu.",
         ],
       },
       {
@@ -122,7 +122,7 @@ export const COMPARISONS: Comparison[] = [
       {
         question: "Was kann PromptPrinter nicht?",
         paragraphs: [
-          "Es ist kein allgemeiner Assistent. Es baut keine App, führt keinen Code aus und ersetzt dein Bau-Tool nicht. Es liefert den Prompt, mit dem du dort anfängst.",
+          "Es ist kein allgemeiner Assistent. Es erledigt die Aufgabe nicht selbst: Es schreibt keinen fertigen Text, baut keine App und führt keinen Code aus. Es liefert den Prompt, mit dem du die Aufgabe in der KI deiner Wahl startest.",
         ],
       },
     ],
@@ -153,9 +153,9 @@ export const COMPARISONS: Comparison[] = [
         other: "Du selbst, die Vorlage fragt nicht zurück",
       },
       {
-        topic: "Zuschnitt auf dein Bau-Tool",
-        promptprinter: "Auf das Tool, das du im Gespräch nennst",
-        other: "Nur, wenn die Vorlage für dieses Tool geschrieben wurde",
+        topic: "Zuschnitt auf deine KI",
+        promptprinter: "Auf die KI, die du im Gespräch nennst, sonst so, dass er überall funktioniert",
+        other: "Nur, wenn die Vorlage für diese KI geschrieben wurde",
       },
       {
         topic: "Änderungen",
@@ -177,21 +177,21 @@ export const COMPARISONS: Comparison[] = [
       {
         question: "Wann reicht eine Vorlage?",
         paragraphs: [
-          "Für Aufgaben, die immer gleich aussehen: eine Landingpage nach bekanntem Muster, ein Standardformular, ein Prompt zur Fehlersuche.",
+          "Für Aufgaben, die immer gleich aussehen: ein Standardbrief, eine Zusammenfassung nach festem Muster, ein Prompt zur Fehlersuche.",
           "Wenn du die Lücken sicher füllen kannst und weisst, was die Vorlage weglässt, bist du mit ihr am schnellsten.",
         ],
       },
       {
         question: "Wann bringt die Rückfrage mehr?",
         paragraphs: [
-          "Sobald deine Idee nicht dem Muster der Vorlage entspricht. Eine Vorlage kennt dein Datenmodell nicht und fragt nicht, ob es Konten geben soll.",
-          "Was sie nicht abfragt, entscheidet später das Bau-Tool für dich. Eine falsche Annahme kostet dort eine Korrekturrunde.",
+          "Sobald deine Aufgabe nicht dem Muster der Vorlage entspricht. Eine Vorlage kennt deinen Fall nicht und fragt nicht, was bei dir anders ist.",
+          "Was sie nicht abfragt, entscheidet später die KI für dich. Eine falsche Annahme kostet eine Korrekturrunde.",
         ],
       },
       {
         question: "Kann ich meine eigene Vorlage in PromptPrinter verwenden?",
         paragraphs: [
-          "Ja. Leg ein Projekt an und schreib deine festen Regeln in die Anweisungen, zum Beispiel Sprache, Stack und Ton. Jeder Chat des Projekts hält sich daran.",
+          "Ja. Leg ein Projekt an und schreib deine festen Regeln in die Anweisungen, zum Beispiel Sprache, Ton und feste Vorgaben. Jeder Chat des Projekts hält sich daran.",
           "Prompts, die funktioniert haben, speicherst du im Projekt und holst sie später wieder hervor.",
         ],
       },
@@ -203,67 +203,67 @@ export const COMPARISONS: Comparison[] = [
     ],
   },
   {
-    slug: "direkt-im-bau-tool-prompten",
-    question: "Direkt in Lovable oder Cursor prompten, oder erst PromptPrinter?",
-    label: "Direkt im Bau-Tool prompten",
+    slug: "direkt-in-die-ki-tippen",
+    question: "Direkt in die KI tippen, oder erst PromptPrinter?",
+    label: "Direkt in die KI tippen",
     summary:
-      "Was passiert, wenn du deine Idee ohne Vorbereitung in Lovable, Cursor oder v0 tippst, und wann sich der Schritt davor lohnt.",
+      "Was passiert, wenn du deine Aufgabe ohne Vorbereitung in eine KI tippst, und wann sich der Schritt davor lohnt.",
     answer:
-      "Du kannst deine Idee direkt in Lovable, Cursor, v0 oder Bolt tippen, und für kleine Änderungen ist das der richtige Weg. Bei einem neuen Projekt baut das Tool aber mit dem, was im Prompt steht, und füllt Lücken mit eigenen Annahmen. PromptPrinter setzt einen Schritt davor: erst klären, dann bauen lassen.",
-    other: "Direkt im Bau-Tool",
+      "Du kannst deine Aufgabe direkt in eine KI tippen, und für kleine, klare Anfragen ist das der richtige Weg. Bei einer grösseren Aufgabe arbeitet die KI aber mit dem, was im Prompt steht, und füllt Lücken mit eigenen Annahmen. PromptPrinter setzt einen Schritt davor: erst klären, dann die KI arbeiten lassen.",
+    other: "Direkt in die KI",
     rows: [
       {
         topic: "Erster Schritt",
         promptprinter: "Eine gebündelte Rückfrage zu dem, was fehlt",
-        other: "Das Tool beginnt mit dem, was im Prompt steht",
+        other: "Die KI beginnt mit dem, was im Prompt steht",
       },
       {
         topic: "Fehlende Angaben",
         promptprinter: "Werden vorher erfragt oder als Lücke markiert",
-        other: "Werden beim Bauen mit Annahmen gefüllt",
+        other: "Werden mit Annahmen gefüllt",
       },
       {
         topic: "Was eine Korrektur kostet",
         promptprinter: "Eine weitere Chat-Antwort",
-        other: "Credits oder Anfragen im Bau-Tool, je nach Tarif",
+        other: "Eine weitere Runde in der KI, je nach Tool und Tarif mit Credits oder Anfragen",
       },
       {
         topic: "Ergebnis",
-        promptprinter: "Ein Prompt als Text, noch kein Code",
-        other: "Laufender Code oder eine Vorschau",
+        promptprinter: "Ein Prompt als Text, noch nicht die Aufgabe selbst",
+        other: "Das Ergebnis selbst: ein Text, eine Seite, Code",
       },
       {
-        topic: "Kleine Änderung an bestehendem Code",
+        topic: "Kleine, klare Anfrage",
         promptprinter: "Kein Vorteil",
-        other: "Am schnellsten direkt im Tool",
+        other: "Am schnellsten direkt in der KI",
       },
     ],
     sections: [
       {
-        question: "Wann tippe ich besser direkt ins Bau-Tool?",
+        question: "Wann tippe ich besser direkt in die KI?",
         paragraphs: [
-          "Bei kleinen, klaren Änderungen an etwas, das schon steht: eine Farbe, ein Feld, ein Fehler. Dort kennt das Tool deinen Code, und ein Umweg bringt nichts.",
-          "Hat dein Bau-Tool einen eigenen Plan- oder Chat-Modus, deckt er einen Teil der Vorarbeit ebenfalls ab.",
+          "Bei kleinen, klaren Anfragen: eine Frage, eine Umformulierung, ein Fehler in einer Zeile. Dort kostet ein Umweg mehr, als er bringt.",
+          "Hat deine KI einen eigenen Plan- oder Rückfrage-Modus, deckt er einen Teil der Vorarbeit ebenfalls ab.",
         ],
       },
       {
         question: "Wann lohnt sich der Schritt davor?",
         paragraphs: [
-          "Beim ersten Prompt für ein neues Projekt und bei jedem grösseren Umbau. Dort entscheidet der Prompt über Datenmodell, Login und Aufbau, und genau diese Entscheidungen sind später teuer zu ändern.",
-          "Finn fragt sie ab, bevor das Bau-Tool sie für dich trifft.",
+          "Bei grösseren Aufgaben, die du nicht in einem Satz erklären kannst: ein längerer Text, eine Datenbank, eine Sicherheitsprüfung, ein neues Projekt. Dort entscheiden die Angaben im Prompt über das Ergebnis, und was fehlt, füllt die KI mit eigenen Annahmen.",
+          "Finn fragt diese Angaben ab, bevor die KI sie für dich trifft.",
         ],
       },
       {
-        question: "Spart das wirklich Credits?",
+        question: "Spart das wirklich Zeit?",
         paragraphs: [
-          "Das hängt von deiner Idee ab, eine Garantie gibt es nicht. Die Rechnung dahinter ist einfach: Eine Rückfrage in PromptPrinter kostet eine Chat-Antwort, eine Korrekturrunde im Bau-Tool kostet dort Credits oder Anfragen.",
+          "Das hängt von deiner Aufgabe ab, eine Garantie gibt es nicht. Die Rechnung dahinter ist einfach: Eine Rückfrage in PromptPrinter kostet eine Chat-Antwort, eine Korrekturrunde in der KI kostet Zeit und je nach Tool Credits oder Anfragen.",
           "Je mehr dein erster Prompt offen lässt, desto mehr solcher Runden brauchst du.",
         ],
       },
       {
-        question: "Für welche Bau-Tools funktioniert das?",
+        question: "Für welche KI funktioniert das?",
         paragraphs: [
-          "Für jedes, das einen Text-Prompt annimmt. Du nennst Finn dein Tool im Gespräch, zum Beispiel Lovable, Cursor, v0, Claude Code, Bolt oder Replit, und der Prompt wird darauf zugeschnitten.",
+          "Für jede, die einen Text-Prompt annimmt, ob Chat, Bild- oder Code-Werkzeug. Sagst du Finn im Gespräch, für welche KI der Prompt gedacht ist, schreibt er ihn darauf zu. Sagst du nichts, schreibt er ihn so, dass er überall funktioniert.",
         ],
       },
     ],

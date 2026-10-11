@@ -22,16 +22,16 @@ export default function Page() {
       <h2>Was steht im fertigen Prompt?</h2>
       <p>
         Der Prompt kommt immer als ein Stück, in einem eigenen Codeblock. Er ist
-        so gebaut, dass er für sich allein steht, das Bau-Tool braucht euer
-        Gespräch nicht mitgelesen zu haben:
+        so gebaut, dass er für sich allein steht, die KI, in die du ihn einfügst,
+        braucht euer Gespräch nicht mitgelesen zu haben:
       </p>
       <ul>
         <li>eine klare Rolle und Rahmensetzung</li>
         <li>die konkrete Aufgabe</li>
-        <li>den Kontext, den das Tool kennen muss</li>
+        <li>den Kontext, den die KI kennen muss</li>
         <li>
-          ausdrückliche Einschränkungen, also auch was <em>nicht</em> gebaut
-          werden soll
+          ausdrückliche Einschränkungen, also auch was die KI <em>nicht</em>
+          tun soll
         </li>
         <li>das gewünschte Verhalten oder Ausgabeformat</li>
       </ul>
@@ -45,8 +45,8 @@ export default function Page() {
       <p>
         Über dem Codeblock sitzt der Kopieren-Knopf, das ist der übliche Weg.
         Zusätzlich kannst du jede Antwort als Ganzes kopieren oder als
-        Markdown-Datei herunterladen, praktisch, wenn du den Prompt neben dem
-        Code im Repo ablegen willst.
+        Markdown-Datei herunterladen, praktisch, wenn du den Prompt zu deinen
+        Unterlagen oder neben dem Code im Repo ablegen willst.
       </p>
       <p>
         Arbeitest du in einem Projekt, kannst du den Prompt ausserdem in die{" "}

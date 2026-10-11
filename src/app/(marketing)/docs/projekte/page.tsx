@@ -58,9 +58,9 @@ export default function Page() {
       <p>Zum Beispiel:</p>
       <p>
         <em>
-          „Alle Prompts auf Deutsch. Ich baue in Lovable, mobile-first. Halte
-          dich kurz, keine ausschweifenden Erklärungen im Prompt. Datenbank ist
-          immer Supabase.“
+          „Alle Prompts auf Deutsch, Ton sachlich, per Du. Halte dich kurz,
+          keine ausschweifenden Erklärungen im Prompt. Wenn es um Software
+          geht: Datenbank ist immer Supabase.“
         </em>
       </p>
 
