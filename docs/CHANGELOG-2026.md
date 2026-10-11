@@ -11,6 +11,8 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+**Sicherheitsrichtlinie (2026-10-11, Branch `docs/security-policy`):** `SECURITY.md` im Wurzelverzeichnis, damit GitHub unter "Security policy" zeigt, wie man eine Lücke meldet: per Mail an die Adresse aus `src/shared/lib/legal.ts`, nicht über eine öffentliche Issue. Auf Kasums Wunsch (Mail statt GitHubs privater Meldefunktion). Zugesagt wird nur, was sich halten lässt: Antwort in einigen Tagen ohne feste Frist, kein Bug-Bounty, kein Freibrief für Tests (nur eigenes Konto, keine Last, kein Social Engineering). Nicht eingerichtet: GitHubs "Private vulnerability reporting" und eine `/.well-known/security.txt` auf der Seite.
+
 **Neuausrichtung: Prompts für jede KI und jede Aufgabe (2026-10-11, Branch `feat/positionierung-jede-ki`):**
 Kasums Entscheid. PromptPrinter ist kein Werkzeug für Vibe-Coder und Bau-Tools (Lovable, Cursor, v0,
 Claude Code, Bolt, Replit) mehr, sondern gibt Prompts für jede KI und jede Aufgabe: Dokument, Webseite,
