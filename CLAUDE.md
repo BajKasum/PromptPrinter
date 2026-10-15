@@ -96,8 +96,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   kein eigener SMTP, "Confirm email" aus, Standard-Vorlage): Mail-Anbieter buchen, DNS, Vorlagen aus
   `supabase/templates/` einfügen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
-  am 2026-10-11 geprüft); Entscheid zu #51 (`lucide-react` 1.x, 23 von 70 Symbolen anders
-  gezeichnet); die
+  am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
 - **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
   (Google/Microsoft), der Satz zum Ausweich-Anbieter, Speed Insights (Aufbewahrung bei Vercel
