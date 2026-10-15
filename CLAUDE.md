@@ -89,12 +89,13 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 
 - **Kritisch, nicht Teil der M-Punkte:** K1 Backup und Tarife (Supabase Free, Vercel Hobby),
   K2 `ALERT_WEBHOOK_URL`, K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
-  signierten Ereignissen belegt (#73), ein echtes Ereignis steht aus.
-- **Wartet auf Kasum:** `GITHUB_TOKEN`, bezahlter `GEMINI_API_KEY`, die vier `STRIPE_*`-Variablen
-  in Vercel löschen, Entscheid zum Fehler-Tracker; **Auth-Mails** (Befund 2026-10-07 im Changelog:
+  signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
+  eingerichtet, ein echtes Ereignis steht aus.
+- **Wartet auf Kasum:** `GITHUB_TOKEN`, bezahlter `GEMINI_API_KEY`, Entscheid zum Fehler-Tracker;
+  **Auth-Mails** (Befund 2026-10-07 im Changelog:
   kein eigener SMTP, "Confirm email" aus, Standard-Vorlage): Mail-Anbieter buchen, DNS, Vorlagen aus
-  `supabase/templates/` einfügen; **Lemon Squeezy** nachsehen (Testmodus oder Live, Webhook-URL,
-  Preise brutto oder netto); Dependabot alerts und security updates einschalten (beide aus,
+  `supabase/templates/` einfügen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
+  Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
   am 2026-10-11 geprüft); Entscheid zu #51 (`lucide-react` 1.x, 23 von 70 Symbolen anders
   gezeichnet); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
@@ -135,10 +136,10 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
    Server-Key komplett und hebt das Chat-Limit auf. Routen sprechen nie direkt mit
    einem Provider-SDK, und kein Aufruf geht an `llm-retry.ts` und `llm-failover.ts`
    vorbei.
-2. **Zahlungen laufen über Lemon Squeezy, live seit 2026-08.** Checkout, Webhook
-   (`/api/webhooks/lemonsqueezy`) und Kundenportal sind gebaut und produktiv.
-   Stripe ist aus Code und Datenbank entfernt (Migration `0043`, am 2026-10-05
-   angewendet). Vercel trägt noch vier ungenutzte `STRIPE_*`-Variablen.
+2. **Zahlungen laufen über Lemon Squeezy.** Checkout, Webhook
+   (`/api/webhooks/lemonsqueezy`) und Kundenportal sind gebaut. Seit 2026-10-15 zeigt der
+   Pro-Knopf auf das Live-Produkt (vorher ein Testmodus-Link), ein echter Kauf steht aus.
+   Stripe ist aus Code, Datenbank (Migration `0043`, 2026-10-05) und Vercel entfernt.
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
    Prod-Docker-Container liest `.env` (via `env_file` in
    `docker-compose.prod.yml`). Das `--env-file .env.local` im Compose-Befehl steuert
