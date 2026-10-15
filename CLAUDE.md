@@ -93,9 +93,9 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
   eingerichtet, ein echtes Ereignis steht aus.
 - **Wartet auf Kasum:** Entscheid zum Fehler-Tracker;
-  **Auth-Mails** (Befund 2026-10-07 im Changelog:
-  kein eigener SMTP, "Confirm email" aus, Standard-Vorlage): Mail-Anbieter buchen, DNS, Vorlagen aus
-  `supabase/templates/` einfügen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
+  **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
+  Dashboard, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder Adresse, Datenschutz um
+  Resend ergänzen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
   am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
