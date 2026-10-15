@@ -51,7 +51,8 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Chat im Stub-Modus, nur in Entwicklung (`next start` verweigert ihn).
   `llm-retry.ts` wiederholt vorübergehende Fehler (3 Versuche), `llm-failover.ts`
   weicht bei einem Ausfall von Z.ai auf Gemini aus (nur mit beiden Server-Keys,
-  Leistungsschalter in Redis, eigenes Tagesbudget). Jeder Anbieter-Aufruf geht
+  Leistungsschalter in Redis, eigenes Tagesbudget; **bewusst aus**: es gibt keinen
+  `GEMINI_API_KEY`, Entscheid 2026-10-15). Jeder Anbieter-Aufruf geht
   durch diese Hüllen.
 - **Auth:** Supabase. Die anonymen Aktionen (Anmelden, Registrieren, Reset) laufen
   über `/api/auth` mit serverseitiger Turnstile-Prüfung. **Supabases eigenes
@@ -65,8 +66,8 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
-  (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, aber
-  ohne URL. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
+  (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
+  ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout
   (`src/shared/providers/site-speed-insights.tsx`), nur im Produktions-Build. Adressen
   werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
@@ -88,10 +89,10 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 
 - **Kritisch, nicht Teil der M-Punkte:** K1 Backup und Tarife (Supabase Free, Vercel Hobby),
-  K2 `ALERT_WEBHOOK_URL`, K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
+  K2 Alarm-Webhook (bewusst nicht eingerichtet), K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
   signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
   eingerichtet, ein echtes Ereignis steht aus.
-- **Wartet auf Kasum:** `GITHUB_TOKEN`, bezahlter `GEMINI_API_KEY`, Entscheid zum Fehler-Tracker;
+- **Wartet auf Kasum:** Entscheid zum Fehler-Tracker;
   **Auth-Mails** (Befund 2026-10-07 im Changelog:
   kein eigener SMTP, "Confirm email" aus, Standard-Vorlage): Mail-Anbieter buchen, DNS, Vorlagen aus
   `supabase/templates/` einfügen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
@@ -99,7 +100,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
 - **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
-  (Google/Microsoft), der Satz zum Ausweich-Anbieter, Speed Insights (Aufbewahrung bei Vercel
+  (Google/Microsoft), der Satz zum Ausweich-Anbieter (Failover ist aus), Speed Insights (Aufbewahrung bei Vercel
   nicht belegt), jeder neue Empfänger (Mail-Anbieter, Fehler-Tracker); AGB Ziffer 2 und
   Nutzungsrichtlinie Ziffer 2 nennen noch Lovable und Cursor (Vorschlag in #88).
 - **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche).
