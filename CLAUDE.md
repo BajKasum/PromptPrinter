@@ -94,8 +94,8 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   eingerichtet, ein echtes Ereignis steht aus.
 - **Wartet auf Kasum:** Entscheid zum Fehler-Tracker;
   **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
-  Dashboard, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder Adresse, Datenschutz um
-  Resend ergänzen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
+  Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
+  Adresse, Datenschutz-PR zu Resend prüfen und mergen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
   am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
