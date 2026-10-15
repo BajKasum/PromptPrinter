@@ -288,6 +288,29 @@ heute stehen, und die dort gesetzten Limits. Nachsehen (nur lesen):
    Redirect URLs enthalten `https://promptprinter.app/**` (ohne sie ignoriert
    Supabase das `redirectTo` der App und schickt auf die Site URL).
 
+### Gewählt: Resend (15.10.2026)
+
+Statt Brevo (der Abschnitt darunter bleibt als Alternative) läuft der Versand über
+**Resend**, weil Kasum dort schon ein Konto hat (Artemis Hebammen, Kazuvate). Stand:
+
+- **Domain** `promptprinter.app` in Resend, Region **Irland (eu-west-1)**, Status "Verified".
+  Resend hat die DNS-Einträge über die Vercel-Anbindung selbst angelegt: TXT
+  `resend._domainkey` (DKIM) und die CNAME `send` und `rsend`. Ein `_dmarc`-Eintrag fehlt
+  (optional, zum Beispiel `v=DMARC1; p=none;`).
+- **Supabase** (*Authentication → Emails → SMTP Settings*): Host `smtp.resend.com`, Port
+  `465`, Benutzer `resend`, Passwort = ein Resend-API-Key nur für diese Domain
+  (*Sending access*), Absender `noreply@promptprinter.app`, Name `PromptPrinter`. Das
+  Limit bleibt bei 30 Mails pro Stunde (Resends Gratis-Tarif erlaubt laut Plan 100 am Tag).
+- **Vorlagen** aus `supabase/templates/` im Dashboard eingefügt, auf Kasums Angabe.
+- **Nicht belegt:** dass je eine Mail zugestellt wurde. Es gab keinen Test mit einer
+  fremden Adresse (Kasum wollte keinen). "Confirm email" bleibt deshalb **aus**: es
+  einzuschalten, ohne dass der Versand je lief, ließe jede neue Registrierung ohne Zugang,
+  sobald er klemmt. Prüfen: Schritt 7 unten (Reset mit einer Adresse außerhalb des Teams),
+  bei Fehlern die SQL aus Schritt 7 und in Resend *Logs*.
+- **Datenschutz:** Resend (US-Firma, Versand aus Irland) ist ein neuer Empfänger und steht
+  noch **nicht** in der Datenschutzerklärung. Entwurf im Vault ("PromptPrinter Auth-Mails
+  Plan 2026-10-06"), juristisch ansehen lassen.
+
 ### Einrichten (Brevo)
 
 Brevo ist nur der Vorschlag (französische Firma, EU-Datenhaltung als Standard,
