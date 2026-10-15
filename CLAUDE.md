@@ -95,13 +95,13 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 - **Wartet auf Kasum:** Entscheid zum Fehler-Tracker;
   **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
-  Adresse, Datenschutz-PR zu Resend prüfen und mergen; **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
+  Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
   am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
 - **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
   (Google/Microsoft), der Satz zum Ausweich-Anbieter (Failover ist aus), Speed Insights (Aufbewahrung bei Vercel
-  nicht belegt), jeder neue Empfänger (Mail-Anbieter, Fehler-Tracker); AGB Ziffer 2 und
+  nicht belegt), Resend (Region Irland gegen Vertrag USA, Data-Privacy-Framework nicht geprüft), jeder weitere Empfänger (Fehler-Tracker); AGB Ziffer 2 und
   Nutzungsrichtlinie Ziffer 2 nennen noch Lovable und Cursor (Vorschlag in #88).
 - **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche).
 - **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste), Obergrenzen in
