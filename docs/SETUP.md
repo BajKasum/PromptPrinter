@@ -295,8 +295,9 @@ Statt Brevo (der Abschnitt darunter bleibt als Alternative) läuft der Versand �
 
 - **Domain** `promptprinter.app` in Resend, Region **Irland (eu-west-1)**, Status "Verified".
   Resend hat die DNS-Einträge über die Vercel-Anbindung selbst angelegt: TXT
-  `resend._domainkey` (DKIM) und die CNAME `send` und `rsend`. Ein `_dmarc`-Eintrag fehlt
-  (optional, zum Beispiel `v=DMARC1; p=none;`).
+  `resend._domainkey` (DKIM) und die CNAME `send` und `rsend`. Den `_dmarc`-Eintrag
+  (TXT `v=DMARC1; p=none;`, nur beobachten, nichts abweisen) hat Claude am 15.10.2026 bei
+  Vercel angelegt und gegen `ns1.vercel-dns.com` gelesen.
 - **Supabase** (*Authentication → Emails → SMTP Settings*): Host `smtp.resend.com`, Port
   `465`, Benutzer `resend`, Passwort = ein Resend-API-Key nur für diese Domain
   (*Sending access*), Absender `noreply@promptprinter.app`, Name `PromptPrinter`. Das
@@ -307,9 +308,11 @@ Statt Brevo (der Abschnitt darunter bleibt als Alternative) läuft der Versand �
   einzuschalten, ohne dass der Versand je lief, ließe jede neue Registrierung ohne Zugang,
   sobald er klemmt. Prüfen: Schritt 7 unten (Reset mit einer Adresse außerhalb des Teams),
   bei Fehlern die SQL aus Schritt 7 und in Resend *Logs*.
-- **Datenschutz:** Resend (US-Firma, Versand aus Irland) ist ein neuer Empfänger und steht
-  noch **nicht** in der Datenschutzerklärung. Entwurf im Vault ("PromptPrinter Auth-Mails
-  Plan 2026-10-06"), juristisch ansehen lassen.
+- **Datenschutz:** Resend (Plus Five Five, Inc., USA; Versand aus Irland, Vertrag sieht
+  überwiegend die USA vor, Aufbewahrung der Mailinhalte 30 Tage) steht als Empfänger in
+  Ziffer 2, 4, 5 und 6 der Datenschutzerklärung (Stand 15.10.2026). Ob die Firma zum Data
+  Privacy Framework zertifiziert ist, ist **nicht geprüft** und steht deshalb nicht im Text;
+  die Übermittlung stützt sich auf die Standardvertragsklauseln. Juristisch ansehen lassen.
 
 ### Einrichten (Brevo)
 

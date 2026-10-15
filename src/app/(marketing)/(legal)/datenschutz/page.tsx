@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/marketing/components/legal-shell";
+import { DatenschutzWeitereEmpfaenger } from "@/features/marketing/components/datenschutz-weitere-empfaenger";
 import { LEGAL } from "@/shared/lib/legal";
 import {
   MAX_FILES_PER_PROJECT,
@@ -57,6 +58,11 @@ export default function DatenschutzPage() {
         Bei der Registrierung mit E-Mail erfassen wir deine <strong>E-Mail-Adresse</strong> und ein
         <strong> Passwort</strong>. Das Passwort wird ausschliesslich verschlüsselt (gehasht) durch
         unseren Authentifizierungs-Dienst gespeichert; wir sehen es zu keinem Zeitpunkt im Klartext.
+      </p>
+      <p>
+        Systemmails, etwa den Link zum Zurücksetzen deines Passworts oder die Bestätigung einer
+        neuen oder geänderten E-Mail-Adresse, schicken wir dir über einen E-Mail-Dienst (siehe
+        Ziffer 4). Dieser erhält dafür deine E-Mail-Adresse und den Inhalt der Nachricht.
       </p>
       <p>
         Meldest du dich stattdessen über <strong>Google</strong> oder <strong>GitHub</strong> an,
@@ -212,6 +218,15 @@ export default function DatenschutzPage() {
           Datenregion: {LEGAL.dataRegion}.
         </li>
         <li>
+          <strong>Resend</strong> (Plus Five Five, Inc., USA): Versand der System-E-Mails, nämlich
+          des Links zum Zurücksetzen deines Passworts und, wenn sie ausgelöst werden, der Mails zur
+          Bestätigung oder Änderung deiner E-Mail-Adresse. Dafür werden deine{" "}
+          <strong>E-Mail-Adresse</strong> und der Inhalt der jeweiligen Nachricht (Link, Zeitpunkt)
+          an den Anbieter übermittelt. Für unsere Absenderadresse ist die Region Irland eingestellt;
+          nach der Vereinbarung zur Auftragsbearbeitung kann die Bearbeitung dennoch überwiegend
+          in den USA stattfinden. Nach Angaben von Resend werden Mailinhalte 30 Tage aufbewahrt.
+        </li>
+        <li>
           <strong>{LEGAL.appHost}</strong>: Betrieb und Auslieferung der Anwendung. Dabei fallen
           serverseitige Zugriffs- und Fehlerprotokolle an.
         </li>
@@ -257,65 +272,12 @@ export default function DatenschutzPage() {
           nötig ist, insbesondere Mailadresse und Status des Abonnements.
         </li>
       </ul>
-      <p>
-        <strong>Spracherkennung im Sprachmodus (Ziffer 2):</strong> Nutzt du die Diktierfunktion
-        im Chat, bearbeitet nicht wir deine Sprachaufnahme, sondern dein <strong>Browser</strong>,
-        über eine in ihm eingebaute Funktion (die „Web Speech API“), auf deren Anbieter und
-        Umsetzung wir keinen Einfluss haben und für die wir keinen eigenen Vertrag geschlossen
-        haben. Je nachdem, welchen Browser du verwendest, geht die Aufnahme dabei an:
-      </p>
-      <ul>
-        <li>
-          <strong>Google Chrome</strong>: an <strong>Google</strong> (Google Ireland Ltd. / Google
-          LLC, USA);
-        </li>
-        <li>
-          <strong>Microsoft Edge</strong>: an <strong>Microsoft</strong> (Microsoft Ireland
-          Operations Ltd. / Microsoft Corporation, USA);
-        </li>
-        <li>
-          <strong>Safari</strong>: nach Angaben von Apple für unterstützte Sprachen direkt auf
-          deinem Gerät, ohne Übermittlung an einen Server;
-        </li>
-        <li>andere oder ältere Browser: je nach deren eigener Umsetzung, teils ganz ohne diese Funktion.</li>
-      </ul>
-      <p>
-        Diese Übermittlung findet unmittelbar zwischen deinem Browser und dem jeweiligen Anbieter
-        statt; deine Sprachaufnahme durchläuft unsere Server zu keinem Zeitpunkt und wird von uns
-        nicht gespeichert. Weil wir diese Bearbeitung nicht steuern und keine
-        Auftragsbearbeitungsvereinbarung mit Google oder Microsoft für diesen Zweck getroffen
-        haben, handelt es sich dabei nicht um eine Auftragsbearbeitung in unserem Sinn, sondern um
-        eine Bearbeitung durch den Anbieter deines Browsers in eigener Verantwortung; es gelten
-        dessen eigene Datenschutzbestimmungen. Wenn du das vermeiden möchtest, nutze den Chat über
-        die Tastatur statt über den Sprachmodus, oder einen Browser mit lokaler Spracherkennung
-        wie Safari.
-      </p>
-      <p>
-        <strong>Anmeldung über Google oder GitHub (Ziffer 2):</strong> Wählst du diesen Weg, meldest
-        du dich direkt bei <strong>Google</strong> (Google Ireland Ltd. / Google LLC, USA) bzw.{" "}
-        <strong>GitHub</strong> (GitHub, Inc., USA) an, die uns danach die in Ziffer 2 genannten
-        Angaben übermitteln. Diese Anbieter handeln dabei in eigener Verantwortung, es gelten deren
-        Datenschutzbestimmungen. Für das Projekt-Gedächtnis ruft unser Server ausserdem öffentliche
-        Daten bei GitHub ab, ohne dabei Angaben über dich zu übermitteln.
-      </p>
-      <p>
-        <strong>Wenn du einen eigenen API-Schlüssel hinterlegst</strong>, gehen deine Eingaben nicht
-        mehr an die oben genannten Modellanbieter, sondern an den von dir gewählten Anbieter, je
-        nach deiner Auswahl etwa <strong>Anthropic</strong> (Anthropic PBC, USA),{" "}
-        <strong>OpenAI</strong> (OpenAI, L.L.C., USA), <strong>Google</strong> oder einen von dir
-        selbst eingetragenen, kompatiblen Endpunkt. In diesem Fall bestimmst du den Empfänger, und
-        es gelten zusätzlich dessen Datenschutzbestimmungen. Auf die Bearbeitung durch diesen
-        Anbieter haben wir keinen Einfluss.
-      </p>
-      <p>
-        Wir geben deine Daten nicht zu Werbezwecken weiter und verkaufen sie nicht. Wir werten deine
-        Inhalte nicht aus, um damit KI-Modelle zu trainieren.
-      </p>
+      <DatenschutzWeitereEmpfaenger />
 
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
         Einzelne der oben genannten Dienste bearbeiten Daten ausserhalb der Schweiz bzw. des EWR,
-        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Google Gemini,
+        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Resend, Google Gemini,
         Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter, bei der Anmeldung über
         diese Dienste Google bzw. GitHub sowie, wenn du den Sprachmodus mit Chrome oder Edge
         nutzt, Google bzw. Microsoft, siehe Ziffer 4) sowie in <strong>Singapur</strong> (Z.ai,
@@ -347,7 +309,8 @@ export default function DatenschutzPage() {
         Projektdateien gelöscht. Dasselbe gilt für Anhänge, wenn du einen einzelnen Chat oder ein
         Projekt löschst. Zähler für Rate-Limiting und Monatskontingente liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
-        und werden danach selbsttätig entfernt. Server- und Fehlerprotokolle unseres Hosting-Anbieters
+        und werden danach selbsttätig entfernt. Der E-Mail-Dienst für die System-E-Mails (Ziffer 4)
+        bewahrt die Mailinhalte nach eigenen Angaben 30 Tage auf. Server- und Fehlerprotokolle unseres Hosting-Anbieters
         sowie die Messwerte zur Ladegeschwindigkeit werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
         insbesondere für Rechnungsunterlagen aus der Zahlungsabwicklung, bleiben vorbehalten.
         Sprachaufnahmen aus dem Sprachmodus durchlaufen unsere Server nicht und werden von uns
