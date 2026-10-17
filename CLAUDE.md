@@ -264,7 +264,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 |---|---|
 | Cookie oder `localStorage`-Schlüssel | Eintrag in `features/marketing/lib/cookie-inventory.ts` (und `/cookies` stimmt dann) |
 | Seite in der eingeloggten App | Eintrag in `APP_PREFIXES`, öffentliche Seite in `PUBLIC_PREFIXES` (`shared/lib/app-routes.ts`) |
-| Seite mit Captcha oder Checkout | Eintrag in `thirdPartiesFor()` (`server/security/csp.ts`) |
+| Seite mit Captcha oder Checkout | Eintrag in `thirdPartiesFor()` (`shared/lib/third-party-paths.ts`; ein Seitenwechsel im Browser behält die Policy der ersten Seite, `FreshDocumentForThirdParties` im Root-Layout lädt dann neu) |
 | Öffentliche Seite | Metadaten über `pageMetadata()`; keine `FadeIn` und kein `motion.h1` um eine `h1` |
 | Text eines Hilfe-Artikels geändert | `updated` in `docs-nav.ts` nachziehen |
 | UI-Text | Wörterbuch `shared/i18n/messages/`, alle fünf Sprachen (fr/it/es sind nie von Muttersprachlern geprüft: im PR kennzeichnen) |

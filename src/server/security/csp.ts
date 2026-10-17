@@ -1,5 +1,7 @@
 import "server-only";
 
+import { thirdPartiesFor, type ThirdParties } from "@/shared/lib/third-party-paths";
+
 // Content-Security-Policy for every response (QA finding S-2: chat renders
 // third-party markdown via react-markdown, which never emits raw HTML — no
 // rehype-raw, no dangerouslySetInnerHTML — so there's no known injection
@@ -91,26 +93,14 @@ const LEMONSQUEEZY_FRAME_HOST = "https://*.lemonsqueezy.com";
 //    Handler per addEventListener an, lemon.js und Turnstile ebenso (beide
 //    geprüft: kein Inline-Handler in ihrem Quelltext). `<script>`-Blöcke bleiben
 //    erlaubt, das ist die Grenze, die diese Variante nicht überschreitet.
-export type ThirdParties = { turnstile: boolean; lemonSqueezy: boolean };
+// Die Pfadlisten (`thirdPartiesFor`) stehen in shared/lib/third-party-paths.ts, weil der Browser sie auch
+// braucht: die Policy hängt am Dokument, ein Seitenwechsel ohne Neuladen behält die der ersten Seite
+// (shared/providers/fresh-document-for-third-parties.tsx lädt dann neu).
+export { thirdPartiesFor, type ThirdParties };
 
 const NO_THIRD_PARTIES: ThirdParties = { turnstile: false, lemonSqueezy: false };
 
 const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
-
-// Exakte Pfade, keine Präfixe: /reset-password/update bindet Turnstile NICHT
-// ein (update-password-experience.tsx), /reset-password schon. Dass die Liste
-// zu den Seiten passt, hält csp.test.ts gegen den Quelltext fest.
-const TURNSTILE_PATHS: readonly string[] = ["/login", "/signup", "/reset-password", "/kontakt"];
-const LEMON_SQUEEZY_PATHS: readonly string[] = ["/pricing", "/billing", "/plans"];
-
-/** Welche Drittanbieter die Seite unter diesem Pfad einbindet. */
-export function thirdPartiesFor(pathname: string): ThirdParties {
-  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return {
-    turnstile: TURNSTILE_PATHS.includes(path),
-    lemonSqueezy: LEMON_SQUEEZY_PATHS.includes(path),
-  };
-}
 
 /** Next.js dev mode (webpack, not Turbopack) uses eval() for Fast Refresh's source maps. */
 function devEvalSource(): string {

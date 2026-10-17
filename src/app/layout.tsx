@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { MotionShell } from "@/shared/providers/motion-shell";
 import { SiteSpeedInsights } from "@/shared/providers/site-speed-insights";
+import { FreshDocumentForThirdParties } from "@/shared/providers/fresh-document-for-third-parties";
 import { siteUrl } from "@/shared/lib/site-url";
 import { siteVerification } from "@/shared/lib/site-verification";
 import "./globals.css";
@@ -129,6 +130,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <MotionShell>{children}</MotionShell>
         <SiteSpeedInsights />
+        <FreshDocumentForThirdParties />
       </body>
     </html>
   );
