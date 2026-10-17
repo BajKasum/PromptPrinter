@@ -19,6 +19,16 @@ Ein durchdachter Habit-Tracker.
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
   });
 
+  it("kennzeichnet die PDF als KI-erzeugt: Dokumenteigenschaften und sichtbarer Hinweis auf jeder Seite", () => {
+    const doc = markdownToPdf("Produktplan", "# Titel Text");
+    const raw = doc.output();
+
+    expect(raw).toContain("ai-generated");
+    // Klammern stehen in PDF-Zeichenketten maskiert, deshalb nur der Anfang des Betreffs.
+    expect(raw).toMatch(/\/Subject \(Mit KI erzeugt/);
+    expect(raw).toContain("mit KI erzeugt");
+  });
+
   it("paginates long content across multiple pages", () => {
     const longMd = Array.from({ length: 400 }, (_, i) => `Zeile ${i} mit etwas Text zum Umbrechen.`).join(
       "\n"

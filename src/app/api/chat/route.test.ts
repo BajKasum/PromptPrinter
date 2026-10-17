@@ -205,6 +205,12 @@ describe("POST /api/chat", () => {
       expect(body).toContain("event: done");
     });
 
+    it("kennzeichnet den Strom maschinenlesbar als KI-erzeugt (EU-KI-Verordnung Art. 50 Abs. 2)", async () => {
+      const res = await POST(req());
+
+      expect(res.headers.get("x-ai-generated")).toBe("true");
+    });
+
     it("falls back to the stub reply when no provider is configured", async () => {
       llmConfig.mockReturnValue(null);
 

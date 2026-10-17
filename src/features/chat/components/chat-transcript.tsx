@@ -12,6 +12,7 @@ import type { AttachmentView } from "@/shared/lib/chat-attachments";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { useSmoothStream } from "@/features/chat/hooks/use-smooth-stream";
 import { downloadFile } from "@/shared/lib/utils";
+import { markAiMarkdown } from "@/shared/lib/ai-marker";
 import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import { useT } from "@/shared/i18n/provider";
 
@@ -141,7 +142,8 @@ export function ChatAssistantBubble({ content, index }: { content: string; index
   const { copied, copy } = useCopyToClipboard();
 
   function exportMd() {
-    downloadFile(`prompt-${index + 1}.md`, content, "text/markdown");
+    // Als KI-Inhalt maschinenlesbar gekennzeichnet (EU-KI-Verordnung Art. 50 Abs. 2, shared/lib/ai-marker.ts).
+    downloadFile(`prompt-${index + 1}.md`, markAiMarkdown(content), "text/markdown");
   }
 
   return (

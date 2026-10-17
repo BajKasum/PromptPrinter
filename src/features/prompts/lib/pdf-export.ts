@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { AI_GENERATED_FOOTER, AI_GENERATED_KEYWORD, AI_GENERATED_SUBJECT } from "@/shared/lib/ai-marker";
 
 // Pro-only export (lib/pricing.ts → "PDF- & Markdown-Export"). Renders
 // the artifact's markdown as real, selectable text, not a rasterized
@@ -14,6 +15,14 @@ const FONT = { body: 10, h1: 16, h2: 13, h3: 11 } as const;
 
 export function markdownToPdf(title: string, markdown: string): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  // Als KI-Inhalt maschinenlesbar gekennzeichnet (EU-KI-Verordnung Art. 50 Abs. 2): Dokumenteigenschaften
+  // der PDF, dazu unten auf jeder Seite sichtbar (shared/lib/ai-marker.ts).
+  doc.setProperties({
+    title,
+    subject: AI_GENERATED_SUBJECT,
+    keywords: AI_GENERATED_KEYWORD,
+    creator: "PromptPrinter",
+  });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const contentWidth = pageWidth - MARGIN * 2;
@@ -95,7 +104,7 @@ export function markdownToPdf(title: string, markdown: string): jsPDF {
   doc.setTextColor(150);
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.text("PromptPrinter", MARGIN, pageHeight - 10);
+    doc.text(AI_GENERATED_FOOTER, MARGIN, pageHeight - 10);
     doc.text(`${i} / ${pageCount}`, pageWidth - MARGIN, pageHeight - 10, { align: "right" });
   }
 

@@ -91,3 +91,26 @@ describe("ChatTyping", () => {
     expect(screen.getByRole("status")).toHaveAccessibleName(/Das dauert gerade etwas länger/);
   });
 });
+
+// EU-KI-Verordnung Art. 50 Abs. 2 (Rechts-Audit R-9): eine heruntergeladene Antwort trägt die Markierung.
+describe("ChatAssistantBubble: Markdown-Export", () => {
+  it("lädt die Antwort mit der KI-Markierung vor dem Text herunter", async () => {
+    const downloaded: { name: string; content: string }[] = [];
+    vi.resetModules();
+    vi.doMock("@/shared/lib/utils", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/shared/lib/utils")>();
+      return { ...actual, downloadFile: (name: string, content: string) => downloaded.push({ name, content }) };
+    });
+    const { ChatAssistantBubble } = await import("./chat-transcript");
+    render(<ChatAssistantBubble content="Du bist ein Tutor." index={0} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /Export/ }));
+
+    expect(downloaded).toHaveLength(1);
+    expect(downloaded[0].name).toBe("prompt-1.md");
+    expect(downloaded[0].content.startsWith("<!-- ai-generated: true")).toBe(true);
+    expect(downloaded[0].content.endsWith("Du bist ein Tutor.")).toBe(true);
+    vi.doUnmock("@/shared/lib/utils");
+  });
+});
