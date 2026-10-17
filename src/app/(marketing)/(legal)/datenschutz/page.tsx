@@ -123,6 +123,13 @@ export default function DatenschutzPage() {
         Sprachmodus ist rein optional und braucht deine ausdrückliche Freigabe des Mikrofons;
         ohne sie funktioniert der Chat unverändert über die Tastatur.
       </p>
+      <p>
+        Bevor du ihn zum ersten Mal nutzt, fragen wir dich, ob du damit einverstanden bist, dass
+        dein Browser die Aufnahme an den Anbieter der Spracherkennung schickt (Ziffer 4). Deine
+        Zustimmung merkt sich dein Browser, nicht wir (Eintrag{" "}
+        <code>pp-voice-consent</code>, siehe <a href="/cookies">Cookie-Richtlinie</a>). Du kannst
+        sie jederzeit im Sprachmodus widerrufen oder den Eintrag in deinem Browser löschen.
+      </p>
       <h3>Eigene API-Schlüssel (optional)</h3>
       <p>
         Wenn du in den Einstellungen einen <strong>eigenen Zugang zu einem Modellanbieter</strong>{" "}
@@ -171,7 +178,8 @@ export default function DatenschutzPage() {
         unseres Authentifizierungs-Dienstes (Präfix <code>sb-</code>), die deine Sitzung
         aufrechterhalten, und zwei Cookies für die Seitenleiste (<code>pp-sidebar</code>,{" "}
         <code>pp-sidebar-width</code>), die keine Personendaten enthalten. Deine Theme-Einstellung
-        (hell/dunkel) liegt im lokalen Speicher deines Browsers und wird nicht an uns übertragen. Es
+        (hell/dunkel) und deine Zustimmung zum Sprachmodus liegen im lokalen Speicher deines
+        Browsers und werden nicht an uns übertragen. Es
         kommen <strong>keine Tracking-, Analyse- oder Werbe-Cookies</strong> zum Einsatz und wir
         betreiben kein Drittanbieter-Tracking; die oben beschriebene Messung der Ladegeschwindigkeit
         arbeitet ohne Cookies. Weil alle eingesetzten Cookies

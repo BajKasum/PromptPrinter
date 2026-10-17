@@ -409,6 +409,11 @@ export const de = {
     privacyNotice:
       "Chrome und Edge schicken deine Aufnahme zur Erkennung an Google bzw. Microsoft, Safari erkennt auf dem Gerät.",
     privacyLink: "Datenschutz",
+    consentTitle: "Spracherkennung deines Browsers",
+    consentBody:
+      "Zum Diktieren nutzt dein Browser seine eigene Spracherkennung. In Chrome und Edge wird deine Aufnahme dafür an Google bzw. Microsoft geschickt, auch in die USA, in Safari bleibt sie auf deinem Gerät. Wir bekommen die Aufnahme nicht und speichern sie nicht. Du kannst deine Zustimmung jederzeit im Sprachmodus widerrufen. Magst du den Sprachmodus so nutzen?",
+    consentAccept: "Einverstanden",
+    consentWithdraw: "Zustimmung widerrufen",
     errors: {
       micUnsupported: "Dieser Browser gibt keinen Zugriff auf das Mikrofon.",
       micDenied:

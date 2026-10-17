@@ -278,15 +278,108 @@ describe("Bearbeiten", () => {
 });
 
 describe("Sprachmodus", () => {
-  it("ersetzt das Eingabefeld durch die Sprachleiste und gibt es beim Schließen zurück", async () => {
+  // Vor dem ersten Diktat fragt der Chat nach (Chrome und Edge schicken die Aufnahme an Google bzw. Microsoft).
+  // Die Zustimmung steht je Browser in localStorage; ihr Wert ist die Fassung des Hinweises.
+  const KEY = "pp-voice-consent";
+  const VERSION = "2026-10-17";
+  const openVoice = () => screen.getByRole("button", { name: "Sprachmodus öffnen" });
+
+  beforeEach(() => window.localStorage.removeItem(KEY));
+  afterEach(() => {
+    window.localStorage.removeItem(KEY);
+    vi.unstubAllGlobals();
+  });
+
+  it("ersetzt mit Zustimmung das Eingabefeld durch die Sprachleiste und gibt es beim Schließen zurück", async () => {
+    window.localStorage.setItem(KEY, VERSION);
     render(<Chat />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Sprachmodus öffnen" }));
+    await user.click(openVoice());
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Sprachmodus schliessen" }));
     expect(screen.getByRole("textbox")).toBeInTheDocument();
+  });
+
+  it("fragt ohne Zustimmung zuerst und öffnet die Sprachleiste noch nicht", async () => {
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.click(openVoice());
+
+    const dialog = await screen.findByRole("dialog", { name: "Spracherkennung deines Browsers" });
+    expect(within(dialog).getByText(/Google bzw. Microsoft/)).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("Abbrechen lässt den Chat unverändert und speichert nichts", async () => {
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.click(openVoice());
+    await user.click(await screen.findByRole("button", { name: "Abbrechen" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("Einverstanden merkt sich die Zustimmung und öffnet die Sprachleiste, beim nächsten Mal ohne Frage", async () => {
+    const { unmount } = render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.click(openVoice());
+    await user.click(await screen.findByRole("button", { name: "Einverstanden" }));
+
+    expect(window.localStorage.getItem(KEY)).toBe(VERSION);
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    unmount();
+
+    render(<Chat />);
+    await user.click(openVoice());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("fragt neu, wenn die gespeicherte Zustimmung zu einer älteren Fassung des Hinweises gehört", async () => {
+    window.localStorage.setItem(KEY, "2020-01-01");
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.click(openVoice());
+
+    expect(await screen.findByRole("dialog", { name: "Spracherkennung deines Browsers" })).toBeInTheDocument();
+  });
+
+  it("Widerrufen in der Sprachleiste löscht die Zustimmung, schließt sie und fragt beim nächsten Mal wieder", async () => {
+    // Der Hinweis samt Widerruf steht nur dort, wo die Erkennung überhaupt läuft (wie im Browser).
+    class FakeRecognition extends EventTarget {
+      continuous = false;
+      interimResults = false;
+      lang = "";
+      onresult = null;
+      onerror = null;
+      onend = null;
+      start() {}
+      stop() {}
+      abort() {}
+    }
+    vi.stubGlobal("SpeechRecognition", FakeRecognition);
+    window.localStorage.setItem(KEY, VERSION);
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.click(openVoice());
+    await user.click(screen.getByRole("button", { name: "Zustimmung widerrufen" }));
+
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+
+    await user.click(openVoice());
+    expect(await screen.findByRole("dialog", { name: "Spracherkennung deines Browsers" })).toBeInTheDocument();
   });
 });
 
