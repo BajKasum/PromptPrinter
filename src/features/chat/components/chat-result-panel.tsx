@@ -35,7 +35,7 @@ export function ChatResultPanel({
       aria-label={t.chat.resultLabel}
       className="overflow-hidden rounded-2xl border border-border-strong bg-surface-raised"
     >
-      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 md:px-7">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 md:px-7">
         <div className="flex items-center gap-2">
           {/* Finn's delivering pose, static, a quiet badge, not a performing
               character: this sits on screen for as long as you're reading. */}
@@ -52,7 +52,7 @@ export function ChatResultPanel({
       </header>
 
       {/* Larger, looser type than a chat bubble, this is meant to be read. */}
-      <div className="px-5 py-5 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
+      <div className="px-3 py-4 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
         <MarkdownMessage content={content} />
       </div>
     </section>
