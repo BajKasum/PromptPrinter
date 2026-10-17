@@ -93,7 +93,7 @@ const CASES: { party: keyof ThirdParties; label: string; modules: string[] }[] =
   {
     party: "turnstile",
     label: "Cloudflare Turnstile",
-    modules: ["features/auth/components/turnstile-widget.tsx"],
+    modules: ["shared/ui/turnstile-widget.tsx"],
   },
   {
     party: "lemonSqueezy",

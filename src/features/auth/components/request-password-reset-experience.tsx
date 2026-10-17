@@ -6,7 +6,7 @@ import { z } from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
-import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/features/auth/components/turnstile-widget";
+import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
 import { Input } from "@/shared/ui/input";
 
 const emailSchema = z.string().email("Bitte eine gültige Email eingeben");

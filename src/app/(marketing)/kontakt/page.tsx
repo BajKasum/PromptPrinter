@@ -5,18 +5,20 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { LEGAL } from "@/shared/lib/legal";
+import { ContactForm } from "@/features/marketing/components/contact-form";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
   title: "Kontakt",
   description:
-    "Fehler melden, Fragen stellen, Datenschutzanfragen: alles läuft über eine E-Mail-Adresse, ohne Ticket-System.",
+    "Fehler melden, Fragen stellen, Datenschutzanfragen: per E-Mail oder über das Formular, ohne Ticket-System.",
   path: "/kontakt",
 });
 
-// Deliberately no contact form: the project has no transactional mail setup,
-// so a form would either silently drop messages or need a whole delivery
-// stack for one address. A plain mailto is honest and works today.
+// Zwei Wege: die Mailadresse und das Formular (POST /api/contact, Versand über
+// Resend). Das Formular ist der zweite schnelle Kontaktweg, den das Impressum
+// für Besucher aus Deutschland braucht; die Adresse bleibt direkt sichtbar, und
+// jede Fehlermeldung des Formulars nennt sie.
 
 const TOPICS = [
   {
@@ -83,6 +85,18 @@ export default function KontaktPage() {
             />
           </div>
         </Rise>
+      </section>
+
+      <section className="container-x pb-12" aria-labelledby="kontakt-formular">
+        <FadeIn>
+          <h2
+            id="kontakt-formular"
+            className="mb-4 text-[20px] font-semibold tracking-[-0.01em] text-foreground"
+          >
+            Oder gleich hier schreiben
+          </h2>
+          <ContactForm />
+        </FadeIn>
       </section>
 
       <section className="container-x pb-16">

@@ -156,6 +156,7 @@ describe("thirdPartiesFor", () => {
     ["/login", { turnstile: true, lemonSqueezy: false }],
     ["/signup", { turnstile: true, lemonSqueezy: false }],
     ["/reset-password", { turnstile: true, lemonSqueezy: false }],
+    ["/kontakt", { turnstile: true, lemonSqueezy: false }],
     ["/pricing", { turnstile: false, lemonSqueezy: true }],
     ["/billing", { turnstile: false, lemonSqueezy: true }],
     ["/plans", { turnstile: false, lemonSqueezy: true }],

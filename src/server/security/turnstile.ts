@@ -3,7 +3,7 @@ import "server-only";
 /**
  * Cloudflare Turnstile verification, server side.
  *
- * The widget (components/auth/turnstile-widget.tsx) hands the browser a
+ * The widget (shared/ui/turnstile-widget.tsx) hands the browser a
  * single-use token. This module is the only place that redeems one, against
  * Cloudflare's canonical siteverify endpoint.
  *

@@ -404,6 +404,25 @@ Mails pro Tag) vor der Buchung auf brevo.com selbst prüfen. Ein anderer Anbiete
    bekommt jedes neue Konto die Bestätigungsmail, und der Registrierungs-
    Bildschirm zeigt "Schau in dein Postfach" statt des Sofort-Logins.
 
+## Kontaktformular
+
+`/kontakt` hat neben der Mailadresse ein Formular (`ContactForm`, Name freiwillig, E-Mail, Thema, Nachricht
+mit 10 bis 4000 Zeichen). Es ist der zweite schnelle Kontaktweg, den das Impressum für Besucher aus
+Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nachricht per
+`server/mail/resend.ts` an `LEGAL.email` (Antwortadresse = die des Absenders) und **speichert nichts**.
+
+- **Einrichten:** in Resend einen API-Key mit *Sending access* für `promptprinter.app` anlegen, in
+  Vercel als `RESEND_API_KEY` (Production) eintragen, neu deployen. Ohne den Wert antwortet die Route
+  mit 503 und der Mailadresse im Text; die Seite bleibt benutzbar.
+- **Schutz:** Ratenlimit 5 Nachrichten je Stunde und IP, **20 je Tag insgesamt** (das Resend-Konto ist
+  dasselbe wie das der Auth-Mails, der Gratis-Tarif erlaubt 100 am Tag: ohne die zweite Grenze könnte ein
+  Schwarm den Reset-Link echter Nutzer verdrängen), Köderfeld `website`, die Mensch-Prüfung von
+  Cloudflare (`/kontakt` steht in `thirdPartiesFor()`, das Widget liegt jetzt in `shared/ui`).
+- **Datenschutz:** Ziffern 2 (Kontaktformular), 3, 4 (Cloudflare, Resend), 6 und `/cookies`. Wer Felder
+  ändert oder die Nachricht irgendwo speichert, zieht die Texte mit.
+- **Nicht belegt:** dass eine Mail im Postfach ankommt. Der Versand lief nie gegen den echten Dienst
+  (kein Schlüssel in der Entwicklung); der erste Test ist eine eigene Nachricht über das Formular.
+
 ## Zahlungen: Webhook (Lemon Squeezy)
 
 `/api/webhooks/lemonsqueezy` schaltet Pro frei und nimmt es zurück. Im Lemon-Squeezy-
