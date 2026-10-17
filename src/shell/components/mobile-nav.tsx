@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,6 +57,13 @@ export function MobileNav({
   // Desktop: im schmalen Drawer ist neben dem Menü kein Platz.
   const [learnMoreOpen, setLearnMoreOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
+  // Der Drawer ist `fixed inset-0`, sitzt aber im Quelltext in der klebenden
+  // Kopfleiste mit `backdrop-blur`. Jeder Vorfahre mit `backdrop-filter` macht
+  // sich zum Bezugsrahmen für `fixed`: der Drawer war dadurch nur so hoch wie
+  // die Leiste (56 px) und das Menü auf dem Handy unbenutzbar. Darum hängt er
+  // an `document.body`, wie die anderen Dialoge (confirm-dialog.tsx).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -106,6 +114,8 @@ export function MobileNav({
         <Menu className="h-4 w-4" strokeWidth={1.8} />
       </button>
 
+      {mounted &&
+        createPortal(
       <AnimatePresence>
         {open && (
           <div className="md:hidden fixed inset-0 z-[60]">
@@ -349,7 +359,9 @@ export function MobileNav({
             </motion.aside>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+        )}
     </>
   );
 }
