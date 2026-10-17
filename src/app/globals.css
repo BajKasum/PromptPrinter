@@ -465,16 +465,19 @@
 
 /* iPhone: ein Eingabefeld unter 16 px lässt Safari beim Fokus auf das Feld
    hineinzoomen, und die Seite bleibt danach vergrössert. Die Felder tragen
-   Tailwind-Grössen (text-sm, text-[13.5px] ...), die in `@layer utilities`
-   liegen; diese Regel steht bewusst ausserhalb jeder Ebene und gewinnt damit
-   gegen alle. Nur bei Touch (pointer: coarse), Desktop behält die kleinere
-   Schrift. Der Guard tests/guards/touch-input-size.test.ts hält Regel und
-   Stelle fest (Handy-Audit 2026-10-17). */
+   Tailwind-Grössen (text-sm, text-[13.5px] ...). Tailwind 3 kennt keine
+   echten CSS-Ebenen: `.text-sm` (Spezifität 0,1,0) schlägt ein blosses
+   `textarea` oder `select` (0,0,1), nur `input:not(...)` käme dagegen an.
+   Darum `!important`; das gilt dann auch gegen `md:text-sm` auf Tablets.
+   Nur bei Touch (pointer: coarse), Desktop behält die kleinere Schrift.
+   Der Guard tests/guards/touch-input-size.test.ts hält die Regel fest
+   (Handy-Audit 2026-10-17; die erste Fassung ohne !important wirkte live
+   nicht: Textfeld blieb bei 14 px). */
 @media (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
   textarea,
   select {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 
