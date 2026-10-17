@@ -168,7 +168,7 @@ export function ChatComposer({
               disabled={attachLimitReached}
               onClick={() => fileInputRef.current?.click()}
               aria-label={t.chat.attachAdd}
-              className="h-9 w-9 shrink-0 rounded-full"
+              className="touch-hit relative h-9 w-9 shrink-0 rounded-full"
             >
               <Plus className="h-[18px] w-[18px]" strokeWidth={1.8} />
             </Button>
@@ -202,7 +202,7 @@ export function ChatComposer({
             variant="subtle"
             aria-label={t.chat.openVoice}
             title={t.chat.voiceTitle}
-            className="absolute bottom-2 right-12 h-9 w-9 shrink-0 rounded-full"
+            className="touch-hit absolute bottom-2 right-12 h-9 w-9 shrink-0 rounded-full"
           >
             <AudioLines className="h-4 w-4" strokeWidth={1.8} />
           </Button>
@@ -213,7 +213,7 @@ export function ChatComposer({
             size="icon"
             variant="subtle"
             aria-label={t.chat.stop}
-            className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
+            className="touch-hit absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
           >
             <Square className="h-3.5 w-3.5 fill-current" />
           </Button>
@@ -223,7 +223,7 @@ export function ChatComposer({
             disabled={!input.trim() || attachPending > 0}
             size="icon"
             aria-label={t.chat.send}
-            className="absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
+            className="touch-hit absolute bottom-2 right-2 h-9 w-9 shrink-0 rounded-full"
           >
             <Send className="h-4 w-4" />
           </Button>

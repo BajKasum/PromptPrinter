@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 // Die Regel in globals.css muss (1) für Touch gelten, (2) 16 px setzen und (3) ausserhalb jeder
 // `@layer` stehen, sonst gewinnen die Tailwind-Grössen (text-sm ...) aus `@layer utilities`.
 
-const css = readFileSync("src/app/globals.css", "utf8");
+const css = readFileSync("src/app/globals.css", "utf8").replace(/\r\n/g, "\n");
 const START = css.indexOf("@media (pointer: coarse)");
 
 /** Schachtelungstiefe der geschweiften Klammern an einer Stelle (Kommentare enthalten keine). */

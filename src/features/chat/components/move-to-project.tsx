@@ -89,7 +89,7 @@ export function MoveToProjectButton({
         aria-label={fmt(t.chat.moveLabel, { title: chatTitle })}
         aria-haspopup="true"
         aria-expanded={open}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+        className="touch-hit-y relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
       >
         <FolderInput className="h-3.5 w-3.5" />
       </button>

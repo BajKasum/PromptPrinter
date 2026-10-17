@@ -256,7 +256,7 @@ export function ProjectFiles({
                 // Permanently visible below md (QA finding K-2), same reasoning
                 // as chat-list.tsx's row actions: a hover-only reveal leaves
                 // touch devices with no dependable way to see this button.
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                className="touch-hit relative flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

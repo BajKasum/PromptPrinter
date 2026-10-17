@@ -294,7 +294,7 @@ export function VoiceBar({
           type="button"
           onClick={close}
           aria-label={t.voice.close}
-          className="focus-glow flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-hover hover:text-foreground"
+          className="touch-hit-y focus-glow relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-hover hover:text-foreground"
         >
           <X className="h-4 w-4" strokeWidth={1.8} />
         </button>
@@ -317,7 +317,7 @@ export function VoiceBar({
           disabled={primaryDisabled}
           aria-label={primaryLabel}
           title={primaryLabel}
-          className="focus-glow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+          className="touch-hit-y focus-glow relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
         >
           {mode === "thinking" ? (
             <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.8} />

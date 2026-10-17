@@ -175,7 +175,7 @@ export default async function ProjectWorkspaceLayout({
           <div className="mb-4 flex items-center justify-between gap-3">
             <Link
               href="/projects"
-              className="inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
+              className="touch-hit-y relative inline-flex items-center gap-1.5 text-[13px] text-secondary transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               {t.pages.workspace.back}

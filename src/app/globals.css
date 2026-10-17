@@ -477,3 +477,28 @@
     font-size: 16px;
   }
 }
+
+/* Tippflächen: kleine Knöpfe (24 bis 36 px) bekommen auf Touch eine
+   unsichtbare Trefferfläche von mindestens 44 px, ohne dass sich das Bild
+   ändert. `touch-hit` wächst in beide Richtungen, `touch-hit-y` nur in der
+   Höhe (für Knöpfe, die in einer Reihe dicht nebeneinander stehen, sonst
+   überlappen sich die Flächen). Der Knopf muss positioniert sein (`relative`
+   oder `absolute`). Wie die Regel oben ausserhalb jeder `@layer`. Guard:
+   tests/guards/touch-target.test.ts (Handy-Audit 2026-10-17). */
+@media (pointer: coarse) {
+  .touch-hit::after,
+  .touch-hit-y::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .touch-hit::after {
+    width: max(100%, 44px);
+  }
+  .touch-hit-y::after {
+    width: 100%;
+  }
+}
