@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Script from "next/script";
 import { useCallback, useState, type MouseEvent, type ReactNode } from "react";
 import { Check } from "lucide-react";
@@ -17,6 +18,7 @@ import {
   type LemonSqueezyEvent,
 } from "@/shared/lib/use-lemon-squeezy";
 import { useT } from "@/shared/i18n/provider";
+import { PRO_AVAILABLE, PRO_UNAVAILABLE_PATH } from "@/shared/lib/pro-availability";
 
 type LemonCheckoutButtonProps = {
   /** Beschriftung. */
@@ -109,6 +111,16 @@ export function LemonCheckoutButton({
     const dark = document.documentElement.classList.contains("dark");
     const url = buildCheckoutUrl(checkoutBase, { email, userId, dark, presentation });
     if (url && openCheckout(url)) clickEvent.preventDefault();
+  }
+
+  // Pro nicht kaufbar (pro-availability.ts): jeder Pro-Knopf führt auf die
+  // Entschuldigungsseite. Die Hooks oben laufen weiter, sie sind harmlos.
+  if (!PRO_AVAILABLE) {
+    return (
+      <Button asChild variant={variant} size={size} className={className}>
+        <Link href={PRO_UNAVAILABLE_PATH}>{children}</Link>
+      </Button>
+    );
   }
 
   if (purchased) {

@@ -162,11 +162,17 @@ describe("SEO-Metadaten der öffentlichen Seiten", () => {
 
   // Eine neue Seite ohne Sitemap-Eintrag findet Google nur über Links, ein
   // Eintrag ohne Seite ist ein Crawl-Fehler. Beides fällt sonst niemandem auf.
+  // Ausgenommen sind Seiten, die sich selbst auf `noindex` stellen (heute /pro-bald,
+  // die Übergangsseite der Pro-Knöpfe): ein Sitemap-Eintrag für eine Seite, die nicht
+  // in den Index soll, widerspräche sich selbst.
   it("führt genau die öffentlichen Seiten in der Sitemap", () => {
     const listed = sitemap()
       .map((entry) => entry.url.replace(ORIGIN, "") || "/")
       .sort();
-    const routes = pages.map((page) => page.route).sort();
+    const routes = pages
+      .filter((page) => (page.metadata?.robots as { index?: boolean } | undefined)?.index !== false)
+      .map((page) => page.route)
+      .sort();
 
     expect(listed).toEqual(routes);
   });

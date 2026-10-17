@@ -3,6 +3,15 @@ import { act, render, screen } from "@testing-library/react";
 import { ProCheckoutCta } from "./pro-checkout-cta";
 import type { MarketingPlan } from "@/shared/lib/pricing";
 
+// Schalter aus src/shared/lib/pro-availability.ts: hier an, die letzten Tests schalten aus.
+const flag = vi.hoisted(() => ({ available: true }));
+vi.mock("@/shared/lib/pro-availability", () => ({
+  get PRO_AVAILABLE() {
+    return flag.available;
+  },
+  PRO_UNAVAILABLE_PATH: "/pro-bald",
+}));
+
 const getUser = vi.fn();
 
 vi.mock("@/shared/supabase/client", () => ({
@@ -35,6 +44,7 @@ const plan: MarketingPlan = {
 };
 
 beforeEach(() => {
+  flag.available = true;
   getUser.mockReset();
   checkoutProps.length = 0;
 });
@@ -120,5 +130,27 @@ describe("ProCheckoutCta", () => {
     });
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe("ProCheckoutCta, solange Pro nicht kaufbar ist", () => {
+  it("führt auch Besucher ohne Konto auf die Entschuldigungsseite, nicht zur Registrierung", async () => {
+    flag.available = false;
+    getUser.mockResolvedValue({ data: { user: null } });
+    render(<ProCheckoutCta plan={plan} activatesAutomatically />);
+
+    expect(screen.getByRole("link", { name: "Pro holen" })).toHaveAttribute("href", "/pro-bald");
+    expect(getUser).not.toHaveBeenCalled();
+    expect(checkoutProps).toHaveLength(0);
+  });
+
+  it("auch ein angemeldeter Besucher bekommt keinen Checkout", async () => {
+    flag.available = false;
+    getUser.mockResolvedValue({ data: { user: { id: "u1", email: "a@b.test" } } });
+    render(<ProCheckoutCta plan={plan} activatesAutomatically />);
+    await act(async () => {});
+
+    expect(screen.getByRole("link", { name: "Pro holen" })).toHaveAttribute("href", "/pro-bald");
+    expect(checkoutProps).toHaveLength(0);
   });
 });

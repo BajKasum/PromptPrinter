@@ -32,7 +32,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   den Einstellungen zu einem Gratis-Gemini-Key), Pro mit Server-Key und Kontingent.
   **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder
   OpenAI-kompatible Endpunkt) hebt das Chat-Limit auf. Zahlung über Lemon Squeezy
-  (Webhook `/api/webhooks/lemonsqueezy`).
+  (Webhook `/api/webhooks/lemonsqueezy`). **Pro ist abgeschaltet** (seit 2026-10-17, `PRO_AVAILABLE = false`, jeder Pro-Knopf führt auf `/pro-bald`; Vercel Hobby erlaubt keine Zahlungen): Wiederaufnahme in docs/PRO-WIEDERAUFNAHME.md.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch.
 - **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`,
@@ -139,7 +139,7 @@ Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
 2. **Zahlungen laufen über Lemon Squeezy.** Checkout, Webhook
    (`/api/webhooks/lemonsqueezy`) und Kundenportal sind gebaut. Seit 2026-10-15 zeigt der
    Pro-Knopf auf das Live-Produkt (vorher ein Testmodus-Link), ein echter Kauf steht aus.
-   Stripe ist aus Code, Datenbank (Migration `0043`, 2026-10-05) und Vercel entfernt.
+   Stripe ist aus Code, Datenbank (Migration `0043`, 2026-10-05) und Vercel entfernt. **Pro ist nicht kaufbar** (`src/shared/lib/pro-availability.ts`), nichts davon gelöscht; "nimm Pro wieder auf" heisst: docs/PRO-WIEDERAUFNAHME.md abarbeiten.
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
    Prod-Docker-Container liest `.env` (via `env_file` in
    `docker-compose.prod.yml`). Das `--env-file .env.local` im Compose-Befehl steuert

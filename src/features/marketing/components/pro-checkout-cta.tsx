@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/shared/supabase/client";
 import { Button } from "@/shared/ui/button";
 import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
+import { PRO_AVAILABLE, PRO_UNAVAILABLE_PATH } from "@/shared/lib/pro-availability";
 import type { MarketingPlan } from "@/shared/lib/pricing";
 
 type Buyer = { email: string | null; userId: string };
@@ -60,6 +61,8 @@ export function ProCheckoutCta({
   const [buyer, setBuyer] = useState<Buyer | null>(null);
 
   useEffect(() => {
+    // Pro nicht kaufbar: niemand braucht Mail und Konto-ID für den Checkout.
+    if (!PRO_AVAILABLE) return;
     let cancelled = false;
     createClient()
       .auth.getUser()
@@ -94,7 +97,9 @@ export function ProCheckoutCta({
 
   return (
     <Button asChild variant="accent" className="w-full mt-6">
-      <Link href={plan.href}>{plan.cta}</Link>
+      {/* Pro nicht kaufbar: auch Besucher ohne Konto landen auf der Entschuldigung,
+          nicht auf der Registrierung (pro-availability.ts). */}
+      <Link href={PRO_AVAILABLE ? plan.href : PRO_UNAVAILABLE_PATH}>{plan.cta}</Link>
     </Button>
   );
 }
