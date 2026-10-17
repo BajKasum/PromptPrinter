@@ -134,7 +134,7 @@ function CodeBlock({ text }: { text: string }) {
           <CopyMoment copied={copied} copyCount={copyCount} idleLabel={t.chat.copyPrompt} />
         </button>
       </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap px-3.5 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
+      <pre className="overflow-x-auto whitespace-pre-wrap px-3 py-3 md:px-3.5 font-mono text-[12.5px] leading-relaxed text-foreground/85">
         {text}
       </pre>
     </div>
