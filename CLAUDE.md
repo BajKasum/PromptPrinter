@@ -100,9 +100,9 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
 - **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
-  (Google/Microsoft), der Satz zum Ausweich-Anbieter (Failover ist aus), Speed Insights (Aufbewahrung bei Vercel
-  nicht belegt), Resend (Region Irland gegen Vertrag USA, Data-Privacy-Framework nicht geprüft), jeder weitere Empfänger (Fehler-Tracker); AGB Ziffer 2 und
-  Nutzungsrichtlinie Ziffer 2 nennen noch Lovable und Cursor (Vorschlag in #88).
+  (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
+  Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
+  Empfänger (Fehler-Tracker); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
 - **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche).
 - **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste), Obergrenzen in
   `tests/guards/file-size.test.ts`.
@@ -270,6 +270,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | UI-Text | Wörterbuch `shared/i18n/messages/`, alle fünf Sprachen (fr/it/es sind nie von Muttersprachlern geprüft: im PR kennzeichnen) |
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
+| Server-Key eines Anbieters (`GEMINI_API_KEY`) | vorher Datenschutz Ziffer 4 und 5 um ihn ergänzen (seit 2026-10-17 nennt der Text Google nicht mehr) |
 | Datei in `src/server/` | `import "server-only"` |
 | Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3, `zod-import.test.ts`) |
 | Mail-Vorlage | `supabase/templates/`, Link über `/auth/callback`; im Dashboard neu einfügen |

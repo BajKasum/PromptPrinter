@@ -34,5 +34,5 @@ export const LEGAL = {
    * Letzte Aktualisierung der Rechtstexte (gilt für alle sechs gemeinsam, inkl.
    * /cookies und /nutzungsrichtlinie).
    */
-  lastUpdated: "15. Oktober 2026",
+  lastUpdated: "17. Oktober 2026",
 } as const;

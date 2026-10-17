@@ -40,10 +40,10 @@ export default function NutzungsrichtliniePage() {
 
       <h2>2. Wofür PromptPrinter gedacht ist</h2>
       <p>
-        PromptPrinter hilft dir, aus einer Idee einen klaren Prompt für KI-Bau-Tools wie Lovable,
-        Cursor oder Claude Code zu machen, und dein Projektwissen dafür bereitzuhalten. Die
+        PromptPrinter hilft dir, aus einer Idee einen klaren Prompt für eine KI deiner Wahl zu
+        machen, und dein Projektwissen dafür bereitzuhalten. Die
         Ergebnisse darfst du nach Ziffer 5 der AGB frei für eigene Zwecke verwenden, auch in
-        kommerziellen Projekten. Die Grenzen unten betreffen nicht das Bauen selbst, sondern
+        kommerziellen Projekten. Die Grenzen unten betreffen nicht die Aufgabe selbst, sondern
         Inhalte und Verhalten, die anderen schaden oder den Dienst gefährden.
       </p>
 
