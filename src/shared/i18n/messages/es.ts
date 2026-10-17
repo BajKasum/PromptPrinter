@@ -399,6 +399,11 @@ export const es: Messages = {
     privacyNotice:
       "Chrome y Edge envían tu grabación a Google o Microsoft para reconocerla, Safari la reconoce en el dispositivo.",
     privacyLink: "Privacidad",
+    consentTitle: "El reconocimiento de voz de tu navegador",
+    consentBody:
+      "Para dictar, tu navegador usa su propio reconocimiento de voz. En Chrome y Edge tu grabación se envía para ello a Google o a Microsoft, también a Estados Unidos; en Safari se queda en tu dispositivo. Nosotros no recibimos la grabación ni la guardamos. Puedes retirar tu consentimiento en cualquier momento en el modo de voz. ¿Quieres usar el modo de voz así?",
+    consentAccept: "De acuerdo",
+    consentWithdraw: "Retirar el consentimiento",
     errors: {
       micUnsupported: "Este navegador no da acceso al micrófono.",
       micDenied: "Necesito acceso a tu micrófono. Permítelo en la barra de direcciones e inténtalo de nuevo.",

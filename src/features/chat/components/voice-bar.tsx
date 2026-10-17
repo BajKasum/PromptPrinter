@@ -49,9 +49,12 @@ const MASCOT_FOR_MODE: Record<SpokenMode, MascotState> = {
 export function VoiceBar({
   onClose,
   onSubmit,
+  onRevokeConsent,
   lang: langOverride,
 }: {
   onClose: () => void;
+  /** Nimmt die Zustimmung zur Spracherkennung zurück und schliesst den Sprachmodus. */
+  onRevokeConsent?: () => void;
   /** Sends the spoken turn and resolves with Finn's reply (null if it failed). */
   onSubmit: (text: string) => Promise<string | null>;
   /** Erkennungs- und Vorlesesprache; ohne Angabe die Sprache der App. */
@@ -345,6 +348,18 @@ export function VoiceBar({
           >
             {t.voice.privacyLink}
           </a>
+          {onRevokeConsent && (
+            <>
+              {" · "}
+              <button
+                type="button"
+                onClick={onRevokeConsent}
+                className="text-accent-text underline underline-offset-2"
+              >
+                {t.voice.consentWithdraw}
+              </button>
+            </>
+          )}
         </p>
       )}
     </motion.div>

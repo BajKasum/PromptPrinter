@@ -81,6 +81,17 @@ export const FIRST_PARTY_STORAGE: StorageEntry[] = [
     duration: "1 Jahr.",
   },
   {
+    // features/chat/hooks/use-voice-consent.ts. Der Wert ist die Fassung des
+    // Hinweises, damit ein geänderter Hinweis neu gefragt wird.
+    name: "pp-voice-consent",
+    kind: "Lokaler Speicher (localStorage)",
+    setBy: "PromptPrinter",
+    purpose:
+      "Merkt sich, dass du dem Hinweis zur Spracherkennung deines Browsers zugestimmt hast. Enthält nur das Datum der Fassung des Hinweises und wird nie an uns übertragen.",
+    when: "Erst wenn du im Chat den Sprachmodus öffnest und auf „Einverstanden“ klickst.",
+    duration: "Bis du die Zustimmung im Sprachmodus widerrufst oder ihn in deinem Browser löschst.",
+  },
+  {
     // next-themes' Standard-storageKey, (app)/layout.tsx setzt keinen eigenen.
     name: "theme",
     kind: "Lokaler Speicher (localStorage)",
