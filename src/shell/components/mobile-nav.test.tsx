@@ -42,6 +42,19 @@ describe("MobileNav", () => {
     expect(document.body.style.overflow).toBe("hidden");
   });
 
+  it("hängt den Drawer an document.body, nicht in die Kopfleiste mit backdrop-filter", async () => {
+    // Ein Vorfahre mit backdrop-filter wird zum Bezugsrahmen für `fixed inset-0`:
+    // der Drawer war so nur 56 px hoch (Handy-Audit 2026-10-17).
+    const user = userEvent.setup();
+    const { container } = render(<MobileNav chats={chats} projects={[]} />);
+    await user.click(screen.getByRole("button", { name: "Menü öffnen" }));
+
+    const drawer = screen.getByText("Erste Idee").closest("aside");
+    expect(drawer).not.toBeNull();
+    expect(container.contains(drawer)).toBe(false);
+    expect(drawer?.parentElement?.parentElement).toBe(document.body);
+  });
+
   it("lists the account destinations, all plans and a collapsible 'Mehr erfahren'", async () => {
     const user = userEvent.setup();
     render(<MobileNav chats={chats} projects={[]} />);
