@@ -130,6 +130,29 @@ describe("ContactForm", () => {
     expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).website).toBe("https://spam.example");
   });
 
+  it("zeigt den Hinweis für eine Meldung rechtswidriger Inhalte nur bei diesem Thema", () => {
+    render(<ContactForm />);
+    expect(screen.queryByText("Was in einer Meldung stehen sollte")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Worum geht es?"), { target: { value: "melden" } });
+
+    expect(screen.getByText("Was in einer Meldung stehen sollte")).toBeTruthy();
+    expect(screen.getByText(/nach bestem Wissen und Gewissen/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Nutzungsrichtlinie" }).getAttribute("href")).toBe("/nutzungsrichtlinie");
+
+    fireEvent.change(screen.getByLabelText("Worum geht es?"), { target: { value: "frage" } });
+    expect(screen.queryByText("Was in einer Meldung stehen sollte")).toBeNull();
+  });
+
+  it("schickt das Thema melden an die Route", async () => {
+    render(<ContactForm />);
+    fireEvent.change(screen.getByLabelText("Worum geht es?"), { target: { value: "melden" } });
+    fill();
+    submit();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).topic).toBe("melden");
+  });
+
   it("verlinkt die Datenschutzerklärung", () => {
     render(<ContactForm />);
     expect(screen.getByRole("link", { name: "Datenschutzerklärung" }).getAttribute("href")).toBe("/datenschutz");

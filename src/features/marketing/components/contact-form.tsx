@@ -162,6 +162,29 @@ export function ContactForm() {
         </select>
       </div>
 
+      {topic === "melden" && (
+        <div
+          role="note"
+          className="rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3 text-[13px] leading-relaxed text-secondary"
+        >
+          <p className="font-medium text-foreground">Was in einer Meldung stehen sollte</p>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">
+            <li>wo du den Inhalt gefunden hast (Adresse oder genaue Stelle),</li>
+            <li>warum er deiner Meinung nach rechtswidrig ist,</li>
+            <li>deinen Namen, falls du ihn angeben willst (die E-Mail-Adresse brauche ich).</li>
+          </ul>
+          <p className="mt-1.5">
+            Mit dem Absenden bestätigst du, dass deine Angaben nach bestem Wissen und Gewissen richtig
+            und vollständig sind. Ich bestätige dir den Eingang per Mail und teile dir meine
+            Entscheidung mit. Mehr dazu in der{" "}
+            <Link href="/nutzungsrichtlinie" className="text-accent-text underline underline-offset-2">
+              Nutzungsrichtlinie
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <label htmlFor="contact-message" className="block text-[13px] font-medium text-foreground">
           Deine Nachricht

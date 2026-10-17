@@ -418,6 +418,11 @@ Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nac
   dasselbe wie das der Auth-Mails, der Gratis-Tarif erlaubt 100 am Tag: ohne die zweite Grenze könnte ein
   Schwarm den Reset-Link echter Nutzer verdrängen), Köderfeld `website`, die Mensch-Prüfung von
   Cloudflare (`/kontakt` steht in `thirdPartiesFor()`, das Widget liegt jetzt in `shared/ui`).
+- **Meldeweg für rechtswidrige Inhalte (Digital Services Act, Art. 16):** das Thema "Rechtswidrigen Inhalt
+  melden" im Formular (`CONTACT_TOPICS`, `melden`). Nur dort bestätigt die Route den Eingang per Mail an den
+  Absender (Art. 16 Abs. 4), ohne dessen Nachricht zu wiederholen; bei jedem anderen Thema wäre eine
+  Bestätigung an eine eingetippte Adresse ein Weg, Dritten Mails zuzustellen. Scheitert die Bestätigung, ist
+  die Meldung trotzdem angekommen (Logeintrag `contact.ack_failed`). Die Entscheidung teilt Kasum von Hand mit.
 - **Datenschutz:** Ziffern 2 (Kontaktformular), 3, 4 (Cloudflare, Resend), 6 und `/cookies`. Wer Felder
   ändert oder die Nachricht irgendwo speichert, zieht die Texte mit.
 - **Nicht belegt:** dass eine Mail im Postfach ankommt. Der Versand lief nie gegen den echten Dienst

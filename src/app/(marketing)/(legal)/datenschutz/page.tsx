@@ -138,8 +138,10 @@ export default function DatenschutzPage() {
         ihn angibst, deinen Namen. Die Nachricht geht per E-Mail an uns (Versand über Resend, siehe
         Ziffer 4); wir speichern sie nicht in unserer Datenbank. Auf der Seite läuft die
         Mensch-Prüfung von Cloudflare, dabei wird deine IP-Adresse übermittelt, und wir zählen die
-        Nachrichten je IP-Adresse, um Missbrauch zu begrenzen. Du kannst uns auch direkt per
-        E-Mail schreiben.
+        Nachrichten je IP-Adresse, um Missbrauch zu begrenzen. Meldest du über das Formular einen
+        rechtswidrigen Inhalt (Thema „Rechtswidrigen Inhalt melden“), schicken wir dir zusätzlich eine
+        Eingangsbestätigung an deine Adresse, ohne deine Nachricht darin zu wiederholen. Du kannst
+        uns auch direkt per E-Mail schreiben.
       </p>
       <h3>Nutzungs- und Protokolldaten</h3>
       <p>

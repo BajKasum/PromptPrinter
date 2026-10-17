@@ -165,6 +165,52 @@ describe("POST /api/contact", () => {
     });
   });
 
+  describe("Meldung rechtswidriger Inhalte (Digital Services Act, Art. 16)", () => {
+    const report = { ...valid, topic: "melden", message: "Auf der Seite xyz steht ein rechtswidriger Text über mich." };
+
+    it("bestätigt den Eingang per Mail an den Absender, ohne seine Nachricht zu wiederholen", async () => {
+      const res = await POST(req(report));
+
+      expect(res.status).toBe(200);
+      expect(sendMail).toHaveBeenCalledTimes(2);
+      const ack = sendMail.mock.calls[1][0] as { to: string; subject: string; text: string; replyTo?: string };
+      expect(ack.to).toBe("mira@example.com");
+      expect(ack.subject).toBe("Deine Meldung ist angekommen");
+      expect(ack.text).not.toContain("rechtswidriger Text");
+      expect(ack.replyTo).toBeUndefined();
+    });
+
+    it("die Meldung selbst geht zuerst an den Betreiber", async () => {
+      await POST(req(report));
+      const first = sendMail.mock.calls[0][0] as { to: string; subject: string };
+      expect(first.to).toBe("kasumbajrami7@gmail.com");
+      expect(first.subject).toBe("Kontakt: Rechtswidrigen Inhalt melden");
+    });
+
+    it.each(["fehler", "frage", "idee", "daten"])("schickt bei %s keine Bestätigung an eine eingetippte Adresse", async (topic) => {
+      await POST(req({ ...valid, topic }));
+      expect(sendMail).toHaveBeenCalledTimes(1);
+    });
+
+    it("scheitert die Bestätigung, ist die Meldung trotzdem angekommen: 200 und ein Logeintrag", async () => {
+      sendMail.mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false, reason: "rejected" });
+
+      const res = await POST(req(report));
+
+      expect(res.status).toBe(200);
+      expect(logWarning).toHaveBeenCalledWith("contact.ack_failed", { reason: "rejected" });
+    });
+
+    it("kam die Meldung selbst nicht an, geht auch keine Bestätigung raus", async () => {
+      sendMail.mockResolvedValueOnce({ ok: false, reason: "unreachable" });
+
+      const res = await POST(req(report));
+
+      expect(res.status).toBe(502);
+      expect(sendMail).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("Versand abgelehnt oder nicht erreichbar: 502 mit der Adresse als Ausweg", async () => {
     sendMail.mockResolvedValue({ ok: false, reason: "rejected" });
     const res = await POST(req(valid));
