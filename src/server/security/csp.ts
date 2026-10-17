@@ -7,7 +7,7 @@ import "server-only";
 //
 // Trusted origins beyond 'self':
 // - challenges.cloudflare.com: Turnstile captcha, loaded as an external
-//   <script src> (turnstile-widget.tsx) plus its iframe challenge overlay.
+//   <script src> (shared/ui/turnstile-widget.tsx) plus its iframe challenge overlay.
 // - lh3.googleusercontent.com / avatars.githubusercontent.com: OAuth avatar
 //   images (next.config.ts remotePatterns).
 // - the Supabase project origin: the browser client talks to it directly
@@ -100,7 +100,7 @@ const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 // Exakte Pfade, keine Präfixe: /reset-password/update bindet Turnstile NICHT
 // ein (update-password-experience.tsx), /reset-password schon. Dass die Liste
 // zu den Seiten passt, hält csp.test.ts gegen den Quelltext fest.
-const TURNSTILE_PATHS: readonly string[] = ["/login", "/signup", "/reset-password"];
+const TURNSTILE_PATHS: readonly string[] = ["/login", "/signup", "/reset-password", "/kontakt"];
 const LEMON_SQUEEZY_PATHS: readonly string[] = ["/pricing", "/billing", "/plans"];
 
 /** Welche Drittanbieter die Seite unter diesem Pfad einbindet. */

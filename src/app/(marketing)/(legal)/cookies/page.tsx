@@ -76,11 +76,11 @@ export default function CookiesPage() {
       </p>
       <h3>Cloudflare Turnstile (Schutz vor Bots)</h3>
       <p>
-        Auf den Formularen für Anmeldung, Registrierung und Passwort-Zurücksetzen prüft das Captcha
+        Auf den Formularen für Anmeldung, Registrierung, Passwort-Zurücksetzen und Kontakt prüft das Captcha
         „Turnstile“ von Cloudflare, ob ein Mensch oder ein Programm das Formular abschickt. Dazu lädt
         dein Browser ein Skript von Cloudflare, das kurzzeitig technische Merkmale deines Browsers
         auswertet. Cookies setzt Turnstile dabei nach Angaben von Cloudflare in der
-        Standardeinstellung nicht. Der Zweck ist ausschliesslich die Sicherheit der Anmeldung.
+        Standardeinstellung nicht. Der Zweck ist ausschliesslich der Schutz dieser Formulare vor automatisierten Zugriffen.
       </p>
       <h3>Lemon Squeezy (Bezahlung)</h3>
       <p>
