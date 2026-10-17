@@ -89,6 +89,9 @@ export async function POST(req: Request) {
       // Disabling proxy buffering (nginx et al.) so deltas actually arrive
       // incrementally instead of being held until the stream closes.
       "x-accel-buffering": "no",
+      // Maschinenlesbar: der Inhalt dieses Stroms ist KI-erzeugt (EU-KI-Verordnung Art. 50 Abs. 2,
+      // shared/lib/ai-marker.ts). Eine erste Schicht, kein Wasserzeichen.
+      "x-ai-generated": "true",
     },
   });
 }
