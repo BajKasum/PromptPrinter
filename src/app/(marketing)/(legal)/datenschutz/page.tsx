@@ -257,8 +257,9 @@ export default function DatenschutzPage() {
           Inhalte von API-Anfragen nicht auf seinen Servern, sondern verarbeitet sie in Echtzeit.
         </li>
         <li>
-          <strong>Upstash</strong> (Upstash Inc.): Rate-Limiting und Kontingentzählung; bearbeitet zu
-          diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung.
+          <strong>Upstash</strong> (Upstash Inc., USA): Rate-Limiting und Kontingentzählung;
+          bearbeitet zu diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung. Datenregion: EU
+          (Frankfurt).
         </li>
         <li>
           <strong>Lemon Squeezy</strong> (Lemon Squeezy, LLC, USA): Zahlungsabwicklung für den
@@ -277,12 +278,14 @@ export default function DatenschutzPage() {
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
         Einzelne der oben genannten Dienste bearbeiten Daten ausserhalb der Schweiz bzw. des EWR,
-        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Resend,
+        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Resend,
         Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter, bei der Anmeldung über
         diese Dienste Google bzw. GitHub sowie, wenn du den Sprachmodus mit Chrome oder Edge
         nutzt, Google bzw. Microsoft, siehe Ziffer 4) sowie in <strong>Singapur</strong> (Z.ai,
-        möglicherweise auch in <strong>China</strong>; bei Supabase, dessen Vertragspartner in
-        Singapur sitzt, liegen die Daten in Irland).
+        möglicherweise auch in <strong>China</strong>). Bei Supabase (Vertragspartner in
+        Singapur) und Upstash (Anbieter mit Sitz in den USA) liegen die Daten in der EU, in Irland
+        bzw. Frankfurt; soweit die Anbieter von ausserhalb darauf zugreifen, gelten die
+        Standardvertragsklauseln in ihren Vereinbarungen.
       </p>
       <p>
         Für Übermittlungen an Dienstleister in den USA, die in unserem Auftrag handeln, stützen wir
