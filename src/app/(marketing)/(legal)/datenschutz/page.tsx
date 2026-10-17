@@ -131,6 +131,16 @@ export default function DatenschutzPage() {
         dazu verwendet, deine Anfragen bei deinem Anbieter auszuführen, und niemals im Klartext
         angezeigt. Du kannst ihn jederzeit wieder entfernen.
       </p>
+      <h3>Kontaktformular</h3>
+      <p>
+        Schreibst du mir über das Formular auf der <a href="/kontakt">Kontaktseite</a>, bearbeiten
+        wir deine <strong>E-Mail-Adresse</strong>, deine Nachricht, das gewählte Thema und, wenn du
+        ihn angibst, deinen Namen. Die Nachricht geht per E-Mail an uns (Versand über Resend, siehe
+        Ziffer 4); wir speichern sie nicht in unserer Datenbank. Auf der Seite läuft die
+        Mensch-Prüfung von Cloudflare, dabei wird deine IP-Adresse übermittelt, und wir zählen die
+        Nachrichten je IP-Adresse, um Missbrauch zu begrenzen. Du kannst uns auch direkt per
+        E-Mail schreiben.
+      </p>
       <h3>Nutzungs- und Protokolldaten</h3>
       <p>
         Zum Schutz vor Missbrauch und zur Begrenzung der Anfragen (Rate-Limiting) bearbeiten wir
@@ -189,6 +199,12 @@ export default function DatenschutzPage() {
           (Art. 6 Abs. 1 lit. f DSGVO; Art. 31 Abs. 1 revDSG).
         </li>
         <li>
+          <strong>Beantwortung deiner Anfragen</strong> über das Kontaktformular oder per E-Mail,
+          aufgrund unseres berechtigten Interesses, dir zu antworten, und, wenn es um dein Konto
+          oder den Vertrag geht, zu dessen Erfüllung (Art. 6 Abs. 1 lit. b und f DSGVO; Art. 31
+          Abs. 1 revDSG).
+        </li>
+        <li>
           <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Antworten im Chat und,
           wenn du es startest, zur Analyse für das Projekt-Gedächtnis, zur Erfüllung des
           Nutzungsvertrags.
@@ -221,7 +237,8 @@ export default function DatenschutzPage() {
         <li>
           <strong>Resend</strong> (Plus Five Five, Inc., USA): Versand der System-E-Mails, nämlich
           des Links zum Zurücksetzen deines Passworts und, wenn sie ausgelöst werden, der Mails zur
-          Bestätigung oder Änderung deiner E-Mail-Adresse. Dafür werden deine{" "}
+          Bestätigung oder Änderung deiner E-Mail-Adresse, ausserdem die Zustellung der Nachrichten
+          aus dem Kontaktformular an uns. Dafür werden deine{" "}
           <strong>E-Mail-Adresse</strong> und der Inhalt der jeweiligen Nachricht (Link, Zeitpunkt)
           an den Anbieter übermittelt. Für unsere Absenderadresse ist die Region Irland eingestellt;
           nach der Vereinbarung zur Auftragsbearbeitung kann die Bearbeitung dennoch überwiegend
@@ -241,7 +258,7 @@ export default function DatenschutzPage() {
         </li>
         <li>
           <strong>Cloudflare</strong> (Cloudflare, Inc.): Captcha (Turnstile) auf den Formularen für
-          Anmeldung, Registrierung und Passwort-Zurücksetzen. Dazu wird ein Skript von Cloudflare in
+          Anmeldung, Registrierung, Passwort-Zurücksetzen und Kontakt. Dazu wird ein Skript von Cloudflare in
           deinem Browser geladen und deine <strong>IP-Adresse</strong> sowie technische
           Browser-Merkmale werden zur Prüfung übermittelt, ob die Anfrage automatisiert ist.
         </li>
@@ -315,8 +332,10 @@ export default function DatenschutzPage() {
         Projektdateien gelöscht. Dasselbe gilt für Anhänge, wenn du einen einzelnen Chat oder ein
         Projekt löschst. Zähler für Rate-Limiting und Monatskontingente liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
-        und werden danach selbsttätig entfernt. Der E-Mail-Dienst für die System-E-Mails (Ziffer 4)
-        bewahrt die Mailinhalte nach eigenen Angaben 30 Tage auf. Server- und Fehlerprotokolle unseres Hosting-Anbieters
+        und werden danach selbsttätig entfernt. Nachrichten aus dem Kontaktformular und E-Mails an uns
+        bewahren wir in unserem Postfach so lange auf, wie wir sie für die Antwort und mögliche
+        Rückfragen brauchen. Der E-Mail-Dienst (Ziffer 4) bewahrt die Mailinhalte, auch die des
+        Kontaktformulars, nach eigenen Angaben 30 Tage auf. Server- und Fehlerprotokolle unseres Hosting-Anbieters
         sowie die Messwerte zur Ladegeschwindigkeit werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
         insbesondere für Rechnungsunterlagen aus der Zahlungsabwicklung, bleiben vorbehalten.
         Sprachaufnahmen aus dem Sprachmodus durchlaufen unsere Server nicht und werden von uns

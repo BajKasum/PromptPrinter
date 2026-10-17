@@ -36,7 +36,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch.
 - **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`,
-  Hilfe `/docs`, `/ueber`, `/kontakt`, `/vergleich` mit drei Vergleichen und die
+  Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit drei Vergleichen und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
   Rückerstattung).
 - **Entfernt, nicht wiederherstellen:** die Generierungs-Pipeline (`/api/generate`,
@@ -92,7 +92,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   K2 Alarm-Webhook (bewusst nicht eingerichtet), K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
   signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
   eingerichtet, ein echtes Ereignis steht aus.
-- **Wartet auf Kasum:** Entscheid zum Fehler-Tracker;
+- **Wartet auf Kasum:** `RESEND_API_KEY` in Vercel für das Kontaktformular (docs/SETUP.md, "Kontaktformular"); Entscheid zum Fehler-Tracker;
   **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
   Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,

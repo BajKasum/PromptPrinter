@@ -9,7 +9,7 @@ import { safeNextPath } from "@/shared/lib/site-url";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
-import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/features/auth/components/turnstile-widget";
+import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
