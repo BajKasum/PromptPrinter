@@ -287,7 +287,7 @@ function SavedPromptCard({
             {prompt.content}
           </pre>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
-            <span className="px-1 text-[11.5px] text-tertiary">
+            <span className="px-1 text-[12px] text-tertiary">
               {fmt(t.prompts.savedAgo, {
                 time: relativeTime(prompt.createdAt, LOCALE_TAGS[locale].intl, t.time.justNow),
               })}

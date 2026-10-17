@@ -73,7 +73,7 @@ export function LibraryCard({
 
       {/* Workspace-Meta + freshness, supporting metadata in the footer:
           what lives inside (chats, saved prompts). */}
-      <div className="mt-auto flex items-center justify-between text-[11.5px] text-muted-foreground pt-3 border-t border-border">
+      <div className="mt-auto flex items-center justify-between text-[12px] text-muted-foreground pt-3 border-t border-border">
         <span className="inline-flex items-center gap-1.5">
           <Sparkles className="h-3 w-3" />
           {workspaceMeta(item, t.library, locale)}

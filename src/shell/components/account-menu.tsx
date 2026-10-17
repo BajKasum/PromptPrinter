@@ -222,7 +222,7 @@ export function AccountMenu({
                   {shortcut && (
                     <kbd
                       aria-hidden
-                      className="shrink-0 font-sans text-[11.5px] tabular-nums tracking-wide text-tertiary"
+                      className="shrink-0 font-sans text-[12px] tabular-nums tracking-wide text-tertiary"
                     >
                       {formatShortcut(shortcut, mac, t.shell.ctrlKey)}
                     </kbd>

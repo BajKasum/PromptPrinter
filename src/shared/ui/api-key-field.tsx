@@ -111,7 +111,7 @@ export function ApiKeyField({
         </Button>
       </div>
       {detected && (
-        <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-tertiary">
+        <div className="mt-2 flex items-center gap-1.5 text-[12px] text-tertiary">
           <ToolLogo name={NAMED_PROVIDER_META[detected].logo} size={13} />
           <span>
             {fmt(t.settings.keys.detected, { name: NAMED_PROVIDER_META[detected].name })}

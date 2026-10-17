@@ -13,7 +13,7 @@ const PLAN_BADGE: Record<PlanKey, string> = {
 export function PlanBadge({ plan, isAdmin = false }: { plan: PlanKey; isAdmin?: boolean }) {
   if (isAdmin) {
     return (
-      <span className="shrink-0 rounded-full border border-warning/40 bg-warning/15 px-2.5 py-1 text-[11px] font-medium text-warning">
+      <span className="shrink-0 rounded-full border border-warning/40 bg-warning/15 px-2.5 py-1 text-[12px] font-medium text-warning">
         Admin
       </span>
     );
@@ -21,7 +21,7 @@ export function PlanBadge({ plan, isAdmin = false }: { plan: PlanKey; isAdmin?: 
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize",
+        "shrink-0 rounded-full border px-2.5 py-1 text-[12px] font-medium capitalize",
         PLAN_BADGE[plan]
       )}
     >

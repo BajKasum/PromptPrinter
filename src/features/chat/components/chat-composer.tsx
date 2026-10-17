@@ -182,8 +182,8 @@ export function ChatComposer({
             aria-live="polite"
             className={
               remaining === 0
-                ? "pointer-events-none absolute bottom-3 right-24 text-[11px] tabular-nums text-destructive"
-                : "pointer-events-none absolute bottom-3 right-24 text-[11px] tabular-nums text-muted-foreground"
+                ? "pointer-events-none absolute bottom-3 right-24 text-[12px] tabular-nums text-destructive"
+                : "pointer-events-none absolute bottom-3 right-24 text-[12px] tabular-nums text-muted-foreground"
             }
           >
             {remaining === 0
@@ -236,7 +236,7 @@ export function ChatComposer({
           dauerhaft hier, also auch in der leeren Ansicht vor der ersten
           Nachricht, und ist bewusst keine "Enter sendet"-Chrome (siehe oben):
           er ist eine Pflichtangabe (Rechts-Audit 28.09.2026). */}
-      <p className="mt-2 text-center text-[11.5px] leading-snug text-tertiary">
+      <p className="mt-2 text-center text-[12px] leading-snug text-tertiary">
         {t.chat.aiDisclosure}
       </p>
     </div>

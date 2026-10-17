@@ -49,7 +49,7 @@ export function KeyGuide({ field }: { field?: ReactNode }) {
         </Step>
       </ol>
 
-      <div className="mt-3 space-y-1.5 text-[11.5px] leading-relaxed text-tertiary">
+      <div className="mt-3 space-y-1.5 text-[12px] leading-relaxed text-tertiary">
         <p>{t.keyGuide.limits}</p>
         <p>
           {t.keyGuide.privacy}{" "}
@@ -73,7 +73,7 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
     <li className="flex gap-2.5">
       <span
         aria-hidden
-        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-medium text-accent-text"
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[12px] font-medium text-accent-text"
       >
         {n}
       </span>

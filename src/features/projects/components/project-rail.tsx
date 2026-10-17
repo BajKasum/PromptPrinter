@@ -209,7 +209,7 @@ export function ProjectRail({
         {/* Only before anything's filled in, once a field carries content,
             "alles optional" has already been learned by using it. */}
         {Object.values(context).every((v) => !v?.trim()) && (
-          <p className="mt-2.5 text-[11.5px] leading-relaxed text-secondary">
+          <p className="mt-2.5 text-[12px] leading-relaxed text-secondary">
             {t.projects.structureOptional}
           </p>
         )}
@@ -227,7 +227,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
     <span
       role="status"
       className={cn(
-        "inline-flex items-center gap-1 text-[11px]",
+        "inline-flex items-center gap-1 text-[12px]",
         state === "error" ? "text-destructive" : "text-muted-foreground"
       )}
     >

@@ -56,7 +56,7 @@ export function SettingsCard({
           <p className="mt-0.5 text-[13px] text-secondary">{description}</p>
         </div>
         {badge ? (
-          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.08em] text-tertiary">
+          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[12px] font-mono uppercase tracking-[0.08em] text-tertiary">
             {badge}
           </span>
         ) : (

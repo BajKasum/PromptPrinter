@@ -186,7 +186,7 @@ export function ProjectBrainCard({
             <Mascot state="researching" size={36} className="shrink-0" />
             <div className="min-w-0">
               <p className="text-[12.5px] text-foreground">{t.projects.brain.reading}</p>
-              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {t.projects.brain.readingHint}
               </p>
             </div>
@@ -203,7 +203,7 @@ export function ProjectBrainCard({
         )}
 
         {stale && !running && (
-          <p className="mt-2.5 flex items-start gap-1.5 rounded-md bg-accent-subtle px-2.5 py-2 text-[11.5px] leading-relaxed text-accent-text">
+          <p className="mt-2.5 flex items-start gap-1.5 rounded-md bg-accent-subtle px-2.5 py-2 text-[12px] leading-relaxed text-accent-text">
             <Sparkles className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
             {t.projects.brain.staleHint}
           </p>
@@ -212,7 +212,7 @@ export function ProjectBrainCard({
         {brain.status === "failed" && !running && (
           <p
             role="status"
-            className="mt-2.5 flex items-start gap-1.5 text-[11.5px] leading-relaxed text-destructive"
+            className="mt-2.5 flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
           >
             <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
             {errorText(brain.errorCode, t.projects.brain)}
@@ -242,7 +242,7 @@ export function ProjectBrainCard({
           {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
               auf fremden Quellcode auf dem Server, das ist eine eigene
               Vertrauensfrage und keine Erweiterung dieses Feldes. */}
-          <p className="text-[11px] leading-relaxed text-secondary">
+          <p className="text-[12px] leading-relaxed text-secondary">
             {t.projects.brain.repoHint}
           </p>
         </div>
@@ -271,13 +271,13 @@ export function ProjectBrainCard({
         </Button>
 
         {!hasSources && !blocked && (
-          <p className="mt-2 text-[11.5px] leading-relaxed text-secondary">
+          <p className="mt-2 text-[12px] leading-relaxed text-secondary">
             {t.projects.brain.noSources}
           </p>
         )}
 
         {error && (
-          <p role="status" className="mt-2 text-[11.5px] leading-relaxed text-destructive">
+          <p role="status" className="mt-2 text-[12px] leading-relaxed text-destructive">
             {error}
           </p>
         )}
@@ -310,11 +310,11 @@ function BrainStatus({
   const t = useT();
   if (running || !ready) return null;
   return stale ? (
-    <span className="rounded-full bg-accent/15 px-1.5 py-px text-[10.5px] font-medium text-accent-text">
+    <span className="rounded-full bg-accent/15 px-1.5 py-px text-[12px] font-medium text-accent-text">
       {t.projects.brain.stale}
     </span>
   ) : (
-    <span className="rounded-full bg-success/15 px-1.5 py-px text-[10.5px] font-medium text-success">
+    <span className="rounded-full bg-success/15 px-1.5 py-px text-[12px] font-medium text-success">
       {t.projects.brain.active}
     </span>
   );
@@ -343,7 +343,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
           {facts.stack.map((item) => (
             <li
               key={item}
-              className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10.5px] text-foreground/75"
+              className="rounded bg-surface px-1.5 py-0.5 font-mono text-[12px] text-foreground/75"
             >
               {item}
             </li>
@@ -358,7 +358,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
             onClick={() => setShowDetails((v) => !v)}
             aria-expanded={showDetails}
             aria-controls={detailsId}
-            className="inline-flex items-center gap-1 rounded text-[11.5px] text-secondary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="inline-flex items-center gap-1 rounded text-[12px] text-secondary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <ChevronRight
               className={cn("h-3.5 w-3.5 transition-transform duration-150", showDetails && "rotate-90")}
@@ -370,10 +370,10 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
             <dl id={detailsId} className="mt-1.5 space-y-1">
               {fields.map(({ key }) => (
                 <div key={key} className="grid grid-cols-[92px_1fr] gap-2">
-                  <dt className="text-[11.5px] text-muted-foreground">
+                  <dt className="text-[12px] text-muted-foreground">
                     {t.projects.brain.fields[key]}
                   </dt>
-                  <dd className="text-[11.5px] text-foreground/85">{facts[key] as string}</dd>
+                  <dd className="text-[12px] text-foreground/85">{facts[key] as string}</dd>
                 </div>
               ))}
             </dl>
@@ -384,7 +384,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
       {/* Die Selbsteinschaetzung des Modells sichtbar lassen: ein aus einer
           einzigen README abgeleitetes Ergebnis soll nicht so aussehen wie
           eines aus package.json plus Migrationen. */}
-      <p className="text-[11px] text-secondary">
+      <p className="text-[12px] text-secondary">
         {plural(t.projects.brain.sources, brain.sources.length, locale)}
         <span className={cn(facts.confidence === "low" && "text-destructive/80")}>
           {" · "}

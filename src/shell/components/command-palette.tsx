@@ -230,7 +230,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   return (
                     <Fragment key={c.id}>
                       {showHeader && (
-                        <div className="px-3 pb-1 pt-3 text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+                        <div className="px-3 pb-1 pt-3 text-[12px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
                           {c.group}
                         </div>
                       )}
@@ -258,7 +258,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                           <kbd
                             aria-hidden
                             className={cn(
-                              "shrink-0 font-sans text-[11.5px] tabular-nums tracking-wide",
+                              "shrink-0 font-sans text-[12px] tabular-nums tracking-wide",
                               active ? "text-accent-text" : "text-tertiary"
                             )}
                           >
@@ -273,7 +273,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-[12px] text-muted-foreground">
               <span className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
                   <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↑</kbd>

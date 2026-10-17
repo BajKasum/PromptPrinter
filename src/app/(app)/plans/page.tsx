@@ -199,7 +199,7 @@ function PlanCard({
             className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 rounded-t-2xl bg-[radial-gradient(ellipse_at_top,hsl(var(--accent)/0.22),transparent_75%)]"
           />
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-accent-foreground">
+            <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-1 text-[12px] font-mono uppercase tracking-[0.1em] text-accent-foreground">
               <Sparkles className="h-3 w-3" strokeWidth={2} />
               {m.recommended}
             </div>
@@ -234,7 +234,7 @@ function PlanCard({
         <span className="text-[13px] text-tertiary">/ {plan.cadence}</span>
       </div>
       {plan.badge && (
-        <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-subtle px-2.5 py-1 text-[11.5px] font-medium text-accent-text">
+        <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-subtle px-2.5 py-1 text-[12px] font-medium text-accent-text">
           {plan.badge}
         </div>
       )}
