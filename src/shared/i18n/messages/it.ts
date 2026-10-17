@@ -110,6 +110,13 @@ export const it: Messages = {
       "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
     keyNoticeSettings: "Un altro fornitore? Vai alle impostazioni",
     keyNoticeSeePro: "Scopri Pro",
+    consentTitle: "I tuoi messaggi vanno a Z.ai a Singapore",
+    consentBody:
+      "Con Pro, Z.ai risponde ai tuoi messaggi, un fornitore di IA con sede a Singapore. Per Singapore e la Cina non esiste una decisione di adeguatezza dell'UE né della Svizzera e non possiamo escludere un trattamento in Cina. Per questo te lo chiedo una volta, in modo esplicito. Se non sei d'accordo, puoi usare la tua chiave API. Puoi revocare il consenso in qualsiasi momento nelle impostazioni.",
+    consentAccept: "Sono d'accordo, invia",
+    consentOwnKey: "Usa la mia chiave",
+    consentPrivacy: "Privacy",
+    consentFailed: "Non ha funzionato. Riprova, per favore.",
     composerLabel: "Messaggio per Finn",
     maxLengthReached: "Lunghezza massima raggiunta",
     charsLeft: "ancora {count} caratteri",
@@ -358,6 +365,16 @@ export const it: Messages = {
       endpointPlaceholder: "Endpoint API (es. https://api.z.ai/api/paas/v4/chat/completions)",
       endpointLabel: "Endpoint API",
       keyPlaceholder: "Chiave API",
+    },
+    zaiConsent: {
+      title: "Trasferimento a Z.ai",
+      hint: "Il tuo consenso per le chat con il piano Pro.",
+      granted: "Il {date} hai acconsentito all'invio dei tuoi messaggi a Z.ai a Singapore.",
+      withdraw: "Revoca il consenso",
+      withdrawn: "Revocato. Senza consenso Finn risponde solo con la tua chiave.",
+      notGranted: "Non hai ancora acconsentito. Fino ad allora Finn risponde solo con la tua chiave.",
+      grant: "Acconsento",
+      failed: "Non ha funzionato. Riprova, per favore.",
     },
     dataExport: {
       title: "I tuoi dati",
@@ -623,6 +640,8 @@ export const it: Messages = {
     unprocessableReload: "Non è stato possibile elaborare la richiesta. Ricarica la pagina e riprova.",
     unprocessable: "Non è stato possibile elaborare la richiesta.",
     messageTooLong: "Il tuo messaggio è troppo lungo, al massimo {max} caratteri per messaggio.",
+    consentRequired:
+      "Prima di rispondere ho bisogno del tuo consenso a inviare i tuoi messaggi a Z.ai a Singapore. Puoi darlo nella chat o nelle impostazioni.",
     byokRequired:
       "Free funziona solo con la tua chiave IA. Aggiungi una chiave Anthropic, OpenAI o Gemini nelle impostazioni, oppure passa a Pro.",
     chatLimit:

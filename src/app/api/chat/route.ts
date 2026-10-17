@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
   const session = await authenticate(m);
   if (session instanceof Response) return session;
-  const { supabase, userId } = session;
+  const { supabase, userId, appMetadata } = session;
 
   const input = await readTranscript(req, m, locale);
   if (input instanceof Response) return input;
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const uploads = await checkAttachments({ supabase, userId, input, m, locale });
   if (uploads instanceof Response) return uploads;
 
-  const allowance = await reserveAllowance({ req, supabase, userId, m });
+  const allowance = await reserveAllowance({ req, supabase, userId, appMetadata, m });
   if (allowance instanceof Response) return allowance;
   const { override, releaseReservations } = allowance;
 

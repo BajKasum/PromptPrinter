@@ -7,6 +7,7 @@ import {
 } from "@/server/security/rate-limit";
 import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
+import { hasZaiConsent } from "@/server/consent";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { problem } from "@/server/http/api-problem";
 import type { Messages } from "@/shared/i18n/messages/de";
@@ -30,9 +31,11 @@ export async function reserveAllowance(args: {
   req: Request;
   supabase: SupabaseClient;
   userId: string;
+  /** app_metadata des Kontos (Einwilligung in die Übermittlung an Z.ai, server/consent.ts). */
+  appMetadata: unknown;
   m: Messages["api"];
 }): Promise<Allowance | Response> {
-  const { req, supabase, userId, m } = args;
+  const { req, supabase, userId, appMetadata, m } = args;
   // 3. Enforce the monthly chat allowance, unless the caller configured their
   //    own BYOK key. Checked before the model call, same principle as
   //    /api/projects's own project-count cap. Runs before the rate limit so its
@@ -101,6 +104,14 @@ export async function reserveAllowance(args: {
         m.byokRequired,
         { kind: "byokRequired", plan }
       );
+    }
+
+    // 3a. Läuft dieser Zug auf Z.ai, braucht das Konto vorher die ausdrückliche Zustimmung
+    //     zur Übermittlung nach Singapur (Rechts-Audit R-1, server/consent.ts). Vor jeder
+    //     Reservierung, damit eine Ablehnung nichts kostet und nichts zurückgeben muss. Der
+    //     eigene Key (BYOK) geht nie an Z.ai und braucht sie nicht; ohne Server-Key (Stub) auch nicht.
+    if (llmConfig()?.provider === "zai" && !hasZaiConsent(appMetadata)) {
+      return problem(403, m.consentRequired, { kind: "consentRequired" });
     }
 
     const reservation = await reserveMonthlyQuota(chatQuotaKey(userId, now), limits.chatMessages);

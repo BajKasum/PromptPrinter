@@ -56,6 +56,9 @@ vi.mock("@/features/settings/components/language-preference", () => ({
 }));
 vi.mock("@/features/settings/components/change-password", () => ({ ChangePassword: () => <div data-testid="change-password" /> }));
 vi.mock("@/features/settings/components/data-export", () => ({ DataExport: () => <div data-testid="data-export" /> }));
+vi.mock("@/features/settings/components/zai-consent", () => ({
+  ZaiConsent: ({ consentAt }: { consentAt: string | null }) => <div data-testid="zai-consent" data-at={consentAt ?? ""} />,
+}));
 vi.mock("@/features/settings/components/delete-account", () => ({
   DeleteAccount: ({ email }: { email: string }) => <div data-testid="delete-account" data-email={email} />,
 }));
@@ -103,7 +106,7 @@ afterEach(() => {
 });
 
 describe("Karten", () => {
-  it("zeigt die acht Karten in dieser Reihenfolge, jede mit Titel und Hinweis", () => {
+  it("zeigt die neun Karten in dieser Reihenfolge, jede mit Titel und Hinweis", () => {
     renderIt();
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual([
@@ -113,6 +116,7 @@ describe("Karten", () => {
       "Sprache",
       "Eigene API-Keys",
       "Sicherheit",
+      "Übermittlung an Z.ai",
       "Deine Daten",
       "Gefahrenzone",
     ]);
@@ -122,6 +126,7 @@ describe("Karten", () => {
       "Die Sprache der App. Die Landing Page und die Rechtstexte bleiben Deutsch.",
       "Nutze dein eigenes Kontingent statt unserer Limits.",
       "Ändere dein Passwort.",
+      "Deine Zustimmung für Chats im Pro-Plan.",
       "Eine Kopie von allem, was zu deinem Konto gehört.",
       "Unwiderrufliche Aktionen.",
     ]) {
@@ -133,17 +138,26 @@ describe("Karten", () => {
     const { container } = renderIt();
     const withId = Array.from(container.querySelectorAll("section[id]")).map((s) => s.id);
     expect(withId).toEqual(["language", "api-keys"]);
-    expect(container.querySelectorAll("section")).toHaveLength(8);
+    expect(container.querySelectorAll("section")).toHaveLength(9);
     expect(container.querySelector("section#api-keys h2")?.textContent).toBe("Eigene API-Keys");
     expect(container.querySelector("section#language h2")?.textContent).toBe("Sprache");
   });
 
-  it("jede Karte trägt ihren Inhalt: Attrappen für Erscheinungsbild, Sprache, Passwort, Export und Konto löschen", () => {
+  it("jede Karte trägt ihren Inhalt: Attrappen für Erscheinungsbild, Sprache, Passwort, Zustimmung, Export und Konto löschen", () => {
     renderIt();
-    for (const id of ["theme-pref", "language-pref", "change-password", "data-export", "delete-account"]) {
+    for (const id of ["theme-pref", "language-pref", "change-password", "zai-consent", "data-export", "delete-account"]) {
       expect(screen.getByTestId(id)).toBeInTheDocument();
     }
     expect(screen.getByTestId("delete-account")).toHaveAttribute("data-email", "anna@example.test");
+  });
+
+  it("reicht den Zeitpunkt der Zustimmung zu Z.ai an ihre Karte weiter (leer, wenn keine erteilt ist)", () => {
+    const { unmount } = renderIt();
+    expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "");
+    unmount();
+
+    renderIt({ zaiConsentAt: "2026-10-17T10:00:00.000Z" });
+    expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "2026-10-17T10:00:00.000Z");
   });
 
   it("reicht Schlüssel-Zustand an die API-Key-Karte weiter und nennt unter ihr den Hinweis zum Limit", () => {
@@ -162,9 +176,9 @@ describe("Karten", () => {
     const iconColors = Array.from(container.querySelectorAll("section > header > svg")).map(
       (svg) => (svg as SVGElement).getAttribute("style") ?? ""
     );
-    expect(iconColors).toHaveLength(8);
-    expect(iconColors.slice(0, 7).every((c) => c.includes("--accent"))).toBe(true);
-    expect(iconColors[7]).toContain("--destructive");
+    expect(iconColors).toHaveLength(9);
+    expect(iconColors.slice(0, 8).every((c) => c.includes("--accent"))).toBe(true);
+    expect(iconColors[8]).toContain("--destructive");
   });
 });
 

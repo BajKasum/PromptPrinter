@@ -40,6 +40,8 @@ export function useChatTurn({
   // Starts from the server's own check and flips on if the route answers
   // 403 byokRequired anyway (e.g. the key was deleted in another tab).
   const [keyRequired, setKeyRequired] = useState(needsKey);
+  // Pro, aber noch ohne Zustimmung zur Übermittlung an Z.ai: kommt nur aus dem 403 consentRequired.
+  const [consentRequired, setConsentRequired] = useState(false);
   // Seconds until a rate-limited request may be retried, straight from the
   // route's own `retryAfter`. Null for every other kind of failure.
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
@@ -262,6 +264,7 @@ export function useChatTurn({
         setConversationId,
         setInput,
         setKeyRequired,
+        setConsentRequired,
       },
       next,
       text,
@@ -289,6 +292,8 @@ export function useChatTurn({
     error,
     retryAfter,
     keyRequired,
+    consentRequired,
+    dismissConsentNotice: () => setConsentRequired(false),
     // Nach dem Verbinden verschwindet der Key-Hinweis sofort. Der Zustand
     // startet aus dem Server-Check und wird sonst nur durch einen 403 gesetzt,
     // ein neues Prop käme nach router.refresh() nicht an.

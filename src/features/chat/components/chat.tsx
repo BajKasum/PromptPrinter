@@ -109,6 +109,12 @@ export function Chat({
       <ChatNotices
         keyRequired={turn.keyRequired}
         onKeyConnected={turn.dismissKeyNotice}
+        consentRequired={turn.consentRequired}
+        onConsentGranted={async () => {
+          turn.dismissConsentNotice();
+          // Die Nachricht steht noch im Eingabefeld (der Zug wurde zurückgerollt): jetzt senden.
+          await send();
+        }}
         error={turn.error}
         retryAfter={turn.retryAfter}
         input={input}
