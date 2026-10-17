@@ -24,7 +24,8 @@ const OVER_LIMIT: Record<string, number> = {
 
 /** Wörterbücher: Daten, nicht Logik. */
 const DICTIONARY_DIR = "src/shared/i18n/messages/";
-const MAX_DICTIONARY_LINES = 800;
+// 800 -> 900 am 2026-10-17: die Texte der Einwilligungen (Sprachmodus, Z.ai) kamen in fuenf Sprachen dazu.
+const MAX_DICTIONARY_LINES = 900;
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
