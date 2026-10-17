@@ -58,6 +58,9 @@ export function checkoutUrlFromEnv(): string | null {
   return normalizeCheckoutUrl(process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL);
 }
 
+/** Teile des Bezahlfensters, die ausgeblendet werden (`<name>=0`). */
+export const CHECKOUT_HIDDEN_PARTS = ["logo", "media", "desc", "discount"] as const;
+
 export type CheckoutOptions = {
   /** Mail des angemeldeten Käufers, spart ihm eine Eingabe. */
   email?: string | null;
@@ -97,6 +100,15 @@ export function buildCheckoutUrl(
 
   const url = new URL(base);
   url.searchParams.set("embed", "1");
+  // Schlankes Fenster: kein Shop-Logo, kein Produktbild, keine Beschreibung,
+  // kein Rabattfeld. Das Produktbild kam abgeschnitten, das runde Logo
+  // überlappte es, und die Beschreibung ist im Dashboard englisch angelegt;
+  // übrig bleiben "PromptPrinter Pro", die Zahlart und der Preis. `media`,
+  // `desc` und `discount` stehen in der API-Doku von Lemon Squeezy als
+  // checkout_options (false = ausblenden), `logo=0` zusätzlich im Guide
+  // "Taking payments" als URL-Parameter; im Browser am 2026-10-17 alle vier
+  // als URL-Parameter geprüft. `dark` bewirkt dort nichts mehr (veraltet).
+  for (const hidden of CHECKOUT_HIDDEN_PARTS) url.searchParams.set(hidden, "0");
   if (email) url.searchParams.set("checkout[email]", email);
   if (userId) url.searchParams.set("checkout[custom][user_id]", userId);
   if (dark) url.searchParams.set("dark", "1");

@@ -78,6 +78,19 @@ describe("buildCheckoutUrl", () => {
     expect(url.searchParams.get("embed")).toBe("1");
   });
 
+  it("blendet Logo, Produktbild, Beschreibung und Rabattfeld aus (Handy-Audit 2026-10-17)", () => {
+    const url = new URL(buildCheckoutUrl(REAL_CHECKOUT)!);
+    for (const part of ["logo", "media", "desc", "discount"]) {
+      expect(url.searchParams.get(part), part).toBe("0");
+    }
+  });
+
+  it("blendet auch dann aus, wenn die konfigurierte Adresse etwas anderes vorgibt", () => {
+    const url = new URL(buildCheckoutUrl(`${REAL_CHECKOUT}&media=1&logo=1`)!);
+    expect(url.searchParams.getAll("media")).toEqual(["0"]);
+    expect(url.searchParams.getAll("logo")).toEqual(["0"]);
+  });
+
   it("does not duplicate embed when the configured address already carries it", () => {
     const url = buildCheckoutUrl(REAL_CHECKOUT)!;
     expect(url.match(/embed=1/g)).toHaveLength(1);
