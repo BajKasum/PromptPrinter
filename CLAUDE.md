@@ -99,7 +99,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
   am 2026-10-11 geprüft); die
   `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
-- **Juristisch zu prüfen:** Übermittlung an Z.ai, EU-Vertreter (Art. 27 DSGVO), Sprachmodus
+- **Juristisch zu prüfen (Aufwand bewusst klein, Entscheid 2026-10-17: Hobby- und Lernprojekt ohne Werbung, kein Jurist, keine Verträge, kein EU-Vertreter nach Art. 27 DSGVO und DSA Art. 13, keine Angebote einholen, nicht wieder vorschlagen; die Seite soll vor allem gut aussehen und laufen):** Übermittlung an Z.ai (Antwort auf Kasums Mail steht aus), Sprachmodus
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
   Empfänger (Fehler-Tracker); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
