@@ -462,3 +462,18 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
   }
 }
+
+/* iPhone: ein Eingabefeld unter 16 px lässt Safari beim Fokus auf das Feld
+   hineinzoomen, und die Seite bleibt danach vergrössert. Die Felder tragen
+   Tailwind-Grössen (text-sm, text-[13.5px] ...), die in `@layer utilities`
+   liegen; diese Regel steht bewusst ausserhalb jeder Ebene und gewinnt damit
+   gegen alle. Nur bei Touch (pointer: coarse), Desktop behält die kleinere
+   Schrift. Der Guard tests/guards/touch-input-size.test.ts hält Regel und
+   Stelle fest (Handy-Audit 2026-10-17). */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
