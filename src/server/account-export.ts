@@ -2,6 +2,7 @@ import "server-only";
 
 import type { createClient } from "@/server/supabase/server";
 import { captureError } from "@/shared/lib/observability";
+import { zaiConsentOf } from "@/server/consent";
 
 // Der Datenexport des Kontos: alles, was zu einem Nutzer gehört, als eine
 // JSON-Datei (Betriebs-Audit 04.10.2026, Punkt "kein Datenexport zum
@@ -184,7 +185,7 @@ export const EXPORT_SECTIONS: readonly Section[] = [
   },
 ];
 
-type AuthUser = { id: string; email?: string | null; created_at?: string | null };
+type AuthUser = { id: string; email?: string | null; created_at?: string | null; app_metadata?: unknown };
 
 /** Die Spalten des Profils, die der Export liest. Eine Stelle für Route und Test. */
 export const PROFILE_COLUMNS =
@@ -208,6 +209,10 @@ export function buildAccountSection(user: AuthUser, profile: Row | null): Row {
       endsAt: profile?.subscription_ends_at ?? null,
     },
     settings: profile?.settings ?? {},
+    // Die Zustimmung zur Übermittlung an Z.ai (Zeitpunkt und Fassung des Hinweises), damit der Export
+    // auch den Nachweis zeigt, den wir über dich führen. Sonst nichts aus app_metadata: dort kann
+    // die Auth-Schicht Betriebsangaben ablegen.
+    consents: { zaiTransfer: zaiConsentOf(user.app_metadata) },
   };
 }
 

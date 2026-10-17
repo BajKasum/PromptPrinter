@@ -249,6 +249,26 @@ describe("buildAccountSection", () => {
     expect(text).not.toContain("isAdmin");
   });
 
+  it("nennt die Zustimmung zur Übermittlung an Z.ai mit Zeitpunkt und Fassung, und sonst nichts aus app_metadata", () => {
+    const section = buildAccountSection(
+      {
+        id: USER,
+        app_metadata: {
+          provider: "email",
+          zai_consent: { version: "2026-10-17", at: "2026-10-17T10:00:00.000Z" },
+        },
+      },
+      null
+    );
+
+    expect(section.consents).toEqual({ zaiTransfer: { version: "2026-10-17", at: "2026-10-17T10:00:00.000Z" } });
+    expect(JSON.stringify(section)).not.toContain("provider");
+  });
+
+  it("zeigt ohne Zustimmung null, statt den Schlüssel wegzulassen", () => {
+    expect(buildAccountSection({ id: USER, app_metadata: {} }, null).consents).toEqual({ zaiTransfer: null });
+  });
+
   it("fällt ohne Profilzeile auf Free und leere Einstellungen zurück, statt zu werfen", () => {
     expect(buildAccountSection({ id: USER }, null)).toMatchObject({
       email: null,
