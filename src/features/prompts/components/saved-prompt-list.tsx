@@ -242,7 +242,7 @@ function SavedPromptCard({
             type="button"
             onClick={() => void rename()}
             aria-label={t.prompts.saveName}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+            className="touch-hit-y relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
           >
             <Check className="h-3.5 w-3.5" />
           </button>
@@ -250,7 +250,7 @@ function SavedPromptCard({
             type="button"
             onClick={cancelRename}
             aria-label={t.prompts.cancelRename}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+            className="touch-hit-y relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>

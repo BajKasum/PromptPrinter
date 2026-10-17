@@ -54,7 +54,7 @@ export function LibraryCard({
           }}
           aria-pressed={isFavorite}
           aria-label={isFavorite ? t.library.unfavorite : t.library.favorite}
-          className="relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-tertiary hover:text-warning hover:bg-surface-hover transition-colors active:scale-90"
+          className="touch-hit relative z-10 -mr-1 -mt-1 h-8 w-8 rounded-lg flex items-center justify-center text-tertiary hover:text-warning hover:bg-surface-hover transition-colors active:scale-90"
         >
           <Star
             className={cn(

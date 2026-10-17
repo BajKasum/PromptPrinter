@@ -109,7 +109,7 @@ export function MobileNav({
         onClick={() => setOpen(true)}
         aria-label={t.shell.openMenu}
         aria-expanded={open}
-        className="md:hidden h-9 w-9 shrink-0 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
+        className="touch-hit relative md:hidden h-9 w-9 shrink-0 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
       >
         <Menu className="h-4 w-4" strokeWidth={1.8} />
       </button>
@@ -143,7 +143,7 @@ export function MobileNav({
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label={t.shell.closeMenu}
-                  className="h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
+                  className="touch-hit relative h-8 w-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
                 >
                   <X className="h-4 w-4" strokeWidth={1.8} />
                 </button>

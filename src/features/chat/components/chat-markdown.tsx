@@ -129,7 +129,7 @@ function CodeBlock({ text }: { text: string }) {
         <button
           type="button"
           onClick={() => copy(text)}
-          className="inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
+          className="touch-hit-y relative inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
         >
           <CopyMoment copied={copied} copyCount={copyCount} idleLabel={t.chat.copyPrompt} />
         </button>

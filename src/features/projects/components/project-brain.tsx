@@ -173,7 +173,7 @@ export function ProjectBrainCard({
               type="button"
               onClick={() => setConfirmReset(true)}
               aria-label={t.projects.brain.delete}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive"
+              className="touch-hit relative flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

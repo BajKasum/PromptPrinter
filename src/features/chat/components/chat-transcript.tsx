@@ -122,7 +122,7 @@ export function ChatUserBubble({
           // Auf Touch dauerhaft sichtbar (QA-Befund K-2, dieselbe Begruendung
           // wie bei den Zeilen-Aktionen der Chat-Liste): ein Hover-Reveal
           // laesst Touch-Geraete ohne verlaesslichen Weg zum Knopf.
-          className="mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-foreground focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+          className="touch-hit relative mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity hover:text-foreground focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={1.8} />
         </button>

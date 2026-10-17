@@ -168,7 +168,7 @@ function ChatRow({
           onClick={() => void rename()}
           disabled={busy}
           aria-label={t.chat.saveTitle}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+          className="touch-hit-y relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         </button>
@@ -177,7 +177,7 @@ function ChatRow({
           onClick={cancel}
           disabled={busy}
           aria-label={t.chat.cancelRename}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+          className="touch-hit-y relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
         >
           <X className="h-4 w-4" />
         </button>
@@ -226,7 +226,7 @@ function ChatRow({
           type="button"
           onClick={() => setMode("rename")}
           aria-label={fmt(t.chat.renameLabel, { title: chat.title })}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+          className="touch-hit-y relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
@@ -234,7 +234,7 @@ function ChatRow({
           type="button"
           onClick={() => setMode("confirm-delete")}
           aria-label={fmt(t.chat.deleteLabel, { title: chat.title })}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/[0.08] hover:text-destructive"
+          className="touch-hit-y relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/[0.08] hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
