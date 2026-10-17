@@ -5,6 +5,16 @@ import { LemonCheckoutButton } from "./lemon-checkout-button";
 import type { ComponentProps } from "react";
 import { LEMON_JS_ID, type LemonSqueezyEvent } from "@/shared/lib/use-lemon-squeezy";
 
+// Der Schalter aus src/shared/lib/pro-availability.ts: hier an, damit der Kaufweg
+// geprüft wird; die Tests am Ende schalten ihn aus.
+const flag = vi.hoisted(() => ({ available: true }));
+vi.mock("@/shared/lib/pro-availability", () => ({
+  get PRO_AVAILABLE() {
+    return flag.available;
+  },
+  PRO_UNAVAILABLE_PATH: "/pro-bald",
+}));
+
 const CHECKOUT = "https://promptprinter.lemonsqueezy.com/checkout/buy/abc-123?embed=1";
 
 /** Fast alle Tests hier prüfen den Overlay-Weg; die Seite ist seit 2026-10-17 der Standard. */
@@ -64,6 +74,7 @@ function trackNavigation() {
 }
 
 beforeEach(() => {
+  flag.available = true;
   scriptProps.length = 0;
   open.mockReset();
   close.mockReset();
@@ -349,5 +360,22 @@ describe("LemonCheckoutButton", () => {
     act(() => dispatchLemonEvent!({ event: "Checkout.Success" }));
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe("LemonCheckoutButton, solange Pro nicht kaufbar ist", () => {
+  it("führt auf die Entschuldigungsseite statt auf den Checkout und lädt Lemon.js nicht", () => {
+    flag.available = false;
+    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    expect(screen.getByRole("link", { name: "Pro holen" })).toHaveAttribute("href", "/pro-bald");
+    expect(scriptProps).toHaveLength(0);
+  });
+
+  it("auch das Overlay und der Standardweg öffnen nichts", async () => {
+    flag.available = false;
+    installFakeLemonJs();
+    render(<OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>);
+    await userEvent.click(screen.getByRole("link", { name: "Pro holen" }));
+    expect(open).not.toHaveBeenCalled();
   });
 });

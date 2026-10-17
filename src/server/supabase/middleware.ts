@@ -38,6 +38,7 @@ const PUBLIC_PREFIXES = [
   "/datenschutz",
   "/impressum",
   "/kontakt",
+  "/pro-bald", // Ziel der Pro-Knöpfe, solange Pro nicht kaufbar ist (shared/lib/pro-availability.ts)
   "/rueckerstattung",
   "/ueber",
   "/vergleich",
