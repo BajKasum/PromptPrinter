@@ -122,7 +122,7 @@ function CodeBlock({ text }: { text: string }) {
     // is the same "make it darker/lighter than its surroundings" intent,
     // just through the token that already knows which direction that means.
     <div className="my-2 overflow-hidden rounded-lg border border-border bg-surface">
-      <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2.5 md:py-1.5">
         <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-tertiary">
           {t.chat.promptLabel}
         </span>
