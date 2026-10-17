@@ -29,8 +29,8 @@ export default function AgbPage() {
       <h2>2. Leistungsbeschreibung</h2>
       <p>
         Der Dienst bietet einen KI-gestützten Chat mit Finn, der dich beim Formulieren,
-        Strukturieren und Verfeinern von Prompts für andere KI-Tools (z. B. Claude, ChatGPT,
-        Lovable, Cursor) unterstützt. Dazu kommen Projekte als Arbeitsbereiche mit eigenem Kontext,
+        Strukturieren und Verfeinern von Prompts für beliebige KI-Anwendungen (z. B. Claude,
+        ChatGPT, Gemini) unterstützt. Dazu kommen Projekte als Arbeitsbereiche mit eigenem Kontext,
         das Anhängen von Dateien, ein Projekt-Gedächtnis, das deine Projektdateien und auf Wunsch ein
         öffentliches GitHub-Repository auswertet, und das Speichern fertiger Prompts.
       </p>

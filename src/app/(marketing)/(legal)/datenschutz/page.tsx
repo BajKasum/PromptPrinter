@@ -228,10 +228,11 @@ export default function DatenschutzPage() {
       </p>
       <ul>
         <li>
-          <strong>Supabase</strong> (Supabase Inc.): Authentifizierung, Datenbank und Dateispeicher
-          für deine Konto- und Inhaltsdaten, einschliesslich hochgeladener Projektdateien und
-          Chat-Anhänge.
-          Datenregion: {LEGAL.dataRegion}.
+          <strong>Supabase</strong> (Supabase Pte. Ltd., Singapur): Authentifizierung, Datenbank und
+          Dateispeicher für deine Konto- und Inhaltsdaten, einschliesslich hochgeladener
+          Projektdateien und Chat-Anhänge.
+          Datenregion: {LEGAL.dataRegion}. Nach den Bedingungen von Supabase kann die Bearbeitung
+          auch dort stattfinden, wo Supabase oder seine Unterauftragnehmer Einrichtungen betreiben.
         </li>
         <li>
           <strong>Resend</strong> (Plus Five Five, Inc., USA): Versand der System-E-Mails, nämlich
@@ -241,7 +242,10 @@ export default function DatenschutzPage() {
           <strong>E-Mail-Adresse</strong> und der Inhalt der jeweiligen Nachricht (Link, Zeitpunkt)
           an den Anbieter übermittelt. Für unsere Absenderadresse ist die Region Irland eingestellt;
           nach der Vereinbarung zur Auftragsbearbeitung kann die Bearbeitung dennoch überwiegend
-          in den USA stattfinden. Nach Angaben von Resend werden Mailinhalte 30 Tage aufbewahrt.
+          in den USA stattfinden. Resend gibt an, unter dem EU-US Data Privacy Framework
+          zertifiziert zu sein; ergänzend gelten die Standardvertragsklauseln in seiner
+          Vereinbarung zur Auftragsbearbeitung. Nach Angaben von Resend werden Mailinhalte 30 Tage
+          aufbewahrt.
         </li>
         <li>
           <strong>{LEGAL.appHost}</strong>: Betrieb und Auslieferung der Anwendung. Dabei fallen
@@ -266,16 +270,13 @@ export default function DatenschutzPage() {
           die Z.ai-API übermittelt. Nach
           Angaben von Z.ai werden sie in der Regel in <strong>Singapur</strong> bearbeitet. Eine
           Bearbeitung durch Konzerngesellschaften in <strong>China</strong> können wir nicht
-          ausschliessen.
+          ausschliessen. Nach der Vereinbarung zur Auftragsbearbeitung von Z.ai speichert Z.ai die
+          Inhalte von API-Anfragen nicht auf seinen Servern, sondern verarbeitet sie in Echtzeit.
         </li>
         <li>
-          <strong>Google Gemini</strong> (Google Ireland Ltd. / Google LLC): als Ausweich-Anbieter,
-          falls Z.ai nicht verfügbar ist. Dabei kann eine Übermittlung in die <strong>USA</strong>{" "}
-          stattfinden.
-        </li>
-        <li>
-          <strong>Upstash</strong> (Upstash Inc.): Rate-Limiting und Kontingentzählung; bearbeitet zu
-          diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung.
+          <strong>Upstash</strong> (Upstash Inc., USA): Rate-Limiting und Kontingentzählung;
+          bearbeitet zu diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung. Datenregion: EU
+          (Frankfurt).
         </li>
         <li>
           <strong>Lemon Squeezy</strong> (Lemon Squeezy, LLC, USA): Zahlungsabwicklung für den
@@ -294,11 +295,14 @@ export default function DatenschutzPage() {
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
         Einzelne der oben genannten Dienste bearbeiten Daten ausserhalb der Schweiz bzw. des EWR,
-        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Upstash, Resend, Google Gemini,
+        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Resend,
         Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter, bei der Anmeldung über
         diese Dienste Google bzw. GitHub sowie, wenn du den Sprachmodus mit Chrome oder Edge
         nutzt, Google bzw. Microsoft, siehe Ziffer 4) sowie in <strong>Singapur</strong> (Z.ai,
-        möglicherweise auch in <strong>China</strong>).
+        möglicherweise auch in <strong>China</strong>). Bei Supabase (Vertragspartner in
+        Singapur) und Upstash (Anbieter mit Sitz in den USA) liegen die Daten in der EU, in Irland
+        bzw. Frankfurt; soweit die Anbieter von ausserhalb darauf zugreifen, gelten die
+        Standardvertragsklauseln in ihren Vereinbarungen.
       </p>
       <p>
         Für Übermittlungen an Dienstleister in den USA, die in unserem Auftrag handeln, stützen wir
@@ -306,7 +310,9 @@ export default function DatenschutzPage() {
         Auftragsbearbeitungsvereinbarungen und, soweit der jeweilige Anbieter entsprechend
         zertifiziert ist, ergänzend auf das EU-US bzw. Swiss-US Data Privacy Framework. Anbieter,
         die in eigener Verantwortung handeln (Ziffer 4), bestimmen die Grundlage ihrer
-        Übermittlungen selbst.
+        Übermittlungen selbst. Auch für Supabase gelten die Standardvertragsklauseln der
+        EU-Kommission in dessen Vereinbarung zur Auftragsbearbeitung, die dort für Übermittlungen
+        aus der Schweiz angepasst sind.
       </p>
       <p>
         Für Singapur und China besteht weder ein Angemessenheitsbeschluss der EU-Kommission noch

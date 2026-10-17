@@ -680,10 +680,15 @@ Ist das Failover-Budget aufgebraucht, laufen keine Züge mehr auf Gemini.
 **Datenschutz.** Im Ausfall gehen Nachrichten, Anhänge und Projektdateien an Google.
 Der Key muss deshalb aus einem Projekt mit **aktivierter Abrechnung** stammen: auf
 dem Gratis-Tarif darf Google Prompts zur Produktverbesserung nutzen, auf der
-bezahlten Stufe nicht. Die Datenschutzerklärung nennt Gemini als „Ausweich-Anbieter,
-falls Z.ai nicht verfügbar ist“; erst mit diesem Failover stimmt der Satz. Ob die
-Formulierung alle Fälle trägt (Anhänge, Projektdateien), sollte juristisch angesehen
-werden.
+bezahlten Stufe nicht (Stand der Gemini-API-Bedingungen 2026-04-28: im EWR, der Schweiz
+und Großbritannien gelten die Regeln der bezahlten Stufe für alle Dienste, auch für den
+Gratis-Kontingent, außerhalb nicht). **Seit 2026-10-17 nennt die Datenschutzerklärung
+Gemini nicht mehr als Ausweich-Anbieter**, weil es keinen `GEMINI_API_KEY` gibt und der
+Failover aus ist. Wer den Key wieder setzt, ergänzt vorher in Ziffer 4 (eigener Eintrag) und
+Ziffer 5 (USA-Liste) Google Gemini (Google Ireland Ltd. / Google LLC), sonst stimmt der Text
+nicht. Wortlaut des früheren Eintrags: Git-Verlauf von `datenschutz/page.tsx`, Stand
+2026-10-15. Ob die Formulierung alle Fälle trägt (Anhänge, Projektdateien), sollte
+juristisch angesehen werden.
 
 **Was du im Log siehst.** `llm.retry` (jeder Wiederholungsversuch), `llm.failover`
 (Warnung, geht an den Alarm-Webhook: `from`, `to`, `reason`, `attempts`),
