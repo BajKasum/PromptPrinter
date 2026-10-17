@@ -58,8 +58,42 @@ export function checkoutUrlFromEnv(): string | null {
   return normalizeCheckoutUrl(process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL);
 }
 
-/** Teile des Bezahlfensters, die ausgeblendet werden (`<name>=0`). */
-export const CHECKOUT_HIDDEN_PARTS = ["logo", "media", "desc", "discount"] as const;
+/**
+ * Wie der Checkout erscheint.
+ *
+ * - `page`: ganze Seite von Lemon Squeezy, links Name, Preis und Produktbild
+ *   auf deinen Farben, rechts die Zahlung (Standard seit 2026-10-17, Kasum).
+ * - `overlay`: Fenster über unserer Seite per Lemon.js. Der Inhalt ist dort
+ *   eine weisse Karte, die sich nicht einfärben lässt; Logo, Bild, Beschreibung
+ *   und Rabattfeld sind ausgeblendet.
+ */
+export type CheckoutPresentation = "page" | "overlay";
+
+/** Im Overlay ausgeblendet (`<name>=0`). */
+export const CHECKOUT_OVERLAY_HIDDEN_PARTS = ["logo", "media", "desc", "discount"] as const;
+
+/** Auf der ganzen Seite ausgeblendet: die Beschreibung (im Dashboard englisch) und das Rabattfeld. */
+export const CHECKOUT_PAGE_HIDDEN_PARTS = ["desc", "discount"] as const;
+
+/**
+ * Farben der Seite links (Name, Preis) und des Knopfs, aus den hellen Tokens
+ * in globals.css: background #EBF4FA, foreground #0C0F13, muted-foreground
+ * #596473, accent #7FC5F0, accent-text #15679D, border #BDCFDB. Die weisse
+ * Formularhälfte rechts gehört Lemon Squeezy und nimmt keine Farbe an
+ * (am 2026-10-17 mit grellen Farben geprüft).
+ */
+export const CHECKOUT_COLORS = {
+  background_color: "#EBF4FA",
+  headings_color: "#0C0F13",
+  primary_text_color: "#0C0F13",
+  secondary_text_color: "#596473",
+  links_color: "#15679D",
+  borders_color: "#BDCFDB",
+  checkbox_color: "#15679D",
+  active_state_color: "#15679D",
+  button_color: "#7FC5F0",
+  button_text_color: "#0C0F13",
+} as const;
 
 export type CheckoutOptions = {
   /** Mail des angemeldeten Käufers, spart ihm eine Eingabe. */
@@ -79,8 +113,10 @@ export type CheckoutOptions = {
    * nur als Zuordnung behandeln.
    */
   userId?: string | null;
-  /** Overlay und Checkout im dunklen Look ausliefern. */
+  /** Overlay und Checkout im dunklen Look ausliefern (nur Overlay, bei Lemon Squeezy veraltet und ohne Wirkung). */
   dark?: boolean;
+  /** Ganze Seite (Standard) oder Overlay. */
+  presentation?: CheckoutPresentation;
 };
 
 /**
@@ -94,24 +130,30 @@ export type CheckoutOptions = {
  */
 export function buildCheckoutUrl(
   base: string | null,
-  { email, userId, dark }: CheckoutOptions = {}
+  { email, userId, dark, presentation = "page" }: CheckoutOptions = {}
 ): string | null {
   if (!base) return null;
 
   const url = new URL(base);
-  url.searchParams.set("embed", "1");
-  // Schlankes Fenster: kein Shop-Logo, kein Produktbild, keine Beschreibung,
-  // kein Rabattfeld. Das Produktbild kam abgeschnitten, das runde Logo
-  // überlappte es, und die Beschreibung ist im Dashboard englisch angelegt;
-  // übrig bleiben "PromptPrinter Pro", die Zahlart und der Preis. `media`,
-  // `desc` und `discount` stehen in der API-Doku von Lemon Squeezy als
-  // checkout_options (false = ausblenden), `logo=0` zusätzlich im Guide
-  // "Taking payments" als URL-Parameter; im Browser am 2026-10-17 alle vier
-  // als URL-Parameter geprüft. `dark` bewirkt dort nichts mehr (veraltet).
-  for (const hidden of CHECKOUT_HIDDEN_PARTS) url.searchParams.set(hidden, "0");
+  if (presentation === "overlay") {
+    url.searchParams.set("embed", "1");
+    // Schlankes Fenster: kein Shop-Logo, kein Produktbild, keine Beschreibung,
+    // kein Rabattfeld (das Produktbild kam abgeschnitten, das Logo überlappte
+    // es). Im Browser am 2026-10-17 als URL-Parameter geprüft; `dark` bewirkt
+    // dort nichts mehr (veraltet).
+    for (const hidden of CHECKOUT_OVERLAY_HIDDEN_PARTS) url.searchParams.set(hidden, "0");
+  } else {
+    // Ganze Seite: ohne `embed` zeigt Lemon Squeezy die Seite mit zwei Spalten.
+    // Ein `embed`, das in der konfigurierten Adresse steht, fällt weg. Das
+    // Produktbild bleibt an (es ist Finn, im Dashboard hochgeladen), Logo
+    // ebenfalls (das kleine Finn-Zeichen oben links).
+    url.searchParams.delete("embed");
+    for (const hidden of CHECKOUT_PAGE_HIDDEN_PARTS) url.searchParams.set(hidden, "0");
+    for (const [name, value] of Object.entries(CHECKOUT_COLORS)) url.searchParams.set(name, value);
+  }
   if (email) url.searchParams.set("checkout[email]", email);
   if (userId) url.searchParams.set("checkout[custom][user_id]", userId);
-  if (dark) url.searchParams.set("dark", "1");
+  if (dark && presentation === "overlay") url.searchParams.set("dark", "1");
 
   return url.toString();
 }

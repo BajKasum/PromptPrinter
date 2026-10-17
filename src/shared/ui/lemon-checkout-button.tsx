@@ -5,7 +5,11 @@ import { useCallback, useState, type MouseEvent, type ReactNode } from "react";
 import { Check } from "lucide-react";
 import { Button, type ButtonProps } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
-import { buildCheckoutUrl, checkoutUrlFromEnv } from "@/shared/lib/lemon-squeezy";
+import {
+  buildCheckoutUrl,
+  checkoutUrlFromEnv,
+  type CheckoutPresentation,
+} from "@/shared/lib/lemon-squeezy";
 import {
   LEMON_JS_ID,
   LEMON_JS_SRC,
@@ -30,8 +34,13 @@ type LemonCheckoutButtonProps = {
   variant?: ButtonProps["variant"];
   size?: ButtonProps["size"];
   className?: string;
-  /** Text nach erfolgreichem Kauf. */
+  /** Text nach erfolgreichem Kauf (nur Overlay). */
   successMessage?: string;
+  /**
+   * `page` (Standard): der Knopf ist ein Link auf die Checkout-Seite von Lemon
+   * Squeezy, Lemon.js wird nicht geladen. `overlay`: Fenster über unserer Seite.
+   */
+  presentation?: CheckoutPresentation;
 };
 
 /**
@@ -61,6 +70,7 @@ export function LemonCheckoutButton({
   size,
   className,
   successMessage,
+  presentation = "page",
 }: LemonCheckoutButtonProps) {
   const t = useT();
   const [purchased, setPurchased] = useState(false);
@@ -80,10 +90,11 @@ export function LemonCheckoutButton({
   // erst im Browser fest — beides in einen Wert zu giessen wäre ein
   // Hydrations-Unterschied. Der Look wird deshalb erst beim Klick angehängt,
   // wo er ohnehin gebraucht wird.
-  const href = buildCheckoutUrl(checkoutBase, { email, userId }) ?? fallbackHref;
+  const href = buildCheckoutUrl(checkoutBase, { email, userId, presentation }) ?? fallbackHref;
 
   function handleClick(clickEvent: MouseEvent<HTMLAnchorElement>) {
-    if (!configured) return;
+    // Ganze Seite: der Browser folgt dem Link, nichts abzufangen.
+    if (!configured || presentation !== "overlay") return;
     // Cmd/Strg/Shift/Alt-Klick gehört dem Browser: neuer Tab, neues Fenster,
     // Download. Wer das drückt, will bewusst nicht das Overlay.
     if (clickEvent.metaKey || clickEvent.ctrlKey || clickEvent.shiftKey || clickEvent.altKey) {
@@ -96,7 +107,7 @@ export function LemonCheckoutButton({
     // dort, wo das öffentliche Marketing bewusst auf hell festgehalten wird
     // (siehe theme-provider.tsx).
     const dark = document.documentElement.classList.contains("dark");
-    const url = buildCheckoutUrl(checkoutBase, { email, userId, dark });
+    const url = buildCheckoutUrl(checkoutBase, { email, userId, dark, presentation });
     if (url && openCheckout(url)) clickEvent.preventDefault();
   }
 
@@ -121,7 +132,7 @@ export function LemonCheckoutButton({
           ein, auch wenn mehrere Knöpfe es anfordern. `afterInteractive` statt
           `lazyOnload`, weil das hier der Kaufweg ist — 3,8 KB, die früh genug
           da sein sollen, dass der erste Klick schon das Overlay bekommt. */}
-      {configured && (
+      {configured && presentation === "overlay" && (
         <Script
           id={LEMON_JS_ID}
           src={LEMON_JS_SRC}

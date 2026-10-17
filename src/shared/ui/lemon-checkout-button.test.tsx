@@ -2,9 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LemonCheckoutButton } from "./lemon-checkout-button";
+import type { ComponentProps } from "react";
 import { LEMON_JS_ID, type LemonSqueezyEvent } from "@/shared/lib/use-lemon-squeezy";
 
 const CHECKOUT = "https://promptprinter.lemonsqueezy.com/checkout/buy/abc-123?embed=1";
+
+/** Fast alle Tests hier prüfen den Overlay-Weg; die Seite ist seit 2026-10-17 der Standard. */
+function OverlayButton(props: ComponentProps<typeof LemonCheckoutButton>) {
+  return <LemonCheckoutButton presentation="overlay" {...props} />;
+}
 
 // next/script lädt in jsdom nichts, und genau darum geht es hier auch nicht:
 // interessant ist, MIT WELCHEN Angaben die Komponente das Skript anfordert.
@@ -72,10 +78,41 @@ afterEach(() => {
   document.documentElement.classList.remove("dark");
 });
 
+describe("LemonCheckoutButton als ganze Seite (Standard)", () => {
+  it("ist ein Link auf die Checkout-Seite, ohne embed und mit den Markenfarben", () => {
+    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    const link = screen.getByRole("link", { name: "Pro holen" });
+    const href = new URL(link.getAttribute("href")!);
+    expect(href.host).toBe("promptprinter.lemonsqueezy.com");
+    expect(href.searchParams.has("embed")).toBe(false);
+    expect(href.searchParams.get("button_color")).toBe("#7FC5F0");
+  });
+
+  it("lädt Lemon.js nicht und öffnet kein Overlay, der Browser folgt dem Link", async () => {
+    installFakeLemonJs();
+    const user = userEvent.setup();
+    const nav = trackNavigation();
+    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    expect(scriptProps).toHaveLength(0);
+
+    const link = screen.getByRole("link", { name: "Pro holen" });
+    // Vor dem Aufräum-Listener ablesen, der navigiert selbst nie (siehe oben).
+    let preventedByComponent = false;
+    link.addEventListener("click", (e) => {
+      preventedByComponent = e.defaultPrevented;
+    });
+    await user.click(link);
+    nav.stop();
+
+    expect(open).not.toHaveBeenCalled();
+    expect(preventedByComponent).toBe(false);
+  });
+});
+
 describe("LemonCheckoutButton", () => {
   it("renders a real link to the checkout, not a dead button", () => {
     render(
-      <LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>
+      <OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>
     );
     const link = screen.getByRole("link", { name: "Pro holen" });
     expect(link).toHaveAttribute("href", expect.stringContaining("/checkout/buy/abc-123"));
@@ -85,8 +122,8 @@ describe("LemonCheckoutButton", () => {
   it("requests Lemon.js under a fixed id, so two buttons cannot load it twice", () => {
     render(
       <>
-        <LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>
-        <LemonCheckoutButton fallbackHref="/signup">Auch Pro holen</LemonCheckoutButton>
+        <OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>
+        <OverlayButton fallbackHref="/signup">Auch Pro holen</OverlayButton>
       </>
     );
     expect(scriptProps).toHaveLength(2);
@@ -96,7 +133,7 @@ describe("LemonCheckoutButton", () => {
 
   it("falls back to the given href and loads nothing when no checkout is configured", () => {
     vi.stubEnv("NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL", "");
-    render(<LemonCheckoutButton fallbackHref="/signup?plan=pro">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/signup?plan=pro">Pro holen</OverlayButton>);
 
     expect(screen.getByRole("link", { name: "Pro holen" })).toHaveAttribute(
       "href",
@@ -107,7 +144,7 @@ describe("LemonCheckoutButton", () => {
 
   it("opens the overlay and stops the navigation once Lemon.js is there", async () => {
     installFakeLemonJs();
-    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>);
 
     const nav = trackNavigation();
     await userEvent.click(screen.getByRole("link", { name: "Pro holen" }));
@@ -119,7 +156,7 @@ describe("LemonCheckoutButton", () => {
   });
 
   it("lets the browser follow the link while Lemon.js is still missing", async () => {
-    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>);
 
     const nav = trackNavigation();
     const link = screen.getByRole("link", { name: "Pro holen" });
@@ -138,7 +175,7 @@ describe("LemonCheckoutButton", () => {
 
   it("leaves modifier clicks to the browser, so 'open in new tab' keeps working", async () => {
     installFakeLemonJs();
-    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>);
 
     // Eine Sitzung über beide Aufrufe hinweg: die direkte API legt pro Aufruf
     // eine neue an, die gedrückte Taste ginge zwischen keyboard() und click()
@@ -156,7 +193,7 @@ describe("LemonCheckoutButton", () => {
   it("asks for the dark checkout when the page itself is dark", async () => {
     installFakeLemonJs();
     document.documentElement.classList.add("dark");
-    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>);
 
     const nav = trackNavigation();
     await userEvent.click(screen.getByRole("link", { name: "Pro holen" }));
@@ -167,7 +204,7 @@ describe("LemonCheckoutButton", () => {
 
   it("does not ask for dark on the light public site", async () => {
     installFakeLemonJs();
-    render(<LemonCheckoutButton fallbackHref="/signup">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/signup">Pro holen</OverlayButton>);
 
     const nav = trackNavigation();
     await userEvent.click(screen.getByRole("link", { name: "Pro holen" }));
@@ -178,9 +215,9 @@ describe("LemonCheckoutButton", () => {
 
   it("carries the signed-in buyer's mail and account id into the checkout", () => {
     render(
-      <LemonCheckoutButton fallbackHref="/pricing" email="kasum@example.test" userId="user-7">
+      <OverlayButton fallbackHref="/pricing" email="kasum@example.test" userId="user-7">
         Pro holen
-      </LemonCheckoutButton>
+      </OverlayButton>
     );
     const href = screen.getByRole("link", { name: "Pro holen" }).getAttribute("href") ?? "";
     const params = new URL(href).searchParams;
@@ -191,9 +228,9 @@ describe("LemonCheckoutButton", () => {
   it("confirms the purchase in place of the button when the checkout reports success", async () => {
     installFakeLemonJs();
     render(
-      <LemonCheckoutButton fallbackHref="/pricing" successMessage="Zahlung da, Rest folgt.">
+      <OverlayButton fallbackHref="/pricing" successMessage="Zahlung da, Rest folgt.">
         Pro holen
-      </LemonCheckoutButton>
+      </OverlayButton>
     );
 
     expect(dispatchLemonEvent).not.toBeNull();
@@ -205,7 +242,7 @@ describe("LemonCheckoutButton", () => {
 
   it("ignores the other checkout events, only a completed purchase counts", () => {
     installFakeLemonJs();
-    render(<LemonCheckoutButton fallbackHref="/pricing">Pro holen</LemonCheckoutButton>);
+    render(<OverlayButton fallbackHref="/pricing">Pro holen</OverlayButton>);
 
     act(() => dispatchLemonEvent!({ event: "Checkout.ViewCart" }));
 
@@ -253,7 +290,7 @@ describe("LemonCheckoutButton", () => {
     });
 
     it("räumt auf und öffnet den Checkout als ganze Seite", () => {
-      render(<LemonCheckoutButton fallbackHref="/pricing">Pro holen</LemonCheckoutButton>);
+      render(<OverlayButton fallbackHref="/pricing">Pro holen</OverlayButton>);
       const assign = clickAndWatchNavigation();
 
       expect(assign).not.toHaveBeenCalled(); // noch wird gewartet
@@ -265,7 +302,7 @@ describe("LemonCheckoutButton", () => {
     });
 
     it("hört auf zu warten, sobald die Seite da ist", () => {
-      render(<LemonCheckoutButton fallbackHref="/pricing">Pro holen</LemonCheckoutButton>);
+      render(<OverlayButton fallbackHref="/pricing">Pro holen</OverlayButton>);
       const assign = clickAndWatchNavigation();
 
       act(() => dispatchLemonEvent!("mounted"));
@@ -276,7 +313,7 @@ describe("LemonCheckoutButton", () => {
     });
 
     it("hört auch auf zu warten, wenn der Besucher abbricht", () => {
-      render(<LemonCheckoutButton fallbackHref="/pricing">Pro holen</LemonCheckoutButton>);
+      render(<OverlayButton fallbackHref="/pricing">Pro holen</OverlayButton>);
       const assign = clickAndWatchNavigation();
 
       act(() => dispatchLemonEvent!("close"));
@@ -287,7 +324,7 @@ describe("LemonCheckoutButton", () => {
 
     it("nimmt den Zeitgeber beim Unmount mit, sonst navigiert er von einer fremden Seite weg", () => {
       const view = render(
-        <LemonCheckoutButton fallbackHref="/pricing">Pro holen</LemonCheckoutButton>
+        <OverlayButton fallbackHref="/pricing">Pro holen</OverlayButton>
       );
       const assign = clickAndWatchNavigation();
 
@@ -301,7 +338,7 @@ describe("LemonCheckoutButton", () => {
   it("unsubscribes on unmount, a stale button must not react to a later purchase", () => {
     installFakeLemonJs();
     const first = render(
-      <LemonCheckoutButton fallbackHref="/pricing">Pro holen</LemonCheckoutButton>
+      <OverlayButton fallbackHref="/pricing">Pro holen</OverlayButton>
     );
     first.unmount();
 
