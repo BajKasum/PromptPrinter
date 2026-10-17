@@ -48,7 +48,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 
 - **Modellzugang** nur in `src/server/llm/` (Einstieg `index.ts`). Z.ai (Standard `glm-4.5-air`) und
   Gemini auf dem Server, Anthropic und OpenAI nur per BYOK. Ohne Key antwortet der
-  Chat im Stub-Modus, nur in Entwicklung (`next start` verweigert ihn).
+  Chat im Stub-Modus, nur in Entwicklung (`next start` verweigert ihn). Der Server-Key-Pfad (Z.ai) verlangt vorher die Zustimmung des Kontos (`server/consent.ts`, `app_metadata.zai_consent`, Chat und Projekt-Gedächtnis; Hinweistext geändert: `ZAI_CONSENT_VERSION` hochsetzen).
   `llm-retry.ts` wiederholt vorübergehende Fehler (3 Versuche), `llm-failover.ts`
   weicht bei einem Ausfall von Z.ai auf Gemini aus (nur mit beiden Server-Keys,
   Leistungsschalter in Redis, eigenes Tagesbudget; **bewusst aus**: es gibt keinen

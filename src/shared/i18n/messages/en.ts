@@ -110,6 +110,13 @@ export const en: Messages = {
       "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
     keyNoticeSettings: "Another provider? Go to settings",
     keyNoticeSeePro: "See Pro",
+    consentTitle: "Your messages go to Z.ai in Singapore",
+    consentBody:
+      "On Pro, Z.ai answers your messages, an AI provider based in Singapore. There is no adequacy decision from the EU or Switzerland for Singapore and China, and we can't rule out processing in China. That's why I ask you once, explicitly. If you don't agree, you can use your own API key instead. You can withdraw your consent at any time in settings.",
+    consentAccept: "I agree, send",
+    consentOwnKey: "Use my own key",
+    consentPrivacy: "Privacy",
+    consentFailed: "That didn't work. Please try again.",
     composerLabel: "Message to Finn",
     maxLengthReached: "Maximum length reached",
     charsLeft: "{count} characters left",
@@ -358,6 +365,16 @@ export const en: Messages = {
       endpointPlaceholder: "API endpoint (e.g. https://api.z.ai/api/paas/v4/chat/completions)",
       endpointLabel: "API endpoint",
       keyPlaceholder: "API key",
+    },
+    zaiConsent: {
+      title: "Transfer to Z.ai",
+      hint: "Your consent for chats on the Pro plan.",
+      granted: "On {date} you agreed that your messages go to Z.ai in Singapore.",
+      withdraw: "Withdraw consent",
+      withdrawn: "Withdrawn. Without consent, Finn only answers with your own key.",
+      notGranted: "You haven't agreed yet. Until then, Finn only answers with your own key.",
+      grant: "Agree",
+      failed: "That didn't work. Please try again.",
     },
     dataExport: {
       title: "Your data",
@@ -626,6 +643,8 @@ export const en: Messages = {
     unprocessableReload: "The request couldn't be processed. Reload the page and try again.",
     unprocessable: "The request couldn't be processed.",
     messageTooLong: "Your message is too long, {max} characters per message at most.",
+    consentRequired:
+      "Before I answer, I need your consent for your messages to go to Z.ai in Singapore. You can give it in the chat or in settings.",
     byokRequired:
       "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings, or switch to Pro.",
     chatLimit:

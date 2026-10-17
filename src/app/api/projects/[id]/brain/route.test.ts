@@ -85,6 +85,12 @@ vi.mock("@/server/brain/analyze", async () => {
 });
 
 import { DELETE, POST } from "./route";
+import { ZAI_CONSENT_VERSION } from "@/server/consent";
+
+// Ein Konto, das der Übermittlung an Z.ai zugestimmt hat (server/consent.ts): ohne sie antwortet der
+// Server-Key-Pfad mit 403 consentRequired. Das Verhalten ohne Zustimmung steht in consent.test.ts und im Abschnitt
+// "Zustimmung zur Übermittlung an Z.ai" der Route.
+const consented = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T00:00:00.000Z" } };
 
 const FACTS = {
   summary: "Eine Next.js-App.",
@@ -123,7 +129,7 @@ describe("POST /api/projects/[id]/brain", () => {
     adminWrites.length = 0;
     for (const key of Object.keys(adminReads)) delete adminReads[key];
 
-    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
     reserveMonthlyQuota.mockResolvedValue({ allowed: true, release: vi.fn() });
     reserveServerKeyCall.mockResolvedValue({ allowed: true, release: vi.fn() });
@@ -211,6 +217,33 @@ describe("POST /api/projects/[id]/brain", () => {
       "proj-1",
       expect.objectContaining({ repoUrl: null })
     );
+  });
+
+  describe("Zustimmung zur Übermittlung an Z.ai (Rechts-Audit R-1)", () => {
+    const withoutConsent = (appMetadata: unknown) =>
+      getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: appMetadata } } });
+
+    it("verweigert die Analyse auf dem Z.ai-Server-Key ohne Zustimmung, ohne Reservierung und ohne zu lesen", async () => {
+      withoutConsent({});
+
+      const res = await POST(req(), params);
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).kind).toBe("consentRequired");
+      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
+      expect(collectBrainSources).not.toHaveBeenCalled();
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+    });
+
+    it("braucht sie mit eigenem Key nicht", async () => {
+      withoutConsent({});
+      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "k" });
+
+      const res = await POST(req(), params);
+
+      expect(res.status).toBe(200);
+    });
   });
 
   describe("Kosten-Schranken", () => {
@@ -323,7 +356,7 @@ describe("DELETE /api/projects/[id]/brain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     adminWrites.length = 0;
-    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     tableResults.projects = { data: { id: "proj-1" }, error: null };
   });
 

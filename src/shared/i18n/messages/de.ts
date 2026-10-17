@@ -117,6 +117,13 @@ export const de = {
       "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
     keyNoticeSettings: "Anderer Anbieter? Zu den Einstellungen",
     keyNoticeSeePro: "Pro ansehen",
+    consentTitle: "Deine Nachrichten gehen an Z.ai in Singapur",
+    consentBody:
+      "Im Pro-Plan beantwortet Z.ai deine Nachrichten, ein KI-Anbieter mit Sitz in Singapur. Für Singapur und China gibt es keinen Angemessenheitsbeschluss der EU und der Schweiz, und eine Bearbeitung in China können wir nicht ausschliessen. Deshalb frage ich dich einmal ausdrücklich. Stimmst du nicht zu, kannst du stattdessen deinen eigenen API-Schlüssel nutzen. Du kannst die Zustimmung jederzeit in den Einstellungen widerrufen.",
+    consentAccept: "Einverstanden und senden",
+    consentOwnKey: "Eigenen Schlüssel nutzen",
+    consentPrivacy: "Datenschutz",
+    consentFailed: "Das hat nicht geklappt. Bitte versuch es noch einmal.",
     composerLabel: "Nachricht an Finn",
     maxLengthReached: "Maximale Länge erreicht",
     charsLeft: "noch {count} Zeichen",
@@ -367,6 +374,16 @@ export const de = {
       endpointPlaceholder: "API-Endpoint (z. B. https://api.z.ai/api/paas/v4/chat/completions)",
       endpointLabel: "API-Endpoint",
       keyPlaceholder: "API-Key",
+    },
+    zaiConsent: {
+      title: "Übermittlung an Z.ai",
+      hint: "Deine Zustimmung für Chats im Pro-Plan.",
+      granted: "Du hast am {date} zugestimmt, dass deine Nachrichten an Z.ai in Singapur gehen.",
+      withdraw: "Zustimmung widerrufen",
+      withdrawn: "Widerrufen. Ohne Zustimmung antwortet Finn nur noch mit deinem eigenen Schlüssel.",
+      notGranted: "Du hast noch nicht zugestimmt. Bis dahin antwortet Finn nur mit deinem eigenen Schlüssel.",
+      grant: "Zustimmen",
+      failed: "Das hat nicht geklappt. Bitte versuch es noch einmal.",
     },
     dataExport: {
       title: "Deine Daten",
@@ -644,6 +661,8 @@ export const de = {
       "Die Anfrage konnte nicht verarbeitet werden. Lade die Seite neu und versuch es erneut.",
     unprocessable: "Die Anfrage konnte nicht verarbeitet werden.",
     messageTooLong: "Deine Nachricht ist zu lang, höchstens {max} Zeichen pro Nachricht.",
+    consentRequired:
+      "Bevor ich antworte, brauche ich deine Zustimmung, dass deine Nachrichten an Z.ai in Singapur gehen. Du kannst sie im Chat oder in den Einstellungen erteilen.",
     byokRequired:
       "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
     chatLimit:

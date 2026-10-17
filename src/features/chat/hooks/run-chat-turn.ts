@@ -41,6 +41,7 @@ export type ChatTurnContext = {
   setConversationId: Dispatch<SetStateAction<string | undefined>>;
   setInput: Dispatch<SetStateAction<string>>;
   setKeyRequired: Dispatch<SetStateAction<boolean>>;
+  setConsentRequired: Dispatch<SetStateAction<boolean>>;
 };
 
 /**
@@ -81,6 +82,7 @@ export async function runChatTurn(
     setConversationId,
     setInput,
     setKeyRequired,
+    setConsentRequired,
   } = ctx;
   // Der Stand VOR dem Zug, fuer den Fehlerfall. Frueher stand dort ein
   // `slice(0, -1)`, das die zuletzt angehaengte Nachricht wegnahm — beim
@@ -312,6 +314,11 @@ export async function runChatTurn(
         // No banner, no "Erneut senden": resending can only fail the same
         // way. The key notice below names the two ways that do work.
         setKeyRequired(true);
+      } else if (failureKind === "consentRequired") {
+        // Pro läuft auf Z.ai (Singapur) und braucht vorher die Zustimmung des Kontos
+        // (server/consent.ts). Kein Fehlerbanner: der Hinweis nimmt sie entgegen und
+        // schickt die Nachricht, die im Eingabefeld wartet, gleich ab.
+        setConsentRequired(true);
       } else {
         setError(e instanceof Error ? e.message : t.common.unknownError);
         setRetryAfter(typeof retryAfterSeconds === "number" ? retryAfterSeconds : null);

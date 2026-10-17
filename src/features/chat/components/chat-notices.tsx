@@ -2,6 +2,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { ChatKeyNotice } from "@/features/chat/components/chat-key-notice";
+import { ChatConsentNotice } from "@/features/chat/components/chat-consent-notice";
 import { formatRetryDelay } from "@/features/chat/lib/chat-wire";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
@@ -11,6 +12,8 @@ import { fmt } from "@/shared/i18n/format";
 export function ChatNotices({
   keyRequired,
   onKeyConnected,
+  consentRequired,
+  onConsentGranted,
   error,
   retryAfter,
   input,
@@ -21,6 +24,9 @@ export function ChatNotices({
 }: {
   keyRequired: boolean;
   onKeyConnected: () => void;
+  consentRequired: boolean;
+  /** Die Zustimmung ist gespeichert: Hinweis weg, die wartende Nachricht senden. */
+  onConsentGranted: () => Promise<void> | void;
   error: string | null;
   retryAfter: number | null;
   input: string;
@@ -34,6 +40,8 @@ export function ChatNotices({
   return (
     <>
           {keyRequired && <ChatKeyNotice onConnected={onKeyConnected} />}
+
+          {consentRequired && <ChatConsentNotice onGranted={onConsentGranted} />}
 
           {error && (
             <div

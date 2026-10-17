@@ -5,6 +5,7 @@ import { createClient } from "@/server/supabase/server";
 import type { PlanKey } from "@/shared/lib/plans";
 import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
 import { getT } from "@/server/i18n";
+import { zaiConsentOf } from "@/server/consent";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.settings };
@@ -61,6 +62,7 @@ export default async function SettingsPage() {
         configuredProviders={configuredProviders}
         activeProvider={activeProvider}
         customProvider={customProvider}
+        zaiConsentAt={zaiConsentOf(user.app_metadata)?.at ?? null}
       />
     </div>
   );

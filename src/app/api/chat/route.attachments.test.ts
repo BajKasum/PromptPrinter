@@ -4,6 +4,12 @@ import {
   MAX_ATTACHMENT_STORAGE_PER_USER,
   MAX_ATTACHMENT_IMAGE_BYTES,
 } from "@/shared/lib/chat-limits";
+import { ZAI_CONSENT_VERSION } from "@/server/consent";
+
+// Ein Konto, das der Übermittlung an Z.ai zugestimmt hat (server/consent.ts): ohne sie antwortet der
+// Server-Key-Pfad mit 403 consentRequired. Das Verhalten ohne Zustimmung steht in consent.test.ts und im Abschnitt
+// "Zustimmung zur Übermittlung an Z.ai" der Route.
+const consented = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T00:00:00.000Z" } };
 
 // Anhänge an Chat-Nachrichten (2026-10-02), von der Anfrage bis zum Modell.
 //
@@ -151,7 +157,7 @@ describe("POST /api/chat, attachments", () => {
     storedRows.length = 0;
     seededAttachmentRows = [];
 
-    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rpc.mockResolvedValue({ data: 0, error: null });
     llmConfig.mockReturnValue({ provider: "zai", model: "glm-4.5-air" });
     chatCompleteStream.mockImplementation(async function* () {
