@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildCheckoutUrl,
+  CHECKOUT_COLORS,
   checkoutUrlFromEnv,
   normalizeCheckoutUrl,
 } from "@/shared/lib/lemon-squeezy";
@@ -73,27 +74,53 @@ describe("buildCheckoutUrl", () => {
     expect(buildCheckoutUrl(null)).toBeNull();
   });
 
-  it("always requests the embed view, also for the no-JavaScript fallback", () => {
-    const url = new URL(buildCheckoutUrl("https://x.lemonsqueezy.com/checkout/buy/1")!);
+  it("overlay: requests the embed view, also for the no-JavaScript fallback", () => {
+    const url = new URL(
+      buildCheckoutUrl("https://x.lemonsqueezy.com/checkout/buy/1", { presentation: "overlay" })!
+    );
     expect(url.searchParams.get("embed")).toBe("1");
   });
 
-  it("blendet Logo, Produktbild, Beschreibung und Rabattfeld aus (Handy-Audit 2026-10-17)", () => {
-    const url = new URL(buildCheckoutUrl(REAL_CHECKOUT)!);
+  it("overlay: blendet Logo, Produktbild, Beschreibung und Rabattfeld aus (Handy-Audit 2026-10-17)", () => {
+    const url = new URL(buildCheckoutUrl(REAL_CHECKOUT, { presentation: "overlay" })!);
     for (const part of ["logo", "media", "desc", "discount"]) {
       expect(url.searchParams.get(part), part).toBe("0");
     }
   });
 
-  it("blendet auch dann aus, wenn die konfigurierte Adresse etwas anderes vorgibt", () => {
-    const url = new URL(buildCheckoutUrl(`${REAL_CHECKOUT}&media=1&logo=1`)!);
+  it("overlay: blendet auch dann aus, wenn die konfigurierte Adresse etwas anderes vorgibt", () => {
+    const url = new URL(
+      buildCheckoutUrl(`${REAL_CHECKOUT}&media=1&logo=1`, { presentation: "overlay" })!
+    );
     expect(url.searchParams.getAll("media")).toEqual(["0"]);
     expect(url.searchParams.getAll("logo")).toEqual(["0"]);
   });
 
-  it("does not duplicate embed when the configured address already carries it", () => {
-    const url = buildCheckoutUrl(REAL_CHECKOUT)!;
+  it("overlay: does not duplicate embed when the configured address already carries it", () => {
+    const url = buildCheckoutUrl(REAL_CHECKOUT, { presentation: "overlay" })!;
     expect(url.match(/embed=1/g)).toHaveLength(1);
+  });
+
+  it("Seite ist der Standard: kein embed, auch wenn die konfigurierte Adresse eins trägt", () => {
+    const url = new URL(buildCheckoutUrl(REAL_CHECKOUT)!);
+    expect(url.searchParams.has("embed")).toBe(false);
+  });
+
+  it("Seite: Finn bleibt sichtbar (Bild und Logo an), Beschreibung und Rabattfeld aus", () => {
+    const url = new URL(buildCheckoutUrl(REAL_CHECKOUT)!);
+    expect(url.searchParams.has("media")).toBe(false);
+    expect(url.searchParams.has("logo")).toBe(false);
+    expect(url.searchParams.get("desc")).toBe("0");
+    expect(url.searchParams.get("discount")).toBe("0");
+  });
+
+  it("Seite: trägt die Markenfarben, links hell wie die App, Knopf in Akzentblau", () => {
+    const url = new URL(buildCheckoutUrl(REAL_CHECKOUT)!);
+    expect(url.searchParams.get("background_color")).toBe("#EBF4FA");
+    expect(url.searchParams.get("button_color")).toBe("#7FC5F0");
+    for (const name of Object.keys(CHECKOUT_COLORS)) {
+      expect(url.searchParams.get(name), name).toMatch(/^#[0-9A-F]{6}$/);
+    }
   });
 
   it("prefills the buyer's mail and carries the account id as custom data", () => {
@@ -111,10 +138,13 @@ describe("buildCheckoutUrl", () => {
   });
 
   it("asks for the dark checkout only when the page is dark", () => {
-    expect(new URL(buildCheckoutUrl(REAL_CHECKOUT, { dark: true })!).searchParams.get("dark")).toBe(
+    expect(new URL(buildCheckoutUrl(REAL_CHECKOUT, { dark: true, presentation: "overlay" })!).searchParams.get("dark")).toBe(
       "1"
     );
     expect(new URL(buildCheckoutUrl(REAL_CHECKOUT, { dark: false })!).searchParams.has("dark")).toBe(
+      false
+    );
+    expect(new URL(buildCheckoutUrl(REAL_CHECKOUT, { dark: true })!).searchParams.has("dark")).toBe(
       false
     );
   });
