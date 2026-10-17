@@ -404,6 +404,29 @@ Mails pro Tag) vor der Buchung auf brevo.com selbst prüfen. Ein anderer Anbiete
    bekommt jedes neue Konto die Bestätigungsmail, und der Registrierungs-
    Bildschirm zeigt "Schau in dein Postfach" statt des Sofort-Logins.
 
+## KI-Kennzeichnung (EU-KI-Verordnung Art. 50)
+
+Stand 2026-10-17, Rechts-Audit R-9. **Keine Rechtsberatung, und aus Sekundärquellen: weder den Verhaltenskodex
+(10.06.2026) noch die Leitlinien der Kommission (C(2026) 5054, 20.07.2026) habe ich im Wortlaut gelesen.**
+
+- **Abs. 1 (Chatbot sagt, dass er eine KI ist):** erledigt. "Finn ist eine KI und kann Fehler machen." steht
+  dauerhaft unter dem Eingabefeld (seit 2026-09-28).
+- **Abs. 2 (Ausgabe maschinenlesbar kennzeichnen):** gilt seit 2026-08-02; für Systeme, die vor diesem Tag am
+  Markt waren, gilt laut Berichten über den Digital Omnibus **2026-12-02**. Ob PromptPrinter davor am Markt war,
+  weiss Kasum. Ob ein Chat, der Prompts als Text erzeugt, unter die Ausnahme "Unterstützung
+  bei der Standardbearbeitung / keine wesentliche Änderung der Eingabe" fällt, ist **offen**: Finn erzeugt neuen
+  Text aus einer Idee, die Ausnahme dürfte also nicht greifen.
+- **Was umgesetzt ist** (`shared/lib/ai-marker.ts`): eine erste, maschinenlesbare Schicht. Die Antwort von `/api/chat`
+  trägt `x-ai-generated: true`; eine heruntergeladene Markdown-Antwort beginnt mit einem HTML-Kommentar
+  (`<!-- ai-generated: true; … -->`); eine exportierte PDF trägt die Eigenschaften Betreff und Schlüsselwort
+  und unten auf jeder Seite "mit KI erzeugt".
+- **Was nicht:** das Wasserzeichen (für reinen Text gibt es kein anerkanntes Verfahren; der Kodex verlangt
+  "mindestens zwei Schichten" und nennt keine Einzelmethode), ein Weg, die Herkunft zu prüfen (Erkennungsschnittstelle),
+  und eine Markierung im Text selbst, den man kopiert: ein Zusatz im Prompt würde das Ergebnis in der anderen
+  KI verändern. Ob eine Schicht reicht, ist offen. Hat Z.ai die Ausgabe schon selbst gekennzeichnet, ist die
+  Frage, wer als Anbieter gilt, wenn man ein fremdes Modell einbindet: auch das steht nicht in meinen Quellen.
+- **Beobachten:** Kodex und Leitlinien im Wortlaut lesen (Kommission, digital-strategy.ec.europa.eu), vor dem 2. Dezember.
+
 ## Kontaktformular
 
 `/kontakt` hat neben der Mailadresse ein Formular (`ContactForm`, Name freiwillig, E-Mail, Thema, Nachricht
