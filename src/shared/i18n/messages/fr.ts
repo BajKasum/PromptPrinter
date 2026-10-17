@@ -403,6 +403,11 @@ export const fr: Messages = {
     privacyNotice:
       "Chrome et Edge envoient ton enregistrement à Google ou Microsoft pour la reconnaissance, Safari reconnaît sur l'appareil.",
     privacyLink: "Confidentialité",
+    consentTitle: "La reconnaissance vocale de ton navigateur",
+    consentBody:
+      "Pour dicter, ton navigateur utilise sa propre reconnaissance vocale. Dans Chrome et Edge, ton enregistrement est envoyé pour cela à Google ou à Microsoft, y compris aux États-Unis ; dans Safari, il reste sur ton appareil. Nous ne recevons pas l'enregistrement et nous ne le conservons pas. Tu peux retirer ton consentement à tout moment dans le mode vocal. Veux-tu utiliser le mode vocal ainsi ?",
+    consentAccept: "D'accord",
+    consentWithdraw: "Retirer mon consentement",
     errors: {
       micUnsupported: "Ce navigateur ne donne pas accès au micro.",
       micDenied: "J'ai besoin d'accéder à ton micro. Autorise-le dans la barre d'adresse et réessaie.",

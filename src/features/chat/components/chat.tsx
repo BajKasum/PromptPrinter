@@ -5,6 +5,8 @@ import { ChatNotices } from "@/features/chat/components/chat-notices";
 import { ChatThread } from "@/features/chat/components/chat-thread";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { VoiceBar } from "@/features/chat/components/voice-bar";
+import { VoiceConsentDialog } from "@/features/chat/components/voice-consent-dialog";
+import { useVoiceConsent } from "@/features/chat/hooks/use-voice-consent";
 import { useAttachNotice } from "@/features/chat/hooks/use-attach-notice";
 import { useChatScroll } from "@/features/chat/hooks/use-chat-scroll";
 import { useChatTurn } from "@/features/chat/hooks/use-chat-turn";
@@ -63,6 +65,10 @@ export function Chat({
     streamedChars: pending?.text.length ?? 0,
   });
   const [voiceOpen, setVoiceOpen] = useState(false);
+  // Vor dem ersten Diktat fragen wir nach: Chrome und Edge schicken die Aufnahme an Google
+  // bzw. Microsoft (Rechts-Audit 28.09.2026, Sprachmodus). Die Zustimmung gilt je Browser.
+  const voiceConsent = useVoiceConsent();
+  const [consentOpen, setConsentOpen] = useState(false);
 
   // The "taking a little longer" hint is NOT repeated here: its bubble
   // (DolphinLoader) is already a role="status" region, so it is announced from
@@ -124,7 +130,14 @@ export function Chat({
           turn through the same `send`, so a spoken conversation lands in this
           transcript and is persisted exactly like a typed one. */}
       {voiceOpen ? (
-        <VoiceBar onClose={() => setVoiceOpen(false)} onSubmit={send} />
+        <VoiceBar
+          onClose={() => setVoiceOpen(false)}
+          onSubmit={send}
+          onRevokeConsent={() => {
+            voiceConsent.revoke();
+            setVoiceOpen(false);
+          }}
+        />
       ) : (
         <ChatComposer
           input={input}
@@ -133,13 +146,23 @@ export function Chat({
           loading={busy}
           onSend={() => send()}
           onStop={stop}
-          onVoice={() => setVoiceOpen(true)}
+          onVoice={() => (voiceConsent.granted ? setVoiceOpen(true) : setConsentOpen(true))}
           attachments={attachments.items}
           attachPending={attachments.pending}
           onAddFiles={addFiles}
           onRemoveAttachment={attachments.remove}
         />
       )}
+
+      <VoiceConsentDialog
+        open={consentOpen}
+        onAccept={() => {
+          voiceConsent.grant();
+          setConsentOpen(false);
+          setVoiceOpen(true);
+        }}
+        onCancel={() => setConsentOpen(false)}
+      />
     </div>
   );
 }

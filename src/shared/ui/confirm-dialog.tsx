@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useT } from "@/shared/i18n/provider";
 
@@ -20,6 +20,7 @@ export function ConfirmDialog({
   confirmLabel,
   busyLabel,
   busy = false,
+  tone = "danger",
   onConfirm,
   onCancel,
 }: {
@@ -29,6 +30,12 @@ export function ConfirmDialog({
   confirmLabel: string;
   busyLabel: string;
   busy?: boolean;
+  /**
+   * "danger" (Vorgabe): eine unumkehrbare Aktion, roter Knopf, Warnzeichen.
+   * "neutral": eine Zustimmung oder Bestätigung ohne Verlust, etwa die
+   * Einwilligung zum Sprachmodus; Schild statt Warnzeichen, normaler Knopf.
+   */
+  tone?: "danger" | "neutral";
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -85,9 +92,15 @@ export function ConfirmDialog({
             className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
           >
             <div className="flex items-start gap-3 border-b border-border p-5">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/[0.08]">
-                <AlertTriangle className="h-4 w-4 text-destructive" strokeWidth={1.8} />
-              </div>
+              {tone === "neutral" ? (
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/25 bg-accent/[0.08]">
+                  <ShieldCheck className="h-4 w-4 text-accent-text" strokeWidth={1.8} aria-hidden />
+                </div>
+              ) : (
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/[0.08]">
+                  <AlertTriangle className="h-4 w-4 text-destructive" strokeWidth={1.8} />
+                </div>
+              )}
               <div>
                 <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
                 <p className="mt-1 text-[13px] text-secondary">{description}</p>
@@ -98,7 +111,7 @@ export function ConfirmDialog({
               <Button ref={cancelRef} variant="ghost" onClick={close} disabled={busy}>
                 {t.common.cancel}
               </Button>
-              <Button variant="destructive" onClick={onConfirm} disabled={busy}>
+              <Button variant={tone === "neutral" ? "primary" : "destructive"} onClick={onConfirm} disabled={busy}>
                 {busy ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
