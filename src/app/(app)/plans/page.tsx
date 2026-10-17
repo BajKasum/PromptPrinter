@@ -289,7 +289,10 @@ function ComparisonTable({ m }: { m: PlansCopy }) {
   return (
     <section className="mt-14 max-w-4xl">
       <h2 className="mb-5 text-[15px] font-semibold text-foreground">{m.compareTitle}</h2>
-      <div className="overflow-x-auto rounded-xl border border-border">
+      {/* `relative`: die sr-only-Beschriftungen in der Tabelle sind `absolute`.
+          Ohne positionierten Rahmen gehören sie zum Dokument, nicht zum
+          scrollenden Div, und weiten die Seite auf dem Handy seitlich auf. */}
+      <div className="relative overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[520px] border-collapse text-left text-[13px]">
           <caption className="sr-only">{m.compareCaption}</caption>
           <thead>
