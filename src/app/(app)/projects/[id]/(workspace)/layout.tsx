@@ -187,7 +187,7 @@ export default async function ProjectWorkspaceLayout({
                 anonymous panel. Static and small: a mark, not a performance. */}
             <Mascot state="idle" size={40} className="mt-0.5 hidden shrink-0 sm:block" />
             <div className="flex min-w-0 flex-col gap-2">
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">
+              <div className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-[0.08em] text-accent-text">
                 <FolderKanban className="h-3 w-3" />
                 {t.pages.workspace.eyebrow}
               </div>

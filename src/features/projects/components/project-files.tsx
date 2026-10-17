@@ -228,7 +228,7 @@ export function ProjectFiles({
           <FileText className="h-[15px] w-[15px] text-muted-foreground" strokeWidth={1.8} />
           {t.projects.files}
         </h2>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[12px] text-muted-foreground">
           {files.length}/{MAX_FILES_PER_PROJECT}
         </span>
       </div>
@@ -246,7 +246,7 @@ export function ProjectFiles({
               >
                 {f.name}
               </span>
-              <span className="shrink-0 text-[11px] text-muted-foreground">
+              <span className="shrink-0 text-[12px] text-muted-foreground">
                 {formatBytes(f.sizeBytes)}
               </span>
               <button
@@ -293,7 +293,7 @@ export function ProjectFiles({
           Offensichtlichem. Der native accept-Filter (ALLOWED_FILE_EXTENSIONS
           oben) und die Fehlermeldung bei einem abgelehnten Upload bleiben die
           eigentliche Führung. */}
-      {error && <p className="mt-2 text-[11.5px] text-destructive">{error}</p>}
+      {error && <p className="mt-2 text-[12px] text-destructive">{error}</p>}
 
       <ConfirmDialog
         open={pendingDelete !== null}

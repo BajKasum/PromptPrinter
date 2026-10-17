@@ -90,14 +90,14 @@ export function ConnectedProviderRow({
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <div className="truncate text-[13px] font-medium text-foreground">{meta.name}</div>
-        <div className="truncate text-[11px] text-tertiary">{meta.sub}</div>
+        <div className="truncate text-[12px] text-tertiary">{meta.sub}</div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {/* Security-Audit finding M-6: every connected provider used to read
             "Verbunden" while exactly one of them was actually in use. Which
             one is the thing worth saying. */}
         {isActive ? (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-success">
+          <span className="flex items-center gap-1 text-[12px] font-medium text-success">
             <Check className="h-3 w-3" />
             {t.settings.keys.active}
           </span>
@@ -105,14 +105,14 @@ export function ConnectedProviderRow({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 shrink-0 text-[11px]"
+            className="h-7 shrink-0 text-[12px]"
             onClick={() => void activate()}
             disabled={busy}
           >
             {t.settings.keys.activate}
           </Button>
         ) : (
-          <span className="text-[11px] font-medium text-tertiary">
+          <span className="text-[12px] font-medium text-tertiary">
             {t.settings.keys.connectedState}
           </span>
         )}
@@ -168,10 +168,10 @@ export function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <div className="truncate text-[13px] font-medium text-foreground">{meta.label}</div>
-        <div className="truncate text-[11px] text-tertiary">{meta.model}</div>
+        <div className="truncate text-[12px] text-tertiary">{meta.model}</div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="flex items-center gap-1 text-[11px] font-medium text-success">
+        <span className="flex items-center gap-1 text-[12px] font-medium text-success">
           <Check className="h-3 w-3" />
           {t.settings.keys.connectedState}
         </span>

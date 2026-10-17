@@ -21,7 +21,7 @@ function FileChip({ name, sizeBytes, kind }: { name: string; sizeBytes: number; 
       <Icon className="h-4 w-4 shrink-0 text-secondary" strokeWidth={1.8} />
       <span className="min-w-0">
         <span className="block truncate text-[12.5px] font-medium leading-tight text-foreground">{name}</span>
-        <span className="block text-[11px] leading-tight text-tertiary">
+        <span className="block text-[12px] leading-tight text-tertiary">
           {formatBytes(sizeBytes, LOCALE_TAGS[locale].intl)}
         </span>
       </span>

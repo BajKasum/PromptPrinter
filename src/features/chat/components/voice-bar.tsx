@@ -338,7 +338,7 @@ export function VoiceBar({
           ohne Unterstuetzung steht oben schon, dass nichts passiert. Neuer Tab,
           damit der offene Sprachmodus nicht verloren geht. */}
       {supported && (
-        <p className="mt-2 px-3 text-center text-[11.5px] leading-snug text-tertiary">
+        <p className="mt-2 px-3 text-center text-[12px] leading-snug text-tertiary">
           {t.voice.privacyNotice}{" "}
           <a
             href="/datenschutz"

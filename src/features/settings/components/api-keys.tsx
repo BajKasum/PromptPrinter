@@ -176,7 +176,7 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
           <div className="truncate text-[13px] font-medium text-foreground">
             {t.settings.keys.otherTitle}
           </div>
-          <div className="truncate text-[11px] text-tertiary">{t.settings.keys.otherHint}</div>
+          <div className="truncate text-[12px] text-tertiary">{t.settings.keys.otherHint}</div>
         </div>
       </div>
 

@@ -40,7 +40,7 @@ export function AppHeader({
           )}
           <div className="min-w-0">
             {eyebrow && (
-              <p className="mb-1 text-[11.5px] font-mono uppercase tracking-[0.09em] text-accent-text">
+              <p className="mb-1 text-[12px] font-mono uppercase tracking-[0.09em] text-accent-text">
                 {eyebrow}
               </p>
             )}
