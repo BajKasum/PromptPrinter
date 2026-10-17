@@ -12,6 +12,7 @@ import {
   Lock,
   Database,
   ShieldAlert,
+  ShieldCheck,
   ArrowUpRight,
   Loader2,
   Check,
@@ -23,6 +24,7 @@ import { useToast } from "@/shared/ui/toast";
 import { DeleteAccount } from "@/features/settings/components/delete-account";
 import { ChangePassword } from "@/features/settings/components/change-password";
 import { DataExport } from "@/features/settings/components/data-export";
+import { ZaiConsent } from "@/features/settings/components/zai-consent";
 import { ThemePreference } from "@/features/settings/components/theme-preference";
 import { ApiKeys } from "@/features/settings/components/api-keys";
 import { PlanBadge } from "@/shared/ui/plan-badge";
@@ -46,6 +48,7 @@ export function SettingsWorkspace({
   configuredProviders,
   activeProvider,
   customProvider,
+  zaiConsentAt = null,
 }: {
   userId: string;
   email: string;
@@ -61,6 +64,8 @@ export function SettingsWorkspace({
   activeProvider: ByokProvider | null;
   /** The user's custom-endpoint BYOK config (no key), if any. */
   customProvider: CustomProviderMeta | null;
+  /** Wann das Konto der Übermittlung an Z.ai zugestimmt hat (server/consent.ts), sonst null. */
+  zaiConsentAt?: string | null;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -248,6 +253,16 @@ export function SettingsWorkspace({
           description={t.settings.securityHint}
         >
           <ChangePassword />
+        </SettingsCard>
+
+        {/* Zustimmung zur Übermittlung an Z.ai (Pro, Server-Key), Rechts-Audit R-1 */}
+        <SettingsCard
+          Icon={ShieldCheck}
+          accent="--accent"
+          title={t.settings.zaiConsent.title}
+          description={t.settings.zaiConsent.hint}
+        >
+          <ZaiConsent consentAt={zaiConsentAt} />
         </SettingsCard>
 
         {/* Your data: self-service export (Betriebs-Audit 04.10.2026) */}

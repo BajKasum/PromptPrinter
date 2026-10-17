@@ -60,6 +60,12 @@ export default function DatenschutzPage() {
         unseren Authentifizierungs-Dienst gespeichert; wir sehen es zu keinem Zeitpunkt im Klartext.
       </p>
       <p>
+        Nutzt du den Pro-Plan, speichern wir bei deinem Konto ausserdem, <strong>wann du</strong> der
+        Übermittlung deiner Nachrichten an Z.ai <strong>zugestimmt hast</strong> und zu welcher Fassung
+        des Hinweises (siehe Ziffer 5). Du kannst die Zustimmung in den Einstellungen einsehen und
+        widerrufen.
+      </p>
+      <p>
         Systemmails, etwa den Link zum Zurücksetzen deines Passworts oder die Bestätigung einer
         neuen oder geänderten E-Mail-Adresse, schicken wir dir über einen E-Mail-Dienst (siehe
         Ziffer 4). Dieser erhält dafür deine E-Mail-Adresse und den Inhalt der Nachricht.
@@ -217,7 +223,7 @@ export default function DatenschutzPage() {
         <li>
           <strong>KI-Verarbeitung deiner Eingaben</strong> zur Erzeugung der Antworten im Chat und,
           wenn du es startest, zur Analyse für das Projekt-Gedächtnis, zur Erfüllung des
-          Nutzungsvertrags.
+          Nutzungsvertrags und, soweit sie an Z.ai gehen, aufgrund deiner Einwilligung (Ziffer 5).
         </li>
       </ul>
       <p>
@@ -330,7 +336,12 @@ export default function DatenschutzPage() {
         Vereinbarung zur Auftragsbearbeitung für API-Kunden, Daten nur nach unseren Weisungen zu
         bearbeiten, und nach eigenen Angaben, Daten nur gestützt auf gesetzlich anerkannte
         Mechanismen ins Ausland zu übermitteln. Ein gleichwertiges Datenschutzniveau können wir für
-        diese Länder dennoch nicht vollständig zusichern. Wenn du das vermeiden möchtest, kannst du in den
+        diese Länder dennoch nicht vollständig zusichern. Deshalb holen wir im Pro-Plan, bevor deine
+        Nachrichten zum ersten Mal an Z.ai gehen, deine <strong>ausdrückliche Einwilligung</strong>
+        ein (Art. 49 Abs. 1 lit. a DSGVO; Art. 17 Abs. 1 lit. a revDSG), und der Server prüft sie bei
+        jeder Anfrage; das gilt auch für die Analyse im Projekt-Gedächtnis. Du kannst sie jederzeit
+        in den Einstellungen widerrufen, danach antwortet Finn nur noch mit deinem eigenen
+        API-Schlüssel. Wenn du das vermeiden möchtest, kannst du in den
         Einstellungen einen eigenen API-Schlüssel eines Anbieters deiner Wahl hinterlegen; deine
         Eingaben gehen dann nicht mehr an Z.ai.
       </p>

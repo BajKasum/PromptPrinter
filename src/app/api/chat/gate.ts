@@ -35,7 +35,7 @@ type ApiMessages = Messages["api"];
 /** Schritt 1: eine Sitzung, bevor der Body angefasst wird. */
 export async function authenticate(
   m: ApiMessages
-): Promise<{ supabase: SupabaseClient; userId: string } | Response> {
+): Promise<{ supabase: SupabaseClient; userId: string; appMetadata: unknown } | Response> {
   // 1. Require a session BEFORE touching the body (Security-Audit finding
   //    H-3). Reading and JSON-parsing first meant an unauthenticated caller
   //    could make the server buffer and parse an arbitrarily large payload and
@@ -63,9 +63,13 @@ export async function authenticate(
   }
 
   let sessionUserId: string | null = null;
+  // Aus derselben Abfrage: die Einwilligung in die Übermittlung an Z.ai liegt in app_metadata
+  // (server/consent.ts), ein zweiter Auth-Aufruf pro Zug wäre vermeidbar.
+  let appMetadata: unknown = null;
   try {
     const { data } = await supabase.auth.getUser();
     sessionUserId = data.user?.id ?? null;
+    appMetadata = data.user?.app_metadata ?? null;
   } catch {
     // Auth lookup failed — treat as "not signed in", never as "anonymous, go ahead".
   }
@@ -76,7 +80,7 @@ export async function authenticate(
   // (TypeScript widens a `let` back to `string | null` inside a callback, since
   // it can't prove nothing reassigns it in between).
   const userId = sessionUserId;
-  return { supabase, userId };
+  return { supabase, userId, appMetadata };
 }
 
 /** Schritt 2: den Verlauf lesen und pruefen, begrenzt. */

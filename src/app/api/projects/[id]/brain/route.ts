@@ -11,6 +11,7 @@ import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
+import { hasZaiConsent } from "@/server/consent";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { problem } from "@/server/http/api-problem";
 import {
@@ -176,6 +177,11 @@ export async function POST(req: Request, { params }: Params) {
         m.byokRequired,
         { kind: "byokRequired", plan }
       );
+    }
+    // Dieselbe Zustimmung wie im Chat (server/consent.ts): die Analyse schickt Projektdateien und
+    // Repository-Inhalte an Z.ai. Vor jeder Reservierung, eine Ablehnung kostet nichts.
+    if (llmConfig()?.provider === "zai" && !hasZaiConsent(user.app_metadata)) {
+      return problem(403, m.consentRequired, { kind: "consentRequired" });
     }
     const reservation = await reserveMonthlyQuota(chatQuotaKey(userId), limits.chatMessages);
     if (reservation && !reservation.allowed) {

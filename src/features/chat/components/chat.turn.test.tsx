@@ -277,6 +277,93 @@ describe("Bearbeiten", () => {
   });
 });
 
+describe("Zustimmung zur Übermittlung an Z.ai (Pro, Rechts-Audit R-1)", () => {
+  /** Antwort des Servers: 403 mit dem maschinenlesbaren Grund, wie api-problem sie liefert. */
+  const consentRefusal = () => ({
+    ok: false,
+    status: 403,
+    json: async () => ({ kind: "consentRequired", detail: "Bevor ich antworte, brauche ich deine Zustimmung." }),
+  });
+
+  it("zeigt statt eines Fehlerbanners den Zustimmungs-Hinweis und lässt die Nachricht im Eingabefeld", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(consentRefusal()));
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Meine Idee");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    expect(await screen.findByText("Deine Nachrichten gehen an Z.ai in Singapur")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toHaveValue("Meine Idee");
+    expect(screen.queryByText("Meine Idee", { selector: "p, div" })).not.toBeInTheDocument();
+  });
+
+  it("Einverstanden speichert die Zustimmung und schickt die wartende Nachricht gleich ab", async () => {
+    const fetchMock = vi
+      .fn()
+      // 1. Zug: abgelehnt
+      .mockResolvedValueOnce(consentRefusal())
+      // Zustimmung speichern
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, granted: true }) })
+      // 2. Zug: klappt
+      .mockResolvedValueOnce({
+        ok: true,
+        body: streamOf([frame("delta", { text: "Fertig" }), frame("done", { conversationId: "c" })]),
+        json: async () => ({}),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Meine Idee");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+    await user.click(await screen.findByRole("button", { name: "Einverstanden und senden" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const [consentUrl, consentInit] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(consentUrl).toBe("/api/consent/zai");
+    expect(consentInit.method).toBe("POST");
+    const [chatUrl, chatInit] = fetchMock.mock.calls[2] as [string, RequestInit];
+    expect(chatUrl).toBe("/api/chat");
+    expect(JSON.parse(chatInit.body as string).messages.at(-1).content).toBe("Meine Idee");
+    // Der Hinweis ist weg, sobald die Zustimmung steht; die Antwort schreibt sich in ihrem eigenen Tempo.
+    await waitFor(() =>
+      expect(screen.queryByText("Deine Nachrichten gehen an Z.ai in Singapur")).not.toBeInTheDocument()
+    );
+  });
+
+  it("schickt nichts ab, wenn das Speichern der Zustimmung scheitert, und sagt es", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(consentRefusal())
+      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Meine Idee");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+    await user.click(await screen.findByRole("button", { name: "Einverstanden und senden" }));
+
+    expect(await screen.findByText("Das hat nicht geklappt. Bitte versuch es noch einmal.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Deine Nachrichten gehen an Z.ai in Singapur")).toBeInTheDocument();
+  });
+
+  it("führt auf Wunsch zu den Einstellungen, um stattdessen einen eigenen Schlüssel zu nutzen", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(consentRefusal()));
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Meine Idee");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    const link = await screen.findByRole("link", { name: "Eigenen Schlüssel nutzen" });
+    expect(link.getAttribute("href")).toBe("/settings#api-keys");
+  });
+});
+
 describe("Sprachmodus", () => {
   // Vor dem ersten Diktat fragt der Chat nach (Chrome und Edge schicken die Aufnahme an Google bzw. Microsoft).
   // Die Zustimmung steht je Browser in localStorage; ihr Wert ist die Fassung des Hinweises.

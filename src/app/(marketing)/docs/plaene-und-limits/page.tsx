@@ -64,6 +64,14 @@ export default function Page() {
         <li>Kein eigener API-Key nötig</li>
       </ul>
       <p>
+        Mein Modellzugang läuft über <strong>Z.ai in Singapur</strong>. Beim
+        ersten Chat im Pro-Plan frage ich dich deshalb einmal, ob du damit
+        einverstanden bist, dass deine Nachrichten dorthin gehen. Du kannst das
+        in den Einstellungen widerrufen, dann antworte ich nur noch mit deinem
+        eigenen Key. Die Einzelheiten stehen in der{" "}
+        <Link href="/datenschutz">Datenschutzerklärung</Link>.
+      </p>
+      <p>
         Die aktuellen Preise stehen auf der{" "}
         <Link href="/pricing">Preisseite</Link>.
       </p>

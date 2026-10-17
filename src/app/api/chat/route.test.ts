@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 import { MAX_CHAT_BODY_BYTES } from "@/server/http/request-body";
+import { ZAI_CONSENT_VERSION } from "@/server/consent";
+
+// Ein Konto, das der Übermittlung an Z.ai zugestimmt hat (server/consent.ts): ohne sie antwortet der
+// Server-Key-Pfad mit 403 consentRequired. Das Verhalten ohne Zustimmung steht in consent.test.ts und im Abschnitt
+// "Zustimmung zur Übermittlung an Z.ai" der Route.
+const consented = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T00:00:00.000Z" } };
 
 // Guards the fix for QA finding S-1: /api/chat used to serve anonymous callers,
 // which skipped the whole monthly-quota block (it hung off `userId`) and ran
@@ -123,7 +129,7 @@ describe("POST /api/chat", () => {
     for (const table of Object.keys(deleteCalls)) delete deleteCalls[table];
     for (const table of Object.keys(selectCalls)) delete selectCalls[table];
     createClient.mockResolvedValue(supabaseStub);
-    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 });
     rateLimitKey.mockReturnValue("u:user-1");
     reserveMonthlyQuota.mockResolvedValue(null);
@@ -147,6 +153,87 @@ describe("POST /api/chat", () => {
     tableResults.projects = { data: null, error: null };
     tableResults.generations = { data: null, error: null };
     tableResults.project_files = { data: [], error: null };
+  });
+
+  describe("Zustimmung zur Übermittlung an Z.ai (Rechts-Audit R-1)", () => {
+    const withoutConsent = (appMetadata: unknown) =>
+      getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: appMetadata } } });
+
+    it("verweigert einen Zug auf dem Z.ai-Server-Key ohne Zustimmung mit 403 consentRequired, ohne Modell und ohne Reservierung", async () => {
+      withoutConsent({});
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).kind).toBe("consentRequired");
+      expect(chatCompleteStream).not.toHaveBeenCalled();
+      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
+      expect(rateLimit).not.toHaveBeenCalled();
+    });
+
+    it("zählt eine Zustimmung zu einer älteren Fassung des Hinweises nicht", async () => {
+      withoutConsent({ zai_consent: { version: "2020-01-01", at: "2020-01-01T00:00:00.000Z" } });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).kind).toBe("consentRequired");
+    });
+
+    it("lässt einen Zug mit Zustimmung durch", async () => {
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalledTimes(1);
+    });
+
+    it("braucht sie nicht mit eigenem Key: der geht nie an Z.ai", async () => {
+      withoutConsent({});
+      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "k" });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+    });
+
+    it("braucht sie nicht, wenn der Server-Anbieter nicht Z.ai ist", async () => {
+      withoutConsent({});
+      llmConfig.mockReturnValue({ provider: "gemini", model: "gemini-3.5-flash" });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+    });
+
+    it("braucht sie ohne Server-Key (Entwicklung, Stub) nicht", async () => {
+      withoutConsent({});
+      llmConfig.mockReturnValue(null);
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+    });
+
+    it("lässt Free ohne Key bei byokRequired, nicht bei der Zustimmung", async () => {
+      withoutConsent({});
+      tableResults.profiles = { data: { plan: "free", is_admin: false } };
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).kind).toBe("byokRequired");
+    });
+
+    it("gilt auch für Admins: die Übermittlung ist dieselbe", async () => {
+      withoutConsent({});
+      tableResults.profiles = { data: { plan: "pro", is_admin: true } };
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).kind).toBe("consentRequired");
+    });
   });
 
   describe("authentication (QA finding S-1)", () => {
