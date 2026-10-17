@@ -144,6 +144,16 @@ export default function NutzungsrichtliniePage() {
         Wo es angemessen ist, benachrichtigen wir dich vorher. Bei schweren Verstössen, insbesondere bei Inhalten, die Kinder ausbeuten,
         informieren wir die zuständigen Behörden, soweit das Gesetz es vorsieht oder erlaubt.
       </p>
+      <p>
+        Entfernen wir Inhalte, schränken wir etwas für dein Konto ein oder sperren wir es, schreiben
+        wir dir <strong>mit Begründung</strong>: was wir getan haben, aus welchem Grund und auf
+        welcher Grundlage (ein Verstoss gegen diese Richtlinie oder gegen das Gesetz), und dass du
+        widersprechen kannst. Das gilt nicht, wenn wir dich aus rechtlichen Gründen nicht
+        informieren dürfen. Widersprechen kannst du formlos über die{" "}
+        <a href="/kontakt">Kontaktseite</a> oder per E-Mail; wir sehen uns die Entscheidung dann
+        noch einmal an und antworten dir mit dem Ergebnis. Eine Entscheidung trifft bei uns immer ein
+        Mensch, wir setzen dafür keine automatische Erkennung ein.
+      </p>
 
       <h2>7. Verstösse und Sicherheitslücken melden</h2>
       <p>
@@ -151,6 +161,21 @@ export default function NutzungsrichtliniePage() {
         uns an <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a> oder über die{" "}
         <a href="/kontakt">Kontaktseite</a>. Eine gefundene Lücke nutzt du bitte nicht aus und
         machst sie erst öffentlich, wenn wir Zeit hatten, sie zu beheben.
+      </p>
+      <p>
+        <strong>Rechtswidrige Inhalte melden:</strong> Auf der <a href="/kontakt">Kontaktseite</a>{" "}
+        gibt es dafür im Formular das Thema „Rechtswidrigen Inhalt melden“ (Art. 16 Digital Services
+        Act). Nenne bitte, wo du den Inhalt gefunden hast, warum er deiner Meinung nach
+        rechtswidrig ist und deine E-Mail-Adresse; deinen Namen nur, wenn du willst. Wir bestätigen
+        den Eingang per E-Mail, prüfen die Meldung sorgfältig und teilen dir die Entscheidung mit.
+        Die Inhalte der Nutzer sind nicht öffentlich einsehbar, sie liegen im jeweiligen Konto; wo
+        nötig, bitten wir dich um mehr Angaben.
+      </p>
+      <p>
+        <strong>Kontaktstelle:</strong> Für Nutzer und für Behörden ist die Kontaktstelle nach dem
+        Digital Services Act dieselbe: {LEGAL.email} oder das Formular auf der{" "}
+        <a href="/kontakt">Kontaktseite</a>, auf Deutsch oder Englisch. Antworten schreibt dir ein
+        Mensch.
       </p>
 
       <h2>8. Änderungen dieser Richtlinie</h2>
