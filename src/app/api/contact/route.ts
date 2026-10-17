@@ -94,5 +94,22 @@ export async function POST(req: Request) {
     return problem(502, `Die Nachricht konnte nicht gesendet werden. Schreib mir bitte direkt an ${LEGAL.email}.`);
   }
 
+  // Eine Meldung rechtswidriger Inhalte (Digital Services Act, Art. 16 Abs. 4) wird dem Absender
+  // bestätigt. Nur dann: eine Bestätigung an eine Adresse, die jemand ins Formular tippt, wäre sonst
+  // ein Weg, einem Dritten Mails zuzustellen. Der Text gibt die Nachricht nicht wieder. Scheitert die
+  // Bestätigung, ist die Meldung trotzdem angekommen: kein Fehler für den Absender, nur ein Logeintrag.
+  if (input.topic === "melden") {
+    const ack = await sendMail({
+      to: input.email,
+      subject: "Deine Meldung ist angekommen",
+      text:
+        "Hallo,\n\ndeine Meldung über das Formular auf promptprinter.app ist bei mir angekommen. " +
+        "Ich sehe sie mir an und teile dir meine Entscheidung mit.\n\n" +
+        "Falls du diese Meldung nicht selbst geschickt hast, kannst du diese Mail ignorieren.\n\n" +
+        `${LEGAL.operator}\nPromptPrinter\n`,
+    });
+    if (!ack.ok) logWarning("contact.ack_failed", { reason: ack.reason });
+  }
+
   return NextResponse.json({ ok: true });
 }

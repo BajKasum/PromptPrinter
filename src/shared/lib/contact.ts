@@ -5,9 +5,12 @@ import { z } from "@/shared/lib/zod";
  * Browser vor dem Senden und die Route (`/api/contact`) beim Empfangen prüft.
  * Eine Quelle, damit beide dieselben Grenzen meinen.
  *
- * Die Themen sind die vier Kacheln der Seite, in derselben Reihenfolge.
+ * Die ersten vier Themen sind die Kacheln der Seite, in derselben Reihenfolge.
+ * "melden" ist der Meldeweg für rechtswidrige Inhalte (Digital Services Act,
+ * Art. 16): er hat keine Kachel, nur den Eintrag im Formular, und die Route
+ * bestätigt den Eingang per Mail an den Absender (Art. 16 Abs. 4).
  */
-export const CONTACT_TOPICS = ["fehler", "frage", "idee", "daten"] as const;
+export const CONTACT_TOPICS = ["fehler", "frage", "idee", "daten", "melden"] as const;
 export type ContactTopic = (typeof CONTACT_TOPICS)[number];
 
 export const CONTACT_TOPIC_LABELS: Record<ContactTopic, string> = {
@@ -15,6 +18,7 @@ export const CONTACT_TOPIC_LABELS: Record<ContactTopic, string> = {
   frage: "Ich komme nicht weiter",
   idee: "Mir fehlt etwas",
   daten: "Daten und Rechtliches",
+  melden: "Rechtswidrigen Inhalt melden",
 };
 
 export const CONTACT_LIMITS = {
