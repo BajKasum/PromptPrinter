@@ -121,15 +121,24 @@ export type ResponseIssue = { path: PropertyKey[]; message: string };
  * davor); alles andere bleibt, wie zod es meldet.
  */
 export function responseIssues(issues: readonly z.core.$ZodIssue[]): ResponseIssue[] {
-  return issues.flatMap((issue): ResponseIssue[] => {
+  return flattenIssues(issues).map((issue) => ({ path: [...issue.path], message: issue.message }));
+}
+
+/**
+ * Dieselbe Auffächerung wie in `responseIssues`, aber mit den ganzen Fehlern (Code, Grenzwerte, Format) statt nur
+ * Pfad und Text. Wer dem Nutzer einen Satz in seiner Sprache sagen will, braucht den Code und nicht den
+ * englischen Text.
+ */
+export function flattenIssues(issues: readonly z.core.$ZodIssue[]): z.core.$ZodIssue[] {
+  return issues.flatMap((issue): z.core.$ZodIssue[] => {
     if (issue.code === "invalid_union") {
       for (const option of issue.errors) {
         if (option.length > 0 && option.every((item) => !ABORTING_CODES.has(item.code))) {
-          return responseIssues(option.map((item) => ({ ...item, path: [...issue.path, ...item.path] })));
+          return flattenIssues(option.map((item) => ({ ...item, path: [...issue.path, ...item.path] })));
         }
       }
     }
-    return [{ path: [...issue.path], message: issue.message }];
+    return [issue];
   });
 }
 

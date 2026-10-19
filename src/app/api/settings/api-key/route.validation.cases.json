@@ -9,7 +9,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid JSON body"
+      "detail": "Die Anfrage konnte nicht gelesen werden."
     }
   },
   {
@@ -22,7 +22,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid JSON body"
+      "detail": "Die Anfrage konnte nicht gelesen werden."
     }
   },
   {
@@ -34,7 +34,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -52,7 +52,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -70,7 +70,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -88,7 +88,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -108,7 +108,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -128,7 +128,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -148,7 +148,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -168,7 +168,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -190,7 +190,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -223,7 +223,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf höchstens 300 Zeichen haben.",
       "issues": [
         {
           "path": [
@@ -305,7 +305,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -326,7 +326,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -348,7 +348,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -384,7 +384,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -407,7 +407,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -430,7 +430,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Das Modell darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -453,7 +453,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -477,7 +477,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -516,7 +516,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf höchstens 60 Zeichen haben.",
       "issues": [
         {
           "path": [],
@@ -540,7 +540,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Das Modell darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -579,7 +579,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Das Modell darf höchstens 100 Zeichen haben.",
       "issues": [
         {
           "path": [],
@@ -603,7 +603,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -633,7 +633,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Key darf höchstens 300 Zeichen haben.",
       "issues": [
         {
           "path": [
@@ -679,7 +679,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -703,7 +703,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [],
@@ -877,7 +877,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -901,7 +901,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -925,7 +925,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -949,7 +949,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -1003,7 +1003,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -1027,7 +1027,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -1096,7 +1096,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL muss eine gültige Adresse sein, die mit https:// beginnt.",
       "issues": [
         {
           "path": [],
@@ -1255,7 +1255,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Basis-URL darf höchstens 300 Zeichen haben.",
       "issues": [
         {
           "path": [],
@@ -1274,7 +1274,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid JSON body"
+      "detail": "Die Anfrage konnte nicht gelesen werden."
     }
   },
   {

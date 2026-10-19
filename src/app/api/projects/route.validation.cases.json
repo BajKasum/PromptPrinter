@@ -7,7 +7,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -28,7 +28,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -49,7 +49,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -70,7 +70,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -94,7 +94,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf nicht leer sein.",
       "issues": [
         {
           "path": [
@@ -115,7 +115,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name braucht mindestens 2 Zeichen.",
       "issues": [
         {
           "path": [
@@ -136,7 +136,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name braucht mindestens 2 Zeichen.",
       "issues": [
         {
           "path": [
@@ -157,7 +157,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name braucht mindestens 2 Zeichen.",
       "issues": [
         {
           "path": [
@@ -208,7 +208,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Der Name darf höchstens 80 Zeichen haben.",
       "issues": [
         {
           "path": [
@@ -237,7 +237,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -254,7 +254,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -271,7 +271,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -288,7 +288,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid request",
+      "detail": "Die Anfrage konnte nicht verarbeitet werden.",
       "issues": [
         {
           "path": [],
@@ -306,7 +306,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid JSON body"
+      "detail": "Die Anfrage konnte nicht gelesen werden."
     }
   },
   {
@@ -318,7 +318,7 @@
       "type": "about:blank",
       "title": "Bad Request",
       "status": 400,
-      "detail": "Invalid JSON body"
+      "detail": "Die Anfrage konnte nicht gelesen werden."
     }
   },
   {

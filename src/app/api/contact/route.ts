@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z, responseIssues } from "@/shared/lib/zod";
 import { problem } from "@/server/http/api-problem";
+import { invalidJsonProblem } from "@/server/http/validation-problem";
+import { de } from "@/shared/i18n/messages/de";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
 import {
@@ -49,7 +51,8 @@ export async function POST(req: Request) {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
   } catch (err) {
     if (err instanceof RequestBodyTooLargeError) return problem(413, "Die Nachricht ist zu gross.");
-    return problem(400, "Invalid JSON body");
+    // Das Kontaktformular ist deutsch, also auch seine Fehler.
+    return invalidJsonProblem(de.api);
   }
 
   const parsed = requestSchema.safeParse(body);
