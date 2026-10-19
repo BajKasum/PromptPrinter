@@ -271,7 +271,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
 | Server-Key eines Anbieters (`GEMINI_API_KEY`) | vorher Datenschutz Ziffer 4 und 5 um ihn ergänzen (seit 2026-10-17 nennt der Text Google nicht mehr) |
 | Datei in `src/server/` | `import "server-only"` |
-| Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3, `zod-import.test.ts`) |
+| Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3). **Im Browser-Code `import * as z from "@/shared/lib/zod"`**, `import { z }` nur in `src/server/` und `src/app/api/` (sonst +65 KB auf `/login`, #134); beides hält `zod-import.test.ts` |
 | Mail-Vorlage | `supabase/templates/`, Link über `/auth/callback`; im Dashboard neu einfügen |
 | Node-Version ändern | alle Stellen, siehe [SETUP.md](docs/SETUP.md), "Node-Version" |
 

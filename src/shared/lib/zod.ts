@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { config, type z } from "zod";
 
 // zod 4 mit den Meldungen von zod 3 (Betriebs-Audit, Folgesitzung 2026-10-07, Teil F).
 //
@@ -15,8 +15,25 @@ import { z } from "zod";
 // die von zod. Was hier nichts Passendes findet, bekommt den Standard von zod 4.
 //
 // Wichtig: jede Datei im Quelltext importiert `z` von hier, nie von "zod" (tests/guards/
-// zod-import.test.ts). Sonst liefe ein Schema vor dem `z.config()` unten und bekäme den
+// zod-import.test.ts). Sonst liefe ein Schema vor dem `config()` unten und bekäme den
 // neuen Wortlaut.
+//
+// Zwei Dinge für den Browser (#134), beide vom Bündel von /login gemessen (393 KB roh, 89 KB gzip):
+//
+// 1. Die Ausgabe ist `export * from "zod"`, nicht `export { z }`. Als Namensraum-Wert (`z`) zieht zod
+//    jeden seiner Exporte ins Bündel, auch die rund 60 Sprachpakete: Webpack kann die Zugriffe
+//    `z.object(...)` nicht durch einen Wrapper bis zu den einzelnen Exporten zurückverfolgen. Wer im
+//    Browser landet (Komponenten und die Module, die sie laden), schreibt deshalb
+//    `import * as z from "@/shared/lib/zod"`: dasselbe `z.object(...)` im Quelltext, aber ein
+//    echter Namensraum des Wrappers, dessen Zugriffe Webpack bis zum einzelnen Export auflöst
+//    (89 KB gzip auf 24 KB). Auf dem Server ist die Grösse egal, dort bleibt `import { z }`
+//    erlaubt (tests/guards/zod-import.test.ts hält die Liste fest).
+//
+// 2. `jitless` im Browser. zod prüft beim ersten Objektschema mit `Function("")`, ob `eval` erlaubt ist.
+//    Unsere CSP verbietet `eval` zu Recht, der Browser meldet die Probe auf jeder Seite mit einem
+//    Formular als Verstoss. Unter `jitless` fällt die Probe weg; die Entscheidungen bleiben dieselben,
+//    nur der Weg ist der langsamere (bei einer E-Mail und einem Passwort nicht messbar). Auf dem Server
+//    bleibt der schnelle Weg.
 
 type RawIssue = z.core.$ZodRawIssue;
 
@@ -142,6 +159,6 @@ export function flattenIssues(issues: readonly z.core.$ZodIssue[]): z.core.$ZodI
   });
 }
 
-z.config({ customError: zod3Message });
+config({ customError: zod3Message, jitless: typeof window !== "undefined" });
 
-export { z };
+export * from "zod";
