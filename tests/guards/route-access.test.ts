@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { requiresSession } from "@/server/supabase/middleware";
@@ -62,5 +62,31 @@ describe("Routenlisten der Middleware", () => {
 
   it("zählt keinen App-Pfad zu den öffentlichen", () => {
     expect(APP_PREFIXES.filter((prefix) => !requiresSession(prefix))).toEqual([]);
+  });
+});
+
+// ─── Unbekannte Adressen unter einem App-Präfix (#149) ─────────────────────
+// Die App-Pfade bekommen in src/middleware.ts die Nonce-Policy. Passt eine Adresse wie /settings/x zu keiner
+// Route, geht sie an die statische Root-404, deren Inline-Skripte keinen Nonce tragen: die Policy blockt sie,
+// die Seite hydriert nie, eingeloggt steht eine leere Seite da. Eine Auffangroute je Präfix schickt solche
+// Adressen durch notFound() in die 404 des App-Layouts. Bei Präfixen mit eigenem [id]-Segment (chats,
+// projects) sitzt sie darunter, sonst direkt im Präfix.
+describe("Auffangrouten der App", () => {
+  const catchAll = (segment: string) =>
+    ["[...rest]", join("[id]", "[...rest]")]
+      .map((dir) => join(APP_DIR, "(app)", segment.slice(1), dir, "page.tsx"))
+      .find((file) => existsSync(file));
+
+  it("hat für jeden Ordner unter (app) eine Auffangroute, die notFound() ruft", () => {
+    const missing: string[] = [];
+    for (const route of routeSegments("(app)")) {
+      const file = catchAll(route);
+      if (!file || !/notFound\(\)/.test(readFileSync(file, "utf8"))) missing.push(route);
+    }
+    expect(
+      missing,
+      `Diese Präfixe haben keine Auffangroute "[...rest]/page.tsx" mit notFound(); eingeloggt zeigt eine ` +
+        `unbekannte Unterseite sonst eine leere Seite: ${missing.join(", ")}`
+    ).toEqual([]);
   });
 });

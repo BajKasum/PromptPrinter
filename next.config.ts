@@ -111,7 +111,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/features", destination: "/#funktionen", permanent: true },
-      { source: "/admin", destination: "/usage", permanent: true },
+      { source: "/admin/:path*", destination: "/usage", permanent: true },
       {
         source: "/vergleich/direkt-im-bau-tool-prompten",
         destination: "/vergleich/direkt-in-die-ki-tippen",
