@@ -138,7 +138,7 @@ export async function reserveAllowance(args: {
   //    call, so the ceiling is generous. There is no separate anonymous tier any
   //    more (it was 20/hr) — anonymous callers never get this far.
   if (!isAdmin) {
-    const rl = await rateLimit(rateLimitKey(req, userId), { limit: 120, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, "chat", userId), { limit: 120, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       await releaseReservations();
       return problem(429, m.tooManyRequests, {

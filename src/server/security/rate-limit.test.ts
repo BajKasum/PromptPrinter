@@ -1,19 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { chatQuotaKey, rateLimitKey } from "@/server/security/rate-limit";
 
+// Die Kopfzeilen-Tests prüfen, wen der Schlüssel meint; der Bereich ist dafür gleichgültig.
+const keyFor = (r: Request, userId?: string | null) => rateLimitKey(r, "chat", userId);
+
 function req(headers: Record<string, string> = {}) {
   return new Request("https://promptprinter.app/api/chat", { headers });
 }
 
 describe("rateLimitKey", () => {
   it("keys by user id when present, ignoring headers", () => {
-    expect(rateLimitKey(req({ "x-forwarded-for": "1.2.3.4" }), "user-123")).toBe(
-      "u:user-123"
+    expect(keyFor(req({ "x-forwarded-for": "1.2.3.4" }), "user-123")).toBe(
+      "chat:u:user-123"
     );
   });
 
   it("falls back to the ip when userId is null", () => {
-    expect(rateLimitKey(req({ "x-forwarded-for": "1.2.3.4" }), null)).toBe("ip:1.2.3.4");
+    expect(keyFor(req({ "x-forwarded-for": "1.2.3.4" }), null)).toBe("chat:ip:1.2.3.4");
   });
 
   // The security-relevant one. x-forwarded-for is a chain and every proxy
@@ -23,15 +26,15 @@ describe("rateLimitKey", () => {
   // any caller mint unlimited fresh rate-limit buckets by varying a header,
   // so the limit was effectively absent for unauthenticated requests.
   it("ignores a caller-prepended x-forwarded-for entry and uses the last one", () => {
-    expect(rateLimitKey(req({ "x-forwarded-for": "  9.9.9.9 , 8.8.8.8 " }))).toBe(
-      "ip:8.8.8.8"
+    expect(keyFor(req({ "x-forwarded-for": "  9.9.9.9 , 8.8.8.8 " }))).toBe(
+      "chat:ip:8.8.8.8"
     );
   });
 
   it("ignores a forged chain however many entries the caller prepends", () => {
     expect(
-      rateLimitKey(req({ "x-forwarded-for": "10.0.0.1, 10.0.0.2, 10.0.0.3, 8.8.8.8" }))
-    ).toBe("ip:8.8.8.8");
+      keyFor(req({ "x-forwarded-for": "10.0.0.1, 10.0.0.2, 10.0.0.3, 8.8.8.8" }))
+    ).toBe("chat:ip:8.8.8.8");
   });
 
   // Hosting is Vercel: x-vercel-forwarded-for is its own name for the same
@@ -39,13 +42,13 @@ describe("rateLimitKey", () => {
   // proxy in front of Vercel overwrites the generic header, so it wins.
   it("prefers x-vercel-forwarded-for over the x-forwarded-for chain", () => {
     expect(
-      rateLimitKey(
+      keyFor(
         req({
           "x-vercel-forwarded-for": "5.5.5.5",
           "x-forwarded-for": "9.9.9.9, 1.1.1.1",
         })
       )
-    ).toBe("ip:5.5.5.5");
+    ).toBe("chat:ip:5.5.5.5");
   });
 
   // cf-connecting-ip is never set by Vercel's own edge — trusting it would
@@ -53,22 +56,62 @@ describe("rateLimitKey", () => {
   // the bug this function exists to close. It must NOT be read as a client IP.
   it("ignores cf-connecting-ip entirely and falls through to the x-forwarded-for chain", () => {
     expect(
-      rateLimitKey(
+      keyFor(
         req({ "cf-connecting-ip": "5.5.5.5", "x-forwarded-for": "9.9.9.9, 1.1.1.1" })
       )
-    ).toBe("ip:1.1.1.1");
+    ).toBe("chat:ip:1.1.1.1");
   });
 
   it("falls back to x-real-ip only when neither forwarded-for header is present", () => {
-    expect(rateLimitKey(req({ "x-real-ip": "6.6.6.6" }))).toBe("ip:6.6.6.6");
+    expect(keyFor(req({ "x-real-ip": "6.6.6.6" }))).toBe("chat:ip:6.6.6.6");
   });
 
   it('falls back to "unknown" without any ip headers', () => {
-    expect(rateLimitKey(req())).toBe("ip:unknown");
+    expect(keyFor(req())).toBe("chat:ip:unknown");
   });
 
   it('falls back to "unknown" rather than an empty bucket on a blank header', () => {
-    expect(rateLimitKey(req({ "x-forwarded-for": "   " }))).toBe("ip:unknown");
+    expect(keyFor(req({ "x-forwarded-for": "   " }))).toBe("chat:ip:unknown");
+  });
+});
+
+// #147: Upstash zählt je Schlüssel und Fenster, die Obergrenze gehört nicht zum Schlüssel. Teilten sich
+// Chat und Datenexport einen Schlüssel, sperrten fünf Chat-Antworten den Export (Grenze 5).
+describe("rateLimitKey, ein Zähler je Aktion", () => {
+  it("trennt dieselbe Person nach Aktion", () => {
+    const r = req({ "x-forwarded-for": "1.2.3.4" });
+    expect(rateLimitKey(r, "chat", "user-1")).not.toBe(rateLimitKey(r, "account-export", "user-1"));
+    expect(rateLimitKey(r, "chat", null)).not.toBe(rateLimitKey(r, "auth", null));
+  });
+
+  it("trennt zwei Personen innerhalb derselben Aktion", () => {
+    const r = req();
+    expect(rateLimitKey(r, "chat", "user-1")).not.toBe(rateLimitKey(r, "chat", "user-2"));
+  });
+});
+
+describe("rateLimit, eine Aktion verbraucht die andere nicht (#147)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("lässt den Datenexport zu, wenn der Chat seine Stunde schon verbraucht hat", async () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit, rateLimitKey: key } = await import("@/server/security/rate-limit");
+    const r = new Request("https://promptprinter.app/api/chat");
+    const hour = 60 * 60 * 1000;
+
+    for (let i = 0; i < 5; i++) {
+      expect((await rateLimit(key(r, "chat", "user-147"), { limit: 120, windowMs: hour })).allowed).toBe(true);
+    }
+
+    const exported = await rateLimit(key(r, "account-export", "user-147"), { limit: 5, windowMs: hour });
+    expect(exported.allowed).toBe(true);
+    expect(exported.remaining).toBe(4);
   });
 });
 

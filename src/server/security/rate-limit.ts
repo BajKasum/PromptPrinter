@@ -89,6 +89,8 @@ let warnedMissingRedisInProduction = false;
 // with their own limit/window (chat, projects, settings/api-key, account),
 // each with a different ceiling, so this memoises per combo rather than
 // hardcoding a fixed set, avoiding rebuilding a limiter on every request.
+// The ceiling is NOT part of the Redis key, so routes only get separate
+// counters through separate keys (see RateLimitScope).
 const limiters = new Map<string, Ratelimit>();
 
 function getLimiter(limit: number, windowMs: number): Ratelimit {
@@ -265,8 +267,30 @@ export {
 } from "@/server/security/daily-budget";
 
 /**
+ * Ein Zähler je Aktion. Upstash bildet den Redis-Schlüssel aus Präfix, Kennung
+ * und Zeitfenster, die Obergrenze gehört nicht dazu: zwei Routen mit demselben
+ * Schlüssel und demselben Fenster erhöhen denselben Zähler und vergleichen ihn
+ * nur mit ihrer eigenen Grenze. Fünf Chat-Antworten sperrten so den Datenexport
+ * (Grenze 5). Darum hat jede Route einen eigenen Namen, und `rateLimitKey`
+ * verlangt ihn. Jeder Eintrag darf genau einmal vorkommen
+ * (tests/guards/rate-limit-scopes.test.ts).
+ */
+export type RateLimitScope =
+  | "chat"
+  | "projects"
+  | "brain"
+  | "consent"
+  | "contact"
+  | "auth"
+  | "api-key-save"
+  | "api-key-update"
+  | "api-key-delete"
+  | "account-delete"
+  | "account-export";
+
+/**
  * The bucket a request counts against: the signed-in user, or the caller's IP
- * when there is none.
+ * when there is none, always inside the counter of one `scope`.
  *
  * The IP branch used to read `x-forwarded-for.split(",")[0]`, which is the one
  * entry in that header a caller can freely choose. XFF is a *chain*, and every
@@ -295,9 +319,13 @@ export {
  * unreachable in practice. It stays correct for whatever anonymous endpoint
  * comes next — that is exactly how the old bug survived unnoticed.
  */
-export function rateLimitKey(req: Request, userId?: string | null): string {
-  if (userId) return `u:${userId}`;
-  return `ip:${clientIp(req)}`;
+export function rateLimitKey(
+  req: Request,
+  scope: RateLimitScope,
+  userId?: string | null
+): string {
+  if (userId) return `${scope}:u:${userId}`;
+  return `${scope}:ip:${clientIp(req)}`;
 }
 
 /**

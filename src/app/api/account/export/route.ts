@@ -60,7 +60,7 @@ export async function GET(req: Request) {
   // Betreiber ist ausgenommen.
   const isAdmin = (profile as { is_admin?: boolean } | null)?.is_admin ?? false;
   if (!isAdmin) {
-    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, "account-export", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),

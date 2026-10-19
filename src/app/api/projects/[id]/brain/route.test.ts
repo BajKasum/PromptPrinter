@@ -67,7 +67,7 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   return {
     ...actual,
     rateLimit: (...a: unknown[]) => rateLimit(...a),
-    rateLimitKey: () => "u:user-1",
+    rateLimitKey: (_req: Request, scope: string) => `${scope}:u:user-1`,
     reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
     reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
   };
