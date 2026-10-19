@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { z, responseIssues } from "@/shared/lib/zod";
+import { z } from "@/shared/lib/zod";
 import { problem } from "@/server/http/api-problem";
+import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
+import { de } from "@/shared/i18n/messages/de";
 import { createClient } from "@/server/supabase/server";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
@@ -101,15 +103,12 @@ export async function POST(req: Request) {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
   } catch (err) {
     if (err instanceof RequestBodyTooLargeError) return problem(413, "Die Anfrage ist zu gross.");
-    return problem(400, "Invalid JSON body");
+    // Die Anmelde-Seiten sind deutsch (Landing, Auth und Rechtstexte bleiben es), also auch ihre Fehler.
+    return invalidJsonProblem(de.api);
   }
 
   const parsed = requestSchema.safeParse(body);
-  if (!parsed.success) {
-    return problem(400, "Invalid request", {
-      issues: responseIssues(parsed.error.issues),
-    });
-  }
+  if (!parsed.success) return validationProblem(de.api, parsed.error.issues);
   const input = parsed.data;
 
   // ── The gate. Everything below this line is reached only by a redeemed token.

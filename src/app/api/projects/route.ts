@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { z, responseIssues } from "@/shared/lib/zod";
+import { z } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { problem } from "@/server/http/api-problem";
+import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
 import {
   MAX_SMALL_BODY_BYTES,
@@ -43,15 +44,11 @@ export async function POST(req: Request) {
     if (err instanceof RequestBodyTooLargeError) {
       return problem(413, m.tooLarge);
     }
-    return problem(400, "Invalid JSON body");
+    return invalidJsonProblem(m);
   }
 
   const parsed = createProjectSchema.safeParse(body);
-  if (!parsed.success) {
-    return problem(400, "Invalid request", {
-      issues: responseIssues(parsed.error.issues),
-    });
-  }
+  if (!parsed.success) return validationProblem(m, parsed.error.issues);
 
   // Plan allowance, the project cap now gates workspace creation. Filter by
   // owner explicitly even though RLS already scopes the count (defense in

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { z, responseIssues } from "@/shared/lib/zod";
+import { z } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { chatComplete, type LlmOverride } from "@/server/llm";
 import { encrypt } from "@/server/security/crypto";
 import { problem } from "@/server/http/api-problem";
+import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
 import { detectProviderFromKey } from "@/shared/lib/byok-detect";
 import {
@@ -38,16 +39,17 @@ const PROVIDERS = [...NAMED_PROVIDERS, "custom"] as const;
 // verwerfen und die Anfrage trotzdem gegen DIESEN Zweig matchen, bevor der
 // echte custom-Zweig unten je geprueft wird — jede fehlerhafte custom-
 // Eingabe liefe dann unbemerkt in den falschen Pfad.
-const saveSchema = z.union([
-  z.object({ apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300) }).strict(),
-  z.object({
-    provider: z.literal("custom"),
-    apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300),
-    label: z.string().trim().min(1, "Name darf nicht leer sein").max(60),
-    baseUrl: z.string().trim().url("Muss eine gültige URL sein").max(300),
-    model: z.string().trim().min(1, "Modell darf nicht leer sein").max(100),
-  }),
-]);
+const primarySaveSchema = z
+  .object({ apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300) })
+  .strict();
+const customSaveSchema = z.object({
+  provider: z.literal("custom"),
+  apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300),
+  label: z.string().trim().min(1, "Name darf nicht leer sein").max(60),
+  baseUrl: z.string().trim().url("Muss eine gültige URL sein").max(300),
+  model: z.string().trim().min(1, "Modell darf nicht leer sein").max(100),
+});
+const saveSchema = z.union([primarySaveSchema, customSaveSchema]);
 
 const activateSchema = z.object({ provider: z.enum(PROVIDERS) });
 
@@ -72,14 +74,16 @@ export async function POST(req: Request) {
     if (err instanceof RequestBodyTooLargeError) {
       return problem(413, m.tooLarge);
     }
-    return problem(400, "Invalid JSON body");
+    return invalidJsonProblem(m);
   }
 
   const parsed = saveSchema.safeParse(body);
   if (!parsed.success) {
-    return problem(400, "Invalid request", {
-      issues: responseIssues(parsed.error.issues),
-    });
+    // `issues` meldet den ersten weichen Zweig der Vereinigung, bei einem custom-Rumpf also den
+    // primären ("unbekannte Schlüssel"). Dem Nutzer sagen wir, was in SEINEM Zweig nicht stimmt.
+    const isCustom = typeof body === "object" && body !== null && "provider" in body && body.provider === "custom";
+    const own = (isCustom ? customSaveSchema : primarySaveSchema).safeParse(body);
+    return validationProblem(m, parsed.error.issues, own.success ? undefined : own.error.issues);
   }
 
   // Provider kommt entweder explizit mit (der custom-Zweig, der eigene
@@ -272,7 +276,7 @@ export async function PATCH(req: Request) {
     if (err instanceof RequestBodyTooLargeError) {
       return problem(413, m.tooLarge);
     }
-    return problem(400, "Invalid JSON body");
+    return invalidJsonProblem(m);
   }
 
   const parsed = activateSchema.safeParse(body);

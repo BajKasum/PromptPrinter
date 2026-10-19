@@ -674,6 +674,20 @@ export const de = {
     unprocessableReload:
       "Die Anfrage konnte nicht verarbeitet werden. Lade die Seite neu und versuch es erneut.",
     unprocessable: "Die Anfrage konnte nicht verarbeitet werden.",
+    fieldEmpty: "{field} darf nicht leer sein.",
+    fieldTooShort: "{field} braucht mindestens {min} Zeichen.",
+    fieldTooLong: "{field} darf höchstens {max} Zeichen haben.",
+    fieldUrl: "{field} muss eine gültige Adresse sein, die mit https:// beginnt.",
+    invalidEmail: "Bitte gib eine gültige E-Mail-Adresse ein.",
+    fields: {
+      apiKey: "Der Key",
+      label: "Der Name",
+      baseUrl: "Die Basis-URL",
+      model: "Das Modell",
+      name: "Der Name",
+      email: "Die E-Mail-Adresse",
+      password: "Das Passwort",
+    },
     messageTooLong: "Deine Nachricht ist zu lang, höchstens {max} Zeichen pro Nachricht.",
     consentRequired:
       "Bevor ich antworte, brauche ich deine Zustimmung, dass deine Nachrichten an Z.ai in Singapur gehen. Du kannst sie im Chat oder in den Einstellungen erteilen.",
