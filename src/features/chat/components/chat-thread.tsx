@@ -105,6 +105,7 @@ export function ChatThread({
                       content={m.content}
                       projectId={projectId}
                       savedPrompts={savedPrompts}
+                      index={i}
                     />
                   </div>
                 ) : (

@@ -110,8 +110,9 @@ export const it: Messages = {
     retryIn: "Riprova tra {delay}.",
     retrySeconds: { one: "{count} secondo", other: "{count} secondi" },
     retryMinutes: { one: "un minuto", other: "{count} minuti" },
-    resultLabel: "Risultato attuale",
-    resultTitle: "Il tuo risultato",
+    resultLabel: "Ultima risposta di Finn",
+    resultTitlePrompt: "Il tuo prompt",
+    resultTitleReply: "Risposta di Finn",
     keyNoticeTitle: "Prima di iniziare, mi serve la tua chiave IA.",
     keyNoticeBody:
       "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
@@ -204,7 +205,7 @@ export const it: Messages = {
     deletedBody: "«{name}» è stato rimosso.",
     deleteConfirmTitle: "Eliminare il progetto?",
     deleteConfirmBody:
-      "«{name}» verrà rimosso definitivamente insieme a tutte le sue chat, i file e i risultati. L'operazione non può essere annullata.",
+      "«{name}» verrà rimosso definitivamente insieme a tutte le sue chat, i file e i prompt salvati. L'operazione non può essere annullata.",
     deleteConfirm: "Elimina progetto",
     contextLabel: "Contesto del progetto",
     instructions: "Istruzioni",
@@ -456,7 +457,7 @@ export const it: Messages = {
     project: "Progetto",
     projectChat: "Chat del progetto",
     newProjectChat: "Nuova chat del progetto",
-    results: "Risultati",
+    results: "Prompt salvati",
     savedPrompts: "Prompt salvati",
     settings: "Impostazioni",
     billing: "Fatturazione",
@@ -491,7 +492,7 @@ export const it: Messages = {
     projects: {
       title: "I tuoi progetti",
       emptySubtitle:
-        "Un progetto è il tuo spazio di lavoro: brief, struttura, chat e risultati in un unico posto.",
+        "Un progetto è il tuo spazio di lavoro: brief, struttura, chat e prompt salvati in un unico posto.",
       emptyTitle: "Ancora nessun progetto",
       emptyBody:
         "Creane uno subito, basta un nome, brief e struttura crescono nello spazio di lavoro. Oppure descrivi prima la tua idea in una chat — se ti piace, sposti la chat in un progetto più tardi.",
@@ -503,8 +504,8 @@ export const it: Messages = {
       eyebrow: "Progetto",
       chats: { one: "{count} chat", other: "{count} chat" },
       files: { one: "{count} file", other: "{count} file" },
-      noResults: "Ancora nessun risultato",
-      results: { one: "{count} risultato", other: "{count} risultati" },
+      noResults: "Ancora nessun prompt salvato",
+      results: { one: "{count} prompt salvato", other: "{count} prompt salvati" },
       updated: "Aggiornato {time}",
       noChats: "Ancora nessuna chat",
       noChatsBody:
@@ -515,7 +516,7 @@ export const it: Messages = {
       backToOverview: "Torna alla panoramica",
     },
     results: {
-      title: "Risultati",
+      title: "Prompt salvati",
       noneTitle: "Ancora nessun prompt salvato",
       noneBody:
         "Quando Finn ti scrive un prompt in una chat, lo salvi qui con «Salva» e lo ritrovi in qualsiasi momento.",

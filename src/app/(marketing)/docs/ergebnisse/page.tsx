@@ -17,13 +17,13 @@ export default function Page() {
     <DocsShell
       slug={doc.slug}
       title="Prompts speichern"
-      intro="Ein Prompt, der funktioniert hat, soll nicht im Chat-Verlauf versanden. Ein Klick legt ihn in die Ergebnisse des Projekts."
+      intro="Ein Prompt, der funktioniert hat, soll nicht im Chat-Verlauf versanden. Ein Klick legt ihn in deine gespeicherten Prompts."
     >
       <h2>Wie speichere ich einen Prompt?</h2>
       <p>
-        In einem Projekt-Chat sitzt unter der aktuellen Antwort ein{" "}
-        <strong>Speichern</strong>-Knopf. Der legt den fertigen Prompt aus dieser
-        Antwort in die Ergebnisse des Projekts.
+        Sobald Finn dir einen fertigen Prompt geschrieben hat, sitzt oben in der
+        aktuellen Antwort ein <strong>Speichern</strong>-Knopf. Der legt den
+        Prompt aus dieser Antwort in deine gespeicherten Prompts.
       </p>
       <p>
         Wichtig zu wissen: <strong>Speichern kostet nichts und ruft kein Modell
@@ -34,10 +34,9 @@ export default function Page() {
 
       <h2>Wo finde ich gespeicherte Prompts?</h2>
       <p>
-        Im Projekt führt der Reiter <strong>Ergebnisse</strong> zur Liste aller
-        gespeicherten Prompts, neueste zuerst. Die Liste zeigt nur die Titel,
-        ein Klick klappt den Prompt auf. Dort kopierst du ihn, benennst ihn um
-        oder löschst ihn.
+        Im Kontomenü unter <strong>Gespeicherte Prompts</strong>, neueste zuerst.
+        Die Liste zeigt nur die Titel, ein Klick klappt den Prompt auf. Dort
+        kopierst du ihn, benennst ihn um oder löschst ihn.
       </p>
       <p>
         Den Titel musst du beim Speichern nicht vergeben: er entsteht aus der
@@ -56,8 +55,8 @@ export default function Page() {
         Es entsteht dabei kein Paket aus mehreren Dokumenten, kein Produktplan
         und keine automatisch erzeugte Sammlung. PromptPrinter erzeugt nichts im
         Hintergrund und ohne dein Zutun. Es gibt genau einen Weg zu einem
-        Ergebnis, und den gehst du bewusst: du siehst den Prompt, er gefällt
-        dir, du speicherst ihn.
+        gespeicherten Prompt, und den gehst du bewusst: du siehst den Prompt, er
+        gefällt dir, du speicherst ihn.
       </p>
 
       <h2>Kennt Finn meine gespeicherten Prompts?</h2>
@@ -70,11 +69,11 @@ export default function Page() {
 
       <h2>Kann ich auch ausserhalb eines Projekts speichern?</h2>
       <p>
-        Ergebnisse hängen immer an einem Projekt, in einem losen Chat gibt es
-        den Speichern-Knopf nicht. Wenn du in einem normalen Chat etwas Gutes
-        hast, das du behalten willst, verschieb den Chat zuerst in ein{" "}
-        <Link href="/docs/projekte">Projekt</Link>, oder lade die Antwort als
-        Markdown herunter.
+        Ja. Gespeicherte Prompts gehören zu deinem Konto, nicht zu einem
+        Projekt: der Speichern-Knopf sitzt in jedem Chat, auch in einem losen.
+        Speicherst du in einem <Link href="/docs/projekte">Projekt</Link>-Chat,
+        ordnet PromptPrinter den Prompt zusätzlich diesem Projekt zu. Als
+        Markdown-Datei lässt sich jede Antwort ausserdem herunterladen.
       </p>
     </DocsShell>
   );

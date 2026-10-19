@@ -137,7 +137,14 @@ export function ChatUserBubble({
   );
 }
 
-export function ChatAssistantBubble({ content, index }: { content: string; index: number }) {
+/**
+ * Message-level actions of a finished reply: copying the whole reply is the
+ * primary move and must exist even when the reply has no fenced prompt block,
+ * and the export hands it over as a Markdown file. One component for the older
+ * replies (ChatAssistantBubble) and the newest one (ChatResultPanel), so the
+ * newest reply can't have fewer actions than the ones before it (#150).
+ */
+export function ChatReplyActions({ content, index }: { content: string; index: number }) {
   const t = useT();
   const { copied, copy } = useCopyToClipboard();
 
@@ -147,26 +154,28 @@ export function ChatAssistantBubble({ content, index }: { content: string; index
   }
 
   return (
+    <div className="flex items-center gap-1">
+      <Button size="sm" variant="ghost" onClick={() => copy(content)}>
+        {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+        {copied ? t.common.copied : t.chat.copyReply}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={exportMd}>
+        <Download className="h-3.5 w-3.5" />
+        {t.chat.exportReply}
+      </Button>
+    </div>
+  );
+}
+
+export function ChatAssistantBubble({ content, index }: { content: string; index: number }) {
+  return (
     <div className="flex justify-start">
       <div className="max-w-[88%] w-full">
         <div className="rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
           <MarkdownMessage content={content} />
         </div>
-        {/* Message-level actions: copying the whole reply is the primary move and
-            must exist even when the reply has no fenced prompt block. */}
-        <div className="mt-1.5 flex items-center gap-1">
-          <Button size="sm" variant="ghost" onClick={() => copy(content)}>
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-success" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-            {copied ? t.common.copied : t.chat.copyReply}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={exportMd}>
-            <Download className="h-3.5 w-3.5" />
-            {t.chat.exportReply}
-          </Button>
+        <div className="mt-1.5">
+          <ChatReplyActions content={content} index={index} />
         </div>
       </div>
     </div>

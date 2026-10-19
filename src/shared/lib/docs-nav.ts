@@ -53,7 +53,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Der fertige Prompt",
         summary:
           "Kopieren, exportieren, nachschärfen: was im Prompt steht und wie du ihn ohne Neustart änderst.",
-        updated: "2026-10-11",
+        updated: "2026-10-19",
       },
     ],
   },
@@ -78,8 +78,8 @@ export const DOCS_GROUPS: DocGroup[] = [
         slug: "ergebnisse",
         title: "Prompts speichern",
         summary:
-          "Gute Prompts landen per Klick in den Ergebnissen des Projekts, zum Wiederfinden statt Wiederfinden-Müssen.",
-        updated: "2026-10-01",
+          "Gute Prompts landen per Klick unter Gespeicherte Prompts, zum Wiederfinden statt Wiederfinden-Müssen.",
+        updated: "2026-10-19",
       },
     ],
   },

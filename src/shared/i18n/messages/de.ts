@@ -117,8 +117,9 @@ export const de = {
     retryIn: "Versuch es in {delay} nochmal.",
     retrySeconds: { one: "{count} Sekunde", other: "{count} Sekunden" },
     retryMinutes: { one: "einer Minute", other: "{count} Minuten" },
-    resultLabel: "Aktuelles Ergebnis",
-    resultTitle: "Dein Ergebnis",
+    resultLabel: "Aktuelle Antwort von Finn",
+    resultTitlePrompt: "Dein Prompt",
+    resultTitleReply: "Finns Antwort",
     keyNoticeTitle: "Bevor wir loslegen, brauche ich deinen eigenen KI-Key.",
     keyNoticeBody:
       "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
@@ -211,7 +212,7 @@ export const de = {
     deletedBody: "„{name}“ wurde entfernt.",
     deleteConfirmTitle: "Projekt löschen?",
     deleteConfirmBody:
-      "„{name}“ wird mit allen Chats, Dateien und Ergebnissen dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.",
+      "„{name}“ wird mit allen Chats, Dateien und gespeicherten Prompts dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.",
     deleteConfirm: "Projekt löschen",
     contextLabel: "Projekt-Kontext",
     instructions: "Anweisungen",
@@ -468,7 +469,7 @@ export const de = {
     project: "Projekt",
     projectChat: "Projekt-Chat",
     newProjectChat: "Neuer Projekt-Chat",
-    results: "Ergebnisse",
+    results: "Gespeicherte Prompts",
     savedPrompts: "Gespeicherte Prompts",
     settings: "Einstellungen",
     billing: "Abrechnung",
@@ -503,7 +504,7 @@ export const de = {
     projects: {
       title: "Deine Projekte",
       emptySubtitle:
-        "Ein Projekt ist dein Arbeitsraum: Briefing, Struktur, Chats und Ergebnisse an einem Ort.",
+        "Ein Projekt ist dein Arbeitsraum: Briefing, Struktur, Chats und gespeicherte Prompts an einem Ort.",
       emptyTitle: "Noch kein Projekt angelegt",
       emptyBody:
         "Leg direkt eins an, ein Name genügt, Briefing und Struktur wachsen im Workspace. Oder beschreib deine Idee zuerst im Chat — gefällt sie dir, verschiebst du den Chat später in ein Projekt.",
@@ -516,8 +517,8 @@ export const de = {
       eyebrow: "Projekt",
       chats: { one: "{count} Chat", other: "{count} Chats" },
       files: { one: "{count} Datei", other: "{count} Dateien" },
-      noResults: "Noch keine Ergebnisse",
-      results: { one: "{count} Ergebnis", other: "{count} Ergebnisse" },
+      noResults: "Noch keine gespeicherten Prompts",
+      results: { one: "{count} gespeicherter Prompt", other: "{count} gespeicherte Prompts" },
       updated: "Aktualisiert {time}",
       noChats: "Noch keine Chats",
       noChatsBody:
@@ -528,7 +529,7 @@ export const de = {
       backToOverview: "Zurück zur Übersicht",
     },
     results: {
-      title: "Ergebnisse",
+      title: "Gespeicherte Prompts",
       noneTitle: "Noch keine Prompts gespeichert",
       noneBody:
         "Wenn Finn dir im Chat einen Prompt schreibt, sicherst du ihn mit „Speichern“ hierher, dann findest du ihn jederzeit wieder.",
