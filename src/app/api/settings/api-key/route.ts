@@ -122,7 +122,7 @@ export async function POST(req: Request) {
     .eq("id", user.id)
     .maybeSingle();
   if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, "api-key-save", user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
@@ -257,7 +257,7 @@ export async function PATCH(req: Request) {
     .eq("id", user.id)
     .maybeSingle();
   if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, "api-key-update", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
@@ -324,7 +324,7 @@ export async function DELETE(req: Request) {
     .eq("id", user.id)
     .maybeSingle();
   if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, "api-key-delete", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return problem(429, m.tooManyRequests, {
         retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),

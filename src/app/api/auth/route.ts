@@ -89,7 +89,7 @@ const requestSchema = z.discriminatedUnion("action", [
 const RATE_LIMIT = { limit: 30, windowMs: 10 * 60 * 1000 };
 
 export async function POST(req: Request) {
-  const rl = await rateLimit(rateLimitKey(req), RATE_LIMIT);
+  const rl = await rateLimit(rateLimitKey(req, "auth"), RATE_LIMIT);
   if (!rl.allowed) {
     return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.", {
       retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),

@@ -37,7 +37,7 @@ const requestSchema = contactSchema.extend({
 });
 
 export async function POST(req: Request) {
-  const rl = await rateLimit(`contact:${rateLimitKey(req)}`, PER_IP);
+  const rl = await rateLimit(rateLimitKey(req, "contact"), PER_IP);
   if (!rl.allowed) {
     return problem(429, "Du hast gerade mehrere Nachrichten geschickt. Bitte warte etwas und versuch es später erneut.", {
       retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),

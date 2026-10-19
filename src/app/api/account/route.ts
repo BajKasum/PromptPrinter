@@ -63,7 +63,7 @@ export async function DELETE(req: Request) {
     .eq("id", user.id)
     .maybeSingle();
   if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(rateLimitKey(req, "account-delete", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
       return NextResponse.json(
         { error: m.tooManyRequests },

@@ -13,7 +13,7 @@ const logWarning = vi.fn();
 
 vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
-  rateLimitKey: () => "ip:203.0.113.7",
+  rateLimitKey: (_req: Request, scope: string) => `${scope}:ip:203.0.113.7`,
   clientIp: () => "203.0.113.7",
 }));
 

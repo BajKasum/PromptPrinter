@@ -11,7 +11,7 @@ vi.mock("@/server/supabase/server", () => ({
 }));
 vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
-  rateLimitKey: (_req: Request, userId?: string) => `u:${userId}`,
+  rateLimitKey: (_req: Request, scope: string, userId?: string) => `${scope}:u:${userId}`,
 }));
 vi.mock("@/server/consent", () => ({ setZaiConsent: (...a: unknown[]) => setZaiConsent(...a) }));
 vi.mock("@/shared/lib/observability", () => ({

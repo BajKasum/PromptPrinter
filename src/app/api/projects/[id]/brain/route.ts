@@ -201,7 +201,7 @@ export async function POST(req: Request, { params }: Params) {
   // einmal und danach, wenn sich Quellen ändern) und deckeln die
   // GitHub-Requests gleich mit.
   if (!isAdmin) {
-    const rl = await rateLimit(`brain:${rateLimitKey(req, userId)}`, {
+    const rl = await rateLimit(rateLimitKey(req, "brain", userId), {
       limit: 5,
       windowMs: 60 * 60 * 1000,
     });
