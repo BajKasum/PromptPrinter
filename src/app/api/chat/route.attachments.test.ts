@@ -126,11 +126,12 @@ const OLD_REPLY_ID = "22222222-2222-4222-8222-222222222222";
 const NEW_ID = "33333333-3333-4333-8333-333333333333";
 const CONVERSATION_ID = "44444444-4444-4444-8444-444444444444";
 
-function req(body: unknown) {
+function req(body: unknown, signal?: AbortSignal) {
   return new Request("https://promptprinter.app/api/chat", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    ...(signal ? { signal } : {}),
   });
 }
 
@@ -450,6 +451,24 @@ describe("POST /api/chat, attachments", () => {
       expect(move).toBeDefined();
       expect(move!.filters).toContainEqual(["message_id", OLD_USER_ID]);
       expect(move!.filters).toContainEqual(["user_id", "user-1"]);
+    });
+
+    // #129: ein Stopp ist kein Fehler. Die neue Frage steht, der Bildschirm zeigt sie samt Dateien, also
+    // wandern die Dateien auch dann an die neue Fassung, bevor die alte wegfaellt.
+    it("moves the files to the new message when the user stops the reply", async () => {
+      seededAttachmentRows = [oldRow];
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        yield "halbe ";
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+
+      await (await POST(req(edit(), controller.signal))).text();
+
+      const move = adminUpdates.find((u) => (u.patch as { message_id?: string }).message_id === NEW_ID);
+      expect(move).toBeDefined();
+      expect(move!.filters).toContainEqual(["message_id", OLD_USER_ID]);
     });
 
     it("leaves the old message and its files alone when the provider fails", async () => {
