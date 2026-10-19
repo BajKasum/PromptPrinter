@@ -110,8 +110,9 @@ export const en: Messages = {
     retryIn: "Try again in {delay}.",
     retrySeconds: { one: "{count} second", other: "{count} seconds" },
     retryMinutes: { one: "a minute", other: "{count} minutes" },
-    resultLabel: "Current result",
-    resultTitle: "Your result",
+    resultLabel: "Finn's latest reply",
+    resultTitlePrompt: "Your prompt",
+    resultTitleReply: "Finn's reply",
     keyNoticeTitle: "Before we start, I need your own AI key.",
     keyNoticeBody:
       "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
@@ -204,7 +205,7 @@ export const en: Messages = {
     deletedBody: "“{name}” was removed.",
     deleteConfirmTitle: "Delete project?",
     deleteConfirmBody:
-      "“{name}” will be permanently removed along with all its chats, files and results. This can't be undone.",
+      "“{name}” will be permanently removed along with all its chats, files and saved prompts. This can't be undone.",
     deleteConfirm: "Delete project",
     contextLabel: "Project context",
     instructions: "Instructions",
@@ -456,7 +457,7 @@ export const en: Messages = {
     project: "Project",
     projectChat: "Project chat",
     newProjectChat: "New project chat",
-    results: "Results",
+    results: "Saved prompts",
     savedPrompts: "Saved prompts",
     settings: "Settings",
     billing: "Billing",
@@ -490,7 +491,7 @@ export const en: Messages = {
     },
     projects: {
       title: "Your projects",
-      emptySubtitle: "A project is your workspace: brief, structure, chats and results in one place.",
+      emptySubtitle: "A project is your workspace: brief, structure, chats and saved prompts in one place.",
       emptyTitle: "No projects yet",
       emptyBody:
         "Create one right away, a name is enough, the brief and structure grow in the workspace. Or describe your idea in a chat first — if you like it, move the chat into a project later.",
@@ -502,8 +503,8 @@ export const en: Messages = {
       eyebrow: "Project",
       chats: { one: "{count} chat", other: "{count} chats" },
       files: { one: "{count} file", other: "{count} files" },
-      noResults: "No results yet",
-      results: { one: "{count} result", other: "{count} results" },
+      noResults: "No saved prompts yet",
+      results: { one: "{count} saved prompt", other: "{count} saved prompts" },
       updated: "Updated {time}",
       noChats: "No chats yet",
       noChatsBody:
@@ -514,7 +515,7 @@ export const en: Messages = {
       backToOverview: "Back to overview",
     },
     results: {
-      title: "Results",
+      title: "Saved prompts",
       noneTitle: "No prompts saved yet",
       noneBody:
         "When Finn writes you a prompt in a chat, save it here with “Save” and you'll always find it again.",

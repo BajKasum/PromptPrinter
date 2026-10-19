@@ -111,8 +111,9 @@ export const fr: Messages = {
     retryIn: "Réessaie dans {delay}.",
     retrySeconds: { one: "{count} seconde", other: "{count} secondes" },
     retryMinutes: { one: "une minute", other: "{count} minutes" },
-    resultLabel: "Résultat actuel",
-    resultTitle: "Ton résultat",
+    resultLabel: "Dernière réponse de Finn",
+    resultTitlePrompt: "Ton prompt",
+    resultTitleReply: "Réponse de Finn",
     keyNoticeTitle: "Avant de commencer, j'ai besoin de ta propre clé d'IA.",
     keyNoticeBody:
       "Avec Free, je fonctionne avec ta propre clé. Tu peux obtenir gratuitement une clé Gemini chez Google, et PromptPrinter lui-même ne te coûte alors rien. Si tu as déjà une clé Anthropic ou OpenAI, elle marche de la même façon. Pas envie de t'occuper d'une clé ? Avec Pro, je m'en charge pour toi.",
@@ -206,7 +207,7 @@ export const fr: Messages = {
     deletedBody: "« {name} » a été supprimé.",
     deleteConfirmTitle: "Supprimer le projet ?",
     deleteConfirmBody:
-      "« {name} » sera supprimé définitivement avec toutes ses conversations, ses fichiers et ses résultats. Cette action est irréversible.",
+      "« {name} » sera supprimé définitivement avec toutes ses conversations, ses fichiers et ses prompts enregistrés. Cette action est irréversible.",
     deleteConfirm: "Supprimer le projet",
     contextLabel: "Contexte du projet",
     instructions: "Instructions",
@@ -460,7 +461,7 @@ export const fr: Messages = {
     project: "Projet",
     projectChat: "Conversation du projet",
     newProjectChat: "Nouvelle conversation du projet",
-    results: "Résultats",
+    results: "Prompts enregistrés",
     savedPrompts: "Prompts enregistrés",
     settings: "Paramètres",
     billing: "Facturation",
@@ -495,7 +496,7 @@ export const fr: Messages = {
     projects: {
       title: "Tes projets",
       emptySubtitle:
-        "Un projet est ton espace de travail : brief, structure, conversations et résultats au même endroit.",
+        "Un projet est ton espace de travail : brief, structure, conversations et prompts enregistrés au même endroit.",
       emptyTitle: "Aucun projet pour l'instant",
       emptyBody:
         "Crée-en un tout de suite, un nom suffit, le brief et la structure se développent dans l'espace de travail. Ou décris d'abord ton idée dans une conversation — si elle te plaît, tu déplaces la conversation dans un projet plus tard.",
@@ -508,8 +509,8 @@ export const fr: Messages = {
       eyebrow: "Projet",
       chats: { one: "{count} conversation", other: "{count} conversations" },
       files: { one: "{count} fichier", other: "{count} fichiers" },
-      noResults: "Aucun résultat pour l'instant",
-      results: { one: "{count} résultat", other: "{count} résultats" },
+      noResults: "Aucun prompt enregistré pour l'instant",
+      results: { one: "{count} prompt enregistré", other: "{count} prompts enregistrés" },
       updated: "Mis à jour {time}",
       noChats: "Aucune conversation pour l'instant",
       noChatsBody:
@@ -520,7 +521,7 @@ export const fr: Messages = {
       backToOverview: "Retour à l'aperçu",
     },
     results: {
-      title: "Résultats",
+      title: "Prompts enregistrés",
       noneTitle: "Aucun prompt enregistré pour l'instant",
       noneBody:
         "Quand Finn t'écrit un prompt dans une conversation, tu l'enregistres ici avec « Enregistrer », et tu le retrouves à tout moment.",

@@ -49,9 +49,9 @@ export default function Page() {
         Unterlagen oder neben dem Code im Repo ablegen willst.
       </p>
       <p>
-        Arbeitest du in einem Projekt, kannst du den Prompt ausserdem in die{" "}
-        <Link href="/docs/ergebnisse">Ergebnisse</Link> speichern und später
-        wiederfinden.
+        Den Prompt kannst du ausserdem unter{" "}
+        <Link href="/docs/ergebnisse">gespeicherte Prompts</Link> ablegen und
+        später wiederfinden.
       </p>
 
       <h2>Wie ändere ich den Prompt, ohne neu anzufangen?</h2>
