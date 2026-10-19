@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { AudioLines, Plus, Send, Square } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/input";
@@ -33,6 +33,7 @@ export function ChatComposer({
   attachPending = 0,
   onAddFiles,
   onRemoveAttachment,
+  inputRef,
 }: {
   input: string;
   onInputChange: (value: string) => void;
@@ -50,9 +51,12 @@ export function ChatComposer({
   /** Omitted where attachments aren't offered: no "+" button then. */
   onAddFiles?: (files: File[]) => void;
   onRemoveAttachment?: (id: string) => void;
+  /** Lets the parent move focus into the field, e.g. after a starter idea filled it. */
+  inputRef?: RefObject<HTMLTextAreaElement | null>;
 }) {
   const t = useT();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const ownTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = inputRef ?? ownTextareaRef;
   const fileInputRef = useRef<HTMLInputElement>(null);
   // QA finding K-1: keeps the sticky composer pinned above an on-screen
   // keyboard on iOS Safari instead of floating mid-screen or hiding behind
@@ -81,7 +85,7 @@ export function ChatComposer({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-  }, [input]);
+  }, [input, textareaRef]);
 
   return (
     <div

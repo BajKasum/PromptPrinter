@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ChatNotices } from "@/features/chat/components/chat-notices";
 import { ChatThread } from "@/features/chat/components/chat-thread";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
@@ -64,6 +64,18 @@ export function Chat({
     busy,
     streamedChars: pending?.text.length ?? 0,
   });
+  // Startideen im leeren Standalone-Chat (#156): ein Tipp füllt das Feld und
+  // setzt den Cursor ans Ende, gesendet wird erst, wenn der Nutzer es will.
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const pickSuggestion = (text: string) => {
+    setInput(text);
+    requestAnimationFrame(() => {
+      const el = composerRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    });
+  };
   const [voiceOpen, setVoiceOpen] = useState(false);
   // Vor dem ersten Diktat fragen wir nach: Chrome und Edge schicken die Aufnahme an Google
   // bzw. Microsoft (Rechts-Audit 28.09.2026, Sprachmodus). Die Zustimmung gilt je Browser.
@@ -110,6 +122,9 @@ export function Chat({
         onEdit={turn.editMessage}
         onRegenerate={turn.regenerate}
         onRevealed={turn.commitReply}
+        suggestionsLabel={variant === "general" ? t.chat.emptyStartersLabel : undefined}
+        suggestions={variant === "general" ? t.chat.emptyStarters : undefined}
+        onPickSuggestion={variant === "general" ? pickSuggestion : undefined}
       />
 
       <ChatNotices
@@ -149,6 +164,7 @@ export function Chat({
           input={input}
           onInputChange={setInput}
           placeholder={placeholder}
+          inputRef={composerRef}
           loading={busy}
           onSend={() => send()}
           onStop={stop}
