@@ -1089,6 +1089,58 @@ describe("POST /api/chat", () => {
       expect(deleteCalls.conversations ?? 0).toBe(0);
     });
 
+    // #129: der Nutzer drueckt Stopp. Der Bildschirm zeigt dann schon den neuen Stand, also muss die
+    // Datenbank ihn auch halten, sonst stehen nach einem Reload alte und neue Antwort untereinander.
+    it("Stopp MIT Teiltext: der Teiltext ersetzt die alte Antwort, auch nach einem Reload", async () => {
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        yield "halbe ";
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+
+      await readSse(
+        await POST(
+          req(
+            {
+              conversationId: "11111111-1111-4111-8111-111111111111",
+              replaceMessageId: REPLACE_ID,
+              messages: [{ role: "user", content: "Hi" }],
+            },
+            controller.signal
+          )
+        )
+      );
+
+      expect(
+        (insertCalls.messages ?? []).filter((r) => (r as { role?: string }).role === "assistant")
+      ).toHaveLength(1);
+      expect(deleteCalls.messages ?? 0).toBe(1);
+    });
+
+    it("Stopp OHNE Teiltext: es gibt nichts Neues, die alte Antwort bleibt stehen", async () => {
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+
+      await readSse(
+        await POST(
+          req(
+            {
+              conversationId: "11111111-1111-4111-8111-111111111111",
+              replaceMessageId: REPLACE_ID,
+              messages: [{ role: "user", content: "Hi" }],
+            },
+            controller.signal
+          )
+        )
+      );
+
+      expect(deleteCalls.messages ?? 0).toBe(0);
+    });
+
     it("weist eine unbrauchbare Ersetzungs-ID ab, statt sie zu raten", async () => {
       const res = await POST(
         req({
@@ -1155,6 +1207,47 @@ describe("POST /api/chat", () => {
       await readSse(await POST(editReq()));
 
       expect(deleteCalls.messages ?? 0).toBe(1);
+    });
+
+    // #129: wie beim Neu-Erzeugen. Die neue Frage steht seit C-1 in jedem Fall in der Datenbank, die alte
+    // Fassung muss deshalb auch nach einem Stopp weg, mit und ohne Teiltext.
+    it("Stopp MIT Teiltext: raeumt die ueberholten Zeilen weg", async () => {
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        yield "halbe ";
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+      const body = {
+        conversationId: "11111111-1111-4111-8111-111111111111",
+        supersededMessageIds: OLD_IDS,
+        messages: [{ role: "user", content: "Anders gefragt" }],
+      };
+
+      await readSse(await POST(req(body, controller.signal)));
+
+      expect(deleteCalls.messages ?? 0).toBe(1);
+      expect(deleteCalls.conversations ?? 0).toBe(0);
+    });
+
+    it("Stopp OHNE Teiltext: die neue Frage steht, die alte Fassung faellt trotzdem weg", async () => {
+      const controller = new AbortController();
+      chatCompleteStream.mockImplementation(async function* () {
+        controller.abort();
+        throw new DOMException("aborted", "AbortError");
+      });
+      const body = {
+        conversationId: "11111111-1111-4111-8111-111111111111",
+        supersededMessageIds: OLD_IDS,
+        messages: [{ role: "user", content: "Anders gefragt" }],
+      };
+
+      await readSse(await POST(req(body, controller.signal)));
+
+      const users = (insertCalls.messages ?? []).filter((r) => (r as { role?: string }).role === "user");
+      expect(users).toHaveLength(1);
+      expect(deleteCalls.messages ?? 0).toBe(1);
+      expect(deleteCalls.conversations ?? 0).toBe(0);
     });
 
     it("laesst den alten Verlauf stehen, wenn der Anbieter scheitert", async () => {

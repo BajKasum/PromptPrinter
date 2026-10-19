@@ -186,6 +186,52 @@ describe("Neu erzeugen", () => {
     expect(within(screen.getByRole("log")).getByText("Zweite Antwort")).toBeInTheDocument();
   });
 
+  // #129: ein Strom, der bei Stopp wie ein echter fetch mit AbortError abreißt.
+  function abortableFetch() {
+    const handle: { controller?: ReadableStreamDefaultController<Uint8Array> } = {};
+    const body = new ReadableStream<Uint8Array>({ start: (c) => void (handle.controller = c) });
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      (init.signal as AbortSignal).addEventListener("abort", () =>
+        handle.controller!.error(new DOMException("aborted", "AbortError"))
+      );
+      return { ok: true, body, json: async () => ({}) };
+    });
+    return { fetchMock, handle };
+  }
+
+  it("Stopp vor dem ersten Wort: die alte Antwort kommt zurück, weil die Route sie behält", async () => {
+    const { fetchMock } = abortableFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Chat initialMessages={thread} initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /Neu erzeugen/ }));
+    const log = screen.getByRole("log");
+    await waitFor(() => expect(within(log).queryByText("Zweite Antwort")).not.toBeInTheDocument());
+
+    await user.click(await screen.findByRole("button", { name: /stoppen/ }));
+
+    expect(await within(log).findByText("Zweite Antwort")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("Stopp nach den ersten Wörtern: der Teiltext ersetzt die alte Antwort, sie kommt nicht zurück", async () => {
+    const { fetchMock, handle } = abortableFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Chat initialMessages={thread} initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /Neu erzeugen/ }));
+    await waitFor(() => expect(handle.controller).toBeDefined());
+    handle.controller!.enqueue(encoder.encode(frame("delta", { text: "Neuanfang" })));
+
+    await user.click(await screen.findByRole("button", { name: /stoppen/ }));
+
+    const log = screen.getByRole("log");
+    expect(await within(log).findByText("Neuanfang")).toBeInTheDocument();
+    expect(within(log).queryByText("Zweite Antwort")).not.toBeInTheDocument();
+  });
+
   it("gibt es nur im Ruhezustand: nicht, solange ein Zug läuft", async () => {
     const { fetchMock, handle } = hangingFetch();
     vi.stubGlobal("fetch", fetchMock);

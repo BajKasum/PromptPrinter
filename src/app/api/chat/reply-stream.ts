@@ -29,6 +29,53 @@ import type { SupabaseClient } from "./gate";
 // Nutzer, Speichern der Antwort. Welcher die Reservierungen zurueckgibt und welcher sie behaelt, haelt
 // route.exits.test.ts fest.
 
+// Die alte Fassung wegnehmen, NACHDEM die neue steht (C-2). Gilt fuer den vollstaendigen Zug genauso wie
+// fuer einen gestoppten mit Teiltext: der Bildschirm zeigt nach einem Stopp schon den neuen Stand, ohne
+// diese Schritte stuende nach einem Reload alt und neu doppelt im Chat (#129). `withReplacedReply` ist
+// false, wenn es keine neue Antwort gibt (Stopp vor dem ersten Wort): dann bleibt die alte stehen.
+async function dropOldVersion(args: {
+  supabase: SupabaseClient;
+  userId: string;
+  conversationId: string;
+  input: ChatRequest;
+  userMessageId: string | null;
+  inheritFrom: string | undefined;
+  withReplacedReply: boolean;
+}): Promise<void> {
+  const { supabase, userId, conversationId, input, userMessageId, inheritFrom, withReplacedReply } = args;
+  // Beim Neu-Erzeugen (C-2) faellt die alte Antwort JETZT weg, nicht
+  // vorher: waere sie schon beim Start geloescht worden, stuende der
+  // Nutzer nach einem gescheiterten Anbieter-Aufruf ohne beides da.
+  if (withReplacedReply && input.replaceMessageId) {
+    await dropReplacedReply(supabase, userId, conversationId, input.replaceMessageId);
+  }
+  // Bearbeitete Frage mit Anhaengen: die Dateien wandern jetzt an die
+  // neue Fassung, VOR dem Wegwerfen der alten. Andersherum wuerde die
+  // Kaskade sie mit der alten Zeile loeschen, und dropSupersededMessages
+  // raeumte auch noch ihre Objekte weg. Scheitert das Umhaengen, bleibt
+  // die alte Fassung samt Anhaengen stehen: ein doppelter Eintrag im
+  // Verlauf ist harmlos, verlorene Dateien nicht.
+  let adopted = true;
+  if (inheritFrom && userMessageId) {
+    try {
+      await adoptAttachments({
+        userId,
+        conversationId,
+        fromMessageId: inheritFrom,
+        toMessageId: userMessageId,
+      });
+    } catch (err) {
+      adopted = false;
+      captureError("chat.attachments_adopt_failed", err, { userId });
+    }
+  }
+  // Bearbeitete Frage (C-2): die alte Fassung und alles, was ihr folgte,
+  // faellt jetzt weg — aus demselben Grund erst hier.
+  if (adopted && input.supersededMessageIds?.length) {
+    await dropSupersededMessages(supabase, userId, conversationId, input.supersededMessageIds);
+  }
+}
+
 export function replyStream(args: {
   req: Request;
   supabase: SupabaseClient;
@@ -166,10 +213,37 @@ export function replyStream(args: {
           // geschrieben hat. Genau das war der Verlust, den dieser Planpunkt
           // behebt — vorher war ohne Teiltext der ganze Zug weg, inklusive
           // der eigenen Nachricht.
-          if (reply.trim()) {
-            await completeTurn(supabase, userId, opened.conversationId, reply).catch(() => {});
-          } else {
-            await releaseReservations();
+          //
+          // Mit Teiltext wird die alte Fassung wie nach einem vollstaendigen Zug
+          // weggeraeumt, ohne ihn zeigt der Bildschirm nach einem Stopp schon den
+          // neuen Stand und ein Reload den alten und den neuen zugleich (#129).
+          // Ohne Teiltext gibt es beim Neu-Erzeugen nichts Neues: die alte Antwort
+          // bleibt, die Oberflaeche stellt sie wieder her (run-chat-turn.ts). Beim
+          // Bearbeiten steht die neue Frage (openTurn) und ersetzt die alte so oder so.
+          const hasReply = reply.trim().length > 0;
+          try {
+            if (hasReply) {
+              await completeTurn(supabase, userId, opened.conversationId, reply);
+            } else {
+              await releaseReservations();
+            }
+            if (hasReply || input.supersededMessageIds?.length) {
+              await dropOldVersion({
+                supabase,
+                userId,
+                conversationId: opened.conversationId,
+                input,
+                userMessageId: opened.userMessageId,
+                inheritFrom,
+                withReplacedReply: hasReply,
+              });
+            }
+          } catch (abortErr) {
+            captureError("chat.persist_failed", abortErr, {
+              userId,
+              projectId: verifiedProjectId,
+              aborted: true,
+            });
           }
           // Den Stream trotzdem schliessen. Fuer den echten Abbruch ist das
           // folgenlos (es hoert niemand mehr zu, closeQuietly schluckt den
@@ -228,42 +302,15 @@ export function replyStream(args: {
       let assistantMessageId: string | null = null;
       try {
         assistantMessageId = await completeTurn(supabase, userId, conversationId, reply);
-        // Beim Neu-Erzeugen (C-2) faellt die alte Antwort JETZT weg, nicht
-        // vorher: waere sie schon beim Start geloescht worden, stuende der
-        // Nutzer nach einem gescheiterten Anbieter-Aufruf ohne beides da.
-        if (input.replaceMessageId) {
-          await dropReplacedReply(supabase, userId, conversationId, input.replaceMessageId);
-        }
-        // Bearbeitete Frage mit Anhaengen: die Dateien wandern jetzt an die
-        // neue Fassung, VOR dem Wegwerfen der alten. Andersherum wuerde die
-        // Kaskade sie mit der alten Zeile loeschen, und dropSupersededMessages
-        // raeumte auch noch ihre Objekte weg. Scheitert das Umhaengen, bleibt
-        // die alte Fassung samt Anhaengen stehen: ein doppelter Eintrag im
-        // Verlauf ist harmlos, verlorene Dateien nicht.
-        let adopted = true;
-        if (inheritFrom && opened.userMessageId) {
-          try {
-            await adoptAttachments({
-              userId,
-              conversationId,
-              fromMessageId: inheritFrom,
-              toMessageId: opened.userMessageId,
-            });
-          } catch (err) {
-            adopted = false;
-            captureError("chat.attachments_adopt_failed", err, { userId });
-          }
-        }
-        // Bearbeitete Frage (C-2): die alte Fassung und alles, was ihr folgte,
-        // faellt jetzt weg — aus demselben Grund erst hier.
-        if (adopted && input.supersededMessageIds?.length) {
-          await dropSupersededMessages(
-            supabase,
-            userId,
-            conversationId,
-            input.supersededMessageIds
-          );
-        }
+        await dropOldVersion({
+          supabase,
+          userId,
+          conversationId,
+          input,
+          userMessageId: opened.userMessageId,
+          inheritFrom,
+          withReplacedReply: true,
+        });
       } catch (err) {
         persistError = "persist_failed";
         captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });

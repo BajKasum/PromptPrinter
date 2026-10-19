@@ -278,6 +278,17 @@ export async function runChatTurn(
       // it (the route does the same server-side, best-effort persisting
       // the same partial text, see /api/chat). No celebration for a reply
       // the user cut short; a no-op if stop() already committed it.
+      //
+      // Neu-Erzeugen, gestoppt bevor ein Wort kam (#129): es gibt nichts Neues, die
+      // Route behaelt die alte Antwort. Sie wieder einzusetzen haelt Bildschirm und
+      // Datenbank gleich, ein Reload zeigt dann dasselbe wie vorher.
+      if (replaceMessageId && !accumulated.trim()) {
+        pendingRef.current = null;
+        setPending(null);
+        pendingAssistantIdRef.current = null;
+        setMessages(before);
+        return accumulated;
+      }
       commitReply(accumulated, false);
       return accumulated;
     } else if (!(e instanceof StreamProtocolError) && accumulated.trim().length > 0) {
