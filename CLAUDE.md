@@ -405,8 +405,8 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 
 | Datei | Zustand | Finn |
 |---|---|---|
-| `hero.tsx` | Finn + Sprechblase links, Headline und CTAs rechts, darunter die HeroDemo in drei Stufen (Idee → Rückfrage → Prompt, spiegelt das echte CodeBlock-Chrome aus `chat-markdown.tsx`). „Erst mal zuschauen" springt auf `#produkt`. | `welcoming` + Stage-States |
-| `how-it-works.tsx` | Drei Schritte (Idee → kurz klären → startklar) in flachen `card-surface`-Karten. Trägt `id="funktionen"`, das Sprungziel der Navbar. | `building` |
+| `hero.tsx` | Finn + Sprechblase links, Headline und CTAs rechts, darunter die HeroDemo in drei Stufen (Idee → Rückfrage → Prompt, spiegelt das echte CodeBlock-Chrome aus `chat-markdown.tsx`). „Erst mal zuschauen" springt auf `#produkt`. Unter den Knöpfen eine Zeile zum KI-Key (#126, `landing-key-hint.test.ts`). | `welcoming` + Stage-States |
+| `how-it-works.tsx` | Drei Schritte (Idee → kurz klären → startklar) in flachen `card-surface`-Karten. Trägt `id="funktionen"`, das Sprungziel der Navbar. Darunter die Karte „Einmal vorab" zum KI-Key, bewusst kein vierter Schritt. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau (Chats / Projekte) mit demselben Pillen-Umschalter (`NavSwitcher`) wie die echte Sidebar. Einziges „Schau es dir an"-Element. | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir." | `celebrating` |
 | `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
