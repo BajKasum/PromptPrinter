@@ -20,7 +20,12 @@ export function buildLlmsTxt(): string {
   const base = siteUrl();
 
   const plans = PLANS.map((plan) => {
-    const price = plan.name === "Pro" ? `${PRO_PRICE_EUR.toFixed(2)} €/Monat` : "0 €";
+    // Solange Pro nicht buchbar ist (pro-availability.ts), steht dort kein Preis, den niemand zahlen kann.
+    const price = plan.soon
+      ? "derzeit nicht buchbar"
+      : plan.name === "Pro"
+        ? `${PRO_PRICE_EUR.toFixed(2)} €/Monat`
+        : "0 €";
     return `- ${plan.name} (${price}): ${plan.description}`;
   }).join("\n");
 

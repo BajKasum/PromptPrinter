@@ -6,6 +6,7 @@ import { Button } from "@/shared/ui/button";
 import { ApiKeyField } from "@/shared/ui/api-key-field";
 import { KeyGuide } from "@/shared/ui/key-guide";
 import { useT } from "@/shared/i18n/provider";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 
 // Free chattet seit 30.07.2026 nur mit eigenem Key (plans.ts). Vorher erfuhr
 // ein neues Free-Konto das erst NACH dem Absenden seiner ersten Idee, als rote
@@ -36,7 +37,7 @@ export function ChatKeyNotice({ onConnected }: { onConnected?: () => void }) {
           >
             {t.chat.keyNoticeTitle}
           </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-secondary">{t.chat.keyNoticeBody}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-secondary">{PRO_AVAILABLE ? t.chat.keyNoticeBody : t.chat.keyNoticeBodySoon}</p>
 
           <div className="mt-3">
             <KeyGuide
@@ -54,9 +55,11 @@ export function ChatKeyNotice({ onConnected }: { onConnected?: () => void }) {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild size="sm" variant="ghost">
-              <Link href="/billing">{t.chat.keyNoticeSeePro}</Link>
-            </Button>
+            {PRO_AVAILABLE && (
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/billing">{t.chat.keyNoticeSeePro}</Link>
+              </Button>
+            )}
             <Button asChild size="sm" variant="ghost">
               <Link href="/settings#api-keys">{t.chat.keyNoticeSettings}</Link>
             </Button>

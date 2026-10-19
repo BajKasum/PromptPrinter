@@ -13,6 +13,7 @@ import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { problem } from "@/server/http/api-problem";
 import {
   MAX_SMALL_BODY_BYTES,
@@ -174,7 +175,7 @@ export async function POST(req: Request, { params }: Params) {
     if (limits.chatMessages <= 0) {
       return problem(
         403,
-        m.byokRequired,
+        PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon,
         { kind: "byokRequired", plan }
       );
     }

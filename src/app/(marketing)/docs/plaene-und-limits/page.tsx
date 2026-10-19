@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
 import { docBySlug, docHref } from "@/shared/lib/docs-nav";
 import { PLAN_LIMITS } from "@/shared/lib/plans";
+import { PRO_AVAILABLE, PRO_UNAVAILABLE_PATH } from "@/shared/lib/pro-availability";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 const doc = docBySlug("plaene-und-limits")!;
@@ -48,6 +49,14 @@ export default function Page() {
       </ul>
 
       <h2>Was enthält der Pro-Plan?</h2>
+      {!PRO_AVAILABLE && (
+        <p>
+          <strong>Pro ist gerade nicht buchbar.</strong> Ich schalte das
+          Bezahlen erst frei, wenn ich es sauber betreiben kann. Bis dahin
+          läuft alles über deinen eigenen Key, der Abschnitt beschreibt den
+          Plan, wie er sein wird.
+        </p>
+      )}
       <p>
         Pro läuft <strong>ohne eigenen Key</strong>, ich stelle meinen
         Modellzugang bereit.
@@ -72,8 +81,17 @@ export default function Page() {
         <Link href="/datenschutz">Datenschutzerklärung</Link>.
       </p>
       <p>
-        Die aktuellen Preise stehen auf der{" "}
-        <Link href="/pricing">Preisseite</Link>.
+        {PRO_AVAILABLE ? (
+          <>
+            Die aktuellen Preise stehen auf der{" "}
+            <Link href="/pricing">Preisseite</Link>.
+          </>
+        ) : (
+          <>
+            Warum Pro noch nicht buchbar ist, steht{" "}
+            <Link href={PRO_UNAVAILABLE_PATH}>hier</Link>.
+          </>
+        )}
       </p>
 
       <h2>Was zählt gegen mein Monatskontingent?</h2>

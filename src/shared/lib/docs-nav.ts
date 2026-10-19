@@ -98,7 +98,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Pläne und Limits",
         summary:
           "Was Free und Pro genau enthalten, welche Grenzen wirklich zählen und wann ein eigener Key sie aufhebt.",
-        updated: "2026-10-17",
+        updated: "2026-10-19",
       },
     ],
   },

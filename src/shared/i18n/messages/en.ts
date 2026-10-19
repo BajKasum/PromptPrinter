@@ -108,6 +108,8 @@ export const en: Messages = {
     keyNoticeTitle: "Before we start, I need your own AI key.",
     keyNoticeBody:
       "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
+    keyNoticeBodySoon:
+      "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way.",
     keyNoticeSettings: "Another provider? Go to settings",
     keyNoticeSeePro: "See Pro",
     consentTitle: "Your messages go to Z.ai in Singapore",
@@ -548,6 +550,7 @@ export const en: Messages = {
         "You can cancel and change your payment method through the link in your Lemon Squeezy purchase confirmation.",
       manage: "Manage subscription",
       upsellTitle: "More room with Pro",
+      upsellTitleSoon: "Pro comes later",
       compare: "Compare Free and Pro",
       getPro: "Get Pro, {price} per {cadence}",
       thanksAuto: "Thanks! Your payment has arrived. Reload the page once and Pro is active.",
@@ -565,6 +568,8 @@ export const en: Messages = {
       noteByok: "With your own key, the chat limit goes away. The project limit stays.",
       noteFree:
         "On Free, chatting needs your own key, that's not a monthly limit you wait out. If the project limit is full, deleting one or Pro helps.",
+      noteFreeSoon:
+        "On Free, chatting needs your own key, that's not a monthly limit you wait out. If the project limit is full, deleting a project helps.",
       notePaid: "If a bar is full, it continues next month.",
       projects: "Projects",
       chatMessages: "Chat messages",
@@ -594,6 +599,7 @@ export const en: Messages = {
     plans: {
       title: "Plans",
       subtitle: "Free with your own AI key, or Pro if I take care of the key for you.",
+      subtitleSoon: "Free with your own AI key. Pro, where I take care of the key for you, isn't available yet.",
       needKey: "On Free, you need your own key to chat.",
       addKey: "Add a key",
       backToFree:
@@ -647,6 +653,8 @@ export const en: Messages = {
       "Before I answer, I need your consent for your messages to go to Z.ai in Singapore. You can give it in the chat or in settings.",
     byokRequired:
       "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings, or switch to Pro.",
+    byokRequiredSoon:
+      "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings.",
     chatLimit:
       "Monthly chat message limit reached, your plan ({plan}) allows {limit} per month. It continues next month, or add your own API key in the settings.",
     tooManyRequests: "Too many requests, please wait a moment and try again.",
@@ -718,6 +726,13 @@ export const en: Messages = {
         "Prompts for any AI and any task",
         "Markdown export",
       ],
+    },
+    proSoon: {
+      price: "Later",
+      description:
+        "If you don't want to set up your own key, I'll take care of it for you at some point. Pro can't be booked right now.",
+      badge: "Not available yet",
+      cta: "Why not yet?",
     },
     pro: {
       description: "If you don't want to set up your own key, I take care of it for you.",

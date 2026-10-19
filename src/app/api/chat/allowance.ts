@@ -9,6 +9,7 @@ import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { problem } from "@/server/http/api-problem";
 import type { Messages } from "@/shared/i18n/messages/de";
 import { fmt } from "@/shared/i18n/format";
@@ -101,7 +102,8 @@ export async function reserveAllowance(args: {
     if (limits.chatMessages <= 0) {
       return problem(
         403,
-        m.byokRequired,
+        // Ohne buchbaren Pro-Plan darf die Meldung nicht zu Pro raten (pro-availability.ts).
+        PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon,
         { kind: "byokRequired", plan }
       );
     }

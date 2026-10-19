@@ -6,6 +6,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
 import { localizePlans, type MarketingPlan } from "@/shared/lib/pricing";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { PLAN_LIMITS, toPlanKey } from "@/shared/lib/plans";
 import { cn } from "@/shared/lib/utils";
 import { fmt, rich } from "@/shared/i18n/format";
@@ -55,7 +56,10 @@ export default async function PlansPage() {
   // schaltet niemand automatisch frei, dann sagt der Text das auch.
   const activatesAutomatically = Boolean(process.env.LEMON_SQUEEZY_WEBHOOK_SECRET);
 
-  const plans = localizePlans(t, locale);
+  // Wer Pro schon hat (auch ein Admin), sieht den echten Plan. Alle anderen sehen ihn nur, solange er
+  // buchbar ist (pro-availability.ts), sonst eine ruhige Karte ohne Preis, Empfehlung und Kaufknopf.
+  const proOffered = PRO_AVAILABLE || onPro || isAdmin;
+  const plans = localizePlans(t, locale, proOffered);
   const free = plans.find((p) => p.name === "Free");
   const pro = plans.find((p) => p.name === "Pro");
   if (!free || !pro) return null;
@@ -68,7 +72,9 @@ export default async function PlansPage() {
             <h1 className="text-[32px] md:text-[40px] leading-[1.05] tracking-[-0.03em] font-semibold text-foreground">
               {m.title}
             </h1>
-            <p className="mt-1.5 max-w-xl text-[14px] text-secondary">{m.subtitle}</p>
+            <p className="mt-1.5 max-w-xl text-[14px] text-secondary">
+              {pro.soon ? m.subtitleSoon : m.subtitle}
+            </p>
           </div>
           <div className="pb-0.5">
             <PlanBadge plan={planKey} isAdmin={isAdmin} />
@@ -125,6 +131,13 @@ export default async function PlansPage() {
                   {m.manage}
                 </Link>
               </>
+            ) : pro.soon ? (
+              <Link
+                href={pro.href}
+                className="mt-6 inline-flex text-[13px] font-medium text-accent-text underline underline-offset-2 hover:text-accent-text/80"
+              >
+                {pro.cta}
+              </Link>
             ) : (
               <>
                 <LemonCheckoutButton
@@ -148,7 +161,7 @@ export default async function PlansPage() {
       </div>
 
       <FadeIn delay={0.16}>
-        <ComparisonTable m={m} />
+        <ComparisonTable m={m} proOffered={proOffered} />
       </FadeIn>
     </div>
   );
@@ -231,7 +244,7 @@ function PlanCard({
         >
           {plan.price}
         </span>
-        <span className="text-[13px] text-tertiary">/ {plan.cadence}</span>
+        {plan.cadence && <span className="text-[13px] text-tertiary">/ {plan.cadence}</span>}
       </div>
       {plan.badge && (
         <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-subtle px-2.5 py-1 text-[12px] font-medium text-accent-text">
@@ -261,9 +274,9 @@ type Cell = string | boolean;
 
 // Zeile für Zeile aus plans.ts/pricing.ts abgeleitet, keine zweite Wahrheit.
 // PDF nur für Pro: prompts/page.tsx und results/page.tsx schalten es genau so.
-function comparisonRows(m: PlansCopy): { label: string; free: Cell; pro: Cell }[] {
+function comparisonRows(m: PlansCopy, proOffered: boolean): { label: string; free: Cell; pro: Cell }[] {
   const r = m.rows;
-  return [
+  const rows = [
     { label: r.access, free: r.accessFree, pro: r.accessPro },
     {
       label: r.replies,
@@ -283,9 +296,11 @@ function comparisonRows(m: PlansCopy): { label: string; free: Cell; pro: Cell }[
     { label: r.pdf, free: false, pro: true },
     { label: r.cancel, free: r.cancelFree, pro: r.cancelPro },
   ];
+  // Die Erstattungszusage gehört zu einem Plan, den man buchen kann (pro-availability.ts).
+  return proOffered ? rows : rows.filter((row) => row.label !== r.cancel);
 }
 
-function ComparisonTable({ m }: { m: PlansCopy }) {
+function ComparisonTable({ m, proOffered }: { m: PlansCopy; proOffered: boolean }) {
   return (
     <section className="mt-14 max-w-4xl">
       <h2 className="mb-5 text-[15px] font-semibold text-foreground">{m.compareTitle}</h2>
@@ -312,7 +327,7 @@ function ComparisonTable({ m }: { m: PlansCopy }) {
             </tr>
           </thead>
           <tbody>
-            {comparisonRows(m).map((row) => (
+            {comparisonRows(m, proOffered).map((row) => (
               <tr key={row.label} className="border-b border-border last:border-b-0">
                 <th scope="row" className="px-4 py-3 font-medium text-foreground">
                   {row.label}

@@ -115,6 +115,8 @@ export const de = {
     keyNoticeTitle: "Bevor wir loslegen, brauche ich deinen eigenen KI-Key.",
     keyNoticeBody:
       "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
+    keyNoticeBodySoon:
+      "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso.",
     keyNoticeSettings: "Anderer Anbieter? Zu den Einstellungen",
     keyNoticeSeePro: "Pro ansehen",
     consentTitle: "Deine Nachrichten gehen an Z.ai in Singapur",
@@ -562,6 +564,7 @@ export const de = {
         "Kündigen und Zahlungsmittel ändern kannst du über den Link in deiner Kaufbestätigung von Lemon Squeezy.",
       manage: "Abo verwalten",
       upsellTitle: "Mehr Spielraum mit Pro",
+      upsellTitleSoon: "Pro kommt später",
       compare: "Free und Pro im Vergleich",
       getPro: "Pro holen, {price} pro {cadence}",
       thanksAuto: "Danke! Deine Zahlung ist angekommen. Lad die Seite einmal neu, dann ist Pro aktiv.",
@@ -581,6 +584,8 @@ export const de = {
       noteByok: "Mit deinem eigenen Key entfällt das Chat-Limit. Das Projekt-Limit bleibt bestehen.",
       noteFree:
         "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen oder Pro.",
+      noteFreeSoon:
+        "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen.",
       notePaid: "Ist ein Balken voll, geht's erst im nächsten Monat weiter.",
       projects: "Projekte",
       chatMessages: "Chat-Nachrichten",
@@ -610,6 +615,7 @@ export const de = {
     plans: {
       title: "Tarife",
       subtitle: "Free mit deinem eigenen KI-Key, oder Pro, wenn ich den Key für dich übernehme.",
+      subtitleSoon: "Free mit deinem eigenen KI-Key. Pro, bei dem ich den Key für dich übernehme, gibt es noch nicht.",
       needKey: "Zum Chatten brauchst du auf Free deinen eigenen Key.",
       addKey: "Key hinterlegen",
       backToFree:
@@ -665,6 +671,8 @@ export const de = {
       "Bevor ich antworte, brauche ich deine Zustimmung, dass deine Nachrichten an Z.ai in Singapur gehen. Du kannst sie im Chat oder in den Einstellungen erteilen.",
     byokRequired:
       "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
+    byokRequiredSoon:
+      "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen.",
     chatLimit:
       "Monatslimit für Chat-Nachrichten erreicht, dein Plan ({plan}) erlaubt {limit} pro Monat. Nächsten Monat geht's weiter, oder hinterlege einen eigenen API-Key in den Einstellungen.",
     tooManyRequests: "Zu viele Anfragen, bitte warte kurz und versuch es erneut.",
@@ -744,6 +752,13 @@ export const de = {
         "Prompts für jede KI und jede Aufgabe",
         "Markdown-Export",
       ],
+    },
+    proSoon: {
+      price: "Später",
+      description:
+        "Wenn du keinen eigenen Key einrichten willst, übernehme ich das irgendwann für dich. Buchen kann man Pro im Moment nicht.",
+      badge: "Noch nicht verfügbar",
+      cta: "Warum noch nicht?",
     },
     pro: {
       description: "Wenn du keinen eigenen Key einrichten willst, übernehme ich das für dich.",

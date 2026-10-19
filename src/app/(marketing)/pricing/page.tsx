@@ -4,13 +4,15 @@ import { PageHeader } from "@/features/marketing/components/page-header";
 import { FAQ } from "@/features/marketing/components/faq";
 import { faqs } from "@/features/marketing/lib/faq-data";
 import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { JsonLd } from "@/shared/ui/json-ld";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
   title: "Preise",
-  description:
-    `Free läuft mit deinem eigenen KI-Key komplett gratis. Ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`,
+  description: PRO_AVAILABLE
+    ? `Free läuft mit deinem eigenen KI-Key komplett gratis. Ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`
+    : "Free läuft mit deinem eigenen KI-Key komplett gratis. Pro, bei dem ich den Key für dich übernehme, gibt es noch nicht.",
   path: "/pricing",
 });
 
@@ -48,7 +50,9 @@ export default function PricingPage() {
         headline={
           <>
             Bring deinen eigenen Key mit.{" "}
-            <span className="text-accent-text">Oder ich übernehme das für dich.</span>
+            <span className="text-accent-text">
+              {PRO_AVAILABLE ? "Oder ich übernehme das für dich." : "Dann kostet dich die App nichts."}
+            </span>
           </>
         }
       />

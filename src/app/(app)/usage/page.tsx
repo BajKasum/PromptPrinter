@@ -7,6 +7,7 @@ import { UsageMeter } from "@/features/settings/components/usage-meter";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { getConfiguredProviders } from "@/server/byok";
 import {
   chatQuotaKey,
@@ -102,7 +103,9 @@ export default async function UsagePage() {
     : hasByok
       ? m.noteByok
       : isFree
-        ? m.noteFree
+        ? PRO_AVAILABLE
+          ? m.noteFree
+          : m.noteFreeSoon
         : m.notePaid;
 
   return (
