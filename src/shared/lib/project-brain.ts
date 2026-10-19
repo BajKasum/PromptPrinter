@@ -1,4 +1,4 @@
-import { z } from "@/shared/lib/zod";
+import * as z from "@/shared/lib/zod";
 import { truncate } from "@/shared/lib/chat-limits";
 
 // Das Projekt-Gedächtnis ("AI Project Brain"): was PromptPrinter über den

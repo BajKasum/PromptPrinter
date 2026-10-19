@@ -1,4 +1,4 @@
-import { z } from "@/shared/lib/zod";
+import * as z from "@/shared/lib/zod";
 
 /**
  * Das Kontaktformular auf /kontakt: Themen, Grenzen und das Schema, das der
