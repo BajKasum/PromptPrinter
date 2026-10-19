@@ -80,9 +80,11 @@ describe("marketed plans match enforced limits", () => {
   });
 
   it("keeps Pro's price and the free tier's zero price in sync with the config", async () => {
-    const { PLANS, PRO_PRICE_LABEL } = await import("@/shared/lib/pricing");
-    expect(PLANS.find((p) => p.name === "Free")?.price).toBe("0 €");
-    expect(PLANS.find((p) => p.name === "Pro")?.price).toBe(PRO_PRICE_LABEL);
+    // Der buchbare Plan; ohne Schalter zeigt PLANS "Später" (pricing.test.ts).
+    const { buildPlans, PRO_PRICE_LABEL } = await import("@/shared/lib/pricing");
+    const plans = buildPlans(true);
+    expect(plans.find((p) => p.name === "Free")?.price).toBe("0 €");
+    expect(plans.find((p) => p.name === "Pro")?.price).toBe(PRO_PRICE_LABEL);
   });
 
   // The old badge claimed a Pro/Free usage multiplier ("10× mehr Nutzung").
@@ -91,8 +93,8 @@ describe("marketed plans match enforced limits", () => {
   // — asserted literally, so a future edit can't quietly reintroduce a
   // numeric claim with nothing to back it.
   it("pro's badge states the real differentiator, not a stale usage multiplier", async () => {
-    const { PLANS } = await import("@/shared/lib/pricing");
-    const pro = PLANS.find((p) => p.name === "Pro");
+    const { buildPlans } = await import("@/shared/lib/pricing");
+    const pro = buildPlans(true).find((p) => p.name === "Pro");
 
     expect(pro?.badge).toBe("Kein eigener Key nötig");
     expect(pro?.badge).not.toMatch(/\d+\s*×/);

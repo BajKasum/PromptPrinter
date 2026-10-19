@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import {
   COMPARISONS,
   COMPARISONS_UPDATED,
@@ -55,12 +56,16 @@ describe("Vergleiche", () => {
 
   // Regel 3: der Preis kommt aus pricing.ts. Steht irgendwo ein Euro-Betrag,
   // muss es genau dieser sein, keine zweite Zahl von Hand.
-  it("nennt keinen anderen Preis als den der Preisseite", () => {
+  it("nennt keinen anderen Preis als den der Preisseite, und keinen, solange Pro nicht buchbar ist", () => {
     const text = JSON.stringify(COMPARISONS);
     const amounts = text.match(/\d+(?:,\d+)?\s?€/g) ?? [];
 
-    expect(amounts.length).toBeGreaterThan(0);
-    for (const amount of amounts) expect(amount).toBe(PRO_PRICE_LABEL);
+    if (PRO_AVAILABLE) {
+      expect(amounts.length).toBeGreaterThan(0);
+      for (const amount of amounts) expect(amount).toBe(PRO_PRICE_LABEL);
+    } else {
+      expect(amounts).toEqual([]);
+    }
   });
 
   it("verlinkt nur auf interne Seiten", () => {

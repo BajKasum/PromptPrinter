@@ -164,7 +164,7 @@ export default async function BillingPage() {
             <div className="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
               <div className="max-w-sm">
                 <h2 className="text-[17px] font-semibold text-foreground">
-                  {t.pages.billing.upsellTitle}
+                  {pro.soon ? t.pages.billing.upsellTitleSoon : t.pages.billing.upsellTitle}
                 </h2>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-secondary">
                   {pro.description}
@@ -175,12 +175,22 @@ export default async function BillingPage() {
                 >
                   {t.pages.billing.compare}
                 </Link>
-                <div className="mt-4 flex items-baseline gap-1.5">
-                  <span className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">
-                    {pro.price}
-                  </span>
-                  <span className="text-[12.5px] text-tertiary">/ {pro.cadence}</span>
-                </div>
+                {/* Pro nicht buchbar (pro-availability.ts): kein Preis, kein Kaufknopf, nur der Weg zur Erklärung. */}
+                {pro.soon ? (
+                  <Link
+                    href={pro.href}
+                    className="mt-4 inline-flex text-[13px] font-medium text-accent-text underline underline-offset-2 hover:text-accent-text/80"
+                  >
+                    {pro.cta}
+                  </Link>
+                ) : (
+                  <div className="mt-4 flex items-baseline gap-1.5">
+                    <span className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">
+                      {pro.price}
+                    </span>
+                    <span className="text-[12.5px] text-tertiary">/ {pro.cadence}</span>
+                  </div>
+                )}
               </div>
               <ul className="space-y-2.5 md:min-w-[260px]">
                 {proDelta.map((f) => (
@@ -191,37 +201,39 @@ export default async function BillingPage() {
                 ))}
               </ul>
             </div>
-            <div className="mt-6 border-t border-border pt-5">
-              {/* Der einzige Ort im Produkt, an dem Mail UND Konto-ID bekannt
-                  sind — beide reisen mit der Bestellung mit, damit eine
-                  eingegangene Zahlung ohne Rückfrage dem richtigen Konto
-                  zugeordnet werden kann. */}
-              <LemonCheckoutButton
-                email={user.email}
-                userId={user.id}
-                fallbackHref="/pricing"
-                className="w-full sm:w-auto"
-                // M-5 (Audit 06.09.2026): stand vorher immer auf "ich schalte
-                // von Hand frei", direkt ueber dem Hinweis zwei Zeilen weiter
-                // unten, der bei gesetztem Webhook-Secret das Gegenteil sagt
-                // ("schaltet sich von selbst frei") — der Kaeufer las beide
-                // Saetze gleichzeitig im selben Kasten. Beide haengen jetzt
-                // an derselben activatesAutomatically-Bedingung.
-                successMessage={
-                  activatesAutomatically ? t.pages.billing.thanksAuto : t.pages.billing.thanksManual
-                }
-              >
-                {fmt(t.pages.billing.getPro, { price: pro.price, cadence: pro.cadence })}
-              </LemonCheckoutButton>
-              <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-relaxed text-tertiary">
-                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
-                <span>
-                  {activatesAutomatically
-                    ? t.pages.billing.activatesAuto
-                    : t.pages.billing.activatesManual}
-                </span>
-              </p>
-            </div>
+            {!pro.soon && (
+              <div className="mt-6 border-t border-border pt-5">
+                {/* Der einzige Ort im Produkt, an dem Mail UND Konto-ID bekannt
+                    sind — beide reisen mit der Bestellung mit, damit eine
+                    eingegangene Zahlung ohne Rückfrage dem richtigen Konto
+                    zugeordnet werden kann. */}
+                <LemonCheckoutButton
+                  email={user.email}
+                  userId={user.id}
+                  fallbackHref="/pricing"
+                  className="w-full sm:w-auto"
+                  // M-5 (Audit 06.09.2026): stand vorher immer auf "ich schalte
+                  // von Hand frei", direkt ueber dem Hinweis zwei Zeilen weiter
+                  // unten, der bei gesetztem Webhook-Secret das Gegenteil sagt
+                  // ("schaltet sich von selbst frei") — der Kaeufer las beide
+                  // Saetze gleichzeitig im selben Kasten. Beide haengen jetzt
+                  // an derselben activatesAutomatically-Bedingung.
+                  successMessage={
+                    activatesAutomatically ? t.pages.billing.thanksAuto : t.pages.billing.thanksManual
+                  }
+                >
+                  {fmt(t.pages.billing.getPro, { price: pro.price, cadence: pro.cadence })}
+                </LemonCheckoutButton>
+                <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-relaxed text-tertiary">
+                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+                  <span>
+                    {activatesAutomatically
+                      ? t.pages.billing.activatesAuto
+                      : t.pages.billing.activatesManual}
+                  </span>
+                </p>
+              </div>
+            )}
           </section>
         </FadeIn>
       )}

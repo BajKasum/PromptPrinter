@@ -13,6 +13,7 @@ import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
 import {
   MIN_PASSWORD_LENGTH,
@@ -248,15 +249,17 @@ export function SignUpExperience() {
           Konto erstellen
         </h1>
         <p className="text-[15px] font-light text-secondary">
-          Kostenlos und ohne Kreditkarte. Zum Chatten brauchst du einen eigenen KI-Key oder Pro.
+          {PRO_AVAILABLE
+            ? "Kostenlos und ohne Kreditkarte. Zum Chatten brauchst du einen eigenen KI-Key oder Pro."
+            : "Kostenlos und ohne Kreditkarte. Zum Chatten brauchst du einen eigenen KI-Key."}
         </p>
       </div>
 
       {wantsPro && (
         <div className="rounded-lg border border-accent/30 bg-accent-subtle px-3.5 py-3 text-[13px] leading-relaxed text-accent-text">
-          Du kommst über Pro. Erstell hier zuerst dein Konto, buchen kannst du
-          direkt danach unter Abrechnung. Bis dahin läuft es auf Free, mit
-          vollem Funktionsumfang über deinen eigenen API-Key.
+          {PRO_AVAILABLE
+            ? "Du kommst über Pro. Erstell hier zuerst dein Konto, buchen kannst du direkt danach unter Abrechnung. Bis dahin läuft es auf Free, mit vollem Funktionsumfang über deinen eigenen API-Key."
+            : "Du kommst über Pro. Das gibt es noch nicht, ein Konto kannst du trotzdem anlegen: Free läuft mit vollem Funktionsumfang über deinen eigenen API-Key."}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { PLAN_LIMITS } from "@/shared/lib/plans";
 import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS, type Locale } from "@/shared/i18n/locales";
 import type { Messages } from "@/shared/i18n/messages/de";
+import { PRO_AVAILABLE, PRO_UNAVAILABLE_PATH } from "@/shared/lib/pro-availability";
 
 // The marketed price and what each plan actually gets. One source, because
 // this used to live inside the pricing-grid component while the ENFORCED
@@ -69,69 +70,101 @@ export type MarketingPlan = {
   /** Short value pill shown under the price (e.g. "Kein eigener Key nötig"). */
   badge?: string;
   highlight: boolean;
+  /**
+   * Der Plan ist gerade nicht buchbar (pro-availability.ts). Dann trägt die Karte weder Preis noch
+   * Empfehlung noch Kaufknopf noch Erstattungstext, `cta` führt auf die Erklärung statt in den Checkout.
+   */
+  soon?: boolean;
   /** Mascot state for this plan's card — Finn reacts to what you pick. */
   mascot: "curious" | "celebrating";
   features: string[];
 };
 
-export const PLANS: MarketingPlan[] = [
-  {
-    name: "Free",
-    price: "0 €",
-    cadence: "für immer",
-    description: "Bring deinen eigenen KI-Key mit, dann ist die App komplett gratis für dich.",
-    cta: "Kostenlos starten",
-    href: "/signup",
-    highlight: false,
-    mascot: "curious",
-    features: [
-      // Led with the requirement, not framed as an optional perk: this is
-      // what makes Free free. Without a key, Free can't chat at all — see
-      // this file's own top comment for why.
-      "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
-      // "ohne Monatslimit" statt "unbegrenzt": auch mit eigenem Key greift
-      // der stuendliche Missbrauchsschutz (AGB Ziffer 8). "Unbegrenzt" war
-      // damit eine Zusage, die der Code nicht haelt (Rechts-Audit 28.09.2026).
-      "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
-      `Bis zu ${PLAN_LIMITS.free.projects} Projekte`,
-      "Prompts für jede KI und jede Aufgabe",
-      "Markdown-Export",
-    ],
-  },
-  {
-    name: "Pro",
-    price: PRO_PRICE_LABEL,
-    cadence: "Monat",
-    description: "Wenn du keinen eigenen Key einrichten willst, übernehme ich das für dich.",
-    // Der Knopf führt seit dem 04.08.2026 in den Checkout (Lemon Squeezy),
-    // nicht mehr auf eine Warteliste. Davor stand hier "Für Pro vormerken"
-    // samt Notiz, dass Bezahlung nicht freigeschaltet ist — die Fassung, mit
-    // der QA-Befund U-2 den Widerspruch "Knopf verspricht einen Kauf, den es
-    // nicht gibt" ehrlich stillgelegt hatte, bis es den Kauf wirklich gibt.
-    //
-    // `href` bleibt der Weg für den Fall, dass kein Checkout konfiguriert ist
-    // (siehe `checkout` oben): dann ist Registrieren immer noch das Richtige.
-    cta: "Pro holen",
-    href: "/signup?plan=pro",
-    checkout: true,
-    note: "Monatlich kündbar. Auf die erste Zahlung gibt es 14 Tage Geld zurück, ohne Begründung.",
-    badge: "Kein eigener Key nötig",
-    highlight: true,
-    mascot: "celebrating",
-    features: [
-      "Alles aus Free",
-      // Gezaehlt werden Chat-Antworten (plans.ts), nicht fertige Prompts: ein
-      // Prompt braucht mindestens zwei Antworten (Rueckfrage, dann Prompt).
-      // "400 Prompts" versprach damit rund das Doppelte dessen, was das
-      // Kontingent hergibt, und widersprach /docs/plaene-und-limits, das
-      // schon "Chat-Antworten" sagt (Rechts-Audit 28.09.2026).
-      `${PLAN_LIMITS.pro.chatMessages} Chat-Antworten pro Monat mit meiner KI`,
-      "Kein eigener Key nötig",
-      "Unbegrenzt viele Projekte",
-      "PDF- & Markdown-Export",
-    ],
-  },
+const FREE_PLAN: MarketingPlan = {
+  name: "Free",
+  price: "0 €",
+  cadence: "für immer",
+  description: "Bring deinen eigenen KI-Key mit, dann ist die App komplett gratis für dich.",
+  cta: "Kostenlos starten",
+  href: "/signup",
+  highlight: false,
+  mascot: "curious",
+  features: [
+    // Led with the requirement, not framed as an optional perk: this is
+    // what makes Free free. Without a key, Free can't chat at all — see
+    // this file's own top comment for why.
+    "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
+    // "ohne Monatslimit" statt "unbegrenzt": auch mit eigenem Key greift
+    // der stuendliche Missbrauchsschutz (AGB Ziffer 8). "Unbegrenzt" war
+    // damit eine Zusage, die der Code nicht haelt (Rechts-Audit 28.09.2026).
+    "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
+    `Bis zu ${PLAN_LIMITS.free.projects} Projekte`,
+    "Prompts für jede KI und jede Aufgabe",
+    "Markdown-Export",
+  ],
+};
+
+const PRO_FEATURES = [
+  "Alles aus Free",
+  // Gezaehlt werden Chat-Antworten (plans.ts), nicht fertige Prompts: ein
+  // Prompt braucht mindestens zwei Antworten (Rueckfrage, dann Prompt).
+  // "400 Prompts" versprach damit rund das Doppelte dessen, was das
+  // Kontingent hergibt, und widersprach /docs/plaene-und-limits, das
+  // schon "Chat-Antworten" sagt (Rechts-Audit 28.09.2026).
+  `${PLAN_LIMITS.pro.chatMessages} Chat-Antworten pro Monat mit meiner KI`,
+  "Kein eigener Key nötig",
+  "Unbegrenzt viele Projekte",
+  "PDF- & Markdown-Export",
 ];
+
+const PRO_PLAN: MarketingPlan = {
+  name: "Pro",
+  price: PRO_PRICE_LABEL,
+  cadence: "Monat",
+  description: "Wenn du keinen eigenen Key einrichten willst, übernehme ich das für dich.",
+  // Der Knopf führt seit dem 04.08.2026 in den Checkout (Lemon Squeezy),
+  // nicht mehr auf eine Warteliste. Davor stand hier "Für Pro vormerken"
+  // samt Notiz, dass Bezahlung nicht freigeschaltet ist — die Fassung, mit
+  // der QA-Befund U-2 den Widerspruch "Knopf verspricht einen Kauf, den es
+  // nicht gibt" ehrlich stillgelegt hatte, bis es den Kauf wirklich gibt.
+  //
+  // `href` bleibt der Weg für den Fall, dass kein Checkout konfiguriert ist
+  // (siehe `checkout` oben): dann ist Registrieren immer noch das Richtige.
+  cta: "Pro holen",
+  href: "/signup?plan=pro",
+  checkout: true,
+  note: "Monatlich kündbar. Auf die erste Zahlung gibt es 14 Tage Geld zurück, ohne Begründung.",
+  badge: "Kein eigener Key nötig",
+  highlight: true,
+  mascot: "celebrating",
+  features: PRO_FEATURES,
+};
+
+// Solange Pro nicht buchbar ist (pro-availability.ts), sagt jede Stelle, die Pro nennt, das schon
+// vorher: kein Preis, keine Empfehlung, kein Kaufknopf, kein Erstattungstext. Die Karte bleibt als
+// Vorschau stehen und führt auf die Erklärung. Ein bestehender Pro-Nutzer sieht weiter den echten
+// Plan (localizePlans mit proAvailable = true).
+const PRO_PLAN_SOON: MarketingPlan = {
+  name: "Pro",
+  price: "Später",
+  cadence: "",
+  description:
+    "Wenn du keinen eigenen Key einrichten willst, übernehme ich das irgendwann für dich. Buchen kann man Pro im Moment nicht.",
+  cta: "Warum noch nicht?",
+  href: PRO_UNAVAILABLE_PATH,
+  badge: "Noch nicht verfügbar",
+  highlight: false,
+  soon: true,
+  mascot: "curious",
+  features: PRO_FEATURES,
+};
+
+/** Die Pläne, wie sie jetzt angeboten werden. `proAvailable` ist in Tests umschaltbar. */
+export function buildPlans(proAvailable: boolean): MarketingPlan[] {
+  return [FREE_PLAN, proAvailable ? PRO_PLAN : PRO_PLAN_SOON];
+}
+
+export const PLANS: MarketingPlan[] = buildPlans(PRO_AVAILABLE);
 
 /**
  * Preis als Text in der Sprache der App. Deutsch wie auf der Preisseite
@@ -157,14 +190,29 @@ export function formatPlanPrice(amount: number, locale: Locale): string {
  * (t.planCopy), die Zahlen darin setzt diese Funktion aus PLAN_LIMITS ein.
  * Die öffentliche Preisseite bleibt Deutsch und liest PLANS direkt.
  */
-export function localizePlans(t: Messages, locale: Locale): MarketingPlan[] {
+export function localizePlans(
+  t: Messages,
+  locale: Locale,
+  proAvailable: boolean = PRO_AVAILABLE
+): MarketingPlan[] {
   const vars = {
     projects: PLAN_LIMITS.free.projects,
     chatMessages: PLAN_LIMITS.pro.chatMessages,
   };
-  return PLANS.map((plan) => {
+  return buildPlans(proAvailable).map((plan) => {
     const isPro = plan.name === "Pro";
     const copy = isPro ? t.planCopy.pro : t.planCopy.free;
+    if (plan.soon) {
+      const soon = t.planCopy.proSoon;
+      return {
+        ...plan,
+        price: soon.price,
+        description: soon.description,
+        badge: soon.badge,
+        cta: soon.cta,
+        features: copy.features.map((f) => fmt(f, vars)),
+      };
+    }
     return {
       ...plan,
       price: formatPlanPrice(isPro ? PRO_PRICE_EUR : 0, locale),

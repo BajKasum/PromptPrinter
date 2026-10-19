@@ -108,6 +108,8 @@ export const it: Messages = {
     keyNoticeTitle: "Prima di iniziare, mi serve la tua chiave IA.",
     keyNoticeBody:
       "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
+    keyNoticeBodySoon:
+      "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo.",
     keyNoticeSettings: "Un altro fornitore? Vai alle impostazioni",
     keyNoticeSeePro: "Scopri Pro",
     consentTitle: "I tuoi messaggi vanno a Z.ai a Singapore",
@@ -549,6 +551,7 @@ export const it: Messages = {
         "Puoi disdire e cambiare metodo di pagamento tramite il link nella conferma d'acquisto di Lemon Squeezy.",
       manage: "Gestisci l'abbonamento",
       upsellTitle: "Più spazio con Pro",
+      upsellTitleSoon: "Pro arriverà più avanti",
       compare: "Confronta Free e Pro",
       getPro: "Passa a Pro, {price} al {cadence}",
       thanksAuto: "Grazie! Il tuo pagamento è arrivato. Ricarica la pagina una volta e Pro è attivo.",
@@ -567,6 +570,8 @@ export const it: Messages = {
       noteByok: "Con la tua chiave il limite di chat scompare. Il limite di progetti resta.",
       noteFree:
         "Con Free per chattare serve la tua chiave, non è un limite mensile da aspettare. Se il limite di progetti è pieno, aiuta eliminarne uno o Pro.",
+      noteFreeSoon:
+        "Con Free per chattare serve la tua chiave, non è un limite mensile da aspettare. Se il limite di progetti è pieno, aiuta eliminarne uno.",
       notePaid: "Se una barra è piena, si riparte il mese prossimo.",
       projects: "Progetti",
       chatMessages: "Messaggi in chat",
@@ -596,6 +601,7 @@ export const it: Messages = {
     plans: {
       title: "Piani",
       subtitle: "Free con la tua chiave IA, oppure Pro se della chiave mi occupo io.",
+      subtitleSoon: "Free con la tua chiave IA. Pro, in cui della chiave mi occupo io, non è ancora disponibile.",
       needKey: "Con Free ti serve la tua chiave per chattare.",
       addKey: "Aggiungi una chiave",
       backToFree:
@@ -649,6 +655,8 @@ export const it: Messages = {
       "Prima di rispondere ho bisogno del tuo consenso a inviare i tuoi messaggi a Z.ai a Singapore. Puoi darlo nella chat o nelle impostazioni.",
     byokRequired:
       "Free funziona solo con la tua chiave IA. Aggiungi una chiave Anthropic, OpenAI o Gemini nelle impostazioni, oppure passa a Pro.",
+    byokRequiredSoon:
+      "Free funziona solo con la tua chiave IA. Aggiungi una chiave Anthropic, OpenAI o Gemini nelle impostazioni.",
     chatLimit:
       "Limite mensile di messaggi in chat raggiunto, il tuo piano ({plan}) ne consente {limit} al mese. Si riparte il mese prossimo, oppure aggiungi la tua chiave API nelle impostazioni.",
     tooManyRequests: "Troppe richieste, aspetta un attimo e riprova.",
@@ -720,6 +728,13 @@ export const it: Messages = {
         "Prompt per qualsiasi IA e qualsiasi compito",
         "Esportazione Markdown",
       ],
+    },
+    proSoon: {
+      price: "Più avanti",
+      description:
+        "Se non vuoi configurare una chiave tua, prima o poi me ne occuperò io. Al momento Pro non si può attivare.",
+      badge: "Non ancora disponibile",
+      cta: "Perché non ancora?",
     },
     pro: {
       description: "Se non vuoi configurare una chiave tua, me ne occupo io.",

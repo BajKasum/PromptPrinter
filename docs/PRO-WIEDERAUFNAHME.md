@@ -26,8 +26,16 @@ führt jeder Pro-Knopf auf die Seite `/pro-bald` ("Pro gibt es noch nicht, es tu
   der App, links Name, Preis und Finn, `presentation: "page"`), der Webhook
   (`/api/webhooks/lemonsqueezy`), das Kundenportal, die Kündigung. Ein bestehender Pro-Nutzer (zum
   Beispiel Admin) behält seinen Plan.
+- Die **Texte** hängen am selben Schalter (Issue #125): `buildPlans()` in `src/shared/lib/pricing.ts`
+  liefert ohne Schalter eine ruhige Pro-Karte ("Später", "Noch nicht verfügbar", Link auf `/pro-bald`, kein
+  Preis, keine Empfehlung, keine Erstattungszusage). Dasselbe gilt für `/pricing` (Überschrift, Beschreibung),
+  `/signup`, `/plans`, `/billing`, `/usage`, den Hinweis im leeren Chat, die Fehlermeldung `byokRequired`,
+  die Vergleiche, den Hilfe-Artikel "Pläne und Limits" und `llms.txt`. Die Ersatztexte der App stehen im
+  Wörterbuch als `*Soon` (`planCopy.proSoon`, `chat.keyNoticeBodySoon`, ...). Ein bestehender Pro-Nutzer (auch
+  ein Admin) sieht auf `/plans` weiter den echten Plan.
 - Der Guard `tests/guards/pro-availability.test.ts` hält Schalter, Seite und dieses Dokument zusammen
-  und lässt keinen zweiten Weg am Schalter vorbei zu.
+  und lässt keinen zweiten Weg am Schalter vorbei zu. `src/shared/lib/pricing.test.ts` und
+  `src/features/marketing/components/pricing-grid.test.tsx` halten die Texte fest.
 
 ## Voraussetzungen (Kasum)
 
@@ -43,7 +51,10 @@ führt jeder Pro-Knopf auf die Seite `/pro-bald` ("Pro gibt es noch nicht, es tu
 ## Schritte (Claude)
 
 1. Frischer Branch von `main` (`feat/pro-wieder-an`), Regeln aus CLAUDE.md.
-2. `PRO_AVAILABLE = true` in `src/shared/lib/pro-availability.ts`. Kommentar am Schalter anpassen.
+2. `PRO_AVAILABLE = true` in `src/shared/lib/pro-availability.ts`. Kommentar am Schalter anpassen. Die
+   Texte (Preis, Empfehlung, Erstattung) kommen damit von selbst zurück; die Tests, die den
+   ausgeschalteten Zustand prüfen (`pricing-grid.test.tsx`, `comparisons.test.ts`, der Pro-Absatz in
+   `build-llms-txt.test.ts`), schalten mit dem Schalter um oder müssen angepasst werden.
 3. Die Seite `/pro-bald` auf `/pricing` umleiten (`redirects` in `next.config.ts`) oder löschen.
    Löschen heisst: Ordner, Eintrag in `PUBLIC_PREFIXES` (`src/server/supabase/middleware.ts`) und
    den Guard-Abschnitt in `tests/guards/pro-availability.test.ts` mit entfernen. Der Rest der
