@@ -78,7 +78,7 @@ export async function POST(req: Request) {
   }
 
   if (!isAdmin) {
-    const rl = await rateLimit(rateLimitKey(req, user.id), {
+    const rl = await rateLimit(rateLimitKey(req, "projects", user.id), {
       limit: 30,
       windowMs: 60 * 60 * 1000,
     });

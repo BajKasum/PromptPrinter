@@ -276,7 +276,7 @@ describe("POST /api/chat", () => {
     it("buckets the rate limit by user id, never by a request header", async () => {
       await POST(req());
 
-      expect(rateLimitKey).toHaveBeenCalledWith(expect.anything(), "user-1");
+      expect(rateLimitKey).toHaveBeenCalledWith(expect.anything(), "chat", "user-1");
     });
   });
 

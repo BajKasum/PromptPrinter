@@ -25,7 +25,7 @@ async function change(req: Request, granted: boolean): Promise<Response> {
   } = await supabase.auth.getUser();
   if (!user) return problem(401, m.signInRequired);
 
-  const rl = await rateLimit(`consent:${rateLimitKey(req, user.id)}`, LIMIT);
+  const rl = await rateLimit(rateLimitKey(req, "consent", user.id), LIMIT);
   if (!rl.allowed) {
     return problem(429, m.tooManyRequests, {
       retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
