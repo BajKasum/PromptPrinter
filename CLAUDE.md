@@ -204,41 +204,41 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 ## Arbeitsregeln (verbindlich)
 
 - **Git-Staging immer explizit per Dateiname**, nie `git add .` / `git add -A`.
-- **Gate vor jedem Commit** (siehe oben), alles grün.
+- **Gate vor jedem Push und vor jedem Merge** (siehe oben), alles grün. Je Commit reichen
+  Typecheck und die betroffenen Tests, der volle Lauf dauert Minuten und die CI wiederholt ihn.
 - **Commit-Trailer:** `Co-Authored-By: Claude <aktuelles Modell> <noreply@anthropic.com>`.
-- **Nie direkt auf `main` arbeiten** (Kasums Regel seit 2026-09-23). Jede Arbeit auf
-  einem eigenen Branch (`fix/…`, `feat/…`, `docs/…`, `ci/…`), für jedes Problem ein
-  eigener. **Branches nie löschen**, weder lokal noch auf GitHub (kein
-  `--delete-branch`). **Nie force-pushen.** Soll ein offener Branch den neuen `main`
-  aufnehmen, `git merge main` statt Rebase (der Rebase-Merge des PR schreibt die
-  Commits ohnehin neu).
-- **Nach `main` nur per Pull Request mit "Rebase and merge"** (seit 2026-09-29).
-  Ablauf pro Branch:
-  1. Frischen Branch von aktuellem `main` anlegen (`git pull` vorher). **Nie vom
-     vorherigen Feature-Branch abzweigen**, sonst trägt der neue PR dessen Commits
-     noch einmal mit (die Commits auf `main` haben nach dem Rebase andere IDs).
-  2. Committen, Gate grün, Branch pushen.
-  3. `gh pr create --base main` mit kurzer Beschreibung.
-  4. CI auf dem PR grün abwarten, dann `gh pr merge <nr> --rebase`. **Ein grüner
-     Lauf, der älter als ein paar Stunden ist, zählt nicht:** vorher
-     `gh run rerun <id>` und das Ergebnis abwarten, denn der Merge schreibt einen
-     neuen Commit auf `main`, dessen Lauf den Stand von jetzt prüft (ein neues
-     Advisory färbte so schon einen Commit auf `main` rot).
-  5. Lokal `git checkout main && git pull`, erst danach der nächste Branch.
+- **Git-Arbeitsweise** (Kasum 2026-10-19: "schlau committen, pushen, Branches anlegen"), GitHub Flow:
+  - **Nie direkt auf `main`.** Ein Branch je **Arbeitsgang oder Thema** (`fix/…`, `feat/…`,
+    `docs/…`, `ci/…`), **nicht je Issue, nicht je Commit**: zusammengehörige Korrekturen
+    kommen als mehrere Commits auf einen Branch und in einen PR. Eigener Branch nur für
+    Unabhängiges, das getrennt zurückgenommen oder aufgehalten werden können muss (Migration,
+    riskanter Umbau). Kurz leben lassen (Stunden bis ein Tag), ein PR nach dem anderen.
+  - **Commit** = eine stimmige Änderung (zum Beispiel ein Issue mit Test und Changelog), die
+    Nachricht sagt warum, `Closes #n` schliesst das Issue beim Merge. Nicht winzig stückeln.
+  - **Push** an Zwischenständen (fertiger Teil, vor dem PR, Ende der Sitzung), nicht nach jedem
+    Commit, aber nie eine Sitzung mit ungepushten Commits beenden (Sicherung).
+  - **Pull** (`git pull`) auf `main` vor jedem neuen Branch und nach jedem Merge, im Branch
+    `git merge main`, wenn `main` weiterzog. **Nie force-pushen**, gepushte Branches nie
+    rebasen. **Branches nie löschen**, lokal wie auf GitHub (kein `--delete-branch`).
+- **Nach `main` nur per Pull Request mit "Rebase and merge"** (seit 2026-09-29). Ablauf:
+  1. Branch von aktuellem `main` (`git pull` vorher), **nie vom vorherigen Feature-Branch**
+     (die Commits auf `main` haben nach dem Rebase andere IDs).
+  2. Committen, Gate grün, pushen, `gh pr create --base main` mit kurzer Beschreibung.
+  3. CI auf dem PR grün, dann `gh pr merge <nr> --rebase`. **Ein grüner Lauf, der älter als
+     ein paar Stunden ist, zählt nicht:** vorher `gh run rerun <id>` und abwarten, der Merge
+     schreibt einen neuen Commit auf `main` (ein neues Advisory färbte so schon einen rot).
+  4. Lokal `git checkout main && git pull`, erst danach der nächste Branch.
 
-  Auf `main` hat jeder Commit eine eigene Concurrency-Gruppe, ein Kreuz dort ist also
-  kein abgebrochener Lauf. Wer eines sieht: `gh run rerun <id>`, aber erst wenn auf
-  `main` kein anderer Lauf läuft.
+  Zwei offene Branches, die dieselbe Stelle ändern (etwa den Kopf von `docs/CHANGELOG-2026.md`),
+  lassen sich nach dem ersten Merge nicht mehr per "Rebase and merge" mergen, auch nicht nach
+  `git merge main`: dann `<name>-v2` frisch von `main`, Cherry-Pick, alten PR schliessen
+  (2026-10-19 bei vier PRs nötig). Ein Kreuz auf `main` ist kein abgebrochener Lauf (eigene
+  Concurrency-Gruppe je Commit): `gh run rerun <id>`, wenn auf `main` kein anderer Lauf läuft.
 
-  **Warum Rebase-Merge und kein Fast-Forward:** GitHub zählt Commits, die zuerst auf
-  einem Branch lagen und dann per Fast-Forward nach `main` kamen, großenteils nicht
-  in Kasums Contributions. "Rebase and merge" schreibt sie auf `main` neu, jeder
-  zählt (am 01.10.2026 nachgemessen). **Ungezählte Commits nachträglich zählen
-  lassen** geht über einen Wechsel des Standard-Branches; Ablauf und Messungen:
-  [Changelog, Anhang](docs/CHANGELOG-2026.md#anhang-aus-claudemd-ausgelagert-am-2026-10-06).
-  Dabei **nichts auf `main` pushen oder mergen**, solange der Wechsel läuft.
-- **Nach jeder abgeschlossenen Änderung committen und pushen**, nicht auf Aufforderung
-  warten.
+  **Warum Rebase-Merge:** Per Fast-Forward nach `main` gekommene Commits zählt GitHub großenteils
+  nicht in Kasums Contributions, "Rebase and merge" schreibt sie neu, jeder zählt (01.10.2026
+  nachgemessen). Nachträglich zählen lassen (Standard-Branch kurz wechseln, dabei nichts auf `main`
+  pushen oder mergen): [Changelog, Anhang](docs/CHANGELOG-2026.md#anhang-aus-claudemd-ausgelagert-am-2026-10-06).
 - **Dependabot-PRs** (wöchentlich) nie ohne Kasums Entscheidung mergen, es gibt
   bewusst keinen Auto-Merge. **Nie mergen:** der Vercel-Bot-Branch
   `vercel/install-vercel-web-analytics-…` (PR #1, Draft). Web Analytics ist ein anderes
