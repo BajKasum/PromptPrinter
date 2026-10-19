@@ -94,6 +94,13 @@ export const de = {
     emptyHeadingNamed: "Woran arbeiten wir, {name}?",
     emptyRefine: "Pass deine Prompts an",
     emptyProject: "Woran arbeiten wir hier?",
+    emptyStartersLabel: "Zum Beispiel",
+    emptyStarters: [
+      "Ein Prompt für einen Brief an meinen Vermieter wegen Schimmel",
+      "Ein Prompt für eine 10-Folien-Präsentation über erneuerbare Energien",
+      "Ein Prompt für eine Webseite für unseren Sportverein",
+      "Ein Prompt für einen Lernplan für meine Prüfungen",
+    ],
     placeholder: "Beschreib, woran wir arbeiten…",
     placeholderRefine: "Sag mir, was ich ändern soll…",
     failed: "Chat fehlgeschlagen",

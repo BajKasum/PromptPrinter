@@ -32,6 +32,9 @@ export function ChatThread({
   onEdit,
   onRegenerate,
   onRevealed,
+  suggestionsLabel,
+  suggestions,
+  onPickSuggestion,
 }: {
   messages: Msg[];
   heading: string;
@@ -48,6 +51,10 @@ export function ChatThread({
   onEdit: (id: string, next: string) => Promise<string | null>;
   onRegenerate: () => Promise<string | null>;
   onRevealed: (text: string, celebrate?: boolean) => void;
+  /** Starter ideas of the empty chat; omitted where the chat has its own context (a project). */
+  suggestionsLabel?: string;
+  suggestions?: readonly string[];
+  onPickSuggestion?: (text: string) => void;
 }) {
   const t = useT();
   // min-h keeps this area (and the composer right below it) roughly the
@@ -57,7 +64,12 @@ export function ChatThread({
   return (
         <div className="min-h-[58dvh]">
           {messages.length === 0 ? (
-            <ChatEmptyState heading={heading} />
+            <ChatEmptyState
+              heading={heading}
+              suggestionsLabel={suggestionsLabel}
+              suggestions={suggestions}
+              onPick={onPickSuggestion}
+            />
           ) : (
             // role="log" WITHOUT a live region. It used to carry
             // aria-live="polite", which meant every text delta changed the

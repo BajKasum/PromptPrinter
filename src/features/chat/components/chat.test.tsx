@@ -74,6 +74,33 @@ describe("Chat", () => {
     expect(screen.getByText("Woran arbeiten wir, Kasum?")).toBeInTheDocument();
   });
 
+  // Startideen im leeren Chat (#156): ein Tipp füllt das Feld, gesendet wird nichts.
+  describe("Startideen im leeren Chat", () => {
+    it("füllt das Eingabefeld mit der gewählten Idee, setzt den Fokus und sendet nicht", async () => {
+      vi.stubGlobal("fetch", vi.fn());
+      render(<Chat />);
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole("button", { name: /Brief an meinen Vermieter/ }));
+
+      const field = screen.getByPlaceholderText("Beschreib, woran wir arbeiten…") as HTMLTextAreaElement;
+      expect(field.value).toBe("Ein Prompt für einen Brief an meinen Vermieter wegen Schimmel");
+      await waitFor(() => expect(field).toHaveFocus());
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("zeigt in einem Projekt-Chat keine Startideen (er hat seinen eigenen Kontext)", () => {
+      render(<Chat projectId="p1" />);
+      expect(screen.queryByText("Zum Beispiel")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Ein Prompt für/ })).not.toBeInTheDocument();
+    });
+
+    it("blendet die Ideen aus, sobald der Chat eine Nachricht hat", () => {
+      render(<Chat initialMessages={[{ id: "m1", role: "user", content: "Hallo" }]} />);
+      expect(screen.queryByText("Zum Beispiel")).not.toBeInTheDocument();
+    });
+  });
+
   it("sends a message, shows it optimistically, and renders the streamed reply", async () => {
     mockStreamingFetch(["Hier ", "ist dein Plan."], { conversationId: "conv-1" });
     render(<Chat />);

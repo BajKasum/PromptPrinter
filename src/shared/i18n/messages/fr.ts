@@ -88,6 +88,13 @@ export const fr: Messages = {
     emptyHeadingNamed: "Sur quoi travaille-t-on, {name} ?",
     emptyRefine: "Ajuste tes prompts",
     emptyProject: "Sur quoi travaille-t-on ici ?",
+    emptyStartersLabel: "Par exemple",
+    emptyStarters: [
+      "Un prompt pour une lettre à mon propriétaire à cause de la moisissure",
+      "Un prompt pour une présentation de 10 diapositives sur les énergies renouvelables",
+      "Un prompt pour un site web pour notre club de sport",
+      "Un prompt pour un plan de révision pour mes examens",
+    ],
     placeholder: "Décris ce sur quoi on travaille…",
     placeholderRefine: "Dis-moi ce que je dois changer…",
     failed: "La conversation a échoué",

@@ -19,8 +19,9 @@ export function resolveVariant(projectId: string | undefined): Variant {
 
 export type ResolvedEmptyState = { heading: string; placeholder: string };
 
-// Just Finn's opening line, no subtext or starter suggestions, Finn is the
-// whole empty state. Inside a project the copy depends on whether results
+// Finn's opening line. The starter ideas of a fresh standalone chat (#156) are
+// not part of this: they come from the dictionary and are wired in chat.tsx,
+// only for the "general" variant. Inside a project the copy depends on whether results
 // exist: refining a saved prompt vs. doing the project's first work (a
 // project chat before any result exists is where the project's first work
 // happens, briefed by the context rail). `name` (the user's display name, or
