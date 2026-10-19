@@ -95,7 +95,7 @@ export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
               >
                 {p.price}
               </span>
-              <span className="text-[13px] text-tertiary">/ {p.cadence}</span>
+              {p.cadence && <span className="text-[13px] text-tertiary">/ {p.cadence}</span>}
             </div>
             {p.badge && (
               <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-subtle px-2.5 py-1 text-[11.5px] font-medium text-accent-text">

@@ -4,6 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { SignUpExperience } from "./sign-up-experience";
 import { PASSWORD_RULE_HINT } from "@/shared/lib/password";
 
+// Schalter aus src/shared/lib/pro-availability.ts: aus wie in der Wirklichkeit, einzelne Tests schalten an.
+const flag = vi.hoisted(() => ({ available: false }));
+vi.mock("@/shared/lib/pro-availability", () => ({
+  get PRO_AVAILABLE() {
+    return flag.available;
+  },
+  PRO_UNAVAILABLE_PATH: "/pro-bald",
+}));
+
 const push = vi.fn();
 const refresh = vi.fn();
 const postAuthAction = vi.fn();
@@ -248,9 +257,22 @@ describe("SignUpExperience", () => {
     // angebunden ist, führt der Weg über die Abrechnungsseite, und genau das
     // muss der Hinweis sagen: erst Konto, dann Kauf.
     it("points the way on: account first, then buy under Abrechnung", () => {
+      flag.available = true;
+      try {
+        searchParams = new URLSearchParams("plan=pro");
+        render(<SignUpExperience />);
+        expect(screen.getByText(/direkt danach unter Abrechnung/)).toBeInTheDocument();
+      } finally {
+        flag.available = false;
+      }
+    });
+
+    // #125: ist Pro nicht buchbar, verspricht der Hinweis keinen Kauf unter Abrechnung.
+    it("does not promise a purchase while Pro cannot be bought", () => {
       searchParams = new URLSearchParams("plan=pro");
       render(<SignUpExperience />);
-      expect(screen.getByText(/direkt danach unter Abrechnung/)).toBeInTheDocument();
+      expect(screen.getByText(/Das gibt es noch nicht/)).toBeInTheDocument();
+      expect(screen.queryByText(/unter Abrechnung/)).not.toBeInTheDocument();
     });
 
     it("stays quiet for a plain signup", () => {

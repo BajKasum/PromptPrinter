@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPARISONS } from "@/features/marketing/lib/comparisons";
+import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { buildLlmsTxt } from "./build-llms-txt";
 
 // Same drift guard as robots.test.ts / sitemap.test.ts: every URL in here
@@ -32,6 +33,22 @@ describe("llms.txt", () => {
     expect(text).toContain("Free");
     expect(text).toContain("Pro");
     expect(text).toContain("/docs/erste-schritte");
+  });
+
+  // #125: Antwortmaschinen lesen diese Datei, nicht die Entschuldigungsseite.
+  it("nennt keinen Preis für Pro, solange Pro nicht buchbar ist", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
+    const proLine = buildLlmsTxt()
+      .split("\n")
+      .find((line) => line.startsWith("- Pro"));
+
+    expect(proLine).toBeDefined();
+    if (PRO_AVAILABLE) {
+      expect(proLine).toMatch(/€\/Monat/);
+    } else {
+      expect(proLine).toContain("derzeit nicht buchbar");
+      expect(proLine).not.toMatch(/\d/);
+    }
   });
 
   it("lists the comparison pages with their question", () => {

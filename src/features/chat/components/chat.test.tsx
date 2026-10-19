@@ -3,6 +3,15 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Chat } from "./chat";
 
+// Schalter aus src/shared/lib/pro-availability.ts: aus wie in der Wirklichkeit, einzelne Tests schalten an.
+const flag = vi.hoisted(() => ({ available: false }));
+vi.mock("@/shared/lib/pro-availability", () => ({
+  get PRO_AVAILABLE() {
+    return flag.available;
+  },
+  PRO_UNAVAILABLE_PATH: "/pro-bald",
+}));
+
 const replace = vi.fn();
 const refresh = vi.fn();
 
@@ -514,7 +523,20 @@ describe("Chat", () => {
       expect(
         screen.getByRole("link", { name: "Anderer Anbieter? Zu den Einstellungen" })
       ).toHaveAttribute("href", "/settings#api-keys");
-      expect(screen.getByRole("link", { name: "Pro ansehen" })).toHaveAttribute("href", "/billing");
+      // #125: ohne buchbares Pro rät der Hinweis nicht zu Pro.
+      expect(screen.queryByRole("link", { name: "Pro ansehen" })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Mit Pro übernehme ich das für dich/)).not.toBeInTheDocument();
+    });
+
+    it("offers Pro as a way forward once Pro can be bought", () => {
+      flag.available = true;
+      try {
+        render(<Chat needsKey />);
+        expect(screen.getByRole("link", { name: "Pro ansehen" })).toHaveAttribute("href", "/billing");
+        expect(screen.getByText(/Mit Pro übernehme ich das für dich/)).toBeInTheDocument();
+      } finally {
+        flag.available = false;
+      }
     });
 
     // Audit 23.09.2026, P-1: der Weg zu einem Key war ein Raetselraten. Jetzt
