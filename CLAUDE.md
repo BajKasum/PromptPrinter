@@ -97,8 +97,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
   Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
-  am 2026-10-11 geprüft); die
-  `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.).
+  am 2026-10-11 geprüft); die `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.; Entscheid Tailwind 4 und Reihenfolge der Major-Upgrades: [docs/UPGRADES-2026-10.md](docs/UPGRADES-2026-10.md)).
 - **Juristisch zu prüfen (Aufwand bewusst klein, Entscheid 2026-10-17: Hobby- und Lernprojekt ohne Werbung, kein Jurist, keine Verträge, kein EU-Vertreter nach Art. 27 DSGVO und DSA Art. 13, keine Angebote einholen, nicht wieder vorschlagen; die Seite soll vor allem gut aussehen und laufen):** Übermittlung an Z.ai (Antwort auf Kasums Mail steht aus), Sprachmodus
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
