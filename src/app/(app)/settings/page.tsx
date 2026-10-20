@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { SettingsWorkspace } from "@/features/settings/components/settings-workspace";
 import { createClient } from "@/server/supabase/server";
-import type { PlanKey } from "@/shared/lib/plans";
+import { resolvePlan } from "@/shared/lib/plans";
 import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
 import { getT } from "@/server/i18n";
 import { zaiConsentOf } from "@/server/consent";
@@ -36,8 +36,7 @@ export default async function SettingsPage() {
   const t = await getT();
   const email = user.email ?? "";
   const displayName = profile?.display_name ?? email.split("@")[0] ?? "";
-  const plan = (profile?.plan ?? "free") as PlanKey;
-  const isAdmin = profile?.is_admin ?? false;
+  const { plan, isAdmin } = resolvePlan(profile);
 
   return (
     <div>

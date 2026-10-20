@@ -8,7 +8,7 @@ import {
 import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
-import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { resolvePlan } from "@/shared/lib/plans";
 import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { problem } from "@/server/http/api-problem";
 import type { Messages } from "@/shared/i18n/messages/de";
@@ -76,10 +76,7 @@ export async function reserveAllowance(args: {
       .gte("created_at", monthStart);
     return count ?? 0;
   };
-  const isAdmin = profile?.is_admin ?? false;
-  const rawPlan = (profile?.plan as string | undefined) ?? "free";
-  const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const limits = effectiveLimits(plan, isAdmin);
+  const { plan, isAdmin, limits } = resolvePlan(profile);
 
   // Slots reserved for this request (monthly allowance, global daily budget),
   // handed back below if the LLM call itself fails so a failed turn doesn't

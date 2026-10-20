@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
-import { requiresOwnKey, toPlanKey } from "@/shared/lib/plans";
+import { requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
 
 // Die eine Stelle, die pro Request nach dem angemeldeten Nutzer und seinem
 // Profil fragt (Planpunkt B-3).
@@ -103,8 +103,7 @@ export const getNeedsOwnKey = cache(async (): Promise<boolean> => {
   if (!user) return false;
 
   const profile = await getSessionProfile();
-  const plan = toPlanKey(profile?.plan);
-  const isAdmin = profile?.is_admin ?? false;
+  const { plan, isAdmin } = resolvePlan(profile);
   // Pro, Team und Admins laufen ohnehin auf dem Server-Key, keine Abfrage noetig.
   if (!requiresOwnKey(plan, isAdmin, false)) return false;
 
