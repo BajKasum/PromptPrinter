@@ -105,21 +105,6 @@ export function Hero() {
             <Link href="#produkt">Erst mal zuschauen</Link>
           </Button>
         </motion.div>
-
-        {/* Die Voraussetzung vor dem Klick nennen (#126): ohne eigenen KI-Key
-            gibt es auf Free keinen Chat, und wer das erst nach der
-            Registrierung liest, springt dort ab. */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.55 }}
-          className="mt-3 text-center text-[13.5px] leading-snug text-tertiary md:text-left"
-        >
-          Du brauchst dafür einen KI-Key, am einfachsten einen kostenlosen von Google.{" "}
-          <Link href="/docs/eigene-api-keys" className="text-accent-text underline underline-offset-2">
-            So kommst du dran
-          </Link>
-        </motion.p>
           </div>
         </div>
 
