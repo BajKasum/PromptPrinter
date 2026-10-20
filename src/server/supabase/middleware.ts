@@ -3,7 +3,7 @@ import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { secureCookieOptions } from "@/server/supabase/cookie-options";
-import { isAppPath } from "@/shared/lib/app-routes";
+import { isAppPath, PUBLIC_EXACT, PUBLIC_PREFIXES } from "@/shared/lib/app-routes";
 
 type CookieSet = { name: string; value: string; options: CookieOptions };
 
@@ -11,51 +11,8 @@ type CookieSet = { name: string; value: string; options: CookieOptions };
 // Next die Root-not-found.tsx mit Status 404 ausliefern.
 const NOT_FOUND_PATH = "/__not-found";
 
-// Everything a signed-out visitor may reach. Anything not listed needs a
-// session (Security-Audit finding M-7).
-//
-// This used to be the other way round — an allowlist of PROTECTED prefixes —
-// which is a hand-maintained duplicate of the route tree, and it had already
-// drifted: /prompts was added without being listed, so it was guarded only by
-// the (app) layout's own check, one layer later than intended. Inverting the
-// default means the failure mode of forgetting an entry flips from "new page is
-// unguarded" to "new public page answers 404 while signed out", which is
-// visible the first time anyone opens it instead of silent. Only the app's own
-// paths (shared/lib/app-routes.ts) redirect to /login; see updateSession.
-const PUBLIC_PREFIXES = [
-  "/login",
-  "/signup",
-  "/reset-password",
-  "/auth", // the OAuth/email callback completes the session, so it can't need one
-  // No "/features": next.config.ts redirects it to /#funktionen, and
-  // next.config redirects resolve before middleware runs, so the path never
-  // reaches this check.
-  "/pricing",
-  "/docs",
-  "/agb",
-  "/cookies",
-  "/nutzungsrichtlinie",
-  "/datenschutz",
-  "/impressum",
-  "/kontakt",
-  "/pro-bald", // Ziel der Pro-Knöpfe, solange Pro nicht kaufbar ist (shared/lib/pro-availability.ts)
-  "/rueckerstattung",
-  "/ueber",
-  "/vergleich",
-] as const;
-
-// Metadata routes Next serves from the app directory. Exact matches only, so
-// they can't shadow a real page.
-const PUBLIC_EXACT = [
-  "/",
-  "/robots.txt",
-  "/sitemap.xml",
-  "/opengraph-image",
-  // llms.txt (app/llms.txt/route.ts): without this, an anonymous request —
-  // which is every AI crawler and every browser that never logged in — got
-  // 307'd to /login instead of the file, silently defeating the whole point.
-  "/llms.txt",
-] as const;
+// Welche Pfade ein abgemeldeter Besucher erreicht (PUBLIC_PREFIXES, PUBLIC_EXACT)
+// und welche zur App gehören (APP_PREFIXES), steht in shared/lib/app-routes.ts.
 
 /**
  * "Needs a session" is NOT the same as "is an app page": it is also true for

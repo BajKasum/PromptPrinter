@@ -23,7 +23,7 @@ describe("Pro-Schalter", () => {
   it("führt auf eine öffentliche Seite, die es gibt", () => {
     expect(PRO_UNAVAILABLE_PATH).toBe("/pro-bald");
     expect(existsSync(join(ROOT, "src/app/(marketing)/pro-bald/page.tsx"))).toBe(true);
-    expect(read("src/server/supabase/middleware.ts")).toContain(`"${PRO_UNAVAILABLE_PATH}"`);
+    expect(read("src/shared/lib/app-routes.ts")).toContain(`"${PRO_UNAVAILABLE_PATH}"`);
   });
 
   it("hat eine Anleitung zur Wiederaufnahme, auf die CLAUDE.md verweist", () => {
