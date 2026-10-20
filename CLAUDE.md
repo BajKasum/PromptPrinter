@@ -97,7 +97,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
   Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
-  am 2026-10-11 geprüft); die `braces`-Ausnahme in `scripts/audit-gate.mjs` (einmal bis **2026-11-19** verlängert, das Issue warnt ab dem 12.11.; Tailwind 4 ist drin, löst den Fund aber nicht, er hängt jetzt allein an `eslint-config-next`. **Entscheid, wie es danach weitergeht, wartet auf Kasum**, drei Wege in [docs/UPGRADES-2026-10.md](docs/UPGRADES-2026-10.md), "Korrektur").
+  am 2026-10-11 geprüft).
 - **Juristisch zu prüfen (Aufwand bewusst klein, Entscheid 2026-10-17: Hobby- und Lernprojekt ohne Werbung, kein Jurist, keine Verträge, kein EU-Vertreter nach Art. 27 DSGVO und DSA Art. 13, keine Angebote einholen, nicht wieder vorschlagen; die Seite soll vor allem gut aussehen und laufen):** Übermittlung an Z.ai (Antwort auf Kasums Mail steht aus), Sprachmodus
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
@@ -169,15 +169,15 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 - Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push auf **jeden**
   Branch und bei jedem PR. Der Audit steht dort VOR allem anderen: schlägt er an,
   laufen die übrigen Schritte nicht. Deshalb gehört er ins lokale Gate.
-- **`audit:gate` ist `npm audit --audit-level=high` mit einer befristeten
-  Ausnahmeliste** ([`scripts/audit-gate.mjs`](scripts/audit-gate.mjs)). Aktuell steht
-  dort GHSA-vfj7-8cjw-p6xm (`braces`, keine gepatchte Version, hängt nur an
-  `eslint-config-next` und ist im ausgelieferten `.next/standalone` nicht enthalten),
-  **befristet bis 2026-11-19**. Danach scheitert das Gate wieder und jemand
-  entscheidet: Upstream-Fix, ESLint ohne `eslint-config-next`, das Gate nach Baum trennen
-  oder Verlängerung mit neuer Begründung (Tailwind 4 ist seit 2026-10-20 drin und half nicht). Einträge nur mit Beleg, dass der Fund die ausgelieferte App nicht
-  erreicht, nie "später". Der tägliche Lauf `audit.yml` meldet die Frist sieben Tage
-  vorher per Issue.
+- **`audit:gate` ist `npm audit --audit-level=high`, nach Baum getrennt**
+  ([`scripts/audit-gate.mjs`](scripts/audit-gate.mjs), Entscheid 2026-10-20). Ein Fund im
+  ausgelieferten Baum (`npm audit --omit=dev`) blockiert immer, **ohne Ausnahmen und ohne
+  Fristen**. Ein Fund nur in einem Entwicklungswerkzeug blockiert, wenn es eine gepatchte
+  Version gibt (dann anheben), und wird nur **gemeldet**, wenn keine gepatchte Version
+  existiert (der Bereich des Pakets im Bericht ist `*`). Aktuell gemeldet: GHSA-vfj7-8cjw-p6xm
+  (`braces` über `eslint-config-next`). Es gibt keine Ausnahmeliste mehr, also auch kein
+  Ablaufdatum, das jemand vergessen kann; die Bedingung prüft das Gate bei jedem Lauf selbst
+  (zieht jemand `braces` in den ausgelieferten Baum, scheitert es).
 - **Die Schritte des Gates nie durch `| tail` oder `| head` leiten.** Eine Pipe gibt
   den Exit-Code des letzten Befehls zurück, und der ist immer 0: ein roter
   `npm audit` sah so einen Lauf lang grün aus. Ausgabe in eine Datei schreiben und

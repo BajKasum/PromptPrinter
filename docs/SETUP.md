@@ -154,8 +154,9 @@ jeden Branch und bei jedem Pull Request aus. Die Smoketests laufen getrennt in
 [`e2e.yml`](../.github/workflows/e2e.yml) (nur wenn etwas Betroffenes geändert wird,
 dazu wöchentlich), `docker.yml` hält den Docker-Pfad am Leben, und `audit.yml`
 prüft täglich die Abhängigkeiten (siehe "Täglicher Audit" unten). `audit:gate` ist
-`npm audit --audit-level=high` plus eine kurze, befristete Ausnahmeliste für
-Funde ohne gepatchte Version (`scripts/audit-gate.mjs`).
+`npm audit --audit-level=high`, nach Baum getrennt (`scripts/audit-gate.mjs`): ein Fund
+im ausgelieferten Baum blockiert immer, einer nur in einem Entwicklungswerkzeug nur dann, wenn es
+eine gepatchte Version gibt. Es gibt keine Ausnahmeliste.
 
 ### Abhängigkeiten (Dependabot)
 
@@ -191,14 +192,17 @@ Advisory am selben Tag. Ein geplanter Lauf färbt keinen Commit, deshalb meldet
 **GitHub-Issue** (Label `audit`, Titel "Audit: Abhängigkeiten brauchen eine
 Entscheidung"):
 
-- Audit gescheitert (offener Fund, abgelaufene Ausnahme, Registry nicht
-  erreichbar, oder der Lauf kam gar nicht bis zum Audit): Issue wird **einmal
-  angelegt**, jeder weitere Fehlschlag ergänzt es um einen Kommentar.
-- Eine Ausnahme in `ACCEPTED` (`scripts/audit-gate.mjs`) läuft in höchstens 7
-  Tagen ab: dasselbe Issue, obwohl der Audit noch grün ist. So kommt die Frist
-  des `braces`-Funds (2026-11-04) mit Vorwarnung statt als rotes `main`.
-- Wieder sauber und keine Ausnahme in Sicht: das Issue wird mit einem Kommentar
-  geschlossen.
+- Audit gescheitert (ein blockierender Fund, Registry nicht erreichbar, oder der
+  Lauf kam gar nicht bis zum Audit): Issue wird **einmal angelegt**, jeder weitere
+  Fehlschlag ergänzt es um einen Kommentar.
+- Wieder sauber: das Issue wird mit einem Kommentar geschlossen.
+
+Ein Fund **nur in einem Entwicklungswerkzeug, ohne gepatchte Version** (Stand 2026-10-20:
+`braces` über `eslint-config-next`) steht im Protokoll als "gemeldet, blockiert nicht"
+und ist kein Fehlschlag, also auch kein Issue: es gäbe nichts zu entscheiden, und das
+Issue bliebe offen, bis Upstream nachzieht. Er taucht in jedem Lauf des Gates auf, lokal,
+in der CI und im täglichen Audit. Erkannt wird "ohne gepatchte Version" am Bereich des
+Pakets im Bericht (`*`: jede veröffentlichte Version ist betroffen).
 
 Der Lauf selbst wird bei einem Fehlschlag rot (Actions-Übersicht), ohne einen
 Commit zu färben. **Meldeweg prüfen**, ohne dass es einen echten Fund gibt:

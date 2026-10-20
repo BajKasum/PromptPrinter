@@ -1,73 +1,57 @@
 /**
- * Das Audit-Gate: `npm audit --audit-level=high`, plus eine benannte, befristete
- * Liste bewusst angenommener Advisories.
+ * Das Audit-Gate: `npm audit`, aber nach Baum getrennt. Zwei Bäume, zwei Regeln.
+ *
+ * ─── Die Regel (Kasum, 2026-10-20) ──────────────────────────────────────────
+ * 1. **Der ausgelieferte Baum** (`npm audit --omit=dev`): jeder Fund ab "high"
+ *    lässt das Gate scheitern. Keine Ausnahmen, keine Fristen.
+ * 2. **Der Rest, also nur Entwicklungswerkzeuge** (Lint, Tests, Build): ein Fund
+ *    ab "high" lässt das Gate scheitern, wenn es eine gepatchte Version gibt
+ *    (dann wird sie angehoben). Gibt es keine, wird der Fund **gemeldet und
+ *    blockiert nicht**: wer einen Fund nicht beheben kann, darf deshalb nicht
+ *    jeden Merge blockieren, und ein Werkzeug, das nie ausgeliefert wird, ist
+ *    nicht die Stelle, an der er jemandem schadet.
  *
  * ─── Warum es das gibt ──────────────────────────────────────────────────────
- * Die CI führte `npm audit --audit-level=high` und sonst nichts. Das ist die
- * richtige Schwelle (siehe CI-Kommentar, Security-Audit H-2), aber es kennt nur
+ * Die CI führte `npm audit --audit-level=high` und sonst nichts. Das kennt nur
  * "sauber" und "rot". Am 04.10.2026 erschien GHSA-vfj7-8cjw-p6xm für `braces`
  * (Stack-Erschöpfung bei tief verschachtelten Glob-Mustern, CVSS 7.5) mit
- * `first_patched_version: null`: betroffen sind ALLE Versionen bis 3.0.3, eine
- * gepatchte gibt es nicht. Die bisherige Antwort für solche Funde (ein
- * `overrides`-Eintrag mit der kleinsten bereinigenden Version) greift hier
- * nicht, weil es keine Version gibt, auf die man heben könnte. npm schlug nur
- * den Sprung auf tailwindcss 4 vor, einen Major mit Breaking Change. Der ist seit dem
- * 20.10.2026 gemacht, beseitigt den Fund aber nicht: er bleibt über eslint-config-next
- * (siehe den Eintrag unten).
+ * `first_patched_version: null`: betroffen sind ALLE Versionen, eine gepatchte
+ * gibt es nicht. Jeder Push auf jeden Branch wäre rot gewesen, bis Upstream
+ * nachzieht. Bis zum 20.10.2026 half eine befristete Ausnahmeliste (`ACCEPTED`,
+ * höchstens 30 Tage, dann neu entscheiden). Sie wurde nie die Lösung: Tailwind 4
+ * (die erste Hoffnung) beseitigte den Fund nicht, er hängt auch an
+ * `eslint-config-next`, und Next 16 bindet dasselbe `fast-glob` ein. Die Liste
+ * wäre monatlich verlängert worden, bis jemand es vergisst. Seither entscheidet
+ * der Baum statt eines Datums.
  *
- * Ohne diese Datei wäre jeder Push auf jeden Branch rot gewesen, bis Upstream
- * nachzieht. Genau die Lage, die docs/CHANGELOG-2026.md beschreibt (23.09. und 01.10.2026),
- * nur ohne Ausweg.
+ * ─── Warum zwei Aufrufe und nicht `--omit=dev` oder eine höhere Schwelle ────
+ * `--omit=dev` allein prüfte nur noch den ausgelieferten Baum und ließe jeden
+ * Fund in den Werkzeugen still durch, auch einen, den ein Update behebt. Eine
+ * Schwelle von `critical` ließe jeden künftigen High-Fund durch, auch einen im
+ * ausgelieferten Baum. Zwei Aufrufe (alles, und ohne Entwicklungsabhängigkeiten)
+ * trennen die Funde sauber: was im zweiten steht, wird ausgeliefert.
  *
- * ─── Warum eine Liste und nicht `--omit=dev` oder eine höhere Schwelle ──────
- * `--omit=dev` hilft nicht: tailwindcss steckt über tailwindcss-animate (eine
- * Produktions-Dependency) im Produktionsbaum und wird trotzdem gemeldet. Eine
- * Schwelle von `critical` würde jeden künftigen High-Fund stillschweigend
- * durchlassen, auch einen, der die ausgelieferte App betrifft. Eine Liste mit
- * Kennung, Begründung und Ablaufdatum nimmt GENAU diesen einen Fund heraus und
- * lässt alles andere so scharf wie vorher.
- *
- * ─── Regeln für Einträge ────────────────────────────────────────────────────
- * - Nur mit Begründung, die belegt, warum der Fund die ausgelieferte App nicht
- *   erreicht (nicht "irgendwann beheben").
- * - Immer mit Ablaufdatum, höchstens ~30 Tage. Danach scheitert das Gate wieder,
- *   und jemand muss neu entscheiden: Upstream-Fix, Major-Sprung oder
- *   Verlängerung mit neuer Begründung. Eine Ausnahme ohne Ende ist keine
- *   Entscheidung mehr, sondern ein vergessener Stand.
- * - Eintrag löschen, sobald der Fund verschwindet (das Skript weist darauf hin).
+ * ─── Wie "keine gepatchte Version" erkannt wird ─────────────────────────────
+ * Am Knoten des betroffenen Pakets im Bericht (`vulnerabilities.<paket>.range`):
+ * `*` heißt, jede veröffentlichte Version ist betroffen. Das ist genau der Fall
+ * "nichts zum Anheben". Der Bereich des Advisorys selbst (`via[].range`) taugt
+ * dafür nicht, `<=3.0.3` sagt nicht, ob es eine 3.0.4 gibt. Ein Fund ohne lesbaren
+ * Bereich zählt als behebbar, also als blockierend: im Zweifel scheitert das Gate.
  *
  * Usage: node scripts/audit-gate.mjs        (auch: npm run audit:gate)
- * Exit:  0 sauber oder alles angenommen · 1 offene/abgelaufene Funde ·
+ * Exit:  0 sauber oder nur gemeldet · 1 offene Funde ·
  *        2 Audit nicht lesbar (Registry nicht erreichbar): schlägt zu, nie auf.
  */
 
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-/**
- * @typedef {{ id: string, pkg: string, until: string, reason: string }} Accepted
- * @type {Accepted[]}
- */
-export const ACCEPTED = [
-  {
-    id: "GHSA-vfj7-8cjw-p6xm",
-    pkg: "braces",
-    until: "2026-11-19",
-    reason:
-      "Nur ESLint: braces hängt seit der Umstellung auf Tailwind 4 (2026-10-20) allein an " +
-      "eslint-config-next -> @next/eslint-plugin-next -> fast-glob 3.3.1 -> micromatch 4.0.8, einem " +
-      "Entwicklungswerkzeug. Keine gepatchte Version vorhanden (betroffen <= 3.0.3 = alle, 3.0.3 ist " +
-      "die neueste), und auch Next 16 (@next/eslint-plugin-next 16.4.2) bindet fast-glob 3.3.1 ein: " +
-      "keines der geplanten Major-Upgrades beseitigt den Fund, nur ein Fix in braces oder micromatch. " +
-      "Der ausgelieferte Build enthält braces nicht: .next/standalone/node_modules am 20.10.2026 " +
-      "geprüft, dort fehlen braces, micromatch, tailwindcss, chokidar, fast-glob. Auch " +
-      "'npm audit --omit=dev' (der Baum, der ausgeliefert wird) meldet braces nicht mehr. " +
-      "Ausnutzbar nur mit angreiferkontrollierten Glob-Mustern, die unser Lint nie verarbeitet.",
-  },
-];
-
 /** @type {Record<string, number>} */
 const RANK = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
+
+/**
+ * @typedef {{ id: string, pkg: string, severity: string, title: string, url: string, range: string }} Advisory
+ */
 
 /**
  * Die eigentlichen Advisories eines `npm audit --json`-Berichts.
@@ -75,11 +59,13 @@ const RANK = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
  * Ein Eintrag unter `vulnerabilities` ist entweder selbst von einem Advisory
  * betroffen (`via` enthält ein Objekt) oder nur weil er etwas Betroffenes
  * einbindet (`via` enthält den Paketnamen als Text). Letztere sind Folgen, keine
- * eigenen Funde: tailwindcss steht im Bericht, weil es chokidar einbindet, das
- * braces einbindet. Gezählt wird deshalb nur, was als Objekt auftaucht.
+ * eigenen Funde: `eslint-config-next` steht im Bericht, weil es `fast-glob`
+ * einbindet, das `micromatch` einbindet, das `braces` einbindet. Gezählt wird
+ * deshalb nur, was als Objekt auftaucht, und `range` ist der Bereich des
+ * Knotens, an dem es auftaucht (siehe oben, "keine gepatchte Version").
  *
- * @param {{ vulnerabilities?: Record<string, { via?: unknown[] }> }} report
- * @returns {{ id: string, pkg: string, severity: string, title: string, url: string }[]}
+ * @param {{ vulnerabilities?: Record<string, { range?: string, via?: unknown[] }> }} report
+ * @returns {Advisory[]}
  */
 export function advisoriesOf(report) {
   const found = new Map();
@@ -96,6 +82,7 @@ export function advisoriesOf(report) {
         severity: String(advisory.severity ?? "unknown"),
         title: String(advisory.title ?? ""),
         url,
+        range: String(vulnerability.range ?? ""),
       });
     }
   }
@@ -103,42 +90,49 @@ export function advisoriesOf(report) {
 }
 
 /**
- * @param {Parameters<typeof advisoriesOf>[0]} report
- * @param {{ accepted?: Accepted[], today?: Date | string, level?: string }} [options]
+ * Jede veröffentlichte Version des Pakets ist betroffen: nichts zum Anheben.
+ * Ein leerer oder unlesbarer Bereich gilt als "es gibt vielleicht eine", also
+ * nicht als ohne Fix.
+ *
+ * @param {string} range
  */
-export function evaluate(report, options = {}) {
-  const { accepted = ACCEPTED, today = new Date(), level = "high" } = options;
-  const day = (today instanceof Date ? today : new Date(today)).toISOString().slice(0, 10);
-  const threshold = RANK[level] ?? RANK.high;
-
-  const failing = [];
-  const tolerated = [];
-  const seen = new Set();
-
-  for (const advisory of advisoriesOf(report)) {
-    seen.add(advisory.id);
-    // Ein unbekannter Schweregrad zählt als zu hoch, nicht als zu niedrig.
-    const rank = RANK[advisory.severity] ?? RANK.critical;
-    if (rank < threshold) continue;
-
-    const entry = accepted.find((a) => a.id === advisory.id);
-    if (!entry) {
-      failing.push({ ...advisory, why: "nicht angenommen" });
-    } else if (entry.until < day) {
-      failing.push({ ...advisory, why: `Ausnahme am ${entry.until} abgelaufen` });
-    } else {
-      tolerated.push({ ...advisory, until: entry.until, reason: entry.reason });
-    }
-  }
-
-  // Einträge, die der Bericht nicht mehr kennt: der Fund ist behoben oder das
-  // Paket weg. Kein Grund zu scheitern, aber ein Grund, aufzuräumen.
-  const stale = accepted.filter((a) => !seen.has(a.id));
-
-  return { failing, tolerated, stale };
+export function isUnpatched(range) {
+  const r = range.trim();
+  return r === "*" || r === ">=0.0.0" || r === ">=0";
 }
 
-function runAudit() {
+/**
+ * @param {Parameters<typeof advisoriesOf>[0]} full  `npm audit --json`: alle Bäume
+ * @param {Parameters<typeof advisoriesOf>[0]} prod  `npm audit --omit=dev --json`: nur, was ausgeliefert wird
+ * @param {{ level?: string }} [options]
+ * @returns {{ failing: (Advisory & { why: string })[], reported: Advisory[] }}
+ */
+export function evaluate(full, prod, options = {}) {
+  const { level = "high" } = options;
+  const threshold = RANK[level] ?? RANK.high;
+  // Ein unbekannter Schweregrad zählt als zu hoch, nicht als zu niedrig.
+  const reaches = (/** @type {Advisory} */ a) => (RANK[a.severity] ?? RANK.critical) >= threshold;
+
+  const prodFound = advisoriesOf(prod).filter(reaches);
+  const prodIds = new Set(prodFound.map((a) => a.id));
+
+  const failing = prodFound.map((a) => ({
+    ...a,
+    why: "im ausgelieferten Baum (npm audit --omit=dev), dort gibt es keine Ausnahmen",
+  }));
+  const reported = [];
+
+  for (const advisory of advisoriesOf(full).filter(reaches)) {
+    if (prodIds.has(advisory.id)) continue;
+    if (isUnpatched(advisory.range)) reported.push(advisory);
+    else failing.push({ ...advisory, why: "nur ein Entwicklungswerkzeug, aber es gibt eine gepatchte Version: anheben" });
+  }
+
+  return { failing, reported };
+}
+
+/** @param {string} command */
+function runAudit(command) {
   const options = { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 };
   // Unter Windows ist npm eine .cmd-Datei und braucht eine Shell. Der Befehl
   // geht dann als EIN String durch, nicht als Argumentliste: Node warnt bei
@@ -146,8 +140,8 @@ function runAudit() {
   // maskiert werden müssten.
   const result =
     process.platform === "win32"
-      ? spawnSync("npm audit --json", { ...options, shell: true })
-      : spawnSync("npm", ["audit", "--json"], options);
+      ? spawnSync(command, { ...options, shell: true })
+      : spawnSync(command.split(" ")[0], command.split(" ").slice(1), options);
   // npm audit endet mit 1, sobald es etwas findet. Der Exit-Code sagt hier also
   // nichts, gelesen wird der Bericht.
   try {
@@ -156,7 +150,7 @@ function runAudit() {
     return report;
   } catch (error) {
     console.error(
-      "audit-gate: npm audit lieferte keinen lesbaren Bericht " +
+      `audit-gate: "${command}" lieferte keinen lesbaren Bericht ` +
         `(${error instanceof Error ? error.message : error}). Das Gate schlägt zu.`
     );
     if (result.stderr) console.error(result.stderr.trim());
@@ -165,14 +159,15 @@ function runAudit() {
 }
 
 function main() {
-  const { failing, tolerated, stale } = evaluate(runAudit());
+  const { failing, reported } = evaluate(runAudit("npm audit --json"), runAudit("npm audit --omit=dev --json"));
 
-  for (const t of tolerated) {
-    console.log(`  angenommen bis ${t.until}  ${t.id}  ${t.pkg} (${t.severity})`);
-    console.log(`    ${t.reason}`);
-  }
-  for (const s of stale) {
-    console.log(`  Hinweis: ${s.id} (${s.pkg}) steht in ACCEPTED, taucht im Bericht aber nicht mehr auf. Eintrag löschen.`);
+  for (const r of reported) {
+    console.log(`  gemeldet, blockiert nicht  ${r.id}  ${r.pkg} (${r.severity})`);
+    if (r.title) console.log(`    ${r.title}`);
+    console.log(
+      "    Nur ein Entwicklungswerkzeug, und jede Version des Pakets ist betroffen: es gibt nichts zum Anheben. " +
+        "Gilt, bis das Paket oder das, was es einbindet, einen Fix bringt."
+    );
   }
   for (const f of failing) {
     console.error(`  OFFEN  ${f.id}  ${f.pkg} (${f.severity}), ${f.why}`);
@@ -181,12 +176,12 @@ function main() {
   }
 
   if (failing.length > 0) {
-    console.error(`\naudit-gate: ${failing.length} Fund(e) ab Schwelle "high" ohne gültige Ausnahme.`);
+    console.error(`\naudit-gate: ${failing.length} Fund(e) ab Schwelle "high", die blockieren.`);
     process.exit(1);
   }
   console.log(
-    tolerated.length > 0
-      ? `\naudit-gate: sauber, ${tolerated.length} befristete Ausnahme(n) aktiv (siehe oben).`
+    reported.length > 0
+      ? `\naudit-gate: sauber, ${reported.length} Fund(e) nur in Entwicklungswerkzeugen ohne gepatchte Version gemeldet (siehe oben).`
       : "\naudit-gate: sauber."
   );
 }

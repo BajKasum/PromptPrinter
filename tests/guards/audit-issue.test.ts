@@ -1,18 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  LABEL,
-  MAX_LOG_CHARS,
-  TITLE,
-  WARN_DAYS,
-  bodyFor,
-  excerpt,
-  expiringSoon,
-  plan,
-  run,
-} from "../../scripts/audit-issue.mjs";
-import { ACCEPTED } from "../../scripts/audit-gate.mjs";
+import { LABEL, MAX_LOG_CHARS, TITLE, bodyFor, excerpt, plan, run } from "../../scripts/audit-issue.mjs";
 
 // Der tägliche Audit (.github/workflows/audit.yml) meldet über
 // scripts/audit-issue.mjs. Der Meldeweg läuft nachts um 4:37 und sieht niemand,
@@ -38,53 +27,14 @@ function fakeGh(open: { number: number; title: string }[] = []) {
 
 const verbs = (calls: { args: string[] }[]) => calls.map((c) => c.args.slice(0, 2).join(" "));
 
-const NOT_EXPIRING = [{ id: "GHSA-aaaa", pkg: "x", until: "2026-12-31" }];
-const EXPIRING = [{ id: "GHSA-bbbb", pkg: "braces", until: "2026-10-10" }];
 const TODAY = "2026-10-06";
-
-describe("expiringSoon", () => {
-  const entry = (until: string) => [{ id: "GHSA-x", pkg: "x", until }];
-
-  it("meldet eine Ausnahme, die in höchstens 7 Tagen abläuft, mit den Resttagen", () => {
-    const [e] = expiringSoon(entry("2026-10-13"), TODAY);
-    expect(e.daysLeft).toBe(7);
-  });
-
-  it("meldet eine Ausnahme, die heute abläuft (der Audit lässt sie heute noch durch)", () => {
-    expect(expiringSoon(entry(TODAY), TODAY)).toHaveLength(1);
-  });
-
-  it("schweigt bei einer, die noch länger hält", () => {
-    expect(expiringSoon(entry("2026-10-14"), TODAY)).toEqual([]);
-  });
-
-  it("schweigt bei einer abgelaufenen: die lässt den Audit selbst scheitern", () => {
-    expect(expiringSoon(entry("2026-10-05"), TODAY)).toEqual([]);
-  });
-
-  it("meldet jede echte Ausnahme aus audit-gate.mjs ab 7 Tagen vor ihrem Ablauf, nicht früher", () => {
-    // Die echte Liste, nicht eine Kopie: ändert jemand ein Datum, prüft dieser
-    // Test die neue Grenze.
-    expect(ACCEPTED.length).toBeGreaterThan(0);
-    for (const entry of ACCEPTED) {
-      const dayBefore = (n: number) => new Date(Date.parse(entry.until) - n * 86_400_000).toISOString().slice(0, 10);
-      const ids = (today: string) => expiringSoon(ACCEPTED, today).map((e) => e.id);
-      expect(ids(dayBefore(8)), entry.id).not.toContain(entry.id);
-      expect(ids(dayBefore(7)), entry.id).toContain(entry.id);
-      expect(ids(dayBefore(0)), entry.id).toContain(entry.id);
-      expect(ids(dayBefore(-1)), entry.id).not.toContain(entry.id);
-    }
-  });
-});
 
 describe("plan", () => {
   const cases: [string, Parameters<typeof plan>[0], ReturnType<typeof plan>][] = [
-    ["Fehlschlag, noch kein Issue → anlegen", { failed: true, expiring: [], openIssue: null }, "create"],
-    ["Fehlschlag, Issue offen → ergänzen (kein zweites)", { failed: true, expiring: [], openIssue: 7 }, "comment"],
-    ["nur eine ablaufende Ausnahme, kein Issue → anlegen", { failed: false, expiring: [1], openIssue: null }, "create"],
-    ["nur eine ablaufende Ausnahme, Issue offen → ergänzen", { failed: false, expiring: [1], openIssue: 7 }, "comment"],
-    ["alles sauber, Issue offen → schließen", { failed: false, expiring: [], openIssue: 7 }, "close"],
-    ["alles sauber, kein Issue → nichts", { failed: false, expiring: [], openIssue: null }, "none"],
+    ["Fehlschlag, noch kein Issue → anlegen", { failed: true, openIssue: null }, "create"],
+    ["Fehlschlag, Issue offen → ergänzen (kein zweites)", { failed: true, openIssue: 7 }, "comment"],
+    ["alles sauber, Issue offen → schließen", { failed: false, openIssue: 7 }, "close"],
+    ["alles sauber, kein Issue → nichts", { failed: false, openIssue: null }, "none"],
   ];
   it.each(cases)("%s", (_name, state, expected) => {
     expect(plan(state)).toBe(expected);
@@ -100,7 +50,6 @@ describe("run (der ganze Ablauf mit ersetztem gh)", () => {
       simulated: false,
       runUrl: RUN_URL,
       today: TODAY,
-      accepted: NOT_EXPIRING,
       gh,
     });
     expect(result.action).toBe("create");
@@ -113,7 +62,7 @@ describe("run (der ganze Ablauf mit ersetztem gh)", () => {
 
   it("ergänzt bei einem Folgefehlschlag das offene Issue, statt ein zweites anzulegen", () => {
     const { gh, calls } = fakeGh([{ number: 12, title: TITLE }]);
-    const result = run({ status: "failure", log: "x", simulated: false, runUrl: RUN_URL, today: TODAY, accepted: NOT_EXPIRING, gh });
+    const result = run({ status: "failure", log: "x", simulated: false, runUrl: RUN_URL, today: TODAY, gh });
     expect(result.action).toBe("comment");
     expect(verbs(calls)).toEqual(["issue list", "issue comment"]);
     expect(calls[1].args[2]).toBe("12");
@@ -122,14 +71,14 @@ describe("run (der ganze Ablauf mit ersetztem gh)", () => {
 
   it("schließt das Issue, sobald der Audit wieder sauber ist", () => {
     const { gh, calls } = fakeGh([{ number: 12, title: TITLE }]);
-    const result = run({ status: "success", log: "", simulated: false, runUrl: RUN_URL, today: TODAY, accepted: NOT_EXPIRING, gh });
+    const result = run({ status: "success", log: "", simulated: false, runUrl: RUN_URL, today: TODAY, gh });
     expect(result.action).toBe("close");
     expect(calls[1].args.slice(0, 3)).toEqual(["issue", "close", "12"]);
   });
 
   it("tut bei sauberem Lauf ohne offenes Issue nichts außer nachzusehen", () => {
     const { gh, calls } = fakeGh();
-    const result = run({ status: "success", log: "", simulated: false, runUrl: RUN_URL, today: TODAY, accepted: NOT_EXPIRING, gh });
+    const result = run({ status: "success", log: "", simulated: false, runUrl: RUN_URL, today: TODAY, gh });
     expect(result.action).toBe("none");
     expect(verbs(calls)).toEqual(["issue list"]);
   });
@@ -137,26 +86,15 @@ describe("run (der ganze Ablauf mit ersetztem gh)", () => {
   it("zählt einen Lauf, der den Audit nie erreicht hat (skipped), als Fehlschlag, nie als sauber", () => {
     for (const status of ["skipped", "cancelled", "failure", ""]) {
       const { gh } = fakeGh();
-      const result = run({ status, log: "", simulated: false, runUrl: RUN_URL, today: TODAY, accepted: NOT_EXPIRING, gh });
+      const result = run({ status, log: "", simulated: false, runUrl: RUN_URL, today: TODAY, gh });
       expect(result.failed, `status "${status}"`).toBe(true);
       expect(result.action, `status "${status}"`).toBe("create");
     }
   });
 
-  it("warnt bei grünem Audit, wenn eine Ausnahme in 7 Tagen abläuft, und nennt sie im Issue", () => {
-    const { gh, calls } = fakeGh();
-    const result = run({ status: "success", log: "", simulated: false, runUrl: RUN_URL, today: TODAY, accepted: EXPIRING, gh });
-    expect(result.action).toBe("create");
-    const create = calls.find((c) => c.args[0] === "issue" && c.args[1] === "create")!;
-    expect(create.stdin).toContain("GHSA-bbbb");
-    expect(create.stdin).toContain("2026-10-10");
-    // Der Audit selbst war grün: kein "gescheitert" im Text.
-    expect(create.stdin).not.toContain("gescheitert");
-  });
-
   it("fasst ein Issue mit gleichem Label, aber anderem Titel nie an", () => {
     const { gh, calls } = fakeGh([{ number: 3, title: "Von Hand angelegt, gleiches Label" }]);
-    const result = run({ status: "failure", log: "x", simulated: false, runUrl: RUN_URL, today: TODAY, accepted: NOT_EXPIRING, gh });
+    const result = run({ status: "failure", log: "x", simulated: false, runUrl: RUN_URL, today: TODAY, gh });
     expect(result.action).toBe("create");
     expect(verbs(calls)).not.toContain("issue comment");
     expect(verbs(calls)).not.toContain("issue close");
@@ -164,7 +102,7 @@ describe("run (der ganze Ablauf mit ersetztem gh)", () => {
 
   it("kennzeichnet eine Simulation als solche", () => {
     const { gh, calls } = fakeGh();
-    run({ status: "failure", log: "SIMULATION", simulated: true, runUrl: RUN_URL, today: TODAY, accepted: NOT_EXPIRING, gh });
+    run({ status: "failure", log: "SIMULATION", simulated: true, runUrl: RUN_URL, today: TODAY, gh });
     const create = calls.find((c) => c.args[0] === "issue" && c.args[1] === "create")!;
     expect(create.stdin).toMatch(/Simulation/);
   });
@@ -179,7 +117,7 @@ describe("excerpt und bodyFor", () => {
 
   it("lässt drei Backticks aus fremdem Text nie den Codeblock beenden", () => {
     expect(excerpt("titel ``` ende")).not.toContain("```");
-    const body = bodyFor({ failed: true, expiring: [], log: "x ``` y", runUrl: RUN_URL, today: TODAY, simulated: false });
+    const body = bodyFor({ log: "x ``` y", runUrl: RUN_URL, today: TODAY, simulated: false });
     // Genau ein öffnender und ein schließender Zaun.
     expect(body.match(/```/g)).toHaveLength(2);
   });
@@ -189,9 +127,6 @@ describe("excerpt und bodyFor", () => {
     expect(excerpt(undefined as unknown as string)).toMatch(/kein Protokoll/);
   });
 
-  it("warnt eine Woche vor Ablauf, nicht früher (Konstante festgehalten)", () => {
-    expect(WARN_DAYS).toBe(7);
-  });
 });
 
 describe("audit.yml", () => {
