@@ -358,6 +358,6 @@ describe("ChatComposer, attachments", () => {
 
   it("leaves room for the plus button in front of the text", () => {
     setupAttach();
-    expect(screen.getByRole("textbox").className).toContain("pl-[3.25rem]");
+    expect(screen.getByRole("textbox").className).toContain("pl-13");
   });
 });

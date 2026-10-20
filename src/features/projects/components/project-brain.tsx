@@ -156,7 +156,7 @@ export function ProjectBrainCard({
           seen). */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-accent-subtle to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-accent-subtle to-transparent"
       />
 
       <div className="relative">
@@ -237,7 +237,7 @@ export function ProjectBrainCard({
             autoComplete="off"
             spellCheck={false}
             placeholder={t.projects.brain.repoPlaceholder}
-            className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+            className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
           />
           {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
               auf fremden Quellcode auf dem Server, das ist eine eigene
@@ -358,7 +358,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
             onClick={() => setShowDetails((v) => !v)}
             aria-expanded={showDetails}
             aria-controls={detailsId}
-            className="inline-flex items-center gap-1 rounded text-[12px] text-secondary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="inline-flex items-center gap-1 rounded text-[12px] text-secondary transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <ChevronRight
               className={cn("h-3.5 w-3.5 transition-transform duration-150", showDetails && "rotate-90")}

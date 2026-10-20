@@ -300,7 +300,7 @@ export function SettingsWorkspace({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 28, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="pointer-events-none fixed inset-x-0 bottom-5 z-50 px-6 md:pl-[var(--sidebar-w,264px)] md:pr-10"
+            className="pointer-events-none fixed inset-x-0 bottom-5 z-50 px-6 md:pl-(--sidebar-w,264px) md:pr-10"
           >
             <div className="pointer-events-auto flex max-w-[1080px] items-center justify-between gap-4 rounded-2xl border border-border glass-strong px-4 py-3 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.85)]">
               <div className="flex items-center gap-2.5">

@@ -54,7 +54,7 @@ export default function KontaktPage() {
       <section
         id="main-content"
         tabIndex={-1}
-        className="container-x pt-32 md:pt-40 pb-12 focus:outline-none"
+        className="container-x pt-32 md:pt-40 pb-12 focus:outline-hidden"
       >
         <Rise>
           <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">

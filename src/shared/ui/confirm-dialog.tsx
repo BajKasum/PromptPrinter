@@ -73,7 +73,7 @@ export function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-95 flex items-center justify-center bg-black/60 px-4 backdrop-blur-xs"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -93,11 +93,11 @@ export function ConfirmDialog({
           >
             <div className="flex items-start gap-3 border-b border-border p-5">
               {tone === "neutral" ? (
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/25 bg-accent/[0.08]">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/25 bg-accent/8">
                   <ShieldCheck className="h-4 w-4 text-accent-text" strokeWidth={1.8} aria-hidden />
                 </div>
               ) : (
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/[0.08]">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/8">
                   <AlertTriangle className="h-4 w-4 text-destructive" strokeWidth={1.8} />
                 </div>
               )}

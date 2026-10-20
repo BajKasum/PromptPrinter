@@ -254,7 +254,7 @@ export function VoiceBar({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
-      className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5"
+      className="sticky bottom-0 z-10 -mb-4 bg-linear-to-t from-background via-background to-background/0 pb-4 pt-5"
     >
       {/* The accessible announcement of the state machine. Sighted users read
           the state off Finn's pose and the waveform instead (see module doc). */}
@@ -273,7 +273,7 @@ export function VoiceBar({
         ) : mode === "speaking" && reply ? (
           <p className="text-balance text-[14px] leading-relaxed text-foreground/90">{reply}</p>
         ) : spokenText ? (
-          <p className="text-balance text-[16px] leading-[1.5] tracking-[-0.01em] text-foreground">
+          <p className="text-balance text-[16px] leading-normal tracking-[-0.01em] text-foreground">
             <WordStream text={final} className="text-foreground" reduced={reducedMotion} />
             {interim && (
               <>

@@ -68,7 +68,7 @@ export function DeleteAccount({ email }: { email: string }) {
 
   return (
     <>
-      <div className="flex flex-col gap-3 rounded-lg border border-destructive/25 bg-destructive/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-destructive/25 bg-destructive/4 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[14px] font-medium text-foreground">
             {t.settings.deleteAccount.title}
@@ -89,7 +89,7 @@ export function DeleteAccount({ email }: { email: string }) {
           <AnimatePresence>
             {open && (
               <motion.div
-                className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+                className="fixed inset-0 z-95 flex items-center justify-center bg-black/60 px-4 backdrop-blur-xs"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -108,7 +108,7 @@ export function DeleteAccount({ email }: { email: string }) {
                   className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
                 >
                   <div className="flex items-start gap-3 border-b border-border p-5">
-                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/[0.08]">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-destructive/25 bg-destructive/8">
                       <AlertTriangle className="h-4 w-4 text-destructive" strokeWidth={1.8} />
                     </div>
                     <div>
@@ -135,7 +135,7 @@ export function DeleteAccount({ email }: { email: string }) {
                       autoComplete="off"
                       spellCheck={false}
                       placeholder={email}
-                      className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-destructive/55 focus:outline-none focus:ring-2 focus:ring-destructive/15"
+                      className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-destructive/55 focus:outline-hidden focus:ring-2 focus:ring-destructive/15"
                     />
                   </div>
 

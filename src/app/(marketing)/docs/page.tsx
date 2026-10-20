@@ -25,7 +25,7 @@ export default function DocsIndexPage() {
       <section
         id="main-content"
         tabIndex={-1}
-        className="container-x pt-32 md:pt-40 pb-14 focus:outline-none"
+        className="container-x pt-32 md:pt-40 pb-14 focus:outline-hidden"
       >
         <Rise>
           <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">

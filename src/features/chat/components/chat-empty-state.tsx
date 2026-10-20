@@ -32,7 +32,7 @@ export function ChatEmptyState({
                 <button
                   type="button"
                   onClick={() => onPick!(text)}
-                  className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-border bg-surface px-4 py-2 text-[14px] leading-snug text-secondary transition-colors hover:border-accent/40 hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-auto"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-border bg-surface px-4 py-2 text-[14px] leading-snug text-secondary transition-colors hover:border-accent/40 hover:bg-surface-hover hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-auto"
                 >
                   {text}
                 </button>

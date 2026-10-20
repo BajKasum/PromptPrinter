@@ -58,7 +58,7 @@ export default function UeberPage() {
       <section
         id="main-content"
         tabIndex={-1}
-        className="container-x pt-32 md:pt-40 pb-4 focus:outline-none"
+        className="container-x pt-32 md:pt-40 pb-4 focus:outline-hidden"
       >
         <Rise>
           <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">

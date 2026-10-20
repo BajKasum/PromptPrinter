@@ -212,7 +212,7 @@ function PlanCard({
             className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 rounded-t-2xl bg-[radial-gradient(ellipse_at_top,hsl(var(--accent)/0.22),transparent_75%)]"
           />
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-1 text-[12px] font-mono uppercase tracking-[0.1em] text-accent-foreground">
+            <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-1 text-[12px] font-mono uppercase tracking-widest text-accent-foreground">
               <Sparkles className="h-3 w-3" strokeWidth={2} />
               {m.recommended}
             </div>
@@ -234,7 +234,7 @@ function PlanCard({
       >
         {plan.name}
       </h2>
-      <p className="mt-1.5 text-[13.5px] leading-[1.5] text-secondary">{plan.description}</p>
+      <p className="mt-1.5 text-[13.5px] leading-normal text-secondary">{plan.description}</p>
       <div className="mt-6 flex items-baseline gap-1.5">
         <span
           className={cn(

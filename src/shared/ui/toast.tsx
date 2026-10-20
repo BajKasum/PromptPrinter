@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* aria-live so screen readers announce toasts without stealing focus */}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2"
+        className="pointer-events-none fixed bottom-4 right-4 z-100 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2"
       >
         <AnimatePresence initial={false}>
           {toasts.map((t) => {

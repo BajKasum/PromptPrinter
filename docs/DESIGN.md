@@ -72,7 +72,7 @@ Hex-Werte in Komponenten**, immer Token-Utilities nutzen.
 - **Geist Mono** (`font-mono`), Labels, Caps, tabellarische Zahlen, Code,
   Chips, Tastatur-Shortcuts.
 - Type-Scale: `display-*`, `headline-*`, `body-*`, `label`, `label-caps`, `code`
-  (siehe `tailwind.config.ts`).
+  (siehe `@theme` in `src/app/globals.css`).
 
 ## Form & Motion
 

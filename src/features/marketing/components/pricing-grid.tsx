@@ -61,7 +61,7 @@ export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
             )}
             {p.highlight && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-accent-foreground">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest text-accent-foreground">
                   Finns Empfehlung
                 </div>
               </div>
@@ -83,7 +83,7 @@ export function PricingGrid({ withMascot = false }: { withMascot?: boolean }) {
             >
               {p.name}
             </h2>
-            <p className="mt-1.5 text-[13.5px] leading-[1.5] text-secondary">
+            <p className="mt-1.5 text-[13.5px] leading-normal text-secondary">
               {p.description}
             </p>
             <div className="mt-7 flex items-baseline gap-1.5">

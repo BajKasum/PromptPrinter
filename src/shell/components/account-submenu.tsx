@@ -160,7 +160,7 @@ export function AccountSubmenu({
               : undefined
           }
           className={cn(
-            "fixed z-[60] overflow-y-auto rounded-xl border border-border bg-surface-raised p-1.5 shadow-elevated",
+            "fixed z-60 overflow-y-auto rounded-xl border border-border bg-surface-raised p-1.5 shadow-elevated",
             !pos && "invisible"
           )}
         >

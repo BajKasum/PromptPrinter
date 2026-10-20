@@ -161,7 +161,7 @@ function ChatRow({
               cancel();
             }
           }}
-          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
         />
         <button
           type="button"
@@ -234,7 +234,7 @@ function ChatRow({
           type="button"
           onClick={() => setMode("confirm-delete")}
           aria-label={fmt(t.chat.deleteLabel, { title: chat.title })}
-          className="touch-hit-y relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/[0.08] hover:text-destructive"
+          className="touch-hit-y relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/8 hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>

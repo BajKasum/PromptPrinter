@@ -34,7 +34,7 @@ export function LibraryBrowser({ items, userId }: { items: LibraryItem[]; userId
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.library.searchPlaceholder}
           aria-label={t.library.searchLabel}
-          className="w-full h-10 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+          className="w-full h-10 pl-9 pr-3 rounded-lg border border-border bg-surface text-[13.5px] text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-ring focus:ring-2 focus:ring-ring/20"
         />
       </div>
 

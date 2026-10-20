@@ -138,7 +138,7 @@ export function ChatThread({
                   <button
                     type="button"
                     onClick={() => void onRegenerate()}
-                    className="touch-hit-y relative inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    className="touch-hit-y relative inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] text-secondary transition-colors hover:bg-surface-hover hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
                   >
                     <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
                     {t.chat.regenerate}

@@ -90,7 +90,7 @@ export function ChatComposer({
   return (
     <div
       style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
-      className="sticky bottom-0 z-10 -mb-4 bg-gradient-to-t from-background via-background to-background/0 pb-4 pt-5">
+      className="sticky bottom-0 z-10 -mb-4 bg-linear-to-t from-background via-background to-background/0 pb-4 pt-5">
       <div className="relative rounded-2xl border border-border-strong bg-surface-raised">
         {onAddFiles && (
           <>
@@ -148,8 +148,8 @@ export function ChatComposer({
           }}
           className={
             onAddFiles
-              ? "min-h-[48px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent py-3 pl-[3.25rem] pr-[5.5rem] transition-[height] duration-100 ease-out focus:ring-0"
-              : "min-h-[48px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent py-3 pl-4 pr-[5.5rem] transition-[height] duration-100 ease-out focus:ring-0"
+              ? "min-h-[48px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent py-3 pl-13 pr-22 transition-[height] duration-100 ease-out focus:ring-0"
+              : "min-h-[48px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent py-3 pl-4 pr-22 transition-[height] duration-100 ease-out focus:ring-0"
           }
         />
         {onAddFiles && (

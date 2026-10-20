@@ -65,7 +65,7 @@ export function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:border focus:border-ring focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-200 focus:rounded-lg focus:border focus:border-ring focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
       >
         Zum Inhalt springen
       </a>
@@ -80,8 +80,8 @@ export function Navbar() {
           "mx-auto flex w-full items-center justify-between gap-4 border-b border-transparent px-6 transition-all duration-300 ease-out md:border md:px-8",
           "h-16",
           scrolled && !open
-            ? "max-w-[1200px] border-border bg-background/70 backdrop-blur-xl backdrop-saturate-150 md:mt-3 md:max-w-4xl md:rounded-2xl md:px-4 md:shadow-elevated"
-            : "max-w-[1200px]",
+            ? "max-w-container border-border bg-background/70 backdrop-blur-xl backdrop-saturate-150 md:mt-3 md:max-w-4xl md:rounded-2xl md:px-4 md:shadow-elevated"
+            : "max-w-container",
           open && "border-border bg-background/90 backdrop-blur-xl"
         )}
       >
@@ -175,7 +175,7 @@ export function Navbar() {
           open ? "block" : "hidden"
         )}
       >
-        <div className="flex h-full flex-col justify-between gap-y-2 p-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2">
+        <div className="flex h-full flex-col justify-between gap-y-2 p-6 motion-safe:animate-menu-in">
           {/* Same idea as the desktop links, adapted to a full-width row: the
               tint is the whole row instead of a pill, and a chevron fades in
               where the desktop wave would be (a centred wave under a

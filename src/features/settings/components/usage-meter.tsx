@@ -91,7 +91,7 @@ export function UsageMeter({
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className={cn("h-full rounded-full bg-gradient-to-r", tone)}
+          className={cn("h-full rounded-full bg-linear-to-r", tone)}
         />
       </div>
     </div>

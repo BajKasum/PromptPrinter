@@ -84,7 +84,7 @@ export function ConnectedProviderRow({
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/[0.06] px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/6 px-3 py-2.5">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface">
         <ToolLogo name={meta.logo} size={16} />
       </span>
@@ -162,7 +162,7 @@ export function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/[0.06] px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/6 px-3 py-2.5">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface">
         <Plug className="h-4 w-4 text-tertiary" strokeWidth={1.8} />
       </span>

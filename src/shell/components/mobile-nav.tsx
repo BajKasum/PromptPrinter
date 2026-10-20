@@ -58,7 +58,7 @@ export function MobileNav({
   const [learnMoreOpen, setLearnMoreOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   // Der Drawer ist `fixed inset-0`, sitzt aber im Quelltext in der klebenden
-  // Kopfleiste mit `backdrop-blur`. Jeder Vorfahre mit `backdrop-filter` macht
+  // Kopfleiste mit `backdrop-blur-sm`. Jeder Vorfahre mit `backdrop-filter` macht
   // sich zum Bezugsrahmen für `fixed`: der Drawer war dadurch nur so hoch wie
   // die Leiste (56 px) und das Menü auf dem Handy unbenutzbar. Darum hängt er
   // an `document.body`, wie die anderen Dialoge (confirm-dialog.tsx).
@@ -118,7 +118,7 @@ export function MobileNav({
         createPortal(
       <AnimatePresence>
         {open && (
-          <div className="md:hidden fixed inset-0 z-[60]">
+          <div className="md:hidden fixed inset-0 z-60">
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -126,7 +126,7 @@ export function MobileNav({
               transition={{ duration: 0.2 }}
               aria-label={t.shell.closeMenu}
               onClick={() => setOpen(false)}
-              className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-xs"
             />
             <motion.aside
               initial={{ x: "-100%" }}
