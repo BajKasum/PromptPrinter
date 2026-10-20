@@ -70,7 +70,10 @@ describe("LibraryBrowser pagination", () => {
     await user.click(screen.getByText("24 von 30, mehr laden"));
     expect(screen.getByText("Projekt 24")).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText(/durchsuchen/), "Projekt 2");
+    // Eingefuegt statt getippt: jeder der neun Anschlaege renderte die Liste neu, im vollen Lauf unter
+    // Last der langsamste Test der Suite (3 s von 5, #145). Dass sich die Suche aendert, bleibt gleich.
+    await user.click(screen.getByPlaceholderText(/durchsuchen/));
+    await user.paste("Projekt 2");
     // Back on page one of the new (smaller) result set, "Projekt 24..29"
     // still match the query, so with a reset window only the first 24 of
     // those matches would show; easier to assert the button count reflects
