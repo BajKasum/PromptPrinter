@@ -10,8 +10,10 @@
  * `first_patched_version: null`: betroffen sind ALLE Versionen bis 3.0.3, eine
  * gepatchte gibt es nicht. Die bisherige Antwort für solche Funde (ein
  * `overrides`-Eintrag mit der kleinsten bereinigenden Version) greift hier
- * nicht, weil es keine Version gibt, auf die man heben könnte. npm schlägt nur
- * den Sprung auf tailwindcss 4 vor, einen Major mit Breaking Change.
+ * nicht, weil es keine Version gibt, auf die man heben könnte. npm schlug nur
+ * den Sprung auf tailwindcss 4 vor, einen Major mit Breaking Change. Der ist seit dem
+ * 20.10.2026 gemacht, beseitigt den Fund aber nicht: er bleibt über eslint-config-next
+ * (siehe den Eintrag unten).
  *
  * Ohne diese Datei wäre jeder Push auf jeden Branch rot gewesen, bis Upstream
  * nachzieht. Genau die Lage, die docs/CHANGELOG-2026.md beschreibt (23.09. und 01.10.2026),
@@ -50,14 +52,17 @@ export const ACCEPTED = [
   {
     id: "GHSA-vfj7-8cjw-p6xm",
     pkg: "braces",
-    until: "2026-11-04",
+    until: "2026-11-19",
     reason:
-      "Nur Build-Werkzeuge: braces hängt an tailwindcss 3.4 (chokidar, micromatch, fast-glob) " +
-      "und eslint-config-next (fast-glob). Keine gepatchte Version vorhanden " +
-      "(betroffen <= 3.0.3 = alle), npm bietet nur tailwindcss 4 an (Breaking Change). " +
-      "Der ausgelieferte Build enthält braces nicht: .next/standalone/node_modules am " +
-      "04.10.2026 geprüft, dort fehlen braces, micromatch, tailwindcss, chokidar, fast-glob. " +
-      "Ausnutzbar nur mit angreiferkontrollierten Glob-Mustern, die unser Build nie verarbeitet.",
+      "Nur ESLint: braces hängt seit der Umstellung auf Tailwind 4 (2026-10-20) allein an " +
+      "eslint-config-next -> @next/eslint-plugin-next -> fast-glob 3.3.1 -> micromatch 4.0.8, einem " +
+      "Entwicklungswerkzeug. Keine gepatchte Version vorhanden (betroffen <= 3.0.3 = alle, 3.0.3 ist " +
+      "die neueste), und auch Next 16 (@next/eslint-plugin-next 16.4.2) bindet fast-glob 3.3.1 ein: " +
+      "keines der geplanten Major-Upgrades beseitigt den Fund, nur ein Fix in braces oder micromatch. " +
+      "Der ausgelieferte Build enthält braces nicht: .next/standalone/node_modules am 20.10.2026 " +
+      "geprüft, dort fehlen braces, micromatch, tailwindcss, chokidar, fast-glob. Auch " +
+      "'npm audit --omit=dev' (der Baum, der ausgeliefert wird) meldet braces nicht mehr. " +
+      "Ausnutzbar nur mit angreiferkontrollierten Glob-Mustern, die unser Lint nie verarbeitet.",
   },
 ];
 

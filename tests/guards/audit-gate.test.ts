@@ -129,7 +129,7 @@ describe("ACCEPTED (die echte Liste)", () => {
   });
 
   it("scheitert wieder, sobald die Ausnahme abgelaufen ist", () => {
-    const { failing } = evaluate(bracesReport, { today: "2026-11-05" });
+    const { failing } = evaluate(bracesReport, { today: "2026-11-20" });
     expect(failing.map((f) => f.id)).toEqual(["GHSA-vfj7-8cjw-p6xm"]);
   });
 

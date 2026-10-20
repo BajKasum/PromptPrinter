@@ -97,7 +97,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
   Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
   Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
-  am 2026-10-11 geprüft); die `braces`-Ausnahme in `scripts/audit-gate.mjs` (läuft am 2026-11-04 ab, das Issue warnt ab dem 28.10.; Entscheid Tailwind 4 und Reihenfolge der Major-Upgrades: [docs/UPGRADES-2026-10.md](docs/UPGRADES-2026-10.md)).
+  am 2026-10-11 geprüft); die `braces`-Ausnahme in `scripts/audit-gate.mjs` (einmal bis **2026-11-19** verlängert, das Issue warnt ab dem 12.11.; Tailwind 4 ist drin, löst den Fund aber nicht, er hängt jetzt allein an `eslint-config-next`. **Entscheid, wie es danach weitergeht, wartet auf Kasum**, drei Wege in [docs/UPGRADES-2026-10.md](docs/UPGRADES-2026-10.md), "Korrektur").
 - **Juristisch zu prüfen (Aufwand bewusst klein, Entscheid 2026-10-17: Hobby- und Lernprojekt ohne Werbung, kein Jurist, keine Verträge, kein EU-Vertreter nach Art. 27 DSGVO und DSA Art. 13, keine Angebote einholen, nicht wieder vorschlagen; die Seite soll vor allem gut aussehen und laufen):** Übermittlung an Z.ai (Antwort auf Kasums Mail steht aus), Sprachmodus
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
@@ -121,7 +121,7 @@ kommt der fertige Prompt. Solo-/Indie-Projekt, ein Gründer.
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
 (Auth/DB/RLS) · Z.ai/GLM (primär) + Gemini (`@google/genai`, sekundär) ·
-Tailwind (HSL-Token-System) · Framer Motion · next-themes · Vitest · Docker.
+Tailwind 4 (HSL-Token-System in `globals.css`) · Framer Motion · next-themes · Vitest · Docker.
 
 ## ⚠️ Wichtig zu wissen, bevor du loslegst
 
@@ -172,10 +172,10 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 - **`audit:gate` ist `npm audit --audit-level=high` mit einer befristeten
   Ausnahmeliste** ([`scripts/audit-gate.mjs`](scripts/audit-gate.mjs)). Aktuell steht
   dort GHSA-vfj7-8cjw-p6xm (`braces`, keine gepatchte Version, hängt nur an
-  Build-Werkzeugen und ist im ausgelieferten `.next/standalone` nicht enthalten),
-  **befristet bis 2026-11-04**. Danach scheitert das Gate wieder und jemand
-  entscheidet: Upstream-Fix, Tailwind 4 (Breaking Change) oder Verlängerung mit neuer
-  Begründung. Einträge nur mit Beleg, dass der Fund die ausgelieferte App nicht
+  `eslint-config-next` und ist im ausgelieferten `.next/standalone` nicht enthalten),
+  **befristet bis 2026-11-19**. Danach scheitert das Gate wieder und jemand
+  entscheidet: Upstream-Fix, ESLint ohne `eslint-config-next`, das Gate nach Baum trennen
+  oder Verlängerung mit neuer Begründung (Tailwind 4 ist seit 2026-10-20 drin und half nicht). Einträge nur mit Beleg, dass der Fund die ausgelieferte App nicht
   erreicht, nie "später". Der tägliche Lauf `audit.yml` meldet die Frist sieben Tage
   vorher per Issue.
 - **Die Schritte des Gates nie durch `| tail` oder `| head` leiten.** Eine Pipe gibt
