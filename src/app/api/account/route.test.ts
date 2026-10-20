@@ -3,7 +3,7 @@ import { DELETE } from "./route";
 
 const getUser = vi.fn();
 const signOut = vi.fn();
-const projectFilesSelect = vi.fn();
+const projectFilesRange = vi.fn();
 const attachmentsRange = vi.fn();
 const profileSelect = vi.fn();
 const storageRemove = vi.fn();
@@ -16,11 +16,25 @@ vi.mock("@/server/supabase/server", () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser, signOut },
     from: (table: string) => {
-      if (table === "project_files") return { select: () => ({ eq: () => projectFilesSelect() }) };
+      // Beide Tabellen werden seitenweise und sortiert gelesen: select -> eq -> order -> range.
+      if (table === "project_files")
+        return {
+          select: () => ({
+            eq: () => ({
+              order: (column: string) => ({
+                range: (from: number, to: number) => projectFilesRange(from, to, column),
+              }),
+            }),
+          }),
+        };
       if (table === "message_attachments")
         return {
           select: () => ({
-            eq: () => ({ range: (from: number, to: number) => attachmentsRange(from, to) }),
+            eq: () => ({
+              order: (column: string) => ({
+                range: (from: number, to: number) => attachmentsRange(from, to, column),
+              }),
+            }),
           }),
         };
       if (table === "profiles")
@@ -61,7 +75,7 @@ describe("DELETE /api/account", () => {
   beforeEach(() => {
     getUser.mockReset();
     signOut.mockReset();
-    projectFilesSelect.mockReset();
+    projectFilesRange.mockReset();
     attachmentsRange.mockReset();
     profileSelect.mockReset();
     storageRemove.mockReset();
@@ -70,7 +84,7 @@ describe("DELETE /api/account", () => {
     captureError.mockReset();
     cancelSubscriptionImmediately.mockReset();
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
-    projectFilesSelect.mockResolvedValue({ data: [] });
+    projectFilesRange.mockResolvedValue({ data: [], error: null });
     attachmentsRange.mockResolvedValue({ data: [], error: null });
     profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: null } });
     storageRemove.mockResolvedValue({ error: null });
@@ -103,8 +117,9 @@ describe("DELETE /api/account", () => {
   });
 
   it("removes every attached project file and the avatar before deleting the account", async () => {
-    projectFilesSelect.mockResolvedValue({
+    projectFilesRange.mockResolvedValue({
       data: [{ storage_path: "user-1/proj-a/file1.md" }, { storage_path: "user-1/proj-b/file2.txt" }],
+      error: null,
     });
 
     const res = await DELETE(req());
@@ -119,11 +134,88 @@ describe("DELETE /api/account", () => {
   });
 
   it("skips the project-files removal call when there are no files", async () => {
-    projectFilesSelect.mockResolvedValue({ data: [] });
+    projectFilesRange.mockResolvedValue({ data: [], error: null });
     await DELETE(req());
     expect(storageRemove).not.toHaveBeenCalledWith("project-files", expect.anything());
     // The avatar path is always attempted, removing a never-uploaded path is a no-op.
     expect(storageRemove).toHaveBeenCalledWith("avatars", ["user-1/avatar"]);
+  });
+
+  // #131: PostgREST kappt eine Antwort bei 1000 Zeilen. Die Projektdateien wurden ohne Seiten gelesen, ein Konto mit
+  // mehr als 1000 Zeilen (Pro oder Admin ohne Projektgrenze, 20 Dateien je Projekt) liess den Rest als Waisen im
+  // Bucket zurueck, obwohl die Datenschutzerklaerung (Ziffer 8) zusagt, dass beim Loeschen alles verschwindet.
+  describe("project files past the first page (#131)", () => {
+    const page = (n: number, prefix: string) =>
+      Array.from({ length: n }, (_, i) => ({ storage_path: `user-1/p/${prefix}${i}.md` }));
+    const removedFromProjectFiles = () =>
+      storageRemove.mock.calls
+        .filter(([bucket]) => bucket === "project-files")
+        .flatMap(([, paths]) => paths as string[]);
+
+    it("reads past the first page, so a large account is not left half cleaned", async () => {
+      projectFilesRange
+        .mockResolvedValueOnce({ data: page(1000, "a"), error: null })
+        .mockResolvedValueOnce({ data: page(3, "b"), error: null });
+
+      const res = await DELETE(req());
+
+      expect(projectFilesRange).toHaveBeenNthCalledWith(1, 0, 999, "id");
+      expect(projectFilesRange).toHaveBeenNthCalledWith(2, 1000, 1999, "id");
+      const removed = removedFromProjectFiles();
+      expect(removed).toHaveLength(1003);
+      expect(new Set(removed).size).toBe(1003);
+      expect(deleteUser).toHaveBeenCalledWith("user-1");
+      expect(res.status).toBe(200);
+    });
+
+    it("asks for another page after exactly 1000 rows, and stops at the empty one", async () => {
+      projectFilesRange
+        .mockResolvedValueOnce({ data: page(1000, "a"), error: null })
+        .mockResolvedValueOnce({ data: [], error: null });
+
+      await DELETE(req());
+
+      expect(projectFilesRange).toHaveBeenCalledTimes(2);
+      expect(removedFromProjectFiles()).toHaveLength(1000);
+    });
+
+    it("reads every page in a stable order, for both tables", async () => {
+      await DELETE(req());
+      expect(projectFilesRange).toHaveBeenCalledWith(0, 999, "id");
+      expect(attachmentsRange).toHaveBeenCalledWith(0, 999, "id");
+    });
+
+    // Der Avatar und das Loeschen des Kontos haengen nicht an der Abfrage der Projektdateien.
+    it("still removes the avatar and deletes the account when the project file lookup fails", async () => {
+      projectFilesRange.mockResolvedValue({ data: null, error: new Error("permission denied") });
+
+      const res = await DELETE(req());
+
+      expect(captureError).toHaveBeenCalledWith(
+        "account.storage_cleanup_failed",
+        expect.any(Error),
+        { userId: "user-1" }
+      );
+      expect(storageRemove).toHaveBeenCalledWith("avatars", ["user-1/avatar"]);
+      expect(deleteUser).toHaveBeenCalledWith("user-1");
+      expect(res.status).toBe(200);
+    });
+
+    it("reports the number of files in batches that could not be removed", async () => {
+      projectFilesRange.mockResolvedValue({ data: page(3, "c"), error: null });
+      storageRemove.mockImplementation(async (bucket: string) =>
+        bucket === "project-files" ? { error: { message: "boom" } } : { error: null }
+      );
+
+      const res = await DELETE(req());
+
+      expect(captureError).toHaveBeenCalledWith(
+        "account.storage_cleanup_partial",
+        expect.objectContaining({ message: "3 project file(s) could not be removed" }),
+        { userId: "user-1" }
+      );
+      expect(res.status).toBe(200);
+    });
   });
 
   describe("chat attachments (migration 0045)", () => {
@@ -152,8 +244,8 @@ describe("DELETE /api/account", () => {
 
       await DELETE(req());
 
-      expect(attachmentsRange).toHaveBeenNthCalledWith(1, 0, 999);
-      expect(attachmentsRange).toHaveBeenNthCalledWith(2, 1000, 1999);
+      expect(attachmentsRange).toHaveBeenNthCalledWith(1, 0, 999, "id");
+      expect(attachmentsRange).toHaveBeenNthCalledWith(2, 1000, 1999, "id");
       const removed = storageRemove.mock.calls
         .filter(([bucket]) => bucket === "chat-attachments")
         .flatMap(([, paths]) => paths as string[]);
@@ -169,7 +261,7 @@ describe("DELETE /api/account", () => {
     // Projektdateien noch das Löschen des Kontos aufhalten.
     it("still removes project files and deletes the account when the attachment lookup fails", async () => {
       attachmentsRange.mockResolvedValue({ data: null, error: new Error("relation does not exist") });
-      projectFilesSelect.mockResolvedValue({ data: [{ storage_path: "user-1/p/f.md" }] });
+      projectFilesRange.mockResolvedValue({ data: [{ storage_path: "user-1/p/f.md" }], error: null });
 
       const res = await DELETE(req());
 
