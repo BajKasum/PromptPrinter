@@ -96,7 +96,7 @@ export function DeleteProjectButton({
         variant="ghost"
         size="sm"
         onClick={() => setOpen(true)}
-        className="shrink-0 text-secondary hover:border-destructive/30 hover:bg-destructive/[0.06] hover:text-destructive"
+        className="shrink-0 text-secondary hover:border-destructive/30 hover:bg-destructive/6 hover:text-destructive"
       >
         <Trash2 className="h-3.5 w-3.5" />
         {t.common.delete}

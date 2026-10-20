@@ -44,7 +44,7 @@ export default function VergleichPage() {
       <section
         id="main-content"
         tabIndex={-1}
-        className="container-x pt-32 md:pt-40 pb-12 focus:outline-none"
+        className="container-x pt-32 md:pt-40 pb-12 focus:outline-hidden"
       >
         <Rise className="max-w-2xl">
           <p className="mb-5 text-[11px] font-mono uppercase tracking-[0.08em] text-accent-text">

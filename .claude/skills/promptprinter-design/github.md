@@ -21,4 +21,4 @@ date: 2026-07-25T15:20:00Z
 | `ui_kits/auth` | `src/components/auth/*` |
 | `ui_kits/settings` | `src/components/app/settings-workspace.tsx`, `theme-preference.tsx`, `tool-picker.tsx` |
 | `tokens/colors.css` | `src/app/globals.css` |
-| `tokens/typography.css`, `tokens/spacing.css`, `tokens/radius.css` | `tailwind.config.ts` |
+| `tokens/typography.css`, `tokens/spacing.css`, `tokens/radius.css` | `@theme` in `src/app/globals.css` (seit Tailwind 4 gibt es kein `tailwind.config.ts` mehr) |

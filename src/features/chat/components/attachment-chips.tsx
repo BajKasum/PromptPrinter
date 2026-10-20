@@ -67,7 +67,7 @@ export function AttachmentTray({
             type="button"
             onClick={() => onRemove(a.id)}
             aria-label={fmt(t.chat.attachRemove, { name: a.name })}
-            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             <X className="h-3 w-3" strokeWidth={2.4} />
           </button>
@@ -106,7 +106,7 @@ export function MessageAttachments({ attachments }: { attachments: AttachmentVie
               target="_blank"
               rel="noopener noreferrer"
               aria-label={fmt(t.chat.attachOpenImage, { name: a.name })}
-              className="block overflow-hidden rounded-xl border border-border transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              className="block overflow-hidden rounded-xl border border-border transition-opacity hover:opacity-90 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- data:/signierte Adresse, siehe oben */}
               <img src={a.url} alt={a.name} className="h-28 w-auto max-w-[220px] object-cover" />

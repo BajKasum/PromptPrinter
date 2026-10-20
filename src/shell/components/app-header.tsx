@@ -44,7 +44,7 @@ export function AppHeader({
                 {eyebrow}
               </p>
             )}
-            <h1 className="text-[28px] md:text-[34px] leading-[1.08] tracking-[-0.025em] font-semibold text-foreground">
+            <h1 className="text-[28px] md:text-[34px] leading-[1.08] tracking-tight font-semibold text-foreground">
               {title}
             </h1>
             {subtitle && (

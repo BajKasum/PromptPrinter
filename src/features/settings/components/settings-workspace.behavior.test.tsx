@@ -272,7 +272,7 @@ describe("Speicherleiste", () => {
     const { container } = renderIt();
     await userEvent.type(nameInput(), "x");
     const wrapper = container.querySelector(".fixed.inset-x-0");
-    expect(wrapper?.className).toContain("md:pl-[var(--sidebar-w,264px)]");
+    expect(wrapper?.className).toContain("md:pl-(--sidebar-w,264px)");
   });
 });
 

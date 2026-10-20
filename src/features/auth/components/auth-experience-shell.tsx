@@ -90,7 +90,10 @@ export function AuthExperienceShell({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-md space-y-6"
+            // `lg:pt-6`: unter Tailwind 3 bekam das Formular auch am Desktop 24 px Abstand nach oben, weil `space-y-6` den
+            // ausgeblendeten Finn (`lg:hidden`) mitzählte. Tailwind 4 zählt ihn nicht mehr; die 24 px bleiben, damit sich die
+            // Seite beim Umbau nicht verschiebt.
+            className="w-full max-w-md space-y-6 lg:pt-6"
           >
             {/* Small Finn for mobile, desktop has the big one on the left. */}
             <div className="flex justify-center lg:hidden">

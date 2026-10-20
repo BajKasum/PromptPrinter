@@ -233,7 +233,7 @@ describe("Trenner zum Ziehen", () => {
 
     fireEvent.pointerDown(handle(), { clientX: 264, pointerId: 1 });
     expect(aside(container).className).not.toContain(transition);
-    expect(handle().querySelector("span")?.className).toContain("!bg-accent");
+    expect(handle().querySelector("span")?.className).toContain("bg-accent!");
 
     fireEvent.pointerMove(handle(), { clientX: 300, pointerId: 1 });
     expect(Number(handle().getAttribute("aria-valuenow"))).toBeGreaterThan(DEFAULT_SIDEBAR_WIDTH);

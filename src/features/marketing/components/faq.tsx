@@ -40,7 +40,7 @@ function FAQItem({ index, q, a }: { index: number; q: string; a: string }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-start justify-between gap-6 px-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset rounded-2xl"
+        className="w-full flex items-start justify-between gap-6 px-6 py-5 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset rounded-2xl"
       >
         <span className="text-[15.5px] font-medium text-foreground pr-4">{q}</span>
         <Plus

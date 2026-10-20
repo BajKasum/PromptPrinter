@@ -152,7 +152,7 @@ export function ContactForm() {
           id="contact-topic"
           value={topic}
           onChange={(e) => setTopic(e.target.value as ContactTopic)}
-          className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground transition-colors duration-200 focus:border-ring focus:outline-none input-glow"
+          className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground transition-colors duration-200 focus:border-ring focus:outline-hidden input-glow"
         >
           {CONTACT_TOPICS.map((t) => (
             <option key={t} value={t}>
@@ -240,7 +240,7 @@ export function ContactForm() {
         )}
       </button>
 
-      <p className="text-[12px] leading-[1.5] text-tertiary">
+      <p className="text-[12px] leading-normal text-tertiary">
         Ich nutze deine Angaben nur, um dir zu antworten. Mehr steht in der{" "}
         <Link href="/datenschutz" className="text-accent-text underline underline-offset-2">
           Datenschutzerklärung

@@ -176,7 +176,7 @@ export function ProjectRail({
           onChange={(e) => setInstructions(e.target.value)}
           onBlur={() => void persistInstructions(instructions)}
           aria-label={t.projects.instructionsLabel}
-          className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[13px] leading-relaxed text-foreground placeholder:text-secondary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+          className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[13px] leading-relaxed text-foreground placeholder:text-secondary transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
         />
       </section>
 
@@ -201,7 +201,7 @@ export function ProjectRail({
                 placeholder={key === "notes" ? t.projects.notesPlaceholder : undefined}
                 onChange={(e) => setContext((c) => ({ ...c, [key]: e.target.value }))}
                 onBlur={() => void persistContext(context)}
-                className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+                className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
               />
             </div>
           ))}

@@ -44,7 +44,7 @@ export function PageHeader({ headline }: { headline: React.ReactNode }) {
     <section
       id="main-content"
       tabIndex={-1}
-      className="relative overflow-hidden pt-36 pb-14 focus:outline-none md:pt-44 md:pb-16"
+      className="relative overflow-hidden pt-36 pb-14 focus:outline-hidden md:pt-44 md:pb-16"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] grid-bg opacity-50" />
       <Floaters items={HEADER_FLOATERS} />

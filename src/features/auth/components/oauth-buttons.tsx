@@ -43,7 +43,7 @@ function GitHubMark() {
 }
 
 const BUTTON_ROW =
-  "flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-surface-raised text-[14px] font-medium text-foreground transition-colors hover:bg-surface-hover disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-surface-raised text-[14px] font-medium text-foreground transition-colors hover:bg-surface-hover disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50";
 
 /**
  * "Weiter mit Google / GitHub", Supabase OAuth (PKCE). The provider redirect

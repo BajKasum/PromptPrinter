@@ -28,7 +28,7 @@ export function Hero() {
     <section
       id="main-content"
       tabIndex={-1}
-      className="relative overflow-hidden pt-36 md:pt-36 pb-20 md:pb-32 focus:outline-none"
+      className="relative overflow-hidden pt-36 md:pt-36 pb-20 md:pb-32 focus:outline-hidden"
     >
       {/* Subtle grid backdrop, restrained, IDE-like. No glow. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] -z-10 grid-bg opacity-50" />
@@ -81,7 +81,7 @@ export function Hero() {
             </h1>
 
             <p
-              className="enter-rise mt-4 text-balance text-[18px] md:text-[21px] leading-[1.5] md:leading-[1.55] text-secondary"
+              className="enter-rise mt-4 text-balance text-[18px] md:text-[21px] leading-normal md:leading-[1.55] text-secondary"
               style={{ animationDelay: "0.1s" }}
             >
               Ob Dokument, Webseite, Datenbank oder Sicherheitsprüfung: Ich
@@ -195,7 +195,7 @@ function BubbleMobile() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute -top-14 left-1/2 z-20 w-[14rem] md:hidden"
+      className="absolute -top-14 left-1/2 z-20 w-56 md:hidden"
     >
       {/* Centering (-translate-x-1/2) and tilt live on this plain inner div,
           not the motion.div above, see BubbleDesktop's comment: framer-motion

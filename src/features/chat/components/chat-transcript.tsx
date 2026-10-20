@@ -88,7 +88,7 @@ export function ChatUserBubble({
               }
             }}
             aria-label={t.chat.editMessage}
-            className="w-full resize-y rounded-2xl border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+            className="w-full resize-y rounded-2xl border border-accent/40 bg-surface px-4 py-2.5 text-[13.5px] leading-relaxed text-foreground focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
           />
           <div className="mt-1.5 flex justify-end gap-1.5">
             <button

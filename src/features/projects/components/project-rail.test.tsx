@@ -58,7 +58,7 @@ describe("ProjectRail", () => {
     update.mockReturnValue(okWrite());
   });
 
-  it("does not persist on blur when nothing changed", async () => {
+  it("does not persist on blur-sm when nothing changed", async () => {
     const user = userEvent.setup();
     setup();
     const textarea = screen.getByLabelText("Projekt-Anweisungen");
@@ -67,7 +67,7 @@ describe("ProjectRail", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
-  it("persists only instructions on blur when changed, Struktur is untouched", async () => {
+  it("persists only instructions on blur-sm when changed, Struktur is untouched", async () => {
     const chain = okWrite();
     update.mockReturnValue(chain);
     const user = userEvent.setup();

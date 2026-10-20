@@ -233,7 +233,7 @@ function SavedPromptCard({
                 cancelRename();
               }
             }}
-            className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+            className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
           />
           {/* No pending/disabled state on either button: the rename closes
               the editor and updates the title on click, there is no in-flight
@@ -265,7 +265,7 @@ function SavedPromptCard({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls={panelId}
-            className="flex w-full min-w-0 items-center gap-2.5 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
+            className="flex w-full min-w-0 items-center gap-2.5 px-4 py-3 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
           >
             <ChevronRight
               className={cn(

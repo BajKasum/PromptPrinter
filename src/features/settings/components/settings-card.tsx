@@ -38,7 +38,7 @@ export function SettingsCard({
       )}
     >
       {/* top hairline highlight */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-border-strong to-transparent" />
       {/* soft accent glow in the corner */}
       <div
         className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full opacity-[0.10] blur-3xl"

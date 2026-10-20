@@ -133,7 +133,7 @@ export function Sidebar({
       className={cn(
         "sidebar-glow sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border md:flex",
         !dragging &&
-          "transition-[width] duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+          "transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
       )}
     >
       <div
@@ -168,7 +168,7 @@ export function Sidebar({
             way without a hard edge. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
+          className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-linear-to-r from-transparent via-border to-transparent"
         />
       </div>
 
@@ -205,14 +205,14 @@ export function Sidebar({
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
           onKeyDown={onKeyDown}
-          className="group absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none outline-none"
+          className="group absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none outline-hidden"
         >
           <span
             aria-hidden
             className={cn(
               "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors duration-150",
               "group-hover:bg-border-strong group-focus-visible:bg-accent",
-              dragging && "!bg-accent"
+              dragging && "bg-accent!"
             )}
           />
         </div>

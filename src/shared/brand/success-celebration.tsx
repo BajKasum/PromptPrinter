@@ -69,7 +69,7 @@ export function SuccessCelebration({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        "fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background/85 px-6 text-center backdrop-blur-md",
+        "fixed inset-0 z-200 flex flex-col items-center justify-center bg-background/85 px-6 text-center backdrop-blur-md",
         className
       )}
     >

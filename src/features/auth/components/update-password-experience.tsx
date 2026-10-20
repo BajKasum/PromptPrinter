@@ -78,7 +78,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
   }
 
   const inputClasses =
-    "h-11 w-full rounded-lg border border-border bg-surface px-3.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground transition-colors duration-200 focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20";
+    "h-11 w-full rounded-lg border border-border bg-surface px-3.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground transition-colors duration-200 focus:outline-hidden focus:border-ring focus:ring-2 focus:ring-ring/20";
 
   return (
     <AuthExperienceShell

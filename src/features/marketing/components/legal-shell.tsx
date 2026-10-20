@@ -23,7 +23,7 @@ export function LegalShell({
       <section
         id="main-content"
         tabIndex={-1}
-        className="container-x pt-32 md:pt-40 pb-10 text-center focus:outline-none"
+        className="container-x pt-32 md:pt-40 pb-10 text-center focus:outline-hidden"
       >
         <Rise>
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 mb-6">
@@ -42,7 +42,7 @@ export function LegalShell({
       </section>
       <section className="container-x pb-24">
         <Rise>
-          <div className="mx-auto max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-accent-text [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:text-foreground/90 [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5 [&_li]:marker:text-tertiary [&_strong]:font-medium [&_strong]:text-foreground/90">
+          <div className="mx-auto max-w-2xl text-[15px] leading-[1.7] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_a]:hover:text-accent-text [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:text-foreground/90 [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5 [&_li]:marker:text-tertiary [&_strong]:font-medium [&_strong]:text-foreground/90">
             {children}
           </div>
         </Rise>

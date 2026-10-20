@@ -119,7 +119,7 @@ function NavSwitcher({ view, onChange }: { view: ViewKey; onChange: (v: ViewKey)
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12.5px] font-medium transition-colors",
               active
-                ? "bg-surface-raised text-foreground shadow-sm"
+                ? "bg-surface-raised text-foreground shadow-xs"
                 : "text-secondary hover:text-foreground"
             )}
           >

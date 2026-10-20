@@ -87,7 +87,7 @@ export default async function ComparisonPage({ params }: Props) {
       <article
         id="main-content"
         tabIndex={-1}
-        className="container-x pt-28 md:pt-36 pb-24 focus:outline-none"
+        className="container-x pt-28 md:pt-36 pb-24 focus:outline-hidden"
       >
         <div className="mx-auto max-w-3xl">
           <Rise>
