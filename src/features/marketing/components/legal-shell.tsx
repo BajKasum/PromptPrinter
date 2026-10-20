@@ -18,8 +18,8 @@ export function LegalShell({
 }) {
   return (
     <>
-      {/* Skip-link target: the navbar lives inside <main> here, so the anchor
-          sits on the first content section instead. */}
+      {/* Skip-link target: the first content section, not <main> itself (see
+          the marketing layout). */}
       <section
         id="main-content"
         tabIndex={-1}

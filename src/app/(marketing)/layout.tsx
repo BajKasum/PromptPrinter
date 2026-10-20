@@ -14,11 +14,17 @@ import { siteUrl } from "@/shared/lib/site-url";
 // Möglichkeit, eine zu vergessen. Genau dieser Fehlertyp ist in diesem Projekt
 // schon zweimal aufgetreten (Sidebar Desktop/Mobile, zwei api-problem-Kopien).
 //
-// Der Skip-Link bleibt unberührt: er steht in der Navbar und zeigt auf
-// #main-content, und dieses Ziel setzt weiterhin jede Seite selbst auf ihren
-// ersten Inhaltsabschnitt (Hero, PageHeader, LegalShell, DocsShell). Die
-// Navbar liegt innerhalb von <main>, deshalb kann der Anker nicht auf <main>
-// selbst sitzen — er würde den Fokus vor die Navigation setzen statt dahinter.
+// Navbar und Footer stehen NEBEN <main>, nicht darin (#144). Ein <header> oder
+// <footer> innerhalb von <main> ist für Screenreader keine Landmarke mehr
+// (banner, contentinfo), dann gäbe es nur einen Hauptbereich, der Kopf und Fuß
+// einschließt. Die Hülle ist ein <div className="relative">: es trägt die
+// Positionierung, die vorher <main> trug (absolut platzierte Teile von Seiten und
+// Footer beziehen sich auf dasselbe Rechteck wie bisher).
+//
+// Der Skip-Link steht in der Navbar und zeigt auf #main-content. Dieses Ziel
+// setzt weiterhin jede Seite selbst auf ihren ersten Inhaltsabschnitt (Hero,
+// PageHeader, LegalShell, DocsShell), nicht auf <main>: so überspringt er auch
+// das, was in <main> vor dem eigentlichen Text steht (die Seitenleiste der Hilfe).
 // Sitewide Identität für Suchmaschinen (Knowledge-Panel-Kandidat) und für
 // generative Engines, die beim Beantworten einer Frage zuerst grundlegende
 // Fakten über eine Marke suchen. Nur in dieser Layout-Ebene, nicht im
@@ -59,12 +65,12 @@ function buildJsonLd() {
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const { organization, website } = buildJsonLd();
   return (
-    <main className="relative">
+    <div className="relative">
       <JsonLd data={organization} />
       <JsonLd data={website} />
       <Navbar />
-      {children}
+      <main>{children}</main>
       <Footer />
-    </main>
+    </div>
   );
 }
