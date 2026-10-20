@@ -4,11 +4,60 @@ import { createAdminClient } from "@/server/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { captureError } from "@/shared/lib/observability";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
-import { removeAllPaths } from "@/shared/lib/storage-cleanup";
+import { collectStoragePaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
 import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
 import { requestT } from "@/server/i18n";
 
 export const runtime = "nodejs";
+
+/**
+ * Entfernt alle Storage-Objekte, auf die die Zeilen EINER Tabelle des Kontos zeigen.
+ *
+ * Seitenweise gelesen (collectStoragePaths), weil PostgREST eine Antwort bei 1000 Zeilen kappt und ein Konto
+ * beliebig viele hat: Anhaenge bis zum Speicherkontingent (bei lauter kleinen Textdateien weit mehr als tausend),
+ * Projektdateien mit Pro und als Admin ohne Projektgrenze (20 je Projekt, MAX_FILES_PER_PROJECT). Wuerde nach der
+ * ersten Seite aufgehoert, blieben die uebrigen Objekte fuer immer im Bucket, ohne dass noch irgendeine Zeile auf
+ * sie zeigt (#131). Entfernt wird in Stapeln, die einzeln scheitern duerfen: ein uebrig gebliebenes Objekt ist
+ * harmlos (Migration 0029), alle liegen zu lassen, weil ein zu grosser Aufruf scheiterte, nicht.
+ *
+ * Wirft nie. Ein Lesefehler und Stapel, die nicht durchgingen, werden gemeldet; das Konto wird trotzdem geloescht.
+ */
+async function removeUserObjects(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  target: {
+    table: "message_attachments" | "project_files";
+    bucket: string;
+    /** Wie ein Objekt in der Fehlermeldung heisst, zum Beispiel "project file". */
+    label: string;
+    partialEvent: string;
+    failedEvent: string;
+  }
+): Promise<void> {
+  try {
+    const paths = await collectStoragePaths((from, to) =>
+      supabase
+        .from(target.table)
+        .select("storage_path")
+        .eq("user_id", userId)
+        // Stabile Reihenfolge, damit zwei Seiten sich weder ueberschneiden noch eine Zeile auslassen.
+        .order("id")
+        .range(from, to)
+    );
+    if (paths.length === 0) return;
+    const { failed } = await removeAllPaths(
+      (batch) => supabase.storage.from(target.bucket).remove(batch),
+      paths
+    );
+    if (failed > 0) {
+      captureError(target.partialEvent, new Error(`${failed} ${target.label}(s) could not be removed`), {
+        userId,
+      });
+    }
+  } catch (err) {
+    captureError(target.failedEvent, err, { userId });
+  }
+}
 
 // Permanently delete the signed-in user's account. The auth.users row cascades
 // to profiles, and profiles cascades to EVERY user-scoped table: projects,
@@ -86,71 +135,28 @@ export async function DELETE(req: Request) {
     }
   }
 
-  // Fotos und Dateien aus Chats (Migration 0045). Eigener Schritt mit eigenem
-  // try: ein Fehler hier (zum Beispiel eine noch nicht angewendete Migration)
-  // darf weder die Projektdateien noch das Loeschen des Kontos aufhalten.
-  //
-  // Seitenweise, weil PostgREST eine Antwort bei 1000 Zeilen kappt und ein
-  // Konto beliebig viele Anhaenge haben kann (bis zu seinem Speicherkontingent,
-  // bei lauter kleinen Textdateien weit mehr als tausend). Wuerde hier nach
-  // der ersten Seite aufgehoert, blieben die uebrigen Objekte fuer immer im
-  // Bucket, ohne dass noch irgendeine Zeile auf sie zeigt.
-  try {
-    const ATTACHMENT_PAGE = 1000;
-    const attachmentPaths: string[] = [];
-    for (let from = 0; ; from += ATTACHMENT_PAGE) {
-      const { data, error } = await supabase
-        .from("message_attachments")
-        .select("storage_path")
-        .eq("user_id", user.id)
-        .range(from, from + ATTACHMENT_PAGE - 1);
-      if (error) throw error;
-      attachmentPaths.push(...(data ?? []).map((r) => r.storage_path as string));
-      if (!data || data.length < ATTACHMENT_PAGE) break;
-    }
-    if (attachmentPaths.length > 0) {
-      const { failed } = await removeAllPaths(
-        (paths) => supabase.storage.from("chat-attachments").remove(paths),
-        attachmentPaths
-      );
-      if (failed > 0) {
-        captureError(
-          "account.attachment_cleanup_partial",
-          new Error(`${failed} chat attachment(s) could not be removed`),
-          { userId: user.id }
-        );
-      }
-    }
-  } catch (err) {
-    captureError("account.attachment_cleanup_failed", err, { userId: user.id });
-  }
+  // Fotos und Dateien aus Chats (Migration 0045) und die Dateien der Projekte.
+  // Je Tabelle ein eigener Schritt mit eigenem try (removeUserObjects): ein
+  // Fehler bei der einen (zum Beispiel eine noch nicht angewendete Migration)
+  // darf weder die andere noch das Loeschen des Kontos aufhalten.
+  await removeUserObjects(supabase, user.id, {
+    table: "message_attachments",
+    bucket: "chat-attachments",
+    label: "chat attachment",
+    partialEvent: "account.attachment_cleanup_partial",
+    failedEvent: "account.attachment_cleanup_failed",
+  });
+  // project_files.user_id is direct (no join through projects needed), one
+  // query covers every project this user has ever attached files to.
+  await removeUserObjects(supabase, user.id, {
+    table: "project_files",
+    bucket: "project-files",
+    label: "project file",
+    partialEvent: "account.storage_cleanup_partial",
+    failedEvent: "account.storage_cleanup_failed",
+  });
 
   try {
-    // project_files.user_id is direct (no join through projects needed), one
-    // query covers every project this user has ever attached files to.
-    const { data: files } = await supabase
-      .from("project_files")
-      .select("storage_path")
-      .eq("user_id", user.id);
-    if (files && files.length > 0) {
-      // Batched: this is the one cleanup path with no upper bound on file
-      // count (Pro has no project cap, and each project holds up to 10 files),
-      // so a single remove() call here can carry thousands of paths in one
-      // request body. Batches fail independently, since leaving some objects
-      // behind is harmless (migration 0029) but stranding all of them because
-      // one oversized request failed is not.
-      const { failed } = await removeAllPaths(
-        (paths) => supabase.storage.from("project-files").remove(paths),
-        files.map((f) => f.storage_path)
-      );
-      if (failed > 0) {
-        captureError(
-          "account.storage_cleanup_partial",
-          new Error(`${failed} project file(s) could not be removed`),
-          { userId: user.id }
-        );
-      }
-    }
     // Always a fixed "{uid}/avatar" path (migration 0027 pins the insert
     // policy to exactly that name — the upload UI that used to write it here
     // is gone, but old objects from before its removal may still exist),

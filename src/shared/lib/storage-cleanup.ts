@@ -46,3 +46,36 @@ export async function removeAllPaths(
   }
   return { removed, failed };
 }
+
+/** So viele Zeilen liefert PostgREST höchstens pro Antwort (Standard-max-rows). */
+export const POSTGREST_PAGE_SIZE = 1000;
+
+type PathPage = PromiseLike<{ data: { storage_path: string }[] | null; error: unknown }>;
+
+/**
+ * Liest alle `storage_path`-Werte einer Abfrage, seitenweise.
+ *
+ * PostgREST kappt eine Antwort bei 1000 Zeilen, ohne das zu melden. Wer die Pfade für das Aufräumen von
+ * Storage-Objekten einsammelt und nach der ersten Seite aufhört, lässt alles dahinter als Waisen im Bucket
+ * zurück, zu denen keine Zeile mehr zeigt (und die nach dem Löschen des Kontos niemandem mehr gehören).
+ *
+ * `page(from, to)` liefert die Zeilen `from` bis `to` (beide eingeschlossen) und sollte nach einer stabilen
+ * Spalte sortieren (`id`), sonst sind zwei Seiten derselben Abfrage nicht garantiert überschneidungsfrei.
+ *
+ * WIRFT bei einem Lesefehler, statt eine halbe Liste zu liefern: der Aufrufer entscheidet, ob er den Fehler meldet
+ * (Konto löschen: ja, aber nicht abbrechen) oder verschluckt. Gegenstück ohne Wurf: `attachment-storage.ts`.
+ */
+export async function collectStoragePaths(
+  page: (from: number, to: number) => PathPage,
+  pageSize: number = POSTGREST_PAGE_SIZE
+): Promise<string[]> {
+  if (pageSize < 1) throw new Error("collectStoragePaths: pageSize must be >= 1");
+  const paths: string[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await page(from, from + pageSize - 1);
+    if (error) throw error;
+    paths.push(...(data ?? []).map((row) => row.storage_path));
+    if (!data || data.length < pageSize) break;
+  }
+  return paths;
+}

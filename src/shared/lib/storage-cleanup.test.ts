@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { STORAGE_REMOVE_BATCH, chunkPaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
+import {
+  POSTGREST_PAGE_SIZE,
+  STORAGE_REMOVE_BATCH,
+  chunkPaths,
+  collectStoragePaths,
+  removeAllPaths,
+} from "@/shared/lib/storage-cleanup";
 
 describe("chunkPaths", () => {
   it("splits into batches of the given size", () => {
@@ -61,5 +67,66 @@ describe("removeAllPaths", () => {
 
     expect(remove).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ removed: 1, failed: 1 });
+  });
+});
+
+describe("collectStoragePaths", () => {
+  const rows = (n: number, prefix = "p") =>
+    Array.from({ length: n }, (_, i) => ({ storage_path: `${prefix}${i}` }));
+
+  it("stops after a page shorter than the page size", async () => {
+    const page = vi.fn().mockResolvedValue({ data: rows(3), error: null });
+    expect(await collectStoragePaths(page, 5)).toEqual(["p0", "p1", "p2"]);
+    expect(page).toHaveBeenCalledTimes(1);
+    expect(page).toHaveBeenCalledWith(0, 4);
+  });
+
+  it("reads the next page after a full one, with inclusive ranges", async () => {
+    const page = vi
+      .fn()
+      .mockResolvedValueOnce({ data: rows(5, "a"), error: null })
+      .mockResolvedValueOnce({ data: rows(2, "b"), error: null });
+
+    const paths = await collectStoragePaths(page, 5);
+
+    expect(page.mock.calls).toEqual([
+      [0, 4],
+      [5, 9],
+    ]);
+    expect(paths).toEqual(["a0", "a1", "a2", "a3", "a4", "b0", "b1"]);
+  });
+
+  it("asks once more after exactly one full page, and stops at the empty one", async () => {
+    const page = vi
+      .fn()
+      .mockResolvedValueOnce({ data: rows(5), error: null })
+      .mockResolvedValueOnce({ data: [], error: null });
+    expect(await collectStoragePaths(page, 5)).toHaveLength(5);
+    expect(page).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns an empty list for no rows, and treats null data as no rows", async () => {
+    expect(await collectStoragePaths(vi.fn().mockResolvedValue({ data: [], error: null }), 5)).toEqual([]);
+    expect(await collectStoragePaths(vi.fn().mockResolvedValue({ data: null, error: null }), 5)).toEqual([]);
+  });
+
+  it("uses PostgREST's page size of 1000 by default", async () => {
+    const page = vi.fn().mockResolvedValue({ data: [], error: null });
+    await collectStoragePaths(page);
+    expect(POSTGREST_PAGE_SIZE).toBe(1000);
+    expect(page).toHaveBeenCalledWith(0, 999);
+  });
+
+  it("throws on a read error instead of returning half a list", async () => {
+    const boom = new Error("relation does not exist");
+    const page = vi
+      .fn()
+      .mockResolvedValueOnce({ data: rows(5), error: null })
+      .mockResolvedValueOnce({ data: null, error: boom });
+    await expect(collectStoragePaths(page, 5)).rejects.toBe(boom);
+  });
+
+  it("rejects a page size that would loop forever", async () => {
+    await expect(collectStoragePaths(vi.fn(), 0)).rejects.toThrow();
   });
 });
