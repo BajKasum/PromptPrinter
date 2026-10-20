@@ -16,6 +16,8 @@ trotzdem auf "der einzige Weg, der den Fund beseitigt". Nach dem Umbau gemessen 
 - Der ausgelieferte Baum ist sauber: `npm audit --omit=dev` meldet `braces` nicht mehr (vorher hing er über `tailwindcss-animate`,
   eine Produktions-Abhängigkeit, die der Umbau entfernt hat), und `.next/standalone/node_modules` enthält keines der Pakete.
 
+**Entschieden am 2026-10-20 (Kasum): Weg 1, das Gate nach Baum trennen.** Umgesetzt in `scripts/audit-gate.mjs`: Produktion streng ohne Ausnahmen, Entwicklungswerkzeuge ohne gepatchte Version melden statt blockieren; die Ausnahmeliste samt Ablaufdatum ist entfernt. Der Absatz "Folge" und die drei Wege darunter sind Stand vor dem Entscheid.
+
 **Folge:** der Rückfall von unten greift jetzt: die Ausnahme ist einmal bis **2026-11-19** verlängert, mit neuer Begründung
 (nur noch ESLint) in `scripts/audit-gate.mjs`. **Offen für Kasum, vor dem 2026-11-19:** wie es danach weitergeht. Drei Wege:
 

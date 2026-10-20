@@ -53,10 +53,11 @@ jobs:
       # package.json with a comment saying why.
       #
       # Runs through scripts/audit-gate.mjs, which is `npm audit` at the same
-      # `high` threshold plus a short, named, EXPIRING list of accepted findings
-      # (04.10.2026: GHSA-vfj7-8cjw-p6xm for `braces` has no patched version at
-      # all, so there was nothing to bump to and no override to write). Every
-      # other high or critical finding fails exactly as before.
+      # `high` threshold, split by tree (20.10.2026): a finding in what ships
+      # (`--omit=dev`) always fails, a finding only in a dev tool fails when a
+      # patched version exists, and is reported without failing when none does
+      # (GHSA-vfj7-8cjw-p6xm for `braces`: every version is affected, so there
+      # was nothing to bump to and no override to write). No exception list.
       - name: Audit dependencies
         run: node scripts/audit-gate.mjs
 

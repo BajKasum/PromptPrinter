@@ -13,12 +13,14 @@
  * entscheidet.
  *
  * ─── Was als "Problem" zählt ────────────────────────────────────────────────
- * 1. der Audit ist gescheitert (offener Fund, abgelaufene Ausnahme, Registry
- *    nicht erreichbar, oder der Lauf kam gar nicht bis zum Audit), oder
- * 2. eine Ausnahme in `ACCEPTED` (scripts/audit-gate.mjs) läuft in höchstens
- *    7 Tagen ab. Der Audit ist dann noch grün, aber in einer Woche färbt er
- *    jeden Branch rot. Die Ausnahme für `braces` (bis 2026-11-04) wäre sonst
- *    der nächste Überraschungs-Ausfall, nur diesmal mit Ansage.
+ * Der Audit ist gescheitert: ein Fund, der blockiert (im ausgelieferten Baum
+ * oder in einem Werkzeug mit gepatchter Version), die Registry war nicht
+ * erreichbar, oder der Lauf kam gar nicht bis zum Audit. Funde nur in
+ * Entwicklungswerkzeugen ohne gepatchte Version (scripts/audit-gate.mjs) stehen
+ * im Protokoll, sind aber keines: es gäbe nichts zu entscheiden, das Issue bliebe
+ * offen, bis Upstream nachzieht. Bis zum 20.10.2026 meldete dieses Skript auch
+ * eine befristete Ausnahme, die in sieben Tagen abläuft. Die Ausnahmeliste gibt
+ * es nicht mehr, also auch diese Warnung nicht.
  *
  * ─── Eine Entscheidungsstelle ───────────────────────────────────────────────
  * `plan()` ist rein und sagt nur, WAS zu tun ist (anlegen, ergänzen, schließen,
@@ -34,15 +36,11 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { ACCEPTED } from "./audit-gate.mjs";
 
 export const TITLE = "Audit: Abhängigkeiten brauchen eine Entscheidung";
 export const LABEL = "audit";
-export const WARN_DAYS = 7;
 /** Mehr passt in kein lesbares Issue, und das Wichtige steht in den ersten Zeilen. */
 export const MAX_LOG_CHARS = 3000;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** @param {Date | string} today */
 function dayOf(today) {
@@ -50,30 +48,13 @@ function dayOf(today) {
 }
 
 /**
- * Ausnahmen, die in höchstens `days` Tagen ablaufen. Eine heute ablaufende gilt
- * noch (der Audit lässt sie am Ablauftag durch), eine gestern abgelaufene steht
- * hier nicht mehr: sie lässt den Audit selbst scheitern.
- *
- * @param {{ id: string, pkg: string, until: string }[]} accepted
- * @param {Date | string} today
- * @param {number} [days]
- */
-export function expiringSoon(accepted, today, days = WARN_DAYS) {
-  const now = Date.parse(dayOf(today));
-  return accepted
-    .map((entry) => ({ ...entry, daysLeft: Math.round((Date.parse(entry.until) - now) / DAY_MS) }))
-    .filter((entry) => entry.daysLeft >= 0 && entry.daysLeft <= days);
-}
-
-/**
  * Was mit dem Issue zu tun ist.
  *
- * @param {{ failed: boolean, expiring: unknown[], openIssue: number | null }} state
+ * @param {{ failed: boolean, openIssue: number | null }} state
  * @returns {"create" | "comment" | "close" | "none"}
  */
-export function plan({ failed, expiring, openIssue }) {
-  const problem = failed || expiring.length > 0;
-  if (problem) return openIssue === null ? "create" : "comment";
+export function plan({ failed, openIssue }) {
+  if (failed) return openIssue === null ? "create" : "comment";
   return openIssue === null ? "none" : "close";
 }
 
@@ -89,15 +70,13 @@ export function excerpt(log) {
 
 /**
  * @param {{
- *   failed: boolean,
- *   expiring: { id: string, pkg: string, until: string, daysLeft: number }[],
  *   log: string,
  *   runUrl: string,
  *   today: string,
  *   simulated: boolean,
  * }} input
  */
-export function bodyFor({ failed, expiring, log, runUrl, today, simulated }) {
+export function bodyFor({ log, runUrl, today, simulated }) {
   const lines = [];
   if (simulated) {
     lines.push(
@@ -105,29 +84,19 @@ export function bodyFor({ failed, expiring, log, runUrl, today, simulated }) {
       ""
     );
   }
-  lines.push(`### Stand ${today}`, "");
-  if (failed) {
-    lines.push(
-      "Der tägliche Audit ist **gescheitert**. Ausgabe von `npm run audit:gate`:",
-      "",
-      "```text",
-      excerpt(log),
-      "```",
-      ""
-    );
-  }
-  if (expiring.length > 0) {
-    lines.push("Eine befristete Ausnahme in `scripts/audit-gate.mjs` läuft bald ab:", "");
-    for (const e of expiring) {
-      lines.push(`- \`${e.id}\` (${e.pkg}): bis **${e.until}**, noch ${e.daysLeft} Tag(e)`);
-    }
-    lines.push(
-      "",
-      "Danach scheitert der Audit auf jedem Branch. Entscheiden: gepatchte Version anheben und den Eintrag löschen, Major-Sprung, oder verlängern mit neuer Begründung und neuem Datum.",
-      ""
-    );
-  }
-  lines.push(`[Lauf ansehen](${runUrl})`);
+  lines.push(
+    `### Stand ${today}`,
+    "",
+    "Der tägliche Audit ist **gescheitert**. Ausgabe von `npm run audit:gate`:",
+    "",
+    "```text",
+    excerpt(log),
+    "```",
+    "",
+    "Entscheiden: gepatchte Version anheben, oder (nur bei einem Entwicklungswerkzeug ohne gepatchte Version) nichts, das Gate meldet es dann ohne zu blockieren.",
+    "",
+    `[Lauf ansehen](${runUrl})`
+  );
   return lines.join("\n");
 }
 
@@ -140,16 +109,14 @@ export function bodyFor({ failed, expiring, log, runUrl, today, simulated }) {
  *   simulated: boolean,
  *   runUrl: string,
  *   today?: Date | string,
- *   accepted?: Parameters<typeof expiringSoon>[0],
  *   gh: (args: string[], stdin?: string) => string,
  * }} input
  */
-export function run({ status, log, simulated, runUrl, today = new Date(), accepted = ACCEPTED, gh }) {
+export function run({ status, log, simulated, runUrl, today = new Date(), gh }) {
   // Alles außer einem ausdrücklichen "success" zählt als Fehlschlag, auch
   // "skipped" (npm ci scheiterte, der Audit lief nie): ein Lauf, der nichts
   // geprüft hat, darf nie grün aussehen.
   const failed = status !== "success";
-  const expiring = expiringSoon(accepted, today);
   const day = dayOf(today);
 
   const listed = JSON.parse(
@@ -158,31 +125,19 @@ export function run({ status, log, simulated, runUrl, today = new Date(), accept
   const open = listed.find((issue) => issue.title === TITLE);
   const openIssue = open ? open.number : null;
 
-  const action = plan({ failed, expiring, openIssue });
+  const action = plan({ failed, openIssue });
 
   if (action === "create") {
     // --force: legt das Label an oder aktualisiert es, ohne bei "gibt es schon"
     // zu scheitern.
     gh(["label", "create", LABEL, "--force", "--color", "B60205", "--description", "Meldung des täglichen Abhängigkeits-Audits"]);
-    gh(
-      ["issue", "create", "--title", TITLE, "--label", LABEL, "--body-file", "-"],
-      bodyFor({ failed, expiring, log, runUrl, today: day, simulated })
-    );
+    gh(["issue", "create", "--title", TITLE, "--label", LABEL, "--body-file", "-"], bodyFor({ log, runUrl, today: day, simulated }));
   } else if (action === "comment") {
-    gh(
-      ["issue", "comment", String(openIssue), "--body-file", "-"],
-      bodyFor({ failed, expiring, log, runUrl, today: day, simulated })
-    );
+    gh(["issue", "comment", String(openIssue), "--body-file", "-"], bodyFor({ log, runUrl, today: day, simulated }));
   } else if (action === "close") {
-    gh([
-      "issue",
-      "close",
-      String(openIssue),
-      "--comment",
-      `Stand ${day}: der Audit ist wieder sauber und keine Ausnahme läuft in den nächsten ${WARN_DAYS} Tagen ab. [Lauf ansehen](${runUrl})`,
-    ]);
+    gh(["issue", "close", String(openIssue), "--comment", `Stand ${day}: der Audit ist wieder sauber. [Lauf ansehen](${runUrl})`]);
   }
-  return { action, failed, expiring };
+  return { action, failed };
 }
 
 function realGh(args, stdin) {

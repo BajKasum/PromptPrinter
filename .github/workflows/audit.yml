@@ -9,9 +9,9 @@ name: Audit
 #
 # Ein geplanter Lauf färbt keinen Commit. Damit Kasum den Fund trotzdem SIEHT,
 # legt scripts/audit-issue.mjs ein GitHub-Issue an (einmal, bei Folgefehlern
-# wird es ergänzt statt vervielfacht, bei einem sauberen Lauf geschlossen). Das
-# Issue meldet auch eine Ausnahme aus scripts/audit-gate.mjs, die in höchstens 7
-# Tagen abläuft: sonst fiele der Audit am Ablauftag überraschend um.
+# wird es ergänzt statt vervielfacht, bei einem sauberen Lauf geschlossen). Ein
+# Fund nur in einem Entwicklungswerkzeug ohne gepatchte Version steht im Protokoll,
+# ist aber kein Fehlschlag (scripts/audit-gate.mjs).
 #
 # Gleiches Gate wie ci.yml (`scripts/audit-gate.mjs`), keine eigene Schwelle.
 # Kein Geheimnis außer dem Token, das GitHub jedem Lauf gibt (nur Issues).
