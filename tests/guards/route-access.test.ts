@@ -7,9 +7,9 @@ import { APP_PREFIXES, isAppPath } from "@/shared/lib/app-routes";
 // Hält die Routenlisten der Middleware gegen den echten Routenbaum fest.
 //
 // ─── Warum ein Guard ───────────────────────────────────────────────────────
-// Die Middleware kennt drei Sorten Pfade: öffentlich (PUBLIC_* in
-// server/supabase/middleware.ts), eingeloggte App (APP_PREFIXES in
-// shared/lib/app-routes.ts) und alles andere, das abgemeldet ein 404 bekommt.
+// Die Middleware kennt drei Sorten Pfade: öffentlich (PUBLIC_*) und eingeloggte
+// App (APP_PREFIXES), beide in shared/lib/app-routes.ts, und alles andere, das
+// abgemeldet ein 404 bekommt.
 // Beide Listen sind von Hand gepflegt und schon einmal vom Routenbaum
 // abgewichen (/prompts fehlte, Security-Audit M-7). Ein vergessener Eintrag
 // ist in beiden Richtungen unauffällig:
@@ -55,13 +55,31 @@ describe("Routenlisten der Middleware", () => {
     expect(
       blocked,
       `Diese öffentlichen Seiten fehlen in PUBLIC_PREFIXES ` +
-        `(src/server/supabase/middleware.ts) und antworten abgemeldet mit 404: ` +
+        `(src/shared/lib/app-routes.ts) und antworten abgemeldet mit 404: ` +
         blocked.join(", ")
     ).toEqual([]);
   });
 
   it("zählt keinen App-Pfad zu den öffentlichen", () => {
     expect(APP_PREFIXES.filter((prefix) => !requiresSession(prefix))).toEqual([]);
+  });
+
+  // #143: CLAUDE.md schickt neue Seiten in "APP_PREFIXES" und "PUBLIC_PREFIXES (Datei)". Stand der Pfad dort
+  // falsch, suchte die nächste Sitzung die Liste an einem Ort, an dem sie nie war.
+  it("CLAUDE.md nennt die Datei, in der APP_PREFIXES und PUBLIC_PREFIXES wirklich stehen", () => {
+    const claude = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
+    const row = claude.split("\n").find((line) => line.includes("PUBLIC_PREFIXES"));
+    expect(row, "CLAUDE.md nennt PUBLIC_PREFIXES nicht mehr").toBeDefined();
+
+    const file = /`([\w/.-]*app-routes\.ts)`/.exec(row ?? "")?.[1];
+    expect(file, `Die Zeile nennt keine Datei app-routes.ts: ${row}`).toBeDefined();
+
+    const source = readFileSync(join(process.cwd(), "src", file ?? ""), "utf8");
+    for (const name of ["APP_PREFIXES", "PUBLIC_PREFIXES"]) {
+      expect(source, `src/${file} exportiert ${name} nicht`).toMatch(
+        new RegExp(`export const ${name}\\b`)
+      );
+    }
   });
 });
 

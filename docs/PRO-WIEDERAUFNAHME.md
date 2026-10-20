@@ -56,7 +56,7 @@ führt jeder Pro-Knopf auf die Seite `/pro-bald` ("Pro gibt es noch nicht, es tu
    ausgeschalteten Zustand prüfen (`pricing-grid.test.tsx`, `comparisons.test.ts`, der Pro-Absatz in
    `build-llms-txt.test.ts`), schalten mit dem Schalter um oder müssen angepasst werden.
 3. Die Seite `/pro-bald` auf `/pricing` umleiten (`redirects` in `next.config.ts`) oder löschen.
-   Löschen heisst: Ordner, Eintrag in `PUBLIC_PREFIXES` (`src/server/supabase/middleware.ts`) und
+   Löschen heisst: Ordner, Eintrag in `PUBLIC_PREFIXES` (`src/shared/lib/app-routes.ts`) und
    den Guard-Abschnitt in `tests/guards/pro-availability.test.ts` mit entfernen. Der Rest der
    Tests läuft mit dem Mock des Schalters und muss nicht angefasst werden.
 4. Dieses Dokument und den Absatz "Pläne" in CLAUDE.md auf "Pro ist kaufbar" ändern, Changelog-Eintrag.
