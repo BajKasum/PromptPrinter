@@ -133,14 +133,21 @@ describe("ApiKeys", () => {
     render(<ApiKeys configured={[]} active={null} customProvider={null} />);
     const user = userEvent.setup();
 
+    // Das Tippen ist nicht Gegenstand dieses Tests, die vier Felder werden eingefuegt. 67 einzelne
+    // Anschlaege in jsdom brauchten im vollen Lauf unter Last gut 5 s und rissen das Zeitlimit (#145).
+    const fill = async (field: HTMLElement, text: string) => {
+      await user.click(field);
+      await user.paste(text);
+    };
+
     await user.click(screen.getByText(/Anderer Anbieter/));
-    await user.type(screen.getByPlaceholderText("Name (z. B. Z.ai)"), "Z.ai");
-    await user.type(screen.getByPlaceholderText("Modell (z. B. glm-4.6)"), "glm-4.6");
-    await user.type(
+    await fill(screen.getByPlaceholderText("Name (z. B. Z.ai)"), "Z.ai");
+    await fill(screen.getByPlaceholderText("Modell (z. B. glm-4.6)"), "glm-4.6");
+    await fill(
       screen.getByPlaceholderText(/API-Endpoint/),
       "https://api.z.ai/api/paas/v4/chat/completions"
     );
-    await user.type(screen.getByPlaceholderText("API-Key"), "custom-key");
+    await fill(screen.getByPlaceholderText("API-Key"), "custom-key");
     await user.click(screen.getByRole("button", { name: "Speichern" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
