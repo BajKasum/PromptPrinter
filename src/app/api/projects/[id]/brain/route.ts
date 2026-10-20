@@ -12,7 +12,7 @@ import { createAdminClient } from "@/server/supabase/admin";
 import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
-import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { resolvePlan } from "@/shared/lib/plans";
 import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { problem } from "@/server/http/api-problem";
 import {
@@ -160,10 +160,7 @@ export async function POST(req: Request, { params }: Params) {
     supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
     getUserOverride(userId),
   ]);
-  const isAdmin = profile?.is_admin ?? false;
-  const rawPlan = (profile?.plan as string | undefined) ?? "free";
-  const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const limits = effectiveLimits(plan, isAdmin);
+  const { plan, isAdmin, limits } = resolvePlan(profile);
 
   const reservations: (() => Promise<void>)[] = [];
   const releaseReservations = async () => {

@@ -7,6 +7,7 @@ import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list
 import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getSessionProfile } from "@/server/session";
+import { resolvePlan } from "@/shared/lib/plans";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
 import { splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
@@ -71,8 +72,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
     // Request-gecacht (B-3): dieselbe Zeile hat das (app)-Layout schon geholt.
     getSessionProfile(),
   ]);
-  const canExportPdf =
-    profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";
+  const { plan, isAdmin } = resolvePlan(profile);
+  const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
     (rowsRaw as GenerationRow[] | null) ?? [],

@@ -6,7 +6,7 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import { UsageMeter } from "@/features/settings/components/usage-meter";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
-import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { resolvePlan } from "@/shared/lib/plans";
 import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { getConfiguredProviders } from "@/server/byok";
 import {
@@ -79,12 +79,9 @@ export default async function UsagePage() {
   const t = await getT();
   const monthlyChatMessages = redisChatUsage ?? monthlyChatMessagesFromDb;
 
-  const rawPlan = (profile?.plan as string | undefined) ?? "free";
-  const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const isAdmin = profile?.is_admin ?? false;
+  const { plan: planKey, isAdmin, limits } = resolvePlan(profile);
   const isFree = planKey === "free";
   const hasByok = configuredProviders.length > 0;
-  const limits = effectiveLimits(planKey, isAdmin);
   // A BYOK key lifts the chat cap the same way admin lifts both, the project
   // cap still applies either way.
   const chatLimit = hasByok ? Infinity : limits.chatMessages;

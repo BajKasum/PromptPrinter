@@ -8,7 +8,7 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import { learnMoreLinks, plansNav, secondaryNav } from "@/shell/lib/nav";
 import { ariaShortcut, formatShortcut, isMacPlatform } from "@/shell/lib/shortcuts";
 import { AccountSubmenu, SUBMENU_ROW } from "@/shell/components/account-submenu";
-import type { PlanKey } from "@/shared/lib/plans";
+import { toPlanKey, type PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
@@ -107,7 +107,7 @@ export function AccountMenu({
   // `plan` arrives as a raw DB string (Sidebar's own prop stays loosely typed),
   // narrow it the same way billing/settings already do before it reaches the
   // shared PlanBadge, which needs a real PlanKey.
-  const planKey: PlanKey = plan === "pro" || plan === "team" ? plan : "free";
+  const planKey: PlanKey = toPlanKey(plan);
   const mac = open && isMacPlatform();
 
   useEffect(() => {

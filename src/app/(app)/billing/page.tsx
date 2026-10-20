@@ -7,7 +7,7 @@ import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
 import { localizePlans } from "@/shared/lib/pricing";
 import { formatDate } from "@/shared/lib/utils";
 import { createClient } from "@/server/supabase/server";
-import type { PlanKey } from "@/shared/lib/plans";
+import { resolvePlan } from "@/shared/lib/plans";
 import { getConfiguredProviders } from "@/server/byok";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, rich } from "@/shared/i18n/format";
@@ -51,9 +51,7 @@ export default async function BillingPage() {
   const statusLabels: Record<string, string> = t.pages.billing.status;
   const intlTag = LOCALE_TAGS[locale].intl;
 
-  const rawPlan = (profile?.plan as string | undefined) ?? "free";
-  const planKey: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const isAdmin = profile?.is_admin ?? false;
+  const { plan: planKey, isAdmin } = resolvePlan(profile);
   const isFree = planKey === "free";
   const hasByok = configuredProviders.length > 0;
   const apiAccessLabel =

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { effectiveLimits, PLAN_LIMITS, requiresOwnKey, toPlanKey } from "@/shared/lib/plans";
+import {
+  effectiveLimits,
+  PLAN_LIMITS,
+  requiresOwnKey,
+  resolvePlan,
+  toPlanKey,
+} from "@/shared/lib/plans";
 
 describe("effectiveLimits", () => {
   it("returns the plan's own limits for a non-admin account", () => {
@@ -109,6 +115,38 @@ describe("toPlanKey", () => {
     expect(toPlanKey("enterprise")).toBe("free");
     expect(toPlanKey(null)).toBe("free");
     expect(toPlanKey(undefined)).toBe("free");
+  });
+});
+
+describe("resolvePlan", () => {
+  it("macht aus einer fehlenden Zeile ein Free-Konto ohne Adminrechte", () => {
+    for (const missing of [null, undefined, {}]) {
+      const resolved = resolvePlan(missing);
+      expect(resolved.plan).toBe("free");
+      expect(resolved.isAdmin).toBe(false);
+      expect(resolved.limits).toEqual(PLAN_LIMITS.free);
+    }
+  });
+
+  it("nimmt Plan und Limits aus der Zeile", () => {
+    expect(resolvePlan({ plan: "pro", is_admin: false })).toEqual({
+      plan: "pro",
+      isAdmin: false,
+      limits: PLAN_LIMITS.pro,
+    });
+    expect(resolvePlan({ plan: "team", is_admin: null }).limits).toEqual(PLAN_LIMITS.team);
+  });
+
+  it("behandelt einen unbekannten Planwert wie Free", () => {
+    expect(resolvePlan({ plan: "enterprise", is_admin: false }).plan).toBe("free");
+    expect(resolvePlan({ plan: "enterprise", is_admin: false }).limits).toEqual(PLAN_LIMITS.free);
+  });
+
+  it("hebt für einen Admin beide Grenzen auf, ohne den Plan zu ändern", () => {
+    const admin = resolvePlan({ plan: "free", is_admin: true });
+    expect(admin.plan).toBe("free");
+    expect(admin.isAdmin).toBe(true);
+    expect(admin.limits).toEqual({ projects: Infinity, chatMessages: Infinity });
   });
 });
 

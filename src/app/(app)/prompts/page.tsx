@@ -6,6 +6,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { createClient } from "@/server/supabase/server";
+import { resolvePlan } from "@/shared/lib/plans";
 import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
@@ -54,8 +55,8 @@ export default async function SavedPromptsPage() {
     // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
   ]);
-  const canExportPdf =
-    profile?.is_admin === true || profile?.plan === "pro" || profile?.plan === "team";
+  const { plan, isAdmin } = resolvePlan(profile);
+  const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
     (rowsRaw as GenerationRow[] | null) ?? [],

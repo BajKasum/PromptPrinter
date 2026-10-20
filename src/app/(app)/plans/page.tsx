@@ -7,7 +7,7 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import { LemonCheckoutButton } from "@/shared/ui/lemon-checkout-button";
 import { localizePlans, type MarketingPlan } from "@/shared/lib/pricing";
 import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
-import { PLAN_LIMITS, toPlanKey } from "@/shared/lib/plans";
+import { PLAN_LIMITS, resolvePlan } from "@/shared/lib/plans";
 import { cn } from "@/shared/lib/utils";
 import { fmt, rich } from "@/shared/i18n/format";
 import type { Messages } from "@/shared/i18n/messages/de";
@@ -47,8 +47,7 @@ export default async function PlansPage() {
   ]);
   const m = t.pages.plans;
 
-  const planKey = toPlanKey(profile?.plan as string | null | undefined);
-  const isAdmin = profile?.is_admin ?? false;
+  const { plan: planKey, isAdmin } = resolvePlan(profile);
   const hasByok = configuredProviders.length > 0;
   const onPro = planKey !== "free";
 

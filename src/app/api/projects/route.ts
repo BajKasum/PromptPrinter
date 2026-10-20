@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
-import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
+import { resolvePlan } from "@/shared/lib/plans";
 import { problem } from "@/server/http/api-problem";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
@@ -62,10 +62,7 @@ export async function POST(req: Request) {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
   ]);
-  const rawPlan = (profile?.plan as string | undefined) ?? "free";
-  const plan: PlanKey = rawPlan === "pro" || rawPlan === "team" ? rawPlan : "free";
-  const isAdmin = profile?.is_admin ?? false;
-  const limits = effectiveLimits(plan, isAdmin);
+  const { plan, isAdmin, limits } = resolvePlan(profile);
   if ((projectCount ?? 0) >= limits.projects) {
     return problem(
       403,

@@ -66,6 +66,25 @@ export function toPlanKey(raw: string | null | undefined): PlanKey {
   return raw === "pro" || raw === "team" ? raw : "free";
 }
 
+/** Die zwei Spalten von `profiles`, aus denen Plan und Limits folgen. */
+export type PlanProfile = { plan?: string | null; is_admin?: boolean | null } | null | undefined;
+
+export type ResolvedPlan = { plan: PlanKey; isAdmin: boolean; limits: PlanLimits };
+
+/**
+ * Aus einer Zeile von `profiles` (`plan`, `is_admin`) werden Plan, Admin-Status und die
+ * wirksamen Limits, in dieser einen Reihenfolge: Plan normalisieren, Admin lesen, dann
+ * `effectiveLimits`. Eine fehlende Zeile ist ein Free-Konto ohne Adminrechte. Jede Stelle,
+ * die "was darf dieses Konto" beantwortet (Chat, Projekte, Gedächtnis, Seiten), ruft dies
+ * auf, statt die Folge nachzubauen: kommt ein Plan dazu oder ändert sich die Regel für
+ * Admins, steht die Änderung hier und nirgends sonst (#141).
+ */
+export function resolvePlan(profile: PlanProfile): ResolvedPlan {
+  const plan = toPlanKey(profile?.plan);
+  const isAdmin = profile?.is_admin ?? false;
+  return { plan, isAdmin, limits: effectiveLimits(plan, isAdmin) };
+}
+
 /**
  * Kann dieses Konto nur mit eigenem Key chatten, und hat es keinen?
  *
