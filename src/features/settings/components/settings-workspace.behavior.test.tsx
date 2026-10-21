@@ -107,7 +107,7 @@ afterEach(() => {
 
 describe("Karten", () => {
   it("zeigt die neun Karten in dieser Reihenfolge, jede mit Titel und Hinweis", () => {
-    renderIt();
+    renderIt({ plan: "pro" });
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual([
       "Profil",
@@ -135,7 +135,7 @@ describe("Karten", () => {
   });
 
   it("gibt nur Sprache und API-Keys einen Sprunganker (Key-Hinweis im Chat, Sprachwahl)", () => {
-    const { container } = renderIt();
+    const { container } = renderIt({ plan: "pro" });
     const withId = Array.from(container.querySelectorAll("section[id]")).map((s) => s.id);
     expect(withId).toEqual(["language", "api-keys"]);
     expect(container.querySelectorAll("section")).toHaveLength(9);
@@ -144,7 +144,7 @@ describe("Karten", () => {
   });
 
   it("jede Karte trägt ihren Inhalt: Attrappen für Erscheinungsbild, Sprache, Passwort, Zustimmung, Export und Konto löschen", () => {
-    renderIt();
+    renderIt({ plan: "pro" });
     for (const id of ["theme-pref", "language-pref", "change-password", "zai-consent", "data-export", "delete-account"]) {
       expect(screen.getByTestId(id)).toBeInTheDocument();
     }
@@ -152,12 +152,37 @@ describe("Karten", () => {
   });
 
   it("reicht den Zeitpunkt der Zustimmung zu Z.ai an ihre Karte weiter (leer, wenn keine erteilt ist)", () => {
-    const { unmount } = renderIt();
+    const { unmount } = renderIt({ plan: "pro" });
     expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "");
     unmount();
 
-    renderIt({ zaiConsentAt: "2026-10-17T10:00:00.000Z" });
+    renderIt({ plan: "pro", zaiConsentAt: "2026-10-17T10:00:00.000Z" });
     expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "2026-10-17T10:00:00.000Z");
+  });
+
+  // #153: die Karte "Übermittlung an Z.ai" gehört nur dorthin, wo der Server-Key läuft. Ein Free-Konto
+  // mit eigenem Key schickt nichts an Z.ai und soll dafür keine Zustimmung erteilen.
+  describe("Karte Übermittlung an Z.ai", () => {
+    it("fehlt für ein Free-Konto ohne frühere Zustimmung", () => {
+      const { container } = renderIt({ plan: "free" });
+      expect(screen.queryByTestId("zai-consent")).not.toBeInTheDocument();
+      expect(screen.queryByText("Übermittlung an Z.ai")).not.toBeInTheDocument();
+      expect(container.querySelectorAll("section")).toHaveLength(8);
+    });
+
+    it("bleibt für ein Free-Konto sichtbar, das schon zugestimmt hat (der Widerruf muss immer gehen)", () => {
+      renderIt({ plan: "free", zaiConsentAt: "2026-10-17T10:00:00.000Z" });
+      expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "2026-10-17T10:00:00.000Z");
+    });
+
+    it.each([
+      ["pro", false],
+      ["team", false],
+      ["free", true],
+    ] as const)("erscheint für Plan %s (Admin: %s)", (plan, isAdmin) => {
+      renderIt({ plan, isAdmin });
+      expect(screen.getByTestId("zai-consent")).toBeInTheDocument();
+    });
   });
 
   it("reicht Schlüssel-Zustand an die API-Key-Karte weiter und nennt unter ihr den Hinweis zum Limit", () => {
@@ -172,7 +197,7 @@ describe("Karten", () => {
   });
 
   it("färbt das Symbol jeder Karte mit ihrem Akzent, die Gefahrenzone mit dem Warnton", () => {
-    const { container } = renderIt();
+    const { container } = renderIt({ plan: "pro" });
     const iconColors = Array.from(container.querySelectorAll("section > header > svg")).map(
       (svg) => (svg as SVGElement).getAttribute("style") ?? ""
     );
