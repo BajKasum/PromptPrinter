@@ -46,11 +46,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     []
   );
   const [loaded, setLoaded] = useState(false);
+  // Wer den Fokus hatte, als die Palette aufging (#151). Beim Schliessen ohne Ziel (Escape, Klick daneben,
+  // Strg+K) geht er dorthin zurueck, sonst landet er auf <body> und wer weitertippen will, muss erst
+  // zurueck navigieren. Beim Wechsel auf eine Seite nicht: dort uebernimmt die neue Seite den Fokus.
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const navigatingRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
 
   const go = useCallback(
     (href: string) => {
+      navigatingRef.current = true;
       onClose();
       router.push(href);
     },
@@ -60,10 +66,24 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // Reset transient state each time the palette opens, and focus the input.
   useEffect(() => {
     if (!open) return;
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+        ? document.activeElement
+        : null;
+    navigatingRef.current = false;
     setQuery("");
     setActiveIndex(0);
     const t = window.setTimeout(() => inputRef.current?.focus(), 20);
     return () => window.clearTimeout(t);
+  }, [open]);
+
+  // Beim Schliessen den Fokus zurueckgeben (siehe returnFocusRef). Laeuft auch beim ersten Rendern, dann ist
+  // noch nichts gemerkt und nichts zu tun.
+  useEffect(() => {
+    if (open) return;
+    const previous = returnFocusRef.current;
+    returnFocusRef.current = null;
+    if (previous && !navigatingRef.current && previous.isConnected) previous.focus();
   }, [open]);
 
   // Lazily load the user's projects + chats the first time the palette opens
