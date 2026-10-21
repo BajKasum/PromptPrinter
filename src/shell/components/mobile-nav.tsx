@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -171,7 +172,7 @@ export function MobileNav({
                         chats.map((c) => {
                           const active = pathname === `/chats/${c.id}`;
                           return (
-                            <Link
+                            <HoverPrefetchLink
                               key={c.id}
                               href={`/chats/${c.id}`}
                               onClick={() => setOpen(false)}
@@ -183,7 +184,7 @@ export function MobileNav({
                               )}
                             >
                               {c.title}
-                            </Link>
+                            </HoverPrefetchLink>
                           );
                         })
                       )}
@@ -208,7 +209,7 @@ export function MobileNav({
                             pathname === `/projects/${p.id}` ||
                             pathname.startsWith(`/projects/${p.id}/`);
                           return (
-                            <Link
+                            <HoverPrefetchLink
                               key={p.id}
                               href={`/projects/${p.id}`}
                               onClick={() => setOpen(false)}
@@ -226,7 +227,7 @@ export function MobileNav({
                                   className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
                                 />
                               )}
-                            </Link>
+                            </HoverPrefetchLink>
                           );
                         })
                       )}
