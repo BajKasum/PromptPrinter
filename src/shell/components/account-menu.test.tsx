@@ -21,6 +21,23 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "Kontomenü" }));
 }
 
+describe("AccountMenu: Auslöser", () => {
+  // #151: aria-haspopup hiesse "Menü" und liesse Pfeiltasten durch Einträge erwarten. Das Panel ist eine
+  // Liste gewöhnlicher Links und Knöpfe, also Disclosure (aria-expanded) ohne Menü-Ankündigung.
+  it("meldet nur auf/zu, kündigt kein Menü an", async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    const trigger = screen.getByRole("button", { name: "Kontomenü" });
+    expect(trigger).not.toHaveAttribute("aria-haspopup");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(trigger);
+    expect(trigger).not.toHaveAttribute("aria-haspopup");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
+  });
+});
+
 describe("AccountMenu: Mehr erfahren", () => {
   beforeEach(() => push.mockClear());
 

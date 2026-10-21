@@ -144,12 +144,14 @@ export function AccountMenu({
 
   return (
     <div className="relative w-full">
+      {/* Kein aria-haspopup (#151): das hiesse "Menue" und liesse Pfeiltasten durch Eintraege
+          erwarten. Das Panel ist eine Liste gewoehnlicher Links, wie der Kommentar in
+          account-submenu.tsx es festhaelt: Disclosure (aria-expanded), kein ARIA-Menue. */}
       <button
         ref={triggerRef}
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
         aria-label={t.shell.accountMenu}
-        aria-haspopup="true"
         aria-expanded={open}
         className={cn(
           "flex items-center rounded-lg text-foreground/85 transition-colors hover:bg-surface-hover",

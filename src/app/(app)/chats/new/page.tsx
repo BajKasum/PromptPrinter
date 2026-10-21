@@ -14,10 +14,13 @@ export async function generateMetadata() {
 }
 
 // The one way a chat starts (REDESIGN.md, Phase 2), and the login landing.
-// No mode choice, no page-level headline: Finn's empty state inside the chat
-// IS the greeting. Once the first turn is persisted, the Chat component
-// replaces the URL with the canonical /chats/[id].
+// No mode choice, no visible page headline: Finn's empty state inside the chat
+// IS the greeting. Screen readers still get a level-1 heading (#151, every other
+// app page has one); the greeting inside the chat is the h2 below it. Once the
+// first turn is persisted, the Chat component replaces the URL with the
+// canonical /chats/[id].
 export default async function NewChatPage() {
+  const t = await getT();
   const supabase = await createClient();
   const user = await getSessionUser();
   if (!user) redirect("/login");
@@ -43,6 +46,7 @@ export default async function NewChatPage() {
 
   return (
     <div className="mx-auto max-w-[900px]">
+      <h1 className="sr-only">{t.nav.newChat}</h1>
       <FadeIn>
         <Chat name={name} savedPrompts={savedPrompts} needsKey={needsKey} />
       </FadeIn>
