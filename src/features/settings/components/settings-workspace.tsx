@@ -29,7 +29,7 @@ import { ThemePreference } from "@/features/settings/components/theme-preference
 import { ApiKeys } from "@/features/settings/components/api-keys";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
-import type { PlanKey } from "@/shared/lib/plans";
+import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
@@ -255,15 +255,20 @@ export function SettingsWorkspace({
           <ChangePassword />
         </SettingsCard>
 
-        {/* Zustimmung zur Übermittlung an Z.ai (Pro, Server-Key), Rechts-Audit R-1 */}
-        <SettingsCard
-          Icon={ShieldCheck}
-          accent="--accent"
-          title={t.settings.zaiConsent.title}
-          description={t.settings.zaiConsent.hint}
-        >
-          <ZaiConsent consentAt={zaiConsentAt} />
-        </SettingsCard>
+        {/* Zustimmung zur Übermittlung an Z.ai (Pro, Server-Key), Rechts-Audit R-1.
+            Nur dort, wo der Server-Key überhaupt läuft (Kontingent über null: Pro, Team, Admin),
+            oder wo schon einmal zugestimmt wurde, damit ein Widerruf immer möglich bleibt (#153).
+            Ein Free-Konto mit eigenem Key schickt nichts an Z.ai und soll dafür nichts erteilen. */}
+        {(effectiveLimits(plan, isAdmin).chatMessages > 0 || zaiConsentAt !== null) && (
+          <SettingsCard
+            Icon={ShieldCheck}
+            accent="--accent"
+            title={t.settings.zaiConsent.title}
+            description={t.settings.zaiConsent.hint}
+          >
+            <ZaiConsent consentAt={zaiConsentAt} />
+          </SettingsCard>
+        )}
 
         {/* Your data: self-service export (Betriebs-Audit 04.10.2026) */}
         <SettingsCard
