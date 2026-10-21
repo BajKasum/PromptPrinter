@@ -57,3 +57,27 @@ describe("Trefferfläche von 44 px auf Touch", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+// #152: sechs kleine Bedienelemente (14 x 14 bis 256 x 18 px) trugen die Klasse nicht, darunter das Auge
+// "Key anzeigen" im Key-Feld, das kleinste Ziel im wichtigsten Schritt der Einrichtung. Der Test oben
+// prueft nur, dass ein Knopf MIT Klasse positioniert ist, nicht, dass ein kleiner Knopf sie ueberhaupt
+// bekommt. Jede Zeile hier nennt die Datei und ein Stück der className des Elements.
+describe("Kleine Bedienelemente tragen touch-hit (#152)", () => {
+  const SMALL_TARGETS: [file: string, label: string, classFragment: string][] = [
+    ["src/shared/ui/api-key-field.tsx", "Key anzeigen im Key-Feld", "text-tertiary transition-colors hover:text-foreground/70"],
+    ["src/features/settings/components/api-keys.tsx", "Key anzeigen im Endpoint-Formular", "text-tertiary transition-colors hover:text-foreground/70"],
+    ["src/features/settings/components/api-keys.tsx", "Anderer Anbieter? Eigenen Endpoint verbinden", "text-[12px] text-tertiary underline-offset-2"],
+    ["src/features/settings/components/settings-workspace.tsx", "Plan verwalten", "text-accent-text transition-colors hover:text-accent-text/80"],
+    ["src/features/projects/components/project-brain.tsx", "Details im Gedächtnis", "rounded text-[12px] text-secondary transition-colors"],
+    ["src/app/(app)/usage/page.tsx", "Plan und Abo", "text-[12.5px] text-tertiary underline underline-offset-2"],
+  ];
+
+  it.each(SMALL_TARGETS)("%s: %s", (file, _label, fragment) => {
+    const text = readFileSync(file, "utf8");
+    const classNames = Array.from(text.matchAll(/"([^"\n]+)"/g))
+      .map((m) => m[1])
+      .filter((c) => c.includes(fragment));
+    expect(classNames.length).toBeGreaterThan(0);
+    for (const c of classNames) expect(c).toMatch(/\btouch-hit(?:-y)?\b/);
+  });
+});

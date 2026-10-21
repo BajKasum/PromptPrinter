@@ -358,7 +358,7 @@ function BrainFacts({ brain }: { brain: ProjectBrain }) {
             onClick={() => setShowDetails((v) => !v)}
             aria-expanded={showDetails}
             aria-controls={detailsId}
-            className="inline-flex items-center gap-1 rounded text-[12px] text-secondary transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="touch-hit-y relative inline-flex items-center gap-1 rounded text-[12px] text-secondary transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <ChevronRight
               className={cn("h-3.5 w-3.5 transition-transform duration-150", showDetails && "rotate-90")}

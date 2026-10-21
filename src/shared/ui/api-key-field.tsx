@@ -101,7 +101,7 @@ export function ApiKeyField({
             type="button"
             onClick={() => setShowKey((v) => !v)}
             aria-label={showKey ? t.settings.keys.hide : t.settings.keys.show}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary transition-colors hover:text-foreground/70"
+            className="touch-hit absolute right-2.5 top-1/2 -translate-y-1/2 text-tertiary transition-colors hover:text-foreground/70"
           >
             {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </button>
