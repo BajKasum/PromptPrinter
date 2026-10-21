@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { Plus, Star, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -267,7 +268,7 @@ function Full({
                   chats.map((c) => {
                     const active = pathname === `/chats/${c.id}`;
                     return (
-                      <Link
+                      <HoverPrefetchLink
                         key={c.id}
                         href={`/chats/${c.id}`}
                         title={c.title}
@@ -278,7 +279,7 @@ function Full({
                         )}
                       >
                         {c.title}
-                      </Link>
+                      </HoverPrefetchLink>
                     );
                   })
                 )}
@@ -304,7 +305,7 @@ function Full({
                       pathname === `/projects/${p.id}` ||
                       pathname.startsWith(`/projects/${p.id}/`);
                     return (
-                      <Link
+                      <HoverPrefetchLink
                         key={p.id}
                         href={`/projects/${p.id}`}
                         title={p.name}
@@ -321,7 +322,7 @@ function Full({
                             className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
                           />
                         )}
-                      </Link>
+                      </HoverPrefetchLink>
                     );
                   })
                 )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
@@ -208,10 +208,10 @@ function ChatRow({
 
   return (
     <div className="group flex items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 hover:bg-surface-hover">
-      <Link href={`${basePath}/${chat.id}`} className="min-w-0 flex-1">
+      <HoverPrefetchLink href={`${basePath}/${chat.id}`} className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-medium text-foreground">{chat.title}</p>
         <p className="mt-0.5 truncate text-[12px] text-secondary">{meta}</p>
-      </Link>
+      </HoverPrefetchLink>
       {/* Permanently visible below md (QA finding K-2): opacity-0 gated purely
           on :hover leaves touch devices with no reliable way to reveal these
           actions at all, Safari's hover-simulation-on-first-tap is not

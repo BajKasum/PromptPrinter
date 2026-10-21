@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { FolderKanban, Sparkles, Clock, Star } from "lucide-react";
 import { cn, relativeTime } from "@/shared/lib/utils";
 import type { LibraryItem } from "@/features/prompts/hooks/use-library-filter";
@@ -36,7 +36,7 @@ export function LibraryCard({
   return (
     <div className="card-surface relative h-full p-5 flex flex-col hover:border-border-strong transition-colors">
       {/* Full-card click target; the star sits above it via z-10. */}
-      <Link
+      <HoverPrefetchLink
         href={`/projects/${item.id}`}
         aria-label={fmt(t.library.open, { name: item.name })}
         className="absolute inset-0 rounded-xl"
