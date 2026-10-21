@@ -41,8 +41,8 @@ export function DeleteAccount({ email }: { email: string }) {
     try {
       const res = await fetch("/api/account", { method: "DELETE" });
       if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? t.common.unknownError);
+        const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? t.common.unknownError);
       }
       // Account + session are gone, hard navigate to a clean public page.
       window.location.href = "/";
