@@ -189,7 +189,7 @@ export function SettingsWorkspace({
             </div>
             <Link
               href="/billing"
-              className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent-text transition-colors hover:text-accent-text/80"
+              className="touch-hit-y relative mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent-text transition-colors hover:text-accent-text/80"
             >
               {t.settings.managePlan}
               <ArrowUpRight className="h-3.5 w-3.5" />

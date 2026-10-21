@@ -119,7 +119,7 @@ export default async function UsagePage() {
             <PlanBadge plan={planKey} isAdmin={isAdmin} />
             <Link
               href="/billing"
-              className="text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
+              className="touch-hit-y relative text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
             >
               {m.planLink}
             </Link>
