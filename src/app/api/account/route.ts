@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { problem } from "@/server/http/api-problem";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
@@ -98,7 +99,7 @@ export async function DELETE(req: Request) {
 
   // The id comes from the verified session, never from client input.
   if (!user) {
-    return NextResponse.json({ error: m.accountNotSignedIn }, { status: 401 });
+    return problem(401, m.accountNotSignedIn);
   }
 
   // Was the one route of the four that touch rateLimit (chat, projects,
@@ -114,10 +115,9 @@ export async function DELETE(req: Request) {
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "account-delete", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
-      return NextResponse.json(
-        { error: m.tooManyRequests },
-        { status: 429 }
-      );
+      return problem(429, m.tooManyRequests, {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
     }
   }
 
@@ -175,7 +175,7 @@ export async function DELETE(req: Request) {
       err instanceof Error && err.message.includes("admin credentials")
         ? m.accountConfigIncomplete
         : m.accountDeleteFailed;
-    return NextResponse.json({ error: message }, { status: 500 });
+    return problem(500, message);
   }
 
   // The user no longer exists, so just clear this browser's session cookies

@@ -7,7 +7,7 @@
 import { NextResponse } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
-import { siteUrl } from "@/shared/lib/site-url";
+import { safeNextPath, siteUrl } from "@/shared/lib/site-url";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -15,9 +15,9 @@ export async function GET(request: Request) {
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
 
-  // Only ever forward to an in-app path, never an attacker-supplied absolute URL.
-  const rawNext = url.searchParams.get("next");
-  const next = rawNext && rawNext.startsWith("/") ? rawNext : "/chats/new";
+  // Only ever forward to an in-app path, never an attacker-supplied absolute URL
+  // (dieselbe Pruefung wie im Login-Formular, eine Kopie davon driftet auseinander, #142).
+  const next = safeNextPath(url.searchParams.get("next"));
 
   // M-8 (Audit 06.09.2026): Supabase haengt bei einem gescheiterten OAuth-
   // Versuch (Google/GitHub) `error`/`error_description` an diese URL, statt

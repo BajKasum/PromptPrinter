@@ -20,11 +20,11 @@ export function siteUrl(path = ""): string {
 /**
  * Validates a `?next=` redirect target (login/signup) is an in-app path
  * before handing it to router.push(), never an attacker-supplied absolute
- * or protocol-relative URL from a crafted link. Mirrors the guard the auth
- * callback route applies server-side (src/app/auth/callback/route.ts), but
- * additionally rejects a leading "//" (a protocol-relative URL still passes
- * a plain `startsWith("/")` check, and unlike the callback route this value
- * is pushed as-is, with no siteUrl() prefix to neutralize it).
+ * or protocol-relative URL from a crafted link. Also used by the auth
+ * callback route (src/app/auth/callback/route.ts), so there is one check, not
+ * two that drift apart. It rejects a leading "//" (a protocol-relative URL
+ * still passes a plain `startsWith("/")` check, and the login form pushes the
+ * value as-is, with no siteUrl() prefix to neutralize it).
  */
 export function safeNextPath(raw: string | null, fallback = "/chats/new"): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return fallback;

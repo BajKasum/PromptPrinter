@@ -54,6 +54,9 @@ describe("GET /auth/callback", () => {
     const res = await GET(req("?token_hash=abc&type=signup&next=//evil.example"));
     const location = res.headers.get("location")!;
     expect(new URL(location).host).toBe("promptprinter.app");
+    // Dieselbe Pruefung wie im Login-Formular (safeNextPath, #142): ein "//host" wird abgelehnt,
+    // nicht bloss durch siteUrl() auf der eigenen Domain gehalten.
+    expect(location).toBe("https://promptprinter.app/chats/new");
   });
 
   it("redirects to the login error page when verifyOtp fails", async () => {

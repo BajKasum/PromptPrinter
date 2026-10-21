@@ -98,6 +98,11 @@ describe("DELETE /api/account", () => {
     getUser.mockResolvedValue({ data: { user: null } });
     const res = await DELETE(req());
     expect(res.status).toBe(401);
+    // Problem-Format wie jede andere Route (#142): `detail`, nicht `error`.
+    expect(res.headers.get("content-type")).toBe("application/problem+json");
+    const json = await res.json();
+    expect(json.detail).toBeTruthy();
+    expect(json.error).toBeUndefined();
     expect(deleteUser).not.toHaveBeenCalled();
   });
 
@@ -105,6 +110,9 @@ describe("DELETE /api/account", () => {
     rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 1000 });
     const res = await DELETE(req());
     expect(res.status).toBe(429);
+    const json = await res.json();
+    expect(json.detail).toBeTruthy();
+    expect(json.retryAfter).toBe(1);
     expect(deleteUser).not.toHaveBeenCalled();
   });
 
@@ -288,7 +296,7 @@ describe("DELETE /api/account", () => {
     const res = await DELETE(req());
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toContain("Service-Role-Key");
+    expect(json.detail).toContain("Service-Role-Key");
   });
 
   it("signs out locally after a successful deletion", async () => {
