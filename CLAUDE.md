@@ -269,6 +269,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | UI-Text | Wörterbuch `shared/i18n/messages/`, alle fünf Sprachen (fr/it/es sind nie von Muttersprachlern geprüft: im PR kennzeichnen) |
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
+| Zeile einer langen Liste (Chats, Projekte) mit Link | `HoverPrefetchLink` aus `shared/ui`, kein bloßes `<Link>` (`list-prefetch.test.ts`) |
 | Server-Key eines Anbieters (`GEMINI_API_KEY`) | vorher Datenschutz Ziffer 4 und 5 um ihn ergänzen (seit 2026-10-17 nennt der Text Google nicht mehr) |
 | Datei in `src/server/` | `import "server-only"` |
 | Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3). **Im Browser-Code `import * as z from "@/shared/lib/zod"`**, `import { z }` nur in `src/server/` und `src/app/api/` (sonst +65 KB auf `/login`, #134); beides hält `zod-import.test.ts` |
