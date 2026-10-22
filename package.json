@@ -39,7 +39,7 @@
     "dev:docker": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings 0",
     "audit:gate": "node scripts/audit-gate.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

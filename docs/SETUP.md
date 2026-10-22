@@ -52,7 +52,7 @@ wandert. Ohne Provider-Key sagt sie ab, auch lokal.
 | `npm run dev` | Dev-Server mit Hot-Reload |
 | `npm run build` | Production-Build (standalone) |
 | `npm run start` | Gebauten Build starten |
-| `npm run lint` | ESLint (`next lint`) |
+| `npm run lint` | ESLint-CLI (`eslint . --max-warnings 0`, jede Warnung stoppt das Gate) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest (Unit-Tests) |
 | `npm run test:e2e` | Playwright-Smoketests im Browser gegen einen lokalen Supabase-Stack (siehe „Ende-zu-Ende-Tests", braucht Docker) |
