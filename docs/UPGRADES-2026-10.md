@@ -67,7 +67,7 @@ Dependabot-PRs dazu nur mit Kasums Ja mergen (`CLAUDE.md`).
 |---|---|---|---|
 | 0 | `next` und `eslint-config-next` auf das aktuelle 15.5.x (15.5.28) | Neues Advisory GHSA-4jqv-mc3x-m676 (moderate, Cache-Vergiftung bei selbst gehostetem SSG/ISR) betrifft 15.0.0 bis 15.5.26. Das Gate lässt "moderate" durch, Vercel ist nicht der betroffene Betrieb, trotzdem ein Patch ohne Breaking Change | klein, nur Patch |
 | 1 | `tailwindcss` 3.4.19 auf 4.3.3, `tailwind-merge` 2.6.1 auf 3.7.0, `tailwindcss-animate` ersetzen | **erledigt am 2026-10-20**; löst die Ausnahme **nicht** (siehe die Korrektur oben) | **gross**, siehe unten |
-| 2 | Next 16 und der Umstieg von `next lint` auf die ESLint-CLI (#138) | `next lint` fällt in 16 weg, ESLint 10 hängt an `eslint-config-next` 16 | mittel, ein Wechsel der Lint-Aufrufe in `package.json`, CI und Gate |
+| 2 | Next 16 und der Umstieg von `next lint` auf die ESLint-CLI (#138, **der Lint-Aufruf ist seit 2026-10-22 umgestellt**, offen ist Next 16) | `next lint` fällt in 16 weg, ESLint 10 hängt an `eslint-config-next` 16 | mittel, ein Wechsel der Lint-Aufrufe in `package.json`, CI und Gate |
 | 3 | `framer-motion` 11.18.2 auf `motion` mit `LazyMotion` (#135) | spart Main-Thread-Zeit auf der Startseite mobil, ein Paketwechsel | mittel, jede Animation prüfen (`reduced-motion`) |
 | 4 | `typescript` 7 und `vitest` 5, einzeln | beide sind für sich ein Major, getrennt lassen sich Fehler zuordnen | je nach Typfehlern |
 | – | `@types/node` 26 | **nicht anheben**: Node 24 bleibt (`.nvmrc`), die Typen müssen zur Laufzeit passen | – |
