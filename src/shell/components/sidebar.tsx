@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Plus, Star, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Logo, LogoMark } from "@/shared/brand/logo";
 import { NewProjectButton } from "@/features/projects/components/new-project";
@@ -173,7 +173,7 @@ export function Sidebar({
         />
       </div>
 
-      <motion.div
+      <m.div
         key={collapsed ? "rail" : "full"}
         initial={mounted && !reduceMotion ? { opacity: 0 } : false}
         animate={{ opacity: 1 }}
@@ -185,7 +185,7 @@ export function Sidebar({
         ) : (
           <Full pathname={pathname} chats={chats} projects={projects} {...accountProps} />
         )}
-      </motion.div>
+      </m.div>
 
       {/* Drag-to-resize handle, invisible at rest (VS Code/Linear-style),
           a thin accent line on hover/focus/drag. Hit area (w-2) is wider than

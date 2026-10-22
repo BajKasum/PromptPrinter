@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import {
   Search,
   FolderKanban,
@@ -206,7 +206,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div
+        <m.div
           className="fixed inset-0 z-90 flex justify-center bg-black/60 px-4 pt-[12vh] backdrop-blur-xs"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -214,7 +214,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           transition={{ duration: 0.15 }}
           onMouseDown={onClose}
         >
-          <motion.div
+          <m.div
             role="dialog"
             aria-modal="true"
             aria-label={t.palette.dialog}
@@ -310,8 +310,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 {t.palette.close}
               </span>
             </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>,
     document.body

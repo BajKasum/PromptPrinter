@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Star } from "lucide-react";
 
 export type FloaterSpec = {
@@ -26,7 +26,7 @@ export function Floaters({ items }: { items: FloaterSpec[] }) {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       {items.map((f, i) => (
-        <motion.span
+        <m.span
           key={i}
           className="absolute hidden sm:block"
           style={{ top: f.top, left: f.left }}
@@ -51,7 +51,7 @@ export function Floaters({ items }: { items: FloaterSpec[] }) {
               className="block rounded-full border border-accent/40 bg-accent/10"
             />
           )}
-        </motion.span>
+        </m.span>
       ))}
     </div>
   );

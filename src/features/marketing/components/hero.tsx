@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, Copy, CornerDownLeft } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
@@ -42,7 +42,7 @@ export function Hero() {
               scale/x animation never distorts the bubble absolutely positioned
               against it below. */}
           <div className="relative shrink-0">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: -16, scale: 0.92 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -55,7 +55,7 @@ export function Hero() {
                 priority
                 className="[&_img]:h-[132px] [&_img]:w-[132px] md:[&_img]:h-[184px] md:[&_img]:w-[184px]"
               />
-            </motion.div>
+            </m.div>
 
             {/* Both balloons are anchored to THIS wrapper (Finn's own box),
                 never independently centered by the outer flex row. Two
@@ -89,7 +89,7 @@ export function Hero() {
               jede KI.
             </p>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -104,19 +104,19 @@ export function Hero() {
           <Button asChild size="lg" variant="ghost">
             <Link href="#produkt">Erst mal zuschauen</Link>
           </Button>
-        </motion.div>
+        </m.div>
           </div>
         </div>
 
         {/* Hero demo: one idea walking the whole journey, live. */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto mt-16 w-full max-w-4xl"
         >
           <HeroDemo />
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );
@@ -130,7 +130,7 @@ export function Hero() {
 
 function BubbleDesktop() {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
@@ -170,13 +170,13 @@ function BubbleDesktop() {
           </p>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
 function BubbleMobile() {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
@@ -214,7 +214,7 @@ function BubbleMobile() {
           </p>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -428,7 +428,7 @@ function HeroDemo() {
             />
             <div className="relative rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-2 text-[13px] leading-snug text-foreground/80">
               <AnimatePresence mode="wait" initial={false}>
-                <motion.span
+                <m.span
                   key={stageKey}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -437,7 +437,7 @@ function HeroDemo() {
                   className="block"
                 >
                   {NARRATION[stageKey].line}
-                </motion.span>
+                </m.span>
               </AnimatePresence>
             </div>
           </div>
@@ -461,7 +461,7 @@ function HeroDemo() {
           {/* Stage-specific content, morphs as the journey advances. */}
           <div className="mt-4 min-h-[200px]">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div
+              <m.div
                 key={stageKey}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -483,7 +483,7 @@ function HeroDemo() {
                     copied={copied}
                   />
                 )}
-              </motion.div>
+              </m.div>
             </AnimatePresence>
           </div>
         </div>

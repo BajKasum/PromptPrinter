@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
@@ -110,7 +110,7 @@ export function DeleteAccount({ email }: { email: string }) {
         createPortal(
           <AnimatePresence>
             {open && (
-              <motion.div
+              <m.div
                 className="fixed inset-0 z-95 flex items-center justify-center bg-black/60 px-4 backdrop-blur-xs"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -118,7 +118,7 @@ export function DeleteAccount({ email }: { email: string }) {
                 transition={{ duration: 0.15 }}
                 onMouseDown={close}
               >
-                <motion.div
+                <m.div
                   role="dialog"
                   aria-modal="true"
                   aria-label={t.settings.deleteAccount.dialog}
@@ -195,8 +195,8 @@ export function DeleteAccount({ email }: { email: string }) {
                       </Button>
                     )}
                   </div>
-                </motion.div>
-              </motion.div>
+                </m.div>
+              </m.div>
             )}
           </AnimatePresence>,
           document.body

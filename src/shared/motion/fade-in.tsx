@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type HTMLMotionProps } from "framer-motion";
+import { m, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
 
 interface FadeInProps extends HTMLMotionProps<"div"> {
@@ -18,7 +18,7 @@ export function FadeIn({
   ...props
 }: FadeInProps) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once, margin: "-80px" }}
@@ -27,7 +27,7 @@ export function FadeIn({
       {...props}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -43,7 +43,7 @@ export function StaggerChildren({
   className?: string;
 }) {
   return (
-    <motion.div
+    <m.div
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-80px" }}
@@ -54,7 +54,7 @@ export function StaggerChildren({
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -68,7 +68,7 @@ export function StaggerItem({
   y?: number;
 }) {
   return (
-    <motion.div
+    <m.div
       variants={{
         hidden: { opacity: 0, y },
         show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
@@ -76,6 +76,6 @@ export function StaggerItem({
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

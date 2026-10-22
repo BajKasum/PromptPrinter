@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { FolderPlus, Loader2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -109,7 +109,7 @@ export function NewProjectButton({
         createPortal(
           <AnimatePresence>
             {open && (
-              <motion.div
+              <m.div
                 className="fixed inset-0 z-95 flex items-center justify-center bg-black/60 px-4 backdrop-blur-xs"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -117,7 +117,7 @@ export function NewProjectButton({
                 transition={{ duration: 0.15 }}
                 onMouseDown={close}
               >
-                <motion.div
+                <m.div
                   role="dialog"
                   aria-modal="true"
                   aria-label={t.projects.newProjectDialog}
@@ -177,8 +177,8 @@ export function NewProjectButton({
                       )}
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
+                </m.div>
+              </m.div>
             )}
           </AnimatePresence>,
           document.body

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { useT } from "@/shared/i18n/provider";
 
 // Deterministic bubble burst (not randomized per render) — Finn's ocean in
@@ -74,7 +74,7 @@ export function CopyMoment({
   return (
     <>
       <span className="relative inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-success">
-        <motion.span
+        <m.span
           key={copyCount}
           className="inline-flex"
           initial={{ scale: 1 }}
@@ -91,16 +91,16 @@ export function CopyMoment({
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <motion.path
+            <m.path
               d="M20 6 9 17l-5-5"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
               transition={{ duration: 0.38, delay: 0.08, ease: EASE_OUT_EXPO }}
             />
           </svg>
-        </motion.span>
+        </m.span>
         {BUBBLES.map((b, i) => (
-          <motion.span
+          <m.span
             key={`${copyCount}-${i}`}
             aria-hidden="true"
             className={`absolute left-1/2 top-1/2 rounded-full border ${

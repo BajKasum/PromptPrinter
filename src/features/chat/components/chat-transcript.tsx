@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Copy, Check, Download, Pencil } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Button } from "@/shared/ui/button";
 import { DolphinLoader } from "@/shared/brand/dolphin-loader";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
@@ -270,7 +270,7 @@ export function ChatFinishedMarker() {
     // reply as it streamed in was unusable noise). The "done" announcement now
     // comes from the single dedicated status line in chat.tsx, so a live region
     // here would only duplicate it — and compete with the persist warning's.
-    <motion.div
+    <m.div
       initial={reduce ? false : { opacity: 0, y: 12, scale: 0.85 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
@@ -278,6 +278,6 @@ export function ChatFinishedMarker() {
     >
       <AnimatedMascot state="celebrating" size={40} motion="float" />
       <span className="text-[13px] text-secondary">{t.chat.finished}</span>
-    </motion.div>
+    </m.div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
 import { Mascot } from "./mascot";
 import { useT } from "@/shared/i18n/provider";
@@ -35,7 +35,7 @@ export function DolphinLoader({ size = 36, label, className }: DolphinLoaderProp
       <span className="relative inline-block shrink-0" style={{ width: size, height: size }}>
         {!reduceMotion &&
           [0, 1, 2].map((i) => (
-            <motion.span
+            <m.span
               key={i}
               aria-hidden
               className="absolute rounded-full bg-accent-text/40"
@@ -50,7 +50,7 @@ export function DolphinLoader({ size = 36, label, className }: DolphinLoaderProp
               }}
             />
           ))}
-        <motion.span
+        <m.span
           className="block"
           animate={
             reduceMotion
@@ -64,7 +64,7 @@ export function DolphinLoader({ size = 36, label, className }: DolphinLoaderProp
           }
         >
           <Mascot state="waiting" size={size} />
-        </motion.span>
+        </m.span>
       </span>
       {label && <span className="text-[13px] text-secondary">{label}</span>}
     </span>

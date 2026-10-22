@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import {
   User,
   Languages,
@@ -311,7 +311,7 @@ export function SettingsWorkspace({
           first, well after mount). */}
       <AnimatePresence>
         {dirty && (
-          <motion.div
+          <m.div
             initial={{ y: 28, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 28, opacity: 0 }}
@@ -347,7 +347,7 @@ export function SettingsWorkspace({
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </>

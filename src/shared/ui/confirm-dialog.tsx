@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { AlertTriangle, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useT } from "@/shared/i18n/provider";
@@ -72,7 +72,7 @@ export function ConfirmDialog({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div
+        <m.div
           className="fixed inset-0 z-95 flex items-center justify-center bg-black/60 px-4 backdrop-blur-xs"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -80,7 +80,7 @@ export function ConfirmDialog({
           transition={{ duration: 0.15 }}
           onMouseDown={close}
         >
-          <motion.div
+          <m.div
             role="dialog"
             aria-modal="true"
             aria-label={title}
@@ -122,8 +122,8 @@ export function ConfirmDialog({
                 )}
               </Button>
             </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>,
     document.body
