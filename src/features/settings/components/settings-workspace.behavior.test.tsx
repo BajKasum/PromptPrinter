@@ -216,8 +216,19 @@ describe("Profil und Workspace", () => {
     expect(input).toHaveAttribute("autocomplete", "name");
     expect(input).toHaveAttribute("placeholder", "Dein Name");
     expect(screen.getByText("anna@example.test")).toBeInTheDocument();
-    expect(screen.getByText("Mit deinem Login verknüpft, hier nicht änderbar.")).toBeInTheDocument();
+    expect(screen.getByText(/Mit deinem Login verknüpft, hier nicht änderbar\./)).toBeInTheDocument();
     expect(screen.getByText("Email")).toBeInTheDocument();
+  });
+
+  // #155: die Adresse lässt sich nicht selbst ändern (das bräuchte eine Bestätigung, die dieser Dienst nicht
+  // verschickt). Wer sie verliert, sieht neben dem gesperrten Feld den Weg über das Kontaktformular.
+  it("zeigt neben der gesperrten E-Mail-Adresse den Weg zur Änderung über das Kontaktformular", () => {
+    renderIt();
+    const link = screen.getByRole("link", { name: "Schreib mir über das Kontaktformular." });
+    expect(link).toHaveAttribute("href", "/kontakt");
+    expect(link.closest("p")).toHaveTextContent("Andere Adresse nötig?");
+    // Ein Eingabefeld für die Adresse gibt es nicht: nur der Anzeigename ist ein Textfeld im Profil.
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
 
   it("zeigt Rolle und 'Mitglied seit' (Monat und Jahr, in UTC), ohne Datum einen Strich", () => {

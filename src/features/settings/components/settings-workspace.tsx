@@ -171,7 +171,18 @@ export function SettingsWorkspace({
                 <div className="flex h-11 items-center rounded-lg border border-border bg-surface px-3.5 text-sm text-secondary">
                   {email}
                 </div>
-                <p className="text-[12px] text-tertiary">{t.settings.emailHint}</p>
+                {/* Die Adresse laesst sich nicht selbst aendern (#155): eine neue braucht eine Bestaetigung an
+                    die alte und die neue Adresse, die dieser Dienst nicht verschickt. Bis dahin der Weg ueber
+                    das Kontaktformular, auch in /docs/konto-und-daten. */}
+                <p className="text-[12px] text-tertiary">
+                  {t.settings.emailHint} {t.settings.emailChange}{" "}
+                  <Link
+                    href="/kontakt"
+                    className="text-accent-text underline underline-offset-2 transition-colors hover:text-accent-text/80"
+                  >
+                    {t.settings.emailChangeLink}
+                  </Link>
+                </p>
               </Field>
             </div>
           </SettingsCard>

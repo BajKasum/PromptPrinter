@@ -316,6 +316,8 @@ export const it: Messages = {
     nameEmpty: "Il nome non può essere vuoto.",
     email: "Email",
     emailHint: "Collegata al tuo accesso, non modificabile qui.",
+    emailChange: "Serve un altro indirizzo?",
+    emailChangeLink: "Scrivimi tramite il modulo di contatto.",
     workspace: "Spazio di lavoro",
     workspaceHint: "Panoramica di account e piano.",
     role: "Ruolo",

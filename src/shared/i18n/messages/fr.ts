@@ -319,6 +319,8 @@ export const fr: Messages = {
     nameEmpty: "Le nom ne peut pas être vide.",
     email: "E-mail",
     emailHint: "Lié à ta connexion, non modifiable ici.",
+    emailChange: "Besoin d'une autre adresse ?",
+    emailChangeLink: "Écris-moi via le formulaire de contact.",
     workspace: "Espace de travail",
     workspaceHint: "Aperçu du compte et de la formule.",
     role: "Rôle",

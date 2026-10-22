@@ -325,6 +325,8 @@ export const de = {
     nameEmpty: "Der Name darf nicht leer sein.",
     email: "Email",
     emailHint: "Mit deinem Login verknüpft, hier nicht änderbar.",
+    emailChange: "Andere Adresse nötig?",
+    emailChangeLink: "Schreib mir über das Kontaktformular.",
     workspace: "Workspace",
     workspaceHint: "Konto- und Plan-Übersicht.",
     role: "Rolle",
