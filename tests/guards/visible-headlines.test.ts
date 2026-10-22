@@ -39,10 +39,11 @@ describe("Sichtbare Überschriften", () => {
   });
 
   it("animiert keine h1 über framer-motion", () => {
-    const offenders = files.filter((f) => /<motion\.h1\b/.test(f.source)).map((f) => f.name);
+    // `m.h1` ist die Kurzform unter LazyMotion (lazy-motion.test.ts), `motion.h1` die alte.
+    const offenders = files.filter((f) => /<(?:m|motion)\.h1\b/.test(f.source)).map((f) => f.name);
     expect(
       offenders,
-      `motion.h1 liefert opacity:0 im HTML aus. Nimm die Klasse "enter-rise":\n${offenders.join("\n")}`
+      `m.h1 liefert opacity:0 im HTML aus. Nimm die Klasse "enter-rise":\n${offenders.join("\n")}`
     ).toEqual([]);
   });
 

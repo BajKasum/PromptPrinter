@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
 import { Mascot } from "./mascot";
 
@@ -62,7 +62,7 @@ export function SuccessCelebration({
   }, [durationMs]);
 
   return (
-    <motion.div
+    <m.div
       role="status"
       aria-live="polite"
       initial={{ opacity: 0 }}
@@ -76,7 +76,7 @@ export function SuccessCelebration({
       <div className="relative">
         {!reduceMotion &&
           CONFETTI.map((p, i) => (
-            <motion.span
+            <m.span
               key={i}
               aria-hidden
               className={cn("absolute left-1/2 top-1/2 rounded-[1px]", p.c)}
@@ -93,7 +93,7 @@ export function SuccessCelebration({
             />
           ))}
 
-        <motion.div
+        <m.div
           initial={{ scale: 0.5, opacity: 0, y: 16 }}
           animate={
             reduceMotion
@@ -103,27 +103,27 @@ export function SuccessCelebration({
           transition={{ type: "spring", stiffness: 240, damping: 16 }}
         >
           <Mascot state="celebrating" size={184} priority />
-        </motion.div>
+        </m.div>
       </div>
 
-      <motion.p
+      <m.p
         className="mt-5 text-[19px] font-semibold tracking-[-0.01em] text-foreground"
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.18, duration: 0.3 }}
       >
         {message}
-      </motion.p>
+      </m.p>
       {description && (
-        <motion.p
+        <m.p
           className="mt-1.5 text-[13.5px] text-secondary"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.28, duration: 0.3 }}
         >
           {description}
-        </motion.p>
+        </m.p>
       )}
-    </motion.div>
+    </m.div>
   );
 }

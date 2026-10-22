@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Check, Loader2, SkipForward, X } from "lucide-react";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import type { MascotState } from "@/shared/brand/mascot-states";
@@ -103,14 +103,14 @@ export function VoiceBar({
       raf = requestAnimationFrame(tick);
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
-      const m = modeRef.current;
-      if (m === "speaking") {
+      const currentMode = modeRef.current;
+      if (currentMode === "speaking") {
         // Each word boundary tops this up; between words it falls back towards
         // a floor so the row keeps moving through a long sentence.
         const decayed = energyRef.current - dt * 1.9;
         energyRef.current = Math.max(0.42, Math.min(1, Math.max(decayed, speechPulseRef.current)));
         speechPulseRef.current = Math.max(0, speechPulseRef.current - dt * 3.2);
-      } else if (m === "thinking") {
+      } else if (currentMode === "thinking") {
         energyRef.current = 0.62;
       } else {
         energyRef.current = 0;
@@ -249,7 +249,7 @@ export function VoiceBar({
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
@@ -362,6 +362,6 @@ export function VoiceBar({
           )}
         </p>
       )}
-    </motion.div>
+    </m.div>
   );
 }

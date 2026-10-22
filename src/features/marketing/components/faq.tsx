@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { cn } from "@/shared/lib/utils";
@@ -53,7 +53,7 @@ function FAQItem({ index, q, a }: { index: number; q: string; a: string }) {
       </button>
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
+          <m.div
             id={panelId}
             role="region"
             aria-labelledby={triggerId}
@@ -66,7 +66,7 @@ function FAQItem({ index, q, a }: { index: number; q: string; a: string }) {
             <div className="px-6 pb-5 text-[14.5px] leading-[1.65] text-secondary">
               {a}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

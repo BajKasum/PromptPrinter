@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Logo } from "@/shared/brand/logo";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
@@ -86,7 +86,7 @@ export function AuthExperienceShell({
             and screen-reader users could not jump to the form (axe
             landmark-one-main, Rechts-Audit 28.09.2026). */}
         <main className="flex flex-1 items-center justify-center px-6 py-8 md:px-12 lg:py-16">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -100,7 +100,7 @@ export function AuthExperienceShell({
               <AnimatedMascot state="welcoming" motion="bob" size={72} alt="" />
             </div>
             {children}
-          </motion.div>
+          </m.div>
         </main>
       </div>
     </div>
