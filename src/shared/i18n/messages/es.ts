@@ -611,6 +611,18 @@ export const es: Messages = {
         costNote:
           "La estimación de costes es un orden de magnitud, no una factura: la ruta de streaming no ve los tokens del proveedor, el cálculo usa el peor caso medido por turno. Para cifras reales, lo que cuenta es la facturación del proveedor, y ahí también hay que fijar un límite de gasto estricto.",
       },
+      funnel: {
+        title: "Activación por semana de registro",
+        hint: "Cuántas cuentas nuevas de una semana guardaron una clave, recibieron una respuesta de Finn y guardaron un prompt. Solo contadores, ningún contenido.",
+        week: "Semana del",
+        signups: "Registradas",
+        withKey: "con clave",
+        withAnswer: "con respuesta",
+        withSaved: "con prompt guardado",
+        empty: "Nadie se registró en estas semanas.",
+        note: "Se cuenta lo que sigue existiendo hoy: una clave guardada, una respuesta guardada, un prompt guardado. Quien borra algo sale del recuento, así que las cifras son un mínimo.",
+        truncated: "Más cuentas de las que la vista comprueba ({limit}), faltan las más antiguas.",
+      },
     },
     plans: {
       title: "Planes",

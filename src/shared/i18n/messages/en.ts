@@ -608,6 +608,18 @@ export const en: Messages = {
         costNote:
           "The cost estimate is an order of magnitude, not an invoice: the streaming path doesn't see the provider's token counts, it calculates with the measured worst case per turn. For real numbers, the provider's billing is what counts, and a hard spending limit belongs there too.",
       },
+      funnel: {
+        title: "Activation by sign-up week",
+        hint: "How many new accounts of a week added a key, got a reply from Finn and saved a prompt. Counts only, no content.",
+        week: "Week of",
+        signups: "Signed up",
+        withKey: "with key",
+        withAnswer: "with reply",
+        withSaved: "with saved prompt",
+        empty: "Nobody signed up in these weeks.",
+        note: "Counts what is still there today: a stored key, a saved reply, a saved prompt. Anyone who deletes something drops out, so the numbers are a lower bound.",
+        truncated: "More accounts than the view checks ({limit}), the oldest are missing.",
+      },
     },
     plans: {
       title: "Plans",
