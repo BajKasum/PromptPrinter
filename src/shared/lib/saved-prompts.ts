@@ -16,7 +16,7 @@ export type SavedPrompt = {
 // A fenced code block: ```<optional lang>\n …body… ```, capturing the lang
 // tag too (group 1) alongside the body (group 2). The chat system prompt
 // asks for exactly one ```text block holding the finished prompt
-// (prompts/system.ts) — but that's a request to a language model, not a
+// (server/system-prompt.ts) — but that's a request to a language model, not a
 // guarantee, and this is the one place that could actually enforce it.
 const FENCE = /```([^\n`]*)\n([\s\S]*?)```/g;
 

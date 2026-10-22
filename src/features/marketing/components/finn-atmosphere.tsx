@@ -7,7 +7,7 @@
  * reduced-motion-safe by nature and composited once (cheap on scroll).
  *
  * Styling lives in globals.css under `.finn-atmosphere`. Scoped to the landing
- * surface for now (rendered in app/page.tsx), not the logged-in app or auth.
+ * surface for now (rendered in app/(marketing)/page.tsx), not the logged-in app or auth.
  */
 export function FinnAtmosphere() {
   return <div aria-hidden className="finn-atmosphere" />;

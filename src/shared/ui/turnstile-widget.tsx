@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
  * local dev and tests keep working without any Cloudflare setup.
  *
  * The matching SECRET lives in this app's own environment as TURNSTILE_SECRET
- * and is redeemed by POST /api/auth (see lib/turnstile.ts). It used to be
+ * and is redeemed by POST /api/auth (see server/security/turnstile.ts). It used to be
  * documented here as belonging in Supabase → Authentication → Attack
  * Protection → CAPTCHA instead — but that setting was never switched on, so
  * for as long as that comment stood, nothing verified these tokens at all.

@@ -104,8 +104,8 @@ export async function DELETE(req: Request) {
   }
 
   // Die eine unumkehrbare Aktion der App verlangt eine frische Anmeldung (#132): ein ausgelesenes Cookie, ein
-  // offener Rechner oder ein geteiltes Geraet reicht sonst, um alle Daten eines Nutzers zu vernichten (das
-  // Sitzungs-Cookie ist bewusst nicht httpOnly). Wie die Seite "Neues Passwort" liest die Pruefung die
+  // offener Rechner oder ein geteiltes Gerät reicht sonst, um alle Daten eines Nutzers zu vernichten (das
+  // Sitzungs-Cookie ist bewusst nicht httpOnly). Wie die Seite "Neues Passwort" liest die Prüfung die
   // AMR-Liste des JWT; ohne belegbaren Zeitpunkt gilt die Sitzung als alt. Der Dialog schickt dann zur
   // erneuten Anmeldung (`code: "reauth_required"`).
   const { data: claims } = await supabase.auth.getClaims();

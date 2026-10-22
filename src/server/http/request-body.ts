@@ -22,7 +22,7 @@ import {
 // `content-length` is checked first because it is free, but it is client-
 // supplied and therefore not trusted — the streaming read below is the
 // authoritative bound, and it is what stops a chunked request that lies about
-// (or omits) its length. Same shape as readCappedText in lib/llm.ts, which
+// (or omits) its length. Same shape as readCappedText in server/llm/http.ts, which
 // bounds responses from a BYOK endpoint for the same reason.
 
 /** The request body exceeded the route's ceiling. Maps to HTTP 413. */

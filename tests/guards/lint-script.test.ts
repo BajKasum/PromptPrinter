@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// #138: `next lint` ist veraltet und faellt mit Next 16 weg, ein Gate-Schritt, der dann verschwindet, bricht
+// #138: `next lint` ist veraltet und fällt mit Next 16 weg, ein Gate-Schritt, der dann verschwindet, bricht
 // die CI. `npm run lint` ruft deshalb die ESLint-CLI auf, und mit `--max-warnings 0`, damit eine neue Warnung
-// das Gate stoppt statt unter alten zu verschwinden. Beides bricht still: jemand stellt den Aufruf zurueck, oder
-// nimmt die Grenze heraus, und niemand sieht es, bis die naechste Warnung durchrutscht.
+// das Gate stoppt statt unter alten zu verschwinden. Beides bricht still: jemand stellt den Aufruf zurück, oder
+// nimmt die Grenze heraus, und niemand sieht es, bis die nächste Warnung durchrutscht.
 
 const scripts = (JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> }).scripts;
 const config = readFileSync("eslint.config.mjs", "utf8");

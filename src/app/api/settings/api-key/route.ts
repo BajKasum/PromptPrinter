@@ -20,12 +20,11 @@ export const runtime = "nodejs";
 
 // Settings → "Eigene API-Keys" (BYOK). Save/remove a user's own Anthropic/
 // OpenAI/Gemini key, or a generic 'custom' OpenAI-compatible endpoint (Z.ai,
-// DeepSeek, Groq, OpenRouter, …), so their chats and generations run against
-// their own account instead of the server's Z.ai default (see lib/llm.ts's
-// LlmOverride, and buildOverride() in api/chat + api/generate). The key is
-// test-called once before it's ever encrypted and stored, so a typo or a
-// revoked key fails here with a clear message instead of silently at the
-// user's next generation.
+// DeepSeek, Groq, OpenRouter, …), so their chats run against their own
+// account instead of the server's Z.ai default (see LlmOverride in
+// server/llm/types.ts). The key is test-called once before it's ever
+// encrypted and stored, so a typo or a revoked key fails here with a clear
+// message instead of silently at the user's next chat turn.
 
 const NAMED_PROVIDERS = ["anthropic", "openai", "gemini"] as const;
 const PROVIDERS = [...NAMED_PROVIDERS, "custom"] as const;

@@ -24,7 +24,7 @@ export const runtime = "nodejs";
  *
  * These used to run straight from the browser against Supabase, carrying the
  * Turnstile token as `captchaToken` — where nobody looked at it (the full story
- * is in lib/turnstile.ts). Verifying in the browser instead would have been
+ * is in server/security/turnstile.ts). Verifying in the browser instead would have been
  * theatre: a client-side "check first, then call Supabase" is advice, not a
  * gate, since the caller decides whether to follow it. Moving the Supabase call
  * behind this route is what makes the check unavoidable, because the token and
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
       });
       if (error) return authFailure(error.message);
       // The session cookies were written by the server client on the way
-      // through (lib/supabase/server.ts), so they ride out on this response.
+      // through (server/supabase/server.ts), so they ride out on this response.
       return NextResponse.json({ ok: true });
     }
 

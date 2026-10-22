@@ -115,7 +115,7 @@ export function replyStream(args: {
   //    point (validation, quota, rate limit, system prompt) still returns a
   //    plain JSON problem response on failure, only the actual reply becomes
   //    an SSE stream. Wire protocol (hand-rolled, not the provider's own SSE
-  //    dialect, see readOpenAiCompatibleSse in lib/llm.ts for that one):
+  //    dialect, see readOpenAiCompatibleSse in server/llm/http.ts for that one):
   //      event: meta   data: {conversationId, userMessageId?}  exactly one, first
   //        Seit C-1 steht die Konversation schon vor dem ersten Token fest.
   //        Fruehes Senden erlaubt dem Client, seine mit `randomId()`

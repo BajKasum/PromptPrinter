@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 // Checkout mit Mail und Konto-ID (wie auf /billing), und wer schon Pro hat,
 // bekommt keinen Kauf-Knopf für den eigenen Plan angeboten.
 //
-// Alle Zahlen kommen aus plans.ts/pricing.ts, denselben Werten, die /api/chat
+// Alle Zahlen kommen aus plans.ts und pricing.ts, denselben Werten, die /api/chat
 // durchsetzt. Die Vergleichstabelle darf nichts versprechen, was dort nicht
 // steht (Rechts-Audit 28.09.2026, "unbelegte Behauptungen"). Die Texte kommen
 // aus dem Wörterbuch der App-Sprache (localizePlans, t.pages.plans).
@@ -271,7 +271,7 @@ function PlanCard({
 
 type Cell = string | boolean;
 
-// Zeile für Zeile aus plans.ts/pricing.ts abgeleitet, keine zweite Wahrheit.
+// Zeile für Zeile aus plans.ts und pricing.ts abgeleitet, keine zweite Wahrheit.
 // PDF nur für Pro: prompts/page.tsx und results/page.tsx schalten es genau so.
 function comparisonRows(m: PlansCopy, proOffered: boolean): { label: string; free: Cell; pro: Cell }[] {
   const r = m.rows;

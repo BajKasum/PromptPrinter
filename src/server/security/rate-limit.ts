@@ -182,7 +182,7 @@ export async function rateLimit(
  * user can delete (conversations cascade), so the counter measures a
  * *deletable* balance rather than a *monotonic* one — deleting old chats
  * resets it. That is a real gap in principle, but Upstash is a hard
- * requirement in production (src/lib/env.ts's boot check refuses to start
+ * requirement in production (src/server/env.ts's boot check refuses to start
  * without it, see QA finding S-2), so the DB-count path only ever runs in
  * dev/self-hosting, where it is an accepted, documented soft spot rather than
  * something worth a new `usage_counters` table and its own RLS/grants for.

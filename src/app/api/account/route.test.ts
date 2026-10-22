@@ -91,7 +91,7 @@ describe("DELETE /api/account", () => {
     captureError.mockReset();
     cancelSubscriptionImmediately.mockReset();
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
-    // Standard: gerade angemeldet (Passwort, vor einer Minute). Die Faelle mit alter Sitzung setzen es um.
+    // Standard: gerade angemeldet (Passwort, vor einer Minute). Die Fälle mit alter Sitzung setzen es um.
     getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(60_000)] } }, error: null });
     projectFilesRange.mockResolvedValue({ data: [], error: null });
     attachmentsRange.mockResolvedValue({ data: [], error: null });
@@ -116,7 +116,7 @@ describe("DELETE /api/account", () => {
   });
 
   // #132: die unumkehrbare Aktion verlangt eine frische Anmeldung. Getestet wird, was NICHT durchgeht: ein
-  // gestohlenes Cookie einer alten Sitzung darf nichts loeschen, nicht einmal Teile.
+  // gestohlenes Cookie einer alten Sitzung darf nichts löschen, nicht einmal Teile.
   describe("frische Anmeldung", () => {
     const nothingTouched = () => {
       expect(deleteUser).not.toHaveBeenCalled();

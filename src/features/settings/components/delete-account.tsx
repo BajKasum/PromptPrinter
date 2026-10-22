@@ -66,14 +66,14 @@ export function DeleteAccount({ email }: { email: string }) {
     }
   }
 
-  // Neu anmelden: diese Sitzung beenden (nur hier, andere Geraete bleiben angemeldet) und zur Anmeldung, die
-  // danach wieder in die Einstellungen fuehrt. Die neue Sitzung traegt eine frische Anmeldung.
+  // Neu anmelden: diese Sitzung beenden (nur hier, andere Geräte bleiben angemeldet) und zur Anmeldung, die
+  // danach wieder in die Einstellungen führt. Die neue Sitzung trägt eine frische Anmeldung.
   async function reauthenticate() {
     setLeaving(true);
     try {
       await createClient().auth.signOut({ scope: "local" });
     } catch {
-      // Scheitert das Abmelden, leitet die Middleware von /login nach /chats/new; der Weg laesst sich wiederholen.
+      // Scheitert das Abmelden, leitet die Middleware von /login nach /chats/new; der Weg lässt sich wiederholen.
     }
     window.location.href = `/login?next=${encodeURIComponent("/settings")}`;
   }

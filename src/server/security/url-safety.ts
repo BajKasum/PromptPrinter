@@ -6,8 +6,8 @@ import { isIP } from "node:net";
 /**
  * Blocks SSRF through user-supplied URLs, specifically the BYOK "custom"
  * provider's baseUrl (settings) and every later call that fetches it
- * (src/lib/llm.ts's customComplete is the one call site, covering the
- * settings test-call, chat, and generate at once). Any signed-in account,
+ * (src/server/llm/custom.ts is the one call site for the endpoint itself,
+ * covering the settings test-call and chat at once). Any signed-in account,
  * even Free, can set this URL and have the server POST to it, so it must
  * never be able to reach the server's own private network: cloud metadata
  * (169.254.169.254), localhost, RFC1918 ranges, etc.

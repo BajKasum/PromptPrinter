@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { FRESH_SIGN_IN_WINDOW_MS, signedInRecently } from "./fresh-sign-in";
 
-// Die Schranke vor "Konto loeschen" (#132): getestet wird vor allem, was sie NICHT durchlassen darf. Ein Test, der
-// nur zeigt, dass eine frische Anmeldung geht, liesse jede zu grosszuegige Aenderung unbemerkt.
+// Die Schranke vor "Konto löschen" (#132): getestet wird vor allem, was sie NICHT durchlassen darf. Ein Test, der
+// nur zeigt, dass eine frische Anmeldung geht, liesse jede zu grosszügige Änderung unbemerkt.
 
 const NOW = Date.UTC(2026, 9, 22, 12, 0, 0);
 const sec = (ms: number) => Math.floor(ms / 1000);

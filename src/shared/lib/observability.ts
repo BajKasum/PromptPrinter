@@ -16,7 +16,7 @@
 //
 // Events also go to an alert webhook when ALERT_WEBHOOK_URL is set, so a
 // production incident reaches a human instead of only a log file — see
-// lib/alerting.ts for why that is a webhook rather than a vendor SDK.
+// server/observability/alerting.ts for why that is a webhook rather than a vendor SDK.
 //
 // PRIVACY: message content NEVER goes into a log line. Not the user's prompt,
 // not the model's reply, not the contents of an attached file. Those are the
@@ -201,7 +201,7 @@ export function logWarning(event: string, context: LogContext = {}): void {
  *
  * Two sinks, both fed from the same redacted object: the structured stdout line
  * (for whatever drain the platform provides) and the alert webhook, when one is
- * configured (lib/alerting.ts, Security-Audit finding M-4). Until that webhook
+ * configured (server/observability/alerting.ts, Security-Audit finding M-4). Until that webhook
  * existed this function only wrote to stdout, which on an unattended deployment
  * is indistinguishable from having no error reporting at all.
  *

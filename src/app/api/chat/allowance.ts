@@ -175,7 +175,7 @@ export async function reserveAllowance(args: {
   //     development and tests — the whole flow stays testable without any
   //     provider key — but if it were ever reached in production (a missing
   //     ZAI_API_KEY/GEMINI_API_KEY, only warned about at boot, see
-  //     assertEnv() in lib/env.ts) it would be a silent total outage of the
+  //     assertEnv() in server/env.ts) it would be a silent total outage of the
   //     one thing this product does: every user gets a plausible-looking
   //     placeholder instead of a real answer, with nothing anywhere signaling
   //     that anything is wrong. A BYOK override always bypasses this, it

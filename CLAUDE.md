@@ -193,8 +193,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
   `next dev` und `next build` teilen sich `.next`. Dev-Server stoppen, Build
   wiederholen. Ein Wettlauf, keine kaputte Zustandsdatei, deshalb bewusst kein
   `prebuild`, das `.next` löscht.
-- **Stehen die Testzeiten plötzlich in Minuten statt Millisekunden,** zuerst den
-  Rechner prüfen (Standby), nicht den Code.
+- **Testzeiten plötzlich in Minuten statt Millisekunden:** zuerst den Rechner prüfen (Standby), nicht den Code.
 - **Browser-Tests** laufen gegen einen lokalen Supabase-Stack (Ablauf in
   [SETUP.md](docs/SETUP.md), "Ende-zu-Ende-Tests"). Startet Docker Desktop nicht,
   belegt der E2E-Lauf der CI denselben Commit. Hilfsskripte für Patches lieber mit
@@ -270,6 +269,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
 | Zeile einer langen Liste (Chats, Projekte) mit Link | `HoverPrefetchLink` aus `shared/ui`, kein bloßes `<Link>` (`list-prefetch.test.ts`) |
+| Kommentar im Code | sagt, was gilt und warum, **kein Verlauf** (der steht im Changelog); Deutsch mit richtigen Umlauten; Pfade relativ zu `src/` (`comment-paths.test.ts`); beim Anfassen einer Datei angleichen, kein Großumbau (#139) |
 | Server-Key eines Anbieters (`GEMINI_API_KEY`) | vorher Datenschutz Ziffer 4 und 5 um ihn ergänzen (seit 2026-10-17 nennt der Text Google nicht mehr) |
 | Datei in `src/server/` | `import "server-only"` |
 | Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3). **Im Browser-Code `import * as z from "@/shared/lib/zod"`**, `import { z }` nur in `src/server/` und `src/app/api/` (sonst +65 KB auf `/login`, #134); beides hält `zod-import.test.ts` |
