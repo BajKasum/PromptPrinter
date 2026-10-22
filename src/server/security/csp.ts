@@ -10,11 +10,12 @@ import { thirdPartiesFor, type ThirdParties } from "@/shared/lib/third-party-pat
 // Trusted origins beyond 'self':
 // - challenges.cloudflare.com: Turnstile captcha, loaded as an external
 //   <script src> (shared/ui/turnstile-widget.tsx) plus its iframe challenge overlay.
-// - lh3.googleusercontent.com / avatars.githubusercontent.com: OAuth avatar
-//   images (next.config.ts remotePatterns).
 // - the Supabase project origin: the browser client talks to it directly
-//   (auth, storage, PostgREST). Every LLM provider call — Z.ai, Gemini,
-//   BYOK Anthropic/OpenAI/custom — happens server-side, so none of them
+//   (auth, storage, PostgREST), and the previews of chat attachments are signed
+//   URLs on this origin (img-src). No other image host is listed: no code shows
+//   an image from anywhere else, and every host in the list is a place a
+//   smuggled-in markup hole could load from. Every LLM provider call — Z.ai,
+//   Gemini, BYOK Anthropic/OpenAI/custom — happens server-side, so none of them
 //   need a connect-src entry here.
 // - lemonsqueezy.com: Zahlungen. Siehe LEMONSQUEEZY_* unten.
 //
@@ -124,18 +125,10 @@ function sharedDirectives(scriptSrc: string, parties: ThirdParties): string[] {
     [parties.turnstile ? TURNSTILE_ORIGIN : "", parties.lemonSqueezy ? LEMONSQUEEZY_FRAME_HOST : ""]
       .filter(Boolean)
       .join(" ") || "'none'";
-  // M-1 (Audit 06.09.2026): fehlte hier, obwohl `supabaseOrigin()` zwei
-  // Zeilen darueber schon fuer connect-src berechnet wird. Jeder hochgeladene
-  // Avatar (avatar-upload.tsx laedt ihn oeffentlich in den "avatars"-Bucket)
-  // liegt auf genau dieser Origin — ohne den Eintrag blockierte der Browser
-  // das eigene Profilbild jedes Nutzers, der eins hochlaedt, live bestaetigt
-  // (Konsole: "img-src … violates the following Content Security Policy").
-  // Google-/GitHub-Avatare (OAuth) blieben davon unberuehrt, weil die von
-  // fremden Hosts kommen, die schon in der Liste stehen — das hat den Fehler
-  // beim eigenen Login unsichtbar gemacht.
-  const imgSrc = ["'self'", "data:", "https://lh3.googleusercontent.com", "https://avatars.githubusercontent.com", supabaseOrigin()]
-    .filter(Boolean)
-    .join(" ");
+  // Die Supabase-Origin traegt die Vorschaubilder der Chat-Anhaenge (signierte
+  // Adressen, features/chat/lib/attachment-store.ts); ohne den Eintrag blockierte
+  // der Browser jedes angehaengte Foto. Sonst nur eigene Bilder und data:-URLs.
+  const imgSrc = ["'self'", "data:", supabaseOrigin()].filter(Boolean).join(" ");
 
   return [
     "default-src 'self'",
