@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { useT } from "@/shared/i18n/provider";
+import { createClient } from "@/shared/supabase/client";
 
 export function DeleteAccount({ email }: { email: string }) {
   const t = useT();
@@ -15,6 +16,9 @@ export function DeleteAccount({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
+  // Der Server verlangt eine frische Anmeldung (#132): dann zeigt der Dialog das statt des Eingabefelds.
+  const [needsReauth, setNeedsReauth] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setMounted(true), []);
@@ -23,6 +27,7 @@ export function DeleteAccount({ email }: { email: string }) {
   useEffect(() => {
     if (!open) return;
     setConfirm("");
+    setNeedsReauth(false);
     const timer = window.setTimeout(() => inputRef.current?.focus(), 20);
     return () => window.clearTimeout(timer);
   }, [open]);
@@ -41,7 +46,12 @@ export function DeleteAccount({ email }: { email: string }) {
     try {
       const res = await fetch("/api/account", { method: "DELETE" });
       if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+        const body = (await res.json().catch(() => null)) as { detail?: string; code?: string } | null;
+        if (res.status === 403 && body?.code === "reauth_required") {
+          setDeleting(false);
+          setNeedsReauth(true);
+          return;
+        }
         throw new Error(body?.detail ?? t.common.unknownError);
       }
       // Account + session are gone, hard navigate to a clean public page.
@@ -54,6 +64,18 @@ export function DeleteAccount({ email }: { email: string }) {
         variant: "error",
       });
     }
+  }
+
+  // Neu anmelden: diese Sitzung beenden (nur hier, andere Geraete bleiben angemeldet) und zur Anmeldung, die
+  // danach wieder in die Einstellungen fuehrt. Die neue Sitzung traegt eine frische Anmeldung.
+  async function reauthenticate() {
+    setLeaving(true);
+    try {
+      await createClient().auth.signOut({ scope: "local" });
+    } catch {
+      // Scheitert das Abmelden, leitet die Middleware von /login nach /chats/new; der Weg laesst sich wiederholen.
+    }
+    window.location.href = `/login?next=${encodeURIComponent("/settings")}`;
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -121,42 +143,57 @@ export function DeleteAccount({ email }: { email: string }) {
                     </div>
                   </div>
 
-                  <div className="space-y-3 p-5">
-                    <label htmlFor="confirm-email" className="block text-[13px] text-foreground/70">
-                      {t.settings.deleteAccount.typeEmail}{" "}
-                      <span className="font-mono text-foreground/90">{email}</span>
-                    </label>
-                    <input
-                      id="confirm-email"
-                      ref={inputRef}
-                      value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
-                      onKeyDown={onKeyDown}
-                      autoComplete="off"
-                      spellCheck={false}
-                      placeholder={email}
-                      className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-destructive/55 focus:outline-hidden focus:ring-2 focus:ring-destructive/15"
-                    />
-                  </div>
+                  {needsReauth ? (
+                    <div className="p-5">
+                      <p role="alert" className="text-[13px] text-foreground/80">
+                        {t.settings.deleteAccount.reauthBody}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 p-5">
+                      <label htmlFor="confirm-email" className="block text-[13px] text-foreground/70">
+                        {t.settings.deleteAccount.typeEmail}{" "}
+                        <span className="font-mono text-foreground/90">{email}</span>
+                      </label>
+                      <input
+                        id="confirm-email"
+                        ref={inputRef}
+                        value={confirm}
+                        onChange={(e) => setConfirm(e.target.value)}
+                        onKeyDown={onKeyDown}
+                        autoComplete="off"
+                        spellCheck={false}
+                        placeholder={email}
+                        className="h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-destructive/55 focus:outline-hidden focus:ring-2 focus:ring-destructive/15"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-                    <Button variant="ghost" onClick={close} disabled={deleting}>
+                    <Button variant="ghost" onClick={close} disabled={deleting || leaving}>
                       {t.common.cancel}
                     </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => void handleDelete()}
-                      disabled={!canDelete}
-                    >
-                      {deleting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          {t.common.deleting}
-                        </>
-                      ) : (
-                        t.settings.deleteAccount.title
-                      )}
-                    </Button>
+                    {needsReauth ? (
+                      <Button onClick={() => void reauthenticate()} disabled={leaving}>
+                        {leaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {t.settings.deleteAccount.reauthAction}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="destructive"
+                        onClick={() => void handleDelete()}
+                        disabled={!canDelete}
+                      >
+                        {deleting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {t.common.deleting}
+                          </>
+                        ) : (
+                          t.settings.deleteAccount.title
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </motion.div>
               </motion.div>

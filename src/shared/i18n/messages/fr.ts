@@ -405,6 +405,9 @@ export const fr: Messages = {
         "Cette action est irréversible. Tous tes projets, conversations, fichiers, prompts enregistrés et clés API seront supprimés définitivement.",
       typeEmail: "Pour confirmer, tape ton e-mail",
       failed: "Échec de la suppression",
+      reauthBody:
+        "Ta dernière connexion date un peu. Par sécurité, reconnecte-toi, puis supprime ton compte depuis les paramètres.",
+      reauthAction: "Se reconnecter",
     },
   },
 
@@ -740,6 +743,7 @@ export const fr: Messages = {
     accountNotSignedIn: "Non connecté.",
     accountConfigIncomplete: "Configuration du serveur incomplète, la clé service role manque.",
     accountDeleteFailed: "Le compte n'a pas pu être supprimé.",
+    accountReauthRequired: "Par sécurité, reconnecte-toi avant de supprimer ton compte.",
     accountExportNote: "Export de tes données PromptPrinter. Les fichiers et images importés ne figurent que par leur nom, leur type et leur taille, pas par leur contenu. Les clés API ne sont jamais incluses.",
     accountExportFailed: "L'export n'a pas pu être créé. Réessaie.",
   },

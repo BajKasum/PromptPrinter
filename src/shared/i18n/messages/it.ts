@@ -401,6 +401,9 @@ export const it: Messages = {
         "L'operazione non può essere annullata. Tutti i tuoi progetti, chat, file, prompt salvati e chiavi API verranno rimossi definitivamente.",
       typeEmail: "Per confermare, digita la tua email",
       failed: "Eliminazione non riuscita",
+      reauthBody:
+        "Hai effettuato l'accesso da un po'. Per sicurezza, accedi di nuovo, poi elimina il tuo account dalle impostazioni.",
+      reauthAction: "Accedi di nuovo",
     },
   },
 
@@ -735,6 +738,7 @@ export const it: Messages = {
     accountNotSignedIn: "Non hai effettuato l'accesso.",
     accountConfigIncomplete: "Configurazione del server incompleta, manca la chiave service role.",
     accountDeleteFailed: "Non è stato possibile eliminare l'account.",
+    accountReauthRequired: "Per sicurezza, accedi di nuovo prima di eliminare il tuo account.",
     accountExportNote: "Esportazione dei tuoi dati PromptPrinter. I file e le immagini caricati sono inclusi solo con nome, tipo e dimensione, non con il contenuto. Le chiavi API non sono mai incluse.",
     accountExportFailed: "Non è stato possibile creare l'esportazione. Riprova.",
   },

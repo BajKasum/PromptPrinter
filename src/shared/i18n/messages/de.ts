@@ -410,6 +410,9 @@ export const de = {
         "Diese Aktion ist unwiderruflich. Alle deine Projekte, Chats, Dateien, gespeicherten Prompts und hinterlegten API-Keys werden dauerhaft entfernt.",
       typeEmail: "Tippe zur Bestätigung deine E-Mail",
       failed: "Löschen fehlgeschlagen",
+      reauthBody:
+        "Deine Anmeldung ist schon eine Weile her. Melde dich aus Sicherheitsgründen noch einmal an und lösche dein Konto danach in den Einstellungen.",
+      reauthAction: "Neu anmelden",
     },
   },
 
@@ -754,6 +757,7 @@ export const de = {
     accountNotSignedIn: "Nicht angemeldet.",
     accountConfigIncomplete: "Server-Konfiguration unvollständig, Service-Role-Key fehlt.",
     accountDeleteFailed: "Konto konnte nicht gelöscht werden.",
+    accountReauthRequired: "Aus Sicherheitsgründen melde dich bitte erneut an, bevor du dein Konto löschst.",
     accountExportNote: "Export deiner PromptPrinter-Daten. Hochgeladene Dateien und Bilder sind nur mit Name, Typ und Größe enthalten, nicht ihr Inhalt. API-Keys sind nie enthalten.",
     accountExportFailed: "Der Export konnte nicht erstellt werden. Bitte versuch es erneut.",
   },

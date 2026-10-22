@@ -5,6 +5,7 @@ import { createAdminClient } from "@/server/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { captureError } from "@/shared/lib/observability";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
+import { signedInRecently } from "@/features/auth/lib/fresh-sign-in";
 import { collectStoragePaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
 import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
 import { requestT } from "@/server/i18n";
@@ -100,6 +101,16 @@ export async function DELETE(req: Request) {
   // The id comes from the verified session, never from client input.
   if (!user) {
     return problem(401, m.accountNotSignedIn);
+  }
+
+  // Die eine unumkehrbare Aktion der App verlangt eine frische Anmeldung (#132): ein ausgelesenes Cookie, ein
+  // offener Rechner oder ein geteiltes Geraet reicht sonst, um alle Daten eines Nutzers zu vernichten (das
+  // Sitzungs-Cookie ist bewusst nicht httpOnly). Wie die Seite "Neues Passwort" liest die Pruefung die
+  // AMR-Liste des JWT; ohne belegbaren Zeitpunkt gilt die Sitzung als alt. Der Dialog schickt dann zur
+  // erneuten Anmeldung (`code: "reauth_required"`).
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!signedInRecently(claims?.claims.amr)) {
+    return problem(403, m.accountReauthRequired, { code: "reauth_required" });
   }
 
   // Was the one route of the four that touch rateLimit (chat, projects,
