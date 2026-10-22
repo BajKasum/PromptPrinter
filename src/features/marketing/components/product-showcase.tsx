@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import {
   MessageSquare,
   FolderKanban,
@@ -83,7 +83,7 @@ export function ProductShowcase() {
                 </div>
 
                 <AnimatePresence mode="wait">
-                  <motion.div
+                  <m.div
                     key={view}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -92,7 +92,7 @@ export function ProductShowcase() {
                   >
                     {view === "chats" && <ChatsView />}
                     {view === "projects" && <ProjectsView />}
-                  </motion.div>
+                  </m.div>
                 </AnimatePresence>
               </div>
             </div>

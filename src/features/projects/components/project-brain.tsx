@@ -1,11 +1,10 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   Brain,
-  ChevronRight,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -16,16 +15,10 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { GithubIcon } from "@/shared/ui/github-icon";
 import { Mascot } from "@/shared/brand/mascot";
 import { useToast } from "@/shared/ui/toast";
-import { cn, relativeTime } from "@/shared/lib/utils";
-import {
-  BRAIN_FIELDS,
-  isAnalysisRunning,
-  isBrainStale,
-  type ProjectBrain,
-} from "@/shared/lib/project-brain";
-import { useLocale, useT } from "@/shared/i18n/provider";
-import { plural } from "@/shared/i18n/format";
-import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { isAnalysisRunning, isBrainStale, type ProjectBrain } from "@/shared/lib/project-brain";
+import type { ProjectKind } from "@/shared/lib/project-kind";
+import { useT } from "@/shared/i18n/provider";
+import { BrainFacts, BrainStatus } from "@/features/projects/components/project-brain-facts";
 import type { Messages } from "@/shared/i18n/messages/de";
 
 // Die Kontext-Rail-Karte des Projekt-Gedächtnisses.
@@ -56,6 +49,7 @@ export function ProjectBrainCard({
   brain,
   currentDigest,
   sourceCount,
+  kind,
 }: {
   projectId: string;
   brain: ProjectBrain;
@@ -63,6 +57,8 @@ export function ProjectBrainCard({
   currentDigest: string;
   /** Dateien + ggf. Repo, entscheidet ob es überhaupt etwas zu analysieren gibt. */
   sourceCount: number;
+  /** Art des Projekts: ein Repository bietet nur ein Softwareprojekt an (#154). */
+  kind: ProjectKind;
 }) {
   const t = useT();
   const router = useRouter();
@@ -91,6 +87,10 @@ export function ProjectBrainCard({
   const stale = isBrainStale(brain, currentDigest);
   const ready = brain.status === "ready";
   const hasSources = sourceCount > 0 || repoUrl.trim().length > 0;
+  // Ein schon hinterlegtes Repository bleibt sichtbar und entfernbar, auch wenn das Häkchen
+  // "Softwareprojekt" wieder aus ist: nichts verschwindet, was Quelle der Analyse ist.
+  const showRepo = kind === "software" || Boolean(brain.repoUrl);
+  const general = kind !== "software";
 
   async function analyze() {
     setBusy(true);
@@ -197,7 +197,7 @@ export function ProjectBrainCard({
           <div className="flex items-start gap-3">
             <Mascot state="curious" size={36} className="shrink-0" />
             <p className="text-[12px] leading-relaxed text-secondary">
-              {t.projects.brain.emptyHint}
+              {general ? t.projects.brain.emptyHintGeneral : t.projects.brain.emptyHint}
             </p>
           </div>
         )}
@@ -219,33 +219,35 @@ export function ProjectBrainCard({
           </p>
         )}
 
-        <div className="mt-3 space-y-2">
-          <label
-            htmlFor="brain-repo"
-            className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
-          >
-            <GithubIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
-            {t.projects.brain.repoLabel}
-          </label>
-          <input
-            id="brain-repo"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            disabled={blocked}
-            maxLength={300}
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={t.projects.brain.repoPlaceholder}
-            className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
-          />
-          {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
-              auf fremden Quellcode auf dem Server, das ist eine eigene
-              Vertrauensfrage und keine Erweiterung dieses Feldes. */}
-          <p className="text-[12px] leading-relaxed text-secondary">
-            {t.projects.brain.repoHint}
-          </p>
-        </div>
+        {showRepo && (
+          <div className="mt-3 space-y-2">
+            <label
+              htmlFor="brain-repo"
+              className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+            >
+              <GithubIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {t.projects.brain.repoLabel}
+            </label>
+            <input
+              id="brain-repo"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              disabled={blocked}
+              maxLength={300}
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t.projects.brain.repoPlaceholder}
+              className="h-8 w-full rounded-md border border-border bg-surface px-2.5 text-[12.5px] text-foreground placeholder:text-tertiary transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+            />
+            {/* Nur oeffentliche Repos: alles andere braeuchte dauerhaften Zugriff
+                auf fremden Quellcode auf dem Server, das ist eine eigene
+                Vertrauensfrage und keine Erweiterung dieses Feldes. */}
+            <p className="text-[12px] leading-relaxed text-secondary">
+              {t.projects.brain.repoHint}
+            </p>
+          </div>
+        )}
 
         <Button
           // Vor der ersten Analyse und bei veralteten Quellen ist das DIE
@@ -272,7 +274,7 @@ export function ProjectBrainCard({
 
         {!hasSources && !blocked && (
           <p className="mt-2 text-[12px] leading-relaxed text-secondary">
-            {t.projects.brain.noSources}
+            {general ? t.projects.brain.noSourcesGeneral : t.projects.brain.noSources}
           </p>
         )}
 
@@ -294,106 +296,5 @@ export function ProjectBrainCard({
         onCancel={() => setConfirmReset(false)}
       />
     </section>
-  );
-}
-
-/** Kleine Statusmarke neben der Überschrift. */
-function BrainStatus({
-  ready,
-  stale,
-  running,
-}: {
-  ready: boolean;
-  stale: boolean;
-  running: boolean;
-}) {
-  const t = useT();
-  if (running || !ready) return null;
-  return stale ? (
-    <span className="rounded-full bg-accent/15 px-1.5 py-px text-[12px] font-medium text-accent-text">
-      {t.projects.brain.stale}
-    </span>
-  ) : (
-    <span className="rounded-full bg-success/15 px-1.5 py-px text-[12px] font-medium text-success">
-      {t.projects.brain.active}
-    </span>
-  );
-}
-
-/** Das Ergebnis einer fertigen Analyse: kompakt, Einzelfelder auf Wunsch. */
-function BrainFacts({ brain }: { brain: ProjectBrain }) {
-  const t = useT();
-  const locale = useLocale();
-  const { facts } = brain;
-  const detailsId = useId();
-  const [showDetails, setShowDetails] = useState(false);
-  const fields = BRAIN_FIELDS.filter(({ key }) => {
-    const value = facts[key];
-    return typeof value === "string" && value.length > 0;
-  });
-
-  return (
-    <div className="space-y-2.5">
-      {facts.summary && (
-        <p className="text-[12.5px] leading-relaxed text-foreground/90">{facts.summary}</p>
-      )}
-
-      {facts.stack.length > 0 && (
-        <ul className="flex flex-wrap gap-1" aria-label={t.projects.brain.stack}>
-          {facts.stack.map((item) => (
-            <li
-              key={item}
-              className="rounded bg-surface px-1.5 py-0.5 font-mono text-[12px] text-foreground/75"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {fields.length > 0 && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowDetails((v) => !v)}
-            aria-expanded={showDetails}
-            aria-controls={detailsId}
-            className="touch-hit-y relative inline-flex items-center gap-1 rounded text-[12px] text-secondary transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <ChevronRight
-              className={cn("h-3.5 w-3.5 transition-transform duration-150", showDetails && "rotate-90")}
-              strokeWidth={2}
-            />
-            {t.projects.brain.details}
-          </button>
-          {showDetails && (
-            <dl id={detailsId} className="mt-1.5 space-y-1">
-              {fields.map(({ key }) => (
-                <div key={key} className="grid grid-cols-[92px_1fr] gap-2">
-                  <dt className="text-[12px] text-muted-foreground">
-                    {t.projects.brain.fields[key]}
-                  </dt>
-                  <dd className="text-[12px] text-foreground/85">{facts[key] as string}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
-      )}
-
-      {/* Die Selbsteinschaetzung des Modells sichtbar lassen: ein aus einer
-          einzigen README abgeleitetes Ergebnis soll nicht so aussehen wie
-          eines aus package.json plus Migrationen. */}
-      <p className="text-[12px] text-secondary">
-        {plural(t.projects.brain.sources, brain.sources.length, locale)}
-        <span className={cn(facts.confidence === "low" && "text-destructive/80")}>
-          {" · "}
-          {t.projects.brain.confidence[facts.confidence]}
-        </span>
-        {brain.analyzedAt
-          ? ` · ${relativeTime(brain.analyzedAt, LOCALE_TAGS[locale].intl, t.time.justNow)}`
-          : ""}
-      </p>
-    </div>
   );
 }

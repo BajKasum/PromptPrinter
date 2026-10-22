@@ -16,7 +16,9 @@ import {
 } from "@/server/security/rate-limit";
 import { alertingConfigured } from "@/server/observability/alerting";
 import { llmConfig } from "@/server/llm";
-import { getT } from "@/server/i18n";
+import { getLocale, getT } from "@/server/i18n";
+import { loadActivationFunnel } from "@/server/activation-funnel";
+import { ActivationFunnelCard } from "@/features/settings/components/activation-funnel";
 import { fmt, rich } from "@/shared/i18n/format";
 
 export async function generateMetadata() {
@@ -160,7 +162,9 @@ export default async function UsagePage() {
 // this component only renders behind the page's is_admin check, and it is a
 // server component: nothing of it reaches a non-admin's browser.
 async function OperationsSection() {
-  const ops = (await getT()).pages.usage.ops;
+  const usageMessages = (await getT()).pages.usage;
+  const ops = usageMessages.ops;
+  const locale = await getLocale();
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   const dayStart = new Date(
@@ -168,7 +172,13 @@ async function OperationsSection() {
   ).toISOString();
 
   const admin = createAdminClient();
-  const [serverKey, { count: usersTotal }, { count: messagesMonth }, { count: messagesToday }] =
+  const [
+    serverKey,
+    { count: usersTotal },
+    { count: messagesMonth },
+    { count: messagesToday },
+    funnel,
+  ] =
     await Promise.all([
       readDailyServerKeyUsage(),
       admin.from("profiles").select("id", { count: "exact", head: true }),
@@ -182,6 +192,7 @@ async function OperationsSection() {
         .select("id", { count: "exact", head: true })
         .eq("role", "assistant")
         .gte("created_at", dayStart),
+      loadActivationFunnel(admin, now),
     ]);
 
   // ~0.012 $ per turn at the worst case measured for glm-4.5-air (24k in,
@@ -240,6 +251,10 @@ async function OperationsSection() {
             }
           />
         </div>
+
+        {/* Aktivierung nach Anmeldewoche (#128): Zähler über die gespeicherten Daten des
+            Dienstes, ohne Inhalte. Gehört zu "Betrieb" und damit hinter dieselbe Admin-Prüfung. */}
+        <ActivationFunnelCard funnel={funnel} locale={locale} labels={usageMessages.funnel} />
 
         {/* Whether anyone would actually hear about an incident. This section
             is pull-based — it only helps someone who already suspects a

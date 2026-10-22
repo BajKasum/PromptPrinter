@@ -1,10 +1,12 @@
 import * as z from "@/shared/lib/zod";
 import { truncate } from "@/shared/lib/chat-limits";
 
-// Das Projekt-Gedächtnis ("AI Project Brain"): was PromptPrinter über den
-// Stack eines Projekts weiss, nachdem es dessen Dateien und/oder GitHub-Repo
-// einmal analysiert hat. Ab dann trägt jeder Chat dieses Projekts das Wissen
-// automatisch mit — der Nutzer erklärt seinen Stack nie wieder.
+// Das Projekt-Gedächtnis ("AI Project Brain"): was PromptPrinter über ein
+// Projekt weiss, nachdem es dessen Dateien und/oder GitHub-Repo einmal
+// analysiert hat. Ab dann trägt jeder Chat dieses Projekts das Wissen
+// automatisch mit — der Nutzer erklärt sein Projekt nie wieder. Bei einem
+// Softwareprojekt ist das der Stack, bei einem allgemeinen (Lebenslauf,
+// Vereinsstatuten, Notizen) Zielgruppe, Ton und die Eckdaten.
 //
 // Dieses Modul ist bewusst in shared/: die Fakten werden an drei Stellen
 // gebraucht, die sich gegenseitig nicht kennen dürfen — der Server erzeugt
@@ -33,14 +35,19 @@ const factField = z.string().trim().max(400).default("");
 /**
  * Was die Analyse über ein Projekt herausfindet.
  *
- * Die sieben Kernfelder sind exakt die, die eine KI sonst bei jedem
- * neuen Prompt für ein Softwareprojekt neu erklärt bekommen müsste. `stack` und `conventions` sind
- * die zwei Listen, die sich nicht sinnvoll in eine Zeile pressen lassen.
+ * Die Kernfelder sind exakt die, die eine KI sonst bei jedem neuen Prompt neu erklärt bekommen
+ * müsste: für ein Softwareprojekt Sprache bis Coding-Style, für ein allgemeines `audience`
+ * (wen es erreichen soll), `tone` (wie es klingen soll) und `keyFacts` (die Eckdaten, die in
+ * jedem Prompt stimmen müssen). Welche Felder die Analyse füllt, hängt von der Art des Projekts
+ * ab (`ProjectKind`), die übrigen bleiben leer. `stack`, `keyFacts` und `conventions` sind
+ * die Listen, die sich nicht sinnvoll in eine Zeile pressen lassen.
  * `confidence` ist die ehrliche Selbsteinschätzung des Modells: bei nur einem
  * README ist „low" die richtige Antwort, und die UI sagt das dann auch.
  */
 export const projectBrainFactsSchema = z.object({
   summary: z.string().trim().max(600).default(""),
+  audience: factField,
+  tone: factField,
   language: factField,
   framework: factField,
   architecture: factField,
@@ -49,6 +56,7 @@ export const projectBrainFactsSchema = z.object({
   codingStyle: factField,
   conventions: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
   stack: z.array(z.string().trim().min(1).max(80)).max(16).default([]),
+  keyFacts: z.array(z.string().trim().min(1).max(200)).max(10).default([]),
   confidence: z.enum(["low", "medium", "high"]).default("low"),
 });
 
@@ -57,6 +65,8 @@ export type ProjectBrainFacts = z.infer<typeof projectBrainFactsSchema>;
 /** Leeres Brain, für „noch nie analysiert" und als Parse-Fallback. */
 export const EMPTY_BRAIN_FACTS: ProjectBrainFacts = {
   summary: "",
+  audience: "",
+  tone: "",
   language: "",
   framework: "",
   architecture: "",
@@ -65,6 +75,7 @@ export const EMPTY_BRAIN_FACTS: ProjectBrainFacts = {
   codingStyle: "",
   conventions: [],
   stack: [],
+  keyFacts: [],
   confidence: "low",
 };
 
@@ -75,6 +86,8 @@ export const EMPTY_BRAIN_FACTS: ProjectBrainFacts = {
  * der beiden Stellen auf und niemandem fällt die andere auf.
  */
 export const BRAIN_FIELDS = [
+  { key: "audience", label: "Zielgruppe" },
+  { key: "tone", label: "Ton" },
   { key: "framework", label: "Framework" },
   { key: "language", label: "Sprache" },
   { key: "architecture", label: "Architektur" },
@@ -133,6 +146,9 @@ export function formatBrainForPrompt(facts: ProjectBrainFacts): string {
     if (typeof value === "string" && value) lines.push(`- ${label}: ${value}`);
   }
 
+  if (facts.keyFacts.length > 0) {
+    lines.push(`- Eckdaten:\n${facts.keyFacts.map((f) => `  - ${f}`).join("\n")}`);
+  }
   if (facts.stack.length > 0) lines.push(`- Stack: ${facts.stack.join(", ")}`);
   if (facts.conventions.length > 0) {
     lines.push(`- Konventionen:\n${facts.conventions.map((c) => `  - ${c}`).join("\n")}`);

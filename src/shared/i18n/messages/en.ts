@@ -217,12 +217,19 @@ export const en: Messages = {
     structureSaveFailed: "Your structure details couldn't be saved.",
     structureOptional: "All optional. Whatever you fill in, every chat in this project knows.",
     structureFields: {
+      audience: "Audience",
+      tone: "Tone",
+      background: "Background",
       frontend: "Frontend",
       backend: "Backend",
       language: "Language",
       database: "Database",
       notes: "Other",
     },
+    kindSoftware: "Software project",
+    kindSoftwareHint:
+      "Shows frontend, backend, language and database, and the GitHub repository in the memory.",
+    kindSaveFailed: "The project type couldn't be saved.",
     notesPlaceholder: "Anything else I should know",
     saveFailed: "Saving failed",
     saving: "Saving…",
@@ -250,6 +257,8 @@ export const en: Messages = {
       readingHint: "Takes a few seconds, depending on the project's size.",
       emptyHint:
         "Upload files or enter your public GitHub repo below, then press “Analyze project”. I'll remember the rest.",
+      emptyHintGeneral:
+        "Upload texts or notes as a file, for example a CV or club statutes, then press “Analyze project”. I'll remember the rest.",
       staleHint: "Your sources have changed since the analysis.",
       repoLabel: "GitHub repository, optional",
       repoPlaceholder: "github.com/name/project",
@@ -258,13 +267,15 @@ export const en: Messages = {
       reanalyze: "Analyze again",
       analyze: "Analyze project",
       noSources: "Upload files or enter a repository first.",
+      noSourcesGeneral: "Upload files first.",
       updated: "Memory updated",
-      updatedBody: "Every chat in this project knows the stack now.",
+      updatedBody: "Every chat in this project is up to speed now.",
       startFailed: "The analysis couldn't be started. Are you online?",
       deleteConfirmTitle: "Delete memory?",
       deleteConfirmBody:
-        "Your files and the repository stay. Only what I learned from them is discarded — the chats in this project won't know your stack anymore.",
+        "Your files and the repository stay. Only what I learned from them is discarded — the chats in this project won't know about it anymore.",
       stack: "Stack",
+      keyFacts: "Key facts",
       details: "Details",
       sources: { one: "{count} source", other: "{count} sources" },
       confidence: {
@@ -273,6 +284,8 @@ export const en: Messages = {
         low: "uncertain",
       },
       fields: {
+        audience: "Audience",
+        tone: "Tone",
         framework: "Framework",
         language: "Language",
         architecture: "Architecture",
@@ -607,6 +620,18 @@ export const en: Messages = {
           "No alert webhook configured ({name}). Errors and warnings only end up in the log, nobody is actively notified.",
         costNote:
           "The cost estimate is an order of magnitude, not an invoice: the streaming path doesn't see the provider's token counts, it calculates with the measured worst case per turn. For real numbers, the provider's billing is what counts, and a hard spending limit belongs there too.",
+      },
+      funnel: {
+        title: "Activation by sign-up week",
+        hint: "How many new accounts of a week added a key, got a reply from Finn and saved a prompt. Counts only, no content.",
+        week: "Week of",
+        signups: "Signed up",
+        withKey: "with key",
+        withAnswer: "with reply",
+        withSaved: "with saved prompt",
+        empty: "Nobody signed up in these weeks.",
+        note: "Counts what is still there today: a stored key, a saved reply, a saved prompt. Anyone who deletes something drops out, so the numbers are a lower bound.",
+        truncated: "More accounts than the view checks ({limit}), the oldest are missing.",
       },
     },
     plans: {

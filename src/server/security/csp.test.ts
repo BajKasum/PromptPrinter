@@ -40,13 +40,9 @@ describe("buildCsp", () => {
     expect(buildCsp("n", TURNSTILE)).toContain("connect-src 'self' https://challenges.cloudflare.com;");
   });
 
-  // M-1 (Audit 06.09.2026): img-src kannte die Supabase-Origin nicht, obwohl
-  // connect-src sie zwei Zeilen darueber schon berechnet. Jeder hochgeladene
-  // Avatar liegt im "avatars"-Bucket auf genau dieser Origin — live bestaetigt
-  // blockierte der Browser das eigene Profilbild jedes Nutzers, der eins
-  // hochlaedt (nur OAuth-Avatare von Google/GitHub blieben verschont, die
-  // kommen von anderen, bereits erlaubten Hosts).
-  it("adds the Supabase project origin to img-src as well, for uploaded avatars", () => {
+  // Die Vorschaubilder der Chat-Anhaenge sind signierte Adressen auf der Supabase-Origin
+  // (features/chat/lib/attachment-store.ts). Ohne den Eintrag blockierte der Browser jedes Foto.
+  it("adds the Supabase project origin to img-src as well, for attachment previews", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcxyz.supabase.co");
     const csp = buildCsp("n");
     const imgSrc = csp.split("; ").find((d) => d.startsWith("img-src")) ?? "";
@@ -57,9 +53,18 @@ describe("buildCsp", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     const csp = buildCsp("n");
     const imgSrc = csp.split("; ").find((d) => d.startsWith("img-src")) ?? "";
-    expect(imgSrc).toBe(
-      "img-src 'self' data: https://lh3.googleusercontent.com https://avatars.githubusercontent.com"
-    );
+    expect(imgSrc).toBe("img-src 'self' data:");
+  });
+
+  // Der Profilbild-Upload ist entfernt (#158). Ein Host, von dem kein Code ein Bild zeigt, ist nur eine
+  // Quelle mehr fuer eine eingeschleuste Markup-Luecke.
+  it.each([
+    ["Google-Avatare", "lh3.googleusercontent.com"],
+    ["GitHub-Avatare", "avatars.githubusercontent.com"],
+  ])("laesst keine %s mehr als Bildquelle zu", (_name, host) => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcxyz.supabase.co");
+    expect(buildCsp("n")).not.toContain(host);
+    expect(buildStaticCsp()).not.toContain(host);
   });
 
   it("allows 'unsafe-eval' outside production only (Next dev/Fast Refresh needs eval)", () => {

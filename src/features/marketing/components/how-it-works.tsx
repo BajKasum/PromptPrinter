@@ -4,7 +4,7 @@ import { useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { KeyRound } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
@@ -15,7 +15,7 @@ import { title, steps } from "@/features/marketing/lib/how-it-works-data";
 // only client-side and only once mounted, see how-it-works-spine.tsx for
 // why ssr:false is safe here (purely decorative overlay, no content).
 const HowItWorksSpine = dynamic(
-  () => import("@/features/marketing/components/how-it-works-spine").then((m) => m.HowItWorksSpine),
+  () => import("@/features/marketing/components/how-it-works-spine").then((mod) => mod.HowItWorksSpine),
   { ssr: false }
 );
 
@@ -82,7 +82,7 @@ export function HowItWorks() {
                 <div className={cn("flex gap-5 md:gap-6", !last && "pb-8 md:pb-10")}>
                   {/* Rail: glowing icon node, positioned above the spine. */}
                   <div className="flex flex-col items-center">
-                    <motion.div
+                    <m.div
                       ref={(el) => {
                         nodeRefs.current[i] = el;
                       }}
@@ -94,7 +94,7 @@ export function HowItWorks() {
                       {/* Pulsing glow ring, a slow radar ping, staggered per step
                           so the three nodes don't pulse in lockstep. */}
                       {!reduceMotion && (
-                        <motion.span
+                        <m.span
                           aria-hidden
                           className="absolute inset-0 rounded-full bg-accent/25"
                           animate={{ scale: [1, 1.6, 1], opacity: [0.55, 0, 0.55] }}
@@ -107,11 +107,11 @@ export function HowItWorks() {
                         />
                       )}
                       <Icon className="relative z-10 h-5 w-5 text-accent-text" strokeWidth={1.8} />
-                    </motion.div>
+                    </m.div>
                   </div>
 
                   {/* Content card, lifts and glows a little brighter on hover. */}
-                  <motion.div
+                  <m.div
                     whileHover={reduceMotion ? undefined : { y: -4 }}
                     transition={{ type: "spring", stiffness: 300, damping: 24 }}
                     className="flex-1 rounded-2xl border border-border bg-surface-raised p-5 shadow-card transition-shadow duration-300 hover:border-accent/40 hover:shadow-elevated md:p-6"
@@ -136,7 +136,7 @@ export function HowItWorks() {
                         </div>
                       </div>
                     )}
-                  </motion.div>
+                  </m.div>
                 </div>
               </StaggerItem>
             );

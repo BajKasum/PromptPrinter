@@ -86,8 +86,8 @@ const nextConfig: NextConfig = {
   // meant next/image's optimizer — i.e. sharp, a native libvips binding with a
   // history of CVEs — stayed reachable for third-party bytes for no benefit.
   // Without them, sharp only ever processes our own bundled artwork.
-  // The CSP still allows those hosts in img-src (src/lib/csp.ts), which is what
-  // the plain <img> tags actually need.
+  // Seit dem Entfernen des Profilbild-Uploads zeigt kein <img> mehr einen Avatar,
+  // und die CSP (server/security/csp.ts) kennt die Hosts auch nicht mehr.
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

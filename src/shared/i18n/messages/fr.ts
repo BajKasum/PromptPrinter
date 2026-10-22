@@ -220,12 +220,19 @@ export const fr: Messages = {
     structureOptional:
       "Tout est facultatif. Ce que tu remplis, chaque conversation de ce projet le connaît.",
     structureFields: {
+      audience: "Public cible",
+      tone: "Ton",
+      background: "Contexte",
       frontend: "Frontend",
       backend: "Backend",
       language: "Langage",
       database: "Base de données",
       notes: "Autres",
     },
+    kindSoftware: "Projet logiciel",
+    kindSoftwareHint:
+      "Affiche frontend, backend, langage et base de données, et le dépôt GitHub dans la mémoire.",
+    kindSaveFailed: "Le type de projet n'a pas pu être enregistré.",
     notesPlaceholder: "Ce que je devrais savoir d'autre",
     saveFailed: "Échec de l'enregistrement",
     saving: "Enregistrement…",
@@ -253,6 +260,8 @@ export const fr: Messages = {
       readingHint: "Prend quelques secondes selon la taille du projet.",
       emptyHint:
         "Envoie des fichiers ou indique ton dépôt GitHub public ci-dessous, puis clique sur « Analyser le projet ». Je retiens le reste.",
+      emptyHintGeneral:
+        "Envoie des textes ou des notes sous forme de fichier, par exemple un CV ou des statuts d'association, puis clique sur « Analyser le projet ». Je retiens le reste.",
       staleHint: "Tes sources ont changé depuis l'analyse.",
       repoLabel: "Dépôt GitHub, facultatif",
       repoPlaceholder: "github.com/nom/projet",
@@ -261,13 +270,15 @@ export const fr: Messages = {
       reanalyze: "Analyser à nouveau",
       analyze: "Analyser le projet",
       noSources: "Envoie d'abord des fichiers ou indique un dépôt.",
+      noSourcesGeneral: "Envoie d'abord des fichiers.",
       updated: "Mémoire mise à jour",
-      updatedBody: "Chaque conversation de ce projet connaît maintenant la stack.",
+      updatedBody: "Chaque conversation de ce projet est maintenant au courant.",
       startFailed: "L'analyse n'a pas pu démarrer. Es-tu en ligne ?",
       deleteConfirmTitle: "Supprimer la mémoire ?",
       deleteConfirmBody:
-        "Tes fichiers et le dépôt restent. Seul ce que j'en ai appris est supprimé — les conversations de ce projet ne connaîtront plus ta stack.",
+        "Tes fichiers et le dépôt restent. Seul ce que j'en ai appris est supprimé — les conversations de ce projet ne le sauront plus.",
       stack: "Stack",
+      keyFacts: "Points clés",
       details: "Détails",
       sources: { one: "{count} source", other: "{count} sources" },
       confidence: {
@@ -276,6 +287,8 @@ export const fr: Messages = {
         low: "incertain",
       },
       fields: {
+        audience: "Public cible",
+        tone: "Ton",
         framework: "Framework",
         language: "Langage",
         architecture: "Architecture",
@@ -614,6 +627,18 @@ export const fr: Messages = {
           "Aucun webhook d'alerte configuré ({name}). Les erreurs et avertissements n'arrivent que dans le log, personne n'est prévenu activement.",
         costNote:
           "L'estimation des coûts est un ordre de grandeur, pas une facture : le chemin de streaming ne voit pas le nombre de tokens du fournisseur, le calcul se base sur le pire cas mesuré par tour. Pour les vrais chiffres, la facturation du fournisseur fait foi, et c'est là qu'il faut aussi fixer une limite de dépenses stricte.",
+      },
+      funnel: {
+        title: "Activation par semaine d'inscription",
+        hint: "Combien de nouveaux comptes d'une semaine ont enregistré une clé, reçu une réponse de Finn et sauvegardé un prompt. Des compteurs seulement, aucun contenu.",
+        week: "Semaine du",
+        signups: "Inscrits",
+        withKey: "avec clé",
+        withAnswer: "avec réponse",
+        withSaved: "avec prompt sauvegardé",
+        empty: "Personne ne s'est inscrit pendant ces semaines.",
+        note: "On compte ce qui existe encore aujourd'hui : une clé enregistrée, une réponse sauvegardée, un prompt sauvegardé. Qui supprime quelque chose sort du compte, les chiffres sont donc un minimum.",
+        truncated: "Plus de comptes que la vue n'en vérifie ({limit}), les plus anciens manquent.",
       },
     },
     plans: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 // Die Mitschrift des Sprachmodus, ausgelagert aus voice-bar.tsx (Betriebs-Audit, Folgesitzung
 // 2026-10-07, Dateigroesse).
@@ -25,7 +25,7 @@ export function WordStream({
   return (
     <span className={className}>
       {words.map((word, i) => (
-        <motion.span
+        <m.span
           key={`${i}-${word}`}
           initial={reduced ? false : { opacity: 0, y: 4, filter: "blur(2px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -37,7 +37,7 @@ export function WordStream({
           className="mr-[0.26em] inline-block"
         >
           {word}
-        </motion.span>
+        </m.span>
       ))}
     </span>
   );

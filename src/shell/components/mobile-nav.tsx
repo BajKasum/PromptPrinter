@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import {
   Menu,
   X,
@@ -120,7 +120,7 @@ export function MobileNav({
       <AnimatePresence>
         {open && (
           <div className="md:hidden fixed inset-0 z-60">
-            <motion.button
+            <m.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -129,7 +129,7 @@ export function MobileNav({
               onClick={() => setOpen(false)}
               className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-xs"
             />
-            <motion.aside
+            <m.aside
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -357,7 +357,7 @@ export function MobileNav({
                   </button>
                 </nav>
               </div>
-            </motion.aside>
+            </m.aside>
           </div>
         )}
       </AnimatePresence>,

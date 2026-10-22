@@ -2,7 +2,7 @@
 
 import {
   AnimatePresence,
-  motion,
+  m,
   useReducedMotion,
   type TargetAndTransition,
   type Transition,
@@ -87,9 +87,9 @@ export function AnimatedMascot({
   // Outer wrapper carries the idle loop + caller layout (hidden md:block,
   // mx-auto, shrink-0, …). Inner AnimatePresence crossfades on state change.
   return (
-    <motion.div animate={anim?.animate} transition={anim?.transition} className={className}>
+    <m.div animate={anim?.animate} transition={anim?.transition} className={className}>
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
+        <m.div
           key={state}
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -97,8 +97,8 @@ export function AnimatedMascot({
           transition={{ duration: swap, ease: "easeOut" }}
         >
           <Mascot state={state} size={size} alt={alt} priority={priority} sizes={sizes} />
-        </motion.div>
+        </m.div>
       </AnimatePresence>
-    </motion.div>
+    </m.div>
   );
 }

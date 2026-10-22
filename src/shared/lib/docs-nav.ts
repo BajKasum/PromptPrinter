@@ -65,7 +65,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Projekte als Arbeitsplatz",
         summary:
           "Wenn du länger an einer Sache arbeitest: ein Projekt hält Anweisungen, Struktur und mehrere Chats zusammen.",
-        updated: "2026-10-11",
+        updated: "2026-10-22",
       },
       {
         slug: "dateien",

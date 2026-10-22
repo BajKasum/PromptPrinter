@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/i18n/provider";
 
@@ -87,7 +87,7 @@ export function UsageMeter({
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-surface">
-        <motion.div
+        <m.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}

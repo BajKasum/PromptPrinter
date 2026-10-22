@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 
@@ -50,14 +50,14 @@ export function PageHeader({ headline }: { headline: React.ReactNode }) {
       <Floaters items={HEADER_FLOATERS} />
 
       <div className="container-x relative z-10 flex items-center justify-center gap-6 text-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: -12, scale: 0.94 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="hidden shrink-0 lg:block"
         >
           <AnimatedMascot state="explaining" size={112} alt="" />
-        </motion.div>
+        </m.div>
 
         <h1
           // No shrink-0 here, unlike the two mascots either side: at
@@ -74,14 +74,14 @@ export function PageHeader({ headline }: { headline: React.ReactNode }) {
           {headline}
         </h1>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, x: 12, scale: 0.94 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="hidden shrink-0 lg:block"
         >
           <AnimatedMascot state="helping" size={112} alt="" />
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

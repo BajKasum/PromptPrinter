@@ -40,6 +40,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProjectRail>> = {}
     <ProjectRail
       projectId="proj-1"
       userId="user-1"
+      projectType="software"
       initialInstructions="Ausgangslage"
       initialContext={{ notes: "Mobile first" }}
       files={[]}
@@ -148,6 +149,76 @@ describe("ProjectRail", () => {
     expect(await screen.findByText("Fehler")).toBeInTheDocument();
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  describe("Art des Projekts (#154)", () => {
+    it("zeigt einem allgemeinen Projekt Zielgruppe, Ton und Hintergrund statt Frontend und Backend", () => {
+      setup({ projectType: "general", initialContext: {} });
+      expect(screen.getByLabelText("Zielgruppe")).toBeInTheDocument();
+      expect(screen.getByLabelText("Ton")).toBeInTheDocument();
+      expect(screen.getByLabelText("Hintergrund")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Frontend")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Datenbank")).not.toBeInTheDocument();
+      expect(screen.getByRole("checkbox", { name: /Softwareprojekt/ })).not.toBeChecked();
+    });
+
+    it("zeigt einem Softwareprojekt die technischen Felder", () => {
+      setup({ projectType: "software", initialContext: {} });
+      expect(screen.getByLabelText("Frontend")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Zielgruppe")).not.toBeInTheDocument();
+      expect(screen.getByRole("checkbox", { name: /Softwareprojekt/ })).toBeChecked();
+    });
+
+    it("behält ein technisches Feld mit Inhalt in einem allgemeinen Projekt", () => {
+      setup({ projectType: "general", initialContext: { frontend: "Vue" } });
+      expect(screen.getByLabelText("Frontend")).toHaveValue("Vue");
+    });
+
+    it("speichert den Wechsel in projects.type, nur für den Besitzer, und blendet die Felder um", async () => {
+      const chain = okWrite();
+      update.mockReturnValue(chain);
+      const user = userEvent.setup();
+      setup({ projectType: "general", initialContext: {} });
+
+      await user.click(screen.getByRole("checkbox", { name: /Softwareprojekt/ }));
+
+      expect(update).toHaveBeenCalledWith({ type: "software" });
+      expect(chain.calls).toEqual([
+        ["id", "proj-1"],
+        ["user_id", "user-1"],
+      ]);
+      expect(screen.getByLabelText("Frontend")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Zielgruppe")).not.toBeInTheDocument();
+      expect(refresh).toHaveBeenCalled();
+    });
+
+    it("nimmt den Wechsel zurück und meldet es, wenn das Speichern scheitert", async () => {
+      update.mockReturnValue(failedWrite());
+      const user = userEvent.setup();
+      setup({ projectType: "general", initialContext: {} });
+
+      await user.click(screen.getByRole("checkbox", { name: /Softwareprojekt/ }));
+
+      expect(await screen.findByLabelText("Zielgruppe")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Frontend")).not.toBeInTheDocument();
+      expect(screen.getByRole("checkbox", { name: /Softwareprojekt/ })).not.toBeChecked();
+      expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
+      expect(refresh).not.toHaveBeenCalled();
+    });
+
+    it("speichert Zielgruppe wie jedes andere Strukturfeld unter ihrem Schlüssel", async () => {
+      const chain = okWrite();
+      update.mockReturnValue(chain);
+      const user = userEvent.setup();
+      setup({ projectType: "general", initialContext: {} });
+
+      const input = screen.getByLabelText("Zielgruppe");
+      await user.click(input);
+      await user.type(input, "Spitäler");
+      await user.tab();
+
+      expect(update).toHaveBeenCalledWith({ context: { audience: "Spitäler" } });
+    });
   });
 
   // Audit 23.09.2026, P-3: das Gedaechtnis stand als vierte Karte ganz unten.

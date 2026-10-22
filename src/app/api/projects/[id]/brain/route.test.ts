@@ -187,6 +187,16 @@ describe("POST /api/projects/[id]/brain", () => {
     expect(reserveServerKeyCall).not.toHaveBeenCalled();
   });
 
+  it("fragt die Analyse nach der Art des Projekts", async () => {
+    tableResults.projects = { data: { name: "Bewerbungen", type: "general" }, error: null };
+    await POST(req(), params);
+    expect(analyzeProjectBrain).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ kind: "general" }));
+
+    tableResults.projects = { data: { name: "App", type: "software" }, error: null };
+    await POST(req(), params);
+    expect(analyzeProjectBrain).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ kind: "software" }));
+  });
+
   it("canonicalises an accepted repo url instead of storing it raw", async () => {
     await POST(req({ repoUrl: "github.com/acme/app/tree/main?x=1" }), params);
     expect(collectBrainSources).toHaveBeenCalledWith(
