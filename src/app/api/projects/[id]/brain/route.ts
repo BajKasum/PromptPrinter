@@ -25,6 +25,7 @@ import { analyzeProjectBrain, BrainAnalysisError } from "@/server/brain/analyze"
 import { GithubImportError, parseGithubRepoUrl } from "@/server/brain/github";
 import { collectBrainSources } from "@/features/projects/lib/brain-sources";
 import type { ProjectBrainFacts } from "@/shared/lib/project-brain";
+import { projectKind } from "@/shared/lib/project-kind";
 import { requestT } from "@/server/i18n";
 import type { Messages } from "@/shared/i18n/messages/de";
 import { fmt } from "@/shared/i18n/format";
@@ -121,10 +122,10 @@ export async function POST(req: Request, { params }: Params) {
   //    die einzige Stelle, die „gehört dir" überhaupt noch feststellt.
   const { data: project } = await supabase
     .from("projects")
-    .select("name")
+    .select("name, type")
     .eq("id", projectId)
     .eq("user_id", userId)
-    .maybeSingle<{ name: string }>();
+    .maybeSingle<{ name: string; type?: string | null }>();
   // Fremd und nicht vorhanden bekommen dieselbe Antwort — sonst verrät die
   // Route, welche Projekt-IDs existieren.
   if (!project) return problem(404, m.projectNotFound);
@@ -263,6 +264,8 @@ export async function POST(req: Request, { params }: Params) {
       signal: req.signal,
       // Das Gedächtnis erscheint in der Rail, also in der Sprache der App.
       language: LOCALE_ENGLISH_NAMES[requestT(req).locale],
+      // Ein Lebenslauf braucht andere Fragen als ein Repository (#154).
+      kind: projectKind(project.type),
     });
 
     const analyzedAt = new Date().toISOString();

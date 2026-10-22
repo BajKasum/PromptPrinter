@@ -227,6 +227,7 @@ export default async function ProjectWorkspaceLayout({
           <ProjectRail
             projectId={project.id}
             userId={project.userId}
+            projectType={project.type}
             initialInstructions={project.instructions}
             initialContext={project.context}
             files={files}

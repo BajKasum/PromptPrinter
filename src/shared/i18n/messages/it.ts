@@ -217,12 +217,19 @@ export const it: Messages = {
     structureSaveFailed: "Non è stato possibile salvare i dati sulla struttura.",
     structureOptional: "Tutto facoltativo. Quello che compili, lo conosce ogni chat di questo progetto.",
     structureFields: {
+      audience: "Pubblico",
+      tone: "Tono",
+      background: "Contesto",
       frontend: "Frontend",
       backend: "Backend",
       language: "Linguaggio",
       database: "Database",
       notes: "Altro",
     },
+    kindSoftware: "Progetto software",
+    kindSoftwareHint:
+      "Mostra frontend, backend, linguaggio e database, e nella memoria il repository GitHub.",
+    kindSaveFailed: "Non è stato possibile salvare il tipo di progetto.",
     notesPlaceholder: "Cos'altro dovrei sapere",
     saveFailed: "Salvataggio non riuscito",
     saving: "Salvataggio…",
@@ -250,6 +257,8 @@ export const it: Messages = {
       readingHint: "Richiede qualche secondo, a seconda della dimensione del progetto.",
       emptyHint:
         "Carica dei file o inserisci qui sotto il tuo repository GitHub pubblico, poi premi «Analizza progetto». Al resto penso io.",
+      emptyHintGeneral:
+        "Carica testi o appunti come file, per esempio un CV o lo statuto di un'associazione, poi premi «Analizza progetto». Al resto penso io.",
       staleHint: "Dall'analisi le tue fonti sono cambiate.",
       repoLabel: "Repository GitHub, facoltativo",
       repoPlaceholder: "github.com/nome/progetto",
@@ -258,13 +267,15 @@ export const it: Messages = {
       reanalyze: "Analizza di nuovo",
       analyze: "Analizza progetto",
       noSources: "Carica prima dei file o inserisci un repository.",
+      noSourcesGeneral: "Carica prima dei file.",
       updated: "Memoria aggiornata",
-      updatedBody: "Ogni chat di questo progetto ora conosce lo stack.",
+      updatedBody: "Ogni chat di questo progetto ora è al corrente.",
       startFailed: "Non è stato possibile avviare l'analisi. Sei online?",
       deleteConfirmTitle: "Eliminare la memoria?",
       deleteConfirmBody:
-        "I tuoi file e il repository restano. Viene scartato solo ciò che ne ho imparato — le chat di questo progetto non conosceranno più il tuo stack.",
+        "I tuoi file e il repository restano. Viene scartato solo ciò che ne ho imparato — le chat di questo progetto non ne sapranno più nulla.",
       stack: "Stack",
+      keyFacts: "Dati chiave",
       details: "Dettagli",
       sources: { one: "{count} fonte", other: "{count} fonti" },
       confidence: {
@@ -273,6 +284,8 @@ export const it: Messages = {
         low: "incerto",
       },
       fields: {
+        audience: "Pubblico",
+        tone: "Tono",
         framework: "Framework",
         language: "Linguaggio",
         architecture: "Architettura",

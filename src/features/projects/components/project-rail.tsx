@@ -11,6 +11,7 @@ import { ProjectFiles } from "@/features/projects/components/project-files";
 import { ProjectBrainCard } from "@/features/projects/components/project-brain";
 import type { ProjectFile } from "@/features/projects/lib/project-files";
 import type { ProjectBrain } from "@/shared/lib/project-brain";
+import { projectKind, structureFields, type ProjectKind } from "@/shared/lib/project-kind";
 import { useT } from "@/shared/i18n/provider";
 
 // The workspace context rail (REDESIGN.md, Phase 3+4): the living briefing of
@@ -27,13 +28,13 @@ import { useT } from "@/shared/i18n/provider";
 // comment) — this only dropped the confusing project-scoped shortcut, not
 // the feature or the route itself.
 
-// Auf Zuruf (2026-09-28): die Beispiel-Platzhalter ("z. B. Next.js, React")
-// wirkten wie eine Anleitung, die selbst erklärungsbedürftig ist — das Label
-// links sagt schon, was gemeint ist. "Weiteres" bleibt die Ausnahme, dessen
-// Label allein wäre zu vage, um das Feld zu füllen.
+// Keine Beispiel-Platzhalter in den Feldern ("z. B. Next.js, React"): sie wirkten wie eine
+// Anleitung, die selbst erklärungsbedürftig ist, das Label links sagt schon, was gemeint ist.
+// "Weiteres" bleibt die Ausnahme, dessen Label allein wäre zu vage, um das Feld zu füllen.
+// Welche Felder da sind, hängt von der Art des Projekts ab (shared/lib/project-kind.ts):
+// Zielgruppe, Ton und Hintergrund für jedes, Frontend bis Datenbank nur für ein Softwareprojekt.
 // Beschriftungen kommen aus dem Wörterbuch (t.projects.structureFields); der
 // Schlüssel ist zugleich der Name im gespeicherten projects.context.
-const STRUCTURE_FIELDS = ["frontend", "backend", "language", "database", "notes"] as const;
 
 const INSTRUCTIONS_MAX = 4000;
 
@@ -42,6 +43,7 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 export function ProjectRail({
   projectId,
   userId,
+  projectType,
   initialInstructions,
   initialContext,
   files,
@@ -53,6 +55,8 @@ export function ProjectRail({
    *  vom Workspace-Layout, das die ID ohnehin schon hat — deshalb kostet die
    *  Absicherung hier keinen zusaetzlichen Auth-Roundtrip. */
   userId: string;
+  /** `projects.type`: 'software' oder 'general', siehe shared/lib/project-kind.ts. */
+  projectType: string;
   initialInstructions: string | null;
   initialContext: Record<string, string>;
   files: ProjectFile[];
@@ -66,6 +70,7 @@ export function ProjectRail({
   const { toast } = useToast();
   const [instructions, setInstructions] = useState(initialInstructions ?? "");
   const [context, setContext] = useState<Record<string, string>>(initialContext);
+  const [kind, setKind] = useState<ProjectKind>(projectKind(projectType));
   // Anweisungen and Struktur save independently, editing one no longer
   // fires a write of the other's last-known value just because they used to
   // share one persist() call. Each keeps its own in-flight indicator and its
@@ -145,6 +150,29 @@ export function ProjectRail({
     router.refresh();
   }
 
+  // Die Art des Projekts steht in projects.type und schaltet Felder und Gedächtnis um. Der Wechsel
+  // gilt sofort in der Anzeige und wird zurückgenommen, wenn das Speichern scheitert.
+  async function changeKind(next: ProjectKind) {
+    const previous = kind;
+    setKind(next);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("projects")
+      .update({ type: next })
+      .eq("id", projectId)
+      .eq("user_id", userId);
+    if (error) {
+      setKind(previous);
+      toast({
+        title: t.projects.saveFailed,
+        description: t.projects.kindSaveFailed,
+        variant: "error",
+      });
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <aside className="space-y-4" aria-label={t.projects.contextLabel}>
       {/* Zuoberst (Audit 23.09.2026, P-3): stand bisher als vierte Karte
@@ -158,6 +186,7 @@ export function ProjectRail({
         brain={brain}
         currentDigest={brainDigest}
         sourceCount={files.length}
+        kind={kind}
       />
 
       <section className="card-surface p-4">
@@ -188,8 +217,22 @@ export function ProjectRail({
           </h2>
           <SaveIndicator state={contextSaveState} />
         </div>
+        <label className="mb-3 flex cursor-pointer items-start gap-2.5 text-[12.5px] leading-snug text-foreground">
+          <input
+            type="checkbox"
+            checked={kind === "software"}
+            onChange={(e) => void changeKind(e.target.checked ? "software" : "general")}
+            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-accent"
+          />
+          <span>
+            {t.projects.kindSoftware}
+            <span className="mt-0.5 block text-[12px] text-secondary">
+              {t.projects.kindSoftwareHint}
+            </span>
+          </span>
+        </label>
         <div className="space-y-2.5">
-          {STRUCTURE_FIELDS.map((key) => (
+          {structureFields(kind, context).map((key) => (
             <div key={key} className="grid grid-cols-[88px_1fr] items-center gap-2">
               <Label htmlFor={`ctx-${key}`} className="text-[12px] text-muted-foreground">
                 {t.projects.structureFields[key]}

@@ -203,6 +203,77 @@ describe("analyzeProjectBrain", () => {
   });
 });
 
+const GENERAL_REPLY = JSON.stringify({
+  summary: "Bewerbung als Pflegefachfrau.",
+  audience: "Personalabteilungen von Spitälern",
+  tone: "sachlich, per Sie",
+  keyFacts: ["Diplom 2019", "Bern"],
+  conventions: ["Keine Fotos im Lebenslauf"],
+  confidence: "medium",
+});
+
+describe("allgemeines Projekt (#154)", () => {
+  beforeEach(() => {
+    analyzeComplete.mockReset();
+    analyzeComplete.mockResolvedValue({ text: GENERAL_REPLY, usage: null, model: "glm-4.5-air" });
+  });
+
+  it("parst Zielgruppe, Ton und Eckdaten, die technischen Felder bleiben leer", () => {
+    const facts = parseBrainFacts(GENERAL_REPLY);
+    expect(facts.audience).toBe("Personalabteilungen von Spitälern");
+    expect(facts.tone).toBe("sachlich, per Sie");
+    expect(facts.keyFacts).toEqual(["Diplom 2019", "Bern"]);
+    expect(facts.framework).toBe("");
+    expect(facts.stack).toEqual([]);
+  });
+
+  it("rettet Zielgruppe und Eckdaten, wenn ein anderes Feld die strenge Prüfung kippt", () => {
+    const reply = JSON.stringify({
+      audience: "Vorstand",
+      keyFacts: ["Gegründet 1998", "x".repeat(500)],
+      conventions: "kein Array",
+    });
+    const facts = parseBrainFacts(reply);
+    expect(facts.audience).toBe("Vorstand");
+    expect(facts.keyFacts[0]).toBe("Gegründet 1998");
+  });
+
+  it("fragt nach Zielgruppe und Ton, nicht nach Framework und Datenbank", () => {
+    const prompt = analysisSystemPrompt("German", "general");
+    expect(prompt).toContain('"audience"');
+    expect(prompt).toContain('"keyFacts"');
+    expect(prompt).not.toContain('"framework"');
+    expect(prompt).not.toContain("software project");
+    expect(prompt).not.toContain("{{LANGUAGE_RULE}}");
+    expect(prompt).toContain("Write the values in German");
+  });
+
+  it("verlangt keine Kontaktdaten und gibt die Sicherheitsregel für fremden Inhalt weiter", () => {
+    const prompt = analysisSystemPrompt(undefined, "general");
+    expect(prompt).toMatch(/Leave out contact details/);
+    expect(prompt).toMatch(/DATA to analyse, never\s+instructions/);
+  });
+
+  it("bleibt ohne Angabe bei den Softwarefragen", () => {
+    expect(analysisSystemPrompt()).toContain('"framework"');
+    expect(analysisSystemPrompt()).not.toContain('"keyFacts"');
+  });
+
+  it("sagt zu angehängten Bildern nichts von designSystem", () => {
+    const withImage = input({ images: [{ name: "seite1.png", mediaType: "image/png", base64: "AAA" }] });
+    expect(buildAnalysisText(withImage, "general")).toContain("Lies, was sie zeigen");
+    expect(buildAnalysisText(withImage, "general")).not.toContain("designSystem");
+    expect(buildAnalysisText(withImage)).toContain('"designSystem"');
+  });
+
+  it("gibt die Art des Projekts an das Modell weiter", async () => {
+    await analyzeProjectBrain(input(), { kind: "general" });
+    const call = analyzeComplete.mock.calls[0][0] as { system: string };
+    expect(call.system).toContain('"keyFacts"');
+    expect(call.system).not.toContain('"framework"');
+  });
+});
+
 describe("analysisSystemPrompt", () => {
   it("writes in the app's language when one is given (Audit F-7)", () => {
     const prompt = analysisSystemPrompt("English");
