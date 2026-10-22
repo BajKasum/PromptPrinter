@@ -768,7 +768,7 @@ export const de = {
       description: "Bring deinen eigenen KI-Key mit, dann ist die App komplett gratis für dich.",
       cadence: "für immer",
       features: [
-        "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
+        "Eigener KI-Key nötig (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
         "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
         "Bis zu {projects} Projekte",
         "Prompts für jede KI und jede Aufgabe",

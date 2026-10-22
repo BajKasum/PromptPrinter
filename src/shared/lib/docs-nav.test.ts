@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DOCS_ORDER, DOCS_PUBLISHED, docBySlug, docNeighbours, docStep } from "./docs-nav";
+import { DOCS_GROUPS, DOCS_ORDER, DOCS_PUBLISHED, docBySlug, docNeighbours, docStep } from "./docs-nav";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -38,5 +39,21 @@ describe("docs-nav", () => {
       expect(article.updated >= DOCS_PUBLISHED, article.slug).toBe(true);
       expect(article.updated <= today, article.slug).toBe(true);
     }
+  });
+});
+
+// #146: die Hilfe-Navigation hiess "Modelle und Limits", die Seite dazu "Pläne und Limits". Ein Navigationsname,
+// der nicht zum Seitentitel passt, kostet Orientierung; ein Gruppenname, der einen Artikel doppelt, sagt nichts.
+describe("docs-nav: Namen", () => {
+  it("jeder Artikel heißt in der Navigation wie auf seiner Seite", () => {
+    for (const article of DOCS_ORDER) {
+      const source = readFileSync(`src/app/(marketing)/docs/${article.slug}/page.tsx`, "utf8");
+      expect(source, article.slug).toContain(`title="${article.title}"`);
+    }
+  });
+
+  it("kein Gruppenname gleicht einem Artikel- oder einem anderen Gruppennamen", () => {
+    const names = [...DOCS_GROUPS.map((g) => g.title), ...DOCS_ORDER.map((a) => a.title)];
+    expect(new Set(names).size).toBe(names.length);
   });
 });

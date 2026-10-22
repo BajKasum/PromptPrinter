@@ -103,3 +103,21 @@ describe("Pro-Karte in der App (/plans, /billing)", () => {
     expect(t.pages.usage.noteFreeSoon).not.toMatch(/\bPro\b/);
   });
 });
+
+// #146: die Preisseite nannte drei Anbieter, die Hilfe vier Wege (auch jeden OpenAI-kompatiblen Endpunkt).
+// Für Leute, die vor der Registrierung wissen wollen, welcher Key geht, ist das die wichtigste Frage; die erste
+// Zeile der Free-Karte sagt deshalb in jeder Sprache und auf jeder Karte dasselbe wie die Hilfe.
+describe("Free-Karte: welcher Key geht", () => {
+  const free = PLANS.find((p) => p.name === "Free")!;
+
+  it.each(catalogs)("%s: die erste Zeile nennt Anthropic, OpenAI, Gemini und einen anderen Anbieter", (_locale, t) => {
+    const line = t.planCopy.free.features[0];
+    for (const provider of ["Anthropic", "OpenAI", "Gemini"]) expect(line).toContain(provider);
+    // Mehr als diese drei: das letzte Glied der Aufzählung ist "ein anderer Anbieter" in der jeweiligen Sprache.
+    expect(line).toMatch(/anderer Anbieter|another provider|autre fournisseur|altro fornitore|otro proveedor/);
+  });
+
+  it("die Preisseite (pricing.ts) sagt dasselbe wie das deutsche Wörterbuch der App", () => {
+    expect(free.features[0]).toBe(de.planCopy.free.features[0]);
+  });
+});

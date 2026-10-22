@@ -745,7 +745,7 @@ export const es: Messages = {
       description: "Trae tu propia clave de IA y la app es totalmente gratis para ti.",
       cadence: "para siempre",
       features: [
-        "Se necesita tu propia clave de IA (Anthropic, OpenAI o Gemini)",
+        "Se necesita tu propia clave de IA (Anthropic, OpenAI, Gemini u otro proveedor)",
         "Con tu clave: sin límite mensual, la app sigue siendo gratis",
         "Hasta {projects} proyectos",
         "Prompts para cualquier IA y cualquier tarea",
