@@ -749,7 +749,7 @@ export const fr: Messages = {
       description: "Apporte ta propre clé d'IA et l'appli est entièrement gratuite pour toi.",
       cadence: "pour toujours",
       features: [
-        "Ta propre clé d'IA requise (Anthropic, OpenAI ou Gemini)",
+        "Ta propre clé d'IA requise (Anthropic, OpenAI, Gemini ou un autre fournisseur)",
         "Avec ta clé : sans limite mensuelle, l'appli elle-même reste gratuite",
         "Jusqu'à {projects} projets",
         "Des prompts pour toute IA et toute tâche",

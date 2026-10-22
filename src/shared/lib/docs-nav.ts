@@ -78,13 +78,13 @@ export const DOCS_GROUPS: DocGroup[] = [
         slug: "ergebnisse",
         title: "Prompts speichern",
         summary:
-          "Gute Prompts landen per Klick unter Gespeicherte Prompts, zum Wiederfinden statt Wiederfinden-Müssen.",
-        updated: "2026-10-19",
+          "Gute Prompts landen per Klick unter Gespeicherte Prompts, damit du sie später wiederfindest.",
+        updated: "2026-10-22",
       },
     ],
   },
   {
-    title: "Modelle und Limits",
+    title: "Keys und Pläne",
     articles: [
       {
         slug: "eigene-api-keys",
@@ -98,7 +98,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Pläne und Limits",
         summary:
           "Was Free und Pro genau enthalten, welche Grenzen wirklich zählen und wann ein eigener Key sie aufhebt.",
-        updated: "2026-10-19",
+        updated: "2026-10-22",
       },
     ],
   },

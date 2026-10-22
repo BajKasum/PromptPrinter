@@ -31,7 +31,8 @@ export default function Page() {
         Free hat <strong>keinen eigenen Zugang zu meinem Modell</strong>. Du
         brauchst zwingend einen{" "}
         <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>{" "}
-        (Anthropic, OpenAI oder Gemini), um mit mir zu chatten, dafür läuft
+        (Anthropic, OpenAI, Gemini oder ein anderer OpenAI-kompatibler
+        Anbieter), um mit mir zu chatten, dafür läuft
         dann alles über deinen eigenen Zugang und kostet mich nichts, also
         dich auch nichts extra. Wie du einen kostenlosen Gemini-Key bekommst,
         steht unter{" "}

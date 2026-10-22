@@ -93,7 +93,7 @@ const FREE_PLAN: MarketingPlan = {
     // Led with the requirement, not framed as an optional perk: this is
     // what makes Free free. Without a key, Free can't chat at all — see
     // this file's own top comment for why.
-    "Eigener KI-Key nötig (Anthropic, OpenAI oder Gemini)",
+    "Eigener KI-Key nötig (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
     // "ohne Monatslimit" statt "unbegrenzt": auch mit eigenem Key greift
     // der stuendliche Missbrauchsschutz (AGB Ziffer 8). "Unbegrenzt" war
     // damit eine Zusage, die der Code nicht haelt (Rechts-Audit 28.09.2026).

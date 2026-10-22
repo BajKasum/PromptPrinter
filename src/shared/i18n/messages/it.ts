@@ -744,7 +744,7 @@ export const it: Messages = {
       description: "Porta la tua chiave IA e l'app è completamente gratuita per te.",
       cadence: "per sempre",
       features: [
-        "Serve la tua chiave IA (Anthropic, OpenAI o Gemini)",
+        "Serve la tua chiave IA (Anthropic, OpenAI, Gemini o un altro fornitore)",
         "Con la tua chiave: senza limite mensile, l'app resta gratuita",
         "Fino a {projects} progetti",
         "Prompt per qualsiasi IA e qualsiasi compito",

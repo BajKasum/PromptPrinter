@@ -742,7 +742,7 @@ export const en: Messages = {
       description: "Bring your own AI key and the app is completely free for you.",
       cadence: "forever",
       features: [
-        "Your own AI key required (Anthropic, OpenAI or Gemini)",
+        "Your own AI key required (Anthropic, OpenAI, Gemini or another provider)",
         "With your key: no monthly limit, the app itself stays free",
         "Up to {projects} projects",
         "Prompts for any AI and any task",
