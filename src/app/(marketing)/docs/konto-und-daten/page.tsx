@@ -27,6 +27,17 @@ export default function Page() {
         bleib am besten dabei, so landest du zuverlässig im selben Konto.
       </p>
 
+      <h2>Wie ändere ich meine E-Mail-Adresse?</h2>
+      <p>
+        Die Adresse ist mit deinem Login verknüpft und lässt sich in den
+        Einstellungen nicht selbst ändern. Wer sich über Google oder GitHub
+        anmeldet, hat sie ohnehin beim Anbieter hinterlegt. Brauchst du eine
+        andere, etwa weil dir die Schul- oder Firmenadresse wegfällt, schreib mir
+        über das <Link href="/kontakt">Kontaktformular</Link>, am besten von der
+        bisherigen Adresse aus, und nenne die neue. Ein Konto zu löschen und
+        neu anzufangen ist dafür nicht nötig.
+      </p>
+
       <h2>Wie ändere ich mein Passwort oder setze es zurück?</h2>
       <p>
         Auf der Anmeldeseite gibt es den Weg über{" "}

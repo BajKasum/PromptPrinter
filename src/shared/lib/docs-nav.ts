@@ -109,8 +109,8 @@ export const DOCS_GROUPS: DocGroup[] = [
         slug: "konto-und-daten",
         title: "Konto und Daten",
         summary:
-          "Passwort ändern, Anmeldewege, was gespeichert wird, wie du deine Daten herunterlädst und dein Konto restlos wieder löschst.",
-        updated: "2026-10-04",
+          "Passwort ändern, E-Mail-Adresse wechseln, Anmeldewege, was gespeichert wird, wie du deine Daten herunterlädst und dein Konto restlos wieder löschst.",
+        updated: "2026-10-22",
       },
       {
         slug: "tastenkuerzel",
