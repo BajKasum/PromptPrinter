@@ -610,6 +610,18 @@ export const it: Messages = {
         costNote:
           "La stima dei costi è un ordine di grandezza, non una fattura: il percorso di streaming non vede i token del provider, il calcolo usa il caso peggiore misurato per turno. Per i numeri reali conta la fatturazione del provider, ed è lì che va impostato anche un limite di spesa rigido.",
       },
+      funnel: {
+        title: "Attivazione per settimana di registrazione",
+        hint: "Quanti nuovi account di una settimana hanno salvato una chiave, ricevuto una risposta da Finn e salvato un prompt. Solo contatori, nessun contenuto.",
+        week: "Settimana del",
+        signups: "Registrati",
+        withKey: "con chiave",
+        withAnswer: "con risposta",
+        withSaved: "con prompt salvato",
+        empty: "In queste settimane nessuno si è registrato.",
+        note: "Si conta ciò che esiste ancora oggi: una chiave salvata, una risposta salvata, un prompt salvato. Chi elimina qualcosa esce dal conteggio, quindi i numeri sono un minimo.",
+        truncated: "Più account di quelli che la vista controlla ({limit}), mancano i più vecchi.",
+      },
     },
     plans: {
       title: "Piani",

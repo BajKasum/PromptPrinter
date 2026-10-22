@@ -624,6 +624,18 @@ export const de = {
         costNote:
           "Kostenschätzung ist eine Grössenordnung, keine Abrechnung: der Streaming-Pfad sieht die Token-Zahlen des Anbieters nicht, gerechnet wird mit dem gemessenen Worst Case pro Turn. Für echte Zahlen bleibt die Abrechnung beim Anbieter massgeblich, und dort gehört zusätzlich ein hartes Ausgabenlimit gesetzt.",
       },
+      funnel: {
+        title: "Aktivierung nach Anmeldewoche",
+        hint: "Wie viele neue Konten einer Woche einen Key hinterlegt, eine Antwort von Finn bekommen und einen Prompt gespeichert haben. Nur Zähler, keine Inhalte.",
+        week: "Woche ab",
+        signups: "Registriert",
+        withKey: "mit Key",
+        withAnswer: "mit Antwort",
+        withSaved: "mit gespeichertem Prompt",
+        empty: "In diesen Wochen hat sich niemand angemeldet.",
+        note: "Gezählt wird, was heute noch da ist: ein hinterlegter Key, eine gespeicherte Antwort, ein gespeicherter Prompt. Wer etwas löscht, fällt heraus, die Zahlen sind eine Untergrenze.",
+        truncated: "Mehr Konten als die Ansicht prüft ({limit}), die ältesten fehlen.",
+      },
     },
     plans: {
       title: "Tarife",

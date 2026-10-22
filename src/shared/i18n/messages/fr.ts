@@ -615,6 +615,18 @@ export const fr: Messages = {
         costNote:
           "L'estimation des coûts est un ordre de grandeur, pas une facture : le chemin de streaming ne voit pas le nombre de tokens du fournisseur, le calcul se base sur le pire cas mesuré par tour. Pour les vrais chiffres, la facturation du fournisseur fait foi, et c'est là qu'il faut aussi fixer une limite de dépenses stricte.",
       },
+      funnel: {
+        title: "Activation par semaine d'inscription",
+        hint: "Combien de nouveaux comptes d'une semaine ont enregistré une clé, reçu une réponse de Finn et sauvegardé un prompt. Des compteurs seulement, aucun contenu.",
+        week: "Semaine du",
+        signups: "Inscrits",
+        withKey: "avec clé",
+        withAnswer: "avec réponse",
+        withSaved: "avec prompt sauvegardé",
+        empty: "Personne ne s'est inscrit pendant ces semaines.",
+        note: "On compte ce qui existe encore aujourd'hui : une clé enregistrée, une réponse sauvegardée, un prompt sauvegardé. Qui supprime quelque chose sort du compte, les chiffres sont donc un minimum.",
+        truncated: "Plus de comptes que la vue n'en vérifie ({limit}), les plus anciens manquent.",
+      },
     },
     plans: {
       title: "Formules",
