@@ -172,6 +172,37 @@ describe("Migrations-Konventionen", () => {
     ).toEqual([]);
   });
 
+  // #158: der Profilbild-Upload ist entfernt, seine Rechte sollen es auch sein. Der Guard haelt den
+  // Endzustand fest, nicht nur diese Datei: keine spaetere Migration legt die Schreibrechte neu an.
+  it("raeumt die Rechte des entfernten Profilbild-Uploads ab und legt sie nie wieder an", () => {
+    const sql = withoutComments(read("0048_drop_avatar_upload_remnants.sql"));
+    expect(sql).toMatch(/drop policy if exists avatars_owner_insert on storage\.objects/i);
+    expect(sql).toMatch(/drop policy if exists avatars_owner_update on storage\.objects/i);
+    expect(sql).toMatch(/set public = false\s+where id = 'avatars'/i);
+    expect(sql).toMatch(/revoke update \(avatar_url\) on public\.profiles from authenticated/i);
+
+    const later = migrationFiles().filter((f) => f > "0048");
+    const regranted = later.filter((file) => {
+      const text = withoutComments(read(file));
+      return (
+        /create policy avatars_owner_(insert|update)/i.test(text) ||
+        /grant update \([^)]*avatar_url/i.test(text)
+      );
+    });
+    expect(
+      regranted,
+      "Diese Migrationen vergeben die Schreibrechte am Avatar neu:\n  " + regranted.join("\n  ")
+    ).toEqual([]);
+  });
+
+  // #136: ein Fremdschluessel ohne Index macht jedes Loeschen des Kontos (set null) zum Vollscan.
+  it("indiziert billing_events.user_id, den Fremdschluessel auf auth.users", () => {
+    const sql = withoutComments(read("0047_billing_events_user_index.sql"));
+    expect(sql).toMatch(
+      /create index if not exists billing_events_user_idx\s+on public\.billing_events \(user_id\)/i
+    );
+  });
+
   it("fuehrt keine Ausnahme, die es nicht mehr braucht", () => {
     const stale = [
       ...Object.keys(EXEMPT_SEARCH_PATH).filter((file) => {

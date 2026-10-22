@@ -1,0 +1,23 @@
+-- PromptPrinter — Index auf billing_events.user_id (Supabase-Advisor, Issue #136)
+-- Run AFTER 0046_revoke_anon_byok_rpc.sql.
+--
+-- Der Performance-Advisor meldet am 18.10.2026: `billing_events_user_id_fkey`
+-- (0039, `user_id uuid references auth.users(id) on delete set null`) hat keinen
+-- Index, der die Spalte abdeckt. Ohne ihn liest Postgres bei jedem Löschen eines
+-- Kontos (die Zeilen werden auf NULL gesetzt, nicht gelöscht) und bei jeder
+-- Abfrage nach `user_id` die ganze Tabelle.
+--
+-- Heute ist die Tabelle leer (0 Zeilen am 23.10.2026), der Index kostet also
+-- nichts. Sie wächst mit jedem Webhook-Ereignis und wird bewusst nie geleert,
+-- nur vom Konto entkoppelt (0039). Je später der Index kommt, desto länger
+-- sperrt `create index` die Tabelle für Schreibzugriffe.
+--
+-- Bewusst kein partieller Index (`where user_id is not null`): der Advisor
+-- erkennt einen Fremdschlüssel nur als abgedeckt, wenn ein Index die Spalte ohne
+-- Bedingung führt, und die paar NULL-Zeilen sparen keinen Platz, der zählt.
+--
+-- Die fünf "unused"-Indizes, die der Advisor im selben Lauf nennt, bleiben:
+-- sie stammen aus gezielten Messungen (0033, 0039), bei sechs Konten gibt es
+-- keine Abfragen, die sie benutzen könnten.
+create index if not exists billing_events_user_idx
+  on public.billing_events (user_id);
