@@ -154,7 +154,7 @@ Tailwind 4 (HSL-Token-System in `globals.css`) · Framer Motion · next-themes �
 ```bash
 npm run dev          # Dev-Server (http://localhost:3000)
 npm run typecheck    # tsc --noEmit
-npm run lint         # next lint
+npm run lint         # eslint . --max-warnings 0
 npm run test         # vitest run
 npm run build        # Production-Build (standalone)
 npm run test:e2e     # Browser-Smoketests, braucht Docker + `supabase start` (docs/SETUP.md)
