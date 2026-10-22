@@ -77,7 +77,7 @@ export const viewport: Viewport = {
   // just shrinking the visual viewport underneath — the mismatch that lets a
   // `sticky bottom-0` composer end up hidden behind the keyboard. iOS Safari
   // doesn't fully honor this the same way, that half is handled in
-  // chat-composer.tsx via lib/use-visual-viewport-inset.ts instead.
+  // chat-composer.tsx via features/chat/hooks/use-visual-viewport-inset.ts instead.
   interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },

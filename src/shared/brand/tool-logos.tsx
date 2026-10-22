@@ -8,7 +8,7 @@
  * these are third-party brand colors (Claude's terracotta, ChatGPT's green, …),
  * fixed identity marks that must render the same regardless of the app's own
  * light/dark theme — a design token would be the wrong tool here, not a
- * missed one. auth/oauth-buttons.tsx is the only other file with the same
+ * missed one. features/auth/components/oauth-buttons.tsx is the only other file with the same
  * exception, for the same reason (Google/GitHub brand marks).
  *
  * M-18 (Audit 06.09.2026): this file used to carry nine more cases (Lovable,

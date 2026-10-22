@@ -20,7 +20,7 @@ const HowItWorksSpine = dynamic(
 );
 
 // In place of NoteMage's leaves (a forest motif that doesn't fit a dolphin's
-// world), see components/brand/floaters.tsx for the shared component.
+// world), see shared/brand/floaters.tsx for the shared component.
 const FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "3%", left: "6%", size: 14, delay: 0, duration: 3.4 },
   { kind: "bubble", top: "9%", left: "91%", size: 18, delay: 0.5, duration: 4.6 },

@@ -17,7 +17,7 @@ import { cn } from "@/shared/lib/utils";
 
 type ViewKey = "chats" | "projects";
 
-// Mirrors the real sidebar's pill switcher (src/components/app/sidebar.tsx,
+// Mirrors the real sidebar's pill switcher (src/shell/components/sidebar.tsx,
 // TabSwitcher): one list visible at a time, singular labels ("Chat"/
 // "Projekt") the same way that component names its two pills.
 const NAV: { label: string; Icon: typeof FolderKanban; view: ViewKey }[] = [

@@ -171,7 +171,7 @@ export function SettingsWorkspace({
                 <div className="flex h-11 items-center rounded-lg border border-border bg-surface px-3.5 text-sm text-secondary">
                   {email}
                 </div>
-                {/* Die Adresse laesst sich nicht selbst aendern (#155): eine neue braucht eine Bestaetigung an
+                {/* Die Adresse lässt sich nicht selbst ändern (#155): eine neue braucht eine Bestätigung an
                     die alte und die neue Adresse, die dieser Dienst nicht verschickt. Bis dahin der Weg ueber
                     das Kontaktformular, auch in /docs/konto-und-daten. */}
                 <p className="text-[12px] text-tertiary">

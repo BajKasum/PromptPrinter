@@ -3,7 +3,7 @@ export type SseEvent = { event: string; data: string };
 /**
  * Parses /api/chat's hand-rolled `event: X\ndata: Y\n\n` wire protocol (see
  * that route for the event names it actually sends). Not the same dialect as
- * the raw provider SSE parsed server-side in lib/llm.ts's
+ * the raw provider SSE parsed server-side in server/llm/http.ts's
  * readOpenAiCompatibleSse, that one has no `event:` line, this one is our own
  * framing on top of it. Buffers across chunk boundaries since a network read
  * can split a frame anywhere, including mid-line.

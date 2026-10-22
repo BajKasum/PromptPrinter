@@ -7,8 +7,8 @@ import { siteUrl } from "@/shared/lib/site-url";
  * Adds the `Secure` flag to Supabase's auth cookies when this app is actually
  * served over https.
  *
- * @supabase/ssr's DEFAULT_COOKIE_OPTIONS sets path, sameSite=lax, httpOnly and
- * maxAge — but never `secure`, so the session cookie is written without it and
+ * @supabase/ssr's DEFAULT_COOKIE_OPTIONS sets path, sameSite=lax, maxAge and
+ * `httpOnly: false` — but never `secure`, so the session cookie is written without it and
  * a browser will happily send it over plaintext http. HSTS (next.config.ts)
  * already forces https for the origin, but only from the second visit onward:
  * it does nothing for the very first request, which is exactly the one that
@@ -22,7 +22,7 @@ import { siteUrl } from "@/shared/lib/site-url";
  * https?" — and env.ts already requires NEXT_PUBLIC_APP_URL in production.
  *
  * `httpOnly` is deliberately left at the library's `false`. It is not an
- * oversight: createBrowserClient (lib/supabase/client.ts) reads the session
+ * oversight: createBrowserClient (shared/supabase/client.ts) reads the session
  * from document.cookie to hydrate the client-side Supabase instance, so an
  * httpOnly session cookie would break every client component that talks to
  * Supabase directly. That is the Supabase SSR cookie model, not a setting.

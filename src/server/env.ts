@@ -108,7 +108,7 @@ export function hasNoModelProvider(env: EnvLike = process.env): boolean {
  * plausible-but-wrong value (a leftover http://localhost:3000, say) boots
  * perfectly and then breaks both silently.
  *
- * 1. secureCookieOptions (lib/supabase/cookie-options.ts) decides whether the
+ * 1. secureCookieOptions (server/supabase/cookie-options.ts) decides whether the
  *    session cookie gets the `Secure` flag by asking whether siteUrl() is
  *    https. Non-https here means production session cookies are written
  *    WITHOUT Secure, i.e. a browser will send them over plaintext http.

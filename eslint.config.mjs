@@ -9,8 +9,8 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 
 // `npm run lint` ruft die ESLint-CLI auf (`eslint . --max-warnings 0`), nicht mehr `next lint`, das mit
 // Next 16 wegfaellt (#138). `eslint .` sieht anders als `next lint` den ganzen Baum, deshalb die Ignore-Liste:
-// Build-Ausgaben und erzeugte Dateien gehoeren nicht dazu (`.next` allein waren ueber 40 000 Meldungen und
-// fuenf Minuten).
+// Build-Ausgaben und erzeugte Dateien gehören nicht dazu (`.next` allein waren über 40 000 Meldungen und
+// fünf Minuten).
 const eslintConfig = [
   {
     ignores: [
