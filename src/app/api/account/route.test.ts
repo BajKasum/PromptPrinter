@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE } from "./route";
 
 const getUser = vi.fn();
+const getClaims = vi.fn();
 const signOut = vi.fn();
 const projectFilesRange = vi.fn();
 const attachmentsRange = vi.fn();
@@ -14,7 +15,7 @@ const cancelSubscriptionImmediately = vi.fn();
 
 vi.mock("@/server/supabase/server", () => ({
   createClient: vi.fn(async () => ({
-    auth: { getUser, signOut },
+    auth: { getUser, getClaims, signOut },
     from: (table: string) => {
       // Beide Tabellen werden seitenweise und sortiert gelesen: select -> eq -> order -> range.
       if (table === "project_files")
@@ -71,9 +72,15 @@ function req() {
   return new Request("https://promptprinter.app/api/account", { method: "DELETE" });
 }
 
+/** Ein AMR-Eintrag der Passwort-Anmeldung, die so viele Millisekunden her ist. */
+function signedInAgo(ms: number) {
+  return { method: "password", timestamp: Math.floor((Date.now() - ms) / 1000) };
+}
+
 describe("DELETE /api/account", () => {
   beforeEach(() => {
     getUser.mockReset();
+    getClaims.mockReset();
     signOut.mockReset();
     projectFilesRange.mockReset();
     attachmentsRange.mockReset();
@@ -84,6 +91,8 @@ describe("DELETE /api/account", () => {
     captureError.mockReset();
     cancelSubscriptionImmediately.mockReset();
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    // Standard: gerade angemeldet (Passwort, vor einer Minute). Die Faelle mit alter Sitzung setzen es um.
+    getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(60_000)] } }, error: null });
     projectFilesRange.mockResolvedValue({ data: [], error: null });
     attachmentsRange.mockResolvedValue({ data: [], error: null });
     profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: null } });
@@ -104,6 +113,81 @@ describe("DELETE /api/account", () => {
     expect(json.detail).toBeTruthy();
     expect(json.error).toBeUndefined();
     expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  // #132: die unumkehrbare Aktion verlangt eine frische Anmeldung. Getestet wird, was NICHT durchgeht: ein
+  // gestohlenes Cookie einer alten Sitzung darf nichts loeschen, nicht einmal Teile.
+  describe("frische Anmeldung", () => {
+    const nothingTouched = () => {
+      expect(deleteUser).not.toHaveBeenCalled();
+      expect(storageRemove).not.toHaveBeenCalled();
+      expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
+      expect(signOut).not.toHaveBeenCalled();
+    };
+
+    it("weist eine Sitzung ab, deren Anmeldung Stunden her ist, mit einem Code, den der Dialog versteht", async () => {
+      getClaims.mockResolvedValue({
+        data: { claims: { amr: [signedInAgo(3 * 3600 * 1000)] } },
+        error: null,
+      });
+      const res = await DELETE(req());
+      expect(res.status).toBe(403);
+      expect(res.headers.get("content-type")).toBe("application/problem+json");
+      const json = await res.json();
+      expect(json.code).toBe("reauth_required");
+      expect(json.detail).toBeTruthy();
+      nothingTouched();
+    });
+
+    it("eine Erneuerung des Tokens macht eine alte Sitzung nicht frisch", async () => {
+      getClaims.mockResolvedValue({
+        data: {
+          claims: {
+            amr: [signedInAgo(3 * 3600 * 1000), { method: "token_refresh", timestamp: Math.floor(Date.now() / 1000) }],
+          },
+        },
+        error: null,
+      });
+      const res = await DELETE(req());
+      expect(res.status).toBe(403);
+      nothingTouched();
+    });
+
+    it("weist ab, wenn der Zeitpunkt nicht belegbar ist (keine Claims, kein amr, Textform)", async () => {
+      for (const result of [
+        { data: null, error: { message: "no claims" } },
+        { data: { claims: {} }, error: null },
+        { data: { claims: { amr: ["password"] } }, error: null },
+      ]) {
+        getClaims.mockResolvedValue(result);
+        const res = await DELETE(req());
+        expect(res.status).toBe(403);
+      }
+      nothingTouched();
+    });
+
+    it("prüft die Anmeldung vor dem Ratenlimit und vor jedem Aufräumen", async () => {
+      getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(3 * 3600 * 1000)] } }, error: null });
+      await DELETE(req());
+      expect(rateLimit).not.toHaveBeenCalled();
+      expect(projectFilesRange).not.toHaveBeenCalled();
+      expect(attachmentsRange).not.toHaveBeenCalled();
+    });
+
+    it("löscht nach einer Anmeldung vor ein paar Minuten", async () => {
+      getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(5 * 60 * 1000)] } }, error: null });
+      const res = await DELETE(req());
+      expect(res.status).toBe(200);
+      expect(deleteUser).toHaveBeenCalledWith("user-1");
+    });
+
+    it("auch für Admin-Konten (sie sind nur vom Ratenlimit ausgenommen)", async () => {
+      profileSelect.mockResolvedValue({ data: { is_admin: true, subscription_id: null } });
+      getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(3 * 3600 * 1000)] } }, error: null });
+      const res = await DELETE(req());
+      expect(res.status).toBe(403);
+      nothingTouched();
+    });
   });
 
   it("rejects once the hourly rate limit is exceeded", async () => {

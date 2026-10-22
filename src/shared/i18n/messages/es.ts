@@ -401,6 +401,9 @@ export const es: Messages = {
         "No se puede deshacer. Todos tus proyectos, chats, archivos, prompts guardados y claves API se eliminarán definitivamente.",
       typeEmail: "Para confirmar, escribe tu correo",
       failed: "No se ha podido eliminar",
+      reauthBody:
+        "Iniciaste sesión hace un tiempo. Por seguridad, vuelve a iniciar sesión y luego elimina tu cuenta desde la configuración.",
+      reauthAction: "Iniciar sesión de nuevo",
     },
   },
 
@@ -736,6 +739,7 @@ export const es: Messages = {
     accountNotSignedIn: "No has iniciado sesión.",
     accountConfigIncomplete: "Configuración del servidor incompleta, falta la clave service role.",
     accountDeleteFailed: "No se ha podido eliminar la cuenta.",
+    accountReauthRequired: "Por seguridad, vuelve a iniciar sesión antes de eliminar tu cuenta.",
     accountExportNote: "Exportación de tus datos de PromptPrinter. Los archivos e imágenes subidos solo se incluyen con su nombre, tipo y tamaño, no su contenido. Las claves API nunca se incluyen.",
     accountExportFailed: "No se pudo crear la exportación. Inténtalo de nuevo.",
   },

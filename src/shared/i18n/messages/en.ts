@@ -401,6 +401,9 @@ export const en: Messages = {
         "This can't be undone. All your projects, chats, files, saved prompts and stored API keys will be permanently removed.",
       typeEmail: "To confirm, type your email",
       failed: "Deleting failed",
+      reauthBody:
+        "You signed in a while ago. For your security, sign in again, then delete your account from the settings.",
+      reauthAction: "Sign in again",
     },
   },
 
@@ -733,6 +736,7 @@ export const en: Messages = {
     accountNotSignedIn: "Not signed in.",
     accountConfigIncomplete: "Server configuration incomplete, service role key missing.",
     accountDeleteFailed: "The account couldn't be deleted.",
+    accountReauthRequired: "For your security, please sign in again before you delete your account.",
     accountExportNote: "Export of your PromptPrinter data. Uploaded files and images are included by name, type and size only, not their content. API keys are never included.",
     accountExportFailed: "The export could not be created. Please try again.",
   },
