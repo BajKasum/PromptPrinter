@@ -66,11 +66,19 @@ export default function Page() {
 
       <h3>Struktur</h3>
       <p>
-        Fünf kurze Felder für die Eckdaten, die sich selten ändern:{" "}
-        <strong>Frontend</strong>, <strong>Backend</strong>, <strong>Sprache</strong>,{" "}
-        <strong>Datenbank</strong> und <strong>Weiteres</strong>. Alle sind
+        Kurze Felder für die Eckdaten, die sich selten ändern. Für jedes
+        Projekt gibt es <strong>Zielgruppe</strong>, <strong>Ton</strong>,{" "}
+        <strong>Hintergrund</strong> und <strong>Weiteres</strong>. Alle sind
         freiwillig, leere Felder werden einfach weggelassen. Der Vorteil
         gegenüber Freitext: du siehst auf einen Blick, was gesetzt ist.
+      </p>
+      <p>
+        Setzt du das Häkchen <strong>Softwareprojekt</strong>, kommen{" "}
+        <strong>Frontend</strong>, <strong>Backend</strong>,{" "}
+        <strong>Sprache</strong> und <strong>Datenbank</strong> dazu, und das
+        Gedächtnis bietet ein GitHub-Repository an. Ein Feld, in dem schon
+        etwas steht, bleibt sichtbar, auch wenn du das Häkchen wieder
+        herausnimmst.
       </p>
 
       <h3>Dateien</h3>
@@ -81,13 +89,16 @@ export default function Page() {
 
       <h2>Was ist das Gedächtnis eines Projekts?</h2>
       <p>
-        Das Gedächtnis ist das, was PromptPrinter über den Stack deines Projekts
-        weiss, nachdem es deine Dateien und optional dein Repository einmal
-        gelesen hat. Danach kennt jeder Chat dieses Projekts Framework, Sprache,
-        Architektur, Datenbank, Design-System, Coding-Style und die
-        Konventionen. Finn fragt dann nicht mehr nach dem, was du längst
-        festgelegt hast, sondern nur noch nach dem, was das Gedächtnis offen
-        lässt.
+        Das Gedächtnis ist das, was PromptPrinter über dein Projekt weiss,
+        nachdem es deine Dateien und bei einem Softwareprojekt optional dein
+        Repository einmal gelesen hat. Danach kennt jeder Chat dieses Projekts
+        das Wichtigste daraus. Bei einem Softwareprojekt sind das Framework,
+        Sprache, Architektur, Datenbank, Design-System, Coding-Style und die
+        Konventionen. Bei jedem anderen Projekt, etwa einer Bewerbung oder den
+        Statuten eines Vereins, sind es die Zielgruppe, der Ton und die
+        Eckdaten, die in jedem Prompt stimmen müssen. Finn fragt dann nicht
+        mehr nach dem, was du längst festgelegt hast, sondern nur noch nach dem,
+        was das Gedächtnis offen lässt.
       </p>
       <p>
         In der Karte siehst du eine kurze Zusammenfassung und die erkannten
@@ -96,8 +107,8 @@ export default function Page() {
 
       <h2>Wie entsteht das Gedächtnis?</h2>
       <p>
-        Du lädst Dateien hoch, trägst optional ein GitHub-Repository ein und
-        drückst auf <strong>Projekt analysieren</strong>. Das dauert je nach
+        Du lädst Dateien hoch, trägst bei einem Softwareprojekt optional ein
+        GitHub-Repository ein und drückst auf <strong>Projekt analysieren</strong>. Das dauert je nach
         Projektgrösse ein paar Sekunden. Gelesen wird:
       </p>
       <ul>

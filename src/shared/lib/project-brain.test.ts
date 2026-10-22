@@ -93,6 +93,34 @@ describe("formatBrainForPrompt", () => {
 
   // Der Block reist bei JEDEM Zug mit, das Budget ist deshalb eine
   // Kostengrenze, keine Kosmetik.
+  // #154: ein allgemeines Projekt (Lebenslauf, Statuten) hat keinen Stack, aber Zielgruppe, Ton und Eckdaten.
+  it("gibt Zielgruppe, Ton und Eckdaten eines allgemeinen Projekts in den Prompt", () => {
+    const block = formatBrainForPrompt(
+      projectBrainFactsSchema.parse({
+        summary: "Bewerbung als Pflegefachfrau.",
+        audience: "Personalabteilungen von Spitälern",
+        tone: "sachlich, per Sie",
+        keyFacts: ["Diplom 2019", "Bern"],
+        confidence: "medium",
+      })
+    );
+    expect(block).toContain("- Zielgruppe: Personalabteilungen von Spitälern");
+    expect(block).toContain("- Ton: sachlich, per Sie");
+    expect(block).toContain("- Eckdaten:\n  - Diplom 2019\n  - Bern");
+    expect(block).not.toContain("Framework");
+  });
+
+  it("zählt schon die Zielgruppe allein als verwertbaren Inhalt", () => {
+    expect(hasBrainContent(projectBrainFactsSchema.parse({ audience: "Vorstand" }))).toBe(true);
+    expect(hasBrainContent(projectBrainFactsSchema.parse({ keyFacts: ["Bern"] }))).toBe(true);
+  });
+
+  it("liest ein vor #154 gespeichertes Brain ohne die neuen Felder weiter", () => {
+    const old = projectBrainFactsSchema.parse({ framework: "Next.js 15", stack: ["Supabase"] });
+    expect(old.audience).toBe("");
+    expect(old.keyFacts).toEqual([]);
+  });
+
   it("never exceeds the per-turn budget", () => {
     const block = formatBrainForPrompt({
       ...EMPTY_BRAIN_FACTS,

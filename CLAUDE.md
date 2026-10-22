@@ -24,10 +24,10 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   im Codeblock, der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit
   Test). Streaming per SSE, Antwort neu erzeugen, eigene Frage bearbeiten, Sprachmodus
   (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert).
-- **Projekte sind Workspaces:** Anweisungen, Struktur, Dateien, mehrere Chats, das
-  **Gedächtnis** (einmalige Analyse von Dateien und einem öffentlichen GitHub-Repo,
-  Tabelle `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne
-  Auto-Generieren).
+- **Projekte sind Workspaces:** Anweisungen, Struktur (je nach `projects.type`
+  allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
+  (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
+  `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne Auto-Generieren).
 - **Pläne:** Free chattet nur mit eigenem Key (der Key-Assistent führt im Chat-Hinweis und in
   den Einstellungen zu einem Gratis-Gemini-Key), Pro mit Server-Key und Kontingent.
   **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder

@@ -52,6 +52,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProjectBrainCard>>
       brain={IDLE}
       currentDigest="aaaa1111"
       sourceCount={2}
+      kind="software"
       {...overrides}
     />
   );
@@ -73,6 +74,50 @@ describe("ProjectBrainCard", () => {
     setup();
     expect(screen.getByRole("button", { name: /Projekt analysieren/ })).toBeEnabled();
     expect(screen.getByText(/öffentliches GitHub-Repo/)).toBeInTheDocument();
+  });
+
+  describe("allgemeines Projekt (#154)", () => {
+    it("bietet kein GitHub-Repository an und erklärt es mit Texten statt Repo", () => {
+      setup({ kind: "general" });
+      expect(screen.queryByLabelText(/GitHub-Repository/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/öffentliches GitHub-Repo/)).not.toBeInTheDocument();
+      expect(screen.getByText(/Lebenslauf oder Vereinsstatuten/)).toBeInTheDocument();
+    });
+
+    it("zeigt ein schon hinterlegtes Repository weiter, damit es entfernbar bleibt", () => {
+      setup({ kind: "general", brain: { ...IDLE, repoUrl: "https://github.com/a/b" } });
+      expect(screen.getByLabelText(/GitHub-Repository/)).toHaveValue("https://github.com/a/b");
+    });
+
+    it("ohne Dateien sagt der Hinweis nichts von einem Repository", () => {
+      setup({ kind: "general", sourceCount: 0 });
+      expect(screen.getByText("Lade zuerst Dateien hoch.")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Projekt analysieren/ })).toBeDisabled();
+    });
+
+    it("zeigt Eckdaten und Zielgruppe aus der Analyse", async () => {
+      const user = userEvent.setup();
+      setup({
+        kind: "general",
+        brain: {
+          ...READY,
+          facts: {
+            ...EMPTY_BRAIN_FACTS,
+            summary: "Bewerbung als Pflegefachfrau.",
+            audience: "Personalabteilungen von Spitälern",
+            tone: "sachlich, per Sie",
+            keyFacts: ["Diplom 2019", "Bern"],
+            confidence: "medium",
+          },
+        },
+      });
+      const facts = screen.getByRole("list", { name: "Eckdaten" });
+      expect(within(facts).getByText("Diplom 2019")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: /Details/ }));
+      expect(screen.getByText("Zielgruppe")).toBeInTheDocument();
+      expect(screen.getByText("Personalabteilungen von Spitälern")).toBeInTheDocument();
+      expect(screen.getByText("sachlich, per Sie")).toBeInTheDocument();
+    });
   });
 
   it("shows the detected facts once ready", () => {
