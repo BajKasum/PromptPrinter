@@ -62,7 +62,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`.
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role).
-  Migrationen 0001 bis 0046 in `supabase/migrations/`, alle in Produktion angewendet
+  Migrationen 0001 bis 0048 in `supabase/migrations/`, alle in Produktion angewendet
   (0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
