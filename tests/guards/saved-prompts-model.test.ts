@@ -39,6 +39,19 @@ describe("Datenmodell der gespeicherten Prompts", () => {
     expect(offenders, offenders.join("\n  ")).toEqual([]);
   });
 
+  // Eine Spaltenliste ist eine Zeichenkette, der Typprüfer sieht sie nicht: `getProject()` forderte
+  // `status` noch an, als die Spalte schon weg war, und die Projektseite lud nicht mehr (der
+  // Browser-Test in der CI fand es, kein Unit-Test mit gemocktem Supabase).
+  it("fordert `projects.status` nirgends mehr an", () => {
+    const offenders = files
+      .filter(({ text }) => /from\(\s*["']projects["']\s*\)[\s\S]{0,300}?\.select\(\s*["'`][^"'`]*\bstatus\b/.test(text))
+      .map(({ path }) => path);
+    expect(offenders, "Diese Dateien lesen `projects.status`:\n  " + offenders.join("\n  ")).toEqual([]);
+
+    const project = files.find(({ path }) => path === "server/project.ts")!.text;
+    expect(project).not.toMatch(/\bstatus\b/);
+  });
+
   it("kennt nur die Pläne free und pro", () => {
     const plans = files.find(({ path }) => path === "shared/lib/plans.ts")!.text;
     expect(plans).toMatch(/export type PlanKey = "free" \| "pro";/);

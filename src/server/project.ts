@@ -25,7 +25,6 @@ export type WorkspaceProject = {
   idea: string | null;
   tools: Record<string, string> | null;
   type: string;
-  status: string;
   is_favorite: boolean;
   updated_at: string;
 };
@@ -63,7 +62,7 @@ export const getProject = cache(async (id: string): Promise<WorkspaceProject> =>
   const { data } = await supabase
     .from("projects")
     .select(
-      "id, name, instructions, context, audience, idea, tools, type, status, is_favorite, updated_at"
+      "id, name, instructions, context, audience, idea, tools, type, is_favorite, updated_at"
     )
     .eq("id", id)
     .eq("user_id", user.id)
