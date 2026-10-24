@@ -12,7 +12,7 @@ import { EMPTY_BRAIN_FACTS } from "@/shared/lib/project-brain";
 
 type Rows = {
   projects?: unknown;
-  generations?: unknown;
+  saved_prompts?: unknown;
   project_brains?: unknown;
   project_files?: { name: string; storage_path: string }[];
 };

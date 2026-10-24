@@ -161,7 +161,7 @@ function SavedPromptCard({
     // whole — the card already holds the prompt in memory, no
     // read-modify-write round trip needed.
     const { error } = await supabase
-      .from("generations")
+      .from("saved_prompts")
       .update({
         outputs: {
           prompt: prompt.content,
@@ -193,7 +193,7 @@ function SavedPromptCard({
     const undo = onDelete();
     const supabase = createClient();
     const { error } = await supabase
-      .from("generations")
+      .from("saved_prompts")
       .delete()
       .eq("id", prompt.id)
       .eq("user_id", userId);

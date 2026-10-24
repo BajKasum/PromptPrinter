@@ -7,7 +7,7 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { createClient } from "@/server/supabase/server";
 import { resolvePlan } from "@/shared/lib/plans";
-import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
+import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, plural } from "@/shared/i18n/format";
@@ -18,7 +18,7 @@ export async function generateMetadata() {
   return { title: (await getT()).meta.savedPrompts };
 }
 
-type GenerationRow = {
+type SavedPromptRow = {
   id: string;
   created_at: string;
   outputs: Record<string, unknown> | null;
@@ -29,7 +29,7 @@ type GenerationRow = {
 // fixes): every prompt this user has ever saved, from any chat — global or
 // project — in one place, newest first, findable by name later. A project's
 // own /projects/[id]/results stays as the project-scoped view of the same
-// underlying rows (generations); this is the unscoped one. Naming happens
+// underlying rows (saved_prompts); this is the unscoped one. Naming happens
 // here or on that page (saved-prompt-list.tsx's inline rename), never at
 // save time in the chat itself, saving stays a single zero-friction click.
 export default async function SavedPromptsPage() {
@@ -47,7 +47,7 @@ export default async function SavedPromptsPage() {
     // this used to silently drop anything past SAVED_PROMPTS_LOAD_LIMIT and
     // show the truncated count as if it were the true total.
     supabase
-      .from("generations")
+      .from("saved_prompts")
       .select("id, created_at, outputs")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
@@ -59,11 +59,11 @@ export default async function SavedPromptsPage() {
   const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
-    (rowsRaw as GenerationRow[] | null) ?? [],
+    (rowsRaw as SavedPromptRow[] | null) ?? [],
     SAVED_PROMPTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);
-  const prompts = mapGenerationRowsToSavedPrompts(rows, t.prompts.fallbackTitle);
+  const prompts = mapSavedPromptRows(rows, t.prompts.fallbackTitle);
 
   if (prompts.length === 0) {
     return (

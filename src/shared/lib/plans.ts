@@ -1,4 +1,4 @@
-export type PlanKey = "free" | "pro" | "team";
+export type PlanKey = "free" | "pro";
 
 export type PlanLimits = { projects: number; chatMessages: number };
 
@@ -48,7 +48,6 @@ export type PlanLimits = { projects: number; chatMessages: number };
 export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
   free: { projects: 3, chatMessages: 0 },
   pro: { projects: Infinity, chatMessages: 400 },
-  team: { projects: Infinity, chatMessages: 400 },
 };
 
 // Admin is a role (profiles.is_admin), not a plan, it never changes what
@@ -63,7 +62,7 @@ export function effectiveLimits(plan: PlanKey, isAdmin: boolean): PlanLimits {
 
 /** Normalizes a stored `profiles.plan` value; anything unknown is Free. */
 export function toPlanKey(raw: string | null | undefined): PlanKey {
-  return raw === "pro" || raw === "team" ? raw : "free";
+  return raw === "pro" ? raw : "free";
 }
 
 /** Die zwei Spalten von `profiles`, aus denen Plan und Limits folgen. */

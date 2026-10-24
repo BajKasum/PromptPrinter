@@ -151,7 +151,7 @@ describe("POST /api/chat", () => {
     tableResults.messages = { data: { id: "msg-1" }, error: null, count: 3 };
     tableResults.conversations = { data: { id: "conv-1" }, error: null };
     tableResults.projects = { data: null, error: null };
-    tableResults.generations = { data: null, error: null };
+    tableResults.saved_prompts = { data: null, error: null };
     tableResults.project_files = { data: [], error: null };
   });
 

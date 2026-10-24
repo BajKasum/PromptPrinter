@@ -62,7 +62,7 @@ export const EXPORT_SECTIONS: readonly Section[] = [
     key: "projects",
     table: "projects",
     columns:
-      "id, name, audience, idea, tools, status, type, instructions, context, is_favorite, created_at, updated_at",
+      "id, name, audience, idea, tools, type, instructions, context, is_favorite, created_at, updated_at",
     orderBy: ["created_at", "id"],
     map: (r) => ({
       id: r.id,
@@ -70,7 +70,6 @@ export const EXPORT_SECTIONS: readonly Section[] = [
       audience: r.audience,
       idea: r.idea,
       tools: r.tools,
-      status: r.status,
       type: r.type,
       instructions: r.instructions,
       context: r.context,
@@ -155,14 +154,13 @@ export const EXPORT_SECTIONS: readonly Section[] = [
   },
   {
     key: "savedPrompts",
-    table: "generations",
-    columns: "id, project_id, outputs, model, created_at",
+    table: "saved_prompts",
+    columns: "id, project_id, outputs, created_at",
     orderBy: ["created_at", "id"],
     map: (r) => ({
       id: r.id,
       projectId: r.project_id,
       outputs: r.outputs,
-      model: r.model,
       createdAt: r.created_at,
     }),
   },

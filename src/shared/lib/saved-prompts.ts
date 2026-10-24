@@ -1,8 +1,7 @@
 // Helpers for the "Prompt speichern" flow (Ergebnisse-Neubau, 2026-07): pull
 // the paste-ready prompt out of an assistant reply and give it a short title.
-// A saved prompt is stored as a `generations` row with outputs = { prompt,
-// title } (see save-prompt-button.tsx + results/page.tsx); the table
-// keeps its historical name, but semantically a row is now one prompt the user
+// A saved prompt is stored as a `saved_prompts` row with outputs = { prompt,
+// title } (see save-prompt-button.tsx + results/page.tsx): one prompt the user
 // chose to keep. These helpers are the pure, UI-agnostic part, unit-tested on
 // their own.
 
@@ -62,7 +61,7 @@ export function extractPrompt(markdown: string): string | null {
 }
 
 /**
- * Pull the saved prompt text out of a batch of `generations` rows (each row's
+ * Pull the saved prompt text out of a batch of `saved_prompts` rows (each row's
  * `outputs` is `{ prompt, title }`, see save-prompt-button.tsx). Used
  * by the chat pages to know which prompts are already saved for a project, so
  * SavePromptButton can start disabled instead of allowing a duplicate
@@ -77,7 +76,7 @@ export function extractSavedPromptContents(
 }
 
 /**
- * Turns raw `generations` rows into the `SavedPrompt` shape the UI reads
+ * Turns raw `saved_prompts` rows into the `SavedPrompt` shape the UI reads
  * (`saved-prompt-list.tsx`). Shared by every page that lists saved prompts —
  * originally only results/page.tsx's own inline version; extracted (QA
  * finding N-1) once /prompts (the project-independent library) needed the
@@ -85,7 +84,7 @@ export function extractSavedPromptContents(
  * than shown as an empty card (defensive: outputs is untyped JSONB, a
  * malformed row shouldn't render as broken UI).
  */
-export function mapGenerationRowsToSavedPrompts(
+export function mapSavedPromptRows(
   rows: { id: string; created_at: string; outputs: Record<string, unknown> | null }[],
   fallbackTitle = "Gespeicherter Prompt"
 ): SavedPrompt[] {

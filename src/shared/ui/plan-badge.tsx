@@ -7,7 +7,6 @@ import type { PlanKey } from "@/shared/lib/plans";
 const PLAN_BADGE: Record<PlanKey, string> = {
   free: "border-border bg-surface text-foreground/70",
   pro: "border-accent/40 bg-accent-subtle text-accent-text",
-  team: "border-cyan-400/40 bg-cyan-500/15 text-cyan-200",
 };
 
 export function PlanBadge({ plan, isAdmin = false }: { plan: PlanKey; isAdmin?: boolean }) {

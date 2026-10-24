@@ -11,7 +11,7 @@ import { useT } from "@/shared/i18n/provider";
 type SaveState = "idle" | "saving" | "saved";
 
 // The "Prompt speichern" affordance in a chat's result panel: persists the
-// current prompt into the user's saved-prompt library (a `generations` row
+// current prompt into the user's saved-prompt library (a `saved_prompts` row
 // with outputs = { prompt, title }). Zero extra model calls, it just
 // keeps text the user already has. The insert goes through the RLS-scoped
 // browser client (owner-only insert policy, 0001), the same pattern the
@@ -21,7 +21,7 @@ type SaveState = "idle" | "saving" | "saved";
 // QA finding N-1 (reworked per explicit product direction, not the audit's
 // own two proposed fixes — see migration 0025's comment): saving used to
 // require a project. `projectId` is optional now — omitted (or null) for a
-// global chat, migration 0025 made generations.project_id nullable for
+// global chat, migration 0025 made saved_prompts.project_id nullable for
 // exactly this. A saved prompt is a first-class, project-independent thing
 // now, found later on /prompts (saved-prompt-list.tsx), named and renamed
 // there, not scoped to wherever it happened to be written.
@@ -67,14 +67,13 @@ export function SavePromptButton({
       return;
     }
 
-    const { error } = await supabase.from("generations").insert({
+    const { error } = await supabase.from("saved_prompts").insert({
       project_id: projectId ?? null,
       user_id: user.id,
       outputs: {
         prompt,
         title: derivePromptTitle(prompt, t.prompts.fallbackTitle),
       },
-      model: null,
     });
 
     if (error) {

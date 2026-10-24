@@ -63,7 +63,7 @@ async function removeUserObjects(
 
 // Permanently delete the signed-in user's account. The auth.users row cascades
 // to profiles, and profiles cascades to EVERY user-scoped table: projects,
-// conversations, messages, generations, project_files, subscriptions and
+// conversations, messages, saved_prompts, project_files, subscriptions and
 // user_api_keys (all ON DELETE CASCADE, verified against the live schema
 // 2026-08-02 — this list used to name only four of them, which reads like the
 // encrypted BYOK keys outlive a deletion when in fact they do not).

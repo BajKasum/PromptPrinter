@@ -25,14 +25,10 @@ type ProjectQueryRow = {
   is_favorite: boolean;
 };
 
-// One row per project, see supabase/migrations/0016_project_summaries.sql
-// (+ 0023, which added saved_count and dropped the unused latest_outputs/
-// latest_generation_at columns). Both counts come from this one indexed
-// LATERAL-join RPC now — QA finding P-2: saved_count used to be a separate
-// `select project_id from generations where user_id = ?` loading every saved
-// prompt the user has ever made, tallied in JS, exactly the O(all-time
-// generations) pattern 0016 was built to eliminate for chat_count, just not
-// applied to this column.
+// Eine Zeile je Projekt aus project_summaries() (supabase/migrations/0016, 0023,
+// zuletzt 0049). Chat- und Prompt-Zähler kommen aus dieser einen indizierten
+// Abfrage statt aus allen Zeilen von `saved_prompts`, die sonst im Browser
+// gezählt würden.
 type ProjectSummaryRow = {
   project_id: string;
   chat_count: number;
