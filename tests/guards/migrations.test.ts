@@ -203,6 +203,30 @@ describe("Migrations-Konventionen", () => {
     );
   });
 
+  // #140: `generations` ist `saved_prompts`, und die Reste der Generierungs-Pipeline sind weg. Der
+  // Guard haelt den Endzustand fest: keine spaetere Migration legt die alten Namen oder Spalten an.
+  it("benennt generations in saved_prompts um und raeumt die Pipeline-Reste ab", () => {
+    const sql = withoutComments(read("0049_saved_prompts.sql"));
+    expect(sql).toMatch(/alter table public\.generations rename to saved_prompts/i);
+    for (const column of ["model", "latency_ms", "tokens_in", "tokens_out"]) {
+      expect(sql, column).toMatch(new RegExp(`drop column if exists ${column}\\b`, "i"));
+    }
+    expect(sql).toMatch(/alter table public\.projects drop column if exists status/i);
+    expect(sql).toMatch(/profiles_plan_check check \(plan in \('free', 'pro'\)\)/i);
+    // project_summaries() liest die neue Tabelle und behaelt ihre Rechte.
+    expect(sql).toMatch(/from public\.saved_prompts/i);
+    expect(sql).not.toMatch(/from public\.generations/i);
+    expect(sql).toMatch(/revoke execute on function public\.project_summaries\(\) from public/i);
+
+    const later = migrationFiles().filter((f) => f.slice(0, 4) > "0049");
+    const revived = later.filter((file) =>
+      /(create|alter) table (if not exists )?public\.generations\b|add column (if not exists )?(model|latency_ms|tokens_in|tokens_out)\b/i.test(
+        withoutComments(read(file))
+      )
+    );
+    expect(revived, "Diese Migrationen holen Altes zurueck:\n  " + revived.join("\n  ")).toEqual([]);
+  });
+
   it("fuehrt keine Ausnahme, die es nicht mehr braucht", () => {
     const stale = [
       ...Object.keys(EXEMPT_SEARCH_PATH).filter((file) => {
