@@ -22,7 +22,8 @@ describe("markAiMarkdown", () => {
   });
 
   it("ist ein HTML-Kommentar, damit die Markdown-Ansicht nichts davon zeigt", () => {
-    expect(AI_GENERATED_MARKER).toMatch(/^<!--.*-->$/);
+    expect(AI_GENERATED_MARKER.startsWith("<!--")).toBe(true);
+    expect(AI_GENERATED_MARKER.endsWith("-->")).toBe(true);
   });
 
   it("trägt maschinenlesbar 'ai-generated' und den Erzeuger", () => {
