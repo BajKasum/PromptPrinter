@@ -1,14 +1,12 @@
 <div align="center">
 
-<img src="docs/images/logo.png" alt="Finn, der Delfin von PromptPrinter" width="120" />
+<img src="docs/brand/logo/promptprinter-logo.png" alt="PromptPrinter" width="620" />
 
-# PromptPrinter
+### **PromptPrinter. Für jede KI, jede Aufgabe.**
 
-**Beschreib deine Idee. Finn schreibt dir den Prompt.**
-
-Für jede KI und jede Aufgabe: ein Dokument, eine Webseite, eine Datenbank, eine
-Sicherheitsprüfung. Finn fragt kurz nach, was fehlt, und liefert dir den
-fertigen Prompt.
+Beschreib deine Idee, Finn schreibt dir den Prompt. Ein Dokument, eine Webseite,
+eine Datenbank, eine Sicherheitsprüfung: Finn fragt kurz nach, was fehlt, und
+liefert dir den fertigen Prompt.
 
 [**promptprinter.app**](https://promptprinter.app)
 
@@ -17,10 +15,6 @@ fertigen Prompt.
 [![Lizenz](https://img.shields.io/badge/lizenz-all%20rights%20reserved-lightgrey?style=flat-square)](LICENSE)
 
 </div>
-
-<p align="center">
-  <img src="docs/images/landing.png" alt="Die Startseite von PromptPrinter mit Finn und einem Beispiel-Prompt" width="860" />
-</p>
 
 ## Was ist PromptPrinter?
 
@@ -61,18 +55,10 @@ schreibt dir danach einen Prompt, der für sich steht.
 - **Fünf Sprachen.** Die App gibt es auf Deutsch, Englisch, Französisch,
   Italienisch und Spanisch, in hell und dunkel.
 
-## Tech-Stack
+## Entwicklung
 
-**Next.js 15** · **React 19** · **TypeScript** (strict) · **Supabase** (Auth,
-Postgres, Row-Level-Security) · **Tailwind** · **Framer Motion** · **Vitest** ·
-**Vercel**
-
-Dazu Z.ai (GLM) und Gemini als Modelle, Lemon Squeezy für Zahlungen und Upstash
-für das Rate-Limiting. Über 1.200 Tests, dazu Guard-Tests, die Schichtgrenzen,
-Routen, Kontraste und SEO-Metadaten festhalten.
-
-Setup, Deploy-Checkliste und Projektstruktur stehen in
-[docs/SETUP.md](docs/SETUP.md), die Design-Regeln in [docs/DESIGN.md](docs/DESIGN.md).
+Setup, Deploy-Checkliste und Projektstruktur stehen in [docs/SETUP.md](docs/SETUP.md), die
+Design-Regeln in [docs/DESIGN.md](docs/DESIGN.md), das Logo in [docs/brand/logo](docs/brand/logo).
 
 ## Lizenz
 
