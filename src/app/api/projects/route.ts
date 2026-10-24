@@ -83,11 +83,11 @@ export async function POST(req: Request) {
     }
   }
 
-  // Ein leerer Workspace: nur Name + Owner. `type` ist ein internes Alt-Datum
-  // (bestimmt den System-Prompt der Projekt-Chats), neutraler Default general.
+  // Ein leerer Workspace: nur Name + Owner. `type` startet als general; das
+  // Häkchen "Softwareprojekt" im Workspace stellt es auf software um.
   const { data: project, error } = await supabase
     .from("projects")
-    .insert({ user_id: user.id, name: parsed.data.name, type: "general", status: "ready" })
+    .insert({ user_id: user.id, name: parsed.data.name, type: "general" })
     .select("id")
     .single();
 

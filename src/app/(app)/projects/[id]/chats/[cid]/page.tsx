@@ -45,7 +45,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [initialMessages, { data: generationRows, count: resultCount }, profile, needsKey] =
+  const [initialMessages, { data: savedPromptRows, count: resultCount }, profile, needsKey] =
     await Promise.all([
       // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
       // zuerst, mit Limit, dann umgedreht, QA-Befund P-1) steht in
@@ -57,7 +57,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       // user_id alongside project_id: RLS-only defense-in-depth before
       // (Security-Audit L-3).
       supabase
-        .from("generations")
+        .from("saved_prompts")
         .select("outputs", { count: "exact" })
         .eq("project_id", id)
         .eq("user_id", project.userId),
@@ -70,7 +70,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
-    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+    (savedPromptRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
   );
 
   return (

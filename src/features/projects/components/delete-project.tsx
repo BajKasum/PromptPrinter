@@ -64,7 +64,7 @@ export function DeleteProjectButton({
 
     // Explizites user_id neben RLS, wie ueberall sonst (CLAUDE.mds
     // Defense-in-depth-Standard): `user` liegt hier ohnehin schon vor, es
-    // kostet also nichts. generations, chats und project_files kaskadieren weg.
+    // kostet also nichts. saved_prompts, chats und project_files kaskadieren weg.
     const { error } = await supabase
       .from("projects")
       .delete()

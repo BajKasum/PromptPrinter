@@ -25,14 +25,14 @@ export default async function NewChatPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [profile, { data: generationRows }, needsKey] = await Promise.all([
+  const [profile, { data: savedPromptRows }, needsKey] = await Promise.all([
     getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts, not
     // a project-scoped subset. Explicit user_id on top of RLS, same
     // defense-in-depth as every other user-scoped query here.
     supabase
-      .from("generations")
+      .from("saved_prompts")
       .select("outputs")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
@@ -41,7 +41,7 @@ export default async function NewChatPage() {
   ]);
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
-    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+    (savedPromptRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
   );
 
   return (

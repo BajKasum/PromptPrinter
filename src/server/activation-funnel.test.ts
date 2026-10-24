@@ -139,7 +139,7 @@ describe("loadActivationFunnel", () => {
         { user_id: "b", role: "user" },
         { user_id: "c", role: "assistant" },
       ],
-      generations: [{ user_id: "a" }, { user_id: "a" }],
+      saved_prompts: [{ user_id: "a" }, { user_id: "a" }],
     });
 
     const funnel = await loadActivationFunnel(admin as never, NOW);

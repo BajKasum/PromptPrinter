@@ -177,7 +177,6 @@ describe("Karten", () => {
 
     it.each([
       ["pro", false],
-      ["team", false],
       ["free", true],
     ] as const)("erscheint für Plan %s (Admin: %s)", (plan, isAdmin) => {
       renderIt({ plan, isAdmin });

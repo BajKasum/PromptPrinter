@@ -35,7 +35,7 @@ it reading like an empty template bolted onto the app.
 > 2026-07-17; the software has not produced artifact packets since. Same class of finding as
 > the F-1 fix in the AGB — a document promising a capability the product does not have — at
 > a place the earlier pass did not reach. Note the current numbers while here: Free is
-> BYOK-only (zero server-key messages, 3 projects), Pro/Team are 400 messages per month.
+> BYOK-only (zero server-key messages, 3 projects), Pro is 400 messages per month.
 
 ## Brand Personality
 "Refined Dev-Brand", closest real references are Linear, Vercel, and Raycast: monochrome

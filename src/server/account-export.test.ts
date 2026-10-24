@@ -100,7 +100,7 @@ describe("accountExportStream", () => {
         { id: "m1", user_id: USER, conversation_id: "c1", role: "user", content: "Hallo", created_at: "t1" },
         { id: "m2", user_id: USER, conversation_id: "c1", role: "assistant", content: "Hi", created_at: "t2" },
       ],
-      generations: [{ id: "g1", user_id: USER, project_id: "p1", outputs: { prompt: "x", title: "T" } }],
+      saved_prompts: [{ id: "g1", user_id: USER, project_id: "p1", outputs: { prompt: "x", title: "T" } }],
     });
     const json = JSON.parse(await readAll(accountExportStream(options(client))));
 

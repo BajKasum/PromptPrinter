@@ -8,7 +8,7 @@ import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getSessionProfile } from "@/server/session";
 import { resolvePlan } from "@/shared/lib/plans";
-import { mapGenerationRowsToSavedPrompts } from "@/shared/lib/saved-prompts";
+import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, plural } from "@/shared/i18n/format";
@@ -29,10 +29,9 @@ export async function generateMetadata() {
 
 type Params = Promise<{ id: string }>;
 
-// One saved prompt = one `generations` row with outputs = { prompt, title,
-// target } (see save-prompt-button.tsx). The table keeps its historical name;
-// what a row means changed with the Ergebnisse-Neubau (2026-07).
-type GenerationRow = {
+// Ein gespeicherter Prompt = eine Zeile in `saved_prompts` mit
+// outputs = { prompt, title } (siehe save-prompt-button.tsx).
+type SavedPromptRow = {
   id: string;
   created_at: string;
   outputs: Record<string, unknown> | null;
@@ -57,7 +56,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   // truncated count as if it were the project's true total.
   const [{ data: rowsRaw }, { count: chatCount }, profile] = await Promise.all([
     supabase
-      .from("generations")
+      .from("saved_prompts")
       .select("id, created_at, outputs")
       .eq("project_id", id)
       .eq("user_id", userId)
@@ -76,11 +75,11 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
-    (rowsRaw as GenerationRow[] | null) ?? [],
+    (rowsRaw as SavedPromptRow[] | null) ?? [],
     RESULTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);
-  const prompts = mapGenerationRowsToSavedPrompts(rows, t.prompts.fallbackTitle);
+  const prompts = mapSavedPromptRows(rows, t.prompts.fallbackTitle);
 
   const backLink = (
     <Link

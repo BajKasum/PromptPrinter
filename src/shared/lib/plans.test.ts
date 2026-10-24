@@ -108,9 +108,9 @@ describe("marketed plans match enforced limits", () => {
 });
 
 describe("toPlanKey", () => {
-  it("keeps pro and team, maps everything else to free", () => {
+  it("keeps pro, maps everything else (including the retired team plan) to free", () => {
     expect(toPlanKey("pro")).toBe("pro");
-    expect(toPlanKey("team")).toBe("team");
+    expect(toPlanKey("team")).toBe("free");
     expect(toPlanKey("free")).toBe("free");
     expect(toPlanKey("enterprise")).toBe("free");
     expect(toPlanKey(null)).toBe("free");
@@ -134,7 +134,7 @@ describe("resolvePlan", () => {
       isAdmin: false,
       limits: PLAN_LIMITS.pro,
     });
-    expect(resolvePlan({ plan: "team", is_admin: null }).limits).toEqual(PLAN_LIMITS.team);
+    expect(resolvePlan({ plan: "pro", is_admin: null }).limits).toEqual(PLAN_LIMITS.pro);
   });
 
   it("behandelt einen unbekannten Planwert wie Free", () => {
@@ -159,9 +159,8 @@ describe("requiresOwnKey", () => {
     expect(requiresOwnKey("free", false, true)).toBe(false);
   });
 
-  it("is false for Pro and Team, they run on the server key", () => {
+  it("is false for Pro, it runs on the server key", () => {
     expect(requiresOwnKey("pro", false, false)).toBe(false);
-    expect(requiresOwnKey("team", false, false)).toBe(false);
   });
 
   it("is false for an admin on Free, admins are never capped", () => {

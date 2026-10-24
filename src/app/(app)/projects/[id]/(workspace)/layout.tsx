@@ -126,7 +126,7 @@ export default async function ProjectWorkspaceLayout({
       // neueste Zeile brauchte, ist auf Zuruf entfernt, siehe project-rail.tsx),
       // deshalb head: true statt einer tatsaechlichen Zeile wie vorher.
       supabase
-        .from("generations")
+        .from("saved_prompts")
         .select("id", { count: "exact", head: true })
         .eq("project_id", id)
         .eq("user_id", project.userId),

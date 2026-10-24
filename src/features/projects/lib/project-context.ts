@@ -55,7 +55,7 @@ export async function buildProjectContext(
   // applied — RLS alone was doing that job.
   //
   // All three run in parallel. They used to be three serial awaits (project,
-  // then generation, then the whole file block), which put three sequential
+  // then the saved prompt, then the whole file block), which put three sequential
   // round trips on the critical path of EVERY turn of a project chat, before
   // the model call can even start. None of them depends on another's result:
   // each is scoped by the same (projectId, userId) pair that was already known
@@ -73,7 +73,7 @@ export async function buildProjectContext(
   // billige Teil, die Storage-Downloads sind der teure — die vorzuziehen und
   // hinterher weniger davon zu verwenden kostet nichts, sie zu serialisieren
   // schon.
-  const [{ data: project }, { data: generation }, { data: brainRow }, files] = await Promise.all([
+  const [{ data: project }, { data: latestSaved }, { data: brainRow }, files] = await Promise.all([
     supabase
       .from("projects")
       .select("name, idea, instructions, context, tools")
@@ -81,7 +81,7 @@ export async function buildProjectContext(
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
-      .from("generations")
+      .from("saved_prompts")
       .select("outputs")
       .eq("project_id", projectId)
       .eq("user_id", userId)
@@ -101,7 +101,7 @@ export async function buildProjectContext(
   const brainBlock = formatReadyBrain(brainRow as { status?: unknown; facts?: unknown } | null);
   const filesBlock = renderFilesContext(files, brainBlock.length > 0);
 
-  const outputs = (generation?.outputs ?? {}) as Record<string, string>;
+  const outputs = (latestSaved?.outputs ?? {}) as Record<string, string>;
 
   const parts: string[] = [`Name: ${project.name}`];
 

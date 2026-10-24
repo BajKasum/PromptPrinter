@@ -3,7 +3,7 @@ import {
   extractPrompt,
   derivePromptTitle,
   extractSavedPromptContents,
-  mapGenerationRowsToSavedPrompts,
+  mapSavedPromptRows,
 } from "@/shared/lib/saved-prompts";
 
 describe("extractPrompt", () => {
@@ -106,9 +106,9 @@ describe("extractSavedPromptContents", () => {
 });
 
 // QA finding N-1: extracted out of results/page.tsx once /prompts (the
-// project-independent library) needed the exact same GenerationRow ->
+// project-independent library) needed the exact same row ->
 // SavedPrompt mapping.
-describe("mapGenerationRowsToSavedPrompts", () => {
+describe("mapSavedPromptRows", () => {
   it("maps a full row", () => {
     const rows = [
       {
@@ -117,7 +117,7 @@ describe("mapGenerationRowsToSavedPrompts", () => {
         outputs: { prompt: "Du bist ein Tutor.", title: "sessionStartPrompt", target: "Cursor" },
       },
     ];
-    expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([
+    expect(mapSavedPromptRows(rows)).toEqual([
       {
         id: "g1",
         title: "sessionStartPrompt",
@@ -129,7 +129,7 @@ describe("mapGenerationRowsToSavedPrompts", () => {
 
   it("falls back to a generic title when it is missing", () => {
     const rows = [{ id: "g1", created_at: "2026-07-01T00:00:00Z", outputs: { prompt: "Text." } }];
-    expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([
+    expect(mapSavedPromptRows(rows)).toEqual([
       {
         id: "g1",
         title: "Gespeicherter Prompt",
@@ -145,6 +145,6 @@ describe("mapGenerationRowsToSavedPrompts", () => {
       { id: "g2", created_at: "2026-07-01T00:00:00Z", outputs: null },
       { id: "g3", created_at: "2026-07-01T00:00:00Z", outputs: { prompt: "   " } },
     ];
-    expect(mapGenerationRowsToSavedPrompts(rows)).toEqual([]);
+    expect(mapSavedPromptRows(rows)).toEqual([]);
   });
 });

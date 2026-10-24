@@ -40,7 +40,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [initialMessages, profile, { data: generationRows }, needsKey] = await Promise.all([
+  const [initialMessages, profile, { data: savedPromptRows }, needsKey] = await Promise.all([
     // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
     // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
     loadConversationMessages(supabase, user.id, id),
@@ -48,7 +48,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts.
     supabase
-      .from("generations")
+      .from("saved_prompts")
       .select("outputs")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
@@ -59,7 +59,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   const t = await getT();
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
-    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+    (savedPromptRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
   );
 
   return (

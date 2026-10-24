@@ -145,7 +145,7 @@ export async function loadActivationFunnel(
     accountsWithRows(admin, "user_api_keys", ids),
     // Eine Zeile je Zug: `role = assistant` ist die Antwort, nicht die Frage.
     accountsWithRows(admin, "messages", ids, { column: "role", value: "assistant" }),
-    accountsWithRows(admin, "generations", ids),
+    accountsWithRows(admin, "saved_prompts", ids),
   ]);
 
   return {

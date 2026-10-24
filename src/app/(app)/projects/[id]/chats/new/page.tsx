@@ -27,13 +27,13 @@ export default async function NewProjectChatPage({ params }: { params: Params })
   // something vs. starting the project's first work.
   const supabase = await createClient();
   const user = await getSessionUser();
-  const [{ data: generationRows, count }, profile, needsKey] = await Promise.all([
+  const [{ data: savedPromptRows, count }, profile, needsKey] = await Promise.all([
     // Selecting `outputs` (not just a head-count) also gives the save button
     // the already-saved prompt texts, so it can start disabled for a prompt
     // that's already in the project's Ergebnisse (F-7). Explicit user_id
     // alongside project_id: RLS-only defense-in-depth (Security-Audit L-3).
     supabase
-      .from("generations")
+      .from("saved_prompts")
       .select("outputs", { count: "exact" })
       .eq("project_id", id)
       .eq("user_id", project.userId),
@@ -45,7 +45,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
   const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
-    (generationRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
+    (savedPromptRows as { outputs: Record<string, unknown> | null }[] | null) ?? []
   );
 
   // A chat room, not a workspace panel (Chat-vs-Workspace-Trennung): no rail,
