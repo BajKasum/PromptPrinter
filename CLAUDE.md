@@ -77,11 +77,11 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   2, 3, 4, 6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide
   Texte mit. Kein Env-Wert, kein Dashboard-Schalter. Kosten, Grenzen, Prüfung:
   `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
-- **Qualität:** das Gate (siehe "Befehle"), rund 160 Testdateien, Guards in
-  `tests/guards/` (Schichten, Routen, Cookies, SEO, Kontrast, Node-Version,
-  Mail-Vorlagen, Dependabot, zod-Import), Browser-Smoketests `e2e/` gegen einen lokalen
-  Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch), `e2e.yml`, `docker.yml`,
-  `audit.yml` (täglich, meldet per Issue). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
+- **Qualität:** das Gate (siehe "Befehle"), rund 160 Testdateien, Guards in `tests/guards/` (Schichten,
+  Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
+  Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch),
+  `e2e.yml`, `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an
+  Commit-SHAs (`workflows.test.ts`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
   ändern würde: [docs/SETUP.md](docs/SETUP.md), Abschnitt "Projekt-Gedächtnis".
 
