@@ -56,6 +56,10 @@ concurrency:
   group: docker-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+# Nur lesen, wie in ci.yml (tests/guards/workflows.test.ts).
+permissions:
+  contents: read
+
 jobs:
   image:
     name: Produktions-Image baut und antwortet auf /api/health
@@ -63,7 +67,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # Platzhalter, keine Geheimnisse. docker-compose.prod.yml liest die
       # Laufzeit-Variablen aus `.env` (env_file) UND die NEXT_PUBLIC_*-Build-

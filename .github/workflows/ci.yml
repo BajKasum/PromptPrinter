@@ -21,16 +21,22 @@ concurrency:
   group: ci-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+# Nur lesen. Dieser Lauf schreibt nichts in das Repository, und ein Fund in
+# einer Action soll mit dem Token nichts anrichten können
+# (tests/guards/workflows.test.ts).
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Typecheck · Lint · Test · Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           # The version lives in .nvmrc and nowhere else in the workflows
           # (audit.yml and e2e.yml read it the same way). It is the version
