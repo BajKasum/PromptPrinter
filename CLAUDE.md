@@ -20,10 +20,10 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Befehlspalette, ohne sichtbaren Button. Login landet auf `/chats/new`; `/chat` und
   `/dashboard` leiten um.
 - **Ein Chat (Finn):** eine gebündelte Rückfrage, nur zu dem, was für die Aufgabe zählt
-  (Text: Leser, Ton, Länge; Software: Screens, Daten, Login), dann ein fertiger Prompt
-  im Codeblock, der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit
-  Test). Streaming per SSE, Antwort neu erzeugen, eigene Frage bearbeiten, Sprachmodus
-  (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert).
+  (Text: Leser, Ton, Länge; Software: Screens, Daten, Login), dann ein fertiger Prompt im Codeblock,
+  der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit Test; die Regeln nutzt auch der
+  Skill `/pp` im Schwester-Repo `promptprinter-pp`, Änderungen dort mitprüfen). Streaming per SSE, Antwort neu erzeugen,
+  eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert).
 - **Projekte sind Workspaces:** Anweisungen, Struktur (je nach `projects.type`
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
   (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
