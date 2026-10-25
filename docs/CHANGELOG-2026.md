@@ -11,6 +11,10 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+**Schwester-Repo `promptprinter-pp` (2026-10-25):** PromptPrinter 2.0 (Skill `/pp` plus lokales Skript für Coding-Agenten) bekommt ein eigenes öffentliches Repo, MIT-Lizenz (Entscheide D1 bis D5 und D9, Kasum am 25.10.2026, alle wie empfohlen). **Kein gemeinsamer Code, keine Laufzeit-Abhängigkeit:** die Regeln aus `src/server/system-prompt.ts`, die Rangordnung aus `project-context.ts`, `SIGNAL_FILES` aus `github-select.ts` und `extractPrompt` werden dort als Text oder Neuschreibung übernommen; die Herkunftstabelle steht in `CLAUDE.md` des Schwester-Repos, hier ein Verweis im Abschnitt zu Finn. Wer eine dieser Quellen ändert, prüft die andere Seite. Das Repo ist ein Gerüst (README, Lizenz, CI auf Pflichtdateien), gebaut ist nichts; der Plan liegt im Second Brain.
+
+---
+
 **#140, Datenmodell der gespeicherten Prompts, und #135 abgeschlossen (2026-10-25):** Zweiter und dritter Teil des Auftrags von Kasum vom Abend (alles ohne Rückfragen, auch die Migration auf Produktion; PR #185).
 
 - **Migration `0049_saved_prompts.sql`:** `generations` heißt `saved_prompts`, samt Policies (`saved_prompts_owner_*`), Indizes, Primär- und Fremdschlüsseln, Check `saved_prompts_outputs_len` (die Umbenennung läuft über Schleifen mit `like 'generations\_%'`, die Migration ist wiederholbar). Weg sind die vier Spalten der Pipeline `model`, `latency_ms`, `tokens_in`, `tokens_out`, `projects.status` (samt `projects_status_check`) und `'team'` aus `profiles_plan_check`. `project_summaries()` zählt aus `saved_prompts` (`create or replace`, gleiche Spalten wie 0023, Rechte wie 0032: PUBLIC entzogen, `authenticated` darf). **`projects.type` bleibt**: es wird seit #154 gelesen und geschrieben, der Vorschlag im Issue, es zu entfernen, entfiel.
