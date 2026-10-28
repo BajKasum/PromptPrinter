@@ -100,7 +100,13 @@ export function SuccessCelebration({
               ? { scale: 1, opacity: 1, y: 0 }
               : { scale: 1, opacity: 1, y: [16, -10, 0] }
           }
-          transition={{ type: "spring", stiffness: 240, damping: 16 }}
+          transition={{
+            type: "spring",
+            stiffness: 240,
+            damping: 16,
+            // Eine Feder nimmt nur zwei Werte (framer-motion 14 wirft sonst): das Überschwingen von y läuft als Tween.
+            y: { type: "tween", duration: 0.7, times: [0, 0.45, 1], ease: "easeOut" },
+          }}
         >
           <Mascot state="celebrating" size={184} priority />
         </m.div>
