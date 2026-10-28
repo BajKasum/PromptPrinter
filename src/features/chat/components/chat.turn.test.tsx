@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -151,6 +152,20 @@ describe("was über die Leitung geht", () => {
         scroll: false,
       })
     );
+  });
+
+  it("navigiert auch unter dem Strict Mode, der den Effekt einmal abräumt und neu startet (Entwicklungsserver, Browser-Tests)", async () => {
+    vi.stubGlobal("fetch", okFetch(["ok"], { conversationId: "conv-8" }));
+    render(
+      <StrictMode>
+        <Chat />
+      </StrictMode>
+    );
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("textbox"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/chats/conv-8", { scroll: false }));
   });
 });
 
