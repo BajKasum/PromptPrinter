@@ -55,6 +55,7 @@ export function DeleteAccount({ email }: { email: string }) {
         throw new Error(body?.detail ?? t.common.unknownError);
       }
       // Account + session are gone, hard navigate to a clean public page.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- gewollt: ganzer Neuaufbau, Konto und Sitzung sind weg
       window.location.href = "/";
     } catch (err) {
       setDeleting(false);
@@ -75,6 +76,7 @@ export function DeleteAccount({ email }: { email: string }) {
     } catch {
       // Scheitert das Abmelden, leitet die Middleware von /login nach /chats/new; der Weg lässt sich wiederholen.
     }
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- gewollt: ganzer Neuaufbau mit frischer Sitzung
     window.location.href = `/login?next=${encodeURIComponent("/settings")}`;
   }
 
