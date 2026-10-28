@@ -33,6 +33,13 @@ beim Schliessen die Zweige gelöscht, `@dependabot reopen` griff nicht; die Änd
   Audit sauber). `tsconfig.json`: `jsx` auf `react-jsx` und `.next/dev/types`, wie Next 16 es setzt. Der Build läuft
   mit Turbopack; er warnt, dass `middleware.ts` zu `proxy.ts` wird und die Edge Runtime auslaufend ist (beides
   offen, nicht geändert).
+- **Zwei Fehler, die erst die Browser-Tests mit Next 16 zeigten:** (1) `use-chat-turn.ts` setzte `mountedRef` nur beim Abräumen
+  auf `false`, nie wieder auf `true`; der React-Strict-Mode im Entwicklungsserver räumt den Effekt nach dem ersten
+  Einhängen einmal ab, danach navigierte der erste Zug nie auf `/chats/[id]` (in Produktion läuft kein Strict Mode,
+  dort war es nicht zu sehen). Behoben, mit einem Test unter `<StrictMode>`, der ohne die Korrektur anschlägt.
+  (2) Nexts Dev-Anzeige klappt seit 16 wegen der React-Meldung zum `script`-Element von `next-themes` links unten
+  auf ("1 Issue") und deckt das Kontomenü ab, Playwright fand den Knopf nie "stabil". `PP_E2E=1` aus
+  `e2e/support/env.ts` schaltet sie nur für den Test-Server aus (`next.config.ts`).
 - **Nicht übernommen:** `typescript` 7.0.2 (#188): `typescript-eslint` unterstützt TS 7.0 nicht ("does not support
   TS 7.0", Unterstützung ab 7.1 angekündigt), das Lint stürzt ab; der Typecheck allein liefe nach einer Deklaration
   für `*.css` grün. `eslint` 10.13.0 (#191): `eslint-plugin-jsx-a11y` 6.10 (über `eslint-config-next`) erlaubt nur
