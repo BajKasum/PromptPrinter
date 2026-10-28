@@ -98,6 +98,10 @@ export function useChatTurn({
   // no-ops after unmount. The route persists whatever text had streamed so
   // far, so a turn cut short this way still shows up in the reloaded chat.
   useEffect(() => {
+    // Der React-Strict-Mode (im Entwicklungsserver und damit in den Browser-Tests) räumt einen Effekt nach dem ersten
+    // Einhängen einmal ab und startet ihn neu; ohne dieses Zurücksetzen bliebe die Instanz für immer "ausgehängt" und
+    // der erste Zug navigierte nie auf /chats/[id].
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       // eslint-disable-next-line react-hooks/exhaustive-deps -- gewollt: abgebrochen wird der Controller, der BEIM Verlassen läuft (runChatTurn tauscht ihn je Zug aus), und er ist ein AbortController, nie ein DOM-Knoten. Die Regel sieht die Zuweisung nicht mehr, seit sie in run-chat-turn.ts steht.
