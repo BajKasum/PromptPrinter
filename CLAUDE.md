@@ -119,7 +119,7 @@ kommt der fertige Prompt. Solo-/Indie-Projekt, ein Gründer.
 > Cursor, v0 ...) mehr als Versprechen**, weder in Texten noch im Systemprompt.
 > Kasums Entscheid, Begründung im Changelog. Neue Texte nennen keine Bau-Tools.
 
-**Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Supabase
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript strict · Supabase
 (Auth/DB/RLS) · Z.ai/GLM (primär) + Gemini (`@google/genai`, sekundär) ·
 Tailwind 4 (HSL-Token-System in `globals.css`) · Framer Motion · next-themes · Vitest · Docker.
 

@@ -11,6 +11,38 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-10-28: Next 16 und framer-motion 14 (die Dependabot-PRs #189 und #190)
+
+Die fünf offenen Dependabot-PRs (#187 bis #191) wurden am 28.10. auf Kasums Auftrag bearbeitet. Dependabot hat
+beim Schliessen die Zweige gelöscht, `@dependabot reopen` griff nicht; die Änderungen stehen deshalb neu auf `main`.
+
+- **Gruppe Minor und Patch (#187):** `@google/genai` 2.31.0, `lucide-react` 1.61.0, `openai` 7.43.0,
+  `postcss` 8.5.31, `puppeteer-core` 25.16.0 (PR #192).
+- **framer-motion 14.6.0 (#189, PR #193):** eine Feder mit drei Werten (`y: [16, -10, 0]` in
+  `success-celebration.tsx`) wirft in 14 ("Only two keyframes currently supported with spring"), der Kontomenü-Knopf
+  wurde nie stabil und der Browser-Test zur Anmeldung lief in den Zeitablauf. Scale und Deckkraft bleiben Feder, `y`
+  läuft als Tween über dieselben drei Werte.
+- **Next 16.4.2 mit `eslint-config-next` 16.4.2 (#190):** `eslint.config.mjs` lädt die Next-Regeln als Flat-Config
+  (`eslint-config-next/core-web-vitals` und `/typescript`) statt über `FlatCompat`. Vier Compiler-Regeln von
+  `eslint-plugin-react-hooks` 7 sind aus (`set-state-in-effect` 18 Funde, `refs` 9, `immutability` 1, `purity` 1),
+  weil sie dem React Compiler gelten, den das Projekt nicht einsetzt; ein eigener Auftrag kann den Code später
+  umstellen. Die zwei gewollten harten Navigationen in `delete-account.tsx` tragen einen Ausschluss für
+  `@next/next/no-location-assign-relative-destination`. Die Pinnung von `brace-expansion` (`^5.0.12`) gilt nicht mehr
+  für `minimatch` 3: dessen Aufruf `expand` bricht mit Version 5 ("expand is not a function"), sobald ESLint ein
+  Muster mit Klammern gegen die Next-Konfiguration prüft; `minimatch` 3 bekommt `brace-expansion` ^1.1.12 (gepatcht,
+  Audit sauber). `tsconfig.json`: `jsx` auf `react-jsx` und `.next/dev/types`, wie Next 16 es setzt. Der Build läuft
+  mit Turbopack; er warnt, dass `middleware.ts` zu `proxy.ts` wird und die Edge Runtime auslaufend ist (beides
+  offen, nicht geändert).
+- **Nicht übernommen:** `typescript` 7.0.2 (#188): `typescript-eslint` unterstützt TS 7.0 nicht ("does not support
+  TS 7.0", Unterstützung ab 7.1 angekündigt), das Lint stürzt ab; der Typecheck allein liefe nach einer Deklaration
+  für `*.css` grün. `eslint` 10.13.0 (#191): `eslint-plugin-jsx-a11y` 6.10 (über `eslint-config-next`) erlaubt nur
+  ESLint bis 9, die Installation scheitert an den Peer-Abhängigkeiten. Beide warten auf die Werkzeuge.
+- **Messung auf dem Entwicklungsrechner:** am Akku (Energieplan "Ausbalanciert") laufen die Tests rund dreimal so
+  langsam, einzelne Animations- und Formulartests scheitern dann an der Zeitgrenze von 5 s und laufen einzeln grün;
+  das volle Gate lief mit `--testTimeout=30000` grün (3071 Tests). Die CI auf Linux ist davon nicht betroffen.
+
+---
+
 **Schwester-Repo `promptprinter-pp` (2026-10-25):** PromptPrinter 2.0 (Skill `/pp` plus lokales Skript für Coding-Agenten) bekommt ein eigenes öffentliches Repo, MIT-Lizenz (Entscheide D1 bis D5 und D9, Kasum am 25.10.2026, alle wie empfohlen). **Kein gemeinsamer Code, keine Laufzeit-Abhängigkeit:** die Regeln aus `src/server/system-prompt.ts`, die Rangordnung aus `project-context.ts`, `SIGNAL_FILES` aus `github-select.ts` und `extractPrompt` werden dort als Text oder Neuschreibung übernommen; die Herkunftstabelle steht in `CLAUDE.md` des Schwester-Repos, hier ein Verweis im Abschnitt zu Finn. Wer eine dieser Quellen ändert, prüft die andere Seite. Das Repo ist ein Gerüst (README, Lizenz, CI auf Pflichtdateien), gebaut ist nichts; der Plan liegt im Second Brain.
 
 ---
