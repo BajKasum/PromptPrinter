@@ -47,6 +47,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Der Browser-Test-Server (e2e/support/env.ts) läuft im Dev-Modus. Seit Next 16 zählt dessen Dev-Anzeige die
+  // React-Meldung zum script-Element von next-themes als Hinweis, klappt links unten auf und deckt das Kontomenü ab:
+  // Playwright fände den Knopf nie "stabil". Nur für diesen Server aus, jede andere Entwicklung behält sie.
+  devIndicators: process.env.PP_E2E === "1" ? false : undefined,
   // "standalone" is what the Dockerfile's runner stage copies (.next/standalone
   // + server.js, see Dockerfile). Vercel's own build pipeline neither needs nor
   // benefits from it — it always builds its own optimized Function output
