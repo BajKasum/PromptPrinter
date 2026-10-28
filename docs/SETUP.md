@@ -6,7 +6,7 @@ im [README](../README.md).
 
 ## Tech-Stack
 
-- **Next.js 15** (App Router) · **React 19** · **TypeScript** (strict)
+- **Next.js 16** (App Router) · **React 19** · **TypeScript** (strict)
 - **Supabase**, Auth, Postgres, Row-Level-Security
 - **Lemon Squeezy**, Billing (Checkout + Webhook live)
 - **Z.ai (GLM)** als Standard-Modell, Gemini als Zweit-Provider, dazu eigene
