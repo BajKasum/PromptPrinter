@@ -117,6 +117,8 @@ export function serverEnv(): Record<string, string> {
   const supabase = localSupabase();
   return {
     NODE_ENV: "development",
+    // Schaltet Nexts Dev-Anzeige aus (next.config.ts): sie läge links unten über dem Kontomenü, sobald sie einen Hinweis zählt.
+    PP_E2E: "1",
     NEXT_PUBLIC_SUPABASE_URL: supabase.url,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabase.anonKey,
     SUPABASE_SERVICE_ROLE_KEY: supabase.serviceRoleKey,
