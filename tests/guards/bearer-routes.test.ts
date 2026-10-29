@@ -16,6 +16,7 @@ const ROOT = process.cwd();
 /** Dateien, die den Bearer-Weg nutzen dürfen, je mit Grund. */
 const ALLOWED: Record<string, string> = {
   "src/app/api/chat/gate.ts": "der Chat ist das Ziel der Kommandozeile (createClientForRequest)",
+  "src/app/api/cli/logout/route.ts": "beendet genau die Sitzung, deren Token mitkommt (bearerToken)",
 };
 
 /** Hier sind die beiden Wege definiert. */

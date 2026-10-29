@@ -286,7 +286,12 @@ export type RateLimitScope =
   | "api-key-update"
   | "api-key-delete"
   | "account-delete"
-  | "account-export";
+  | "account-export"
+  | "cli-device"
+  | "cli-approve"
+  | "cli-token"
+  | "cli-refresh"
+  | "cli-logout";
 
 /**
  * The bucket a request counts against: the signed-in user, or the caller's IP
