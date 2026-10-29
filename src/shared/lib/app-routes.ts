@@ -22,6 +22,8 @@ export const APP_PREFIXES = [
   "/usage",
   "/billing",
   "/plans",
+  // Bestätigung der Terminal-Anmeldung (api/cli), eingeloggt und ohne Link-Code.
+  "/cli",
   // Leitet seit 2026-09-29 per next.config.ts auf /usage um und erreicht die
   // Middleware deshalb nie. Bleibt gelistet, damit robots.txt die alte Adresse
   // weiter ausschliesst.
