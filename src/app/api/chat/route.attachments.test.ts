@@ -93,7 +93,10 @@ const admin = {
   }),
 };
 
-vi.mock("@/server/supabase/server", () => ({ createClient: async () => supabaseStub }));
+vi.mock("@/server/supabase/server", () => ({
+  createClient: async () => supabaseStub,
+  createClientForRequest: async () => supabaseStub,
+}));
 vi.mock("@/server/supabase/admin", () => ({ createAdminClient: () => admin }));
 vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();

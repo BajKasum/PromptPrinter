@@ -76,7 +76,10 @@ const supabaseStub = {
   storage: { from: () => ({ download: async () => ({ data: null, error: new Error("n/a") }) }) },
 };
 
-vi.mock("@/server/supabase/server", () => ({ createClient: () => createClient() }));
+vi.mock("@/server/supabase/server", () => ({
+  createClient: () => createClient(),
+  createClientForRequest: () => createClient(),
+}));
 vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();
   return {

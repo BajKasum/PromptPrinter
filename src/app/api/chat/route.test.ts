@@ -79,7 +79,10 @@ const supabaseStub = {
   storage: { from: () => ({ download: async () => ({ data: null, error: new Error("n/a") }) }) },
 };
 
-vi.mock("@/server/supabase/server", () => ({ createClient: () => createClient() }));
+vi.mock("@/server/supabase/server", () => ({
+  createClient: () => createClient(),
+  createClientForRequest: () => createClient(),
+}));
 vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   // chatQuotaKey is real below (pure string formatting, no Redis I/O) — no
   // test needs to fake its actual month format.

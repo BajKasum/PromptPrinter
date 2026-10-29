@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const { t, locale } = requestT(req);
   const m = t.api;
 
-  const session = await authenticate(m);
+  const session = await authenticate(req, m);
   if (session instanceof Response) return session;
   const { supabase, userId, appMetadata } = session;
 
