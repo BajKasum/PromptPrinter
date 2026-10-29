@@ -1,6 +1,6 @@
-// Die Zahlen und Adressen der Seite /skill, an einer Stelle und gegen den Stand des Schwester-Repos
-// `promptprinter-pp` gelesen (README, Abschnitt "What the measurement showed", am 2026-10-29). Die Seite
-// erzählt nichts, was dort nicht steht: ändert sich die Messung, ändert sich zuerst diese Datei.
+// Die Adressen und Texte der Seite /skill, an einer Stelle und gegen den Stand des Schwester-Repos
+// `promptprinter-pp` gelesen (README, Skill 0.3.0). Die Messung des Skills steht dort im README, nicht auf
+// der Seite: sie führt direkt zum Download.
 
 export const SKILL_REPO_URL = "https://github.com/BajKasum/promptprinter-pp";
 
@@ -12,21 +12,6 @@ export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/refs/tags/v0.3.0.zip`;
 
 /** Der Skill in der Fassung, die das Schwester-Repo trägt (Datei SKILL.md, Feld version). */
 export const SKILL_VERSION = "0.3.0";
-
-/**
- * Die Messung an zwölf Aufgaben (elf davon mit Ergebnis im Plan-Modus), bewertet von Claude und nicht
- * blind. `recallBar` ist die Latte, die sich der Skill selbst gesetzt hat und die er in allen drei Fassungen
- * verfehlt hat.
- */
-export const SKILL_MEASUREMENT = {
-  facts: { total: 99, recallBar: 90, skill: 82, planMode: 83 },
-  rating: { total: 176, skill: 170, planMode: 153 },
-  rightFirstTry: { total: 11, skill: 9, planMode: 8 },
-  tasks: 12,
-} as const;
-
-/** Wurde die eigene Latte erreicht? Die Seite sagt "verfehlt" nur, solange es stimmt. */
-export const SKILL_MISSED_BAR = SKILL_MEASUREMENT.facts.skill < SKILL_MEASUREMENT.facts.recallBar;
 
 export const SKILL_CARDS = [
   {
