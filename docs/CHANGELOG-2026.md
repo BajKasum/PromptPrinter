@@ -11,6 +11,60 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-10-29: Terminal-App, Phase 1 (Server): Anmeldung per Geräte-Code (Branch `feat/cli-login`)
+
+Auftrag von Kasum (Phase 1 der Terminal-App, Entwurf und Nachweis im Vault: "PromptPrinter Terminal-App Architektur"
+und "Phase 0"). Ein Branch, mehrere Commits, ein PR, **nicht gemergt**. **Migration 0050 ist nicht auf Produktion
+angewendet**: erst die Migration (nach Kasums Ja), dann der Merge, sonst antworten die Routen unter `api/cli` mit 503.
+Der Client (Phase 2) und `/pp` mit Kontext (Phase 3) sind nicht Teil davon.
+
+- **Bearer neben dem Cookie:** `createClientForRequest(req)` in `server/supabase/server.ts`. Sagt der Kopf `Authorization`
+  "Bearer", bekommt der Client genau dieses Token und liest keine Cookies, setzt keine; ein ungültiges oder leeres Token ist
+  ein 401, das Cookie rettet es nicht. Ohne Kopf (oder mit Basic) alles wie vorher. Die Prüfung bleibt `getUser()` beim
+  Auth-Server (ein gelöschtes Konto ist sofort draußen, das JWT allein gälte bis `exp`). Nur der Chat (`gate.ts`) nutzt es;
+  `tests/guards/bearer-routes.test.ts` verlangt für jede weitere Datei, die den Kopf liest, einen Eintrag mit Grund.
+  `server.bearer.test.ts` belegt gegen die echte supabase-js-Bibliothek, dass `getUser()` ohne Sitzung das Token des Kopfes
+  an `/auth/v1/user` schickt.
+- **Migration `0050_cli_device_requests.sql`:** Tabelle der Anfragen, höchstens zehn Minuten gültig. Nur der SHA-256 des
+  Geräte-Codes liegt in der Datenbank, der Nutzer-Code hat acht Zeichen aus 28 (Konsonanten ohne Y und die Ziffern 2 bis 9,
+  rund 38 Bit). RLS an, die Policy erlaubt `anon` und `authenticated` ausdrücklich nichts, `revoke all`, Rechte nur für die
+  Service-Role; `pending` hat keinen Nutzer, jede Entscheidung hat einen (`check`); `user_id` mit `on delete cascade` und
+  Index (wie 0047). Lokal mit `supabase start` angewendet, auf Produktion **nicht**. Rückweg im Kopf der Datei.
+- **Routen unter `api/cli/`:** `device` (anonym, 20 je 10 Minuten und Adresse), `approve` (nur Cookie, Origin-Prüfung vor
+  allem anderen, 10 je Minute und Nutzer, zählt auch die Vorschau), `token` (240 je 10 Minuten und Adresse, dazu zwei
+  Sekunden Abstand je Code, sonst `slow_down`; holt die Sitzung mit einem Update `approved` nach `consumed` ab),
+  `refresh` und `logout` (je 30 je 10 Minuten und Adresse). Je Route ein eigener Name in `RateLimitScope`.
+- **Entscheide beim Bauen, und warum:**
+  - **Die Sitzung stellt der Server ohne Mail aus** (`generateLink` mit `magiclink`, dann `verifyOtp` mit dem Hash; Phase 0).
+    `generateLink` legt zu einer unbekannten Adresse ein NEUES Konto an, deshalb prüft `issueCliSession`, dass die Sitzung
+    dem freigegebenen Konto gehört, und ein zwischen Freigabe und Abholung gelöschtes Konto bekommt keine.
+  - **Abholen verbraucht den Code zuerst:** scheitert danach das Ausstellen, ist der Code weg und die Anmeldung beginnt von
+    vorn (503 `session_failed`). Lieber das als eine Sitzung zweimal auszuliefern.
+  - **Abmelden über `admin.auth.admin.signOut(jwt, "local")`:** ein supabase-js-Client ohne Sitzung hat bei `signOut` nichts
+    zu beenden. Die Route liest das Token mit `bearerToken()`, prüft es beim Auth-Server und beendet nur diese Sitzung.
+  - **Die Freigabe nimmt kein Bearer an:** ein angemeldetes Terminal gibt mit seinem Token kein weiteres Gerät frei.
+  - **Antworten an das Terminal sind englisch und maschinennah** (`server/cli-login/messages.ts`, das Terminal liest `kind`);
+    die an den Browser (Freigabe) stehen in den fünf Wörterbüchern, fr, it und es nicht von Muttersprachlern geprüft.
+  - **Kein Code in der Adresse:** weder der Server (`verificationUri` ist `/cli`) noch die Seite lesen einen Code aus der
+    Adresse; ein vorausgefüllter Link ließe sich jemandem unterschieben.
+  - **Schwärzliste:** `device_code` und `user_code` (in jeder Schreibung) stehen auf ihr, als Wortpaare, weil `code` allein
+    `statusCode` und `error_code` unlesbar machte.
+- **Hilfe-Artikel `/docs/terminal-anmeldung`** (`updated` 2026-10-29): beschreibt eine Anmeldung, zu der es den Client noch
+  nicht gibt, und sagt das im ersten Satz. Er steht mit dem Merge in Sitemap und `llms.txt`.
+- **Messungen:** 32 Mutationen an Schranken (Fabrik 2, Guard 1, Migration 4, Routen und Codes 13, Schwärzliste 2, Seite 6, Browser-Tests
+  4), alle von einem Test erkannt, der Quelltext danach aus der Sicherung zurückgeholt. Browser-Tests: die elf neuen Tests (`e2e/cli-login.spec.ts`) laufen grün. Die ganze Suite lief mit Chromium 1243 mit 31 von 36 grün; vier der fünf Ausfälle (Passwort-Reset, Projekte, Mobil-Menü, Smoke am Zeitlimit mit 58,7 s von 60 s) fallen auf `main` mit demselben Browser genauso aus, der fünfte (`billing-webhook`, "ignored") ist ein Rest des vorigen Laufs in der lokalen Datenbank (fester Ereignisschlüssel, Antwort `duplicate`) und braucht einen frischen Stack. Gate: grün (Audit, Typecheck, Lint, 220 Testdateien mit 3150 Tests und 2 übersprungenen, vorher 3071, Build mit den Platzhaltern der CI).
+- **Funde:** (1) Das Playwright des Repos (1.64.1) will Chromium 1248, installiert war 1243; die Läufe liefen mit einer
+  nicht eingecheckten Konfiguration auf das vorhandene Chromium, ohne etwas herunterzuladen. (2) `next dev` schreibt seit 16
+  eine `AGENTS.md` ins Repo (untracked, nicht committet). (3) Nach den Mutationsläufen war `.next` offenbar veraltet: ein Lauf der ganzen Suite scheiterte an allen Tests, die im Browser klicken (Chat, Konto, Anmelden), derselbe Stand mit geleertem `.next` lief grün. `.next` leeren gilt also auch nach Mutationsläufen, nicht nur zwischen Branches. (4) Am Akku liefen die Tests wie am 28.10. rund
+  dreimal so langsam; das Gate lief mit `--testTimeout=30000`.
+- **Offen:** vier Werte der Produktion sind nicht gelesen (Lebensdauer des Access-Tokens, Rotation und Wiederverwendungsfenster
+  der Refresh-Tokens, Zeitbegrenzung der Sitzungen, Grenzen je Adresse), und ein echtes OAuth-Konto (Google, GitHub) ist nicht
+  geprüft: `verifyOtp` setzt `app_metadata.provider` auf `email`, ob dabei eine zusätzliche E-Mail-Identität entsteht, ist offen
+  (Phase 0, Abschnitt 2). Für den Datenschutz wäre ein Satz zu den neuen Daten (Gerätename und Zeitpunkte der Anfrage, kein neuer
+  Empfänger) zu entscheiden; geändert ist er nicht.
+
+---
+
 ## 2026-10-28: Next 16 und framer-motion 14 (die Dependabot-PRs #189 und #190)
 
 Die fünf offenen Dependabot-PRs (#187 bis #191) wurden am 28.10. auf Kasums Auftrag bearbeitet. Dependabot hat
