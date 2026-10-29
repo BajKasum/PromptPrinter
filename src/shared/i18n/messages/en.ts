@@ -840,4 +840,28 @@ export const en: Messages = {
     favoriteFailed: "Favorite couldn't be saved",
     tryAgain: "Please try again.",
   },
+
+  cliLogin: {
+    title: "Connect a terminal",
+    intro: "Enter the code your terminal shows.",
+    codeLabel: "Code from the terminal",
+    codeHint: "Eight characters, for example BCDF-GHJK.",
+    check: "Continue",
+    checking: "Checking the code…",
+    device: "Device",
+    unnamed: "Unnamed terminal",
+    requestedAt: "Requested at {time}",
+    warning: "Only confirm if you just started the command yourself.",
+    approve: "Sign in terminal",
+    deny: "Deny",
+    approved: "Done. Your terminal is signed in, you can close this window.",
+    denied: "Denied. The terminal gets no access.",
+    another: "Enter another code",
+    errors: {
+      notFound: "I don't know this code, or it has expired. Run the command in your terminal again.",
+      foreignOrigin: "This request did not come from the PromptPrinter page.",
+      unavailable: "Sign-in is not available right now. Please try again later.",
+      network: "That didn't work. Please try again.",
+    },
+  },
 };

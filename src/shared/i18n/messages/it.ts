@@ -842,4 +842,28 @@ export const it: Messages = {
     favoriteFailed: "Non è stato possibile salvare il preferito",
     tryAgain: "Riprova, per favore.",
   },
+
+  cliLogin: {
+    title: "Collega un terminale",
+    intro: "Inserisci il codice che mostra il tuo terminale.",
+    codeLabel: "Codice dal terminale",
+    codeHint: "Otto caratteri, per esempio BCDF-GHJK.",
+    check: "Continua",
+    checking: "Controllo il codice…",
+    device: "Dispositivo",
+    unnamed: "Terminale senza nome",
+    requestedAt: "Richiesto alle {time}",
+    warning: "Conferma solo se hai appena avviato tu il comando.",
+    approve: "Accedi con il terminale",
+    deny: "Rifiuta",
+    approved: "Fatto. Il tuo terminale è collegato, puoi chiudere questa finestra.",
+    denied: "Rifiutato. Il terminale non ottiene alcun accesso.",
+    another: "Inserisci un altro codice",
+    errors: {
+      notFound: "Non conosco questo codice, oppure è scaduto. Riavvia il comando nel terminale.",
+      foreignOrigin: "Questa richiesta non proviene dalla pagina di PromptPrinter.",
+      unavailable: "L'accesso non è disponibile in questo momento. Riprova più tardi.",
+      network: "Non ha funzionato. Riprova.",
+    },
+  },
 };

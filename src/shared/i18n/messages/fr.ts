@@ -847,4 +847,28 @@ export const fr: Messages = {
     favoriteFailed: "Le favori n'a pas pu être enregistré",
     tryAgain: "Réessaie, s'il te plaît.",
   },
+
+  cliLogin: {
+    title: "Connecter un terminal",
+    intro: "Saisis le code affiché par ton terminal.",
+    codeLabel: "Code du terminal",
+    codeHint: "Huit caractères, par exemple BCDF-GHJK.",
+    check: "Continuer",
+    checking: "Je vérifie le code…",
+    device: "Appareil",
+    unnamed: "Terminal sans nom",
+    requestedAt: "Demandé à {time}",
+    warning: "Ne confirme que si tu viens de lancer la commande toi-même.",
+    approve: "Connecter le terminal",
+    deny: "Refuser",
+    approved: "C'est fait. Ton terminal est connecté, tu peux fermer cette fenêtre.",
+    denied: "Refusé. Le terminal n'obtient aucun accès.",
+    another: "Saisir un autre code",
+    errors: {
+      notFound: "Je ne connais pas ce code, ou il a expiré. Relance la commande dans le terminal.",
+      foreignOrigin: "Cette demande ne vient pas de la page PromptPrinter.",
+      unavailable: "La connexion n'est pas disponible pour le moment. Réessaie plus tard.",
+      network: "Ça n'a pas marché. Réessaie.",
+    },
+  },
 };

@@ -843,4 +843,28 @@ export const es: Messages = {
     favoriteFailed: "No se ha podido guardar el favorito",
     tryAgain: "Inténtalo de nuevo, por favor.",
   },
+
+  cliLogin: {
+    title: "Conectar un terminal",
+    intro: "Introduce el código que muestra tu terminal.",
+    codeLabel: "Código del terminal",
+    codeHint: "Ocho caracteres, por ejemplo BCDF-GHJK.",
+    check: "Continuar",
+    checking: "Compruebo el código…",
+    device: "Dispositivo",
+    unnamed: "Terminal sin nombre",
+    requestedAt: "Solicitado a las {time}",
+    warning: "Confirma solo si acabas de iniciar el comando tú mismo.",
+    approve: "Iniciar sesión en el terminal",
+    deny: "Rechazar",
+    approved: "Listo. Tu terminal ha iniciado sesión, puedes cerrar esta ventana.",
+    denied: "Rechazado. El terminal no obtiene acceso.",
+    another: "Introducir otro código",
+    errors: {
+      notFound: "No conozco este código, o ha caducado. Vuelve a ejecutar el comando en el terminal.",
+      foreignOrigin: "Esta solicitud no procedía de la página de PromptPrinter.",
+      unavailable: "El inicio de sesión no está disponible ahora. Inténtalo más tarde.",
+      network: "No ha funcionado. Inténtalo de nuevo.",
+    },
+  },
 };

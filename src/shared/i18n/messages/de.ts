@@ -866,6 +866,31 @@ export const de = {
     favoriteFailed: "Favorit konnte nicht gespeichert werden",
     tryAgain: "Bitte versuch es erneut.",
   },
+
+  /** Bestätigungsseite der Terminal-Anmeldung (/cli) und die Fehler ihrer Route. */
+  cliLogin: {
+    title: "Terminal verbinden",
+    intro: "Gib den Code ein, den dein Terminal anzeigt.",
+    codeLabel: "Code aus dem Terminal",
+    codeHint: "Acht Zeichen, zum Beispiel BCDF-GHJK.",
+    check: "Weiter",
+    checking: "Ich prüfe den Code…",
+    device: "Gerät",
+    unnamed: "Terminal ohne Namen",
+    requestedAt: "Angefragt um {time}",
+    warning: "Nur bestätigen, wenn du den Befehl gerade selbst gestartet hast.",
+    approve: "Terminal anmelden",
+    deny: "Ablehnen",
+    approved: "Fertig. Dein Terminal ist angemeldet, du kannst dieses Fenster schließen.",
+    denied: "Abgelehnt. Das Terminal bekommt keinen Zugang.",
+    another: "Anderen Code eingeben",
+    errors: {
+      notFound: "Diesen Code kenne ich nicht, oder er ist abgelaufen. Starte den Befehl im Terminal neu.",
+      foreignOrigin: "Diese Anfrage kam nicht von der PromptPrinter-Seite.",
+      unavailable: "Die Anmeldung ist gerade nicht erreichbar. Versuch es später noch einmal.",
+      network: "Das hat nicht geklappt. Versuch es nochmal.",
+    },
+  },
 };
 
 /** Der Typ, den jedes Wörterbuch erfüllen muss. */
