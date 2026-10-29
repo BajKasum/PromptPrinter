@@ -35,7 +35,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (Webhook `/api/webhooks/lemonsqueezy`). **Pro ist abgeschaltet** (seit 2026-10-17, `PRO_AVAILABLE = false`, jeder Pro-Knopf führt auf `/pro-bald`; Vercel Hobby erlaubt keine Zahlungen): Wiederaufnahme in docs/PRO-WIEDERAUFNAHME.md.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch.
-- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`,
+- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen, mit der ehrlichen Messung),
   Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit drei Vergleichen und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
   Rückerstattung).
@@ -410,7 +410,7 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau (Chats / Projekte) mit demselben Pillen-Umschalter (`NavSwitcher`) wie die echte Sidebar. Einziges „Schau es dir an"-Element. | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir." | `celebrating` |
 | `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
-| `navbar.tsx` | Fix, Blur beim Scrollen, zwei Links: „Funktionen" (`/#funktionen`) und „Preise" (`/pricing`). | kein Finn |
+| `navbar.tsx` | Fix, Blur beim Scrollen, drei Links: „Funktionen" (`/#funktionen`), „Preise" (`/pricing`) und „Skill" (`/skill`). | kein Finn |
 
 **`/pricing`:** `PageHeader` (nur Headline) → `PricingGrid` (Finns auf den Plan-Karten) →
 `FAQ` (zwei Fragen) → `Footer`.

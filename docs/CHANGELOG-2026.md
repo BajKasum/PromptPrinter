@@ -11,6 +11,29 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-10-29: Seite `/skill` (der Skill `/pp` zum Herunterladen), dritter Link im Header (Branch `feat/skill-seite`)
+
+Auftrag von Kasum nach dem Merge von PR #196: im Header neben "Funktionen" und "Preise" ein dritter Link, dahinter eine
+Seite im Stil von `/pricing`, auf der man den Skill aus `promptprinter-pp` herunterladen kann, mit Finn.
+
+- **Gebaut:** `src/app/(marketing)/skill/page.tsx` (`PageHeader` mit den zwei Finns, drei Karten mit je einem Finn
+  `researching`, `delivering`, `waiting`, "Ehrlich vorab", Download mit drei Schritten, Schluss mit Link auf die Anmeldung),
+  Daten in `features/marketing/lib/skill-data.ts`. Navbar und Footer führen "Skill", `PUBLIC_PREFIXES`, Sitemap und `llms.txt`
+  ebenso.
+- **Download:** ZIP von `main` (`/archive/refs/heads/main.zip`) und Link auf das Repository. Das Schwester-Repo hat weder
+  Release noch Tag, es gibt also nur `main`; ein Release ist der sauberere Weg, sobald Kasum eines schneidet.
+- **Ehrlich, bevor man lädt:** die Seite sagt vor dem Download, dass der Skill seine eigene Messlatte dreimal verfehlt hat
+  (82 von 99 Fakten, verlangt 90, Plan-Modus 83; besser bei der Bewertung des Auftrags, 170 statt 153 von 176), dass Claude
+  bewertet hat und nicht blind, dass nur Claude Code gemessen ist und der Skill vorerst nicht weiterentwickelt wird. Der Satz
+  "verfehlt" hängt an `SKILL_MISSED_BAR` (Zahl gegen Latte), `page.test.tsx` liest, was auf der Seite steht. Quelle der Zahlen:
+  das README von `promptprinter-pp` vom 2026-10-29. Ändert sich die Messung, ändert sich zuerst `skill-data.ts`.
+- **Bewusst nicht:** keine Bau-Tools genannt (CLAUDE.md, 2026-10-11), nur Claude Code; kein Preis (der Skill ist frei, MIT);
+  keine Änderung am Schwester-Repo (dessen GitHub-Beschreibung sagt noch "nothing installable yet", das ist Kasums Entscheid).
+- **Geprüft:** fünf Mutationen (Kasten, Zahlen, Repo-Adresse, `PUBLIC_PREFIXES`, Sitemap), alle erkannt; im Browser Desktop
+  und Handy (375 Pixel, kein Überlauf, eine h1, beide Links stimmen), Konsole ohne Fehler.
+
+---
+
 ## 2026-10-29: Terminal-App, Phase 1 (Server): Anmeldung per Geräte-Code (Branch `feat/cli-login`)
 
 Auftrag von Kasum (Phase 1 der Terminal-App, Entwurf und Nachweis im Vault: "PromptPrinter Terminal-App Architektur"

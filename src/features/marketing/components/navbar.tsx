@@ -25,6 +25,8 @@ import { cn } from "@/shared/lib/utils";
 const nav = [
   { label: "Funktionen", href: "/#funktionen", route: null },
   { label: "Preise", href: "/pricing", route: "/pricing" },
+  // Der Skill /pp aus dem Schwester-Repo zum Herunterladen (skill-data.ts).
+  { label: "Skill", href: "/skill", route: "/skill" },
 ] as const;
 
 export function Navbar() {

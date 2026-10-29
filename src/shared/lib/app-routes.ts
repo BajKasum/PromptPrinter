@@ -51,6 +51,7 @@ export const PUBLIC_PREFIXES = [
   // next.config redirects resolve before middleware runs, so the path never
   // reaches this check.
   "/pricing",
+  "/skill", // der Skill /pp zum Herunterladen (Seite im Header neben Preise)
   "/docs",
   "/agb",
   "/cookies",
