@@ -4,8 +4,11 @@
 
 export const SKILL_REPO_URL = "https://github.com/BajKasum/promptprinter-pp";
 
-/** Ohne Release und ohne Tag gibt es nur `main`: das ZIP ist der Stand von main. */
-export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/refs/heads/main.zip`;
+/**
+ * Das ZIP ist der Stand des Tags v0.3.0 (die Fassung unten) und ändert sich nicht, wenn `main` im Schwester-Repo
+ * weiterzieht. Wird `SKILL_VERSION` angehoben, muss der Tag dort angelegt und hier mitgezogen werden.
+ */
+export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/refs/tags/v0.3.0.zip`;
 
 /** Der Skill in der Fassung, die das Schwester-Repo trägt (Datei SKILL.md, Feld version). */
 export const SKILL_VERSION = "0.3.0";
