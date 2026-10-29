@@ -59,6 +59,22 @@ describe("redactContext", () => {
     }
   );
 
+  // Die Codes der Geräte-Anmeldung: der Geräte-Code holt eine Sitzung ab, der Nutzer-Code wird im Browser
+  // bestätigt. Beide dürfen in keiner Schreibweise im Log landen, `code` allein bleibt lesbar.
+  it.each(["device_code", "deviceCode", "DEVICE_CODE", "user_code", "userCode", "device_code_hash"])(
+    "redacts the device-login code %s",
+    (key) => {
+      expect(redactContext({ [key]: "BCDF-GHJK" })[key]).toBe("[redacted]");
+    }
+  );
+
+  it.each(["statusCode", "error_code", "code", "userId", "deviceCodeCount", "userCodeLength"])(
+    "keeps %s readable",
+    (key) => {
+      expect(redactContext({ [key]: "value" })[key]).toBe("value");
+    }
+  );
+
   it("keeps the operational fields that make a log line useful", () => {
     const safe = redactContext({
       userId: "user-1",

@@ -80,6 +80,16 @@ const FORBIDDEN_WORDS = [
   "signature",
 ];
 
+/**
+ * Wortpaare, die erst zusammen verboten sind. Die Codes der Geräte-Anmeldung (api/cli) tragen `code` im
+ * Namen: `device_code` holt nach der Freigabe eine Sitzung ab, `user_code` ist das, was der Mensch im
+ * Browser bestätigt. `code` allein bliebe erlaubt, sonst wären `statusCode` und `error_code` unlesbar.
+ */
+const FORBIDDEN_PHRASES: [string, string][] = [
+  ["device", "code"],
+  ["user", "code"],
+];
+
 const REDACTED = "[redacted]";
 
 /**
@@ -124,7 +134,10 @@ function isForbidden(key: string): boolean {
   const words = keyWords(key);
   if (words.length === 0) return false;
   if (QUANTITY_SUFFIXES.includes(words[words.length - 1])) return false;
-  return words.some((word) => FORBIDDEN_WORDS.includes(word));
+  if (words.some((word) => FORBIDDEN_WORDS.includes(word))) return true;
+  return words.some((word, i) =>
+    FORBIDDEN_PHRASES.some(([first, second]) => word === first && words[i + 1] === second)
+  );
 }
 
 export type LogContext = Record<string, unknown>;
