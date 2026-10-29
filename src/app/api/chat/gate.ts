@@ -1,7 +1,7 @@
 import { chatRequestSchema, type ChatRequest } from "@/shared/lib/schemas";
 import { MAX_ATTACHMENT_STORAGE_PER_USER } from "@/shared/lib/chat-limits";
 import { formatBytes } from "@/shared/lib/chat-attachments";
-import { createClient } from "@/server/supabase/server";
+import { createClientForRequest, type createClient } from "@/server/supabase/server";
 import { problem } from "@/server/http/api-problem";
 import {
   MAX_CHAT_BODY_BYTES,
@@ -32,8 +32,13 @@ import { responseIssues } from "@/shared/lib/zod";
 export type SupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 type ApiMessages = Messages["api"];
 
-/** Schritt 1: eine Sitzung, bevor der Body angefasst wird. */
+/**
+ * Schritt 1: eine Sitzung, bevor der Body angefasst wird. Das Cookie des Browsers oder, von der
+ * Kommandozeile, `Authorization: Bearer` (createClientForRequest): in beiden Fällen entscheidet
+ * `getUser()` beim Auth-Server, und alles danach (Kontingent, Einwilligung, eigener Key) ist dasselbe.
+ */
 export async function authenticate(
+  req: Request,
   m: ApiMessages
 ): Promise<{ supabase: SupabaseClient; userId: string; appMetadata: unknown } | Response> {
   // 1. Require a session BEFORE touching the body (Security-Audit finding
@@ -54,7 +59,7 @@ export async function authenticate(
   //    auth-gated (app) segment — so it had no legitimate callers at all.
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
-    supabase = await createClient();
+    supabase = await createClientForRequest(req);
   } catch {
     // Supabase isn't reachable/configured at all. Signing in is required from
     // here on, so there is nothing this route can still do — say so plainly
