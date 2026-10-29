@@ -62,21 +62,21 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`.
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role).
-  Migrationen 0001 bis 0049 in `supabase/migrations/`, alle in Produktion angewendet
-  (0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Migrationen 0001 bis 0050 in `supabase/migrations/`; 0001 bis 0049 sind in Produktion angewendet,
+  **0050 noch nicht** (0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
   ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
-- **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout
-  (`src/shared/providers/site-speed-insights.tsx`), nur im Produktions-Build. Adressen
-  werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
-  Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`;
-  **wer `scriptSrc` oder `endpoint` auf einen fremden Host stellt, zieht
-  `src/server/security/csp.ts` mit** (`csp.test.ts`). Genannt in Datenschutz (Ziffern
-  2, 3, 4, 6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide
-  Texte mit. Kein Env-Wert, kein Dashboard-Schalter. Kosten, Grenzen, Prüfung:
-  `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
+- **Terminal-Anmeldung (Server-Teil der Terminal-App):** Geräte-Code unter `src/app/api/cli/`, Bestätigungsseite `/cli`,
+  Bearer neben dem Cookie nur im Chat (`createClientForRequest`, Guard `bearer-routes.test.ts`). Migration 0050
+  wartet auf Kasums Ja: **erst sie auf Produktion, dann der Code.** Verlauf und Messungen: Changelog 2026-10-29.
+- **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
+  nur im Produktions-Build. Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
+  Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen
+  fremden Host stellt, zieht `src/server/security/csp.ts` mit** (`csp.test.ts`). Genannt in Datenschutz (Ziffern 2, 3, 4,
+  6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide Texte mit. Kein Env-Wert, kein
+  Dashboard-Schalter. Kosten, Grenzen, Prüfung: `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
 - **Qualität:** das Gate (siehe "Befehle"), rund 160 Testdateien, Guards in `tests/guards/` (Schichten,
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
   Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch),
@@ -102,9 +102,8 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
   Empfänger (Fehler-Tracker); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
-- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche).
-- **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste), Obergrenzen in
-  `tests/guards/file-size.test.ts`.
+- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche). **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste),
+  Obergrenzen in `tests/guards/file-size.test.ts`.
 
 ## Was ist PromptPrinter?
 
