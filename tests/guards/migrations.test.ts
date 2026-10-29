@@ -227,6 +227,26 @@ describe("Migrations-Konventionen", () => {
     expect(revived, "Diese Migrationen holen Altes zurueck:\n  " + revived.join("\n  ")).toEqual([]);
   });
 
+  // Anmeldung der Kommandozeile per Geraete-Code: die Tabelle gehoert allein dem Server. Ein Recht fuer
+  // anon oder authenticated machte aus dem Geraete-Code (nur als Hash gespeichert) und der Freigabe etwas,
+  // das ein Nutzer aus der Browser-Konsole selbst setzen koennte.
+  it("haelt cli_device_requests fuer den Browser zu: RLS, keine Rechte, Hash, kurze Frist", () => {
+    const sql = withoutComments(read("0050_cli_device_requests.sql"));
+    expect(sql).toMatch(/alter table public\.cli_device_requests enable row level security/i);
+    expect(sql).toMatch(/revoke all on public\.cli_device_requests from anon, authenticated/i);
+    expect(sql).toMatch(/grant select, insert, update, delete on public\.cli_device_requests to service_role/i);
+    // Kein Grant an anon, authenticated oder public, in keiner Zeile.
+    expect(sql).not.toMatch(/^grant[^;]*\bto\b[^;]*\b(anon|authenticated|public)\b/gim);
+    // Die Policy erlaubt dem Browser nichts.
+    expect(sql).toMatch(/for all to anon, authenticated\s+using \(false\)\s+with check \(false\)/i);
+    // Der Geraete-Code liegt nur als SHA-256 vor, die Frist ist zehn Minuten.
+    expect(sql).toMatch(/device_code_hash text not null unique/i);
+    expect(sql).toMatch(/device_code_hash ~ '\^\[0-9a-f\]\{64\}\$'/i);
+    expect(sql).toMatch(/expires_at timestamptz not null default now\(\) \+ interval '10 minutes'/i);
+    // pending hat keinen Nutzer, jede Entscheidung hat einen.
+    expect(sql).toMatch(/\(status = 'pending'\) = \(user_id is null\)/i);
+  });
+
   it("fuehrt keine Ausnahme, die es nicht mehr braucht", () => {
     const stale = [
       ...Object.keys(EXEMPT_SEARCH_PATH).filter((file) => {
