@@ -39,7 +39,7 @@ describe("Seite /skill", () => {
     render(<SkillPage />);
     const zip = screen.getByRole("link", { name: /ZIP herunterladen/ });
     expect(zip).toHaveAttribute("href", SKILL_ZIP_URL);
-    expect(SKILL_ZIP_URL).toBe("https://github.com/BajKasum/promptprinter-pp/archive/refs/heads/main.zip");
+    expect(SKILL_ZIP_URL).toBe("https://github.com/BajKasum/promptprinter-pp/archive/refs/tags/v0.3.0.zip");
     const repo = screen.getByRole("link", { name: /Auf GitHub ansehen/ });
     expect(repo).toHaveAttribute("href", SKILL_REPO_URL);
     expect(repo).toHaveAttribute("target", "_blank");

@@ -11,6 +11,16 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-10-29: Download auf `/skill` auf den Tag v0.3.0 gestellt (Branch `fix/skill-download-tag`)
+
+Auftrag von Kasum. Das Schwester-Repo hat jetzt den Tag `v0.3.0`; das ZIP auf `/skill` zeigt auf
+`/archive/refs/tags/v0.3.0.zip` statt auf `main.zip`. Warum: der Download ist damit genau die Fassung, deren Zahlen die Seite
+nennt (`SKILL_VERSION` 0.3.0, Messung 82 von 99), auch wenn `main` später weiterzieht. Geändert: `SKILL_ZIP_URL` in
+`skill-data.ts`, die wörtliche Adresse in `skill/page.test.tsx`. Der Satz im Eintrag darunter ("es gibt nur `main`")
+beschreibt den Stand bis hierher.
+
+---
+
 ## 2026-10-29: Seite `/skill` (der Skill `/pp` zum Herunterladen), dritter Link im Header (Branch `feat/skill-seite`)
 
 Auftrag von Kasum nach dem Merge von PR #196: im Header neben "Funktionen" und "Preise" ein dritter Link, dahinter eine
