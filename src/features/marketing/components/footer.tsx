@@ -17,6 +17,7 @@ const FOOTER_LINKS = [
   // nowhere.
   { href: "/#funktionen", label: "Funktionen" },
   { href: "/pricing", label: "Preise" },
+  { href: "/skill", label: "Skill" },
   { href: "/docs", label: "Hilfe" },
   { href: "/vergleich", label: "Vergleich" },
   { href: "/ueber", label: "Über" },
