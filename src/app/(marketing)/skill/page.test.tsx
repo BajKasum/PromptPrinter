@@ -1,15 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import SkillPage from "./page";
-import {
-  SKILL_MEASUREMENT,
-  SKILL_MISSED_BAR,
-  SKILL_REPO_URL,
-  SKILL_ZIP_URL,
-} from "@/features/marketing/lib/skill-data";
+import { SKILL_REPO_URL, SKILL_ZIP_URL } from "@/features/marketing/lib/skill-data";
 
-// Die Seite verkauft nichts, was die Messung nicht trägt, und sagt das vor dem Download. Der Test liest, was
-// auf der Seite STEHT, nicht nur was in den Daten steht.
+// Der Download steht direkt unter der Überschrift, in einem hellblauen Kasten, die Erklärung danach. Der Test
+// liest, was auf der Seite STEHT, nicht nur was in den Daten steht.
 
 describe("Seite /skill", () => {
   // FadeIn wartet mit whileInView auf einen IntersectionObserver, den jsdom nicht kennt.
@@ -53,19 +48,33 @@ describe("Seite /skill", () => {
     expect(code.some((c) => c?.startsWith("/pp "))).toBe(true);
   });
 
-  it("sagt vor dem Download, dass die eigene Messlatte verfehlt wurde, mit den Zahlen der Messung", () => {
-    const { facts, rating, tasks } = SKILL_MEASUREMENT;
-    expect(SKILL_MISSED_BAR, "die Daten sagen 'verfehlt'").toBe(true);
+  it("zeigt den Download direkt unter der Überschrift in einem hellblauen Kasten, vor der Erklärung", () => {
+    const { container } = render(<SkillPage />);
+    const box = screen.getByRole("region", { name: "So bekommst du ihn" });
+    expect(box.className).toContain("bg-accent");
+    expect(within(box).getByRole("link", { name: /ZIP herunterladen/ })).toHaveAttribute("href", SKILL_ZIP_URL);
+    expect(within(box).getByRole("link", { name: /Auf GitHub ansehen/ })).toHaveAttribute("href", SKILL_REPO_URL);
+    // Die drei Schritte stehen im Kasten, nicht erst darunter.
+    expect(within(box).getAllByRole("listitem").map((li) => li.querySelector("h3")?.textContent)).toEqual([
+      "Herunterladen",
+      "Installieren",
+      "Benutzen",
+    ]);
 
+    const text = container.textContent ?? "";
+    expect(text.indexOf("So bekommst du ihn")).toBeLessThan(text.indexOf("Er liest, was da ist"));
+    expect(text.indexOf("Auf GitHub ansehen")).toBeLessThan(text.indexOf("Er liest, was da ist"));
+    // Die Erklärung (die drei Karten) kommt nach dem Kasten.
+    expect(within(box).queryByText("Er liest, was da ist")).toBeNull();
+    expect(text).toContain("Er schreibt einen Auftrag");
+    expect(text).toContain("Er wartet auf dein Ja");
+  });
+
+  it("sagt nichts über ein Experiment und nennt keine Messzahlen", () => {
     const { container } = render(<SkillPage />);
     const text = container.textContent ?? "";
-    expect(text).toMatch(/Ehrlich vorab/);
-    expect(text).toContain(`${facts.skill} von ${facts.total} Fakten`);
-    expect(text).toContain(`verlangt hatte ich ${facts.recallBar}`);
-    expect(text).toContain(`${rating.skill} statt ${rating.planMode} von ${rating.total}`);
-    expect(text).toContain(`${tasks} Aufgaben`);
-    expect(text).toMatch(/Bewertet hat Claude, nicht blind/);
-    expect(text.indexOf("Ehrlich vorab")).toBeLessThan(text.indexOf("ZIP herunterladen"));
+    expect(text).not.toMatch(/Ehrlich vorab|Experiment|verfehlt|Messlatte|Plan-Modus|nicht blind/i);
+    expect(text).not.toMatch(/\d+ von \d+ (Fakten|Punkten|Aufgaben)/);
   });
 
   it("nennt keine Bau-Tools und keinen Preis", () => {

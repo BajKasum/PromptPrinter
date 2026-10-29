@@ -35,7 +35,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (Webhook `/api/webhooks/lemonsqueezy`). **Pro ist abgeschaltet** (seit 2026-10-17, `PRO_AVAILABLE = false`, jeder Pro-Knopf führt auf `/pro-bald`; Vercel Hobby erlaubt keine Zahlungen): Wiederaufnahme in docs/PRO-WIEDERAUFNAHME.md.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch.
-- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen, mit der ehrlichen Messung),
+- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen, Kasten oben, keine Messung auf der Seite),
   Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit drei Vergleichen und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
   Rückerstattung).

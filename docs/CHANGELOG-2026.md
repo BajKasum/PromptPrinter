@@ -11,6 +11,25 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-10-29: `/skill`: Download-Kasten nach oben, "Ehrlich vorab" entfernt (Branch `feat/skill-seite-kasten`)
+
+Auftrag von Kasum: unter der Überschrift soll sofort der Download stehen, nicht erst unter der Erklärung, und der Abschnitt
+"Ehrlich vorab: ein Experiment" soll von der Seite verschwinden.
+
+- **Umgebaut:** direkt unter der Überschrift ein hellblauer Kasten (`bg-accent/30`, Rand `accent/60`, im Dunkelmodus ein
+  gedämpftes Blau) mit "So bekommst du ihn", Version und Lizenz, den Knöpfen "ZIP herunterladen" und "Auf GitHub ansehen" und
+  den drei Schritten (Herunterladen, Installieren, Benutzen). Darunter der erklärende Absatz und die drei Karten ("Er liest,
+  was da ist", "Er schreibt einen Auftrag", "Er wartet auf dein Ja"), am Ende der Hinweis auf den Chat.
+- **Entfernt:** der Abschnitt "Ehrlich vorab" samt den Zahlen der Messung (`SKILL_MEASUREMENT`, `SKILL_MISSED_BAR`), der
+  Satz "mit der ehrlichen Messung dazu" in `llms.txt`. Die Messung steht weiter im README von `promptprinter-pp`, die Seite
+  sagt nichts mehr dazu. Das ist Kasums Entscheid; er ersetzt den Satz im Eintrag darunter ("Ehrlich, bevor man lädt").
+- **Test:** `page.test.tsx` prüft, dass der Kasten (Region "So bekommst du ihn", Klasse `bg-accent`) die zwei Links und die
+  drei Schritte trägt und im Text vor den Karten steht, und dass kein Wort von Experiment, Messlatte oder Messzahlen auf der
+  Seite steht.
+- **Geprüft:** im Browser Desktop hell und dunkel und Handy (375 Pixel, kein Überlauf, eine h1), Konsole ohne Fehler.
+
+---
+
 ## 2026-10-29: Download auf `/skill` auf den Tag v0.3.0 gestellt (Branch `fix/skill-download-tag`)
 
 Auftrag von Kasum. Das Schwester-Repo hat jetzt den Tag `v0.3.0`; das ZIP auf `/skill` zeigt auf

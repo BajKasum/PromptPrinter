@@ -50,7 +50,7 @@ ${plans}
 ## Seiten
 - [Startseite](${base}/): Wie PromptPrinter funktioniert, in drei Schritten
 - [Preise](${base}/pricing): Free und Pro im Detail, plus häufige Fragen
-- [Skill](${base}/skill): Der Skill /pp für Coding-Agenten zum Herunterladen, mit der ehrlichen Messung dazu
+- [Skill](${base}/skill): Der Skill /pp für Coding-Agenten zum Herunterladen
 - [Über](${base}/ueber): Wer dahintersteckt und was versprochen wird
 - [Kontakt](${base}/kontakt): Fehler melden, Fragen stellen
 
