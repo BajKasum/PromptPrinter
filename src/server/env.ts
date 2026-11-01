@@ -95,6 +95,15 @@ export function missingProductionEnv(
   );
 }
 
+/**
+ * True für eine eigene Installation, die keinem Weiterleitungs-Kopf glaubt: alle anonymen Anfragen
+ * teilen sich dann einen Ratenlimit-Zähler (server/security/rate-limit.ts, clientIp). Sicher, aber bei
+ * Besuchern hinter einem Proxy zu eng, daher eine Warnung und kein Abbruch.
+ */
+export function hasNoTrustedClientIp(env: EnvLike = process.env): boolean {
+  return env.NODE_ENV === "production" && isBlank(env.VERCEL) && isBlank(env.TRUSTED_PROXY_HOPS);
+}
+
 /** True when neither server-side model provider is configured (stub mode). */
 export function hasNoModelProvider(env: EnvLike = process.env): boolean {
   return isBlank(env.ZAI_API_KEY) && isBlank(env.GEMINI_API_KEY);
@@ -207,6 +216,14 @@ export function assertEnv(env: EnvLike = process.env): void {
         "Secure-Flag gesetzt (lib/supabase/cookie-options.ts), und Bestätigungs- " +
         "sowie Passwort-Reset-Mails verlinken auf diese Adresse. Auf die öffentliche " +
         "https-Adresse der Deployment setzen."
+    );
+  }
+
+  if (hasNoTrustedClientIp(env)) {
+    console.warn(
+      "[env] TRUSTED_PROXY_HOPS ist nicht gesetzt. Folge: Weiterleitungs-Köpfe zählen nicht, alle " +
+        "anonymen Anfragen (Anmeldung, Kontaktformular, Terminal-Anmeldung) teilen sich einen " +
+        "Ratenlimit-Zähler. Hinter einem Reverse Proxy die Zahl der Proxys eintragen (docs/DOCKER.md)."
     );
   }
 

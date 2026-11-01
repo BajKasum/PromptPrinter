@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { chatQuotaKey, rateLimitKey } from "@/server/security/rate-limit";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { chatQuotaKey, clientIp, rateLimitKey } from "@/server/security/rate-limit";
+import { counterRedisDouble } from "./redis-double";
 
 // Die Kopfzeilen-Tests prüfen, wen der Schlüssel meint; der Bereich ist dafür gleichgültig.
 const keyFor = (r: Request, userId?: string | null) => rateLimitKey(r, "chat", userId);
@@ -8,7 +9,57 @@ function req(headers: Record<string, string> = {}) {
   return new Request("https://promptprinter.app/api/chat", { headers });
 }
 
+describe("clientIp ausserhalb von Vercel", () => {
+  beforeEach(() => {
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("glaubt ohne TRUSTED_PROXY_HOPS keinem Kopf: der Client wählt ihn selbst", () => {
+    expect(
+      clientIp(req({ "x-forwarded-for": "1.2.3.4", "x-vercel-forwarded-for": "5.5.5.5", "x-real-ip": "6.6.6.6" }))
+    ).toBe("unknown");
+  });
+
+  it.each(["0", "-1", "1.5", "viele"])("behandelt TRUSTED_PROXY_HOPS=%s wie nicht gesetzt", (value) => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", value);
+    expect(clientIp(req({ "x-forwarded-for": "1.2.3.4" }))).toBe("unknown");
+  });
+
+  it("nimmt bei einem Proxy den letzten Eintrag, was der Client davorsetzt, zählt nicht", () => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "1");
+    expect(clientIp(req({ "x-forwarded-for": "9.9.9.9, 8.8.8.8" }))).toBe("8.8.8.8");
+  });
+
+  it("nimmt bei zwei Proxys den vorletzten Eintrag", () => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "2");
+    expect(clientIp(req({ "x-forwarded-for": "9.9.9.9, 8.8.8.8, 10.0.0.1" }))).toBe("8.8.8.8");
+  });
+
+  it("zählt eine zu kurze Kette nicht", () => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "2");
+    expect(clientIp(req({ "x-forwarded-for": "8.8.8.8" }))).toBe("unknown");
+  });
+
+  it("wertet auch mit TRUSTED_PROXY_HOPS nur x-forwarded-for aus", () => {
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "1");
+    expect(clientIp(req({ "x-vercel-forwarded-for": "5.5.5.5", "x-real-ip": "6.6.6.6" }))).toBe("unknown");
+  });
+});
+
 describe("rateLimitKey", () => {
+  beforeEach(() => {
+    vi.stubEnv("VERCEL", "1");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("keys by user id when present, ignoring headers", () => {
     expect(keyFor(req({ "x-forwarded-for": "1.2.3.4" }), "user-123")).toBe(
       "chat:u:user-123"

@@ -91,6 +91,24 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 
 ---
 
+## Hinter einem Reverse Proxy betreiben
+
+Der Port 3001 spricht reines http und gehört nicht direkt ins Internet: davor steht ein Reverse Proxy, der
+TLS beendet. Zwei Dinge hängen daran:
+
+- **`TRUSTED_PROXY_HOPS` in `.env`:** die Zahl der Proxys vor dem Container. Die App wertet
+  `X-Forwarded-For` nur danach aus und nimmt den n-ten Eintrag von hinten. Ohne den Wert glaubt sie keinem
+  Kopf, denn den könnte der Client selbst schicken: alle anonymen Anfragen teilen sich dann einen
+  Ratenlimit-Zähler (`auth`, `contact`, `cli-device`, `cli-token`, `cli-refresh`, `cli-logout`), und beim
+  Start erscheint eine Warnung. Das ist sicher, wird aber bei mehr als einer Handvoll Besuchern eng.
+- **Der Proxy muss anhängen oder überschreiben,** nie den Kopf des Clients unverändert als einzigen Wert
+  weiterreichen. Bei nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. Der Container darf
+  nur über den Proxy erreichbar sein, sonst setzt ein Client den Kopf an ihm vorbei.
+
+Auf Vercel ist nichts davon nötig: dort setzt der Rand die Köpfe selbst.
+
+---
+
 ## Wird das noch geprüft?
 
 Ja, seit dem 04.10.2026 ([`.github/workflows/docker.yml`](../.github/workflows/docker.yml)).
