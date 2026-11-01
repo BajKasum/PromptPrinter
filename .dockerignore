@@ -46,3 +46,20 @@ docker-compose*.yml
 # Misc
 README.md
 LICENSE
+
+# Nicht Teil des Images und nicht Eingabe von `next build`: ohne sie ändert eine reine Doku- oder Teständerung die
+# Schicht `COPY . .` nicht und entwertet den Build-Cache nicht (#223). Der TypeScript-Schritt von `next build` liest
+# aber alle *.ts im Projekt: src/**/*.test.tsx importiert `@tests/support/…` und playwright.config.ts
+# `e2e/support/env`, diese beiden Ordner bleiben im Kontext.
+.claude
+.github
+docs
+supabase
+scripts
+screenshots_Docs
+test-results
+playwright-report
+tests/*
+!tests/support
+e2e/*
+!e2e/support
