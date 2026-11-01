@@ -12,6 +12,7 @@ import { useChatScroll } from "@/features/chat/hooks/use-chat-scroll";
 import { useChatTurn } from "@/features/chat/hooks/use-chat-turn";
 import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-variants";
 import type { Msg } from "@/features/chat/lib/chat-wire";
+import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import { useT } from "@/shared/i18n/provider";
 
 // Orchestrator only, every UI role that used to live inline here now has its
@@ -76,6 +77,31 @@ export function Chat({
       el.setSelectionRange(text.length, text.length);
     });
   };
+  // Ein Antwortvorschlag zu Finns Rückfrage (#225) wird an der Cursor-Stelle eingefügt, nicht gesendet: der Text
+  // bleibt bis zum Senden bearbeitbar.
+  const pickChoice = (option: string) => {
+    const el = composerRef.current;
+    const value = input;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const before = value.slice(0, start);
+    const glue = before === "" || /\s$/.test(before) ? "" : /[.,;:!?]$/.test(before) ? " " : ", ";
+    const next = (before + glue + option + value.slice(end)).slice(0, MAX_USER_MESSAGE_CHARS);
+    setInput(next);
+    const caret = Math.min(next.length, before.length + glue.length + option.length);
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(caret, caret);
+    });
+  };
+  // Verfeinern per Tipp (#245): die vorformulierte Nachricht geht als ganz normaler Zug raus. Ein angefangener
+  // Text im Eingabefeld bleibt dabei stehen (send() leert das Feld, hier kommt er zurück).
+  const refine = (message: string) => {
+    const draft = input;
+    void send(message);
+    if (draft) setInput(draft);
+  };
+  const focusComposer = () => composerRef.current?.focus();
   const [voiceOpen, setVoiceOpen] = useState(false);
   // Vor dem ersten Diktat fragen wir nach: Chrome und Edge schicken die Aufnahme an Google
   // bzw. Microsoft (Rechts-Audit 28.09.2026, Sprachmodus). Die Zustimmung gilt je Browser.
@@ -125,6 +151,9 @@ export function Chat({
         suggestionsLabel={variant === "general" ? t.chat.emptyStartersLabel : undefined}
         suggestions={variant === "general" ? t.chat.emptyStarters : undefined}
         onPickSuggestion={variant === "general" ? pickSuggestion : undefined}
+        onPickChoice={pickChoice}
+        onRefine={refine}
+        onRefineOther={focusComposer}
       />
 
       <ChatNotices

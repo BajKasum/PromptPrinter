@@ -35,6 +35,9 @@ export function ChatThread({
   suggestionsLabel,
   suggestions,
   onPickSuggestion,
+  onPickChoice,
+  onRefine,
+  onRefineOther,
 }: {
   messages: Msg[];
   heading: string;
@@ -55,6 +58,11 @@ export function ChatThread({
   suggestionsLabel?: string;
   suggestions?: readonly string[];
   onPickSuggestion?: (text: string) => void;
+  /** Antwortvorschlag zu Finns Rückfrage (#225): schreibt die Option ins Eingabefeld. */
+  onPickChoice?: (option: string) => void;
+  /** Verfeinern per Tipp (#245): schickt die vorformulierte Nachricht. */
+  onRefine?: (message: string) => void;
+  onRefineOther?: () => void;
 }) {
   const t = useT();
   // Was die Person selbst geschrieben hat: der Maßstab der Prompt-Prüfung für Links und Ziele.
@@ -112,6 +120,10 @@ export function ChatThread({
                       savedPrompts={savedPrompts}
                       index={i}
                       typed={typed}
+                      busy={busy || pending !== null}
+                      onPickChoice={onPickChoice}
+                      onRefine={onRefine}
+                      onRefineOther={onRefineOther}
                     />
                   </div>
                 ) : (
