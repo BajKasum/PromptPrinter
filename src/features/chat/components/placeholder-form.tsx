@@ -63,7 +63,7 @@ export function PlaceholderForm({ prompt }: { prompt: string }) {
                       onClick={() => toggleSkip(p.key)}
                       aria-pressed={off}
                       aria-label={fmt(t.chat.fill.skipLabel, { name: p.label })}
-                      className="touch-hit-y relative rounded-md px-1.5 text-[12px] text-secondary underline-offset-2 transition-colors hover:text-foreground aria-pressed:text-foreground aria-pressed:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
+                      className="touch-hit-y relative shrink-0 whitespace-nowrap rounded-md px-1.5 text-[12px] text-secondary underline-offset-2 transition-colors hover:text-foreground aria-pressed:text-foreground aria-pressed:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
                     >
                       {t.chat.fill.skip}
                     </button>
