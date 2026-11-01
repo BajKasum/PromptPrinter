@@ -58,7 +58,7 @@ ${plans}
 ${docs}
 
 ## Vergleiche
-- [Vergleich und Alternativen](${base}/vergleich): Drei Wege zum Prompt im Vergleich, samt der Fälle, in denen PromptPrinter nicht der beste ist
+- [Vergleich und Alternativen](${base}/vergleich): Vier Wege zum Prompt im Vergleich, samt der Fälle, in denen PromptPrinter nicht der beste ist
 ${comparisons}
 
 ## Recht
