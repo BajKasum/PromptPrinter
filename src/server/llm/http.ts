@@ -36,7 +36,10 @@ type OpenAiStreamChunk = {
  * OpenAI-compatible chat/completions SSE dialect: newline-delimited
  * `data: {...}` frames separated by a blank line, terminated by `data:
  * [DONE]`. Buffers across chunk boundaries since a network read can split a
- * frame anywhere. `maxBytes` bounds total bytes read (see MAX_RESPONSE_BYTES
+ * frame anywhere. Zeilenenden werden auf LF gebracht, die Spezifikation erlaubt auch CRLF
+ * und CR; ein CR am Ende des Puffers wartet, weil das LF dazu im nächsten Stück kommen kann.
+ * Endet der Leser vorzeitig ([DONE], Grenze, Abbruch beim Verbraucher), bricht das `finally`
+ * die Antwort ab, sonst läuft die Generierung beim Anbieter ungelesen weiter. `maxBytes` bounds total bytes read (see MAX_RESPONSE_BYTES
  * below, defined after this function but only ever read once this one is
  * actually called, well after module init), harmless for zaiCompleteStream
  * (Z.ai's own max_tokens already keeps it far under this in practice), a real
@@ -59,6 +62,7 @@ export async function* readOpenAiCompatibleSse(
         throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
       }
       buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n|\r(?!$)/g, "\n");
       let sep: number;
       while ((sep = buffer.indexOf("\n\n")) !== -1) {
         const frame = buffer.slice(0, sep);
@@ -86,6 +90,7 @@ export async function* readOpenAiCompatibleSse(
       }
     }
   } finally {
+    await reader.cancel().catch(() => {});
     reader.releaseLock();
   }
 }
