@@ -79,7 +79,10 @@ export async function getConfiguredProviders(
   supabase: SupabaseServerClient,
   userId: string
 ): Promise<ByokProvider[]> {
-  const { data } = await supabase.from("user_api_keys").select("provider").eq("user_id", userId);
+  const { data } = orThrow(
+    await supabase.from("user_api_keys").select("provider").eq("user_id", userId),
+    "user_api_keys"
+  );
   return (data ?? []).map((r) => r.provider as ByokProvider);
 }
 
@@ -96,12 +99,15 @@ export async function getActiveProvider(
   supabase: SupabaseServerClient,
   userId: string
 ): Promise<ByokProvider | null> {
-  const { data } = await supabase
+  const { data } = orThrow(
+    await supabase
     .from("user_api_keys")
     .select("provider")
     .eq("user_id", userId)
     .eq("is_active", true)
-    .maybeSingle();
+    .maybeSingle(),
+    "user_api_keys"
+  );
   return (data?.provider as ByokProvider | undefined) ?? null;
 }
 
@@ -112,12 +118,15 @@ export async function getCustomProvider(
   supabase: SupabaseServerClient,
   userId: string
 ): Promise<CustomProviderMeta | null> {
-  const { data } = await supabase
+  const { data } = orThrow(
+    await supabase
     .from("user_api_keys")
     .select("label, base_url, model")
     .eq("user_id", userId)
     .eq("provider", "custom")
-    .maybeSingle();
+    .maybeSingle(),
+    "user_api_keys"
+  );
   if (!data?.label || !data.base_url || !data.model) return null;
   return { label: data.label as string, baseUrl: data.base_url as string, model: data.model as string };
 }

@@ -1,4 +1,5 @@
 import { truncate, MAX_ASSISTANT_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
+import { captureError } from "@/shared/lib/observability";
 import type { ChatRequest } from "@/shared/lib/schemas";
 import type { createClient } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
@@ -298,9 +299,11 @@ export async function dropSupersededMessages(
     // Pfade) weg, und die Objekte blieben als Waisen im Bucket zurück. Die
     // Anhänge einer bearbeiteten Nachricht hängen zu diesem Zeitpunkt schon an
     // ihrer neuen Fassung (adoptAttachments) und sind nicht dabei.
-    const paths = await collectAttachmentPaths(supabase, userId, conversationId, messageIds).catch(
-      () => []
-    );
+    // Ohne Pfade bleiben die Objekte im Bucket liegen, das Löschen der Nachrichten scheitert daran aber nicht.
+    const paths = await collectAttachmentPaths(supabase, userId, conversationId, messageIds).catch((err) => {
+      captureError("chat.attachment_paths_failed", err, { userId, conversationId });
+      return [] as string[];
+    });
     const { error } = await supabase
       .from("messages")
       .delete()

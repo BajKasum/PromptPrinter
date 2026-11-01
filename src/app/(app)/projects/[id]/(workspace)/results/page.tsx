@@ -12,6 +12,7 @@ import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, plural } from "@/shared/i18n/format";
+import { orThrow } from "@/server/supabase/query";
 
 // QA finding P-1: this query used to load every saved prompt a project ever
 // had, full `outputs` JSONB included, unbounded — the single most expensive
@@ -48,7 +49,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   // splitAtLimit below can tell "exactly at the cap" from "there are more" —
   // this used to silently drop anything past RESULTS_LOAD_LIMIT and show the
   // truncated count as if it were the project's true total.
-  const [{ data: rowsRaw }, { count: chatCount }, profile] = await Promise.all([
+  const [rowsRawResult, chatCountResult, profile] = await Promise.all([
     supabase
       .from("saved_prompts")
       .select("id, created_at, outputs")
@@ -65,6 +66,8 @@ export default async function ProjectResultsPage({ params }: { params: Params })
     // Request-gecacht (B-3): dieselbe Zeile hat das (app)-Layout schon geholt.
     getSessionProfile(),
   ]);
+  const { data: rowsRaw } = orThrow(rowsRawResult, "saved_prompts");
+  const { count: chatCount } = orThrow(chatCountResult, "conversations");
   const { plan, isAdmin } = resolvePlan(profile);
   const canExportPdf = isAdmin || plan !== "free";
 

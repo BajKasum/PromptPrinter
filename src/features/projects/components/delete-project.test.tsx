@@ -74,6 +74,17 @@ describe("DeleteProjectButton", () => {
     storageRemove.mockResolvedValue({ error: null });
   });
 
+  it("deletes nothing when the file list cannot be read, the files would stay in the bucket forever", async () => {
+    projectFilesRows.mockReturnValue({ data: null, error: { message: "db down" } });
+
+    await confirmDelete();
+
+    await waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(toast.mock.calls[0][0].variant).toBe("error");
+    expect(del).not.toHaveBeenCalled();
+    expect(storageRemove).not.toHaveBeenCalled();
+  });
+
   it("removes the project files and the chat attachments, in their own buckets", async () => {
     projectFilesRows.mockReturnValue({ data: [{ storage_path: "u1/proj-1/f.md" }], error: null });
     attachmentRange.mockResolvedValue({

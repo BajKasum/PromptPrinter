@@ -6,6 +6,7 @@ import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/sess
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
+import { orThrow } from "@/server/supabase/query";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function NewChatPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [profile, { data: savedPromptRows }, needsKey] = await Promise.all([
+  const [profile, savedPromptRowsResult, needsKey] = await Promise.all([
     getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts, not
@@ -39,6 +40,7 @@ export default async function NewChatPage() {
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
     getNeedsOwnKey(),
   ]);
+  const { data: savedPromptRows } = orThrow(savedPromptRowsResult, "saved_prompts");
   const name = profile?.display_name || user.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(
     (savedPromptRows as { outputs: Record<string, unknown> | null }[] | null) ?? []

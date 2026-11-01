@@ -10,6 +10,7 @@ import { createClient } from "@/server/supabase/server";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
+import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.chats };
@@ -42,13 +43,16 @@ export default async function ChatsPage() {
   // the cost scaled with total messages written rather than with what the page
   // shows. Explicit user_id on top of RLS, this project's standard for
   // user-scoped reads.
-  const { data: raw } = await supabase
+  const { data: raw } = orThrow(
+    await supabase
     .from("conversations")
     .select("id, title, updated_at, messages(count)")
     .eq("user_id", user.id)
     .is("project_id", null)
     .order("updated_at", { ascending: false })
-    .range(0, LIST_LOAD_LIMIT);
+    .range(0, LIST_LOAD_LIMIT),
+    "conversations"
+  );
 
   const { items: rows, hasMore } = splitAtLimit(
     (raw as ConversationQueryRow[] | null) ?? []

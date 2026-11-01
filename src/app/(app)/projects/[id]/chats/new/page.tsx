@@ -7,6 +7,7 @@ import { createClient } from "@/server/supabase/server";
 import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { getT } from "@/server/i18n";
+import { orThrow } from "@/server/supabase/query";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
   // something vs. starting the project's first work.
   const supabase = await createClient();
   const user = await getSessionUser();
-  const [{ data: savedPromptRows, count }, profile, needsKey] = await Promise.all([
+  const [savedPromptRowsResult, profile, needsKey] = await Promise.all([
     // Selecting `outputs` (not just a head-count) also gives the save button
     // the already-saved prompt texts, so it can start disabled for a prompt
     // that's already in the project's Ergebnisse (F-7). Explicit user_id
@@ -42,6 +43,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
     getSessionProfile(),
     getNeedsOwnKey(),
   ]);
+  const { data: savedPromptRows, count } = orThrow(savedPromptRowsResult, "saved_prompts");
   const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;
   const savedPrompts = extractSavedPromptContents(

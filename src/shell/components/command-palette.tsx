@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { createClient } from "@/shared/supabase/client";
+import { captureError } from "@/shared/lib/observability";
 import { plansNav, primaryNav, secondaryNav } from "@/shell/lib/nav";
 import { formatShortcut, isMacPlatform, type Shortcut } from "@/shell/lib/shortcuts";
 import { LIST_LOAD_LIMIT } from "@/shared/lib/chat-limits";
@@ -101,7 +102,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const [{ data: projectRows }, { data: chatRows }] = await Promise.all([
+      const [
+        { data: projectRows, error: projectsError },
+        { data: chatRows, error: chatsError },
+      ] = await Promise.all([
         supabase
           .from("projects")
           .select("id, name")
@@ -116,7 +120,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       if (!cancelled) {
         setProjects(projectRows ?? []);
         setChats(chatRows ?? []);
-        setLoaded(true);
+        // Nach einem Lesefehler fragt das nächste Öffnen neu; die Seiten-Befehle funktionieren auch ohne die Listen.
+        const failure = projectsError ?? chatsError;
+        if (failure) captureError("palette.load_failed", failure);
+        else setLoaded(true);
       }
     })();
     return () => {

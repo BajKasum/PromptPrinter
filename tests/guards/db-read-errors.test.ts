@@ -16,6 +16,7 @@ const ROOT = process.cwd();
 
 /** Absichtlich best effort: ein Fehler gilt dort als "nichts", und das ist hier die richtige Entscheidung. */
 const BEST_EFFORT: Record<string, string> = {
+  "src/features/chat/lib/attachment-store.ts:data": "Signierte Bildadressen: ohne sie fehlt nur die Vorschau, die Chat-Seite bleibt",
   "src/server/activation-funnel.ts:data": "Auswertung für die Statistik, keine Entscheidung hängt daran",
   "src/shared/i18n/use-change-locale.ts:data": "Browser: das Speichern der Sprache ist ein Nebeneffekt, der Cookie gilt so oder so",
   "src/features/auth/components/sign-up-experience.tsx:profile": "Browser: Hinweis nach der Anmeldung, nur Anzeige",
@@ -23,19 +24,8 @@ const BEST_EFFORT: Record<string, string> = {
 
 /** Noch nicht umgestellt (Rest von #202). Eintrag löschen, sobald die Stelle den Fehler liest. */
 const STILL_OPEN: Record<string, string> = {
-  "src/app/api/settings/api-key/route.ts:profile": "Route außerhalb dieses Durchgangs",
-  "src/app/api/settings/api-key/route.ts:active": "Route außerhalb dieses Durchgangs",
-  "src/app/api/settings/api-key/route.ts:existing": "Route außerhalb dieses Durchgangs",
-  "src/features/chat/components/move-to-project.tsx:data": "Browser",
-  "src/features/chat/lib/attachment-store.ts:data": "Anhänge: Lesen und Storage",
-  "src/features/projects/components/delete-project.tsx:files": "Browser",
-  "src/features/projects/components/project-files.tsx:currentCount": "Browser: Limit-Anzeige",
-  "src/features/projects/lib/brain-sources.ts:rows": "Quellen des Gedächtnisses",
-  "src/server/byok.ts:data": "Einstellungsseite: getConfiguredProviders, getActiveProvider, getCustomProvider",
+  "src/features/chat/components/move-to-project.tsx:data": "Browser: Auswahlliste, liegt in dieser Runde bei einer anderen Sitzung",
 };
-
-/** Ganze Bereiche, die noch nicht umgestellt sind (Rest von #202): die Seiten der App und die Befehlspalette. */
-const STILL_OPEN_PREFIXES = ["src/app/(app)/", "src/shell/components/command-palette.tsx"];
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((entry) => {
@@ -115,7 +105,7 @@ const files = sourceFiles("src").map((file) => ({
 
 const unread = files.flatMap((f) => unreadErrors(f.text).map((name) => `${f.path}:${name}`));
 const known = new Set([...Object.keys(BEST_EFFORT), ...Object.keys(STILL_OPEN)]);
-const isKnown = (key: string) => known.has(key) || STILL_OPEN_PREFIXES.some((prefix) => key.startsWith(prefix));
+const isKnown = (key: string) => known.has(key);
 
 describe("Datenbankfehler werden nicht als 'kein Treffer' gelesen", () => {
   it("jede Abfrage liest den Fehler mit, außer den benannten Ausnahmen", () => {
@@ -125,8 +115,7 @@ describe("Datenbankfehler werden nicht als 'kein Treffer' gelesen", () => {
 
   it("die Ausnahmelisten enthalten nur Stellen, die es noch gibt (gelesene Stellen gehören gelöscht)", () => {
     const stale = [...known].filter((key) => !unread.includes(key));
-    const emptyPrefixes = STILL_OPEN_PREFIXES.filter((prefix) => !unread.some((key) => key.startsWith(prefix)));
-    expect([...stale, ...emptyPrefixes]).toEqual([]);
+    expect(stale).toEqual([]);
   });
 
   it("der Scanner erkennt eine ungelesene und lässt eine gelesene Abfrage durch", () => {

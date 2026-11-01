@@ -14,6 +14,7 @@ import type { Messages } from "@/shared/i18n/messages/de";
 import { createClient } from "@/server/supabase/server";
 import { getConfiguredProviders } from "@/server/byok";
 import { getLocale, getT } from "@/server/i18n";
+import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.plans };
@@ -39,12 +40,13 @@ export default async function PlansPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, configuredProviders, t, locale] = await Promise.all([
+  const [profileResult, configuredProviders, t, locale] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
     getConfiguredProviders(supabase, user.id),
     getT(),
     getLocale(),
   ]);
+  const { data: profile } = orThrow(profileResult, "profiles");
   const m = t.pages.plans;
 
   const { plan: planKey, isAdmin } = resolvePlan(profile);
