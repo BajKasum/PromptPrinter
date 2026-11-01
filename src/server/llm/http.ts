@@ -32,15 +32,16 @@ type OpenAiStreamChunk = {
 };
 
 /**
- * Shared by zaiCompleteStream and customCompleteStream, both speak the same
- * OpenAI-compatible chat/completions SSE dialect: newline-delimited
- * `data: {...}` frames separated by a blank line, terminated by `data:
- * [DONE]`. Buffers across chunk boundaries since a network read can split a
- * frame anywhere. `maxBytes` bounds total bytes read (see MAX_RESPONSE_BYTES
- * below, defined after this function but only ever read once this one is
- * actually called, well after module init), harmless for zaiCompleteStream
- * (Z.ai's own max_tokens already keeps it far under this in practice), a real
- * bound for customCompleteStream's user-supplied endpoint.
+ * Wird von zaiCompleteStream und customCompleteStream gemeinsam genutzt; beide
+ * verwenden dasselbe OpenAI-kompatible SSE-Format für Chat-Completions:
+ * `data: {...}`-Ereignisse, getrennt durch eine Leerzeile mit CRLF, LF oder CR
+ * und beendet durch `data: [DONE]`. Mehrere `data:`-Felder eines Ereignisses
+ * werden mit einem Zeilenumbruch verbunden. Der Puffer fängt aufgeteilte
+ * Netzwerk-Chunks ab. `maxBytes` begrenzt die gelesene Gesamtgröße (siehe
+ * MAX_RESPONSE_BYTES weiter unten); für zaiCompleteStream ist die Grenze
+ * praktisch folgenlos, da Z.ais `max_tokens` die Antwort klein hält, für den
+ * benutzerdefinierten Endpunkt von customCompleteStream ist sie eine echte
+ * Begrenzung.
  */
 export async function* readOpenAiCompatibleSse(
   body: ReadableStream<Uint8Array>,
@@ -48,44 +49,51 @@ export async function* readOpenAiCompatibleSse(
 ): AsyncGenerator<string> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
+  const eventSeparator = /\r\n(?:\r\n|\r|\n)|\r(?:\r\n|\r)|\n(?:\r\n|\r|\n)/;
   let buffer = "";
   let total = 0;
+  let streamEnded = false;
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        streamEnded = true;
+        break;
+      }
       total += value.byteLength;
       if (total > maxBytes) {
         throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
       }
       buffer += decoder.decode(value, { stream: true });
-      let sep: number;
-      while ((sep = buffer.indexOf("\n\n")) !== -1) {
-        const frame = buffer.slice(0, sep);
-        buffer = buffer.slice(sep + 2);
-        for (const line of frame.split("\n")) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
-          if (data === "[DONE]") return;
-          let parsed: OpenAiStreamChunk;
-          try {
-            parsed = JSON.parse(data);
-          } catch {
-            continue;
-          }
-          const delta = parsed.choices?.[0]?.delta;
-          // Same last-resort fallback as the non-streaming reply: content is
-          // the real answer, reasoning_content only stands in when a chunk
-          // carries nothing else (thinking is off for Z.ai, so this should
-          // rarely fire there; a BYOK custom endpoint controls its own
-          // thinking flag, so it's kept here too for parity).
-          const text = delta?.content || delta?.reasoning_content || "";
-          if (text) yield text;
+      let separator: RegExpExecArray | null;
+      while ((separator = eventSeparator.exec(buffer)) !== null) {
+        const frame = buffer.slice(0, separator.index);
+        buffer = buffer.slice(separator.index + separator[0].length);
+        const data = frame
+          .split(/\r\n|\r|\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).replace(/^ /, ""))
+          .join("\n");
+        if (!data) continue;
+        if (data.trim() === "[DONE]") return;
+        let parsed: OpenAiStreamChunk;
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          continue;
         }
+        const delta = parsed.choices?.[0]?.delta;
+        // Wie bei der nicht gestreamten Antwort ist content der eigentliche Text;
+        // reasoning_content dient nur als letzter Ausweg, wenn ein Chunk sonst
+        // nichts enthält. Bei Z.ai ist thinking deaktiviert, daher sollte der
+        // Fallback dort selten greifen. Ein BYOK-Endpunkt steuert thinking
+        // selbst, deshalb bleibt das Verhalten hier zur Einheitlichkeit.
+        const text = delta?.content || delta?.reasoning_content || "";
+        if (text) yield text;
       }
     }
   } finally {
+    if (!streamEnded) await reader.cancel().catch(() => {});
     reader.releaseLock();
   }
 }
