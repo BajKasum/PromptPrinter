@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  ANTHROPIC_DEFAULT_MODEL,
   GEMINI_DEFAULT_MODEL,
+  OPENAI_DEFAULT_MODEL,
   ZAI_VISION_DEFAULT_MODEL,
+  anthropicModel,
+  geminiByokModel,
   llmConfig,
+  openaiModel,
   serverConfigFor,
   zaiModelFor,
 } from "@/server/llm/config";
@@ -78,5 +83,39 @@ describe("Schlüssel aus nur Leerzeichen zählen als nicht gesetzt", () => {
     vi.stubEnv("ZAI_API_KEY", "  ");
     vi.stubEnv("GEMINI_API_KEY", "gk");
     expect(serverConfigFor("zai")).toBeNull();
+  });
+});
+
+describe("Modelle der Nutzer-Keys (BYOK) sind per Umgebung überschreibbar", () => {
+  const cases = [
+    ["ANTHROPIC_MODEL", anthropicModel, ANTHROPIC_DEFAULT_MODEL],
+    ["OPENAI_MODEL", openaiModel, OPENAI_DEFAULT_MODEL],
+    ["GEMINI_MODEL", geminiByokModel, GEMINI_DEFAULT_MODEL],
+  ] as const;
+
+  for (const [name, model, fallback] of cases) {
+    it(`${name}: ohne Wert gilt der Standard`, () => {
+      vi.stubEnv(name, "");
+      expect(model()).toBe(fallback);
+    });
+
+    for (const blank of BLANK_VALUES) {
+      it(`${name}=${JSON.stringify(blank)} ergibt den Standard, nicht ein leeres Modell`, () => {
+        vi.stubEnv(name, blank);
+        expect(model()).toBe(fallback);
+      });
+    }
+
+    it(`${name}: ein gesetzter Name gewinnt, Leerraum drumherum zählt nicht dazu`, () => {
+      vi.stubEnv(name, " neues-modell\n");
+      expect(model()).toBe("neues-modell");
+    });
+  }
+
+  it("ein Gemini-Zug mit eigenem Key und der Server-Anbieter lesen dieselbe Variable", () => {
+    vi.stubEnv("ZAI_API_KEY", "");
+    vi.stubEnv("GEMINI_API_KEY", "gk");
+    vi.stubEnv("GEMINI_MODEL", "gemini-x");
+    expect(geminiByokModel()).toBe(llmConfig()?.model);
   });
 });

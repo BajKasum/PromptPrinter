@@ -635,3 +635,48 @@ describe("Standardwerte des Chats", () => {
     expect(tokens).toEqual([6144, 99]);
   });
 });
+
+// Die Modelle der Nutzer-Keys (BYOK) sind per Umgebung überschreibbar (config.ts, #216): wird ein
+// Modell abgeschaltet, genügt eine Konfigurationsänderung. Ohne Variable gilt der Standard.
+describe("Modellnamen der Nutzer-Keys aus der Umgebung", () => {
+  const one: LlmMessage[] = [{ role: "user", content: "x" }];
+
+  it("Anthropic: ANTHROPIC_MODEL gilt für Chat und Analyse", async () => {
+    vi.stubEnv("ANTHROPIC_MODEL", "claude-neu");
+    sdk.anthropicCreate.mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
+    const override = { provider: "anthropic" as const, apiKey: "ak" };
+
+    await chatComplete({ system: "S", messages: one, override });
+    await analyzeComplete({ system: "S", text: "t", override });
+
+    expect(sdk.anthropicCreate.mock.calls.map((c) => c[0].model)).toEqual(["claude-neu", "claude-neu"]);
+  });
+
+  it("OpenAI: OPENAI_MODEL gilt für Chat und Analyse", async () => {
+    vi.stubEnv("OPENAI_MODEL", "gpt-neu");
+    sdk.openaiCreate.mockResolvedValue({ choices: [{ message: { content: "ok" } }] });
+    const override = { provider: "openai" as const, apiKey: "ok-key" };
+
+    await chatComplete({ system: "S", messages: one, override });
+    await analyzeComplete({ system: "S", text: "t", override });
+
+    expect(sdk.openaiCreate.mock.calls.map((c) => c[0].model)).toEqual(["gpt-neu", "gpt-neu"]);
+  });
+
+  it("Gemini mit eigenem Key: GEMINI_MODEL gilt für Chat und Analyse", async () => {
+    vi.stubEnv("GEMINI_MODEL", "gemini-neu");
+    sdk.generateContent.mockResolvedValue({ text: "ok" });
+    const override = { provider: "gemini" as const, apiKey: "gk" };
+
+    await chatComplete({ system: "S", messages: one, override });
+    await analyzeComplete({ system: "S", text: "t", override });
+
+    expect(sdk.generateContent.mock.calls.map((c) => c[0].model)).toEqual(["gemini-neu", "gemini-neu"]);
+  });
+
+  it("ohne Variablen bleiben die Standardmodelle", async () => {
+    sdk.anthropicCreate.mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
+    await chatComplete({ system: "S", messages: one, override: { provider: "anthropic", apiKey: "ak" } });
+    expect(sdk.anthropicCreate.mock.calls[0][0].model).toBe("claude-sonnet-5");
+  });
+});

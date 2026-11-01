@@ -5,9 +5,9 @@ import { callWithFailover, failoverEnabled, type ServerProvider } from "@/server
 import { withRetry } from "@/server/llm-retry";
 import { anthropicAnalyze } from "@/server/llm/anthropic";
 import {
-  ANTHROPIC_DEFAULT_MODEL,
-  GEMINI_DEFAULT_MODEL,
-  OPENAI_DEFAULT_MODEL,
+  anthropicModel,
+  geminiByokModel,
+  openaiModel,
   ZAI_ENDPOINT,
   geminiApiKey,
   llmConfig,
@@ -88,7 +88,7 @@ async function analyzeCompleteOnce(opts: {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
       return anthropicAnalyze(
-        ANTHROPIC_DEFAULT_MODEL,
+        anthropicModel(),
         opts.system,
         opts.text,
         images,
@@ -99,7 +99,7 @@ async function analyzeCompleteOnce(opts: {
     }
     if (provider === "openai") {
       return openaiAnalyze(
-        OPENAI_DEFAULT_MODEL,
+        openaiModel(),
         opts.system,
         opts.text,
         images,
@@ -125,7 +125,7 @@ async function analyzeCompleteOnce(opts: {
       });
     }
     return geminiAnalyze(
-      GEMINI_DEFAULT_MODEL,
+      geminiByokModel(),
       opts.system,
       opts.text,
       images,

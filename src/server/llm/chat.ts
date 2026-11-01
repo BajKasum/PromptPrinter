@@ -4,10 +4,10 @@ import { callWithFailover, failoverEnabled, streamWithFailover, type ServerProvi
 import { retryStream, withRetry, type RetryEvent } from "@/server/llm-retry";
 import { anthropicComplete, anthropicCompleteStream } from "@/server/llm/anthropic";
 import {
-  ANTHROPIC_DEFAULT_MODEL,
+  anthropicModel,
   DEFAULT_MAX_OUTPUT_TOKENS,
-  GEMINI_DEFAULT_MODEL,
-  OPENAI_DEFAULT_MODEL,
+  geminiByokModel,
+  openaiModel,
   geminiApiKey,
   llmConfig,
   providerLabel,
@@ -64,7 +64,7 @@ async function chatCompleteOnce(opts: {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
       return anthropicComplete(
-        ANTHROPIC_DEFAULT_MODEL,
+        anthropicModel(),
         opts.system,
         opts.messages,
         maxOutputTokens,
@@ -72,7 +72,7 @@ async function chatCompleteOnce(opts: {
       );
     }
     if (provider === "openai") {
-      return openaiComplete(OPENAI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+      return openaiComplete(openaiModel(), opts.system, opts.messages, maxOutputTokens, apiKey);
     }
     if (provider === "custom") {
       return customComplete(
@@ -84,7 +84,7 @@ async function chatCompleteOnce(opts: {
         apiKey
       );
     }
-    return geminiComplete(GEMINI_DEFAULT_MODEL, opts.system, opts.messages, maxOutputTokens, apiKey);
+    return geminiComplete(geminiByokModel(), opts.system, opts.messages, maxOutputTokens, apiKey);
   }
 
   const config = opts.serverProvider ? serverConfigFor(opts.serverProvider) : llmConfig();
@@ -175,7 +175,7 @@ async function* chatCompleteStreamOnce(opts: {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
       yield* anthropicCompleteStream(
-        ANTHROPIC_DEFAULT_MODEL,
+        anthropicModel(),
         opts.system,
         opts.messages,
         maxOutputTokens,
@@ -186,7 +186,7 @@ async function* chatCompleteStreamOnce(opts: {
     }
     if (provider === "openai") {
       yield* openaiCompleteStream(
-        OPENAI_DEFAULT_MODEL,
+        openaiModel(),
         opts.system,
         opts.messages,
         maxOutputTokens,
@@ -208,7 +208,7 @@ async function* chatCompleteStreamOnce(opts: {
       return;
     }
     yield* geminiCompleteStream(
-      GEMINI_DEFAULT_MODEL,
+      geminiByokModel(),
       opts.system,
       opts.messages,
       maxOutputTokens,
