@@ -309,6 +309,25 @@ describe("POST /api/auth", () => {
     });
   });
 
+  describe("unbekannte Fehler des Anbieters", () => {
+    it("gibt den Wortlaut nicht weiter und schreibt ihn ins Log", async () => {
+      signInWithPassword.mockResolvedValue({ error: { message: "connection to db-3.internal refused" } });
+      const res = await POST(req(signIn));
+      expect(res.status).toBe(400);
+      expect((await res.json()).detail).not.toContain("db-3");
+      expect(logWarning).toHaveBeenCalledWith("auth.unknown_error", {
+        action: "sign-in",
+        message: "connection to db-3.internal refused",
+      });
+    });
+
+    it("schreibt bekannte Fehler nicht ins Log", async () => {
+      signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
+      await POST(req(signIn));
+      expect(logWarning).not.toHaveBeenCalled();
+    });
+  });
+
   describe("guards around the gate", () => {
     it("rate-limits before reading the body", async () => {
       rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });

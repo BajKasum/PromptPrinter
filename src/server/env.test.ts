@@ -278,6 +278,34 @@ describe("hasOpenEncryptionRotation", () => {
 // production session cookies carry the Secure flag and where confirmation
 // mails point — a leftover http://localhost:3000 boots cleanly and breaks both
 // without a single error.
+describe("assertEnv mit einer http-Adresse in Produktion", () => {
+  const complete = Object.fromEntries(
+    missingProductionEnv({ NODE_ENV: "production" }).map((m) => [m.name, "x"])
+  );
+  const env = { ...complete, NODE_ENV: "production", NEXT_PUBLIC_APP_URL: "http://localhost:3001" };
+
+  it("bricht den Start ab", () => {
+    expect(() => assertEnv(env)).toThrow(/ALLOW_INSECURE_APP_URL/);
+  });
+
+  it("startet nur mit der ausdrücklichen Erlaubnis, und warnt dann", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() => assertEnv({ ...env, ALLOW_INSECURE_APP_URL: "1" })).not.toThrow();
+    expect(warn.mock.calls.flat().join(" ")).toContain("ALLOW_INSECURE_APP_URL=1");
+    warn.mockRestore();
+  });
+
+  it.each(["0", "true", ""])("ALLOW_INSECURE_APP_URL=%j erlaubt nichts", (value) => {
+    expect(() => assertEnv({ ...env, ALLOW_INSECURE_APP_URL: value })).toThrow();
+  });
+
+  it("startet mit https ohne Erlaubnis", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() => assertEnv({ ...env, NEXT_PUBLIC_APP_URL: "https://example.test" })).not.toThrow();
+    warn.mockRestore();
+  });
+});
+
 describe("hasInsecureAppUrl", () => {
   const prod = (url: string | undefined) => ({
     NODE_ENV: "production",
