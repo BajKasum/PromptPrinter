@@ -62,6 +62,41 @@ describe("assertPublicHttpsUrl", () => {
     );
   });
 
+  it.each([
+    ["Multicast", "ff02::1"],
+    ["Site-Local", "fec0::1"],
+    ["Dokumentation", "2001:db8::1"],
+    ["Discard", "100::1"],
+    ["IPv4-kompatibel, Loopback", "::7f00:1"],
+    ["IPv4-kompatibel, gepunktet", "::127.0.0.1"],
+    ["IPv4-gemappt, Metadaten", "::ffff:a9fe:a9fe"],
+    ["IPv4-gemappt, ausgeschrieben", "0:0:0:0:0:ffff:7f00:1"],
+    ["NAT64, Loopback", "64:ff9b::7f00:1"],
+    ["NAT64, Metadaten", "64:ff9b::169.254.169.254"],
+    ["NAT64, lokal", "64:ff9b:1::1"],
+    ["6to4, Loopback", "2002:7f00:1::"],
+    ["6to4, RFC1918", "2002:0a00:0001::1"],
+    ["unspezifiziert, ausgeschrieben", "0:0:0:0:0:0:0:0"],
+  ])("rejects IPv6 %s", async (_name, ip) => {
+    await expect(assertPublicHttpsUrl(`https://[${ip}]/v1`)).rejects.toThrow("nicht erlaubt");
+    lookupMock.mockResolvedValue([{ address: ip, family: 6 }]);
+    await expect(assertPublicHttpsUrl("https://name.example/v1")).rejects.toThrow("nicht erlaubt");
+  });
+
+  it("rejects a resolved link-local address with a zone id", async () => {
+    lookupMock.mockResolvedValue([{ address: "fe80::1%eth0", family: 6 }]);
+    await expect(assertPublicHttpsUrl("https://name.example/v1")).rejects.toThrow("nicht erlaubt");
+  });
+
+  it.each([
+    ["global", "2606:4700:4700::1111"],
+    ["NAT64 auf öffentliches IPv4", "64:ff9b::808:808"],
+    ["6to4 auf öffentliches IPv4", "2002:808:808::1"],
+    ["IPv4-gemappt, öffentlich", "::ffff:808:808"],
+  ])("accepts public IPv6 %s", async (_name, ip) => {
+    await expect(assertPublicHttpsUrl(`https://[${ip}]/v1`)).resolves.toBeUndefined();
+  });
+
   it("rejects a hostname that resolves to a private address", async () => {
     lookupMock.mockResolvedValue([{ address: "169.254.169.254", family: 4 }]);
     await expect(assertPublicHttpsUrl("https://sneaky.example/v1")).rejects.toThrow(
