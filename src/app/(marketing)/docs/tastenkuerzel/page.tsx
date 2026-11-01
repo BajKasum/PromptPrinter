@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docBySlug } from "@/shared/lib/docs-nav";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("tastenkuerzel")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 const SHORTCUTS = [
   {

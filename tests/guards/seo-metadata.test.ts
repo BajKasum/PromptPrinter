@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 import type { Metadata } from "next";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import sitemap from "@/app/sitemap";
+import { socialCardFor } from "@/features/marketing/lib/social-card";
 
 // Hält fest, was jede öffentliche Seite für Suchmaschinen mitbringen muss.
 //
@@ -135,6 +136,48 @@ describe("SEO-Metadaten der öffentlichen Seiten", () => {
     const skill = pages.find((page) => page.route === "/skill");
     expect(titleOf(skill?.metadata)).toContain("Claude Code");
     expect(skill?.metadata?.description).toContain("Claude Code");
+  });
+
+  // #253: Hilfe-Artikel und Vergleiche werden als Antwort auf eine Frage geteilt. Die Vorschau muss ihr Thema zeigen
+  // und sie als Artikel ausweisen, mit denselben Daten wie die Autorenzeile.
+  describe("Hilfe-Artikel und Vergleiche", () => {
+    const articles = () =>
+      pages.filter((page) => /^\/(docs|vergleich)\/[^/]+$/.test(page.route));
+
+    it("findet beide Sorten", () => {
+      const routes = articles().map((page) => page.route);
+      expect(routes.some((route) => route.startsWith("/docs/"))).toBe(true);
+      expect(routes.some((route) => route.startsWith("/vergleich/"))).toBe(true);
+    });
+
+    it("senden og:type article mit Veröffentlichungs- und Änderungsdatum", () => {
+      const wrong = articles()
+        .filter((page) => {
+          const og = page.metadata?.openGraph as Record<string, unknown> | null | undefined;
+          return og?.type !== "article" || !og.publishedTime || !og.modifiedTime;
+        })
+        .map((page) => page.route);
+
+      expect(wrong).toEqual([]);
+    });
+
+    it("zeigen ein eigenes Bild, nicht die Karte der Startseite, und jede Seite ein anderes", () => {
+      const urls = articles().map((page) => {
+        const image = page.metadata?.openGraph?.images;
+        const first = Array.isArray(image) ? image[0] : image;
+        return typeof first === "string" ? first : first instanceof URL ? first.pathname : (first?.url ?? "");
+      });
+
+      for (const url of urls) expect(String(url)).toMatch(/^\/og\/(docs|vergleich)\/[\w-]+\.png$/);
+      expect(duplicates(urls.map(String))).toEqual([]);
+    });
+
+    it("zeigen auf eine Karte, die es gibt", () => {
+      for (const page of articles()) {
+        const [, kind, slug] = page.route.split("/");
+        expect(socialCardFor(kind === "docs" ? "docs" : "vergleich", slug), page.route).not.toBeNull();
+      }
+    });
   });
 
   it("vergibt jeden Titel nur einmal", () => {

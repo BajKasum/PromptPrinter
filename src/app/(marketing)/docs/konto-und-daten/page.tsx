@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
+import { docBySlug } from "@/shared/lib/docs-nav";
 import { LEGAL } from "@/shared/lib/legal";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("konto-und-daten")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 export default function Page() {
   return (
