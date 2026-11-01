@@ -5,13 +5,19 @@ import { invalidJsonProblem, validationProblem } from "@/server/http/validation-
 import { de } from "@/shared/i18n/messages/de";
 import { createClient } from "@/server/supabase/server";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
+import { isSignInThrottled, recordFailedSignIn } from "@/server/security/sign-in-throttle";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
   readJsonBody,
 } from "@/server/http/request-body";
-import { isMailCooldownError, mailCooldownMessage, translateAuthError } from "@/shared/lib/auth-errors";
+import {
+  isInvalidCredentialsError,
+  isMailCooldownError,
+  mailCooldownMessage,
+  translateAuthError,
+} from "@/shared/lib/auth-errors";
 import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
 import { MIN_PASSWORD_LENGTH, weakPasswordMessage, weakPasswordReason } from "@/shared/lib/password";
 import { logWarning } from "@/shared/lib/observability";
@@ -136,11 +142,19 @@ export async function POST(req: Request) {
 
   switch (input.action) {
     case "sign-in": {
+      // Auch das richtige Passwort prallt ab, sonst wäre die Sperre ein Orakel. Der Text sagt nichts über das
+      // Konto: unbekannte Adressen zählen genauso (server/security/sign-in-throttle.ts).
+      if (await isSignInThrottled(input.email)) {
+        return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.");
+      }
       const { error } = await supabase.auth.signInWithPassword({
         email: input.email,
         password: input.password,
       });
-      if (error) return authFailure(error.message);
+      if (error) {
+        if (isInvalidCredentialsError(error.message)) await recordFailedSignIn(input.email);
+        return authFailure(error.message);
+      }
       // The session cookies were written by the server client on the way
       // through (server/supabase/server.ts), so they ride out on this response.
       return NextResponse.json({ ok: true });
