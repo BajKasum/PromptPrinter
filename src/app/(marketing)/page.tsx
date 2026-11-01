@@ -5,7 +5,7 @@ import { ProductShowcase } from "@/features/marketing/components/product-showcas
 import { FinalCTA } from "@/features/marketing/components/final-cta";
 import { JsonLd } from "@/shared/ui/json-ld";
 import { softwareApplicationJsonLd } from "@/features/marketing/lib/site-schema";
-import { steps, title as howItWorksTitle } from "@/features/marketing/lib/how-it-works-data";
+import { intro as howItWorksIntro, steps, title as howItWorksTitle } from "@/features/marketing/lib/how-it-works-data";
 //
 // The public site is two pages: this one and /pricing.
 //
@@ -41,6 +41,7 @@ const howToJsonLd = {
   "@context": "https://schema.org",
   "@type": "HowTo",
   name: howItWorksTitle,
+  description: howItWorksIntro,
   step: steps.map((s) => ({
     "@type": "HowToStep",
     name: s.title,
