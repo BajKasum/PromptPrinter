@@ -29,11 +29,16 @@ export function mailCooldownMessage(message: string): string {
     : "Zu viele Versuche, bitte kurz warten.";
 }
 
+/** Falsche Zugangsdaten: der eine Fehlschlag, der gegen das Konto zählt (server/security/sign-in-throttle.ts). */
+export function isInvalidCredentialsError(message: string): boolean {
+  return message.toLowerCase().includes("invalid login credentials");
+}
+
 // Maps raw Supabase auth error messages to friendly German copy. Shared by the
 // styled login experience and the signup form so the wording stays consistent.
 export function translateAuthError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login credentials")) return "Email oder Passwort falsch";
+  if (isInvalidCredentialsError(message)) return "Email oder Passwort falsch";
   if (m.includes("email not confirmed"))
     return "Email wurde noch nicht bestätigt, bitte Posteingang prüfen";
   if (m.includes("user already registered"))

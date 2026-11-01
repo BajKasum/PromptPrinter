@@ -12,6 +12,8 @@ const resetPasswordForEmail = vi.fn();
 const rateLimit = vi.fn();
 const verifyTurnstileToken = vi.fn();
 const logWarning = vi.fn();
+const isSignInThrottled = vi.fn();
+const recordFailedSignIn = vi.fn();
 
 vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
@@ -28,6 +30,11 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
   rateLimitKey: () => "ip:203.0.113.7",
   clientIp: () => "203.0.113.7",
+}));
+
+vi.mock("@/server/security/sign-in-throttle", () => ({
+  isSignInThrottled: (...a: unknown[]) => isSignInThrottled(...a),
+  recordFailedSignIn: (...a: unknown[]) => recordFailedSignIn(...a),
 }));
 
 vi.mock("@/server/security/turnstile", () => ({
@@ -64,6 +71,7 @@ describe("POST /api/auth", () => {
     signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
     resend.mockResolvedValue({ error: null });
     resetPasswordForEmail.mockResolvedValue({ error: null });
+    isSignInThrottled.mockResolvedValue(false);
   });
 
   describe("the captcha gate", () => {
@@ -206,6 +214,45 @@ describe("POST /api/auth", () => {
       const res = await POST(req({ ...body, password: "Password123456" }));
       expect(res.status).toBe(403);
       expect((await res.json()).kind).toBe("captcha");
+    });
+  });
+
+  describe("sign-in: Sperre je Konto", () => {
+    it("fragt Supabase bei einer Sperre nicht und nennt das Konto nicht", async () => {
+      isSignInThrottled.mockResolvedValue(true);
+      const res = await POST(req(signIn));
+      expect(res.status).toBe(429);
+      expect(signInWithPassword).not.toHaveBeenCalled();
+      expect((await res.json()).detail).not.toMatch(/passwort|konto|email/i);
+    });
+
+    it("prüft die Sperre erst hinter dem Captcha", async () => {
+      verifyTurnstileToken.mockResolvedValue({ ok: false, reason: "invalid-input-response" });
+      await POST(req(signIn));
+      expect(isSignInThrottled).not.toHaveBeenCalled();
+    });
+
+    it("zählt falsche Zugangsdaten gegen die Adresse, auch eine unbekannte", async () => {
+      signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
+      const res = await POST(req(signIn));
+      expect(res.status).toBe(400);
+      expect(recordFailedSignIn).toHaveBeenCalledWith("du@example.com");
+    });
+
+    it("zählt einen Ausfall des Anbieters nicht als Fehlversuch", async () => {
+      signInWithPassword.mockResolvedValue({ error: { message: "Database error" } });
+      await POST(req(signIn));
+      expect(recordFailedSignIn).not.toHaveBeenCalled();
+    });
+
+    it("eine erfolgreiche Anmeldung setzt einen laufenden Zähler nicht zurück", async () => {
+      signInWithPassword.mockResolvedValue({ error: null });
+      const res = await POST(req(signIn));
+      expect(res.status).toBe(200);
+      expect(recordFailedSignIn).not.toHaveBeenCalled();
+      // Die Sperre kennt gar keinen Weg zurück: das Modul exportiert nur Prüfen und Zählen.
+      const throttle = await vi.importActual<Record<string, unknown>>("@/server/security/sign-in-throttle");
+      expect(Object.keys(throttle).sort()).toEqual(["isSignInThrottled", "recordFailedSignIn"]);
     });
   });
 
