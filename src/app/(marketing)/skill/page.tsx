@@ -16,9 +16,9 @@ import {
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Skill",
+  title: "Skill /pp für Claude Code: fertige Aufträge",
   description:
-    "Der Skill /pp für deinen Coding-Agenten: liest dein Projekt, schreibt einen fertigen Auftrag und wartet auf dein Ja. Kostenlos zum Herunterladen, MIT-Lizenz.",
+    "Der Skill /pp für Claude Code: liest dein Projekt, schreibt einen fertigen Auftrag und wartet auf dein Ja. Kostenlos zum Herunterladen, MIT-Lizenz.",
   path: "/skill",
 });
 

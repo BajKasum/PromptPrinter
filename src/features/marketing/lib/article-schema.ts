@@ -1,8 +1,8 @@
-import { LEGAL } from "@/shared/lib/legal";
 import { siteUrl } from "@/shared/lib/site-url";
+import { AUTHOR_PATH } from "./entity-ids";
+import { organizationRef, personRef } from "./site-schema";
 
-/** Wo der Autor vorgestellt wird. Byline und JSON-LD zeigen auf dieselbe Seite. */
-export const AUTHOR_PATH = "/ueber";
+export { AUTHOR_PATH };
 
 /** "2026-10-01" wird zu "1. Oktober 2026". UTC, damit der Tag nicht kippt. */
 export function formatLongDate(isoDate: string): string {
@@ -20,7 +20,8 @@ export function formatLongDate(isoDate: string): string {
  * Sagt Suchmaschinen und Antwortmaschinen, wer den Text geschrieben hat und
  * von wann er ist. Der Autor ist derselbe Mensch wie im Impressum (LEGAL), das
  * Datum dasselbe wie in der sichtbaren Autorenzeile: was hier steht, muss auf
- * der Seite zu lesen sein, sonst ist es Structured-Data-Missbrauch.
+ * der Seite zu lesen sein, sonst ist es Structured-Data-Missbrauch. Autor und
+ * Herausgeber tragen die @id der Knoten aus site-schema.ts, nicht nur ihren Namen.
  */
 export function articleJsonLd({
   type = "Article",
@@ -49,16 +50,7 @@ export function articleJsonLd({
     datePublished: published,
     dateModified: updated,
     mainEntityOfPage: `${base}${path}`,
-    author: {
-      "@type": "Person",
-      name: LEGAL.operator,
-      url: `${base}${AUTHOR_PATH}`,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "PromptPrinter",
-      url: base,
-      logo: { "@type": "ImageObject", url: `${base}/apple-icon.png` },
-    },
+    author: personRef(),
+    publisher: organizationRef(),
   };
 }

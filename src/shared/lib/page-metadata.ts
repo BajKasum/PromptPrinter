@@ -33,12 +33,18 @@ const SOCIAL_IMAGE = {
  *
  * `path` ist relativ, `metadataBase` im Root-Layout macht daraus die
  * absolute Adresse.
+ *
+ * Eine Seite, die ihr eigenes Thema im Vorschaubild zeigt (Hilfe-Artikel,
+ * Vergleiche), nennt es mit `image`. Ein Artikel nennt zusätzlich `article`:
+ * dann ist `og:type` "article" und trägt dieselben Daten wie die Autorenzeile.
  */
 export function pageMetadata({
   title,
   description,
   path,
   titleStandsAlone = false,
+  image,
+  article,
 }: {
   /** Kurz, ohne Markenname: das Root-Layout hängt " · PromptPrinter" an. */
   title: string;
@@ -51,7 +57,12 @@ export function pageMetadata({
    * und einmal als Anhang, und der Titel würde in der Suche abgeschnitten.
    */
   titleStandsAlone?: boolean;
+  /** Das Vorschaubild dieser Seite statt der Karte der Startseite. */
+  image?: { url: string; alt: string };
+  /** Macht die Seite zu einem Artikel; Daten als ISO-Datum, `authors` als Adresse der Autorenseite. */
+  article?: { publishedTime: string; modifiedTime: string; authors: string[] };
 }): Metadata {
+  const socialImage = image ? { ...SOCIAL_IMAGE, ...image } : SOCIAL_IMAGE;
   const socialTitle = titleStandsAlone ? title : `${title} · ${SITE_NAME}`;
   return {
     title: titleStandsAlone ? { absolute: title } : title,
@@ -62,15 +73,15 @@ export function pageMetadata({
       description,
       url: path,
       siteName: SITE_NAME,
-      type: "website",
+      ...(article ? { type: "article" as const, ...article } : { type: "website" as const }),
       locale: "de_CH",
-      images: [SOCIAL_IMAGE],
+      images: [socialImage],
     },
     twitter: {
       card: "summary_large_image",
       title: socialTitle,
       description,
-      images: [SOCIAL_IMAGE],
+      images: [socialImage],
     },
   };
 }

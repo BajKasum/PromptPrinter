@@ -4,7 +4,7 @@ import { HowItWorks } from "@/features/marketing/components/how-it-works";
 import { ProductShowcase } from "@/features/marketing/components/product-showcase";
 import { FinalCTA } from "@/features/marketing/components/final-cta";
 import { JsonLd } from "@/shared/ui/json-ld";
-import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
+import { softwareApplicationJsonLd } from "@/features/marketing/lib/site-schema";
 import { steps, title as howItWorksTitle } from "@/features/marketing/lib/how-it-works-data";
 //
 // The public site is two pages: this one and /pricing.
@@ -33,26 +33,6 @@ import { steps, title as howItWorksTitle } from "@/features/marketing/lib/how-it
 // request, it repeated ground HowItWorks and ProductShowcase already cover and
 // read as exactly the generic SaaS feature-grid the brand principles below
 // reject. Component deleted (unused, restorable from git history).
-// SoftwareApplication-Markup für die Landing Page: die Preise sind dieselben
-// zwei Zahlen wie auf /pricing (PLANS in shared/lib/pricing.ts, eine Quelle),
-// kein zweiter, potenziell driftender Preis. Bewusst KEIN `aggregateRating`
-// — es gibt keine echten Bewertungen, eine erfundene Zahl wäre genau der
-// Structured-Data-Missbrauch, den Google explizit abstraft.
-const softwareApplicationJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "PromptPrinter",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Web",
-  offers: PLANS.map((plan) => ({
-    "@type": "Offer",
-    name: plan.name,
-    price: plan.name === "Pro" ? PRO_PRICE_EUR.toFixed(2) : "0.00",
-    priceCurrency: "EUR",
-    description: plan.description,
-  })),
-};
-
 // HowTo-Markup: dieselben drei Schritte, die HowItWorks tatsächlich rendert
 // (steps aus how-it-works.tsx), für Answer Engines, die eine "wie
 // funktioniert X"-Frage direkt als Schrittliste beantworten wollen, statt
@@ -71,7 +51,7 @@ const howToJsonLd = {
 export default function HomePage() {
   return (
     <>
-      <JsonLd data={softwareApplicationJsonLd} />
+      <JsonLd data={softwareApplicationJsonLd()} />
       <JsonLd data={howToJsonLd} />
       <FinnAtmosphere />
       <Hero />

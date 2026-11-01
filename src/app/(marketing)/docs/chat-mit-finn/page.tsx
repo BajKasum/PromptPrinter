@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docBySlug } from "@/shared/lib/docs-nav";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 import {
   ATTACHMENT_TEXT_CHARS_PER_FILE,
   MAX_ATTACHMENT_STORAGE_PER_USER,
@@ -18,11 +18,7 @@ const MAX_STORAGE_MB = MAX_ATTACHMENT_STORAGE_PER_USER / (1024 * 1024);
 
 const doc = docBySlug("chat-mit-finn")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 export default function Page() {
   return (

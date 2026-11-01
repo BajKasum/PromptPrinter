@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docBySlug } from "@/shared/lib/docs-nav";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("ergebnisse")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 export default function Page() {
   return (

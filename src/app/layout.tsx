@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { MotionShell } from "@/shared/providers/motion-shell";
 import { SiteSpeedInsights } from "@/shared/providers/site-speed-insights";
 import { FreshDocumentForThirdParties } from "@/shared/providers/fresh-document-for-third-parties";
+import { SITE_DESCRIPTION } from "@/shared/lib/site-description";
 import { siteUrl } from "@/shared/lib/site-url";
 import { siteVerification } from "@/shared/lib/site-verification";
 import "./globals.css";
@@ -44,8 +45,7 @@ export const metadata: Metadata = {
     default: "PromptPrinter, Aus deiner Idee der fertige Prompt",
     template: "%s · PromptPrinter",
   },
-  description:
-    "Ein KI-Chat, der nachfragt, bis klar ist, was du brauchst, und dir dann den fertigen Prompt liefert, für jede KI und jede Aufgabe.",
+  description: SITE_DESCRIPTION,
   keywords: [
     "KI-Prompts",
     "Prompt-Generator",
