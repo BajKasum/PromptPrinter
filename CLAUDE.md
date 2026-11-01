@@ -268,7 +268,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
 | Zeile einer langen Liste (Chats, Projekte) mit Link | `HoverPrefetchLink` aus `shared/ui`, kein bloßes `<Link>` (`list-prefetch.test.ts`) |
-| Kommentar im Code | sagt, was gilt und warum, **kein Verlauf** (der steht im Changelog); Deutsch mit richtigen Umlauten; Pfade relativ zu `src/` (`comment-paths.test.ts`); beim Anfassen einer Datei angleichen, kein Großumbau (#139) |
+| Kommentar im Code, auch in Konfigurations- und Build-Dateien | sagt, was gilt und warum, **kein Verlauf** (der steht im Changelog, Ratsche `comment-history.test.ts`); Deutsch mit richtigen Umlauten; Pfade relativ zu `src/` (`comment-paths.test.ts`); beim Anfassen einer Datei angleichen, kein Großumbau (#139) |
 | Server-Key eines Anbieters (`GEMINI_API_KEY`) | vorher Datenschutz Ziffer 4 und 5 um ihn ergänzen (seit 2026-10-17 nennt der Text Google nicht mehr) |
 | Datei in `src/server/` | `import "server-only"` |
 | Zod-Schema | `z` aus `@/shared/lib/zod`, nie aus `"zod"` (Meldungen wie zod 3). **Im Browser-Code `import * as z from "@/shared/lib/zod"`**, `import { z }` nur in `src/server/` und `src/app/api/` (sonst +65 KB auf `/login`, #134); beides hält `zod-import.test.ts` |
