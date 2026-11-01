@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/shared/supabase/database.types";
 
 // Die Aktivierung nach Anmeldewoche (Audit 2026-10-18, #128): von wie vielen neuen Konten haben
 // wie viele einen Key hinterlegt, eine Antwort von Finn bekommen und einen Prompt gespeichert.
@@ -94,21 +95,23 @@ export function buildFunnelWeeks(
   return rows;
 }
 
-type Admin = Pick<SupabaseClient, "from">;
+type Admin = Pick<SupabaseClient<Database>, "from">;
 
 /** Welche der Konten in `table` mindestens eine Zeile haben (je Konto eine `limit(1)`-Abfrage). */
 async function accountsWithRows(
   admin: Admin,
-  table: string,
+  table: keyof Database["public"]["Tables"],
   ids: readonly string[],
   extra?: { column: string; value: string }
 ): Promise<Set<string>> {
   const found = new Set<string>();
+  // Tabelle und Zusatzspalte sind hier Daten; eine Abfrage über eine Vereinigung von Tabellen löst der Typprüfer nicht auf.
+  const untyped = admin as unknown as Pick<SupabaseClient, "from">;
   for (let i = 0; i < ids.length; i += PROBE_CONCURRENCY) {
     const batch = ids.slice(i, i + PROBE_CONCURRENCY);
     await Promise.all(
       batch.map(async (id) => {
-        let query = admin.from(table).select("user_id").eq("user_id", id);
+        let query = untyped.from(table).select("user_id").eq("user_id", id);
         if (extra) query = query.eq(extra.column, extra.value);
         const { data } = await query.limit(1);
         if (data && data.length > 0) found.add(id);
@@ -136,7 +139,7 @@ export async function loadActivationFunnel(
     .order("created_at", { ascending: false })
     .limit(FUNNEL_MAX_ACCOUNTS + 1);
 
-  const rows = (data ?? []) as FunnelAccount[];
+  const rows: FunnelAccount[] = data ?? [];
   const truncated = rows.length > FUNNEL_MAX_ACCOUNTS;
   const accounts = rows.slice(0, FUNNEL_MAX_ACCOUNTS);
   const ids = accounts.map((a) => a.id);

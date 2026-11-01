@@ -13,6 +13,7 @@ import {
 } from "@/server/http/request-body";
 import { requestT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
+import type { Messages } from "@/shared/i18n/messages/de";
 
 export const runtime = "nodejs";
 
@@ -50,44 +51,8 @@ export async function POST(req: Request) {
   const parsed = createProjectSchema.safeParse(body);
   if (!parsed.success) return validationProblem(m, parsed.error.issues);
 
-  // Plan allowance, the project cap now gates workspace creation. Filter by
-  // owner explicitly even though RLS already scopes the count (defense in
-  // depth; this count enforces a limit). Runs before the rate limit so its
-  // is_admin result can exempt the account from that too, admin used to
-  // only bypass the project cap, not the hourly rate limit.
-  const [profileResult, countResult] = await Promise.all([
-    supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
-    supabase
-      .from("projects")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id),
-  ]);
-  // Ein Lesefehler lockert das Limit nicht: Zählung 0 hieße "unter der Grenze", Profil null hieße Plan Free.
-  if (profileResult.error || countResult.error) {
-    captureError("projects.limit_read_failed", profileResult.error ?? countResult.error, { userId: user.id });
-    return problem(503, m.projectCreateFailed);
-  }
-  const { plan, isAdmin, limits } = resolvePlan(profileResult.data);
-  const projectCount = countResult.count;
-  if ((projectCount ?? 0) >= limits.projects) {
-    return problem(
-      403,
-      fmt(m.projectLimit, { plan, limit: limits.projects }),
-      { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
-    );
-  }
-
-  if (!isAdmin) {
-    const rl = await rateLimit(rateLimitKey(req, "projects", user.id), {
-      limit: 30,
-      windowMs: 60 * 60 * 1000,
-    });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
+  const refused = await enforceProjectLimits(req, supabase, user.id, m);
+  if (refused) return refused;
 
   // Ein leerer Workspace: nur Name + Owner. `type` startet als general; das
   // Häkchen "Softwareprojekt" im Workspace stellt es auf software um.
@@ -108,4 +73,52 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ projectId: project.id as string });
+}
+
+/** Projekt-Limit des Plans und Stundenlimit: die Absage als Antwort, sonst null. */
+async function enforceProjectLimits(
+  req: Request,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  m: Messages["api"]
+): Promise<Response | null> {
+  // Plan allowance, the project cap now gates workspace creation. Filter by
+  // owner explicitly even though RLS already scopes the count (defense in
+  // depth; this count enforces a limit). Runs before the rate limit so its
+  // is_admin result can exempt the account from that too, admin used to
+  // only bypass the project cap, not the hourly rate limit.
+  const [profileResult, countResult] = await Promise.all([
+    supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
+    supabase
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+  ]);
+  // Ein Lesefehler lockert das Limit nicht: Zählung 0 hieße "unter der Grenze", Profil null hieße Plan Free.
+  if (profileResult.error || countResult.error) {
+    captureError("projects.limit_read_failed", profileResult.error ?? countResult.error, { userId });
+    return problem(503, m.projectCreateFailed);
+  }
+  const { plan, isAdmin, limits } = resolvePlan(profileResult.data);
+  const projectCount = countResult.count;
+  if ((projectCount ?? 0) >= limits.projects) {
+    return problem(
+      403,
+      fmt(m.projectLimit, { plan, limit: limits.projects }),
+      { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
+    );
+  }
+
+  if (!isAdmin) {
+    const rl = await rateLimit(rateLimitKey(req, "projects", userId), {
+      limit: 30,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!rl.allowed) {
+      return problem(429, m.tooManyRequests, {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
+  }
+  return null;
 }

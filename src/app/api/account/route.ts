@@ -9,6 +9,7 @@ import { signedInRecently } from "@/features/auth/lib/fresh-sign-in";
 import { collectStoragePaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
 import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
 import { requestT } from "@/server/i18n";
+import type { Messages } from "@/shared/i18n/messages/de";
 
 export const runtime = "nodejs";
 
@@ -128,59 +129,16 @@ export async function DELETE(req: Request) {
     captureError("account.delete_profile_read_failed", profileError, { userId: user.id });
     return problem(503, m.accountDeleteFailed);
   }
-  if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, "account-delete", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
+  const limited = await enforceDeleteLimit(req, user.id, profile?.is_admin ?? false, m);
+  if (limited) return limited;
 
   // K-5: best-effort, wie jeder Aufraeumschritt hier -- ein unerreichbares
   // oder ablehnendes Lemon Squeezy blockiert das Loeschen des Kontos nicht,
   // ein Nutzer, der deshalb nicht loeschen kann, waere schlimmer als ein Abo,
   // das von Hand nachgezogen werden muss.
-  if (profile?.subscription_id) {
-    const result = await cancelSubscriptionImmediately(profile.subscription_id);
-    if (!result.ok) {
-      captureError("account.subscription_cancel_failed", new Error(result.reason), {
-        userId: user.id,
-        subscriptionId: profile.subscription_id,
-      });
-    }
-  }
+  await cancelRunningSubscription(user.id, profile?.subscription_id ?? null);
 
-  // Fotos und Dateien aus Chats (Migration 0045) und die Dateien der Projekte.
-  // Je Tabelle ein eigener Schritt mit eigenem try (removeUserObjects): ein
-  // Fehler bei der einen (zum Beispiel eine noch nicht angewendete Migration)
-  // darf weder die andere noch das Loeschen des Kontos aufhalten.
-  await removeUserObjects(supabase, user.id, {
-    table: "message_attachments",
-    bucket: "chat-attachments",
-    label: "chat attachment",
-    partialEvent: "account.attachment_cleanup_partial",
-    failedEvent: "account.attachment_cleanup_failed",
-  });
-  // project_files.user_id is direct (no join through projects needed), one
-  // query covers every project this user has ever attached files to.
-  await removeUserObjects(supabase, user.id, {
-    table: "project_files",
-    bucket: "project-files",
-    label: "project file",
-    partialEvent: "account.storage_cleanup_partial",
-    failedEvent: "account.storage_cleanup_failed",
-  });
-
-  try {
-    // Always a fixed "{uid}/avatar" path (migration 0027 pins the insert
-    // policy to exactly that name — the upload UI that used to write it here
-    // is gone, but old objects from before its removal may still exist),
-    // removing a path that was never uploaded is a harmless no-op.
-    await supabase.storage.from("avatars").remove([avatarStoragePath(user.id)]);
-  } catch (err) {
-    captureError("account.storage_cleanup_failed", err, { userId: user.id });
-  }
+  await removeAccountObjects(supabase, user.id);
 
   try {
     const admin = createAdminClient();
@@ -199,4 +157,55 @@ export async function DELETE(req: Request) {
   await supabase.auth.signOut({ scope: "local" });
 
   return NextResponse.json({ ok: true });
+}
+
+/** Stundenlimit fürs Löschen, Admins ausgenommen: die Absage als Antwort, sonst null. */
+async function enforceDeleteLimit(req: Request, userId: string, isAdmin: boolean, m: Messages["api"]): Promise<Response | null> {
+  if (isAdmin) return null;
+  const rl = await rateLimit(rateLimitKey(req, "account-delete", userId), { limit: 5, windowMs: 60 * 60 * 1000 });
+  if (rl.allowed) return null;
+  return problem(429, m.tooManyRequests, {
+    retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+  });
+}
+
+async function cancelRunningSubscription(userId: string, subscriptionId: string | null): Promise<void> {
+  if (!subscriptionId) return;
+  const result = await cancelSubscriptionImmediately(subscriptionId);
+  if (!result.ok) {
+    captureError("account.subscription_cancel_failed", new Error(result.reason), { userId, subscriptionId });
+  }
+}
+
+async function removeAccountObjects(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<void> {
+  // Fotos und Dateien aus Chats (Migration 0045) und die Dateien der Projekte.
+  // Je Tabelle ein eigener Schritt mit eigenem try (removeUserObjects): ein
+  // Fehler bei der einen (zum Beispiel eine noch nicht angewendete Migration)
+  // darf weder die andere noch das Loeschen des Kontos aufhalten.
+  await removeUserObjects(supabase, userId, {
+    table: "message_attachments",
+    bucket: "chat-attachments",
+    label: "chat attachment",
+    partialEvent: "account.attachment_cleanup_partial",
+    failedEvent: "account.attachment_cleanup_failed",
+  });
+  // project_files.user_id is direct (no join through projects needed), one
+  // query covers every project this user has ever attached files to.
+  await removeUserObjects(supabase, userId, {
+    table: "project_files",
+    bucket: "project-files",
+    label: "project file",
+    partialEvent: "account.storage_cleanup_partial",
+    failedEvent: "account.storage_cleanup_failed",
+  });
+
+  try {
+    // Always a fixed "{uid}/avatar" path (migration 0027 pins the insert
+    // policy to exactly that name — the upload UI that used to write it here
+    // is gone, but old objects from before its removal may still exist),
+    // removing a path that was never uploaded is a harmless no-op.
+    await supabase.storage.from("avatars").remove([avatarStoragePath(userId)]);
+  } catch (err) {
+    captureError("account.storage_cleanup_failed", err, { userId });
+  }
 }

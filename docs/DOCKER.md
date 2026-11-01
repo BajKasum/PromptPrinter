@@ -130,8 +130,9 @@ als root läuft und dass `docker-compose.yml` (der Dev-Stack) gültig ist.
 
 Er läuft bei Änderungen an `Dockerfile`, `.dockerignore`, den Compose-Dateien,
 `package.json`, `package-lock.json` und `next.config.ts` sowie **jeden Montag auf
-`main`**, weil auch ein unverändertes Repository verrottet, wenn sich das
-Basis-Image (`node:24-alpine`) unter ihm ändert. Von Hand: im Actions-Reiter
+`main`**, weil auch ein unverändertes Repository verrottet, etwa wenn ein festgelegter
+Stand nicht mehr zu beziehen ist. Das Basis-Image (`node:24-alpine`) ist per Digest festgelegt und ändert
+sich nur von Hand (`docs/SETUP.md`, "Node-Version"). Von Hand: im Actions-Reiter
 "Docker" → "Run workflow".
 
 Rot heißt: die dokumentierten Befehle oben funktionieren so nicht mehr. Die Logs

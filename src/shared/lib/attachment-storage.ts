@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/shared/supabase/database.types";
 import { removeAllPaths } from "@/shared/lib/storage-cleanup";
 
 // Wo die Dateien von Chat-Anhängen liegen, und wie man sie wieder einsammelt.
@@ -50,7 +51,7 @@ async function collectPaths(page: (from: number, to: number) => Page): Promise<s
 
 /** Die Pfade aller Anhänge EINES Chats. */
 export function attachmentPathsOfConversation(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   userId: string,
   conversationId: string
 ): Promise<string[]> {
@@ -66,7 +67,7 @@ export function attachmentPathsOfConversation(
 
 /** Die Pfade aller Anhänge aller Chats EINES Projekts. */
 export function attachmentPathsOfProject(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   userId: string,
   projectId: string
 ): Promise<string[]> {
@@ -83,7 +84,7 @@ export function attachmentPathsOfProject(
 }
 
 /** Die Pfade aller Anhänge eines Kontos. */
-export function attachmentPathsOfUser(supabase: SupabaseClient, userId: string): Promise<string[]> {
+export function attachmentPathsOfUser(supabase: SupabaseClient<Database>, userId: string): Promise<string[]> {
   return collectPaths((from, to) =>
     supabase
       .from("message_attachments")
@@ -99,7 +100,7 @@ export function attachmentPathsOfUser(supabase: SupabaseClient, userId: string):
  * Stapeln standen, die nicht durchgingen.
  */
 export async function removeAttachmentObjects(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   paths: readonly string[]
 ): Promise<{ removed: number; failed: number }> {
   if (paths.length === 0) return { removed: 0, failed: 0 };

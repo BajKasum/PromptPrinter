@@ -30,11 +30,6 @@ export type WorkspaceProject = {
   updated_at: string;
 };
 
-type ProjectRow = Omit<WorkspaceProject, "context" | "tools"> & {
-  context: unknown;
-  tools: unknown;
-};
-
 function asStringRecord(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, string> = {};
@@ -67,7 +62,7 @@ export const getProject = cache(async (id: string): Promise<WorkspaceProject> =>
       .select("id, name, instructions, context, audience, idea, tools, type, is_favorite, updated_at")
       .eq("id", id)
       .eq("user_id", user.id)
-      .maybeSingle<ProjectRow>(),
+      .maybeSingle(),
     "projects"
   );
 

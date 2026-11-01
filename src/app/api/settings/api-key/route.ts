@@ -15,6 +15,7 @@ import {
 } from "@/server/http/request-body";
 import { requestT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
+import type { Messages } from "@/shared/i18n/messages/de";
 
 export const runtime = "nodejs";
 
@@ -66,131 +67,23 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return problem(401, m.signInRequired);
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, m.tooLarge);
-    }
-    return invalidJsonProblem(m);
-  }
-
-  const parsed = saveSchema.safeParse(body);
-  if (!parsed.success) {
-    // `issues` meldet den ersten weichen Zweig der Vereinigung, bei einem custom-Rumpf also den
-    // primären ("unbekannte Schlüssel"). Dem Nutzer sagen wir, was in SEINEM Zweig nicht stimmt.
-    const isCustom = typeof body === "object" && body !== null && "provider" in body && body.provider === "custom";
-    const own = (isCustom ? customSaveSchema : primarySaveSchema).safeParse(body);
-    return validationProblem(m, parsed.error.issues, own.success ? undefined : own.error.issues);
-  }
-
-  // Provider kommt entweder explizit mit (der custom-Zweig, der eigene
-  // Endpunkt-Angaben braucht und deshalb nicht erratbar ist) oder wird aus
-  // dem Key-Format selbst hergeleitet — nie aus einer Client-Angabe fuer die
-  // drei benannten Anbieter, es gibt dafuer keine mehr. `resolved` haelt
-  // provider und (nur beim custom-Zweig) label/baseUrl/model als EIN
-  // diskriminiertes Objekt zusammen, damit `resolved.provider === "custom"`
-  // weiter unten sauber narrowt, statt zwei getrennte Variablen ausser
-  // Sync geraten zu lassen oder ein `!`-Assertion zu brauchen.
-  const apiKey = parsed.data.apiKey;
-  type Resolved =
-    | { provider: "anthropic" | "openai" | "gemini" }
-    | { provider: "custom"; label: string; baseUrl: string; model: string };
-  const resolved: Resolved | null = "provider" in parsed.data
-    ? {
-        provider: parsed.data.provider,
-        label: parsed.data.label,
-        baseUrl: parsed.data.baseUrl,
-        model: parsed.data.model,
-      }
-    : (() => {
-        const detected = detectProviderFromKey(apiKey);
-        return detected ? { provider: detected } : null;
-      })();
-  if (!resolved) {
-    return problem(
-      400,
-      m.keyUnknownProvider,
-      { kind: "unknownProvider" }
-    );
-  }
+  const request = await readSaveRequest(req, m);
+  if (request instanceof Response) return request;
+  const { apiKey, resolved } = request;
   const provider = resolved.provider;
 
-  // Admin exemption mirrors /api/chat, /api/projects and /api/account:
-  // a single is_admin lookup gates whether the hourly limit below applies.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, "api-key-save", user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
+  const limited = await enforceSaveLimit(req, supabase, user.id, m);
+  if (limited) return limited;
 
   const override: LlmOverride =
     resolved.provider === "custom"
       ? { provider: resolved.provider, apiKey, baseUrl: resolved.baseUrl, model: resolved.model }
       : { provider: resolved.provider, apiKey };
 
-  // Test the key against its real provider before it's ever persisted, a
-  // bad key should fail loudly right here, not silently at generation time.
-  //
-  // QA finding U-4: /api/chat stopped surfacing raw provider error text to
-  // the client (see classifyLlmFailure/describeLlmFailure in llm.ts / that
-  // route). This is the one deliberate exception: the person reading this
-  // message is the key's own owner, mid-setup, deciding whether the key they
-  // just typed is good — "invalid_api_key" or "model not found" is exactly
-  // the actionable detail they need, and there's no different user it could
-  // leak to. Nothing else in the app reuses this path.
-  try {
-    await chatComplete({
-      system: "Antworte ausschliesslich mit dem einen Wort OK.",
-      messages: [{ role: "user", content: "Test." }],
-      maxOutputTokens: 10,
-      override,
-    });
-  } catch (err) {
-    return problem(
-      400,
-      fmt(m.keyVerifyFailed, { reason: err instanceof Error ? err.message : m.keyVerifyUnknown })
-    );
-  }
+  const unverified = await verifyKey(override, m);
+  if (unverified) return unverified;
 
-  // Same shape either way (nulling the custom-only columns for named
-  // providers), the explicit type keeps this one concrete row type instead
-  // of a union the client's upsert typing can't resolve.
-  type UserApiKeyRow = {
-    user_id: string;
-    provider: "anthropic" | "openai" | "gemini" | "custom";
-    encrypted_key: string;
-    label: string | null;
-    base_url: string | null;
-    model: string | null;
-  };
-  const row: UserApiKeyRow =
-    resolved.provider === "custom"
-      ? {
-          user_id: user.id,
-          provider: resolved.provider,
-          encrypted_key: encrypt(apiKey),
-          label: resolved.label,
-          base_url: resolved.baseUrl,
-          model: resolved.model,
-        }
-      : {
-          user_id: user.id,
-          provider: resolved.provider,
-          encrypted_key: encrypt(apiKey),
-          label: null,
-          base_url: null,
-          model: null,
-        };
+  const row = keyRow(user.id, apiKey, resolved);
 
   const { error } = await supabase
     .from("user_api_keys")
@@ -211,12 +104,18 @@ export async function POST(req: Request) {
   // deliberately do NOT steal the slot: switching is the user's call (PATCH
   // below), so connecting a second provider never changes which key is billed
   // without them asking for it.
-  const { data: active } = await supabase
+  const { data: active, error: activeError } = await supabase
     .from("user_api_keys")
     .select("provider")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .maybeSingle();
+  // Ein Lesefehler ist nicht "noch kein aktiver Key": sonst nähme dieser Key einem anderen den Platz weg. Das Speichern
+  // oben ist ein upsert, ein zweiter Versuch ist also unschädlich.
+  if (activeError) {
+    captureError("api_key.active_read_failed", activeError, { userId: user.id, provider });
+    return problem(503, m.keySaveFailed);
+  }
   if (!active) {
     const { error: activateError } = await supabase.rpc("set_active_byok_provider", {
       target_provider: provider,
@@ -254,11 +153,15 @@ export async function PATCH(req: Request) {
   // admin exemption and limit shape as POST; higher than POST's 30/hr since
   // neither of these calls out to a provider, but still bounded rather than
   // open.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .maybeSingle();
+  if (profileError) {
+    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m.keyActivateFailed);
+  }
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "api-key-update", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
@@ -285,12 +188,16 @@ export async function PATCH(req: Request) {
   // Only a provider the user has actually stored may be activated. Without this
   // the RPC would happily set every row to is_active = false (nothing matches),
   // silently dropping them back to the server key.
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("user_api_keys")
     .select("provider")
     .eq("user_id", user.id)
     .eq("provider", provider)
     .maybeSingle();
+  if (existingError) {
+    captureError("api_key.existing_read_failed", existingError, { userId: user.id, provider });
+    return problem(503, m.keyActivateFailed);
+  }
   if (!existing) return problem(404, m.keyNotFound);
 
   const { error } = await supabase.rpc("set_active_byok_provider", {
@@ -321,11 +228,15 @@ export async function DELETE(req: Request) {
   // Security-Audit finding L-7: the one unlimited authenticated mutation in
   // this route (and, before this, in the project) — see the same block on
   // PATCH above for the full reasoning.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .maybeSingle();
+  if (profileError) {
+    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m.keyRemoveFailed);
+  }
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "api-key-delete", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
@@ -346,4 +257,137 @@ export async function DELETE(req: Request) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+type Resolved =
+  | { provider: "anthropic" | "openai" | "gemini" }
+  | { provider: "custom"; label: string; baseUrl: string; model: string };
+
+async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiKey: string; resolved: Resolved } | Response> {
+  let body: unknown;
+  try {
+    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof RequestBodyTooLargeError) {
+      return problem(413, m.tooLarge);
+    }
+    return invalidJsonProblem(m);
+  }
+
+  const parsed = saveSchema.safeParse(body);
+  if (!parsed.success) {
+    // `issues` meldet den ersten weichen Zweig der Vereinigung, bei einem custom-Rumpf also den
+    // primären ("unbekannte Schlüssel"). Dem Nutzer sagen wir, was in SEINEM Zweig nicht stimmt.
+    const isCustom = typeof body === "object" && body !== null && "provider" in body && body.provider === "custom";
+    const own = (isCustom ? customSaveSchema : primarySaveSchema).safeParse(body);
+    return validationProblem(m, parsed.error.issues, own.success ? undefined : own.error.issues);
+  }
+
+  // Provider kommt entweder explizit mit (der custom-Zweig, der eigene
+  // Endpunkt-Angaben braucht und deshalb nicht erratbar ist) oder wird aus
+  // dem Key-Format selbst hergeleitet — nie aus einer Client-Angabe fuer die
+  // drei benannten Anbieter, es gibt dafuer keine mehr. `resolved` haelt
+  // provider und (nur beim custom-Zweig) label/baseUrl/model als EIN
+  // diskriminiertes Objekt zusammen, damit `resolved.provider === "custom"`
+  // weiter unten sauber narrowt, statt zwei getrennte Variablen ausser
+  // Sync geraten zu lassen oder ein `!`-Assertion zu brauchen.
+  const apiKey = parsed.data.apiKey;
+  const resolved: Resolved | null = "provider" in parsed.data
+    ? {
+        provider: parsed.data.provider,
+        label: parsed.data.label,
+        baseUrl: parsed.data.baseUrl,
+        model: parsed.data.model,
+      }
+    : (() => {
+        const detected = detectProviderFromKey(apiKey);
+        return detected ? { provider: detected } : null;
+      })();
+  if (!resolved) {
+    return problem(
+      400,
+      m.keyUnknownProvider,
+      { kind: "unknownProvider" }
+    );
+  }
+  return { apiKey, resolved };
+}
+
+async function enforceSaveLimit(
+  req: Request,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  m: Messages["api"]
+): Promise<Response | null> {
+  // Admin exemption mirrors /api/chat, /api/projects and /api/account:
+  // a single is_admin lookup gates whether the hourly limit below applies.
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profileError) {
+    captureError("api_key.profile_read_failed", profileError, { userId });
+    return problem(503, m.keySaveFailed);
+  }
+  if (!(profile?.is_admin ?? false)) {
+    const rl = await rateLimit(rateLimitKey(req, "api-key-save", userId), { limit: 30, windowMs: 60 * 60 * 1000 });
+    if (!rl.allowed) {
+      return problem(429, m.tooManyRequests, {
+        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
+      });
+    }
+  }
+  return null;
+}
+
+async function verifyKey(override: LlmOverride, m: Messages["api"]): Promise<Response | null> {
+  // Test the key against its real provider before it's ever persisted, a
+  // bad key should fail loudly right here, not silently at generation time.
+  //
+  // QA finding U-4: /api/chat stopped surfacing raw provider error text to
+  // the client (see classifyLlmFailure/describeLlmFailure in llm.ts / that
+  // route). This is the one deliberate exception: the person reading this
+  // message is the key's own owner, mid-setup, deciding whether the key they
+  // just typed is good — "invalid_api_key" or "model not found" is exactly
+  // the actionable detail they need, and there's no different user it could
+  // leak to. Nothing else in the app reuses this path.
+  try {
+    await chatComplete({
+      system: "Antworte ausschliesslich mit dem einen Wort OK.",
+      messages: [{ role: "user", content: "Test." }],
+      maxOutputTokens: 10,
+      override,
+    });
+  } catch (err) {
+    return problem(
+      400,
+      fmt(m.keyVerifyFailed, { reason: err instanceof Error ? err.message : m.keyVerifyUnknown })
+    );
+  }
+  return null;
+}
+
+// Same shape either way (nulling the custom-only columns for named
+// providers), the explicit type keeps this one concrete row type instead
+// of a union the client's upsert typing can't resolve.
+type UserApiKeyRow = {
+  user_id: string;
+  provider: "anthropic" | "openai" | "gemini" | "custom";
+  encrypted_key: string;
+  label: string | null;
+  base_url: string | null;
+  model: string | null;
+};
+
+function keyRow(userId: string, apiKey: string, resolved: Resolved): UserApiKeyRow {
+  const custom = resolved.provider === "custom" ? resolved : null;
+  return {
+    user_id: userId,
+    provider: resolved.provider,
+    encrypted_key: encrypt(apiKey),
+    label: custom?.label ?? null,
+    base_url: custom?.baseUrl ?? null,
+    model: custom?.model ?? null,
+  };
 }

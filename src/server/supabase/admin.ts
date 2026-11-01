@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/shared/supabase/database.types";
 
 /**
  * Service-role Supabase client. It bypasses Row Level Security, so it must
@@ -23,7 +24,7 @@ export function createAdminClient() {
     throw new Error("Missing Supabase admin credentials.");
   }
 
-  return createClient(url, serviceRoleKey, {
+  return createClient<Database>(url, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }

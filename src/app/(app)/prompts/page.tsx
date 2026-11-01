@@ -11,18 +11,13 @@ import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, plural } from "@/shared/i18n/format";
+import { orThrow } from "@/server/supabase/query";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.savedPrompts };
 }
-
-type SavedPromptRow = {
-  id: string;
-  created_at: string;
-  outputs: Record<string, unknown> | null;
-};
 
 // The project-independent saved-prompt library (QA finding N-1, built per
 // explicit product direction rather than the audit's own two proposed
@@ -39,7 +34,7 @@ export default async function SavedPromptsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: rowsRaw }, { data: profile }] = await Promise.all([
+  const [rowsRawResult, profileResult] = await Promise.all([
     // Explicit user_id on top of RLS (defense in depth, same as every other
     // user-scoped query here), not project-scoped at all — that's the point.
     // M-17 (Audit 06.09.2026): over-fetched by one (.range, not .limit) so
@@ -55,11 +50,13 @@ export default async function SavedPromptsPage() {
     // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
   ]);
+  const { data: rowsRaw } = orThrow(rowsRawResult, "saved_prompts");
+  const { data: profile } = orThrow(profileResult, "profiles");
   const { plan, isAdmin } = resolvePlan(profile);
   const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
-    (rowsRaw as SavedPromptRow[] | null) ?? [],
+    rowsRaw ?? [],
     SAVED_PROMPTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);

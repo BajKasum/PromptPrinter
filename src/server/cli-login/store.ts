@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Tables } from "@/shared/supabase/database.types";
 import { createAdminClient } from "@/server/supabase/admin";
 import {
   DEVICE_REQUEST_TTL_MS,
@@ -20,13 +21,10 @@ const KEEP_EXPIRED_MS = 24 * 60 * 60 * 1000;
 const UNIQUE_VIOLATION = "23505";
 const MAX_CODE_ATTEMPTS = 3;
 
-export type DeviceRequest = {
-  id: string;
-  status: "pending" | "approved" | "denied" | "consumed";
-  user_id: string | null;
-  expires_at: string;
-  last_polled_at: string | null;
-};
+export type DeviceRequest = Pick<
+  Tables<"cli_device_requests">,
+  "id" | "status" | "user_id" | "expires_at" | "last_polled_at"
+>;
 
 /** Legt eine Anfrage an. Gibt die beiden Codes im Klartext zurück, zum einzigen Mal. */
 export async function createDeviceRequest(clientName: string): Promise<{
@@ -104,7 +102,7 @@ export async function findRequestByDeviceCode(deviceCode: string): Promise<Devic
     .eq("device_code_hash", hashDeviceCode(deviceCode))
     .maybeSingle();
   if (error) throw new Error(`cli_device_requests select: ${error.message}`);
-  return (data as DeviceRequest | null) ?? null;
+  return data;
 }
 
 /** Merkt sich, wann das Terminal zuletzt nachgefragt hat (für slow_down). Best effort. */

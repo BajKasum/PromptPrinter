@@ -31,6 +31,7 @@ import { PlanBadge } from "@/shared/ui/plan-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
+import type { TablesUpdate } from "@/shared/supabase/database.types";
 import { cn } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
@@ -105,7 +106,7 @@ export function SettingsWorkspace({
     if (!canSave) return;
     setSaving(true);
 
-    const patch: Record<string, unknown> = {};
+    const patch: TablesUpdate<"profiles"> = {};
     if (nameDirty && nameValid) patch.display_name = nameTrimmed;
 
     const supabase = createClient();

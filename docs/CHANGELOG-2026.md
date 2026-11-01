@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: Typen, Fehlerpfade, Handler (PR #265)
+
+- **Prüfung `reserveCounter`:** `EXPIRE ... NX` wird unterstützt. Die Upstash-Seite zu EXPIRE nennt `[NX | XX | GT | LT]`, das SDK 1.39 typisiert und sendet die Option. Keine Änderung, nichts gegen eine echte Redis-Instanz ausgeführt, also nur aus der Doku belegt.
+- **#241:** Basis-Image per Digest, Aktualisierung von Hand (`docs/SETUP.md`). Offen: die GitHub-Einstellung, bei Kasum.
+- **#217:** Ratsche `tests/guards/comment-history.test.ts` mit Basiswert je Datei.
+- **#209:** Typen aus dem lokalen Stack (CLI 2.119.0, `--schema public`), alle Fabriken typisiert, CI vergleicht in `e2e.yml`. `maybeSingle<T>` und `as` verdeckten falsche Spalten und sind weg. Ungeprüft bleiben Spalten in `account-export.ts` und `accountsWithRows`.
+- **#202:** Rest umgestellt, offen nur `move-to-project.tsx`. Ein Lesefehler im `(app)`-Layout zeigt die globale Fehlerseite.
+- **#211:** drei Optionen an. `allowJs` bleibt (Guards importieren `.mjs`), `noUncheckedIndexedAccess` abgelehnt (365 Funde).
+- **#215:** keine Funktion in `src/app/api`, `model-call.ts` und `decideBillingUpdate` über 100 Zeilen oder Komplexität 15 (Wegwerf-Messung), Route-Tests unverändert.
+- **#232:** Cookie bleibt lesbar (`docs/SETUP.md`). Auth-Einstellungen der Produktion nicht gelesen, Issue offen.
+
 ## 2026-11-01: Nachkontrolle der drei Sessions (Branch `fix/nachkontrolle-2026-11-01`)
 
 Unabhängig gelesen und live geprüft (CSRF-Schranke, `security.txt`, Sitemap, OG-Bilder, Structured Data). Zwei Funde:

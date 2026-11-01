@@ -232,7 +232,7 @@ Stelle abweicht):
 |---|---|
 | `.nvmrc` | `24`, die Quelle der Wahrheit |
 | `ci.yml`, `e2e.yml`, `audit.yml` | `setup-node` liest `.nvmrc` |
-| `Dockerfile` | `node:24-alpine` in allen drei Stufen |
+| `Dockerfile` | `node:24-alpine@sha256:…` in allen drei Stufen, derselbe Digest |
 | `package.json` | `engines.node` = `24.x`, und `@types/node` auf `^24` |
 | **Vercel-Projekt** | Einstellung "Node.js Version" = `24.x` (**außerhalb des Repositories, der Test kann sie nicht prüfen**) |
 
@@ -247,6 +247,11 @@ liefert.
 Dependabot gesperrt, siehe `dependabot.yml`), die Vercel-Einstellung angleichen,
 dann Gate, `npm run test:e2e` und ein Produktions-Deployment mit
 `/api/health` abwarten.
+
+**Basis-Image aktualisieren:** der Digest im `Dockerfile` zieht Sicherheitsupdates von
+Node und Alpine nicht von selbst nach, das geschieht von Hand und bewusst. Neuen Wert lesen
+(`docker buildx imagetools inspect node:24-alpine`, die Zeile `Digest:` des Index, damit
+alle Plattformen gelten), in allen drei `FROM` ersetzen, der Docker-Workflow prüft das Image.
 
 ## Auth-Mails (eigener Versand)
 
@@ -436,6 +441,16 @@ Stand 2026-10-17, Rechts-Audit R-9. **Keine Rechtsberatung, und aus Sekundärque
   Frage, wer als Anbieter gilt, wenn man ein fremdes Modell einbindet: auch das steht nicht in meinen Quellen.
 - **Beobachten:** Kodex und Leitlinien im Wortlaut lesen (Kommission, digital-strategy.ec.europa.eu), vor dem 2. Dezember.
 
+## Sitzungs-Cookie (Entscheid: bleibt lesbar)
+
+Das Sitzungs-Cookie von Supabase ist nicht `HttpOnly` und lebt 400 Tage (Vorgabe von `@supabase/ssr`). Das bleibt so, bewusst:
+
+- **HttpOnly bricht die App.** `createBrowserClient` liest die Sitzung aus `document.cookie`, und 18 Browser-Dateien nutzen diesen Client (Anmeldung per OAuth, Passwort ändern, Chats, Projekte, Dateien, Prompts, Einstellungen, Befehlspalette). Ohne lesbares Cookie wären sie alle nicht angemeldet. Vorher müsste jeder dieser Zugriffe hinter eine Server-Route, Datei-Uploads hinter signierte Adressen: ein eigener Umbau.
+- **Ein kürzeres `maxAge` allein schützt kaum.** Ein ausgelesenes Refresh-Token hängt nicht am Cookie im Browser des Angreifers, und eine feste Höchstdauer der Sitzung bräuchte eine eigene Prüfung auf dem Server. Kosten für echte Nutzer: häufigeres Abmelden.
+- **Was den Schaden begrenzt:** CSP mit Nonce auf den App-Routen, kein rohes HTML aus Markdown, frische Anmeldung vor dem Löschen des Kontos (`features/auth/lib/fresh-sign-in.ts`).
+
+Die Einstellungen im Supabase-Dashboard (Time-box, Inaktivität, Wiederverwendung von Refresh-Tokens) sind **nicht gelesen**: die vorhandenen Werkzeuge zeigen sie nicht. Offen in #232.
+
 ## Kontaktformular
 
 `/kontakt` hat neben der Mailadresse ein Formular (`ContactForm`, Name freiwillig, E-Mail, Thema, Nachricht
@@ -615,6 +630,21 @@ auf. Die Tests wurden einmal gegengeprüft, indem je ein Fehler in die App
 eingebaut wurde (Projekt-Löschen ohne Speicher-Aufräumen, Export mit internem
 Pfad, Schranke gegen schwache Passwörter aus): jeder machte genau den
 zuständigen Test rot.
+
+### Datenbank-Typen
+
+Die Spaltennamen aller Abfragen prüft `npm run typecheck` gegen `src/shared/supabase/database.types.ts`. Die Datei ist erzeugt,
+nie von Hand ändern. Nach jeder Migration neu schreiben, mit laufendem lokalem Stack und aus der Bash (PowerShell schriebe
+UTF-16):
+
+```bash
+npx --yes supabase@2.119.0 gen types typescript --local --schema public > src/shared/supabase/database.types.ts
+```
+
+Die CLI-Version ist dieselbe wie in `e2e.yml`, dort vergleicht ein Schritt die Datei mit dem Schema aus den Migrationen.
+`tests/guards/supabase-types.test.ts` verbietet `.maybeSingle<T>()` und Verwandte, weil sie den erkannten Zeilentyp ersetzen.
+Nicht geprüft sind zwei Stellen, die Tabelle und Spalten als Daten führen: `server/account-export.ts` und
+`accountsWithRows` in `server/activation-funnel.ts`; dort prüft der Typ nur den Tabellennamen.
 
 ## Projektstruktur
 

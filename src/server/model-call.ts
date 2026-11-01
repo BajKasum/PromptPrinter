@@ -64,7 +64,7 @@ export type ModelCallOptions = {
 };
 
 export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCallAllowance | Response> {
-  const { supabase, userId, appMetadata, m, texts } = opts;
+  const { supabase, userId, m, texts } = opts;
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   // Ein Lesefehler ist weder "Plan Free" noch "kein eigener Key": das lehnte ein Pro-Konto mit dem Hinweis auf einen
@@ -81,33 +81,6 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     return problem(409, m.byokUnreadable, { kind: "byokUnreadable" });
   }
 
-  // Eine Zeile je Zug: completeTurn schreibt zu jeder Nutzer-Nachricht genau eine Antwort, die
-  // Zählung nur dieser Rolle zählt einen Zug nicht doppelt. Das ist auch die Zahl in
-  // Einstellungen und Abrechnung.
-  //
-  // Faul gelesen (Betriebs-Audit 04.10.2026): die Zählung wächst mit der Nutzung und wird nur an
-  // zwei Stellen gebraucht, (a) wenn Redis nicht entscheiden kann, dann IST sie die Durchsetzung,
-  // und (b) wenn eine Ablehnung die Zahl nennen muss.
-  // Gibt null zurück, wenn die Zählung scheitert: ein Fehler ist NICHT 0, sonst wäre ohne Redis das Monatskontingent
-  // nicht durchgesetzt. Der Aufrufer entscheidet, was null heißt.
-  const countAssistantMessagesThisMonth = async (): Promise<number | null> => {
-    try {
-      const { count } = orThrow(
-        await supabase
-          .from("messages")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId)
-          .eq("role", "assistant")
-          .gte("created_at", monthStart),
-        "messages count"
-      );
-      return count ?? 0;
-    } catch (err) {
-      if (!(err instanceof DatabaseReadError)) throw err;
-      captureError("model_call.read_failed", err, { userId });
-      return null;
-    }
-  };
   const { plan, isAdmin, limits } = resolvePlan(profile);
 
   // Die Plätze, die für diesen Aufruf reserviert sind (Monatskontingent, globales Tagesbudget).
@@ -120,54 +93,8 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
   };
 
   if (!override) {
-    // Free hat bewusst genau null Antworten (plans.ts): der Plan hat keinen Zugang zum Server-Key,
-    // zum Chatten braucht Free einen eigenen Key. Das ist etwas anderes als "Limit erreicht" (da
-    // gab es ein Kontingent und es ist aufgebraucht) und bekommt eine eigene Meldung. Es gibt
-    // nichts zu reservieren, und kein Grund, bei jedem Versuch einen Redis-Aufruf dafür zu zahlen.
-    if (limits.chatMessages <= 0) {
-      return problem(
-        403,
-        // Ohne buchbaren Pro-Plan darf die Meldung nicht zu Pro raten (pro-availability.ts).
-        PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon,
-        { kind: "byokRequired", plan }
-      );
-    }
-
-    // Läuft dieser Aufruf auf Z.ai, braucht das Konto vorher die ausdrückliche Zustimmung zur
-    // Übermittlung nach Singapur (Rechts-Audit R-1, server/consent.ts). Vor jeder Reservierung,
-    // damit eine Ablehnung nichts kostet und nichts zurückgeben muss. Der eigene Key (BYOK) geht
-    // nie an Z.ai und braucht sie nicht; ohne Server-Key (Stub) auch nicht.
-    if (llmConfig()?.provider === "zai" && !hasZaiConsent(appMetadata)) {
-      return problem(403, m.consentRequired, { kind: "consentRequired" });
-    }
-
-    // Beide Aufruf-Typen zählen gegen dasselbe Monatskontingent, mit demselben Schlüssel
-    // (chatQuotaKey): ein zweiter Zähler wäre ein zweites Versprechen, das die Preisseite nicht
-    // macht, und der Nutzer müsste zwei Budgets im Kopf haben.
-    const reservation = await reserveMonthlyQuota(chatQuotaKey(userId, now), limits.chatMessages);
-    // null = Redis kann nicht entscheiden (nicht konfiguriert oder nicht erreichbar): dann ist die
-    // Zählung in der Datenbank die Durchsetzung. Das gilt für beide Aufruf-Typen gleich: ohne
-    // Redis darf eine Analyse nicht mehr, als ein aufgebrauchtes Monatskontingent mit Redis erlaubte.
-    let used: number | null = null;
-    if (!reservation) {
-      used = await countAssistantMessagesThisMonth();
-      if (used === null) return problem(503, texts.unavailable);
-    }
-    const overLimit = reservation ? !reservation.allowed : (used ?? 0) >= limits.chatMessages;
-    if (overLimit) {
-      if (reservation) await reservation.release();
-      // Die Zahl steht in der Ablehnung: der eine Fall, in dem der Redis-Weg noch zählt, und ein
-      // seltener (das Konto steht an seiner Grenze).
-      used ??= await countAssistantMessagesThisMonth();
-      // Scheitert hier die Zählung, bleibt es bei der Ablehnung, nur ohne die Zahl: eine Ablehnung lockert nichts.
-      return problem(403, fmt(texts.monthlyLimit, { plan, limit: limits.chatMessages }), {
-        kind: "chatMessages",
-        limit: limits.chatMessages,
-        ...(used === null ? {} : { current: used }),
-        plan,
-      });
-    }
-    if (reservation) reservations.push(reservation.release);
+    const refused = await reserveMonthlySlot({ ...opts, plan, limit: limits.chatMessages, now, monthStart, reservations });
+    if (refused) return refused;
   }
 
   // Stundenlimit, Admins ausgenommen. Anonyme Aufrufer kommen nie bis hierher.
@@ -190,13 +117,8 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
   // eigenen Konto, kostet den Betreiber nichts und arbeitet weiter, auch wenn das hier ausgelöst
   // hat. Die letzte Prüfung vor dem Modell, damit ein früher abgelehnter Aufruf nichts verbraucht.
   if (!override) {
-    const budget = await reserveServerKeyCall();
-    if (budget && !budget.allowed) {
-      await budget.release();
-      await releaseReservations();
-      return problem(503, texts.budget);
-    }
-    if (budget) reservations.push(budget.release);
+    const refused = await reserveDailyBudget(texts.budget, reservations, releaseReservations);
+    if (refused) return refused;
   }
 
   // Ohne Server-Anbieter nicht still mit der Platzhalterantwort antworten (QA-Befund C-8). Der
@@ -211,6 +133,113 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     return problem(503, texts.notConfigured);
   }
   return { override, plan, isAdmin, releaseReservations };
+}
+
+// Eine Zeile je Zug: completeTurn schreibt zu jeder Nutzer-Nachricht genau eine Antwort, die
+// Zählung nur dieser Rolle zählt einen Zug nicht doppelt. Das ist auch die Zahl in
+// Einstellungen und Abrechnung.
+//
+// Faul gelesen (Betriebs-Audit 04.10.2026): die Zählung wächst mit der Nutzung und wird nur an
+// zwei Stellen gebraucht, (a) wenn Redis nicht entscheiden kann, dann IST sie die Durchsetzung,
+// und (b) wenn eine Ablehnung die Zahl nennen muss.
+// Gibt null zurück, wenn die Zählung scheitert: ein Fehler ist NICHT 0, sonst wäre ohne Redis das Monatskontingent
+// nicht durchgesetzt. Der Aufrufer entscheidet, was null heißt.
+async function countAssistantMessagesThisMonth(
+  supabase: SupabaseClient,
+  userId: string,
+  monthStart: string
+): Promise<number | null> {
+  try {
+    const { count } = orThrow(
+      await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("role", "assistant")
+        .gte("created_at", monthStart),
+      "messages count"
+    );
+    return count ?? 0;
+  } catch (err) {
+    if (!(err instanceof DatabaseReadError)) throw err;
+    captureError("model_call.read_failed", err, { userId });
+    return null;
+  }
+}
+
+/** Zugang zum Server-Key und Platz im Monatskontingent: die Absage als Antwort, sonst null. */
+async function reserveMonthlySlot(args: ModelCallOptions & {
+  plan: string;
+  limit: number;
+  now: Date;
+  monthStart: string;
+  reservations: (() => Promise<void>)[];
+}): Promise<Response | null> {
+  const { supabase, userId, appMetadata, m, texts, plan, limit, now, monthStart, reservations } = args;
+  // Free hat bewusst genau null Antworten (plans.ts): der Plan hat keinen Zugang zum Server-Key,
+  // zum Chatten braucht Free einen eigenen Key. Das ist etwas anderes als "Limit erreicht" (da
+  // gab es ein Kontingent und es ist aufgebraucht) und bekommt eine eigene Meldung. Es gibt
+  // nichts zu reservieren, und kein Grund, bei jedem Versuch einen Redis-Aufruf dafür zu zahlen.
+  if (limit <= 0) {
+    return problem(
+      403,
+      // Ohne buchbaren Pro-Plan darf die Meldung nicht zu Pro raten (pro-availability.ts).
+      PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon,
+      { kind: "byokRequired", plan }
+    );
+  }
+
+  // Läuft dieser Aufruf auf Z.ai, braucht das Konto vorher die ausdrückliche Zustimmung zur
+  // Übermittlung nach Singapur (Rechts-Audit R-1, server/consent.ts). Vor jeder Reservierung,
+  // damit eine Ablehnung nichts kostet und nichts zurückgeben muss. Der eigene Key (BYOK) geht
+  // nie an Z.ai und braucht sie nicht; ohne Server-Key (Stub) auch nicht.
+  if (llmConfig()?.provider === "zai" && !hasZaiConsent(appMetadata)) {
+    return problem(403, m.consentRequired, { kind: "consentRequired" });
+  }
+
+  // Beide Aufruf-Typen zählen gegen dasselbe Monatskontingent, mit demselben Schlüssel
+  // (chatQuotaKey): ein zweiter Zähler wäre ein zweites Versprechen, das die Preisseite nicht
+  // macht, und der Nutzer müsste zwei Budgets im Kopf haben.
+  const reservation = await reserveMonthlyQuota(chatQuotaKey(userId, now), limit);
+  // null = Redis kann nicht entscheiden (nicht konfiguriert oder nicht erreichbar): dann ist die
+  // Zählung in der Datenbank die Durchsetzung. Das gilt für beide Aufruf-Typen gleich: ohne
+  // Redis darf eine Analyse nicht mehr, als ein aufgebrauchtes Monatskontingent mit Redis erlaubte.
+  let used: number | null = null;
+  if (!reservation) {
+    used = await countAssistantMessagesThisMonth(supabase, userId, monthStart);
+    if (used === null) return problem(503, texts.unavailable);
+  }
+  const overLimit = reservation ? !reservation.allowed : (used ?? 0) >= limit;
+  if (overLimit) {
+    if (reservation) await reservation.release();
+    // Die Zahl steht in der Ablehnung: der eine Fall, in dem der Redis-Weg noch zählt, und ein
+    // seltener (das Konto steht an seiner Grenze).
+    used ??= await countAssistantMessagesThisMonth(supabase, userId, monthStart);
+    // Scheitert hier die Zählung, bleibt es bei der Ablehnung, nur ohne die Zahl: eine Ablehnung lockert nichts.
+    return problem(403, fmt(texts.monthlyLimit, { plan, limit: limit }), {
+      kind: "chatMessages",
+      limit: limit,
+      ...(used === null ? {} : { current: used }),
+      plan,
+    });
+  }
+  if (reservation) reservations.push(reservation.release);
+  return null;
+}
+
+async function reserveDailyBudget(
+  budgetText: string,
+  reservations: (() => Promise<void>)[],
+  releaseReservations: () => Promise<void>
+): Promise<Response | null> {
+  const budget = await reserveServerKeyCall();
+  if (budget && !budget.allowed) {
+    await budget.release();
+    await releaseReservations();
+    return problem(503, budgetText);
+  }
+  if (budget) reservations.push(budget.release);
+  return null;
 }
 
 async function readProfile(supabase: SupabaseClient, userId: string) {
