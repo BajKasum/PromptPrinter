@@ -8,6 +8,13 @@ import { Pencil, MessageSquare, Copy } from "lucide-react";
 // from here, so there's still exactly one list of steps.
 export const title = "In drei Schritten von der Idee zum fertigen Prompt.";
 
+// Der eine Absatz, der sagt, was PromptPrinter ist (#247): Name und Kategorie im selben Satz, in Finns Stimme. Die
+// Überschriften der Startseite sprechen alle in der Ich-Form und nennen den Namen nirgends; Suchmaschinen und
+// Antwortsysteme bauen die Beschreibung einer Marke aus dem Text der Seite, nicht aus <title> und Meta-Tags. Die
+// Kategorie "Prompt-Generator" steht auch in den Schlüsselwörtern des Root-Layouts.
+export const intro =
+  "PromptPrinter ist ein Prompt-Generator, der erst nachfragt. Ich bin Finn: Du sagst mir, was du vorhast, ich stelle dir einmal gebündelt die Fragen, die für deine Aufgabe zählen, und schreibe dir dann den fertigen Prompt für ChatGPT, Claude, Gemini oder jede andere KI.";
+
 export const steps = [
   {
     n: "01",

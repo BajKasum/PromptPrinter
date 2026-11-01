@@ -9,7 +9,7 @@ import { FadeIn, StaggerChildren, StaggerItem } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 import { cn } from "@/shared/lib/utils";
-import { title, steps } from "@/features/marketing/lib/how-it-works-data";
+import { intro, title, steps } from "@/features/marketing/lib/how-it-works-data";
 
 // GSAP (DrawSVG + MotionPath) lives entirely in this sibling chunk, loaded
 // only client-side and only once mounted, see how-it-works-spine.tsx for
@@ -56,6 +56,7 @@ export function HowItWorks() {
               Kein Formular, kein Fachchinesisch. Du redest ganz normal, um den
               Rest kümmere ich mich.
             </p>
+            <p className="mt-3 max-w-xl text-[15px] leading-[1.65] text-secondary">{intro}</p>
           </div>
           {/* The dolphin guides you through the process. */}
           <AnimatedMascot
