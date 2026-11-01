@@ -16,6 +16,7 @@ import {
   isInvalidCredentialsError,
   isMailCooldownError,
   translateAuthError,
+  UNKNOWN_AUTH_ERROR,
 } from "@/shared/lib/auth-errors";
 import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
 import { MIN_PASSWORD_LENGTH, weakPasswordMessage, weakPasswordReason } from "@/shared/lib/password";
@@ -140,7 +141,12 @@ export async function POST(req: Request) {
   // the client only ever renders `detail`, and mapping GoTrue's mix of
   // credential, validation and throttling failures onto distinct statuses would
   // invent a contract nothing reads.
-  const authFailure = (message: string) => problem(400, translateAuthError(message), { kind: "auth" });
+  const authFailure = (message: string) => {
+    const detail = translateAuthError(message);
+    // Der Wortlaut bleibt im Log, der Besucher sieht ihn nicht. Unbekannt heisst: hier fehlt vielleicht eine Übersetzung.
+    if (detail === UNKNOWN_AUTH_ERROR) logWarning("auth.unknown_error", { action: input.action, message });
+    return problem(400, detail, { kind: "auth" });
+  };
 
   switch (input.action) {
     case "sign-in": {

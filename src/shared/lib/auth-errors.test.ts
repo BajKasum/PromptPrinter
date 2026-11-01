@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isMailCooldownError, mailCooldownMessage, translateAuthError } from "./auth-errors";
+import { isMailCooldownError, mailCooldownMessage, translateAuthError, UNKNOWN_AUTH_ERROR } from "./auth-errors";
 
 describe("translateAuthError", () => {
   it("translates known Supabase error strings", () => {
@@ -9,7 +9,7 @@ describe("translateAuthError", () => {
   });
 
   it("passes through an unrecognized message unchanged", () => {
-    expect(translateAuthError("Something odd happened")).toBe("Something odd happened");
+    expect(translateAuthError("Something odd happened at db-3.internal")).toBe(UNKNOWN_AUTH_ERROR);
   });
 
   // M-10 (Audit 06.09.2026): GoTrues Mail-Cooldown meldet sich als "For

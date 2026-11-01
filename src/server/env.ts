@@ -124,11 +124,9 @@ export function hasNoModelProvider(env: EnvLike = process.env): boolean {
  * 2. siteUrl() builds the absolute links in confirmation and password-reset
  *    mails, so every new signup would be mailed a link into localhost.
  *
- * Deliberately a warning rather than a throw: a self-hosted deployment behind
- * a TLS-terminating reverse proxy is a legitimate setup, and refusing to boot
- * would break the Docker path for a value that is a strong smell rather than a
- * certainty. The two consequences are named explicitly so the log line is
- * actionable instead of decorative.
+ * Deshalb bricht der Start ab. Wer das Image nur lokal über http ausprobiert, sagt es ausdrücklich:
+ * ALLOW_INSECURE_APP_URL=1 macht daraus eine Warnung (docs/DOCKER.md). Hinter einem Proxy, der TLS beendet,
+ * gehört hier die öffentliche https-Adresse hin.
  */
 export function hasInsecureAppUrl(env: EnvLike = process.env): boolean {
   if (env.NODE_ENV !== "production") return false;
@@ -210,13 +208,16 @@ export function assertEnv(env: EnvLike = process.env): void {
   }
 
   if (hasInsecureAppUrl(env)) {
-    console.warn(
+    const detail =
       "[env] NEXT_PUBLIC_APP_URL ist in Produktion nicht https " +
-        `(${env.NEXT_PUBLIC_APP_URL}). Folgen: Session-Cookies werden OHNE das ` +
-        "Secure-Flag gesetzt (lib/supabase/cookie-options.ts), und Bestätigungs- " +
-        "sowie Passwort-Reset-Mails verlinken auf diese Adresse. Auf die öffentliche " +
-        "https-Adresse der Deployment setzen."
-    );
+      `(${env.NEXT_PUBLIC_APP_URL}). Folgen: Session-Cookies werden OHNE das ` +
+      "Secure-Flag gesetzt (server/supabase/cookie-options.ts), und Bestätigungs- " +
+      "sowie Passwort-Reset-Mails verlinken auf diese Adresse. Auf die öffentliche " +
+      "https-Adresse der Deployment setzen";
+    if (env.ALLOW_INSECURE_APP_URL !== "1") {
+      throw new Error(`${detail}, oder für einen lokalen Versuch ALLOW_INSECURE_APP_URL=1 (docs/DOCKER.md).`);
+    }
+    console.warn(`${detail}. Läuft nur wegen ALLOW_INSECURE_APP_URL=1.`);
   }
 
   if (hasNoTrustedClientIp(env)) {

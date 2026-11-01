@@ -77,7 +77,8 @@ npm run docker:prod
   Mechanismen, eine davon zu vergessen fiel bisher erst nach dem Start auf.
 - Bleibt **strikt fail-closed**, unveraendert: fehlt eine Pflichtvariable
   (Supabase, `API_KEY_ENCRYPTION_SECRET`, beide `UPSTASH_*`), bricht der Start
-  ab statt in einem funktional toten Zustand hochzukommen.
+  ab statt in einem funktional toten Zustand hochzukommen. Dasselbe gilt für eine
+  `NEXT_PUBLIC_APP_URL` ohne https (siehe unten).
 
 Direkt ohne Prüfung: `docker compose -f docker-compose.prod.yml --env-file .env.local up --build -d`
 
@@ -94,7 +95,12 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 ## Hinter einem Reverse Proxy betreiben
 
 Der Port 3001 spricht reines http und gehört nicht direkt ins Internet: davor steht ein Reverse Proxy, der
-TLS beendet. Zwei Dinge hängen daran:
+TLS beendet. Drei Dinge hängen daran:
+
+- **`NEXT_PUBLIC_APP_URL` ist die öffentliche https-Adresse.** Sonst bekommen die Sitzungs-Cookies kein
+  `Secure`, und die Links in den Mails zeigen auf die falsche Adresse. Das Image startet deshalb in Produktion
+  nicht mit einer http-Adresse. Nur für einen lokalen Versuch auf `http://localhost:3001`:
+  `ALLOW_INSECURE_APP_URL=1` in `.env`.
 
 - **`TRUSTED_PROXY_HOPS` in `.env`:** die Zahl der Proxys vor dem Container. Die App wertet
   `X-Forwarded-For` nur danach aus und nimmt den n-ten Eintrag von hinten. Ohne den Wert glaubt sie keinem

@@ -76,6 +76,8 @@ export const PUBLIC_EXACT = [
   // which is every AI crawler and every browser that never logged in — got
   // 307'd to /login instead of the file, silently defeating the whole point.
   "/llms.txt",
+  // RFC 9116, der Kontakt für Sicherheitsmeldungen (app/.well-known/security.txt).
+  "/.well-known/security.txt",
 ] as const;
 
 export function isAppPath(pathname: string): boolean {

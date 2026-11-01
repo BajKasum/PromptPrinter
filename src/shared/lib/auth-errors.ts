@@ -34,6 +34,9 @@ export function isInvalidCredentialsError(message: string): boolean {
   return message.toLowerCase().includes("invalid login credentials");
 }
 
+/** Für alles, was unten nicht steht: fremder Wortlaut bleibt beim Server, er kann Internes nennen. */
+export const UNKNOWN_AUTH_ERROR = "Das hat gerade nicht geklappt, bitte versuch es erneut.";
+
 // Maps raw Supabase auth error messages to friendly German copy. Shared by the
 // styled login experience and the signup form so the wording stays consistent.
 export function translateAuthError(message: string): string {
@@ -47,5 +50,5 @@ export function translateAuthError(message: string): string {
     return "Diese Email-Adresse wird nicht akzeptiert";
   if (m.includes("password should be")) return `Passwort zu schwach (${PASSWORD_RULE_HINT.toLowerCase()})`;
   if (isMailCooldownError(message)) return mailCooldownMessage(message);
-  return message;
+  return UNKNOWN_AUTH_ERROR;
 }
