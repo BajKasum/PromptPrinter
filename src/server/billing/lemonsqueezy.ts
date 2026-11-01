@@ -215,6 +215,8 @@ export type BillingDecision =
  * `null` mitschreiben, löschte eine verspätet zugestellte Bestellung die
  * Angaben des Abos wieder.
  */
+type BillingAttributes = NonNullable<LemonSqueezyWebhookPayload["data"]["attributes"]>;
+
 export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): BillingDecision {
   const event = payload.meta.event_name;
   const attributes = payload.data.attributes ?? {};
@@ -226,67 +228,80 @@ export function decideBillingUpdate(payload: LemonSqueezyWebhookPayload): Billin
   const patch: ProfileBillingPatch = {};
   if (attributes.customer_id) patch.subscription_customer_id = attributes.customer_id;
 
-  if (event === "order_created") {
-    // Eine Bestellung sagt nichts über den Abo-Zustand, nur dass Geld
-    // geflossen ist. Der Status auf ihr ist der Zustand der BESTELLUNG
-    // (paid/refunded/pending) — ihn nach subscription_status zu schreiben,
-    // hiesse das Abo mit "paid" zu beschriften. Also nur Zugang und Kunde.
-    if (attributes.status !== "paid") {
-      return { kind: "ignore", reason: `Bestellung nicht bezahlt (${attributes.status ?? "?"})` };
-    }
-    patch.plan = "pro";
-    return { kind: "apply", patch };
-  }
+  if (event === "order_created") return decideOrderCreated(attributes, patch);
+  if (event === "order_refunded") return decideOrderRefunded(attributes, patch);
+  if (event === "subscription_payment_success" || event === "subscription_payment_recovered") return decidePaymentSucceeded(attributes, patch);
+  if (event === "subscription_payment_refunded") return decidePaymentRefunded(attributes, patch);
+  return decideSubscriptionEvent(payload, event, patch);
+}
 
-  if (event === "order_refunded") {
-    // K-4 (Audit 06.09.2026): fehlte bisher komplett in SUPPORTED_EVENTS,
-    // der Webhook ignorierte das Ereignis, das Konto blieb Pro. /rueckerstattung
-    // verspricht woertlich "der Betrag wird vollstaendig erstattet, und dein
-    // Konto wechselt zurueck auf den Free-Plan" -- kein Codepfad tat das.
-    // Auf "free", unabhaengig vom sonstigen Status: voll erstattet ist
-    // erstattet, das Geld ist zurueck.
-    //
-    // Folgesitzung 2026-10-07: nur bei VOLLER Erstattung. Laut Doku feuert
-    // order_refunded "when a full or partial refund is made", und der Status der
-    // Bestellung unterscheidet beides ("refunded" gegen "partial_refund"). Eine
-    // Teilerstattung (ein Entgegenkommen, eine Korrektur) nahm bisher dem zahlenden
-    // Kunden den Zugang. /rueckerstattung verspricht den Wechsel auf Free nur fuer
-    // "vollstaendig erstattet".
-    if (attributes.status === "partial_refund") {
-      return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
-    }
-    patch.plan = "free";
-    return { kind: "apply", patch };
+function decideOrderCreated(attributes: BillingAttributes, patch: ProfileBillingPatch): BillingDecision {
+  // Eine Bestellung sagt nichts über den Abo-Zustand, nur dass Geld
+  // geflossen ist. Der Status auf ihr ist der Zustand der BESTELLUNG
+  // (paid/refunded/pending) — ihn nach subscription_status zu schreiben,
+  // hiesse das Abo mit "paid" zu beschriften. Also nur Zugang und Kunde.
+  if (attributes.status !== "paid") {
+    return { kind: "ignore", reason: `Bestellung nicht bezahlt (${attributes.status ?? "?"})` };
   }
+  patch.plan = "pro";
+  return { kind: "apply", patch };
+}
 
-  if (event === "subscription_payment_success" || event === "subscription_payment_recovered") {
-    // Hier ist data.id die RECHNUNG. Die Abo-Nummer steht in den Attributen —
-    // data.id zu nehmen wäre der stille Fehler, der erst auffällt, wenn eine
-    // Kündigung das falsche Abo sucht.
-    if (attributes.subscription_id) patch.subscription_id = attributes.subscription_id;
-    if (attributes.renews_at !== undefined) patch.subscription_renews_at = attributes.renews_at;
-    // Eine erfolgreiche Abbuchung heisst Zugang. Der Abo-Status wird bewusst
-    // NICHT gesetzt: der Status auf einer Rechnung ist "paid", das ist kein
-    // Abo-Zustand.
-    patch.plan = "pro";
-    return { kind: "apply", patch };
+function decideOrderRefunded(attributes: BillingAttributes, patch: ProfileBillingPatch): BillingDecision {
+  // K-4 (Audit 06.09.2026): fehlte bisher komplett in SUPPORTED_EVENTS,
+  // der Webhook ignorierte das Ereignis, das Konto blieb Pro. /rueckerstattung
+  // verspricht woertlich "der Betrag wird vollstaendig erstattet, und dein
+  // Konto wechselt zurueck auf den Free-Plan" -- kein Codepfad tat das.
+  // Auf "free", unabhaengig vom sonstigen Status: voll erstattet ist
+  // erstattet, das Geld ist zurueck.
+  //
+  // Folgesitzung 2026-10-07: nur bei VOLLER Erstattung. Laut Doku feuert
+  // order_refunded "when a full or partial refund is made", und der Status der
+  // Bestellung unterscheidet beides ("refunded" gegen "partial_refund"). Eine
+  // Teilerstattung (ein Entgegenkommen, eine Korrektur) nahm bisher dem zahlenden
+  // Kunden den Zugang. /rueckerstattung verspricht den Wechsel auf Free nur fuer
+  // "vollstaendig erstattet".
+  if (attributes.status === "partial_refund") {
+    return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
   }
+  patch.plan = "free";
+  return { kind: "apply", patch };
+}
 
-  if (event === "subscription_payment_refunded") {
-    // Dieselbe Zusage wie order_refunded, nur fuer eine erstattete
-    // Abo-Abbuchung statt der Erstbestellung (K-4, Audit 06.09.2026). Die
-    // Kuendigung selbst laeuft weiterhin ueber subscription_cancelled/
-    // _expired unten -- dieses Ereignis betrifft nur das Geld einer
-    // einzelnen Rechnung, nicht das Abo als Ganzes, deshalb bleiben
-    // subscription_status/_id/_renews_at/_ends_at unangetastet. Auch hier nur
-    // bei voller Erstattung (Rechnungs-Status "refunded", nicht "partial_refund").
-    if (attributes.status === "partial_refund") {
-      return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
-    }
-    patch.plan = "free";
-    return { kind: "apply", patch };
+function decidePaymentSucceeded(attributes: BillingAttributes, patch: ProfileBillingPatch): BillingDecision {
+  // Hier ist data.id die RECHNUNG. Die Abo-Nummer steht in den Attributen —
+  // data.id zu nehmen wäre der stille Fehler, der erst auffällt, wenn eine
+  // Kündigung das falsche Abo sucht.
+  if (attributes.subscription_id) patch.subscription_id = attributes.subscription_id;
+  if (attributes.renews_at !== undefined) patch.subscription_renews_at = attributes.renews_at;
+  // Eine erfolgreiche Abbuchung heisst Zugang. Der Abo-Status wird bewusst
+  // NICHT gesetzt: der Status auf einer Rechnung ist "paid", das ist kein
+  // Abo-Zustand.
+  patch.plan = "pro";
+  return { kind: "apply", patch };
+}
+
+function decidePaymentRefunded(attributes: BillingAttributes, patch: ProfileBillingPatch): BillingDecision {
+  // Dieselbe Zusage wie order_refunded, nur fuer eine erstattete
+  // Abo-Abbuchung statt der Erstbestellung (K-4, Audit 06.09.2026). Die
+  // Kuendigung selbst laeuft weiterhin ueber subscription_cancelled/
+  // _expired unten -- dieses Ereignis betrifft nur das Geld einer
+  // einzelnen Rechnung, nicht das Abo als Ganzes, deshalb bleiben
+  // subscription_status/_id/_renews_at/_ends_at unangetastet. Auch hier nur
+  // bei voller Erstattung (Rechnungs-Status "refunded", nicht "partial_refund").
+  if (attributes.status === "partial_refund") {
+    return { kind: "ignore", reason: "Teilerstattung (partial_refund), Zugang bleibt" };
   }
+  patch.plan = "free";
+  return { kind: "apply", patch };
+}
 
+function decideSubscriptionEvent(
+  payload: LemonSqueezyWebhookPayload,
+  event: string,
+  patch: ProfileBillingPatch
+): BillingDecision {
+  const attributes = payload.data.attributes ?? {};
   // Bleiben die vier Abo-Ereignisse. Sie teilen sich eine Regel, weil Lemon
   // Squeezy den Status jeweils richtig mitschickt: `cancelled` kommt mit
   // status="cancelled" (Zugang bleibt), `expired` mit status="expired"
