@@ -15,7 +15,6 @@ import {
 import {
   isInvalidCredentialsError,
   isMailCooldownError,
-  mailCooldownMessage,
   translateAuthError,
 } from "@/shared/lib/auth-errors";
 import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
@@ -96,6 +95,9 @@ const requestSchema = z.discriminatedUnion("action", [
  */
 const RATE_LIMIT = { limit: 30, windowMs: 10 * 60 * 1000 };
 
+// Länger als ein gewöhnlicher Mailversand über SMTP. Nicht gegen den echten Versand gemessen.
+const MAIL_ACTION_MIN_MS = 1500;
+
 export async function POST(req: Request) {
   const rl = await rateLimit(rateLimitKey(req, "auth"), RATE_LIMIT);
   if (!rl.allowed) {
@@ -161,6 +163,9 @@ export async function POST(req: Request) {
     }
 
     case "sign-up": {
+      // Bewusst offen: mit "Confirm email" aus (Entscheid, docs/SETUP.md, "Auth-Mails") antwortet GoTrue für eine
+      // vergebene Adresse mit "User already registered", und die Seite sagt es. Das zeigt, ob eine Adresse ein Konto
+      // hat. Verbergen ginge hier nicht: eine neue Adresse bekommt sofort eine Sitzung, eine vergebene nie.
       // Bekannte und naheliegende Passwörter (password.ts, Betriebs-Audit
       // 04.10.2026): Supabases Prüfung gegen geleakte Passwörter ist auf dem
       // Free-Tarif aus, die Länge allein hält "password123" nicht auf. Hier, nicht
@@ -185,36 +190,40 @@ export async function POST(req: Request) {
     }
 
     case "resend": {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: input.email,
-        options: { emailRedirectTo: callbackUrl(input.next) },
-      });
-      if (error) return authFailure(error.message);
+      const { error } = await atLeast(
+        MAIL_ACTION_MIN_MS,
+        supabase.auth.resend({
+          type: "signup",
+          email: input.email,
+          options: { emailRedirectTo: callbackUrl(input.next) },
+        })
+      );
+      // Der Mail-Cooldown gilt nur für bestehende Konten, seine Meldung verriete also das Konto (siehe unten).
+      if (error && !isMailCooldownError(error.message)) return authFailure(error.message);
       return NextResponse.json({ ok: true });
     }
 
     case "reset-password": {
-      const { error } = await supabase.auth.resetPasswordForEmail(input.email, {
-        redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
-      });
-      // Throttling is the one failure worth naming. Everything else answers
-      // ok, preserving the form's existing promise never to reveal whether an
-      // address is registered — an error here would leak exactly that.
-      //
-      // M-10 (Audit 06.09.2026): GoTrues eigener Mail-Cooldown traegt NICHT
-      // das Wort "rate limit" ("For security purposes, you can only request
-      // this after 51 seconds."). Die alte Pruefung erkannte nur die
-      // benannte Rate-Limit-Form und meldete den — dem Zweck nach
-      // haeufigeren — Cooldown-Fall (kurz hintereinander zweimal
-      // angefordert) faelschlich als Erfolg: die Seite zeigte "Schau in dein
-      // Postfach", obwohl gar keine Mail rausging.
-      if (error && isMailCooldownError(error.message)) {
-        return problem(429, mailCooldownMessage(error.message));
-      }
+      // Immer dieselbe Antwort, jeder Fehler eingeschlossen: sie darf nie verraten, ob die Adresse ein Konto hat.
+      // Auch der Mail-Cooldown nicht, denn GoTrue drosselt nur bestehende Konten, zwei Anfragen in Folge zeigten
+      // den Unterschied sonst. Der Preis: eine zweite Anforderung innerhalb einer Minute sieht aus wie Erfolg,
+      // die Mail der ersten ist aber unterwegs, und die Seite nennt die Wartezeit. Die Mindestdauer deckt den
+      // Unterschied in der Laufzeit, denn nur für ein bestehendes Konto wartet GoTrue auf den Mailversand.
+      await atLeast(
+        MAIL_ACTION_MIN_MS,
+        supabase.auth.resetPasswordForEmail(input.email, {
+          redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
+        })
+      );
       return NextResponse.json({ ok: true });
     }
   }
+}
+
+/** Wartet auf `work`, aber mindestens `ms`, damit die Dauer nichts über das Ergebnis sagt. */
+async function atLeast<T>(ms: number, work: Promise<T>): Promise<T> {
+  const [result] = await Promise.all([work, new Promise((resolve) => setTimeout(resolve, ms))]);
+  return result;
 }
 
 /** Confirmation-mail landing spot. `next` is client-supplied, so it is

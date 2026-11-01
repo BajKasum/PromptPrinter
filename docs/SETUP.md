@@ -250,6 +250,11 @@ dann Gate, `npm run test:e2e` und ein Produktions-Deployment mit
 
 ## Auth-Mails (eigener Versand)
 
+**Vergebene Adressen:** Die Registrierung sagt, wenn eine Adresse schon ein Konto hat. Das nehmen wir hin (#230),
+solange "Confirm email" aus ist: GoTrue meldet den Fall dann als Fehler, und eine neue Adresse bekommt sofort eine
+Sitzung, verbergen liesse es sich also nicht. Anmeldung, Passwort-Reset und "erneut senden" verraten es nicht. Wird
+"Confirm email" eingeschaltet, verschwindet auch dieser Unterschied.
+
 Die App löst zwei Mails aus: die **Bestätigung** bei der Registrierung (samt
 "erneut senden") und den **Passwort-Reset**. Beide laufen über Supabase Auth, und
 ohne eigenen SMTP-Server über dessen Standardversand. Das ist für Produktion
