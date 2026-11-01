@@ -496,3 +496,75 @@ describe("Vertrag des Antwort-Stroms", () => {
     expect(list.at(-1)?.data).toMatchObject({ mode: "stub" });
   });
 });
+
+// ─── Datenbank-Lesefehler sind kein "kein Treffer" (#202) ────────────────────
+
+// supabase-js wirft bei einem Fehler nicht. Ein Lesefehler, der als "nichts da" gelesen wird, wäre eine falsche
+// Fachentscheidung: Plan Free statt Pro, ein Zug auf dem Server-Key statt dem eigenen, kein Monatskontingent ohne Redis,
+// eine neue Konversation statt der laufenden, ein Chat ohne sein Projekt. Jeder dieser Ausstiege antwortet mit 503,
+// gibt zurück, was schon reserviert war, und fragt das Modell nie.
+describe("Datenbank-Lesefehler", () => {
+  const readError = { message: "connection reset" };
+  const refused = async () => {
+    const res = await POST(req());
+    expect(res.status).toBe(503);
+    expect(calls(chatCompleteStream)).toBe(0);
+    return res;
+  };
+
+  it("Profil nicht lesbar: nicht Plan Free, sondern 503, noch bevor etwas reserviert wird", async () => {
+    tableResults.profiles = { data: null, error: readError };
+    await refused();
+    expect(calls(reserveMonthlyQuota)).toBe(0);
+    expect(calls(reserveServerKeyCall)).toBe(0);
+    expect(calls(rateLimit)).toBe(0);
+  });
+
+  it("eigener Key nicht lesbar: nicht der Server-Key, sondern 503 vor jeder Reservierung", async () => {
+    const { DatabaseReadError } = await import("@/server/supabase/query");
+    getUserOverride.mockImplementation(async () => {
+      throw new DatabaseReadError("user_api_keys", readError);
+    });
+    await refused();
+    expect(calls(reserveMonthlyQuota)).toBe(0);
+    expect(calls(reserveServerKeyCall)).toBe(0);
+  });
+
+  it("ohne Redis und mit Zählfehler: nicht 0 Nachrichten, sondern 503", async () => {
+    reserveMonthlyQuota.mockImplementation(async () => null);
+    tableResults.messages = { data: null, error: readError, count: 0 };
+    await refused();
+    expect(calls(reserveServerKeyCall)).toBe(0);
+  });
+
+  it("laufende Konversation nicht lesbar: keine neue, sondern 503; beide Reservierungen gehen zurück", async () => {
+    tableResults.conversations = { data: null, error: readError };
+    const res = await POST(
+      req({ conversationId: "11111111-1111-4111-8111-111111111111", messages: [{ role: "user", content: "Hi" }] })
+    );
+    expect(res.status).toBe(503);
+    expect(calls(chatCompleteStream)).toBe(0);
+    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(budgetRelease)).toBe(1);
+    expect(insertCalls.conversations ?? []).toHaveLength(0);
+  });
+
+  it("Projekt nicht lesbar: kein Chat ohne Projektkontext, sondern 503; beide Reservierungen gehen zurück", async () => {
+    tableResults.projects = { data: null, error: readError };
+    const res = await POST(
+      req({ projectId: "22222222-2222-4222-8222-222222222222", messages: [{ role: "user", content: "Hi" }] })
+    );
+    expect(res.status).toBe(503);
+    expect(calls(chatCompleteStream)).toBe(0);
+    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(budgetRelease)).toBe(1);
+    expect(insertCalls.conversations ?? []).toHaveLength(0);
+  });
+
+  it("Tagesbudget und Stundengrenze werden gar nicht erst erreicht, wenn das Profil fehlt", async () => {
+    tableResults.profiles = { data: null, error: readError };
+    await POST(req());
+    expect(log).not.toContain("rateLimit");
+    expect(log).not.toContain("reserveServerKeyCall");
+  });
+});

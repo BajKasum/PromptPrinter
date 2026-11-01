@@ -1,6 +1,7 @@
 import { llmConfig, type LlmMessage } from "@/server/llm";
 import { problem } from "@/server/http/api-problem";
 import { captureError } from "@/shared/lib/observability";
+import { DatabaseReadError } from "@/server/supabase/query";
 import { CHAT_SYSTEM_PROMPT } from "@/server/system-prompt";
 import { buildProjectContext } from "@/features/projects/lib/project-context";
 import { openTurn, type OpenedTurn } from "@/features/chat/lib/chat-persistence";
@@ -15,13 +16,19 @@ import type { SupabaseClient } from "./gate";
 // Die Schritte 5 bis 6b von POST /api/chat: was das Modell zu sehen bekommt (Systemprompt samt
 // Projektkontext), den Zug in der Datenbank OEFFNEN (vor dem Modell), und der Verlauf samt Anhaengen.
 
-/** Schritt 5: der Systemprompt, bei einem Projekt-Chat mit dem Projektkontext. */
+/**
+ * Schritt 5: der Systemprompt, bei einem Projekt-Chat mit dem Projektkontext. Scheitert das Lesen des Projekts,
+ * antwortet der Schritt mit 503 und gibt die Reservierungen zurück: ein Lesefehler ist nicht "nicht gefunden",
+ * der Chat liefe sonst ohne Projektkontext und die Konversation würde dem Projekt entzogen.
+ */
 export async function buildSystemInstruction(args: {
   supabase: SupabaseClient;
   userId: string;
   input: ChatRequest;
-}): Promise<{ systemInstruction: string; verifiedProjectId: string | null }> {
-  const { supabase, userId, input } = args;
+  releaseReservations: Allowance["releaseReservations"];
+  m: Messages["api"];
+}): Promise<{ systemInstruction: string; verifiedProjectId: string | null } | Response> {
+  const { supabase, userId, input, releaseReservations, m } = args;
   // 5. Build the system instruction. One system prompt for every chat now
   //    (CHAT_SYSTEM_PROMPT asks about the target tool itself in conversation;
   //    the picker that used to send it was removed on 23.09.2026, the model
@@ -47,7 +54,15 @@ export async function buildSystemInstruction(args: {
   // query, per query cost, per turn.
   let verifiedProjectId: string | null = null;
   if (input.projectId) {
-    const ctx = await buildProjectContext(supabase, userId, input.projectId);
+    let ctx: string | null;
+    try {
+      ctx = await buildProjectContext(supabase, userId, input.projectId);
+    } catch (err) {
+      if (!(err instanceof DatabaseReadError)) throw err;
+      await releaseReservations();
+      captureError("chat.project_read_failed", err, { userId, projectId: input.projectId });
+      return problem(503, m.chatUnavailable);
+    }
     if (ctx) {
       systemInstruction += `\n\n${ctx}`;
       verifiedProjectId = input.projectId;

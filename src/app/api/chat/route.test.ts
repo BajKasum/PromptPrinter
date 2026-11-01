@@ -1169,6 +1169,8 @@ describe("POST /api/chat", () => {
     });
 
     it("gibt keine assistantMessageId zurueck, wenn das Speichern scheitert", async () => {
+      // Redis entscheidet, die Zählung in der Datenbank wird nicht gebraucht: der Fehler soll hier nur das Speichern treffen.
+      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release: vi.fn() });
       tableResults.messages = { data: null, error: new Error("insert failed") };
 
       const body = await readSse(await POST(regenerateReq()));

@@ -4,6 +4,7 @@ import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/server/supabase/server";
 import { getSessionUser } from "@/server/session";
+import { orThrow } from "@/server/supabase/query";
 
 // The workspace shell (layout) and its subroutes (Übersicht, Chats, Ergebnisse)
 // all need the same project row. Layouts can't pass props to pages, so every
@@ -59,14 +60,16 @@ export const getProject = cache(async (id: string): Promise<WorkspaceProject> =>
   // Either a foreign owner or a malformed/missing id yields no row, so both
   // cases 404 identically below rather than distinguishing "not yours" from
   // "doesn't exist", which would leak which ids are in use.
-  const { data } = await supabase
-    .from("projects")
-    .select(
-      "id, name, instructions, context, audience, idea, tools, type, is_favorite, updated_at"
-    )
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .maybeSingle<ProjectRow>();
+  // Ein Lesefehler ist kein "nicht gefunden": er wirft (Fehlerseite), statt ein vorhandenes Projekt als 404 zu zeigen.
+  const { data } = orThrow(
+    await supabase
+      .from("projects")
+      .select("id, name, instructions, context, audience, idea, tools, type, is_favorite, updated_at")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .maybeSingle<ProjectRow>(),
+    "projects"
+  );
 
   if (!data) notFound();
 

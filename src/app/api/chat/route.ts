@@ -37,11 +37,9 @@ export async function POST(req: Request) {
   if (allowance instanceof Response) return allowance;
   const { override, releaseReservations } = allowance;
 
-  const { systemInstruction, verifiedProjectId } = await buildSystemInstruction({
-    supabase,
-    userId,
-    input,
-  });
+  const system = await buildSystemInstruction({ supabase, userId, input, releaseReservations, m });
+  if (system instanceof Response) return system;
+  const { systemInstruction, verifiedProjectId } = system;
 
   const opened = await openChatTurn({
     supabase,

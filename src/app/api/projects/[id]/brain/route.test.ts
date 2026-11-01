@@ -18,7 +18,9 @@ const analyzeProjectBrain = vi.fn();
 const tableResults: Record<string, { data?: unknown; error?: unknown; count?: number }> = {};
 /** Was der Service-Role-Client geschrieben hat. */
 const adminWrites: { table: string; op: string; values: Record<string, unknown> }[] = [];
-const adminReads: Record<string, { data?: unknown }> = {};
+const adminReads: Record<string, { data?: unknown; error?: unknown }> = {};
+/** Schreibfehler des Service-Role-Clients je Vorgang ("upsert", "update"). */
+const adminWriteErrors: Record<string, unknown> = {};
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null };
@@ -34,15 +36,19 @@ function builder(table: string) {
 function adminBuilder(table: string) {
   const chain: Record<string, unknown> = {
     maybeSingle: async () => adminReads[table] ?? { data: null, error: null },
-    then: (resolve: (v: unknown) => unknown) => resolve({ data: null, error: null }),
+    then: (resolve: (v: unknown) => unknown) =>
+      resolve({ data: null, error: adminWriteErrors[lastOp] ?? null }),
   };
+  let lastOp = "";
   chain.select = () => chain;
   chain.eq = () => chain;
   chain.upsert = (values: Record<string, unknown>) => {
+    lastOp = "upsert";
     adminWrites.push({ table, op: "upsert", values });
     return chain;
   };
   chain.update = (values: Record<string, unknown>) => {
+    lastOp = values.status === "failed" ? "update-failed" : "update";
     adminWrites.push({ table, op: "update", values });
     return chain;
   };
@@ -129,6 +135,7 @@ describe("POST /api/projects/[id]/brain", () => {
     adminWrites.length = 0;
     for (const key of Object.keys(adminReads)) delete adminReads[key];
     delete tableResults.messages;
+    for (const key of Object.keys(adminWriteErrors)) delete adminWriteErrors[key];
 
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
@@ -311,6 +318,48 @@ describe("POST /api/projects/[id]/brain", () => {
       tableResults.messages = { data: null, error: null, count: 399 };
       expect((await POST(req(), params)).status).toBe(200);
       expect(analyzeProjectBrain).toHaveBeenCalledTimes(1);
+    });
+
+    // #202: ein Lesefehler ist weder "nicht gefunden" noch "kein Treffer".
+    it("antwortet 503 statt 404, wenn das Projekt nicht gelesen werden kann", async () => {
+      tableResults.projects = { data: null, error: { message: "connection reset" } };
+      const res = await POST(req(), params);
+      expect(res.status).toBe(503);
+      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+    });
+
+    it("antwortet 503, wenn das gespeicherte Gedächtnis nicht gelesen werden kann (sonst ginge die Repo-Adresse verloren)", async () => {
+      adminReads.project_brains = { data: null, error: { message: "connection reset" } };
+      const res = await POST(req(), params);
+      expect(res.status).toBe(503);
+      expect(adminWrites).toEqual([]);
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+    });
+
+    it("startet die bezahlte Analyse nicht und gibt die Reservierungen zurück, wenn die Zeile nicht angelegt werden kann", async () => {
+      const release = vi.fn();
+      const budgetRelease = vi.fn();
+      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
+      reserveServerKeyCall.mockResolvedValue({ allowed: true, release: budgetRelease });
+      adminWriteErrors.upsert = { message: "write failed" };
+      const res = await POST(req(), params);
+      expect(res.status).toBe(503);
+      expect(collectBrainSources).not.toHaveBeenCalled();
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+      expect(release).toHaveBeenCalledTimes(1);
+      expect(budgetRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("meldet einen Fehler statt eines Ergebnisses, das nach dem Neuladen fehlt, wenn das Speichern scheitert", async () => {
+      const release = vi.fn();
+      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
+      adminWriteErrors.update = { message: "write failed" };
+      const res = await POST(req(), params);
+      expect(res.status).toBeGreaterThanOrEqual(500);
+      expect((await res.json()).status).not.toBe("ready");
+      expect(release).toHaveBeenCalledTimes(1);
+      expect(adminWrites.some((w) => w.op === "update" && w.values.status === "failed")).toBe(true);
     });
 
     it("blocks when the monthly allowance is used up", async () => {

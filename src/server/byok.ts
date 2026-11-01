@@ -2,6 +2,7 @@ import "server-only";
 
 import { decrypt } from "@/server/security/crypto";
 import { createAdminClient } from "@/server/supabase/admin";
+import { orThrow } from "@/server/supabase/query";
 import { captureError } from "@/shared/lib/observability";
 import type { createClient } from "@/server/supabase/server";
 import type { ByokProvider, LlmOverride } from "@/server/llm";
@@ -40,14 +41,19 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
  * migration's backfill and the delete-promotion trigger both failed to apply.
  */
 export async function getUserOverride(userId: string): Promise<LlmOverride | null | "unreadable"> {
-  const { data } = await createAdminClient()
-    .from("user_api_keys")
-    .select("provider, encrypted_key, base_url, model")
-    .eq("user_id", userId)
-    .order("is_active", { ascending: false })
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Ein Lesefehler ist NICHT "kein eigener Key": der Zug liefe sonst auf dem Server-Key (Kosten beim Betreiber) oder würde
+  // abgelehnt. Er wirft DatabaseReadError, der Aufrufer antwortet mit 503.
+  const { data } = orThrow(
+    await createAdminClient()
+      .from("user_api_keys")
+      .select("provider, encrypted_key, base_url, model")
+      .eq("user_id", userId)
+      .order("is_active", { ascending: false })
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    "user_api_keys"
+  );
   if (!data) return null;
 
   const provider = data.provider as ByokProvider;

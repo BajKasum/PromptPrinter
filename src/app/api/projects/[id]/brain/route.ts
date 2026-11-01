@@ -109,24 +109,34 @@ export async function POST(req: Request, { params }: Params) {
   //    Defense-in-depth: die Schreibzugriffe unten laufen über den
   //    Service-Role-Client, für den RLS gar nicht greift, also ist das hier
   //    die einzige Stelle, die „gehört dir" überhaupt noch feststellt.
-  const { data: project } = await supabase
+  const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("name, type")
     .eq("id", projectId)
     .eq("user_id", userId)
     .maybeSingle<{ name: string; type?: string | null }>();
+  // Ein Lesefehler ist kein "nicht gefunden": 503, nicht 404.
+  if (projectError) {
+    captureError("brain.project_read_failed", projectError, { userId, projectId });
+    return problem(503, m.brainUnavailable);
+  }
   // Fremd und nicht vorhanden bekommen dieselbe Antwort — sonst verrät die
   // Route, welche Projekt-IDs existieren.
   if (!project) return problem(404, m.projectNotFound);
 
   // 3. Repo-URL auflösen: mitgeschickte gewinnt, sonst die gespeicherte.
   const admin = createAdminClient();
-  const { data: existing } = await admin
+  const { data: existing, error: existingError } = await admin
     .from("project_brains")
     .select("repo_url")
     .eq("project_id", projectId)
     .eq("user_id", userId)
     .maybeSingle<{ repo_url: string | null }>();
+  // Ohne die gespeicherte Adresse würde das upsert unten ein hinterlegtes Repo stillschweigend löschen.
+  if (existingError) {
+    captureError("brain.brain_read_failed", existingError, { userId, projectId });
+    return problem(503, m.brainUnavailable);
+  }
 
   let repoUrl: string | null = existing?.repo_url ?? null;
   if (parsed.data.repoUrl !== undefined) {
@@ -163,6 +173,7 @@ export async function POST(req: Request, { params }: Params) {
       tooMany: m.brainTooMany,
       budget: m.brainBudget,
       notConfigured: m.brainNotConfigured,
+      unavailable: m.brainUnavailable,
     },
     stubOutsideProduction: false,
   });
@@ -172,7 +183,7 @@ export async function POST(req: Request, { params }: Params) {
   // 5. Status auf „läuft" setzen, damit ein Reload den Spinner zeigt statt
   //    einen scheinbar unveränderten Leerzustand.
   const startedAt = Date.now();
-  await admin.from("project_brains").upsert(
+  const { error: startError } = await admin.from("project_brains").upsert(
     {
       project_id: projectId,
       user_id: userId,
@@ -183,6 +194,13 @@ export async function POST(req: Request, { params }: Params) {
     },
     { onConflict: "project_id" }
   );
+  // Scheitert das Anlegen der Zeile, würde die bezahlte Analyse trotzdem laufen, das abschließende update träfe keine
+  // Zeile, und der Nutzer sähe ein Ergebnis, das nach dem Neuladen fehlt. Also gar nicht erst starten.
+  if (startError) {
+    await releaseReservations();
+    captureError("brain.start_failed", startError, { userId, projectId });
+    return problem(503, m.brainUnavailable);
+  }
 
   try {
     const collected = await collectBrainSources(supabase, userId, projectId, {
@@ -201,7 +219,7 @@ export async function POST(req: Request, { params }: Params) {
     });
 
     const analyzedAt = new Date().toISOString();
-    await admin
+    const { error: saveError } = await admin
       .from("project_brains")
       .update({
         status: "ready",
@@ -217,6 +235,8 @@ export async function POST(req: Request, { params }: Params) {
       })
       .eq("project_id", projectId)
       .eq("user_id", userId);
+    // Nicht gespeichert heißt nicht fertig: der catch unten gibt die Reservierungen zurück und meldet den Fehler.
+    if (saveError) throw saveError;
 
     logEvent("brain.analyzed", {
       userId,
@@ -253,11 +273,14 @@ export async function POST(req: Request, { params }: Params) {
       latencyMs: Date.now() - startedAt,
     });
 
-    await admin
+    const { error: failedWriteError } = await admin
       .from("project_brains")
       .update({ status: "failed", error_code: code, updated_at: new Date().toISOString() })
       .eq("project_id", projectId)
       .eq("user_id", userId);
+    // Best effort: die Antwort unten meldet den Fehler so oder so; nur der Status bleibt dann auf "analyzing" stehen,
+    // den die Leseseite nach einer Frist selbst auflöst (isAnalysisRunning).
+    if (failedWriteError) captureError("brain.failed_status_write_failed", failedWriteError, { userId, projectId });
 
     return problem(502, describeBrainFailure(code, m), { code });
   }
@@ -283,12 +306,16 @@ export async function DELETE(req: Request, { params }: Params) {
 
   // Auch hier zuerst die Eigentümerschaft über den RLS-gebundenen Client, weil
   // das Löschen darunter am Service-Role-Client hängt.
-  const { data: project } = await supabase
+  const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id")
     .eq("id", projectId)
     .eq("user_id", user.id)
     .maybeSingle();
+  if (projectError) {
+    captureError("brain.project_read_failed", projectError, { userId: user.id, projectId });
+    return problem(503, m.brainUnavailable);
+  }
   if (!project) return problem(404, m.projectNotFound);
 
   const admin = createAdminClient();

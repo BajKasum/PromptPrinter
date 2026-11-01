@@ -11,6 +11,8 @@ import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
 import { problem } from "@/server/http/api-problem";
+import { DatabaseReadError, orThrow } from "@/server/supabase/query";
+import { captureError } from "@/shared/lib/observability";
 import { resolvePlan } from "@/shared/lib/plans";
 import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { fmt } from "@/shared/i18n/format";
@@ -52,7 +54,7 @@ export type ModelCallOptions = {
    */
   checkHourlyLimit: () => ReturnType<typeof rateLimit>;
   /** Die Ablehnungstexte des Aufruf-Typs. `monthlyLimit` trägt {plan} und {limit}. */
-  texts: { monthlyLimit: string; tooMany: string; budget: string; notConfigured: string };
+  texts: { monthlyLimit: string; tooMany: string; budget: string; notConfigured: string; unavailable: string };
   /**
    * Ohne Server-Anbieter antwortet der Aufruf in der Entwicklung mit einer Platzhalterantwort
    * (Stub), nur in Produktion verweigert er den Dienst. Aus: auch in der Entwicklung eine klare
@@ -65,10 +67,15 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
   const { supabase, userId, appMetadata, m, texts } = opts;
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  const [{ data: profile }, override] = await Promise.all([
-    supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
-    getUserOverride(userId),
-  ]);
+  // Ein Lesefehler ist weder "Plan Free" noch "kein eigener Key": das lehnte ein Pro-Konto mit dem Hinweis auf einen
+  // eigenen Key ab oder schickte den Zug auf den Server-Key. Vor jeder Reservierung also 503, eine Ablehnung kostet nichts.
+  let profile: Awaited<ReturnType<typeof readProfile>>;
+  let override: Awaited<ReturnType<typeof getUserOverride>>;
+  try {
+    [profile, override] = await Promise.all([readProfile(supabase, userId), getUserOverride(userId)]);
+  } catch (err) {
+    return unavailable(err, userId, texts.unavailable);
+  }
   // Vor jeder Reservierung, eine Ablehnung kostet nichts. Kein Rückfall auf den Server-Key (byok.ts).
   if (override === "unreadable") {
     return problem(409, m.byokUnreadable, { kind: "byokUnreadable" });
@@ -81,14 +88,25 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
   // Faul gelesen (Betriebs-Audit 04.10.2026): die Zählung wächst mit der Nutzung und wird nur an
   // zwei Stellen gebraucht, (a) wenn Redis nicht entscheiden kann, dann IST sie die Durchsetzung,
   // und (b) wenn eine Ablehnung die Zahl nennen muss.
-  const countAssistantMessagesThisMonth = async (): Promise<number> => {
-    const { count } = await supabase
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("role", "assistant")
-      .gte("created_at", monthStart);
-    return count ?? 0;
+  // Gibt null zurück, wenn die Zählung scheitert: ein Fehler ist NICHT 0, sonst wäre ohne Redis das Monatskontingent
+  // nicht durchgesetzt. Der Aufrufer entscheidet, was null heißt.
+  const countAssistantMessagesThisMonth = async (): Promise<number | null> => {
+    try {
+      const { count } = orThrow(
+        await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("role", "assistant")
+          .gte("created_at", monthStart),
+        "messages count"
+      );
+      return count ?? 0;
+    } catch (err) {
+      if (!(err instanceof DatabaseReadError)) throw err;
+      captureError("model_call.read_failed", err, { userId });
+      return null;
+    }
   };
   const { plan, isAdmin, limits } = resolvePlan(profile);
 
@@ -131,17 +149,21 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     // Zählung in der Datenbank die Durchsetzung. Das gilt für beide Aufruf-Typen gleich: ohne
     // Redis darf eine Analyse nicht mehr, als ein aufgebrauchtes Monatskontingent mit Redis erlaubte.
     let used: number | null = null;
-    if (!reservation) used = await countAssistantMessagesThisMonth();
+    if (!reservation) {
+      used = await countAssistantMessagesThisMonth();
+      if (used === null) return problem(503, texts.unavailable);
+    }
     const overLimit = reservation ? !reservation.allowed : (used ?? 0) >= limits.chatMessages;
     if (overLimit) {
       if (reservation) await reservation.release();
       // Die Zahl steht in der Ablehnung: der eine Fall, in dem der Redis-Weg noch zählt, und ein
       // seltener (das Konto steht an seiner Grenze).
       used ??= await countAssistantMessagesThisMonth();
+      // Scheitert hier die Zählung, bleibt es bei der Ablehnung, nur ohne die Zahl: eine Ablehnung lockert nichts.
       return problem(403, fmt(texts.monthlyLimit, { plan, limit: limits.chatMessages }), {
         kind: "chatMessages",
         limit: limits.chatMessages,
-        current: used,
+        ...(used === null ? {} : { current: used }),
         plan,
       });
     }
@@ -189,4 +211,19 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     return problem(503, texts.notConfigured);
   }
   return { override, plan, isAdmin, releaseReservations };
+}
+
+async function readProfile(supabase: SupabaseClient, userId: string) {
+  const { data } = orThrow(
+    await supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
+    "profiles"
+  );
+  return data;
+}
+
+/** Ein Lesefehler wird zu 503 mit Logeintrag; alles andere ist ein Programmfehler und wird weitergeworfen. */
+function unavailable(err: unknown, userId: string, message: string): Response {
+  if (!(err instanceof DatabaseReadError)) throw err;
+  captureError("model_call.read_failed", err, { userId });
+  return problem(503, message);
 }

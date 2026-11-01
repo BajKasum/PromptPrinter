@@ -15,7 +15,7 @@ type Row = Record<string, unknown> | null;
 
 // Minimal PostgREST-shaped stub: every filter returns the builder, and the
 // terminal call resolves to the canned row(s).
-function supabaseWith(result: { data: Row | Row[] }) {
+function supabaseWith(result: { data: Row | Row[]; error?: { message: string } }) {
   const chain: Record<string, unknown> = {
     maybeSingle: async () => result,
     then: (resolve: (v: unknown) => unknown) => resolve(result),
@@ -29,7 +29,7 @@ function supabaseWith(result: { data: Row | Row[] }) {
 // see migration 0020), not the request-scoped client the other two exports
 // below still use — so it gets its own stub, swapped in per test via the
 // module-level mock rather than passed as an argument.
-let adminResult: { data: Row } = { data: null };
+let adminResult: { data: Row; error?: { message: string } } = { data: null };
 vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: () => supabaseWith(adminResult),
 }));
@@ -47,6 +47,13 @@ describe("getUserOverride", () => {
   it("returns null when the user configured no key", async () => {
     adminResult = { data: null };
     expect(await getUserOverride("user-1")).toBeNull();
+  });
+
+  // #202: ein Lesefehler ist NICHT "kein eigener Key": der Zug liefe sonst auf dem Server-Key, Kosten beim Betreiber.
+  it("throws instead of returning null when the read fails", async () => {
+    adminResult = { data: null, error: { message: "connection reset" } };
+    await expect(getUserOverride("user-1")).rejects.toThrow("database read failed: user_api_keys");
+    await expect(getUserOverride("user-1")).rejects.toMatchObject({ name: "DatabaseReadError" });
   });
 
   it("decrypts a named provider's key", async () => {

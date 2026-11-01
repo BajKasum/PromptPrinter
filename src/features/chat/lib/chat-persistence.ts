@@ -1,6 +1,7 @@
 import { truncate, MAX_ASSISTANT_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import type { ChatRequest } from "@/shared/lib/schemas";
 import type { createClient } from "@/server/supabase/server";
+import { orThrow } from "@/server/supabase/query";
 import {
   collectAttachmentPaths,
   removeStoredObjects,
@@ -109,12 +110,17 @@ export async function openTurn(
   // Confirm the caller still owns the passed conversation (RLS scopes the
   // select to the owner); if it's gone or not theirs, start a fresh one.
   if (conversationId) {
-    const { data: existing } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("id", conversationId)
-      .eq("user_id", userId)
-      .maybeSingle();
+    // Ein Lesefehler ist NICHT "gibt es nicht": der Zug legte sonst eine neue Konversation an, und der laufende Chat
+    // spaltete sich still auf. Er wirft, die Route antwortet mit 503.
+    const { data: existing } = orThrow(
+      await supabase
+        .from("conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      "conversations"
+    );
     if (!existing) conversationId = null;
   }
 
