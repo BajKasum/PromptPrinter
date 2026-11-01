@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: Sicherheits-Issues aus dem Audit des Tages (PR #258, Branch `fix/sicherheit-2026-11`)
+
+- **#229 CSRF:** Die Middleware weist fremde ändernde Anfragen an `/api/` mit 403 ab (`server/security/request-origin.ts`), keine Route wurde angefasst. Sec-Fetch-Site zuerst, ohne den Kopf Origin. Ausgenommen: Webhook, die vier Geräte-Routen ohne Cookie, Bearer. **Entscheid:** Eine Anfrage ohne beide Köpfe läuft durch, sie kommt nicht aus einem Browser. Die vorgeschlagene Content-Type-Pflicht ist weggelassen, ein fremdes Formular scheitert schon an der Herkunft.
+- **#207 Client-IP:** Weiterleitungs-Köpfe gelten nur mit `VERCEL` oder dem neuen, optionalen `TRUSTED_PROXY_HOPS`. Sonst teilen sich anonyme Anfragen einen Zähler, beim Start erscheint eine Warnung. In Produktion ist nichts zu setzen.
+- **#206 Zähler:** Monatskontingent und Tagesbudgets laufen über `reserveCounter` (Zählen und Ablauf in einer Transaktion, Rückgabe legt keinen Wert -1 an). Die Budget-Warnung kommt je Tag statt je Prozess.
+- **#231 Anmeldung:** Ab 10 Fehlversuchen in 15 Minuten ist die gehashte Adresse gesperrt, auch mit richtigem Passwort, unbekannte Adressen zählen genauso. **Entscheid:** Feste Sperre mit Ablauf statt wachsender Verzögerung. Wer stetig rät, kann das Passwort-Login eines Opfers aufhalten, Reset und OAuth bleiben offen. Nicht gebaut: die Besucher-IP an GoTrue weitergeben.
+- **#230 Konto-Auskunft:** Reset und Erneut-Senden antworten auch im Mail-Cooldown gleich und warten mindestens 1,5 s. Die Mindestdauer ist nicht gegen den echten Mailversand gemessen. **Abstrich:** Die Registrierung nennt vergebene Adressen, solange "Confirm email" aus ist (docs/SETUP.md, "Auth-Mails").
+- **#238 CSP (offen):** `'unsafe-inline'` bleibt auf `/login`, `/signup`, `/reset-password`. Lokal gemessen hatte die Nonce-Variante zwei- bis dreifache Zeit bis zum ersten Byte (`/login` 4 bis 6 ms gegen 10 bis 16 ms), `/login` und `/signup` mehr als doppelt so viel HTML, und der Cache fiel weg. Messwerte im Issue.
+- **#241 (offen):** `/.well-known/security.txt`, allgemeiner Text für unbekannte Auth-Fehler (Wortlaut im Log), kein Produktionsstart mit http-Adresse ohne `ALLOW_INSECURE_APP_URL=1`, Proxy-Abschnitt in docs/DOCKER.md. Die Wildcard-CORS der Plattform bleibt, nur öffentliche statische Antworten. Offen: Basis-Image per Digest, GitHub-Einstellung für SHA-Pinning (Kasum).
+- **Nicht geprüft:** der Zähler gegen ein echtes Upstash, die Sperre gegen einen echten Auth-Server, der Docker-Pfad von Hand. Die lokalen Tests liefen mit `--testTimeout=60000`, weil parallele Sitzungen den Rechner auslasteten.
+
+---
+
 ## 2026-11-01: SEO, Structured Data, Sitemap und Docker-Kontext (Branch `chore/seo-docs-2026-11`, PR #259)
 
 - **#248 Structured Data:** Organisation, Website, Software und Person tragen feste `@id` (`features/marketing/lib/entity-ids.ts`) und stehen
