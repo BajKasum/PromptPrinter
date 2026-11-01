@@ -138,16 +138,17 @@ describe("SEO-Metadaten der öffentlichen Seiten", () => {
     expect(skill?.metadata?.description).toContain("Claude Code");
   });
 
-  // #253: Hilfe-Artikel und Vergleiche werden als Antwort auf eine Frage geteilt. Die Vorschau muss ihr Thema zeigen
+  // #253: Hilfe-Artikel, Vergleiche und Aufgabenseiten werden als Antwort auf eine Frage geteilt. Die Vorschau muss ihr Thema zeigen
   // und sie als Artikel ausweisen, mit denselben Daten wie die Autorenzeile.
-  describe("Hilfe-Artikel und Vergleiche", () => {
+  describe("Hilfe-Artikel, Vergleiche und Aufgabenseiten", () => {
     const articles = () =>
-      pages.filter((page) => /^\/(docs|vergleich)\/[^/]+$/.test(page.route));
+      pages.filter((page) => /^\/(docs|vergleich|aufgaben)\/[^/]+$/.test(page.route));
 
-    it("findet beide Sorten", () => {
+    it("findet alle Sorten", () => {
       const routes = articles().map((page) => page.route);
       expect(routes.some((route) => route.startsWith("/docs/"))).toBe(true);
       expect(routes.some((route) => route.startsWith("/vergleich/"))).toBe(true);
+      expect(routes.some((route) => route.startsWith("/aufgaben/"))).toBe(true);
     });
 
     it("senden og:type article mit Veröffentlichungs- und Änderungsdatum", () => {
@@ -168,14 +169,14 @@ describe("SEO-Metadaten der öffentlichen Seiten", () => {
         return typeof first === "string" ? first : first instanceof URL ? first.pathname : (first?.url ?? "");
       });
 
-      for (const url of urls) expect(String(url)).toMatch(/^\/og\/(docs|vergleich)\/[\w-]+\.png$/);
+      for (const url of urls) expect(String(url)).toMatch(/^\/og\/(docs|vergleich|aufgaben)\/[\w-]+\.png$/);
       expect(duplicates(urls.map(String))).toEqual([]);
     });
 
     it("zeigen auf eine Karte, die es gibt", () => {
       for (const page of articles()) {
         const [, kind, slug] = page.route.split("/");
-        expect(socialCardFor(kind === "docs" ? "docs" : "vergleich", slug), page.route).not.toBeNull();
+        expect(socialCardFor(kind, slug), page.route).not.toBeNull();
       }
     });
   });

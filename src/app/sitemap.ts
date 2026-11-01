@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next";
 import { COMPARISONS, COMPARISONS_UPDATED, comparisonHref } from "@/features/marketing/lib/comparisons";
+import { TASK_GUIDES, TASK_GUIDES_UPDATED, taskGuideHref } from "@/features/marketing/lib/task-guides";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import { isoFromGermanDate } from "@/shared/lib/german-date";
 import { LEGAL } from "@/shared/lib/legal";
 import { siteUrl } from "@/shared/lib/site-url";
 
-// Nur öffentliche, indexierbare Routen, die App-Seiten liegen hinter dem Login. Hilfe und Vergleiche kommen aus
+// Nur öffentliche, indexierbare Routen, die App-Seiten liegen hinter dem Login. Hilfe, Vergleiche und Aufgabenseiten kommen aus
 // derselben Quelle wie die Seiten selbst, ein neuer Artikel steht hier ohne zweite Änderung.
 //
 // `lastModified` ist das Datum, das die Seite selbst zeigt (Byline, `dateModified`): Hilfe-Artikel `updated`,
-// Vergleiche `COMPARISONS_UPDATED`, Rechtstexte `LEGAL.lastUpdated`. Wo es kein gepflegtes Datum gibt, fehlt das
+// Vergleiche `COMPARISONS_UPDATED`, Aufgabenseiten `TASK_GUIDES_UPDATED`, Rechtstexte `LEGAL.lastUpdated`. Wo es kein gepflegtes Datum gibt, fehlt das
 // Feld: kein Datum ist besser als ein falsches, und die Buildzeit ist keine Änderung (#251).
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -25,6 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/skill`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/docs`, lastModified: docsUpdated, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/vergleich`, lastModified: COMPARISONS_UPDATED, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/aufgaben`, lastModified: TASK_GUIDES_UPDATED, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/ueber`, changeFrequency: "yearly", priority: 0.5 },
     { url: `${BASE}/kontakt`, changeFrequency: "yearly", priority: 0.5 },
   ];
@@ -39,6 +41,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const comparisons: MetadataRoute.Sitemap = COMPARISONS.map((comparison) => ({
     url: `${BASE}${comparisonHref(comparison.slug)}`,
     lastModified: COMPARISONS_UPDATED,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  const taskGuides: MetadataRoute.Sitemap = TASK_GUIDES.map((guide) => ({
+    url: `${BASE}${taskGuideHref(guide.slug)}`,
+    lastModified: TASK_GUIDES_UPDATED,
     changeFrequency: "monthly" as const,
     priority: 0.6,
   }));
@@ -58,5 +67,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.3,
   }));
 
-  return [...marketing, ...docs, ...comparisons, ...legal];
+  return [...marketing, ...docs, ...comparisons, ...taskGuides, ...legal];
 }

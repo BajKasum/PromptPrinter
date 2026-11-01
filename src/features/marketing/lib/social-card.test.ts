@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DOCS_ORDER } from "@/shared/lib/docs-nav";
 import { COMPARISONS } from "./comparisons";
+import { TASK_GUIDES } from "./task-guides";
 import { slugFromSegment, socialCardFor, socialImageUrl } from "./social-card";
 
 describe("socialImageUrl", () => {
@@ -9,6 +10,7 @@ describe("socialImageUrl", () => {
   it("endet auf .png, damit die Middleware die Karte durchlässt", () => {
     expect(socialImageUrl("docs", "erste-schritte")).toBe("/og/docs/erste-schritte.png");
     expect(socialImageUrl("vergleich", "prompt-vorlagen")).toBe("/og/vergleich/prompt-vorlagen.png");
+    expect(socialImageUrl("aufgaben", "lernplan-erstellen-lassen")).toBe("/og/aufgaben/lernplan-erstellen-lassen.png");
   });
 
   it("lässt sich mit slugFromSegment umkehren", () => {
@@ -33,9 +35,16 @@ describe("socialCardFor", () => {
     }
   });
 
+  it("hat für jede Aufgabenseite eine Karte mit deren Frage", () => {
+    for (const guide of TASK_GUIDES) {
+      expect(socialCardFor("aufgaben", guide.slug), guide.slug).toEqual({ label: "Aufgabe", title: guide.question });
+    }
+  });
+
   it("kennt weder fremde Arten noch unbekannte Seiten", () => {
     expect(socialCardFor("docs", "gibt-es-nicht")).toBeNull();
     expect(socialCardFor("vergleich", "gibt-es-nicht")).toBeNull();
+    expect(socialCardFor("aufgaben", "gibt-es-nicht")).toBeNull();
     expect(socialCardFor("pricing", "erste-schritte")).toBeNull();
   });
 });

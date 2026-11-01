@@ -63,6 +63,7 @@ export const PUBLIC_PREFIXES = [
   "/rueckerstattung",
   "/ueber",
   "/vergleich",
+  "/aufgaben", // Was eine KI für eine Aufgabe wissen muss, je Aufgabe eine Seite (features/marketing/lib/task-guides.ts)
 ] as const;
 
 // Metadata routes Next serves from the app directory. Exact matches only, so
