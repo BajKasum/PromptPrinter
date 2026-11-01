@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FolderInput, FolderKanban, Loader2 } from "lucide-react";
 import { useToast } from "@/shared/ui/toast";
 import { createClient } from "@/shared/supabase/client";
+import { captureError } from "@/shared/lib/observability";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 
@@ -39,14 +40,16 @@ export function MoveToProjectButton({
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("projects")
         .select("id, name")
         .order("updated_at", { ascending: false })
         .limit(50);
       if (!cancelled) {
         setProjects((data as ProjectOption[] | null) ?? []);
-        setLoaded(true);
+        // Nach einem Lesefehler fragt das nächste Öffnen neu, statt "keine Projekte" stehen zu lassen.
+        if (error) captureError("move_to_project.load_failed", error);
+        else setLoaded(true);
       }
     })();
     return () => {

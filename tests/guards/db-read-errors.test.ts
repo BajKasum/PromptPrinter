@@ -24,7 +24,6 @@ const BEST_EFFORT: Record<string, string> = {
 
 /** Noch nicht umgestellt (Rest von #202). Eintrag löschen, sobald die Stelle den Fehler liest. */
 const STILL_OPEN: Record<string, string> = {
-  "src/features/chat/components/move-to-project.tsx:data": "Browser: Auswahlliste, liegt in dieser Runde bei einer anderen Sitzung",
 };
 
 function sourceFiles(dir: string): string[] {
