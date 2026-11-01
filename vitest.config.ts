@@ -28,11 +28,12 @@ const alias = {
   "server-only": path.resolve(process.cwd(), "node_modules/server-only/empty.js"),
 };
 const setupFiles = ["./vitest.setup.ts"];
+// Der volle Lauf belegt lokal alle Kerne, dann riss ein gesunder Test die Standardgrenze von 5 s. Steht in jedem
+// Projekt: die Projekte erben die Werte von `test` nicht.
+const testTimeout = 20_000;
 
 export default defineConfig({
   test: {
-    // Der volle Lauf belegt lokal alle Kerne, dann riss ein gesunder Test die Standardgrenze von 5 s.
-    testTimeout: 20_000,
     // Nur gemessen, wenn man es verlangt (`npm run test:coverage`); `npm run test` bleibt wie es war. Bewusst keine
     // `thresholds`: die Messung weist aus, sie schlägt nicht an (#221). `include` zählt auch Dateien, die kein
     // Test lädt, sonst wäre eine nie ausgeführte Datei unsichtbar und die Quote zu schön. Das Skript
@@ -60,6 +61,7 @@ export default defineConfig({
           // andere weiterhin.
           include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
           setupFiles,
+          testTimeout,
         },
       },
       {
@@ -70,6 +72,7 @@ export default defineConfig({
           environment: "jsdom",
           include: ["src/**/*.test.tsx"],
           setupFiles,
+          testTimeout,
         },
       },
     ],
