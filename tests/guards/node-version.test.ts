@@ -41,12 +41,13 @@ describe(`Node ${major} an allen Stellen`, () => {
     expect(pkg.engines?.node).toBe(`${major}.x`);
   });
 
-  it("Dockerfile: jede Stufe baut auf node:<Hauptversion>-alpine", () => {
+  it("Dockerfile: jede Stufe baut auf node:<Hauptversion>-alpine, per Digest festgelegt und überall derselbe", () => {
     const froms = [...read("Dockerfile").matchAll(/^FROM\s+(node:\S+)/gm)].map((m) => m[1]);
     // deps, builder, runner. Weniger hieße, dass eine Stufe entfernt wurde und
     // dieser Test stillschweigend weniger prüft.
     expect(froms.length).toBeGreaterThanOrEqual(3);
-    for (const image of froms) expect(image).toBe(`node:${major}-alpine`);
+    for (const image of froms) expect(image).toMatch(new RegExp(`^node:${major}-alpine@sha256:[0-9a-f]{64}$`));
+    expect(new Set(froms).size).toBe(1);
   });
 
   it("jeder setup-node-Schritt der Workflows nimmt die Version aus .nvmrc (oder nennt dieselbe)", () => {
