@@ -31,6 +31,19 @@ const setupFiles = ["./vitest.setup.ts"];
 
 export default defineConfig({
   test: {
+    // Nur gemessen, wenn man es verlangt (`npm run test:coverage`); `npm run test` bleibt wie es war. Bewusst keine
+    // `thresholds`: die Messung weist aus, sie schlägt nicht an (#221). `include` zählt auch Dateien, die kein
+    // Test lädt, sonst wäre eine nie ausgeführte Datei unsichtbar und die Quote zu schön. Das Skript
+    // scripts/coverage-summary.mjs rechnet die json-summary je Verzeichnis zusammen.
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/**/*.d.ts"],
+      reporter: ["text-summary", "json-summary"],
+      // Auch bei einem roten Test einen Bericht schreiben: die Messung soll nicht an einem Test hängen.
+      reportOnFailure: true,
+      reportsDirectory: "./coverage",
+    },
     projects: [
       {
         plugins: [react()],

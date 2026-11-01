@@ -55,7 +55,9 @@ wandert. Ohne Provider-Key sagt sie ab, auch lokal.
 | `npm run lint` | ESLint-CLI (`eslint . --max-warnings 0`, jede Warnung stoppt das Gate) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest (Unit-Tests) |
+| `npm run test:coverage` | Dieselben Tests mit Messung der Abdeckung (V8), schreibt `coverage/` und eine Tabelle je Verzeichnis (siehe „Testabdeckung") |
 | `npm run test:e2e` | Playwright-Smoketests im Browser gegen einen lokalen Supabase-Stack (siehe „Ende-zu-Ende-Tests", braucht Docker) |
+| `npm run test:e2e:prod` | Dieselbe Technik gegen den Produktionsaufbau (`next build`, `next start`), siehe „Browser-Test gegen den Produktionsaufbau" |
 | `node scripts/take-screenshots.mjs` | Screenshots aller Seiten in Light+Dark → `screenshots_Docs/` (braucht laufenden Dev-Server, Chrome und `SCREENSHOT_EMAIL`/`SCREENSHOT_PASSWORD` in `.env.local`) |
 
 ## Environment
@@ -658,6 +660,55 @@ auf. Die Tests wurden einmal gegengeprüft, indem je ein Fehler in die App
 eingebaut wurde (Projekt-Löschen ohne Speicher-Aufräumen, Export mit internem
 Pfad, Schranke gegen schwache Passwörter aus): jeder machte genau den
 zuständigen Test rot.
+
+## Testabdeckung
+
+`npm run test:coverage` führt dieselben Tests wie `npm run test` mit dem V8-Anbieter
+aus (`@vitest/coverage-v8`, Block `coverage` in `vitest.config.ts`), schreibt
+`coverage/` (gitignored) und danach eine Tabelle je Verzeichnis
+(`scripts/coverage-summary.mjs`, aus Treffern und Gesamtzahlen gerechnet, nicht
+aus Mittelwerten). `include` ist `src/**`, damit auch Dateien zählen, die kein Test
+lädt. Ein Lauf dauert gut drei Minuten.
+
+**Eine Messung, keine Schranke (#221).** Es gibt keine `thresholds`; die CI wird
+von einer Zahl nie rot. Der Job `coverage` in `ci.yml` läuft neben `verify`
+(keine längere Wartezeit), seine Schritte dürfen scheitern, der Bericht liegt
+14 Tage als Artefakt `coverage` am Lauf, die Tabelle steht in dessen
+Zusammenfassung. Eine Ratsche (Zweige je Verzeichnis nicht unter dem Basiswert
+minus 2 Punkte) ist die nächste Stufe und eine Entscheidung von Kasum; der
+Basiswert steht hier, damit es sie geben kann.
+
+**Basiswert vom 2026-11-01** (240 Testdateien, 3 465 Tests, Windows, Commit
+`fd9e84d` plus diese Änderung):
+
+| Verzeichnis | Dateien | Zeilen | Anweisungen | Zweige | Funktionen |
+|---|---:|---:|---:|---:|---:|
+| `src/server/` | 59 | 92,5 % | 91,0 % | 87,8 % | 90,4 % |
+| `src/app/api/` | 20 | 95,4 % | 94,5 % | 90,9 % | 94,6 % |
+| `src/app/` (Seiten, ohne api) | 78 | 24,7 % | 24,4 % | 9,5 % | 15,5 % |
+| `src/features/` | 114 | 82,0 % | 79,3 % | 74,2 % | 78,7 % |
+| `src/shared/` | 80 | 90,8 % | 90,2 % | 86,6 % | 85,9 % |
+| `src/shell/` | 13 | 86,9 % | 84,8 % | 80,7 % | 76,6 % |
+| Rest (`middleware.ts`, `instrumentation.ts`) | 2 | 70,6 % | 63,2 % | 66,7 % | 33,3 % |
+| **Gesamt** | 366 | 83,1 % | 81,6 % | 77,0 % | 76,6 % |
+
+Was die Zahlen sagen und was nicht:
+
+- Für die Bereiche, die Geld, Geheimnisse und Ratenlimit tragen, ist der Basiswert
+  hoch (`src/server/` 87,8 %, `src/app/api/` 90,9 % der Zweige). Die Seiten unter
+  `src/app/` sind kaum durch Vitest erreicht (Zweige 9,5 %): sie laufen in den
+  Browser-Smoketests, die diese Messung nicht sieht.
+- Am dünnsten in `src/server/`: `project.ts` (0 von 15 Zweigen), `session.ts` (0 von
+  10) und `cli-login/store.ts` (0 von 20) laufen nur gemockt oder über die Browser-Tests, kein
+  Vitest-Test führt sie aus.
+- Die drei komplexesten Funktionen (Issue #221): `run-chat-turn.ts` 23 von 26 Zweigen
+  (seit dem Umbau vom 2026-11-01 kleiner geschnitten), Webhook-Route 56 von 63,
+  Gedächtnis-Route 42 von 48. Welche Zweige fehlen, zeigt `vitest run --coverage` mit
+  dem Reporter `html` (`--coverage.reporter=html`, danach `coverage/index.html`); sie
+  als einzelne Aufgaben aufzunehmen ist der nächste Schritt, aber noch nicht getan.
+- V8 misst Zweige aus der Blockabdeckung der Laufzeit, nicht aus dem Quelltext. Ein
+  bis zwei Punkte Unterschied zwischen zwei Läufen sind kein Befund (nicht gemessen, wie
+  stark sie schwanken), ein Verzeichnis, das um zehn fällt, schon.
 
 ## Projektstruktur
 

@@ -99,3 +99,45 @@ jobs:
           # env on a clean runner. They are NOT secrets.
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+
+  # Messung, keine Schranke (#221): welche Zeilen und Zweige die Tests
+  # erreichen, damit "genug getestet" kein Gefühl bleibt. Eigener Job neben
+  # verify, damit der Lauf nicht länger wird und eine Messung nie einen PR rot
+  # färbt: die Schritte dürfen scheitern (continue-on-error), der Job bleibt
+  # grün. Ein Test, der kaputt ist, fängt verify ab. Eine Schwelle gibt es
+  # bewusst nicht, erst ein Basiswert (docs/SETUP.md, "Testabdeckung").
+  coverage:
+    name: Testabdeckung (Messung, blockiert nicht)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tests mit Messung
+        continue-on-error: true
+        run: npx vitest run --coverage
+
+      # Die Tabelle je Verzeichnis steht danach in der Zusammenfassung des Laufs.
+      - name: Tabelle je Verzeichnis
+        if: always()
+        continue-on-error: true
+        run: node scripts/coverage-summary.mjs
+
+      - name: Bericht sichern
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
