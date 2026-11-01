@@ -88,7 +88,8 @@ describe("Befehlspalette: Fokus (#151)", () => {
     other.focus();
     await user.keyboard("{Control>}k{/Control}");
     await user.keyboard("{Escape}");
-    expect(other).toHaveFocus();
+    // Der Fokus kommt nach dem Schliessen zurück, unter Last erst einen Moment später.
+    await waitFor(() => expect(other).toHaveFocus());
     other.remove();
   });
 });
