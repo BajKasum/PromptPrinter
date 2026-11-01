@@ -34,7 +34,6 @@ export function siteUrl(path = ""): string {
  */
 export function safeNextPath(raw: string | null, fallback = "/chats/new"): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return fallback;
-  // eslint-disable-next-line no-control-regex -- genau die Steuerzeichen sind das Ziel
   if (/[\\\u0000-\u001f\u007f]/.test(raw)) return fallback;
   const base = "https://app.invalid";
   try {
