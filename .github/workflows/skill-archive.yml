@@ -1,0 +1,62 @@
+name: Skill-Archiv
+
+# Hält die Prüfsumme auf /skill ehrlich (#240). Die Seite verlinkt das ZIP eines
+# festen Commits aus dem Schwester-Repo promptprinter-pp und nennt seine
+# SHA-256, damit Besucher prüfen können, dass sie die Datei haben, die geprüft
+# wurde, bevor sie den Installer ausführen.
+#
+# GitHub erzeugt dieses ZIP bei jeder Anfrage neu und sagt nicht zu, dass die
+# Bytes für immer gleich bleiben. Ändert sich die Kompression, passt die
+# Prüfsumme auf der Seite nicht mehr, und ein ehrlicher Besucher hielte den
+# Download für verfälscht. Dieser Lauf lädt das ZIP, rechnet nach und scheitert,
+# wenn es abweicht: bei jeder Änderung an den Konstanten, und wöchentlich, auch
+# wenn niemand etwas anfasst (auf main, damit ein roter Lauf sichtbar bleibt).
+#
+# Kein Geheimnis im Spiel, es wird nur eine öffentliche Datei gelesen.
+
+# Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker,
+# aus demselben Grund wie in docker.yml.
+on:
+  # push nur auf main, jeder Branch mit PR läuft über pull_request: ein Lauf je
+  # Commit (Begründung und Folgen: ci.yml, #222).
+  push:
+    branches: [main]
+    paths:
+      - src/features/marketing/lib/skill-data.ts
+      - scripts/verify-skill-archive.mjs
+      - .github/workflows/skill-archive.yml
+  pull_request:
+    paths:
+      - src/features/marketing/lib/skill-data.ts
+      - scripts/verify-skill-archive.mjs
+      - .github/workflows/skill-archive.yml
+  schedule:
+    - cron: "11 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: skill-archive-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Nur lesen, wie in ci.yml (tests/guards/workflows.test.ts).
+permissions:
+  contents: read
+
+jobs:
+  archiv:
+    name: ZIP laden und Prüfsumme vergleichen
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          # Aus .nvmrc, wie überall. Node 24 liest skill-data.ts direkt, die
+          # Typen entfernt es beim Laden: die Konstanten haben eine Quelle.
+          node-version-file: .nvmrc
+
+      - name: Prüfsumme vergleichen
+        run: node scripts/verify-skill-archive.mjs
