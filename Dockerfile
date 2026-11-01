@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Multi-stage build for Next.js 15 standalone output.
+# Multi-stage build for Next.js standalone output.
 # Final image runs `node server.js` on port 3000 as a non-root user.
 # ──────────────────────────────────────────────────────────────────────────────
 
