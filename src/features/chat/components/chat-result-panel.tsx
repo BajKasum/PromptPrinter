@@ -3,6 +3,10 @@
 import { Mascot } from "@/shared/brand/mascot";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { ChatReplyActions } from "@/features/chat/components/chat-transcript";
+import { useMemo } from "react";
+import { ChoiceChips } from "@/features/chat/components/choice-chips";
+import { RefineChips } from "@/features/chat/components/refine-chips";
+import { splitChoices } from "@/features/chat/lib/choices";
 import { PlaceholderForm } from "@/features/chat/components/placeholder-form";
 import { PromptQualityLine } from "@/features/chat/components/prompt-quality-line";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
@@ -27,6 +31,10 @@ export function ChatResultPanel({
   savedPrompts,
   index = 0,
   typed,
+  busy = false,
+  onPickChoice,
+  onRefine,
+  onRefineOther,
 }: {
   content: string;
   /** Present for project chats; omitted (or null) for a global chat's save. */
@@ -37,9 +45,20 @@ export function ChatResultPanel({
   index?: number;
   /** Was die Person im Gespräch geschrieben hat; schaltet die Prompt-Prüfung ein. */
   typed?: string;
+  /** Während ein Zug läuft, bietet das Panel weder Vorschläge noch Verfeinern an. */
+  busy?: boolean;
+  /** Ein Tipp auf einen Antwortvorschlag zu Finns Rückfrage (#225): die Option kommt ins Eingabefeld. */
+  onPickChoice?: (option: string) => void;
+  /** Ein Tipp auf "Kürzer", "Förmlicher" ...: schickt die vorformulierte Nachricht (#245). */
+  onRefine?: (message: string) => void;
+  /** "Anderes": setzt nur den Cursor ins Eingabefeld. */
+  onRefineOther?: () => void;
 }) {
   const t = useT();
-  const savablePrompt = extractPrompt(content);
+  // Der Block mit Antwortvorschlägen ist Bedienung: er wird ausgeblendet und fliesst weder in den Prompt noch
+  // in die kopierte oder exportierte Antwort ein.
+  const { text: shown, choices } = useMemo(() => splitChoices(content), [content]);
+  const savablePrompt = extractPrompt(shown);
   const alreadySaved = savablePrompt ? (savedPrompts?.includes(savablePrompt) ?? false) : false;
 
   return (
@@ -65,8 +84,10 @@ export function ChatResultPanel({
 
       {/* Larger, looser type than a chat bubble, this is meant to be read. */}
       <div className="px-3 py-4 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
-        <MarkdownMessage content={content} typed={typed} />
+        <MarkdownMessage content={shown} typed={typed} />
       </div>
+
+      {choices && !busy && onPickChoice && <ChoiceChips questions={choices} onPick={onPickChoice} />}
 
       {savablePrompt && <PromptQualityLine prompt={savablePrompt} />}
       {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} />}
@@ -74,8 +95,12 @@ export function ChatResultPanel({
       {/* Same actions as under an older reply (#150): the prompt that just got
           finished is the moment you most want to export it. */}
       <footer className="border-t border-border px-2 py-2 md:px-6">
-        <ChatReplyActions content={content} index={index} />
+        <ChatReplyActions content={shown} index={index} />
       </footer>
+
+      {savablePrompt && !busy && onRefine && onRefineOther && (
+        <RefineChips onRefine={onRefine} onOther={onRefineOther} />
+      )}
     </section>
   );
 }

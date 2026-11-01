@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/button";
 import { DolphinLoader } from "@/shared/brand/dolphin-loader";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
+import { hideChoicesWhileStreaming, splitChoices } from "@/features/chat/lib/choices";
 import { MessageAttachments } from "@/features/chat/components/attachment-chips";
 import type { AttachmentView } from "@/shared/lib/chat-attachments";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
@@ -177,14 +178,16 @@ export function ChatAssistantBubble({
   /** Was die Person im Gespräch geschrieben hat; schaltet die Prompt-Prüfung ein. */
   typed?: string;
 }) {
+  // Ein älterer Antwortvorschlags-Block (#225) ist abgelaufen: ausgeblendet, ohne Tippflächen.
+  const shown = splitChoices(content).text;
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] w-full">
         <div className="rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
-          <MarkdownMessage content={content} typed={typed} />
+          <MarkdownMessage content={shown} typed={typed} />
         </div>
         <div className="mt-1.5">
-          <ChatReplyActions content={content} index={index} />
+          <ChatReplyActions content={shown} index={index} />
         </div>
       </div>
     </div>
@@ -246,7 +249,7 @@ export function ChatStreamingReply({
   return (
     <div className="flex justify-start">
       <div className="w-full max-w-[88%] rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
-        <MarkdownMessage content={text} />
+        <MarkdownMessage content={hideChoicesWhileStreaming(text)} />
         <div className="mt-2.5 flex items-center">
           <DolphinLoader size={22} label={t.chat.writing} />
         </div>
