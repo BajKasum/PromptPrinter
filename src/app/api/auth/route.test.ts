@@ -321,6 +321,18 @@ describe("POST /api/auth", () => {
       });
     });
 
+    it("schreibt keine Mailadresse aus der Meldung ins Log", async () => {
+      signInWithPassword.mockResolvedValue({
+        error: { message: 'Email address "kaeufer@example.test" cannot be used as it is not authorized' },
+      });
+      await POST(req(signIn));
+      expect(logWarning).toHaveBeenCalledWith("auth.unknown_error", {
+        action: "sign-in",
+        message: 'Email address [adresse] cannot be used as it is not authorized',
+      });
+      expect(JSON.stringify(logWarning.mock.calls)).not.toContain("kaeufer@example.test");
+    });
+
     it("schreibt bekannte Fehler nicht ins Log", async () => {
       signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
       await POST(req(signIn));
