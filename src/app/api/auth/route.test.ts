@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 // The property worth defending here is ordering: no auth action may run before
@@ -256,34 +256,56 @@ describe("POST /api/auth", () => {
     });
   });
 
-  describe("reset-password", () => {
-    const body = { action: "reset-password", email: "du@example.com", turnstileToken: "token-abc" };
+  describe("Mail-Aktionen verraten kein Konto", () => {
+    const reset = { action: "reset-password", email: "du@example.com", turnstileToken: "token-abc" };
+    const resendBody = { action: "resend", email: "du@example.com", turnstileToken: "token-abc" };
+    const cooldown = { message: "For security purposes, you can only request this after 51 seconds." };
 
-    it("answers ok even when Supabase errors, so it never reveals whether the address exists", async () => {
-      resetPasswordForEmail.mockResolvedValue({ error: { message: "User not found" } });
-      const res = await POST(req(body));
-      expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ ok: true });
+    beforeEach(() => {
+      vi.useFakeTimers();
     });
 
-    it("does surface throttling, which reveals nothing about the account", async () => {
-      resetPasswordForEmail.mockResolvedValue({ error: { message: "Email rate limit exceeded" } });
-      const res = await POST(req(body));
-      expect(res.status).toBe(429);
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
-    // M-10 (Audit 06.09.2026): GoTrues eigener Mail-Cooldown traegt NICHT
-    // das Wort "rate limit" — die alte Pruefung erkannte nur die benannte
-    // Form und meldete diesen, haeufigeren Fall faelschlich als Erfolg
-    // ("Schau in dein Postfach", obwohl keine Mail rausging).
-    it("erkennt GoTrues Cooldown-Meldung auch ohne das Wort 'rate limit'", async () => {
-      resetPasswordForEmail.mockResolvedValue({
-        error: { message: "For security purposes, you can only request this after 51 seconds." },
+    async function answer(body: unknown) {
+      const pending = POST(req(body));
+      await vi.advanceTimersByTimeAsync(1500);
+      const res = await pending;
+      return { status: res.status, body: await res.json() };
+    }
+
+    it.each([
+      ["bekanntes Konto, Mail gesendet", { error: null }],
+      ["unbekannte Adresse", { error: { message: "User not found" } }],
+      ["Mail-Cooldown", { error: cooldown }],
+      ["Mail-Limit", { error: { message: "Email rate limit exceeded" } }],
+    ])("reset-password antwortet gleich: %s", async (_name, result) => {
+      resetPasswordForEmail.mockResolvedValue(result);
+      expect(await answer(reset)).toEqual({ status: 200, body: { ok: true } });
+    });
+
+    it("resend antwortet im Cooldown wie beim Erfolg", async () => {
+      resend.mockResolvedValue({ error: cooldown });
+      expect(await answer(resendBody)).toEqual({ status: 200, body: { ok: true } });
+    });
+
+    it("resend meldet andere Fehler weiter", async () => {
+      resend.mockResolvedValue({ error: { message: "Email address is invalid" } });
+      expect((await answer(resendBody)).status).toBe(400);
+    });
+
+    it.each([reset, resendBody])("wartet mindestens die Mindestdauer: %j", async (body) => {
+      let done = false;
+      const pending = POST(req(body)).then(() => {
+        done = true;
       });
-      const res = await POST(req(body));
-      expect(res.status).toBe(429);
-      const json = await res.json();
-      expect(json.detail).toContain("51 Sekunden");
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(done).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      await pending;
+      expect(done).toBe(true);
     });
   });
 

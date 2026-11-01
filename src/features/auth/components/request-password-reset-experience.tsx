@@ -44,10 +44,9 @@ export function RequestPasswordResetExperience() {
     setLoading(true);
     try {
       const result = await postAuthAction({ action: "reset-password", email }, captchaToken);
-      // The route answers ok even for an unknown address — staying neutral
-      // about whether an email is registered is now enforced there rather than
-      // here. What still reaches this branch is throttling and a failed human
-      // check, neither of which reveals anything about the account.
+      // Die Route antwortet immer gleich, auch im Mail-Cooldown und für eine unbekannte
+      // Adresse. Hier landen nur noch das Limit je Adresse und eine fehlgeschlagene
+      // Mensch-Prüfung, beide sagen nichts über das Konto.
       if (!result.ok) {
         setError(result.message);
         // Tokens are single-use and one was just spent; the retry needs a fresh one.
@@ -77,7 +76,8 @@ export function RequestPasswordResetExperience() {
             </h1>
             <p className="text-[15px] font-light text-secondary">
               Falls ein Konto mit <span className="text-foreground">{email}</span> existiert, haben
-              wir einen Link zum Zurücksetzen gesendet. Prüfe auch deinen Spam-Ordner.
+              wir einen Link zum Zurücksetzen gesendet. Prüfe auch deinen Spam-Ordner. Kommt nichts an,
+              warte eine Minute und fordere den Link neu an.
             </p>
           </div>
           <p className="text-[13px] text-secondary">
