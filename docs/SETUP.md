@@ -232,7 +232,7 @@ Stelle abweicht):
 |---|---|
 | `.nvmrc` | `24`, die Quelle der Wahrheit |
 | `ci.yml`, `e2e.yml`, `audit.yml` | `setup-node` liest `.nvmrc` |
-| `Dockerfile` | `node:24-alpine` in allen drei Stufen |
+| `Dockerfile` | `node:24-alpine@sha256:…` in allen drei Stufen, derselbe Digest |
 | `package.json` | `engines.node` = `24.x`, und `@types/node` auf `^24` |
 | **Vercel-Projekt** | Einstellung "Node.js Version" = `24.x` (**außerhalb des Repositories, der Test kann sie nicht prüfen**) |
 
@@ -247,6 +247,11 @@ liefert.
 Dependabot gesperrt, siehe `dependabot.yml`), die Vercel-Einstellung angleichen,
 dann Gate, `npm run test:e2e` und ein Produktions-Deployment mit
 `/api/health` abwarten.
+
+**Basis-Image aktualisieren:** der Digest im `Dockerfile` zieht Sicherheitsupdates von
+Node und Alpine nicht von selbst nach, das geschieht von Hand und bewusst. Neuen Wert lesen
+(`docker buildx imagetools inspect node:24-alpine`, die Zeile `Digest:` des Index, damit
+alle Plattformen gelten), in allen drei `FROM` ersetzen, der Docker-Workflow prüft das Image.
 
 ## Auth-Mails (eigener Versand)
 
