@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { counterRedisDouble } from "./redis-double";
 
 // Die Tagesbudgets des Servers (Serverschlüssel und Ausweich-Anbieter): Kanten, die rate-limit.test.ts nicht
 // festhält. Festgenagelt vor der Zerlegung von rate-limit.ts (Betriebs-Audit, Folgesitzung 2026-10-07,
@@ -20,7 +21,7 @@ type RedisDouble = {
 async function withRedis(redis: RedisDouble) {
   vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
   vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-  vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => redis } }));
+  vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => counterRedisDouble(redis) } }));
   vi.resetModules();
   return await import("@/server/security/rate-limit");
 }
@@ -109,7 +110,7 @@ describe("reserveServerKeyCall: Grenze, Warnsignal, Aufräumen", () => {
     expect((await over.reserveServerKeyCall())?.allowed).toBe(false);
   });
 
-  it("warnt bei Überschreitung einmal je Prozess, mit Tag, Stand, Budget und Hinweis, und nicht davor", async () => {
+  it("warnt bei Überschreitung einmal am Tag, mit Tag, Stand, Budget und Hinweis, und nicht davor", async () => {
     vi.stubEnv("LLM_DAILY_CALL_BUDGET", "5");
     const incr = vi.fn().mockResolvedValueOnce(5).mockResolvedValueOnce(6).mockResolvedValueOnce(7);
     const { reserveServerKeyCall } = await withRedis({ incr, expire: vi.fn(), decr: vi.fn() });
@@ -130,16 +131,24 @@ describe("reserveServerKeyCall: Grenze, Warnsignal, Aufräumen", () => {
     expect(logWarning).toHaveBeenCalledTimes(1);
   });
 
-  it("setzt das Ablaufdatum nur beim ersten Aufruf des Tages (Stand 1), nicht bei jedem weiteren", async () => {
-    const expire = vi.fn().mockResolvedValue(1);
-    const first = await withRedis({ incr: vi.fn().mockResolvedValue(1), expire, decr: vi.fn() });
-    await first.reserveServerKeyCall();
-    expect(expire).toHaveBeenCalledTimes(1);
-    expect(expire).toHaveBeenCalledWith(`llm-daily-calls:${DAY}`, TWO_DAYS);
+  it("warnt am nächsten Tag erneut, auch im selben Prozess", async () => {
+    vi.stubEnv("LLM_DAILY_CALL_BUDGET", "5");
+    const { reserveServerKeyCall } = await withRedis({ incr: vi.fn().mockResolvedValue(6), expire: vi.fn(), decr: vi.fn() });
+    await reserveServerKeyCall();
+    await reserveServerKeyCall();
+    expect(logWarning).toHaveBeenCalledTimes(1);
 
-    const later = await withRedis({ incr: vi.fn().mockResolvedValue(2), expire, decr: vi.fn() });
-    await later.reserveServerKeyCall();
-    expect(expire).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(new Date("2026-10-08T00:00:01Z"));
+    await reserveServerKeyCall();
+    expect(logWarning).toHaveBeenCalledTimes(2);
+    expect(logWarning.mock.calls[1][1]).toMatchObject({ day: "2026-10-08" });
+  });
+
+  it("legt den Ablauf nur an, wenn noch keiner gilt (NX)", async () => {
+    const expire = vi.fn().mockResolvedValue(1);
+    const { reserveServerKeyCall } = await withRedis({ incr: vi.fn().mockResolvedValue(1), expire, decr: vi.fn() });
+    await reserveServerKeyCall();
+    expect(expire).toHaveBeenCalledWith(`llm-daily-calls:${DAY}`, TWO_DAYS, "NX");
   });
 
   it("gibt den Platz über release() zurück und schluckt einen Fehler dabei", async () => {
@@ -220,16 +229,11 @@ describe("reserveFailoverCall: Schlüssel, Aufräumen, Rückgabe, Warnsignal", (
     expect(incr).toHaveBeenLastCalledWith("llm-failover-calls:2026-10-08");
   });
 
-  it("setzt das Ablaufdatum nur beim ersten Zug des Tages", async () => {
+  it("legt den Ablauf nur an, wenn noch keiner gilt (NX)", async () => {
     const expire = vi.fn().mockResolvedValue(1);
-    const first = await withRedis({ incr: vi.fn().mockResolvedValue(1), expire, decr: vi.fn() });
-    await first.reserveFailoverCall();
-    expect(expire).toHaveBeenCalledWith(`llm-failover-calls:${DAY}`, TWO_DAYS);
-
-    expire.mockClear();
-    const later = await withRedis({ incr: vi.fn().mockResolvedValue(2), expire, decr: vi.fn() });
-    await later.reserveFailoverCall();
-    expect(expire).not.toHaveBeenCalled();
+    const { reserveFailoverCall } = await withRedis({ incr: vi.fn().mockResolvedValue(1), expire, decr: vi.fn() });
+    await reserveFailoverCall();
+    expect(expire).toHaveBeenCalledWith(`llm-failover-calls:${DAY}`, TWO_DAYS, "NX");
   });
 
   it("gibt den Platz über release() zurück und schluckt einen Fehler dabei", async () => {
@@ -240,7 +244,7 @@ describe("reserveFailoverCall: Schlüssel, Aufräumen, Rückgabe, Warnsignal", (
     expect(decr).toHaveBeenCalledWith(`llm-failover-calls:${DAY}`);
   });
 
-  it("warnt bei Überschreitung einmal je Prozess, mit Tag, Stand, Budget und Hinweis, und nicht davor", async () => {
+  it("warnt bei Überschreitung einmal am Tag, mit Tag, Stand, Budget und Hinweis, und nicht davor", async () => {
     vi.stubEnv("LLM_FAILOVER_DAILY_CALLS", "3");
     const incr = vi.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(4).mockResolvedValueOnce(5);
     const { reserveFailoverCall } = await withRedis({ incr, expire: vi.fn(), decr: vi.fn() });
