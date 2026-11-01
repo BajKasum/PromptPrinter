@@ -36,7 +36,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch.
 - **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach),
-  Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit drei Vergleichen und die
+  Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit vier Vergleichen und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
   Rückerstattung).
 - **Entfernt, nicht wiederherstellen:** die Generierungs-Pipeline (`/api/generate`,
@@ -393,7 +393,7 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 Die öffentliche Website hat zwei Seiten, die das Produkt verkaufen: die Landing Page
 und `/pricing`. `/features` gibt es nicht mehr (`next.config.ts` leitet auf
 `/#funktionen` um). Daneben stehen die Hilfe (`/docs`), `/ueber`, `/kontakt`,
-`/vergleich` mit drei Vergleichsseiten und die Rechtstexte. Die Vergleiche sind wie
+`/vergleich` mit vier Vergleichsseiten und die Rechtstexte. Die Vergleiche sind wie
 die Hilfe geschrieben, nicht in Finns Ich-Form, und nur über Footer, Hilfe-Übersicht,
 Sitemap und `llms.txt` erreichbar, nicht über die Navbar. Die Landing Page nennt keinen
 Preis und stellt keine Fragen, beides lebt nur auf `/pricing`.
