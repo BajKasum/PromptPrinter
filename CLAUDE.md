@@ -6,7 +6,7 @@ und nach welchen Regeln hier gearbeitet wird. Details stehen in [README.md](READ
 [SETUP.md](docs/SETUP.md) (Setup, Deploy-Checkliste, Struktur), [DESIGN.md](docs/DESIGN.md)
 und [DOCKER.md](docs/DOCKER.md), hier nur das Wesentliche.
 
-## IST-Zustand (Stand 2026-10-11)
+## IST-Zustand
 
 Gegenwart, keine Historie. Der Verlauf steht datiert in [docs/CHANGELOG-2026.md](docs/CHANGELOG-2026.md)
 (*warum* etwas so ist: Entscheidungen, Messungen, entfernte Features; nach dem Stichwort suchen). Das
@@ -62,22 +62,22 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`.
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role).
-  Migrationen 0001 bis 0050 in `supabase/migrations/`; 0001 bis 0049 sind in Produktion angewendet,
-  **0050 noch nicht** (0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Migrationen 0001 bis 0050 in `supabase/migrations/`, alle in Produktion angewendet (0050 am 2026-10-29,
+  Version `20261029183929`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
   ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Terminal-Anmeldung (Server-Teil der Terminal-App):** Geräte-Code unter `src/app/api/cli/`, Bestätigungsseite `/cli`,
   Bearer neben dem Cookie nur im Chat (`createClientForRequest`, Guard `bearer-routes.test.ts`). Migration 0050
-  wartet auf Kasums Ja: **erst sie auf Produktion, dann der Code.** Verlauf und Messungen: Changelog 2026-10-29.
+  und Code sind in Produktion. Verlauf und Messungen: Changelog 2026-10-29.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
   nur im Produktions-Build. Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
   Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen
   fremden Host stellt, zieht `src/server/security/csp.ts` mit** (`csp.test.ts`). Genannt in Datenschutz (Ziffern 2, 3, 4,
   6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide Texte mit. Kein Env-Wert, kein
   Dashboard-Schalter. Kosten, Grenzen, Prüfung: `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
-- **Qualität:** das Gate (siehe "Befehle"), rund 160 Testdateien, Guards in `tests/guards/` (Schichten,
+- **Qualität:** das Gate (siehe "Befehle"), Guards in `tests/guards/` (Schichten,
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
   Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch),
   `e2e.yml`, `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an

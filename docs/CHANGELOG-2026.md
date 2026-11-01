@@ -11,6 +11,27 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: Sieben Issues aus den Audits des Tages (Branch `fix/issue-runde-2026-11-01`)
+
+- **#226 Open Redirect:** `safeNextPath` prüfte nur das Textpräfix, der Browser liest den Wert aber mit dem URL-Parser ("/\host"
+  und "/" + Tab + "/host" führten nach dem Anmelden auf einen fremden Host). Jetzt sperrt die Prüfung Backslash und Steuerzeichen und
+  löst selbst auf. Der Vorschlag im Issue hätte den normalisierten Pfad zurückgegeben: aus "/a/..//host" wäre "//host" geworden. Deshalb geht
+  der Rohwert zurück, und die Pfadform "//" wird abgelehnt.
+- **#201 Webhook:** Datenbankfehler bei der Konto-Zuordnung, beim Wiederaufnehmen und in `finish` enden in `failed` und 503, nicht in "Kauf ohne Konto".
+- **#234 Mail im Log:** `billing.webhook_unmatched` nennt die Mailadresse nicht mehr, die Freischaltung von Hand läuft über die Bestellnummer
+  im Lemon-Squeezy-Dashboard. `redactContext` schwärzt `email`, `mail`, `phone`.
+- **#203 Unlesbarer Key:** `getUserOverride` gibt `"unreadable"` zurück und meldet `byok.key_unreadable`. Chat und Gedächtnis antworten 409
+  `byokUnreadable`. **Entscheid:** auch Pro fällt nicht auf den Server-Key zurück, wer einen eigenen Key gewählt hat, soll nicht still auf Betreiberkosten
+  laufen. Nicht gebaut: die Anzeige "Key nicht lesbar" in den Einstellungen (nötig wäre dort ein Entschlüsselungsversuch beim Laden).
+- **#205 SSE:** CRLF und CR werden wie LF gelesen, ein vorzeitiges Ende bricht die Antwort beim Anbieter ab. Mehrere `data:`-Zeilen eines Ereignisses
+  werden weiter einzeln gelesen, nicht verbunden: so kommen auch Server durch, die Rahmen nur mit einem Zeilenende trennen.
+- **#208 IPv6:** Adressen werden in acht Gruppen zerlegt und auf Zahlen geprüft, dazu NAT64, 6to4, IPv4-kompatibel, Multicast, Site-Local,
+  Dokumentation, Discard.
+- **#219 Doku:** Migration 0050 liegt seit dem 2026-10-29 auf Produktion (Version `20261029183929`, in der Migrationsliste der Datenbank gelesen), der Eintrag
+  vom 2026-10-29 unten beschreibt den Stand davor. Neuer Guard `claude-md-state.test.ts`.
+
+---
+
 ## 2026-10-29: `/skill`: Download-Kasten nach oben, "Ehrlich vorab" entfernt (Branch `feat/skill-seite-kasten`)
 
 Auftrag von Kasum: unter der Überschrift soll sofort der Download stehen, nicht erst unter der Erklärung, und der Abschnitt
