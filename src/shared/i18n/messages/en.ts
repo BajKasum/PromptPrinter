@@ -98,6 +98,7 @@ export const en: Messages = {
     placeholderRefine: "Tell me what to change…",
     failed: "Chat failed",
     noResponse: "No response received.",
+    streamInvalid: "The reply could not be read. Please try again.",
     persistFailed:
       "This reply is here, but it couldn't be saved just now. It will be lost if you reload.",
     connectionDropped:

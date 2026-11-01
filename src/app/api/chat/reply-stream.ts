@@ -110,36 +110,11 @@ export function replyStream(args: {
     modelMessages,
     attachmentStats,
   } = args;
-  // 7. Produce the reply and persist it, streamed to the client as it's
-  //    generated instead of one opaque round trip: everything above this
-  //    point (validation, quota, rate limit, system prompt) still returns a
-  //    plain JSON problem response on failure, only the actual reply becomes
-  //    an SSE stream. Wire protocol (hand-rolled, not the provider's own SSE
-  //    dialect, see readOpenAiCompatibleSse in server/llm/http.ts for that one):
-  //      event: meta   data: {conversationId, userMessageId?}  exactly one, first
-  //        Seit C-1 steht die Konversation schon vor dem ersten Token fest.
-  //        Fruehes Senden erlaubt dem Client, seine mit `randomId()`
-  //        optimistisch angelegte Frage sofort gegen die echte Zeilen-ID
-  //        auszutauschen (K-2, Audit 06.09.2026) — `userMessageId` fehlt
-  //        beim Neu-Erzeugen, wo openTurn keine Frage schreibt.
-  //        Der Client navigiert bewusst NICHT mehr bei diesem Ereignis (K-1,
-  //        Audit 06.09.2026): /chats/new und /chats/[id] sind zwei
-  //        verschiedene Route-Segmente, eine sofortige Navigation wuerde die
-  //        laufende Chat-Instanz und damit den Stream selbst abbrechen.
-  //      event: status data: {phase: "retrying", attempt, maxAttempts}
-  //        zero or more, only BEFORE the first delta: an attempt failed on
-  //        something transient (503, dropped connection, rate limit) and the
-  //        next one is about to start (llm-retry.ts). The client shows a calm
-  //        "this is taking a little longer", nothing else changes. Older
-  //        clients ignore events they don't know.
-  //      event: delta  data: {"text": "..."}   zero or more, as text arrives
-  //      event: done   data: {conversationId?, assistantMessageId?, persistError?}
-  //        exactly one, on success. assistantMessageId (K-2) ist die echte
-  //        Zeilen-ID der gespeicherten Antwort, fehlt bei persistError, weil
-  //        dann nichts gespeichert wurde. persistError ist eine stabile CODE
-  //        ("persist_failed"), nie eine Meldung — siehe den catch unten
-  //        (Security-Audit finding M-1).
-  //      event: error  data: {"detail": "..."}                  exactly one, on failure
+  // 7. Die Antwort erzeugen und speichern, als Strom an den Client, statt als eine undurchsichtige
+  //    Runde: alles davor (Prüfung, Kontingent, Stundenlimit, Systemprompt) antwortet bei einem
+  //    Fehler weiter mit einer JSON-Problem-Antwort, erst die Antwort selbst wird ein SSE-Strom.
+  //    Welche Ereignisse es gibt (meta, status, delta, done, error), in welcher Reihenfolge und
+  //    mit welcher Nutzlast, steht in shared/lib/chat-stream.ts; `send` nimmt nur diese Formen.
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const { send, closeQuietly } = createSseWriter(controller);
