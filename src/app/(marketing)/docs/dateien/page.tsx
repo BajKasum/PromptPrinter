@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
+import { docBySlug } from "@/shared/lib/docs-nav";
 import {
   ALLOWED_FILE_EXTENSIONS,
   MAX_FILES_PER_PROJECT,
@@ -11,15 +11,11 @@ import {
   MAX_TEXT_FILE_BYTES,
   fileKind,
 } from "@/features/projects/lib/project-files";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("dateien")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 // Limits are read from the same module the upload UI enforces them with, so
 // this page can't drift away from the actual rule. The format groups are

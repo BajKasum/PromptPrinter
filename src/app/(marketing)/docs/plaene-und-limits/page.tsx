@@ -1,18 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
+import { docBySlug } from "@/shared/lib/docs-nav";
 import { PLAN_LIMITS } from "@/shared/lib/plans";
 import { PRO_AVAILABLE, PRO_UNAVAILABLE_PATH } from "@/shared/lib/pro-availability";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("plaene-und-limits")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 // Numbers come from the same module the server enforces them with, so this
 // page can't quietly drift away from the real limits.
