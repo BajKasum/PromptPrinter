@@ -11,6 +11,34 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: SEO, Structured Data, Sitemap und Docker-Kontext (Branch `chore/seo-docs-2026-11`, PR #259)
+
+- **#248 Structured Data:** Organisation, Website, Software und Person tragen feste `@id` (`features/marketing/lib/entity-ids.ts`) und stehen
+  einmal in `site-schema.ts`. Website und Software verweisen mit `{ "@id" }` auf die Organisation, Artikel und Gründer tragen `@id` plus Name
+  (nur die `@id` allein hätte im Rich-Results-Test den Autor ohne Namen gezeigt). **Entscheid: kein `sameAs`**, weil keine öffentliche Seite ein Profil
+  verlinkt (das Repository promptprinter-pp steht nur auf `/skill`); sobald `/ueber` oder der Footer GitHub zeigen, gehört die Adresse
+  in `organization.sameAs`, ein Test hält das bis dahin fest. `inLanguage` der Software sind die fünf Sprachcodes (Urteil, die Startseite zeigt sie nicht, die Hilfe
+  schon). `datePublished` je Vergleich (`published`): 2026-10-01, bei `direkt-in-die-ki-tippen` 2026-10-11, weil die Adresse erst seit der Umbenennung besteht.
+  Kategorie und Angebote unverändert (#127). Die Beschreibung kommt aus `shared/lib/site-description.ts`, wie die Meta-Beschreibung.
+- **#250 Titel:** `/skill` nennt Claude Code, `/docs` heisst "Hilfe und Anleitungen", `/ueber` "Über PromptPrinter: wer es baut und warum". Der Titelvorschlag
+  für `/skill` aus dem Issue war mit Marke 70 Zeichen lang (Grenze 65), gewählt: "Skill /pp für Claude Code: fertige Aufträge".
+- **#251 Sitemap:** `lastModified` ist das Datum, das die Seite zeigt (Hilfe `updated`, Vergleiche `COMPARISONS_UPDATED`, Rechtstexte das Datum aus `legal.ts`, über
+  `shared/lib/german-date.ts` in ISO gewandelt, `legal.ts` blieb unberührt). Startseite, Preise, Skill, Über und Kontakt haben keins.
+- **#252 Sprachen:** Abschnitt "In welchen Sprachen funktioniert PromptPrinter?" in "Konto und Daten" (`updated` 2026-11-01), `llms.txt` mit Satz und englischer
+  Zusammenfassung. Die öffentlichen Seiten bleiben deutsch.
+- **#253 Vorschau:** `/og/<art>/<slug>.png` (`src/app/og/[kind]/[slug]/route.tsx`, Edge, gleicher Aufbau wie die Karte der Startseite) für Hilfe und Vergleiche,
+  `og:type=article` mit Daten aus Autorenzeile und JSON-LD (`article-metadata.ts`). Die Adresse endet auf `.png`, damit der Matcher der Middleware sie auslässt.
+  Cache-Header ein Tag statt des Standards "ein Jahr, unveränderlich". **Build-Grösse:** `.next/standalone` +69 KB, Client-JS unverändert, die neue Edge-Funktion
+  839 KB gzip (die bestehende `/opengraph-image` 843 KB).
+- **#218 Kommentar-Pfade:** der Guard liest auch `next.config.ts`, Konfigurationen, Dockerfile, Compose, `scripts/`, `.github/` und Dateinamen ohne Ordner (nur ausserhalb `src/`,
+  dort stehen Kurznamen wie `llm.ts`).
+- **#223 Docker-Kontext:** `.dockerignore` ohne `.claude`, `docs`, `supabase`, `scripts`, `.github`, `tests/*` und `e2e/*`. **`tests/support` und `e2e/support`
+  müssen bleiben:** der TypeScript-Schritt von `next build` liest `src/**/*.test.tsx` (`@tests/support/…`) und `playwright.config.ts` (`e2e/support/env`). Kontext von etwa 51 auf
+  17,7 MB; mit geänderter `docs`- und `tests`-Datei blieben `COPY . .` und `npm run build` im Cache (lokal, Docker 29.6.2). Der Docker-Workflow lief auf dem PR grün.
+- **Nicht geprüft:** Schema Markup Validator, Rich-Results-Test, LinkedIn Post Inspector; die Vorschau-Karten wurden nur lokal gesehen.
+
+---
+
 ## 2026-11-01: Sieben Issues aus den Audits des Tages (Branch `fix/issue-runde-2026-11-01`)
 
 - **#226 Open Redirect:** `safeNextPath` prüfte nur das Textpräfix, der Browser liest den Wert aber mit dem URL-Parser ("/\host"
