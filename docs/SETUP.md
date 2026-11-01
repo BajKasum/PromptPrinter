@@ -149,8 +149,9 @@ Vor jedem Commit muss das volle Gate grün sein:
 npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
-[CI](../.github/workflows/ci.yml) führt genau dieselbe Kette bei jedem Push auf
-jeden Branch und bei jedem Pull Request aus. Die Smoketests laufen getrennt in
+[CI](../.github/workflows/ci.yml) führt genau dieselbe Kette bei jedem Pull Request (Stand nach dem
+Merge in `main`) und bei jedem Push auf `main` aus, ein Lauf je Commit (#222).
+Ein Branch ohne PR hat keinen Lauf; von Hand: Actions, "CI", "Run workflow". Die Smoketests laufen getrennt in
 [`e2e.yml`](../.github/workflows/e2e.yml) (nur wenn etwas Betroffenes geändert wird,
 dazu wöchentlich), `docker.yml` hält den Docker-Pfad am Leben, und `audit.yml`
 prüft täglich die Abhängigkeiten (siehe "Täglicher Audit" unten). `audit:gate` ist
