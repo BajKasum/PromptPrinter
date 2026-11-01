@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import { useMemo, type RefObject } from "react";
 import { RotateCcw } from "lucide-react";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatResultPanel } from "@/features/chat/components/chat-result-panel";
@@ -57,6 +57,11 @@ export function ChatThread({
   onPickSuggestion?: (text: string) => void;
 }) {
   const t = useT();
+  // Was die Person selbst geschrieben hat: der Maßstab der Prompt-Prüfung für Links und Ziele.
+  const typed = useMemo(
+    () => messages.filter((m) => m.role === "user").map((m) => m.content).join("\n"),
+    [messages]
+  );
   // min-h keeps this area (and the composer right below it) roughly the
   // same height whether it's showing the empty state or a short first
   // exchange, otherwise the composer visibly jumps up the moment the
@@ -106,10 +111,11 @@ export function ChatThread({
                       projectId={projectId}
                       savedPrompts={savedPrompts}
                       index={i}
+                      typed={typed}
                     />
                   </div>
                 ) : (
-                  <ChatAssistantBubble key={m.id} content={m.content} index={i} />
+                  <ChatAssistantBubble key={m.id} content={m.content} index={i} typed={typed} />
                 )
               )}
               {loading && pending === null && <ChatTyping retrying={retrying} />}

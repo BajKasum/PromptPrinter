@@ -167,12 +167,21 @@ export function ChatReplyActions({ content, index }: { content: string; index: n
   );
 }
 
-export function ChatAssistantBubble({ content, index }: { content: string; index: number }) {
+export function ChatAssistantBubble({
+  content,
+  index,
+  typed,
+}: {
+  content: string;
+  index: number;
+  /** Was die Person im Gespräch geschrieben hat; schaltet die Prompt-Prüfung ein. */
+  typed?: string;
+}) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] w-full">
         <div className="rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3 text-[13.5px] leading-relaxed text-foreground/85">
-          <MarkdownMessage content={content} />
+          <MarkdownMessage content={content} typed={typed} />
         </div>
         <div className="mt-1.5">
           <ChatReplyActions content={content} index={index} />

@@ -24,6 +24,7 @@ export function ChatResultPanel({
   projectId,
   savedPrompts,
   index = 0,
+  typed,
 }: {
   content: string;
   /** Present for project chats; omitted (or null) for a global chat's save. */
@@ -32,6 +33,8 @@ export function ChatResultPanel({
   savedPrompts?: string[];
   /** Position of the reply in the chat, names the export file the same way the older replies do. */
   index?: number;
+  /** Was die Person im Gespräch geschrieben hat; schaltet die Prompt-Prüfung ein. */
+  typed?: string;
 }) {
   const t = useT();
   const savablePrompt = extractPrompt(content);
@@ -60,7 +63,7 @@ export function ChatResultPanel({
 
       {/* Larger, looser type than a chat bubble, this is meant to be read. */}
       <div className="px-3 py-4 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
-        <MarkdownMessage content={content} />
+        <MarkdownMessage content={content} typed={typed} />
       </div>
 
       {/* Same actions as under an older reply (#150): the prompt that just got
