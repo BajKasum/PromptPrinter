@@ -21,12 +21,27 @@ export function siteUrl(path = ""): string {
  * Validates a `?next=` redirect target (login/signup) is an in-app path
  * before handing it to router.push(), never an attacker-supplied absolute
  * or protocol-relative URL from a crafted link. Also used by the auth
- * callback route (src/app/auth/callback/route.ts), so there is one check, not
+ * callback route (app/auth/callback/route.ts), so there is one check, not
  * two that drift apart. It rejects a leading "//" (a protocol-relative URL
  * still passes a plain `startsWith("/")` check, and the login form pushes the
  * value as-is, with no siteUrl() prefix to neutralize it).
+ *
+ * Der Browser liest den Wert mit dem URL-Parser, nicht als Text: er streicht Tab und
+ * Zeilenumbruch und nimmt den Backslash als Schrägstrich, "/\host" führt also auf einen
+ * fremden Host. Deshalb sperrt die Prüfung diese Zeichen und löst danach selbst auf.
+ * Zurück geht der Rohwert; die Pfadform "//host" aus "/a/..//host" wird abgelehnt, weil
+ * sie als neue Eingabe wieder protokollrelativ wäre.
  */
 export function safeNextPath(raw: string | null, fallback = "/chats/new"): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return fallback;
+  // eslint-disable-next-line no-control-regex -- genau die Steuerzeichen sind das Ziel
+  if (/[\\\u0000-\u001f\u007f]/.test(raw)) return fallback;
+  const base = "https://app.invalid";
+  try {
+    const url = new URL(raw, base);
+    if (url.origin !== base || url.pathname.startsWith("//")) return fallback;
+  } catch {
+    return fallback;
+  }
   return raw;
 }
