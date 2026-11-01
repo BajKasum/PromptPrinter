@@ -1,14 +1,23 @@
 name: CI
 
 on:
-  # Every branch, not just main: since 23.09.2026 all work happens on a
-  # feature branch that is merged into main only once it is green here.
-  # Checking only main meant a branch's problems surfaced after the merge.
+  # Ein Lauf je Commit. Bis 2026-11-01 stand hier push auf jeden Branch UND
+  # pull_request: ein Commit auf einem Branch mit offenem PR startete zwei
+  # Läufe mit verschiedener Concurrency-Gruppe (github.ref ist bei push
+  # refs/heads/<branch>, beim PR refs/pull/<n>/merge), und beide standen in der
+  # Prüfliste des PR (#222). Jetzt prüft der pull_request-Lauf jeden Branch mit
+  # PR, und zwar den Stand NACH dem Merge in main, nicht nur die Spitze des
+  # Branches; main selbst läuft über push.
+  #
+  # Folge: ein Branch ohne PR hat keinen Lauf, und ein PR mit Merge-Konflikt
+  # bekommt keinen (GitHub legt dann keinen Merge-Stand an). Beides zeigt sich
+  # im PR, nicht erst nach dem Merge. Für einen Branch ohne PR: workflow_dispatch.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
-# Cancel superseded runs on a branch or pull request so pushes don't pile up,
+# Cancel superseded runs of a pull request so pushes don't pile up,
 # but NEVER on main. Every commit on main keeps its own complete run.
 #
 # Until 2026-10-01 this was one group per ref with cancel-in-progress for all
@@ -31,6 +40,11 @@ jobs:
   verify:
     name: Typecheck · Lint · Test · Build
     runs-on: ubuntu-latest
+    # Ein Lauf dauert vier bis fünf Minuten (gemessen an den letzten 30 Läufen
+    # auf main und PRs, höchstens 303 s). Die Grenze ist das Vierfache: ein
+    # hängender Test hält den Runner sonst bis zur Standardgrenze von 360
+    # Minuten (#222).
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

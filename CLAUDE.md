@@ -79,7 +79,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Dashboard-Schalter. Kosten, Grenzen, Prüfung: `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
 - **Qualität:** das Gate (siehe "Befehle"), Guards in `tests/guards/` (Schichten,
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
-  Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder Branch),
+  Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit),
   `e2e.yml`, `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an
   Commit-SHAs (`workflows.test.ts`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
@@ -165,8 +165,8 @@ npm run test:e2e     # Browser-Smoketests, braucht Docker + `supabase start` (do
 npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
-- Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem Push auf **jeden**
-  Branch und bei jedem PR. Der Audit steht dort VOR allem anderen: schlägt er an,
+- Die [CI](.github/workflows/ci.yml) fährt dieselbe Kette bei jedem PR (Stand nach dem Merge)
+  und bei jedem Push auf `main`; ein Branch ohne PR hat keinen Lauf (Weg: `workflow_dispatch`). Der Audit steht dort VOR allem anderen: schlägt er an,
   laufen die übrigen Schritte nicht. Deshalb gehört er ins lokale Gate.
 - **`audit:gate` ist `npm audit --audit-level=high`, nach Baum getrennt**
   ([`scripts/audit-gate.mjs`](scripts/audit-gate.mjs), Entscheid 2026-10-20). Ein Fund im
