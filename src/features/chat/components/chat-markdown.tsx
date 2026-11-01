@@ -2,8 +2,11 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useId, useMemo, useState } from "react";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { CopyMoment } from "@/features/chat/components/copy-moment";
+import { PromptCheckChip, PromptCheckList } from "@/features/chat/components/prompt-check-note";
+import { checkPrompt } from "@/features/chat/lib/prompt-check";
 import { normalizeFences } from "@/features/chat/lib/normalize-fences";
 import { useT } from "@/shared/i18n/provider";
 
@@ -11,7 +14,11 @@ import { useT } from "@/shared/i18n/provider";
 // instead of raw text. Any fenced block becomes a CodeBlock with its own copy
 // button, which is where the paste-ready prompt lives. Fully self-contained:
 // doesn't touch any chat state, just the string it's given.
-export function MarkdownMessage({ content }: { content: string }) {
+//
+// `typed` ist, was die Person im Gespräch selbst geschrieben hat. Wer es angibt, schaltet die
+// Prompt-Prüfung an den Codeblöcken ein (#236, #242); während eine Antwort noch entsteht, bleibt es aus,
+// denn ein halber Befehl wäre kein Befund.
+export function MarkdownMessage({ content, typed }: { content: string; typed?: string }) {
   return (
     <div className="space-y-2.5">
       <ReactMarkdown
@@ -89,7 +96,7 @@ export function MarkdownMessage({ content }: { content: string }) {
             const text = String(children ?? "");
             const isBlock = (className?.includes("language-") ?? false) || text.includes("\n");
             if (isBlock) {
-              return <CodeBlock text={text.replace(/\n$/, "")} />;
+              return <CodeBlock text={text.replace(/\n$/, "")} typed={typed} />;
             }
             return (
               <code className="rounded bg-accent-subtle px-1.5 py-0.5 font-mono text-[12.5px] text-accent-text">
@@ -108,9 +115,12 @@ export function MarkdownMessage({ content }: { content: string }) {
 }
 
 // The paste-ready prompt, in a bordered box with its own copy button.
-function CodeBlock({ text }: { text: string }) {
+function CodeBlock({ text, typed }: { text: string; typed?: string }) {
   const t = useT();
   const { copied, copy, copyCount } = useCopyToClipboard();
+  const risks = useMemo(() => (typed === undefined ? [] : checkPrompt(text, typed)), [text, typed]);
+  const [noteOpen, setNoteOpen] = useState(true);
+  const noteId = useId();
 
   return (
     // bg-surface, not a fixed bg-black/30 (QA finding U-5): a flat black
@@ -126,14 +136,25 @@ function CodeBlock({ text }: { text: string }) {
         <span className="font-mono text-[12px] uppercase tracking-[0.08em] text-tertiary">
           {t.chat.promptLabel}
         </span>
-        <button
-          type="button"
-          onClick={() => copy(text)}
-          className="touch-hit-y relative inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
-        >
-          <CopyMoment copied={copied} copyCount={copyCount} idleLabel={t.chat.copyPrompt} />
-        </button>
+        <div className="flex items-center gap-2.5">
+          {risks.length > 0 && (
+            <PromptCheckChip
+              count={risks.length}
+              open={noteOpen}
+              controlsId={noteId}
+              onToggle={() => setNoteOpen((o) => !o)}
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => copy(text)}
+            className="touch-hit-y relative inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
+          >
+            <CopyMoment copied={copied} copyCount={copyCount} idleLabel={t.chat.copyPrompt} />
+          </button>
+        </div>
       </div>
+      {risks.length > 0 && noteOpen && <PromptCheckList id={noteId} risks={risks} />}
       <pre className="overflow-x-auto whitespace-pre-wrap px-3 py-3 md:px-3.5 font-mono text-[12.5px] leading-relaxed text-foreground/85">
         {text}
       </pre>
