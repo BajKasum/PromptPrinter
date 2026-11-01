@@ -52,7 +52,7 @@ export type Comparison = {
 };
 
 /** Wann die Vergleiche zuletzt inhaltlich geprüft wurden. */
-export const COMPARISONS_UPDATED = "2026-10-11";
+export const COMPARISONS_UPDATED = "2026-11-01";
 
 // Solange Pro nicht buchbar ist (pro-availability.ts), steht hier kein Preis für einen Plan, den man nicht holen kann.
 const PRICE_ROW = PRO_AVAILABLE
@@ -280,6 +280,81 @@ export const COMPARISONS: Comparison[] = [
       { href: "/docs/erste-schritte", label: "Erste Schritte" },
       { href: "/docs/chat-mit-finn", label: "Chat mit Finn" },
       { href: "/docs/plaene-und-limits", label: "Pläne und Limits" },
+    ],
+  },
+  {
+    slug: "prompt-verbessern-lassen",
+    published: "2026-11-01",
+    question: "Prompt verbessern lassen oder mit PromptPrinter erst klären?",
+    label: "Prompt verbessern lassen",
+    summary:
+      "Ein Prompt-Verbesserer formuliert um, was du schon geschrieben hast. Angaben, die im Prompt fehlen, kann er nicht ergänzen. Wann welcher Weg passt.",
+    answer:
+      "Ein Prompt-Verbesserer nimmt den Prompt, den du schon geschrieben hast, und formuliert ihn besser. Das geht schnell und reicht, wenn inhaltlich nichts fehlt. PromptPrinter setzt einen Schritt davor: Finn fragt, was deiner Aufgabe fehlt, und schreibt den Prompt erst danach.",
+    other: "Prompt-Verbesserer",
+    rows: [
+      {
+        topic: "Ausgangspunkt",
+        promptprinter: "Deine Idee in eigenen Worten, auch grob",
+        other: "Ein Prompt, den du schon geschrieben hast",
+      },
+      {
+        topic: "Was dazukommt",
+        promptprinter: "Angaben, die deiner Aufgabe fehlen und die Finn bei dir erfragt",
+        other: "Bessere Wortwahl und Struktur dessen, was schon dasteht",
+      },
+      {
+        topic: "Fehlende Angaben",
+        promptprinter: "Sichtbare Lücke wie [dein Wert] statt einer erfundenen Annahme",
+        other: "Hängt vom Werkzeug ab: oft mit Annahmen gefüllt, oder sie bleiben offen",
+      },
+      {
+        topic: "Aufwand",
+        promptprinter: "Eine gebündelte Rückfrage, dann der Prompt",
+        other: "Einmal einfügen und das Ergebnis lesen",
+      },
+      {
+        topic: "Änderungen danach",
+        promptprinter: "Im Gespräch, du bekommst jedes Mal den ganzen Prompt neu",
+        other: "Erneut einfügen oder von Hand ändern",
+      },
+      {
+        topic: "Prompt, der inhaltlich schon vollständig ist",
+        promptprinter: "Kein Vorteil, du hast die Angaben schon",
+        other: "Am schnellsten, es fehlt nur noch die Formulierung",
+      },
+      {
+        topic: "Kosten",
+        promptprinter: PRICE_ROW,
+        other: "Je nach Werkzeug gratis oder im Abo",
+      },
+    ],
+    sections: [
+      {
+        question: "Wann reicht ein Prompt-Verbesserer?",
+        paragraphs: [
+          "Wenn dein Prompt inhaltlich schon vollständig ist. Du weisst, wer das Ergebnis liest, welchen Ton und welche Länge du brauchst, und es fehlt nur noch an der Formulierung. Dann ist eine Umformulierung der kürzeste Weg.",
+          "Auch für einen kurzen, einmaligen Prompt lohnt sich der Umweg über eine Rückfrage nicht.",
+        ],
+      },
+      {
+        question: "Was kann eine Umformulierung nicht ergänzen?",
+        paragraphs: [
+          "Angaben, die nicht im Prompt stehen. Ein Verbesserer arbeitet mit dem, was du einfügst: Wer den Brief lesen soll, bis wann du eine Antwort willst oder in welchem System die Datenbank laufen soll, weiss er nicht. Er kann Wortwahl und Aufbau verbessern, was fehlt, ergänzt er in der Regel nur mit einer Annahme.",
+          "Genau dort setzt die Rückfrage an. Finn fragt zuerst, was deiner Aufgabe fehlen würde, und lässt eine sichtbare Lücke wie [dein Wert] stehen, wenn du etwas nicht weisst.",
+        ],
+      },
+      {
+        question: "Kann ich einen fertigen Prompt in PromptPrinter nachschärfen lassen?",
+        paragraphs: [
+          "Ja. Du kannst einen Prompt, den du schon hast, in den Chat einfügen und sagen, was besser werden soll. Wie bei jeder Änderung bekommst du den ganzen überarbeiteten Prompt zurück, nicht nur die geänderten Stellen.",
+          "Ob Finn davor noch einmal nachfragt, hängt davon ab, was in deinem Prompt fehlt.",
+        ],
+      },
+    ],
+    related: [
+      { href: "/docs/chat-mit-finn", label: "Chat mit Finn" },
+      { href: "/docs/der-fertige-prompt", label: "Der fertige Prompt" },
     ],
   },
 ];
