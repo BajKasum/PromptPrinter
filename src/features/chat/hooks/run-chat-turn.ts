@@ -9,6 +9,7 @@ import type { DraftAttachment } from "@/features/chat/lib/prepare-attachment";
 import { StreamProtocolError, toWire, type Msg } from "@/features/chat/lib/chat-wire";
 import { parseSseEvents } from "@/features/chat/lib/sse-stream";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/shared/lib/chat-limits";
+import { parseChatStreamEvent } from "@/shared/lib/chat-stream";
 import type { useT } from "@/shared/i18n/provider";
 
 // Die Anfrage eines Chat-Zugs: senden, den Strom lesen, auf Ereignisse reagieren, bei einem Fehler aufräumen.
@@ -197,12 +198,17 @@ export async function runChatTurn(
       setConversationId(newId);
     };
 
-    for await (const { event, data } of parseSseEvents(res.body)) {
-      if (event === "meta") {
-        const { conversationId: newId, userMessageId } = JSON.parse(data) as {
-          conversationId?: string;
-          userMessageId?: string;
-        };
+    for await (const raw of parseSseEvents(res.body)) {
+      const parsed = parseChatStreamEvent(raw.event, raw.data);
+      // Ein Ereignis, das dieser Client nicht kennt (neuere Version des Servers): ignorieren.
+      if (parsed.kind === "unknown") continue;
+      // Eine kaputte Nutzlast ist ein Fehler im Protokoll, kein Verbindungsabbruch: der Aufräumzweig
+      // unten behandelt StreamProtocolError wie einen Fehler der Route und zeigt keine Warnung
+      // "Verbindung unterbrochen".
+      if (parsed.kind === "invalid") throw new StreamProtocolError(t.chat.streamInvalid);
+      const { value } = parsed;
+      if (value.event === "meta") {
+        const { conversationId: newId, userMessageId } = value.data;
         if (newId) adoptConversation(newId);
         // K-2: die eben optimistisch angehaengte Frage gegen ihre echte
         // Zeilen-ID austauschen, sobald sie bekannt ist — lange bevor die
@@ -217,27 +223,16 @@ export async function runChatTurn(
             )
           );
         }
-      } else if (event === "status") {
-        const { phase } = JSON.parse(data) as { phase?: string };
-        if (phase === "retrying") setRetrying(true);
-      } else if (event === "delta") {
-        const { text: chunk } = JSON.parse(data) as { text: string };
+      } else if (value.event === "status") {
+        if (value.data.phase === "retrying") setRetrying(true);
+      } else if (value.event === "delta") {
         setRetrying(false);
-        accumulated += chunk;
+        accumulated += value.data.text;
         setPending({ text: accumulated, complete: false });
-      } else if (event === "error") {
-        const { detail } = JSON.parse(data) as { detail: string };
-        throw new StreamProtocolError(detail);
-      } else if (event === "done") {
-        const {
-          conversationId: newId,
-          assistantMessageId,
-          persistError,
-        } = JSON.parse(data) as {
-          conversationId?: string;
-          assistantMessageId?: string;
-          persistError?: string;
-        };
+      } else if (value.event === "error") {
+        throw new StreamProtocolError(value.data.detail);
+      } else if (value.event === "done") {
+        const { conversationId: newId, assistantMessageId, persistError } = value.data;
         // K-2: commitReply liest diese ID gleich ab, statt eine eigene zu
         // erfinden. Nur gesetzt, wenn die Antwort auch wirklich in der DB
         // steht (kein persistError) — sonst gaebe es eine ID, die commitReply

@@ -105,6 +105,7 @@ export const de = {
     placeholderRefine: "Sag mir, was ich ändern soll…",
     failed: "Chat fehlgeschlagen",
     noResponse: "Keine Antwort erhalten.",
+    streamInvalid: "Die Antwort war unlesbar. Bitte versuch es noch einmal.",
     persistFailed:
       "Diese Antwort ist da, konnte aber gerade nicht gespeichert werden, bei einem Neuladen geht sie verloren.",
     connectionDropped:

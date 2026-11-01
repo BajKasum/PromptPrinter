@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 import { ZAI_CONSENT_VERSION } from "@/server/consent";
+import { chatStreamSchemas, type ChatStreamEventName } from "@/shared/lib/chat-stream";
 
 // Ein Konto, das der Übermittlung an Z.ai zugestimmt hat (server/consent.ts): ohne sie antwortet der
 // Server-Key-Pfad mit 403 consentRequired. Das Verhalten ohne Zustimmung steht in consent.test.ts und im Abschnitt
@@ -428,5 +429,70 @@ describe("Redis nicht erreichbar: es gibt nichts zurückzugeben, und nichts bric
     expect(body).toContain("event: error");
     expect(calls(monthlyRelease)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
+  });
+});
+
+// ─── Der Vertrag des Stroms (#210) ───────────────────────────────────────────
+
+// Jede Nutzlast, die reply-stream wirklich sendet, besteht das Schema in shared/lib/chat-stream.ts:
+// meta zuerst, status nur vor dem ersten Wort, genau ein Abschluss (done oder error). Der Typ von `send`
+// verhindert falsche Nutzlasten schon beim Übersetzen; dieser Test fängt, wenn der Sender sie an anderer
+// Stelle zusammenbaut oder das Schema und der Sender auseinanderlaufen.
+describe("Vertrag des Antwort-Stroms", () => {
+  function frames(body: string): { event: string; data: unknown }[] {
+    return body
+      .split("\n\n")
+      .filter(Boolean)
+      .map((block) => {
+        const event = /^event: (.*)$/m.exec(block)?.[1] ?? "";
+        const data = /^data: (.*)$/m.exec(block)?.[1] ?? "";
+        return { event, data: JSON.parse(data) };
+      });
+  }
+
+  async function sent(): Promise<{ event: string; data: unknown }[]> {
+    const list = frames(await text(await POST(req())));
+    for (const { event, data } of list) {
+      expect(Object.keys(chatStreamSchemas), `unbekanntes Ereignis ${event}`).toContain(event);
+      const result = chatStreamSchemas[event as ChatStreamEventName].safeParse(data);
+      expect(result.success, `${event}: ${JSON.stringify(data)}`).toBe(true);
+    }
+    return list;
+  }
+
+  it("Erfolg: meta, delta, done", async () => {
+    const list = await sent();
+    expect(list.map((f) => f.event)).toEqual(["meta", "delta", "done"]);
+    expect(list.at(-1)?.data).toMatchObject({ mode: "generated", conversationId: "conv-1" });
+  });
+
+  it("Wiederholung vor dem ersten Wort: status zwischen meta und delta", async () => {
+    chatCompleteStream.mockImplementation(async function* (opts: { onRetry: (e: unknown) => void }) {
+      opts.onRetry({ failedAttempt: 1, maxAttempts: 3 });
+      yield "Hallo";
+    });
+    const list = await sent();
+    expect(list.map((f) => f.event)).toEqual(["meta", "status", "delta", "done"]);
+    expect(list[1].data).toEqual({ phase: "retrying", attempt: 2, maxAttempts: 3 });
+  });
+
+  it("Anbieterfehler: meta, error, kein done", async () => {
+    chatCompleteStream.mockImplementation(async function* () {
+      throw new Error("Z.ai 500: down");
+    });
+    expect((await sent()).map((f) => f.event)).toEqual(["meta", "error"]);
+  });
+
+  it("Speichern scheitert: done trägt den Code persistError", async () => {
+    failAssistantInsert = true;
+    const list = await sent();
+    expect(list.at(-1)?.data).toMatchObject({ persistError: "persist_failed" });
+  });
+
+  it("Stub ohne Anbieter: meta, delta, done mit mode stub", async () => {
+    llmConfig.mockReturnValue(null);
+    const list = await sent();
+    expect(list.map((f) => f.event)).toEqual(["meta", "delta", "done"]);
+    expect(list.at(-1)?.data).toMatchObject({ mode: "stub" });
   });
 });

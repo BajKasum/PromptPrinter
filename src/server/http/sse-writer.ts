@@ -1,9 +1,11 @@
 import "server-only";
 
+import type { ChatStreamEventName, ChatStreamPayloads } from "@/shared/lib/chat-stream";
+
 // Gegenstück zu sse-stream.ts's parseSseEvents: writes /api/chat's hand-rolled
 // `event: X\ndata: Y\n\n` wire protocol server-side instead of parsing it
-// client-side. Split out of that route (QA finding C-1) purely to shrink the
-// file; no behavior change.
+// client-side. Welche Ereignisse es gibt und welche Nutzlast sie tragen, steht in
+// shared/lib/chat-stream.ts; `send` nimmt nur diese Formen.
 
 /**
  * Wraps a ReadableStream controller with `send`/`closeQuietly` helpers. Both
@@ -15,7 +17,7 @@ import "server-only";
 export function createSseWriter(controller: ReadableStreamDefaultController<Uint8Array>) {
   const encoder = new TextEncoder();
 
-  function send(event: string, data: unknown) {
+  function send<E extends ChatStreamEventName>(event: E, data: ChatStreamPayloads[E]) {
     try {
       controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
     } catch {

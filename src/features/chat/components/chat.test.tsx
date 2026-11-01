@@ -317,6 +317,58 @@ describe("Chat", () => {
     expect(screen.queryByText("Teilweise")).not.toBeInTheDocument();
   });
 
+  // #210: das Protokoll hat ein gemeinsames Schema (shared/lib/chat-stream.ts). Eine kaputte Nutzlast ist
+  // ein Protokollfehler mit eigener Meldung, keine abgerissene Verbindung: es gibt keine Warnung
+  // "Verbindung unterbrochen", und der Teiltext wird nicht als Antwort stehen gelassen.
+  it.each([
+    ["kein JSON", "event: delta\ndata: {kaputt\n\n"],
+    ["falscher Typ", sseFrame("delta", { text: 5 })],
+    ["fehlendes Feld", sseFrame("error", {})],
+  ])("meldet eine kaputte Nutzlast (%s) als Protokollfehler, nicht als Verbindungsabbruch", async (_name, broken) => {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(sseFrame("delta", { text: "Teilweise" })));
+        controller.enqueue(encoder.encode(broken));
+        controller.close();
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Die Antwort war unlesbar");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText("Teilweise")).not.toBeInTheDocument();
+  });
+
+  it("ignoriert ein Ereignis, das dieser Client nicht kennt", async () => {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(sseFrame("zukunft", { irgendwas: true })));
+        controller.enqueue(encoder.encode(sseFrame("delta", { text: "Antwort da" })));
+        controller.enqueue(encoder.encode(sseFrame("done", { mode: "generated", conversationId: "conv-3" })));
+        controller.close();
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, body, json: async () => ({}) }));
+    render(<Chat />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText("Beschreib, woran wir arbeiten…"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    // Der Zug lief bis zum done durch: erst dort navigiert der erste Zug eines neuen Chats.
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/chats/conv-3", { scroll: false }), {
+      timeout: 10_000,
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   // QA finding E-2: a network drop mid-stream (not the provider reporting a
   // real failure, and not a user-initiated stop) used to discard whatever text
   // had already streamed in. The route may have already persisted it server-

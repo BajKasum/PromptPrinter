@@ -99,6 +99,7 @@ export const fr: Messages = {
     placeholderRefine: "Dis-moi ce que je dois changer…",
     failed: "La conversation a échoué",
     noResponse: "Aucune réponse reçue.",
+    streamInvalid: "La réponse était illisible. Réessaie.",
     persistFailed:
       "Cette réponse est là, mais elle n'a pas pu être enregistrée pour l'instant. Elle sera perdue si tu recharges la page.",
     connectionDropped:
