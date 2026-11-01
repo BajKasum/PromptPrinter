@@ -93,26 +93,50 @@ function isPrivateIPv4(ip: string): boolean {
   return false;
 }
 
-function isPrivateIPv6(ip: string): boolean {
-  const n = ip.toLowerCase();
-  if (n === "::1" || n === "::") return true; // loopback / unspecified
-  if (/^f[cd][0-9a-f]{2}:/.test(n)) return true; // unique local fc00::/7
-  if (/^fe[89ab][0-9a-f]:/.test(n)) return true; // link-local fe80::/10
-
-  // IPv4-mapped IPv6 (::ffff:0:0/96). The embedded IPv4 can appear as a
-  // dotted tail ("::ffff:127.0.0.1") as written, or, once WHATWG's URL host
-  // parser normalizes it, as two hex groups ("::ffff:7f00:1", 127.0.0.1
-  // packed into 0x7f00 0x0001), URL#hostname always returns the latter, so
-  // both are checked.
-  const dotted = n.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-  if (dotted) return isPrivateIPv4(dotted[1]);
-  const hexMapped = n.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
-  if (hexMapped) {
-    const hi = parseInt(hexMapped[1], 16);
-    const lo = parseInt(hexMapped[2], 16);
-    const quad = [(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff].join(".");
-    return isPrivateIPv4(quad);
+/**
+ * Die acht 16-Bit-Gruppen einer IPv6-Adresse, oder null, wenn die Form nicht stimmt. Die
+ * Bereiche werden auf den Zahlen geprüft, nicht auf dem Text: dieselbe Adresse lässt sich
+ * mehrfach schreiben ("::ffff:127.0.0.1", "::ffff:7f00:1", "0:0:0:0:0:ffff:7f00:1").
+ */
+function ipv6Groups(ip: string): number[] | null {
+  let n = ip.toLowerCase().split("%")[0];
+  const dotted = n.match(/^(.*:)(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (dotted) {
+    const [a, b, c, d] = dotted.slice(2).map(Number);
+    n = `${dotted[1]}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
   }
+  const sides = n.split("::");
+  if (sides.length > 2) return null;
+  const toGroups = (side: string) => (side ? side.split(":").map((g) => parseInt(g, 16)) : []);
+  const head = toGroups(sides[0]);
+  const tail = sides.length === 2 ? toGroups(sides[1]) : [];
+  const missing = 8 - head.length - tail.length;
+  if (sides.length === 2 ? missing < 1 : missing !== 0) return null;
+  const groups = [...head, ...new Array<number>(missing).fill(0), ...tail];
+  return groups.some((g) => Number.isNaN(g) || g < 0 || g > 0xffff) ? null : groups;
+}
+
+function isPrivateIPv6(ip: string): boolean {
+  const g = ipv6Groups(ip);
+  if (!g) return true; // Unrecognized shape, fail closed.
+  const embedded = (hi: number, lo: number) =>
+    isPrivateIPv4([(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff].join("."));
+  const zeros = (from: number, to: number) => g.slice(from, to).every((x) => x === 0);
+
+  if ((g[0] & 0xfe00) === 0xfc00) return true; // unique local fc00::/7
+  if ((g[0] & 0xffc0) === 0xfe80) return true; // link-local fe80::/10
+  if ((g[0] & 0xffc0) === 0xfec0) return true; // site-local fec0::/10
+  if ((g[0] & 0xff00) === 0xff00) return true; // multicast ff00::/8
+  if (g[0] === 0x2001 && g[1] === 0x0db8) return true; // documentation 2001:db8::/32
+  if (g[0] === 0x0100 && zeros(1, 4)) return true; // discard 100::/64
+  if (g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 1) return true; // local-use NAT64 64:ff9b:1::/48
+
+  // Adressen, die eine IPv4-Adresse tragen, zählen wie diese. ::/96 umfasst auch ::1 und ::,
+  // die als 0.0.0.1 und 0.0.0.0 im "this network" landen.
+  if (zeros(0, 6)) return embedded(g[6], g[7]); // IPv4-compatible ::/96
+  if (zeros(0, 5) && g[5] === 0xffff) return embedded(g[6], g[7]); // IPv4-mapped ::ffff:0:0/96
+  if (g[0] === 0x0064 && g[1] === 0xff9b && zeros(2, 6)) return embedded(g[6], g[7]); // NAT64 64:ff9b::/96
+  if (g[0] === 0x2002) return embedded(g[1], g[2]); // 6to4 2002::/16
 
   return false;
 }
