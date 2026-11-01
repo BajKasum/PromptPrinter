@@ -26,6 +26,12 @@ const HTTPS_TWIN = E2E_PROD_ORIGIN.replace("http:", "https:");
 const isUpgradedPrefetch = (url: string, error: string | undefined) =>
   url.startsWith(HTTPS_TWIN) && error?.includes("ERR_SSL_PROTOCOL_ERROR") === true;
 
+// Eine dritte Ausnahme: Next lädt Links der eingeloggten App vor (Anfragen mit `_rsc=`) und bricht einen Prefetch
+// ab, sobald ein neuerer ihn ersetzt oder die Seite sich ändert. Das meldet der Browser als ERR_ABORTED, ohne dass
+// etwas kaputt ist. Ausgenommen sind nur abgebrochene Prefetches desselben Servers; jeder andere Abbruch bleibt ein Fund.
+const isAbortedPrefetch = (url: string, error: string | undefined) =>
+  url.startsWith(E2E_PROD_ORIGIN) && url.includes("_rsc=") && error === "net::ERR_ABORTED";
+
 /**
  * Vor dem ersten `goto` aufrufen: der Init-Skript-Hörer muss vor dem Dokument da sein.
  *
@@ -43,7 +49,7 @@ async function watch(page: Page, expectedMissing?: string): Promise<Watch> {
   page.on("pageerror", (error) => problems.push(`Seitenfehler: ${error.message}`));
   page.on("requestfailed", (request) => {
     const error = request.failure()?.errorText;
-    if (isUpgradedPrefetch(request.url(), error)) return;
+    if (isUpgradedPrefetch(request.url(), error) || isAbortedPrefetch(request.url(), error)) return;
     problems.push(`Anfrage fehlgeschlagen: ${request.url()} (${error})`);
   });
 
