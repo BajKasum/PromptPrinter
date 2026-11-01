@@ -21,6 +21,11 @@ vi.mock("@/server/supabase/server", () => ({
     },
   }),
 }));
+const rateLimit = vi.fn();
+vi.mock("@/server/security/rate-limit", () => ({
+  rateLimit: (...args: unknown[]) => rateLimit(...args),
+  rateLimitKey: (_req: unknown, scope: string, userId: string) => `${scope}:u:${userId}`,
+}));
 vi.mock("@/server/brain/repo-status", () => ({ isRepoStale: (...args: unknown[]) => isRepoStale(...args) }));
 vi.mock("@/shared/lib/observability", () => ({ captureError: vi.fn(), logEvent: vi.fn(), logWarning: vi.fn() }));
 
@@ -33,11 +38,20 @@ const call = (id = PROJECT) =>
 beforeEach(() => {
   getUser.mockReset().mockResolvedValue({ data: { user: { id: "user-1" } } });
   isRepoStale.mockReset().mockResolvedValue(true);
+  rateLimit.mockReset().mockResolvedValue({ allowed: true, resetAt: 0 });
   eqCalls.length = 0;
   row = { data: { status: "ready", repo_url: "https://github.com/o/r", repo_ref: "a".repeat(40) }, error: null };
 });
 
 describe("GET /api/projects/[id]/brain/status", () => {
+  it("fragt GitHub über der Stundengrenze nicht und meldet 'unbekannt'", async () => {
+    rateLimit.mockResolvedValueOnce({ allowed: false, resetAt: Date.now() + 1000 });
+    const res = await call();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ stale: null });
+    expect(isRepoStale).not.toHaveBeenCalled();
+  });
+
   it("verlangt eine Sitzung", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     expect((await call()).status).toBe(401);

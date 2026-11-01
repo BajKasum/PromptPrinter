@@ -3,6 +3,7 @@ import { createClient } from "@/server/supabase/server";
 import { problem } from "@/server/http/api-problem";
 import { captureError } from "@/shared/lib/observability";
 import { isRepoStale } from "@/server/brain/repo-status";
+import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 
 export const runtime = "nodejs";
@@ -36,6 +37,11 @@ export async function GET(req: Request, { params }: Params) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return problem(401, m.signInRequired);
+
+  // Die Karte fragt höchstens einmal je Öffnen; mehr ist kein Mensch. Über der Grenze "unbekannt", also kein Hinweis
+  // und keine Anfrage an GitHub: fehlt der Hinweis, geht nichts kaputt.
+  const rl = await rateLimit(rateLimitKey(req, "brain-status", user.id), { limit: 120, windowMs: 60 * 60 * 1000 });
+  if (!rl.allowed) return NextResponse.json({ stale: null }, { headers: { "cache-control": "no-store" } });
 
   // Fremd und nicht vorhanden sehen gleich aus: beides `null`, die Route verrät keine Projekt-IDs.
   const { data: row, error } = await supabase

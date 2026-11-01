@@ -261,6 +261,7 @@ export type RateLimitScope =
   | "chat"
   | "projects"
   | "brain"
+  | "brain-status"
   | "consent"
   | "contact"
   | "auth"
