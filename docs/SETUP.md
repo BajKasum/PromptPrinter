@@ -441,6 +441,16 @@ Stand 2026-10-17, Rechts-Audit R-9. **Keine Rechtsberatung, und aus Sekundärque
   Frage, wer als Anbieter gilt, wenn man ein fremdes Modell einbindet: auch das steht nicht in meinen Quellen.
 - **Beobachten:** Kodex und Leitlinien im Wortlaut lesen (Kommission, digital-strategy.ec.europa.eu), vor dem 2. Dezember.
 
+## Sitzungs-Cookie (Entscheid: bleibt lesbar)
+
+Das Sitzungs-Cookie von Supabase ist nicht `HttpOnly` und lebt 400 Tage (Vorgabe von `@supabase/ssr`). Das bleibt so, bewusst:
+
+- **HttpOnly bricht die App.** `createBrowserClient` liest die Sitzung aus `document.cookie`, und 18 Browser-Dateien nutzen diesen Client (Anmeldung per OAuth, Passwort ändern, Chats, Projekte, Dateien, Prompts, Einstellungen, Befehlspalette). Ohne lesbares Cookie wären sie alle nicht angemeldet. Vorher müsste jeder dieser Zugriffe hinter eine Server-Route, Datei-Uploads hinter signierte Adressen: ein eigener Umbau.
+- **Ein kürzeres `maxAge` allein schützt kaum.** Ein ausgelesenes Refresh-Token hängt nicht am Cookie im Browser des Angreifers, und eine feste Höchstdauer der Sitzung bräuchte eine eigene Prüfung auf dem Server. Kosten für echte Nutzer: häufigeres Abmelden.
+- **Was den Schaden begrenzt:** CSP mit Nonce auf den App-Routen, kein rohes HTML aus Markdown, frische Anmeldung vor dem Löschen des Kontos (`features/auth/lib/fresh-sign-in.ts`).
+
+Die Einstellungen im Supabase-Dashboard (Time-box, Inaktivität, Wiederverwendung von Refresh-Tokens) sind **nicht gelesen**: die vorhandenen Werkzeuge zeigen sie nicht. Offen in #232.
+
 ## Kontaktformular
 
 `/kontakt` hat neben der Mailadresse ein Formular (`ContactForm`, Name freiwillig, E-Mail, Thema, Nachricht
