@@ -1,21 +1,57 @@
 import "server-only";
 
 import { assertPublicHttpsUrl } from "@/server/security/url-safety";
-import { captureError } from "@/shared/lib/observability";
 import {
   CUSTOM_FIRST_CHUNK_TIMEOUT_MS,
   MAX_RESPONSE_BYTES,
-  providerHttpError,
   readCappedText,
+  readCompletion,
   readOpenAiCompatibleSse,
   streamDeadlines,
+  throwProviderError,
   withProviderTimeout,
   type OpenAiCompatibleResponse,
 } from "@/server/llm/http";
 import { toOpenAiMessages } from "@/server/llm/messages";
-import { LlmEmptyReplyError, type LlmMessage, type LlmResult } from "@/server/llm/types";
+import type { LlmMessage, LlmResult } from "@/server/llm/types";
 
 // Der Custom-Slot (BYOK): jeder OpenAI-kompatible Endpunkt. (Teil von src/server/llm/, siehe index.ts)
+
+const LABEL = "Custom-Provider";
+
+/**
+ * Die Anfrage an den Endpunkt des Nutzers, bis zu einer erfolgreichen Antwort. Beide Aufrufer
+ * teilen sich diesen Kopf; sie unterscheiden sich nur im Rumpf (`stream`) und in der Auswertung.
+ *
+ * `endpoint` ist die eigene BYOK-Adresse des Nutzers, nie eine feste, vertrauenswürdige wie bei
+ * Z.ai. Deshalb wird sie vor JEDER Anfrage gegen SSRF geprüft (private, Loopback- und Link-Local-
+ * Ziele, Cloud-Metadaten), nicht nur beim Speichern; was url-safety.ts abdeckt und was nicht
+ * (kein DNS-Rebinding-fester Pin), steht dort. Ein Redirect würde wieder auf eine ungeprüfte Adresse
+ * zeigen, nachdem die Prüfung schon bestanden hat, und wird von einem echten chat/completions-
+ * Endpunkt nicht erwartet: `redirect: "error"`.
+ */
+async function postChatCompletion(args: {
+  endpoint: string;
+  apiKey: string;
+  signal: AbortSignal;
+  body: Record<string, unknown>;
+}): Promise<Response> {
+  await assertPublicHttpsUrl(args.endpoint);
+
+  const res = await fetch(args.endpoint, {
+    method: "POST",
+    redirect: "error",
+    signal: args.signal,
+    headers: {
+      authorization: `Bearer ${args.apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(args.body),
+  });
+
+  if (!res.ok) await throwProviderError(LABEL, res, { reportUnparsable: true });
+  return res;
+}
 
 export async function customComplete(
   endpoint: string,
@@ -25,68 +61,15 @@ export async function customComplete(
   maxOutputTokens: number,
   apiKey: string
 ): Promise<LlmResult> {
-  // `endpoint` is the user's own BYOK baseUrl (settings), never a fixed,
-  // trusted URL like zaiComplete's, so it's checked against SSRF (private/
-  // loopback/link-local targets, cloud metadata) before every request, not
-  // only when it's first saved. See url-safety.ts for what this does and
-  // doesn't cover (no DNS-rebinding-proof pinning).
-  await assertPublicHttpsUrl(endpoint);
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    // A same-origin redirect would still be user-controlled; a cross-origin
-    // one would re-point at an unvalidated URL after the check above already
-    // passed. Neither is expected from a real chat/completions endpoint.
-    redirect: "error",
+  const res = await postChatCompletion({
+    endpoint,
+    apiKey,
     signal: withProviderTimeout(),
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: toOpenAiMessages(system, messages),
-      max_tokens: maxOutputTokens,
-      stream: false,
-    }),
+    body: { model, messages: toOpenAiMessages(system, messages), max_tokens: maxOutputTokens, stream: false },
   });
 
-  if (!res.ok) {
-    const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
-    // Only ever surface a *parsed* error in the provider's expected JSON
-    // shape, never the raw body: if `endpoint` ever slipped past the check
-    // above (or a legitimate custom provider is compromised), an arbitrary
-    // response body must not become a client-visible exfiltration channel.
-    let detail = "";
-    try {
-      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
-      if (parsed.error?.message) detail = parsed.error.message;
-    } catch {
-      // Not the expected shape, nothing safe to surface from the body.
-    }
-    if (!detail) {
-      captureError("llm.custom_provider_unparsable_error", new Error(`HTTP ${res.status}`), {
-        status: res.status,
-        bodyChars: raw.length,
-      });
-    }
-    throw providerHttpError("Custom-Provider", res, detail);
-  }
-
-  const raw = await readCappedText(res, MAX_RESPONSE_BYTES);
-  const json = JSON.parse(raw) as OpenAiCompatibleResponse;
-  const message = json.choices?.[0]?.message;
-  const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
-  if (!text) throw new LlmEmptyReplyError("Custom-Provider");
-
-  const usage =
-    json.usage &&
-    typeof json.usage.prompt_tokens === "number" &&
-    typeof json.usage.completion_tokens === "number"
-      ? { inputTokens: json.usage.prompt_tokens, outputTokens: json.usage.completion_tokens }
-      : null;
-
-  return { text, usage };
+  const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
+  return readCompletion(json, LABEL);
 }
 
 export async function* customCompleteStream(
@@ -98,43 +81,14 @@ export async function* customCompleteStream(
   apiKey: string,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
-  await assertPublicHttpsUrl(endpoint);
-
   const guard = streamDeadlines(signal, CUSTOM_FIRST_CHUNK_TIMEOUT_MS);
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      redirect: "error",
+    const res = await postChatCompletion({
+      endpoint,
+      apiKey,
       signal: guard.signal,
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: toOpenAiMessages(system, messages),
-        max_tokens: maxOutputTokens,
-        stream: true,
-      }),
+      body: { model, messages: toOpenAiMessages(system, messages), max_tokens: maxOutputTokens, stream: true },
     });
-
-    if (!res.ok) {
-      const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
-      let detail = "";
-      try {
-        const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
-        if (parsed.error?.message) detail = parsed.error.message;
-      } catch {
-        // Not the expected shape, nothing safe to surface from the body.
-      }
-      if (!detail) {
-        captureError("llm.custom_provider_unparsable_error", new Error(`HTTP ${res.status}`), {
-          status: res.status,
-          bodyChars: raw.length,
-        });
-      }
-      throw providerHttpError("Custom-Provider", res, detail);
-    }
     if (!res.body) throw new Error("Custom-Provider hat keinen Antwort-Stream geliefert.");
 
     for await (const chunk of readOpenAiCompatibleSse(res.body)) {

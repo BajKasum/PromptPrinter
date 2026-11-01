@@ -34,7 +34,8 @@ import "server-only";
 //   types.ts      Typen, LlmEmptyReplyError, classifyLlmFailure
 //   config.ts     Auswahl des Server-Anbieters (llmConfig, serverConfigFor), Standardmodelle,
 //                 Token-Grenze, abgeschaltete SDK-Wiederholungen
-//   chat.ts       chatComplete / chatCompleteStream: wählt den Anbieter, hängt Retry und Failover an
+//   chat.ts       chatCompleteStream (Server-Anbieter und BYOK, mit Retry und Failover) und chatComplete
+//                 (nur BYOK, für den Key-Test)
 //   analyze.ts    analyzeComplete: die Einzelanalyse des Projekt-Gedächtnisses
 //   zai.ts        Z.ai (fetch, Stream mit Zeitlimit bis zum ersten Textstück)
 //   custom.ts     Custom-Slot (fetch, SSRF-Prüfung, Größen- und Zeitgrenze)

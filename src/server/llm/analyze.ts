@@ -19,15 +19,15 @@ import {
 import { geminiAnalyze } from "@/server/llm/gemini";
 import {
   MAX_RESPONSE_BYTES,
-  providerHttpError,
   readCappedText,
+  readCompletion,
+  throwProviderError,
   withProviderTimeout,
   type OpenAiCompatibleResponse,
 } from "@/server/llm/http";
 import { openAiParts } from "@/server/llm/messages";
 import { openaiAnalyze } from "@/server/llm/openai";
 import {
-  LlmEmptyReplyError,
   type AnalysisImage,
   type AnalysisResult,
   type LlmOverride,
@@ -206,29 +206,8 @@ async function openAiCompatibleAnalyze(args: {
     }),
   });
 
-  if (!res.ok) {
-    const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
-    let detail = "";
-    try {
-      const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
-      if (parsed.error?.message) detail = parsed.error.message;
-    } catch {
-      // Nicht die erwartete Form — aus dem Body nichts weitergeben (S-1).
-    }
-    throw providerHttpError(args.label, res, detail);
-  }
+  if (!res.ok) await throwProviderError(args.label, res);
 
   const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
-  const message = json.choices?.[0]?.message;
-  const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
-  if (!text) throw new LlmEmptyReplyError(args.label);
-
-  const usage =
-    json.usage &&
-    typeof json.usage.prompt_tokens === "number" &&
-    typeof json.usage.completion_tokens === "number"
-      ? { inputTokens: json.usage.prompt_tokens, outputTokens: json.usage.completion_tokens }
-      : null;
-
-  return { text, usage, model: args.model };
+  return { ...readCompletion(json, args.label), model: args.model };
 }
