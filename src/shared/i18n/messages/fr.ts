@@ -321,6 +321,7 @@ export const fr: Messages = {
       emptyHintGeneral:
         "Envoie des textes ou des notes sous forme de fichier, par exemple un CV ou des statuts d'association, puis clique sur « Analyser le projet ». Je retiens le reste.",
       staleHint: "Tes sources ont changé depuis l'analyse.",
+      repoStaleHint: "Le dépôt a peut-être changé depuis l'analyse.",
       repoLabel: "Dépôt GitHub, facultatif",
       repoPlaceholder: "github.com/nom/projet",
       repoHint: "Doit être public. Dépôts privés : envoie plutôt les fichiers importants.",

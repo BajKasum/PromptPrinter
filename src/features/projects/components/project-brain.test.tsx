@@ -206,8 +206,10 @@ describe("ProjectBrainCard", () => {
     await user.clear(screen.getByLabelText(/GitHub-Repository/));
     await user.click(screen.getByRole("button", { name: /Neu analysieren/ }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(String(fetchMock.mock.calls[0][1].body)).toBe(JSON.stringify({ repoUrl: null }));
+    // Die Karte fragt beim Erscheinen zuerst den Stand des Repos (#244), die Analyse ist der POST.
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(true));
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(String(post?.[1].body)).toBe(JSON.stringify({ repoUrl: null }));
   });
 
   it("shows the server's own message when the analysis is refused", async () => {
@@ -343,5 +345,54 @@ describe("ProjectBrainCard", () => {
       setup({ brain: IDLE });
       expect(screen.queryByRole("button", { name: "Gedächtnis löschen" })).not.toBeInTheDocument();
     });
+  });
+});
+
+// #244: Hinweis, wenn sich das analysierte Repo geändert hat.
+describe("ProjectBrainCard: Repo-Hinweis", () => {
+  const statusCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/brain/status"));
+  let n = 0;
+  const withRepo = (extra: Partial<ProjectBrain> = {}): ProjectBrain => ({
+    ...READY,
+    repoUrl: "https://github.com/o/r",
+    analyzedAt: `2026-11-01T11:00:${String(n++).padStart(2, "0")}.000Z`,
+    ...extra,
+  });
+
+  beforeEach(() => {
+    refresh.mockReset();
+    fetchMock.mockReset().mockResolvedValue(jsonResponse({ stale: true }));
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("zeigt den Hinweis mit dem Knopf 'Neu analysieren', wenn das Repo weitergezogen ist", async () => {
+    setup({ brain: withRepo() });
+    expect(await screen.findByText("Das Repo hat sich seit der Analyse vielleicht geändert.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Neu analysieren/ })).toBeEnabled();
+    expect(statusCalls()).toHaveLength(1);
+  });
+
+  it("fragt ohne hinterlegtes Repo nicht", () => {
+    setup({ brain: { ...READY, analyzedAt: "2026-11-01T11:30:00.000Z" } });
+    expect(statusCalls()).toHaveLength(0);
+  });
+
+  it("fragt vor der ersten Analyse nicht", () => {
+    setup({ brain: { ...IDLE, repoUrl: "https://github.com/o/r" } });
+    expect(statusCalls()).toHaveLength(0);
+  });
+
+  it("zeigt bei geänderten Dateien nur den Hinweis zu den Quellen, ohne zusätzlich zu fragen", () => {
+    setup({ brain: withRepo(), currentDigest: "bbbb2222" });
+    expect(screen.getByText("Seit der Analyse haben sich deine Quellen geändert.")).toBeInTheDocument();
+    expect(statusCalls()).toHaveLength(0);
+  });
+
+  it("zeigt bei unverändertem Repo nichts", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ stale: false }));
+    setup({ brain: withRepo() });
+    await waitFor(() => expect(statusCalls()).toHaveLength(1));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.queryByText(/Repo hat sich/)).not.toBeInTheDocument();
   });
 });

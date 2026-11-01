@@ -318,6 +318,7 @@ export const es: Messages = {
       emptyHintGeneral:
         "Sube textos o notas como archivo, por ejemplo un currículum o los estatutos de una asociación, luego pulsa «Analizar proyecto». Del resto me acuerdo yo.",
       staleHint: "Tus fuentes han cambiado desde el análisis.",
+      repoStaleHint: "El repositorio puede haber cambiado desde el análisis.",
       repoLabel: "Repositorio de GitHub, opcional",
       repoPlaceholder: "github.com/nombre/proyecto",
       repoHint: "Tiene que ser público. Repositorios privados: sube los archivos importantes.",
