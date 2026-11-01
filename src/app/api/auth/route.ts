@@ -144,7 +144,10 @@ export async function POST(req: Request) {
   const authFailure = (message: string) => {
     const detail = translateAuthError(message);
     // Der Wortlaut bleibt im Log, der Besucher sieht ihn nicht. Unbekannt heisst: hier fehlt vielleicht eine Übersetzung.
-    if (detail === UNKNOWN_AUTH_ERROR) logWarning("auth.unknown_error", { action: input.action, message });
+    // GoTrue nennt in manchen Meldungen die Adresse, und die gehört nicht ins Log.
+    if (detail === UNKNOWN_AUTH_ERROR) {
+      logWarning("auth.unknown_error", { action: input.action, message: message.replace(/\S+@\S+/g, "[adresse]") });
+    }
     return problem(400, detail, { kind: "auth" });
   };
 
