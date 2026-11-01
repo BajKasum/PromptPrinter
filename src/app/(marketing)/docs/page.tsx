@@ -100,7 +100,16 @@ export default function DocsIndexPage() {
               >
                 Vergleich
               </Link>{" "}
-              steht, wann sich PromptPrinter lohnt und wann nicht.
+              steht, wann sich PromptPrinter lohnt und wann nicht. Welche Angaben eine KI für
+              einen Brief, eine Webseite, eine Datenbank, eine Sicherheitsprüfung oder einen
+              Lernplan braucht, steht unter{" "}
+              <Link
+                href="/aufgaben"
+                className="text-accent-text underline underline-offset-2"
+              >
+                Aufgaben
+              </Link>
+              .
             </p>
             <p className="text-[14px] text-secondary">
               Etwas nicht gefunden oder etwas stimmt nicht?{" "}

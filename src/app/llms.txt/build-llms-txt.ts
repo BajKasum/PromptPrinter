@@ -1,4 +1,5 @@
 import { COMPARISONS, comparisonHref } from "@/features/marketing/lib/comparisons";
+import { TASK_GUIDES, taskGuideHref } from "@/features/marketing/lib/task-guides";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
 import { LEGAL } from "@/shared/lib/legal";
@@ -38,6 +39,10 @@ export function buildLlmsTxt(): string {
       `- [${comparison.question}](${base}${comparisonHref(comparison.slug)}): ${comparison.summary}`
   ).join("\n");
 
+  const taskGuides = TASK_GUIDES.map(
+    (guide) => `- [${guide.question}](${base}${taskGuideHref(guide.slug)}): ${guide.summary}`
+  ).join("\n");
+
   return `# PromptPrinter
 
 > Ein KI-Chat, der nachfragt, bis klar ist, was du brauchst, und dir dann den fertigen Prompt liefert, für jede KI und jede Aufgabe.
@@ -60,6 +65,10 @@ ${docs}
 ## Vergleiche
 - [Vergleich und Alternativen](${base}/vergleich): Vier Wege zum Prompt im Vergleich, samt der Fälle, in denen PromptPrinter nicht der beste ist
 ${comparisons}
+
+## Aufgaben
+- [Was eine KI für deine Aufgabe wissen muss](${base}/aufgaben): Fünf Aufgaben, jeweils mit den Angaben, die das Ergebnis ändern, und einem Beispiel-Prompt, von Hand nach Finns Regeln geschrieben
+${taskGuides}
 
 ## Recht
 - [Impressum](${base}/impressum)
