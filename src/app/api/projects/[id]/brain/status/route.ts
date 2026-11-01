@@ -43,7 +43,7 @@ export async function GET(req: Request, { params }: Params) {
     .select("status, repo_url, repo_ref")
     .eq("project_id", projectId)
     .eq("user_id", user.id)
-    .maybeSingle<{ status: string; repo_url: string | null; repo_ref: string | null }>();
+    .maybeSingle();
   if (error) {
     captureError("brain.status_read_failed", error, { userId: user.id, projectId });
     return problem(503, m.brainUnavailable);

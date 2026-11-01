@@ -334,7 +334,7 @@ export async function fetchRepoSnapshot(
 /**
  * Die Baum-SHA des Standard-Branches jetzt, mit EINER Anfrage (#244). Dieselbe Zahl, die fetchRepoSnapshot beim
  * Analysieren als `sha` speichert: "HEAD" löst GitHub auf den Standard-Branch auf, und die SHA des Wurzelbaums
- * hängt nicht davon ab, ob der Baum rekursiv geliefert wird (gegen api.github.com geprüft, 2026-11-01). Ohne
+ * hängt nicht davon ab, ob der Baum rekursiv geliefert wird (gegen api.github.com geprüft). Ohne
  * `recursive` bleibt die Antwort klein.
  */
 export async function fetchRepoHeadSha(ref: GithubRepoRef, signal?: AbortSignal): Promise<string> {
@@ -344,7 +344,7 @@ export async function fetchRepoHeadSha(ref: GithubRepoRef, signal?: AbortSignal)
   return tree.sha;
 }
 
-/** Eine volle Git-SHA. Ein älteres Gedächtnis trägt noch den Branch-Namen (vor M-13) und lässt sich nicht vergleichen. */
+/** Eine volle Git-SHA. Ein älteres Gedächtnis trägt noch den Branch-Namen statt einer SHA und lässt sich nicht vergleichen. */
 export const GIT_SHA = /^[0-9a-f]{40}$/;
 
 /**
