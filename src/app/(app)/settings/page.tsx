@@ -6,6 +6,7 @@ import { resolvePlan } from "@/shared/lib/plans";
 import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
 import { getT } from "@/server/i18n";
 import { zaiConsentOf } from "@/server/consent";
+import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.settings };
@@ -21,7 +22,7 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, configuredProviders, customProvider, activeProvider] =
+  const [profileResult, configuredProviders, customProvider, activeProvider] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -32,6 +33,7 @@ export default async function SettingsPage() {
       getCustomProvider(supabase, user.id),
       getActiveProvider(supabase, user.id),
     ]);
+  const { data: profile } = orThrow(profileResult, "profiles");
 
   const t = await getT();
   const email = user.email ?? "";

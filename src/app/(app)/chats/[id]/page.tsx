@@ -9,6 +9,7 @@ import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { getT } from "@/server/i18n";
+import { orThrow } from "@/server/supabase/query";
 
 export const dynamic = "force-dynamic";
 
@@ -30,17 +31,20 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   if (!user) redirect("/login");
 
   // RLS scopes the read to the owner, a foreign or malformed id yields no row.
-  const { data: convo } = await supabase
+  const { data: convo } = orThrow(
+    await supabase
     .from("conversations")
     .select("id, title, project_id")
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle(),
+    "conversations"
+  );
 
   if (!convo) notFound();
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [initialMessages, profile, { data: savedPromptRows }, needsKey] = await Promise.all([
+  const [initialMessages, profile, savedPromptRowsResult, needsKey] = await Promise.all([
     // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
     // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
     loadConversationMessages(supabase, user.id, id),
@@ -55,6 +59,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
     getNeedsOwnKey(),
   ]);
+  const { data: savedPromptRows } = orThrow(savedPromptRowsResult, "saved_prompts");
 
   const t = await getT();
   const name = profile?.display_name || user.email?.split("@")[0] || null;

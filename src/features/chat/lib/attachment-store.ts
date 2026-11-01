@@ -218,12 +218,13 @@ export async function collectAttachmentPaths(
   messageIds: readonly string[]
 ): Promise<string[]> {
   if (messageIds.length === 0) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("message_attachments")
     .select("storage_path")
     .eq("user_id", userId)
     .eq("conversation_id", conversationId)
     .in("message_id", [...messageIds]);
+  if (error) throw error;
   return (data ?? []).map((r) => r.storage_path);
 }
 

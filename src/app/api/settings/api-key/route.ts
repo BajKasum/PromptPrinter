@@ -119,11 +119,15 @@ export async function POST(req: Request) {
 
   // Admin exemption mirrors /api/chat, /api/projects and /api/account:
   // a single is_admin lookup gates whether the hourly limit below applies.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .maybeSingle();
+  if (profileError) {
+    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m.keySaveFailed);
+  }
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "api-key-save", user.id), { limit: 30, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
@@ -211,12 +215,18 @@ export async function POST(req: Request) {
   // deliberately do NOT steal the slot: switching is the user's call (PATCH
   // below), so connecting a second provider never changes which key is billed
   // without them asking for it.
-  const { data: active } = await supabase
+  const { data: active, error: activeError } = await supabase
     .from("user_api_keys")
     .select("provider")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .maybeSingle();
+  // Ein Lesefehler ist nicht "noch kein aktiver Key": sonst nähme dieser Key einem anderen den Platz weg. Das Speichern
+  // oben ist ein upsert, ein zweiter Versuch ist also unschädlich.
+  if (activeError) {
+    captureError("api_key.active_read_failed", activeError, { userId: user.id, provider });
+    return problem(503, m.keySaveFailed);
+  }
   if (!active) {
     const { error: activateError } = await supabase.rpc("set_active_byok_provider", {
       target_provider: provider,
@@ -254,11 +264,15 @@ export async function PATCH(req: Request) {
   // admin exemption and limit shape as POST; higher than POST's 30/hr since
   // neither of these calls out to a provider, but still bounded rather than
   // open.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .maybeSingle();
+  if (profileError) {
+    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m.keyActivateFailed);
+  }
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "api-key-update", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
@@ -285,12 +299,16 @@ export async function PATCH(req: Request) {
   // Only a provider the user has actually stored may be activated. Without this
   // the RPC would happily set every row to is_active = false (nothing matches),
   // silently dropping them back to the server key.
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("user_api_keys")
     .select("provider")
     .eq("user_id", user.id)
     .eq("provider", provider)
     .maybeSingle();
+  if (existingError) {
+    captureError("api_key.existing_read_failed", existingError, { userId: user.id, provider });
+    return problem(503, m.keyActivateFailed);
+  }
   if (!existing) return problem(404, m.keyNotFound);
 
   const { error } = await supabase.rpc("set_active_byok_provider", {
@@ -321,11 +339,15 @@ export async function DELETE(req: Request) {
   // Security-Audit finding L-7: the one unlimited authenticated mutation in
   // this route (and, before this, in the project) — see the same block on
   // PATCH above for the full reasoning.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .maybeSingle();
+  if (profileError) {
+    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m.keyRemoveFailed);
+  }
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "api-key-delete", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {

@@ -5,6 +5,7 @@ import { fetchRepoSnapshot, parseGithubRepoUrl, type RepoSnapshot } from "@/serv
 import type { BrainAnalysisInput } from "@/server/brain/analyze";
 import { sourceDigest, type BrainSource } from "@/shared/lib/project-brain";
 import type { createClient } from "@/server/supabase/server";
+import { orThrow } from "@/server/supabase/query";
 
 // Sammelt alles, woraus sich das Projekt-Gedächtnis ableiten lässt: die
 // hochgeladenen Projektdateien und, falls hinterlegt, den aktuellen Stand des
@@ -89,16 +90,17 @@ export async function collectBrainSources(
   options: { projectName: string; repoUrl: string | null; signal?: AbortSignal }
 ): Promise<CollectedSources> {
   // Explizites user_id neben RLS (CLAUDE.mds Defense-in-depth-Standard).
-  const { data: rows } = await supabase
+  const { data: rows } = orThrow(
+    await supabase
     .from("project_files")
     .select("id, name, storage_path, size_bytes")
     .eq("project_id", projectId)
     .eq("user_id", userId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true }),
+    "project_files"
+  );
 
-  const files = (rows as
-    | { id: string; name: string; storage_path: string; size_bytes: number }[]
-    | null) ?? [];
+  const files = rows ?? [];
 
   const ref = options.repoUrl ? parseGithubRepoUrl(options.repoUrl) : null;
 

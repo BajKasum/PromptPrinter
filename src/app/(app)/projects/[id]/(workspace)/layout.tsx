@@ -20,6 +20,7 @@ import type { ProjectFile } from "@/features/projects/lib/project-files";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, plural } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { orThrow } from "@/server/supabase/query";
 
 // The workspace shell (REDESIGN.md, Phase 3): header + context rail persist
 // across the project's "Arbeitsraum" subroutes, Übersicht and Ergebnisse are
@@ -112,10 +113,10 @@ export default async function ProjectWorkspaceLayout({
   // every other user-scoped read, kept in sync here rather than left as the
   // one place that quietly relied on the caller above having checked already.
   const [
-    { count: chatCount },
-    { count: resultCount },
-    { data: filesRaw },
-    { data: brainRaw },
+    chatCountResult,
+    resultCountResult,
+    filesRawResult,
+    brainRawResult,
   ] = await Promise.all([
       supabase
         .from("conversations")
@@ -146,6 +147,10 @@ export default async function ProjectWorkspaceLayout({
         .eq("user_id", project.userId)
         .maybeSingle(),
     ]);
+  const { count: chatCount } = orThrow(chatCountResult, "conversations");
+  const { count: resultCount } = orThrow(resultCountResult, "saved_prompts");
+  const { data: filesRaw } = orThrow(filesRawResult, "project_files");
+  const { data: brainRaw } = orThrow(brainRawResult, "project_brains");
 
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const chats = chatCount ?? 0;

@@ -12,6 +12,7 @@ import { getConfiguredProviders } from "@/server/byok";
 import { getLocale, getT } from "@/server/i18n";
 import { fmt, rich } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.billing };
@@ -36,7 +37,7 @@ export default async function BillingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, configuredProviders, t, locale] = await Promise.all([
+  const [profileResult, configuredProviders, t, locale] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -48,6 +49,7 @@ export default async function BillingPage() {
     getT(),
     getLocale(),
   ]);
+  const { data: profile } = orThrow(profileResult, "profiles");
   const statusLabels: Record<string, string> = t.pages.billing.status;
   const intlTag = LOCALE_TAGS[locale].intl;
 

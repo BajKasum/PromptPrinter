@@ -20,6 +20,7 @@ import { getLocale, getT } from "@/server/i18n";
 import { loadActivationFunnel } from "@/server/activation-funnel";
 import { ActivationFunnelCard } from "@/features/settings/components/activation-funnel";
 import { fmt, rich } from "@/shared/i18n/format";
+import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.usage };
@@ -49,9 +50,9 @@ export default async function UsagePage() {
   ).toISOString();
 
   const [
-    { data: profile },
-    { count: projectsCount },
-    { count: monthlyChatMessagesFromDb },
+    profileResult,
+    projectsCountResult,
+    monthlyChatMessagesFromDbResult,
     configuredProviders,
     redisChatUsage,
   ] = await Promise.all([
@@ -78,6 +79,9 @@ export default async function UsagePage() {
     // falls back to that same DB count, see reserveMonthlyQuota).
     getMonthlyQuotaUsage(chatQuotaKey(user.id)),
   ]);
+  const { data: profile } = orThrow(profileResult, "profiles");
+  const { count: projectsCount } = orThrow(projectsCountResult, "projects");
+  const { count: monthlyChatMessagesFromDb } = orThrow(monthlyChatMessagesFromDbResult, "messages");
   const t = await getT();
   const monthlyChatMessages = redisChatUsage ?? monthlyChatMessagesFromDb;
 
@@ -174,9 +178,9 @@ async function OperationsSection() {
   const admin = createAdminClient();
   const [
     serverKey,
-    { count: usersTotal },
-    { count: messagesMonth },
-    { count: messagesToday },
+    usersTotalResult,
+    messagesMonthResult,
+    messagesTodayResult,
     funnel,
   ] =
     await Promise.all([
@@ -194,6 +198,9 @@ async function OperationsSection() {
         .gte("created_at", dayStart),
       loadActivationFunnel(admin, now),
     ]);
+  const { count: usersTotal } = orThrow(usersTotalResult, "profiles");
+  const { count: messagesMonth } = orThrow(messagesMonthResult, "messages");
+  const { count: messagesToday } = orThrow(messagesTodayResult, "messages");
 
   // ~0.012 $ per turn at the worst case measured for glm-4.5-air (24k in,
   // 6144 out). A rough order of magnitude, not an invoice — the streaming path
