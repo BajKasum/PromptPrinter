@@ -2,12 +2,13 @@
 
 import "client-only";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useReducer, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { useAttachments } from "@/features/chat/hooks/use-attachments";
 import type { DraftAttachment } from "@/features/chat/lib/prepare-attachment";
 import { viewOf, type Msg } from "@/features/chat/lib/chat-wire";
 import { runChatTurn } from "@/features/chat/hooks/run-chat-turn";
+import { initialTurnState, turnReducer, type Pending } from "@/features/chat/lib/turn-state";
 import { randomId } from "@/shared/lib/utils";
 import { useT } from "@/shared/i18n/provider";
 
@@ -30,49 +31,18 @@ export function useChatTurn({
 }) {
   const t = useT();
   const router = useRouter();
-  const [messages, setMessages] = useState<Msg[]>(initialMessages ?? []);
-  const [conversationId, setConversationId] = useState<string | undefined>(
-    initialConversationId
+  // Der Zustand des Zugs steht in turn-state.ts (Felder und ihre Bedeutung), runChatTurn meldet ihm Ereignisse.
+  const [state, dispatch] = useReducer(turnReducer, undefined, () =>
+    initialTurnState({ messages: initialMessages, conversationId: initialConversationId, needsKey })
   );
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Starts from the server's own check and flips on if the route answers
-  // 403 byokRequired anyway (e.g. the key was deleted in another tab).
-  const [keyRequired, setKeyRequired] = useState(needsKey);
-  // Pro, aber noch ohne Zustimmung zur Übermittlung an Z.ai: kommt nur aus dem 403 consentRequired.
-  const [consentRequired, setConsentRequired] = useState(false);
-  // Seconds until a rate-limited request may be retried, straight from the
-  // route's own `retryAfter`. Null for every other kind of failure.
-  const [retryAfter, setRetryAfter] = useState<number | null>(null);
-  // Set when the route replied but couldn't persist the turn (json.persistError):
-  // the message is shown, but nothing was saved, so a reload loses it. Distinct
-  // from `error` (which means no reply at all) since this must not block the
-  // user from continuing to chat, only warn them the history isn't safe yet.
-  const [persistWarning, setPersistWarning] = useState<string | null>(null);
-  // The reply currently arriving via SSE (raw accumulated text), plus whether
-  // the stream has closed. It is deliberately NOT committed into `messages`
-  // the moment "done" lands: ChatStreamingReply writes the text out at a
-  // readable pace and calls back when it has caught up, and only then does the
-  // turn become a real message. Committing on "done" instead made the tail of
-  // a long prompt appear in one block exactly when the user was watching for
-  // it to finish.
-  const [pending, setPending] = useState<{ text: string; complete: boolean } | null>(null);
-  // The server reported a transient failure and is already on its next
-  // attempt (SSE `status`, see /api/chat). Only meaningful before the first
-  // word: it flips back off on the first delta and when the turn ends.
-  const [retrying, setRetrying] = useState(false);
+  const { messages, conversationId, input, loading, pending } = state;
+  const setInput = useCallback((value: string) => dispatch({ type: "inputChanged", value }), []);
   // Mirrors `pending` for event handlers (stop()) and for the commit guard;
   // synced in an effect rather than assigned during render.
-  const pendingRef = useRef<{ text: string; complete: boolean } | null>(null);
+  const pendingRef = useRef<Pending>(null);
   useEffect(() => {
     pendingRef.current = pending;
   }, [pending]);
-  // True from the moment a reply finished writing until the next turn starts,
-  // drives the celebrating end-of-turn marker. Starts false on a reloaded
-  // chat: the marker celebrates a reply you just watched arrive, not every
-  // page view of an old one.
-  const [justFinished, setJustFinished] = useState(false);
   // The in-flight request's controller, so stop() (below) can abort it.
   const abortControllerRef = useRef<AbortController | null>(null);
   // False once this component has unmounted, so a `done` event that (in some
@@ -134,12 +104,11 @@ export function useChatTurn({
   const commitReply = useCallback((text: string, celebrate = true) => {
     if (pendingRef.current === null) return;
     pendingRef.current = null;
-    setPending(null);
+    dispatch({ type: "pendingCleared" });
     if (!text.trim()) return;
     const id = pendingAssistantIdRef.current ?? randomId();
     pendingAssistantIdRef.current = null;
-    setMessages((m) => [...m, { id, role: "assistant", content: text }]);
-    if (celebrate) setJustFinished(true);
+    dispatch({ type: "replyCommitted", message: { id, role: "assistant", content: text }, celebrate });
   }, []);
 
   function stop() {
@@ -245,30 +214,18 @@ export function useChatTurn({
   ): Promise<string | null> {
     return runChatTurn(
       {
-        messages,
-        conversationId,
-        projectId,
-        initialConversationId,
+        snapshot: { messages, conversationId, projectId, initialConversationId },
         t,
         router,
-        attachments,
-        mountedRef,
-        pendingRef,
-        pendingAssistantIdRef,
-        abortControllerRef,
+        refs: {
+          mounted: mountedRef,
+          pending: pendingRef,
+          pendingAssistantId: pendingAssistantIdRef,
+          abortController: abortControllerRef,
+        },
+        dispatch,
         commitReply,
-        setMessages,
-        setError,
-        setRetryAfter,
-        setPersistWarning,
-        setPending,
-        setJustFinished,
-        setRetrying,
-        setLoading,
-        setConversationId,
-        setInput,
-        setKeyRequired,
-        setConsentRequired,
+        restoreAttachments: (uploads) => attachments.restore(uploads),
       },
       next,
       text,
@@ -293,19 +250,19 @@ export function useChatTurn({
     setInput,
     loading,
     busy,
-    error,
-    retryAfter,
-    keyRequired,
-    consentRequired,
-    dismissConsentNotice: () => setConsentRequired(false),
+    error: state.error,
+    retryAfter: state.retryAfter,
+    keyRequired: state.keyRequired,
+    consentRequired: state.consentRequired,
+    dismissConsentNotice: () => dispatch({ type: "consentNoticeDismissed" }),
     // Nach dem Verbinden verschwindet der Key-Hinweis sofort. Der Zustand
     // startet aus dem Server-Check und wird sonst nur durch einen 403 gesetzt,
     // ein neues Prop käme nach router.refresh() nicht an.
-    dismissKeyNotice: () => setKeyRequired(false),
-    persistWarning,
+    dismissKeyNotice: () => dispatch({ type: "keyNoticeDismissed" }),
+    persistWarning: state.persistWarning,
     pending,
-    retrying,
-    justFinished,
+    retrying: state.retrying,
+    justFinished: state.justFinished,
     lastAssistantIndex,
     send,
     stop,
