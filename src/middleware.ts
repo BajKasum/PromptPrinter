@@ -1,9 +1,16 @@
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/server/supabase/middleware";
 import { buildCsp, buildStaticCsp, thirdPartiesFor } from "@/server/security/csp";
+import { problem } from "@/server/http/api-problem";
+import { isForbiddenCrossOriginApiCall } from "@/server/security/request-origin";
 import { isAppPath } from "@/shared/lib/app-routes";
 
 export async function middleware(request: NextRequest) {
+  // Vor allem anderen: eine untergeschobene Anfrage bekommt weder eine Sitzungsrunde noch die Route.
+  if (isForbiddenCrossOriginApiCall(request, request.nextUrl.pathname)) {
+    return problem(403, "Diese Anfrage kommt nicht von dieser Seite.", { kind: "origin" });
+  }
+
   // Base64-encode the UUID: CSP's nonce-source grammar is base64 alphabet
   // only, a raw UUID's hyphens aren't valid there.
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
