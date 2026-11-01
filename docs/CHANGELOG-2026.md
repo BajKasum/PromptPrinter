@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: Modellzugang und Chat-Umbau (PR #262, Branch `refactor/llm-chat-2026-11`)
+
+- **#204 Zeitgrenzen:** Z.ai und der Custom-Slot teilen `streamDeadlines` (`server/llm/http.ts`): Frist bis zum ersten Textstück (Z.ai 30 s, Custom 60 s), danach 45 s Leerlauf (jedes Textstück startet neu), dazu 270 s Gesamtgrenze unter `maxDuration` 300 s. Überschreibbar mit `LLM_STREAM_IDLE_TIMEOUT_MS` und `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze nie über 285 s. Die Zeit, die der Verbraucher für ein Stück braucht, zählt nicht gegen den Anbieter. Nicht gegen einen echten Anbieter geprüft.
+- **#216 BYOK-Modelle:** `ANTHROPIC_MODEL`, `OPENAI_MODEL`, `GEMINI_MODEL` (bei Gemini dieselbe Variable wie beim Server-Anbieter). Die Standardnamen sind nicht gegen die Modelllisten der Anbieter geprüft.
+- **#214 Auswertung:** `throwProviderError` und `readCompletion` je einmal in `llm/http.ts`. `zaiComplete` und der Server-Zweig von `chatComplete` waren im Betrieb nie erreichbar und sind samt Tests entfernt, `chatComplete` verlangt `override`. Zwei kleine Abweichungen: der Fehler-Body von Z.ai wird auf 2 MB begrenzt gelesen, die Frist des Custom-Stroms beginnt vor der DNS-Prüfung.
+- **#213 Kostenkette:** `reserveModelCall` (`server/model-call.ts`) ersetzt die doppelte Kette in `chat/allowance.ts` und der Gedächtnis-Route. **Entscheid:** Ohne Redis zählt auch die Analyse die Datenbank (vorher entfiel das Monatskontingent dort), ihre Ablehnung nennt wie im Chat `current`. Das Stundenlimit prüft der Aufrufer selbst (`rate-limit-scopes.test.ts` verlangt den Bereich als Literal).
+- **#210 Strom-Schema:** `shared/lib/chat-stream.ts` hält Ereignisse, Nutzlast und Protokoll. `send` ist typisiert, der Browser liest mit `parseChatStreamEvent`. Der Leser ist nachsichtiger als der Sender (fehlende Kontextfelder sind kein Fehler), eine kaputte Nutzlast zeigt `chat.streamInvalid` (fr/it/es nicht von Muttersprachlern geprüft). Bundle-Größe nach dem zod-Import im Chat nicht gemessen.
+- **#212 runChatTurn:** Reducer (`turn-state.ts`), Fehlerklassifikation und Anfrage (`turn-outcome.ts`), Ereignishandler (`turn-events.ts`). Keine Funktion in `run-chat-turn.ts` über 74 Zeilen oder Komplexität 9, `ChatTurnContext` hat 7 Mitglieder. `useChatTurn` selbst ist mit 257 Zeilen (viel Kommentar) nicht kleiner geworden als nötig.
+- **#202 Datenbankfehler (teilweise, offen):** `orThrow` (`server/supabase/query.ts`), Lesefehler antworten mit 503 und geben Reservierungen zurück. Umgestellt: Profil und Zählung in der Kostenkette, `getUserOverride`, Konversation, Projektkontext samt Dateiliste, Projekt-Limit beim Anlegen, Gedächtnis-Route (sechs Stellen), Konto löschen, `getSessionProfile`, `getNeedsOwnKey`, `getProject`. Der Guard `db-read-errors.test.ts` führt den Rest in seiner Ausnahmeliste (Seiten der App, `settings/api-key`, Browser-Komponenten, Anhänge, Quellen des Gedächtnisses, Befehlspalette). `auth.getUser()` und `getClaims()` sind bewusst ausgenommen: ein Fehler heißt dort "nicht angemeldet".
+- **Nicht geprüft:** ein echter Anbieter-Strom, der Browser (E2E lief in der CI), `session.ts` und `project.ts` ohne eigene Fehlertests. Die lokalen Tests liefen teils mit längerem Timeout, weil parallele Sitzungen den Rechner auslasteten.
+
+---
+
 ## 2026-11-01: Sicherheits-Issues aus dem Audit des Tages (PR #258, Branch `fix/sicherheit-2026-11`)
 
 - **#229 CSRF:** Die Middleware weist fremde ändernde Anfragen an `/api/` mit 403 ab (`server/security/request-origin.ts`), keine Route wurde angefasst. Sec-Fetch-Site zuerst, ohne den Kopf Origin. Ausgenommen: Webhook, die vier Geräte-Routen ohne Cookie, Bearer. **Entscheid:** Eine Anfrage ohne beide Köpfe läuft durch, sie kommt nicht aus einem Browser. Die vorgeschlagene Content-Type-Pflicht ist weggelassen, ein fremdes Formular scheitert schon an der Herkunft.
