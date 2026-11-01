@@ -3,6 +3,7 @@
 import { Mascot } from "@/shared/brand/mascot";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { ChatReplyActions } from "@/features/chat/components/chat-transcript";
+import { PlaceholderForm } from "@/features/chat/components/placeholder-form";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
 import { useT } from "@/shared/i18n/provider";
@@ -65,6 +66,8 @@ export function ChatResultPanel({
       <div className="px-3 py-4 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
         <MarkdownMessage content={content} typed={typed} />
       </div>
+
+      {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} />}
 
       {/* Same actions as under an older reply (#150): the prompt that just got
           finished is the moment you most want to export it. */}

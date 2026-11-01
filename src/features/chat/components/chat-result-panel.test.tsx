@@ -104,3 +104,99 @@ describe("ChatResultPanel", () => {
     expect(screen.getByRole("button", { name: "Speichern" })).toBeInTheDocument();
   });
 });
+
+// #224: Platzhalter direkt im Ergebnis ausfüllen, alles im Browser.
+describe("ChatResultPanel: Platzhalter ausfüllen", () => {
+  const WITH_SLOTS =
+    "```text\nBrief von [mein Name] an [Vermieter]. Gruss, [mein Name]. Siehe [Doku](https://docs.firma.ch) und [1].\n```";
+  const writeText = vi.fn().mockResolvedValue(undefined);
+
+  function setup() {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    writeText.mockClear();
+    return user;
+  }
+
+  it("bietet bei drei Fundstellen und zwei verschiedenen Platzhaltern ein Formular mit zwei Feldern an", async () => {
+    const user = setup();
+    render(<ChatResultPanel content={WITH_SLOTS} />);
+    await user.click(screen.getByRole("button", { name: "Platzhalter ausfüllen (2)" }));
+    expect(screen.getByLabelText("mein Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Vermieter")).toBeInTheDocument();
+    expect(screen.getAllByRole("textbox")).toHaveLength(2);
+  });
+
+  it("zeigt kein Formular, wenn der Prompt keine Platzhalter hat oder nur Links und Zahlen", () => {
+    render(<ChatResultPanel content={"```text\nSiehe [Doku](https://docs.firma.ch) und [1], liste[0].\n```"} />);
+    expect(screen.queryByRole("button", { name: /Platzhalter ausfüllen/ })).not.toBeInTheDocument();
+    render(<ChatResultPanel content={QUESTION_REPLY} />);
+    expect(screen.queryByRole("button", { name: /Platzhalter ausfüllen/ })).not.toBeInTheDocument();
+  });
+
+  it("ersetzt live in der Vorschau und kopiert die ausgefüllte Fassung", async () => {
+    const user = setup();
+    render(<ChatResultPanel content={WITH_SLOTS} />);
+    await user.click(screen.getByRole("button", { name: /Platzhalter ausfüllen/ }));
+    await user.type(screen.getByLabelText("mein Name"), "Kasum");
+    await user.type(screen.getByLabelText("Vermieter"), "Frau Keller");
+    expect(screen.getByText(/Brief von Kasum an Frau Keller\. Gruss, Kasum\./)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Ausgefüllt kopieren" }));
+    expect(writeText).toHaveBeenCalledWith(
+      "Brief von Kasum an Frau Keller. Gruss, Kasum. Siehe [Doku](https://docs.firma.ch) und [1]."
+    );
+  });
+
+  it("lässt ein leeres Feld als Platzhalter stehen", async () => {
+    const user = setup();
+    render(<ChatResultPanel content={WITH_SLOTS} />);
+    await user.click(screen.getByRole("button", { name: /Platzhalter ausfüllen/ }));
+    await user.type(screen.getByLabelText("mein Name"), "Kasum");
+    await user.click(screen.getByRole("button", { name: "Ausgefüllt kopieren" }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("an [Vermieter]."));
+  });
+
+  it("behandelt einen als 'kein Platzhalter' markierten Treffer nicht als Platzhalter", async () => {
+    const user = setup();
+    render(<ChatResultPanel content={WITH_SLOTS} />);
+    await user.click(screen.getByRole("button", { name: /Platzhalter ausfüllen/ }));
+    await user.type(screen.getByLabelText("Vermieter"), "Frau Keller");
+    await user.click(screen.getByRole("button", { name: "„Vermieter“ nicht als Platzhalter behandeln" }));
+    expect(screen.getByLabelText("Vermieter")).toBeDisabled();
+    await user.type(screen.getByLabelText("mein Name"), "Kasum");
+    await user.click(screen.getByRole("button", { name: "Ausgefüllt kopieren" }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("an [Vermieter]."));
+  });
+
+  it("sendet beim Ausfüllen nichts ins Netz und speichert nichts", async () => {
+    const user = setup();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    localStorage.clear();
+    render(<ChatResultPanel content={WITH_SLOTS} />);
+    await user.click(screen.getByRole("button", { name: /Platzhalter ausfüllen/ }));
+    await user.type(screen.getByLabelText("mein Name"), "Kasum");
+    await user.click(screen.getByRole("button", { name: "Ausgefüllt kopieren" }));
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    fetchSpy.mockRestore();
+  });
+
+  it("speichert weiter den Prompt mit seinen Platzhaltern", async () => {
+    const user = setup();
+    render(<ChatResultPanel content={WITH_SLOTS} projectId="p1" savedPrompts={[]} />);
+    await user.click(screen.getByRole("button", { name: /Platzhalter ausfüllen/ }));
+    await user.type(screen.getByLabelText("mein Name"), "Kasum");
+    expect(screen.getByRole("button", { name: "Speichern" })).not.toBeDisabled();
+  });
+
+  it("ist per Tastatur erreichbar: Knopf, Felder und Umschalter haben einen Namen", async () => {
+    const user = setup();
+    render(<ChatResultPanel content={WITH_SLOTS} />);
+    const toggle = screen.getByRole("button", { name: /Platzhalter ausfüllen/ });
+    toggle.focus();
+    await user.keyboard("{Enter}");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    for (const field of screen.getAllByRole("textbox")) expect(field).toHaveAccessibleName();
+  });
+});
