@@ -4,6 +4,7 @@ import { Mascot } from "@/shared/brand/mascot";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { ChatReplyActions } from "@/features/chat/components/chat-transcript";
 import { PlaceholderForm } from "@/features/chat/components/placeholder-form";
+import { PromptQualityLine } from "@/features/chat/components/prompt-quality-line";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
 import { useT } from "@/shared/i18n/provider";
@@ -67,6 +68,7 @@ export function ChatResultPanel({
         <MarkdownMessage content={content} typed={typed} />
       </div>
 
+      {savablePrompt && <PromptQualityLine prompt={savablePrompt} />}
       {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} />}
 
       {/* Same actions as under an older reply (#150): the prompt that just got
