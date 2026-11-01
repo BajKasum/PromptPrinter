@@ -318,6 +318,7 @@ export const en: Messages = {
       emptyHintGeneral:
         "Upload texts or notes as a file, for example a CV or club statutes, then press “Analyze project”. I'll remember the rest.",
       staleHint: "Your sources have changed since the analysis.",
+      repoStaleHint: "The repo may have changed since the analysis.",
       repoLabel: "GitHub repository, optional",
       repoPlaceholder: "github.com/name/project",
       repoHint: "Has to be public. Private repos: upload the important files instead.",

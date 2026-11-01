@@ -318,6 +318,7 @@ export const it: Messages = {
       emptyHintGeneral:
         "Carica testi o appunti come file, per esempio un CV o lo statuto di un'associazione, poi premi «Analizza progetto». Al resto penso io.",
       staleHint: "Dall'analisi le tue fonti sono cambiate.",
+      repoStaleHint: "Il repository potrebbe essere cambiato dall'analisi.",
       repoLabel: "Repository GitHub, facoltativo",
       repoPlaceholder: "github.com/nome/progetto",
       repoHint: "Deve essere pubblico. Repository privati: carica i file importanti.",

@@ -325,6 +325,7 @@ export const de = {
       emptyHintGeneral:
         "Lad Texte oder Notizen als Datei hoch, zum Beispiel einen Lebenslauf oder Vereinsstatuten, dann auf „Projekt analysieren“ drücken. Ich merk mir den Rest.",
       staleHint: "Seit der Analyse haben sich deine Quellen geändert.",
+      repoStaleHint: "Das Repo hat sich seit der Analyse vielleicht geändert.",
       repoLabel: "GitHub-Repository, optional",
       repoPlaceholder: "github.com/name/projekt",
       repoHint: "Muss öffentlich sein. Private Repos: lade die wichtigen Dateien hoch.",

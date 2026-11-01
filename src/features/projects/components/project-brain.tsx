@@ -19,6 +19,7 @@ import { isAnalysisRunning, isBrainStale, type ProjectBrain } from "@/shared/lib
 import type { ProjectKind } from "@/shared/lib/project-kind";
 import { useT } from "@/shared/i18n/provider";
 import { BrainFacts, BrainStatus } from "@/features/projects/components/project-brain-facts";
+import { RepoStaleHint } from "@/features/projects/components/repo-stale-hint";
 import type { Messages } from "@/shared/i18n/messages/de";
 
 // Die Kontext-Rail-Karte des Projekt-Gedächtnisses.
@@ -207,6 +208,10 @@ export function ProjectBrainCard({
             <Sparkles className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
             {t.projects.brain.staleHint}
           </p>
+        )}
+
+        {ready && !running && !stale && brain.repoUrl && (
+          <RepoStaleHint projectId={projectId} analyzedAt={brain.analyzedAt} />
         )}
 
         {brain.status === "failed" && !running && (

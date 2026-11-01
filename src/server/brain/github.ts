@@ -332,6 +332,22 @@ export async function fetchRepoSnapshot(
 }
 
 /**
+ * Die Baum-SHA des Standard-Branches jetzt, mit EINER Anfrage (#244). Dieselbe Zahl, die fetchRepoSnapshot beim
+ * Analysieren als `sha` speichert: "HEAD" löst GitHub auf den Standard-Branch auf, und die SHA des Wurzelbaums
+ * hängt nicht davon ab, ob der Baum rekursiv geliefert wird (gegen api.github.com geprüft, 2026-11-01). Ohne
+ * `recursive` bleibt die Antwort klein.
+ */
+export async function fetchRepoHeadSha(ref: GithubRepoRef, signal?: AbortSignal): Promise<string> {
+  const slug = `${encodeURIComponent(ref.owner)}/${encodeURIComponent(ref.repo)}`;
+  const tree = await githubJson<TreeResponse>(`${API_HOST}/repos/${slug}/git/trees/HEAD`, signal);
+  if (typeof tree.sha !== "string" || !GIT_SHA.test(tree.sha)) throw new GithubImportError("repo_unavailable");
+  return tree.sha;
+}
+
+/** Eine volle Git-SHA. Ein älteres Gedächtnis trägt noch den Branch-Namen (vor M-13) und lässt sich nicht vergleichen. */
+export const GIT_SHA = /^[0-9a-f]{40}$/;
+
+/**
  * Eine einzelne Datei vom Raw-CDN. Ein Fehlschlag ist hier kein Grund, die
  * ganze Analyse abzubrechen — eine fehlende Datei von vierzehn heisst nur,
  * dass ein Signal weniger da ist.
