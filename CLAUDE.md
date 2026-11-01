@@ -80,7 +80,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Qualität:** das Gate (siehe "Befehle"), Guards in `tests/guards/` (Schichten,
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
   Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit),
-  `e2e.yml`, `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an
+  `e2e.yml`, `e2e-prod.yml` (Produktionsaufbau), `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an
   Commit-SHAs (`workflows.test.ts`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
   ändern würde: [docs/SETUP.md](docs/SETUP.md), Abschnitt "Projekt-Gedächtnis".

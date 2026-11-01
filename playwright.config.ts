@@ -27,7 +27,12 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: "**/mobile.spec.ts" },
+    // e2e/prod/ gehört zu playwright.prod.config.ts (Produktionsaufbau, eigener Workflow).
+    {
+      name: "desktop",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: ["**/mobile.spec.ts", "**/prod/**"],
+    },
     // Dieselbe Chromium-Engine mit Telefonmaß und Touch: Viewport-Fehler zeigen
     // sich so, ohne einen zweiten Browser vorzuhalten.
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: "**/mobile.spec.ts" },
