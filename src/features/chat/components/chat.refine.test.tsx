@@ -196,6 +196,12 @@ describe("Antwortvorschläge zu Finns Rückfrage (#225)", () => {
   });
 
   it("hängt weitere Tipps mit Komma an und fügt in der Mitte an der Cursor-Stelle ein", async () => {
+    // Der Cursor wird nach dem Einfügen im nächsten Frame gesetzt; ohne Frame-Attrappe überholt dieser späte
+    // Aufruf das setSelectionRange des Tests, sobald der Rechner langsam ist.
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
     render(<Chat initialMessages={withQuestion} initialConversationId="c" />);
     const user = userEvent.setup();
     const box = screen.getByRole("textbox") as HTMLTextAreaElement;
