@@ -114,7 +114,7 @@ export async function POST(req: Request, { params }: Params) {
     .select("name, type")
     .eq("id", projectId)
     .eq("user_id", userId)
-    .maybeSingle<{ name: string; type?: string | null }>();
+    .maybeSingle();
   // Ein Lesefehler ist kein "nicht gefunden": 503, nicht 404.
   if (projectError) {
     captureError("brain.project_read_failed", projectError, { userId, projectId });
@@ -131,7 +131,7 @@ export async function POST(req: Request, { params }: Params) {
     .select("repo_url")
     .eq("project_id", projectId)
     .eq("user_id", userId)
-    .maybeSingle<{ repo_url: string | null }>();
+    .maybeSingle();
   // Ohne die gespeicherte Adresse würde das upsert unten ein hinterlegtes Repo stillschweigend löschen.
   if (existingError) {
     captureError("brain.brain_read_failed", existingError, { userId, projectId });

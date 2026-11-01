@@ -18,12 +18,6 @@ export async function generateMetadata() {
   return { title: (await getT()).meta.savedPrompts };
 }
 
-type SavedPromptRow = {
-  id: string;
-  created_at: string;
-  outputs: Record<string, unknown> | null;
-};
-
 // The project-independent saved-prompt library (QA finding N-1, built per
 // explicit product direction rather than the audit's own two proposed
 // fixes): every prompt this user has ever saved, from any chat — global or
@@ -59,7 +53,7 @@ export default async function SavedPromptsPage() {
   const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
-    (rowsRaw as SavedPromptRow[] | null) ?? [],
+    rowsRaw ?? [],
     SAVED_PROMPTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);

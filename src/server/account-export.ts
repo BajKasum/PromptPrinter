@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/shared/supabase/database.types";
 import type { createClient } from "@/server/supabase/server";
 import { captureError } from "@/shared/lib/observability";
 import { zaiConsentOf } from "@/server/consent";
@@ -49,7 +51,7 @@ export const EXPORT_PAGE_SIZE = 1000;
 type Section = {
   /** Schlüssel in der JSON-Datei. */
   key: string;
-  table: string;
+  table: keyof Database["public"]["Tables"];
   /** Positivliste der Spalten, genau diese und nie `*`. */
   columns: string;
   /** Feste Gesamtordnung, sonst verschieben sich Seiten zwischen zwei Abfragen. */
@@ -225,8 +227,11 @@ async function* rowsOf(
   pageSize: number
 ): AsyncGenerator<Row> {
   const [first, second] = section.orderBy;
+  // Tabelle, Spalten und Sortierung stehen hier als Daten (SECTIONS), der Typprüfer kann eine Abfrage über eine
+  // Vereinigung von Tabellen nicht auflösen. Geprüft ist der Tabellenname über Section.table.
+  const untyped = supabase as unknown as SupabaseClient;
   for (let from = 0; ; from += pageSize) {
-    const base = supabase
+    const base = untyped
       .from(section.table)
       .select(section.columns)
       .eq("user_id", userId)

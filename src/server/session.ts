@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Tables } from "@/shared/supabase/database.types";
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
@@ -37,12 +38,7 @@ import { requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
 // Verhaltenswechsel auf dem heissesten Pfad des Produkts bringt dort nichts.
 
 /** Alles, was irgendeine Seite vom Profil braucht — als eine Abfrage. */
-export type SessionProfile = {
-  plan: string | null;
-  is_admin: boolean | null;
-  display_name: string | null;
-  settings: unknown;
-};
+export type SessionProfile = Pick<Tables<"profiles">, "plan" | "is_admin" | "display_name" | "settings">;
 
 /**
  * Der angemeldete Nutzer, hoechstens einmal pro Request geholt.
@@ -84,7 +80,7 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
       .from("profiles")
       .select("plan, is_admin, display_name, settings")
       .eq("id", user.id)
-      .maybeSingle<SessionProfile>(),
+      .maybeSingle(),
     "profiles"
   );
 

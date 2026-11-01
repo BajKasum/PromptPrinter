@@ -85,7 +85,7 @@ export function extractSavedPromptContents(
  * malformed row shouldn't render as broken UI).
  */
 export function mapSavedPromptRows(
-  rows: { id: string; created_at: string; outputs: Record<string, unknown> | null }[],
+  rows: { id: string; created_at: string; outputs: unknown }[],
   fallbackTitle = "Gespeicherter Prompt"
 ): SavedPrompt[] {
   return rows

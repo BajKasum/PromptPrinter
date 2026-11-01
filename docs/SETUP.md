@@ -621,6 +621,21 @@ eingebaut wurde (Projekt-Löschen ohne Speicher-Aufräumen, Export mit internem
 Pfad, Schranke gegen schwache Passwörter aus): jeder machte genau den
 zuständigen Test rot.
 
+### Datenbank-Typen
+
+Die Spaltennamen aller Abfragen prüft `npm run typecheck` gegen `src/shared/supabase/database.types.ts`. Die Datei ist erzeugt,
+nie von Hand ändern. Nach jeder Migration neu schreiben, mit laufendem lokalem Stack und aus der Bash (PowerShell schriebe
+UTF-16):
+
+```bash
+npx --yes supabase@2.119.0 gen types typescript --local --schema public > src/shared/supabase/database.types.ts
+```
+
+Die CLI-Version ist dieselbe wie in `e2e.yml`, dort vergleicht ein Schritt die Datei mit dem Schema aus den Migrationen.
+`tests/guards/supabase-types.test.ts` verbietet `.maybeSingle<T>()` und Verwandte, weil sie den erkannten Zeilentyp ersetzen.
+Nicht geprüft sind zwei Stellen, die Tabelle und Spalten als Daten führen: `server/account-export.ts` und
+`accountsWithRows` in `server/activation-funnel.ts`; dort prüft der Typ nur den Tabellennamen.
+
 ## Projektstruktur
 
 Details und Layer-Regeln: [CLAUDE.md](../CLAUDE.md).

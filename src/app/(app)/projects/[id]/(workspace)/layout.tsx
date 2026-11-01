@@ -158,7 +158,7 @@ export default async function ProjectWorkspaceLayout({
     createdAt: f.created_at,
   }));
 
-  const brain = toBrain(brainRaw as BrainRow | null);
+  const brain = toBrain(brainRaw);
   // Rein aus Datei-IDs und -Groessen plus der Repo-URL gerechnet, ohne einen
   // einzigen Download oder GitHub-Aufruf: dieser Wert wird bei JEDEM Aufruf
   // der Seite gebraucht, nur um "hat sich seit der Analyse etwas geaendert?"
