@@ -23,10 +23,28 @@ export const GEMINI_DEFAULT_MODEL = "gemini-3.5-flash";
 
 // BYOK defaults, a user's own account, so cost isn't a lever here the way it
 // is for ZAI_DEFAULT_MODEL; these just need to be a solid, current model per
-// provider. Each is overridable without a code change (mirrors ZAI_MODEL/
-// GEMINI_MODEL above), worth revisiting as each provider's lineup moves on.
+// provider, worth revisiting as each provider's lineup moves on. Überschreibbar ohne neuen
+// Release, wenn ein Anbieter ein Modell abschaltet (anthropicModel, openaiModel, geminiByokModel).
 export const ANTHROPIC_DEFAULT_MODEL = "claude-sonnet-5";
 export const OPENAI_DEFAULT_MODEL = "gpt-5.1";
+
+/** Das Anthropic-Modell eines BYOK-Zugs: `ANTHROPIC_MODEL`, sonst der Standard (auch bei leerem Wert). */
+export function anthropicModel(): string {
+  return optionalEnv("ANTHROPIC_MODEL") ?? ANTHROPIC_DEFAULT_MODEL;
+}
+
+/** Das OpenAI-Modell eines BYOK-Zugs: `OPENAI_MODEL`, sonst der Standard (auch bei leerem Wert). */
+export function openaiModel(): string {
+  return optionalEnv("OPENAI_MODEL") ?? OPENAI_DEFAULT_MODEL;
+}
+
+/**
+ * Das Gemini-Modell eines BYOK-Zugs. Dieselbe Variable wie beim Server-Anbieter (`GEMINI_MODEL`):
+ * wird ein Gemini-Modell abgeschaltet, ist es für beide Wege abgeschaltet.
+ */
+export function geminiByokModel(): string {
+  return optionalEnv("GEMINI_MODEL") ?? GEMINI_DEFAULT_MODEL;
+}
 
 // Thinking is disabled on the Z.ai path (below), so this is a hard ceiling on
 // the visible reply, not a budget shared with invisible reasoning tokens.
