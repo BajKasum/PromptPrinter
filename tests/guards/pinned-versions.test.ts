@@ -6,9 +6,9 @@ import { describe, expect, it } from "vitest";
 // die Zusagen rund um Dependabot selbst.
 //
 // Dependabot kennt Pakete aus package.json und Actions aus .github/workflows.
-// Die Version der Supabase-CLI steht aber als Text an drei Stellen: als Eingabe
-// der Action in e2e.yml, in der Anleitung (docs/SETUP.md) und in der
-// Fehlermeldung von e2e/support/env.ts. Wer sie an einer Stelle anhebt und die
+// Die Version der Supabase-CLI steht aber als Text an mehreren Stellen: als Eingabe
+// der Action in e2e.yml und e2e-prod.yml, in der Anleitung (docs/SETUP.md) und in
+// der Fehlermeldung von e2e/support/env.ts. Wer sie an einer Stelle anhebt und die
 // anderen vergisst, bekommt lokal eine andere Datenbank als in der CI, also
 // genau die Abweichung, die der lokale Stack ausschließen soll.
 
@@ -19,10 +19,13 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 function supabaseCliVersions() {
   const found: { where: string; version: string }[] = [];
 
-  const e2e = read(".github/workflows/e2e.yml");
-  // `uses: supabase/setup-cli@…` gefolgt von `with:` und `version: X`.
-  const action = e2e.match(/uses:\s*supabase\/setup-cli@[^\n]*\n\s*with:\s*\n\s*version:\s*([0-9][0-9.]*)/);
-  if (action) found.push({ where: ".github/workflows/e2e.yml", version: action[1] });
+  for (const workflow of [".github/workflows/e2e.yml", ".github/workflows/e2e-prod.yml"]) {
+    // `uses: supabase/setup-cli@…` gefolgt von `with:` und `version: X`.
+    const action = read(workflow).match(
+      /uses:\s*supabase\/setup-cli@[^\n]*\n\s*with:\s*\n\s*version:\s*([0-9][0-9.]*)/
+    );
+    if (action) found.push({ where: workflow, version: action[1] });
+  }
 
   const setup = read("docs/SETUP.md");
   for (const m of setup.matchAll(/supabase@([0-9][0-9.]*)/g)) {
@@ -42,12 +45,14 @@ function supabaseCliVersions() {
 describe("Supabase-CLI-Version", () => {
   const found = supabaseCliVersions();
 
-  it("steht an allen vier Stellen, an denen wir sie nennen (nichts wurde stillschweigend entfernt)", () => {
+  it("steht an allen Stellen, an denen wir sie nennen (nichts wurde stillschweigend entfernt)", () => {
     const where = new Set(found.map((f) => f.where.split(" ")[0]));
-    expect(where).toEqual(new Set([".github/workflows/e2e.yml", "docs/SETUP.md", "e2e/support/env.ts"]));
-    // SETUP.md nennt sie dreimal (Fließtext + zwei Befehle), die Action und die
-    // Fehlermeldung je einmal.
-    expect(found.length).toBeGreaterThanOrEqual(5);
+    expect(where).toEqual(
+      new Set([".github/workflows/e2e.yml", ".github/workflows/e2e-prod.yml", "docs/SETUP.md", "e2e/support/env.ts"])
+    );
+    // SETUP.md nennt sie dreimal (Fließtext + zwei Befehle), jede der beiden
+    // Actions und die Fehlermeldung je einmal.
+    expect(found.length).toBeGreaterThanOrEqual(6);
   });
 
   it("ist überall dieselbe", () => {

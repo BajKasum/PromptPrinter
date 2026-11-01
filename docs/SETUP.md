@@ -580,10 +580,52 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
   Passwort-Resets dagegen wird geprüft (`password-reset.spec.ts`), **nicht aber**
   was im Dashboard der Produktion als Vorlage oder SMTP steht.
 - **Den Produktions-Build.** `next start` verweigert den Stub-Chat, deshalb
-  läuft hier der Dev-Server. CSP und statische Seiten im Produktions-Build
-  prüfen `tests/guards/` und `docker.yml`.
+  läuft hier der Dev-Server. Den Produktions-Build prüft ein eigener, kleiner
+  Lauf (nächster Abschnitt); den Chat dort nicht.
 - **Last, andere Browser, Tastatur-Barrierefreiheit.** Nur Chromium, ein Nutzer.
 - **fr/it/es.** Die Tests laufen auf Deutsch, der Sprachwechsel nur auf Englisch.
+
+### Browser-Test gegen den Produktionsaufbau
+
+Die Smoketests laufen im Entwicklungsmodus. Dort gilt eine andere
+Content-Security-Policy (`'unsafe-eval'` ist erlaubt), und es läuft weder das
+gebaute Bündel noch der statisch ausgelieferte Seitenbaum. Ein Fehler in der
+Policy macht aber genau dort alle öffentlichen Seiten leer (05.08.2026,
+Kommentar in `src/server/security/csp.ts`) und fiel bisher erst den ersten
+echten Besuchern auf (#220). `e2e/prod/produktion.spec.ts` fährt deshalb
+`next build` und `next start` mit `NODE_ENV=production` und öffnet die Seiten in
+Chromium; Workflow [`e2e-prod.yml`](../.github/workflows/e2e-prod.yml), eigener
+Lauf neben `e2e.yml`.
+
+```bash
+supabase start
+npm run test:e2e:prod            # baut selbst, einige Minuten
+E2E_PROD_SKIP_BUILD=1 npm run test:e2e:prod   # nur wiederholen, der letzte Build gilt
+```
+
+Der Lauf überschreibt `.next`: ein Dev-Server im selben Ordner gehört vorher
+gestoppt. Port 3101 (`E2E_PROD_PORT`), neben dem Dev-Server der Smoketests auf 3100.
+
+| Prüfung | Inhalt |
+|---|---|
+| Öffentliche Seiten (`/`, `/login`, `/pricing`, `/docs`, `/skill`, `/vergleich`, `/ueber`, eine 404-Seite) | Antwort mit der statischen Policy (`'unsafe-inline'`, kein Nonce, **kein** `'unsafe-eval'`, `script-src-attr 'none'`), HSTS und die übrigen Köpfe aus `next.config.ts`, kein `securitypolicyviolation`, keine Konsolenfehler, keine fehlgeschlagene Anfrage |
+| Hydration | das Menü der Navigation öffnet sich im Telefonmaß (`/`, `/pricing`, `/docs`): es reagiert nur, wenn Nexts Hydrationsskripte gelaufen sind |
+| `/api/health` | `ok`: der Start in Produktion (`env.ts`) ist mit den dokumentierten Pflichtvariablen durchgelaufen |
+| `/chats/new` mit Anmeldung | Nonce-Policy ohne `'unsafe-inline'`; jedes Inline-Skript trägt genau diesen Nonce; die Eingabe reagiert; ein eingeschleustes Inline-Skript ohne Nonce läuft **nicht** und wird gemeldet (Gegenprobe, damit der Hörer nicht still bleibt, weil er nichts mehr sieht) |
+
+Zwei Ausnahmen in der Konsolenprüfung, beide mit Grund im Test: `/_vercel/…`
+(Speed Insights, den Pfad gibt es nur auf Vercel; die Antwort wird ersetzt) und
+der Prefetch einer App-Seite, dessen Weiterleitung auf `/login` der Browser wegen
+`upgrade-insecure-requests` auf https umstellt (nur auf der http-Adresse der Tests).
+Die Anmeldung läuft über Cookies, die der Test mit `@supabase/ssr` selbst
+schreibt, nicht über `/api/auth`: in Produktion fehlt dem Test ein echtes Upstash,
+und das Ratenlimit antwortet dann mit 429.
+
+**Gegengeprüft am 2026-11-01** (jeweils Fehler eingebaut, neu gebaut, der Test lief
+rot, Quelltext wiederhergestellt): das Nonce in `(app)/layout.tsx` weggelassen (der
+Test der App-Seite scheitert am Inline-Skript ohne Nonce) und `isAppPath()` immer wahr
+gemacht, sodass jede Seite die strenge Policy bekommt (elf der zwölf Tests der
+öffentlichen Seiten scheitern: falsche Policy und ein Menü, das sich nicht öffnet).
 
 ### Wie nah der lokale Stack an der Produktion ist
 

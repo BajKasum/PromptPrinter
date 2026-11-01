@@ -1,0 +1,130 @@
+name: E2E Produktion
+
+# Browser-Test gegen den Produktionsaufbau (#220): `next build` und `next start`
+# mit NODE_ENV=production, in Chromium, gegen einen lokalen Supabase-Stack.
+# Was er prüft und warum der Dev-Server der Smoketests das nicht kann:
+# docs/SETUP.md, "Browser-Test gegen den Produktionsaufbau".
+#
+# Kurz: die Smoketests in e2e.yml laufen im Entwicklungsmodus, dort gilt eine
+# andere Content-Security-Policy ('unsafe-eval' ist erlaubt), und es läuft weder
+# das gebaute Bundle noch ein statisch ausgelieferter Seitenbaum. Ein Fehler in
+# der Policy macht aber genau dort alle öffentlichen Seiten leer (Vorfall im
+# Kopfkommentar von csp.ts) und blieb bis zu den ersten echten Besuchern unsichtbar.
+#
+# Eigener Workflow statt ein Schritt in e2e.yml: der Lauf baut die App einmal
+# vollständig (einige Minuten), und e2e.yml bekommt von anderer Stelle eigene
+# Schritte. Gleicher Aufbau wie dort: Pfadfilter, wöchentlich auf main (auch ein
+# unverändertes Repository verrottet, wenn sich ein Supabase-Image ändert), von
+# Hand. Kein Geheimnis im Spiel: der Stack ist ein Wegwerf-Container mit den
+# öffentlich bekannten Demo-Schlüsseln, und e2e/support/env.ts verweigert jede
+# andere Adresse als localhost.
+
+# Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker,
+# aus demselben Grund wie in docker.yml und e2e.yml.
+on:
+  # push nur auf main, jeder Branch mit PR läuft über pull_request: ein Lauf je
+  # Commit (Begründung und Folgen: ci.yml, #222).
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "public/**"
+      - playwright.prod.config.ts
+      - next.config.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/e2e-prod.yml
+  pull_request:
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "public/**"
+      - playwright.prod.config.ts
+      - next.config.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/e2e-prod.yml
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+# Wie ci.yml: ein neuer Push bricht den laufenden Lauf desselben PR ab, auf main
+# nie (ein abgebrochener Lauf zeigt sich dort als rotes Kreuz).
+concurrency:
+  group: e2e-prod-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Nur lesen, wie in ci.yml (tests/guards/workflows.test.ts).
+permissions:
+  contents: read
+
+jobs:
+  produktion:
+    name: Produktionsaufbau im Browser (Chromium, lokaler Supabase-Stack)
+    runs-on: ubuntu-latest
+    # Stack, Build und zwölf Seiten dauern zusammen nicht länger als der
+    # Lauf in e2e.yml; die Grenze ist dieselbe.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          # Aus .nvmrc, wie ci.yml: eine Version für alles, was wir testen und
+          # ausliefern (tests/guards/node-version.test.ts).
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Dieselbe Version wie in e2e.yml und docs/SETUP.md
+      # (tests/guards/pinned-versions.test.ts hält alle Stellen gleich).
+      - name: Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
+        with:
+          version: 2.119.0
+
+      # Die App-Seite braucht ein Konto, also eine Datenbank und die Anmeldung.
+      - name: Lokalen Supabase-Stack starten
+        run: supabase start
+
+      - name: Playwright-Browser (Cache)
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Chromium installieren
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Mit gecachtem Browser fehlen trotzdem die Systembibliotheken.
+      - name: Systembibliotheken für Chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      # Baut und startet die App selbst (playwright.prod.config.ts, webServer):
+      # die Umgebung des Builds und des Servers ist dieselbe, und NEXT_PUBLIC_*
+      # steht erst nach dem Bauen im Bündel.
+      - name: Tests im Produktionsaufbau
+        run: npx playwright test -c playwright.prod.config.ts
+
+      # Bei einem Fehler Bericht und Spuren zum Nachsehen (Screenshot, Trace).
+      - name: Bericht sichern
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: playwright-report-prod
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Stack beenden
+        if: always()
+        run: supabase stop --no-backup

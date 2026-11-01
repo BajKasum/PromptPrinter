@@ -48,7 +48,8 @@
     "test": "vitest run",
     "docker:dev": "node scripts/check-env.mjs dev && docker compose up --build",
     "docker:prod": "node scripts/check-env.mjs prod && docker compose -f docker-compose.prod.yml --env-file .env.local up --build -d",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:prod": "playwright test -c playwright.prod.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

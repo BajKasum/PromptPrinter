@@ -114,15 +114,48 @@ export const E2E_ORIGIN = `http://localhost:${E2E_PORT}`;
  * greift.
  */
 export function serverEnv(): Record<string, string> {
-  const supabase = localSupabase();
   return {
+    ...sharedServerEnv(E2E_ORIGIN),
     NODE_ENV: "development",
     // Schaltet Nexts Dev-Anzeige aus (next.config.ts): sie läge links unten über dem Kontomenü, sobald sie einen Hinweis zählt.
     PP_E2E: "1",
+    UPSTASH_REDIS_REST_URL: "",
+    UPSTASH_REDIS_REST_TOKEN: "",
+  };
+}
+
+/** Port und Adresse des Produktions-Servers (playwright.prod.config.ts), neben dem Dev-Server der Tests. */
+export const E2E_PROD_PORT = Number(process.env.E2E_PROD_PORT ?? 3101);
+export const E2E_PROD_ORIGIN = `http://localhost:${E2E_PROD_PORT}`;
+
+/**
+ * Die Umgebung des Produktions-Servers (`next build` und `next start`), ausdrücklich wie `serverEnv()`.
+ *
+ * NODE_ENV ist "production": dort gilt die Policy ohne `'unsafe-eval'`, env.ts verlangt seine Pflichtvariablen und
+ * der Stub-Chat ist gesperrt. Upstash bekommt Platzhalter wie in docker.yml (der Start verlangt sie, ein Aufruf
+ * von /api/health prüft nur, dass sie da sind); wer eine API-Route anspricht, die das Ratenlimit braucht, bekäme in
+ * Produktion eine 429, deshalb meldet sich dieser Test über Cookies an und nicht über /api/auth. Die Adresse ist
+ * http: ALLOW_INSECURE_APP_URL=1 ist der dokumentierte Weg für einen lokalen Versuch (docs/DOCKER.md).
+ */
+export function prodServerEnv(): Record<string, string> {
+  return {
+    ...sharedServerEnv(E2E_PROD_ORIGIN),
+    NODE_ENV: "production",
+    UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io",
+    UPSTASH_REDIS_REST_TOKEN: "placeholder-token-for-e2e-only",
+    ALLOW_INSECURE_APP_URL: "1",
+    PORT: String(E2E_PROD_PORT),
+  };
+}
+
+/** Was beide Server gemeinsam haben: lokale Datenbank, alle fremden Dienste aus. */
+function sharedServerEnv(origin: string): Record<string, string> {
+  const supabase = localSupabase();
+  return {
     NEXT_PUBLIC_SUPABASE_URL: supabase.url,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabase.anonKey,
     SUPABASE_SERVICE_ROLE_KEY: supabase.serviceRoleKey,
-    NEXT_PUBLIC_APP_URL: E2E_ORIGIN,
+    NEXT_PUBLIC_APP_URL: origin,
     API_KEY_ENCRYPTION_SECRET: "e2e-only-secret-used-by-nothing-else-0123456789",
     API_KEY_ENCRYPTION_SECRET_PREVIOUS: "",
     ZAI_API_KEY: "",
@@ -130,8 +163,6 @@ export function serverEnv(): Record<string, string> {
     ZAI_VISION_MODEL: "",
     GEMINI_API_KEY: "",
     GEMINI_MODEL: "",
-    UPSTASH_REDIS_REST_URL: "",
-    UPSTASH_REDIS_REST_TOKEN: "",
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
     TURNSTILE_SECRET: "",
     NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "",
