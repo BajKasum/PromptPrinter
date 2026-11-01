@@ -47,6 +47,23 @@ test("Registrieren, Abmelden und wieder Anmelden über die Formulare", async ({ 
   }
 });
 
+test("ein präparierter next-Wert führt nach dem Anmelden nicht von der Seite weg", async ({ page, baseURL }) => {
+  const email = uniqueEmail("next");
+  const admin = adminClient();
+  await admin.auth.admin.createUser({ email, password: TEST_PASSWORD, email_confirm: true });
+  try {
+    // %09 kommt als echter Tab an, der URL-Parser des Browsers streicht ihn: "/\t/host" wäre "//host".
+    await page.goto("/login?next=/%09/example.invalid");
+    await page.locator("#login-email").fill(email);
+    await page.locator("#login-password").fill(TEST_PASSWORD);
+    await page.getByRole("button", { name: "Einloggen" }).click();
+    await expect(page).toHaveURL(/\/chats\/new/, { timeout: 30_000 });
+    expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
+  } finally {
+    await removeAccountByEmail(email);
+  }
+});
+
 test("ein falsches Passwort wird abgewiesen, ohne zu verraten, was genau falsch war", async ({ page }) => {
   await page.goto("/login");
   await page.locator("#login-email").fill(uniqueEmail("nobody"));

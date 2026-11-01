@@ -56,6 +56,27 @@ describe("safeNextPath", () => {
     expect(safeNextPath("javascript:alert(1)")).toBe("/chats/new");
   });
 
+  it.each([
+    ["Backslash", "/\\evil.example"],
+    ["Backslash und Schrägstrich", "/\\/evil.example"],
+    ["Tab", "/\t/evil.example"],
+    ["Zeilenumbruch LF", "/\n/evil.example"],
+    ["Zeilenumbruch CR", "/\r/evil.example"],
+    ["anderes Steuerzeichen", "/\u0001/evil.example"],
+    ["Backslash weiter hinten", "/chats\\new"],
+    ["Pfad, der zu // aufgelöst wird", "/a/..//evil.example"],
+  ])("falls back for %s", (_name, raw) => {
+    expect(safeNextPath(raw)).toBe("/chats/new");
+  });
+
+  it("keeps query and fragment of an in-app path", () => {
+    expect(safeNextPath("/chats/new?x=1#y")).toBe("/chats/new?x=1#y");
+  });
+
+  it("leaves an encoded backslash alone, it stays on our origin", () => {
+    expect(safeNextPath("/%5Chost")).toBe("/%5Chost");
+  });
+
   it("honors a custom fallback", () => {
     expect(safeNextPath(null, "/login")).toBe("/login");
     expect(safeNextPath("//evil.example", "/login")).toBe("/login");
