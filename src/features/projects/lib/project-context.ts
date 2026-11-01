@@ -104,7 +104,7 @@ export async function buildProjectContext(
   const { data: brainRow } = orThrow(brainResult, "project_brains");
   if (!project) return null;
 
-  const brainBlock = formatReadyBrain(brainRow as { status?: unknown; facts?: unknown } | null);
+  const brainBlock = formatReadyBrain(brainRow);
   const filesBlock = renderFilesContext(files, brainBlock.length > 0);
 
   const outputs = (latestSaved?.outputs ?? {}) as Record<string, string>;

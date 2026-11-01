@@ -80,7 +80,7 @@ export async function getConfiguredProviders(
   userId: string
 ): Promise<ByokProvider[]> {
   const { data } = await supabase.from("user_api_keys").select("provider").eq("user_id", userId);
-  return ((data ?? []) as { provider: ByokProvider }[]).map((r) => r.provider);
+  return (data ?? []).map((r) => r.provider as ByokProvider);
 }
 
 /**

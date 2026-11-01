@@ -51,7 +51,6 @@ export const runtime = "nodejs";
  * (Migration 0039): sonst setzte sich jeder sein Abo selbst auf "active".
  */
 
-type EventRow = { id: string; status: string };
 
 export async function POST(req: Request): Promise<Response> {
   const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
@@ -121,7 +120,7 @@ export async function POST(req: Request): Promise<Response> {
       { onConflict: "event_key", ignoreDuplicates: true }
     )
     .select("id, status")
-    .maybeSingle<EventRow>();
+    .maybeSingle();
 
   if (claimError) {
     captureError("billing.webhook_claim_failed", claimError, { eventName: event });
@@ -135,7 +134,7 @@ export async function POST(req: Request): Promise<Response> {
       .from("billing_events")
       .select("id, status")
       .eq("event_key", key)
-      .maybeSingle<EventRow>();
+      .maybeSingle();
 
     if (readError || !existing) {
       captureError("billing.webhook_lookup_failed", readError ?? new Error("Zeile verschwunden"), {
@@ -168,6 +167,7 @@ export async function POST(req: Request): Promise<Response> {
 
   // Wirft, wenn der Status nicht ankommt: eine Zeile, die auf "processing" stehen bleibt,
   // schickt jede Wiederholung in den Duplikat-Zweig. Der catch unten antwortet dann 503.
+  const eventRowId = eventId;
   async function finish(
     status: "processed" | "ignored" | "failed",
     detail: string | null,
@@ -176,7 +176,7 @@ export async function POST(req: Request): Promise<Response> {
     const { error } = await admin
       .from("billing_events")
       .update({ status, detail: detail?.slice(0, 500) ?? null, user_id: userId })
-      .eq("id", eventId);
+      .eq("id", eventRowId);
     if (error) throw error;
   }
 
@@ -296,7 +296,7 @@ async function resolveUserId(
         .from("profiles")
         .select("id, subscription_customer_id")
         .eq("id", fromCheckout)
-        .maybeSingle<{ id: string; subscription_customer_id: string | null }>();
+        .maybeSingle();
       if (error) throw error;
       if (data) {
         const incomingCustomerId = patch.subscription_customer_id;
@@ -318,7 +318,7 @@ async function resolveUserId(
       .from("profiles")
       .select("id")
       .eq("subscription_customer_id", customerId)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle();
     if (error) throw error;
     if (data) return data.id;
   }

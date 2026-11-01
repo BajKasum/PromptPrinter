@@ -143,7 +143,7 @@ type AttachmentRow = {
   id: string;
   message_id: string;
   name: string;
-  kind: AttachmentKind;
+  kind: string;
   media_type: string;
   size_bytes: number;
   storage_path: string;
@@ -156,7 +156,7 @@ export function recordFromRow(row: AttachmentRow): AttachmentRecord {
     id: row.id,
     messageId: row.message_id,
     name: row.name,
-    kind: row.kind,
+    kind: row.kind as AttachmentKind,
     mediaType: row.media_type,
     sizeBytes: row.size_bytes,
     storagePath: row.storage_path,
@@ -184,7 +184,7 @@ export async function loadAttachmentRecords(
     .in("message_id", [...messageIds])
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return ((data as AttachmentRow[] | null) ?? []).map(recordFromRow);
+  return (data ?? []).map(recordFromRow);
 }
 
 export function groupByMessage(records: readonly AttachmentRecord[]): Map<string, AttachmentRecord[]> {
@@ -224,7 +224,7 @@ export async function collectAttachmentPaths(
     .eq("user_id", userId)
     .eq("conversation_id", conversationId)
     .in("message_id", [...messageIds]);
-  return ((data as { storage_path: string }[] | null) ?? []).map((r) => r.storage_path);
+  return (data ?? []).map((r) => r.storage_path);
 }
 
 /**

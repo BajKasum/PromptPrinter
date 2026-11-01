@@ -2,7 +2,7 @@ import "server-only";
 
 import type { createClient } from "@/server/supabase/server";
 import { MESSAGE_LOAD_LIMIT } from "@/shared/lib/chat-limits";
-import type { AttachmentKind, AttachmentView } from "@/shared/lib/chat-attachments";
+import type { AttachmentView } from "@/shared/lib/chat-attachments";
 import {
   recordFromRow,
   signImageUrls,
@@ -30,7 +30,7 @@ export type LoadedMessage = {
 type AttachmentRow = {
   id: string;
   name: string;
-  kind: AttachmentKind;
+  kind: string;
   media_type: string;
   size_bytes: number;
   storage_path: string;
@@ -38,7 +38,7 @@ type AttachmentRow = {
 
 type MessageRow = {
   id: string;
-  role: "user" | "assistant";
+  role: string;
   content: string;
   message_attachments?: AttachmentRow[] | null;
 };
@@ -63,7 +63,7 @@ export async function loadConversationMessages(
     .order("created_at", { referencedTable: "message_attachments", ascending: true })
     .limit(MESSAGE_LOAD_LIMIT);
 
-  let rows = embedded.data as MessageRow[] | null;
+  let rows: MessageRow[] | null = embedded.data;
   if (embedded.error || !rows) {
     // Ohne die Tabelle (Migration 0045 noch nicht angewendet) schlägt schon der
     // Embed fehl, und mit ihm die ganze Abfrage. Der Chat muss trotzdem
@@ -75,7 +75,7 @@ export async function loadConversationMessages(
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_LOAD_LIMIT);
-    rows = plain.data as MessageRow[] | null;
+    rows = plain.data;
   }
 
   const chronological = (rows ?? []).slice().reverse();
@@ -89,7 +89,7 @@ export async function loadConversationMessages(
     const own = records.filter((r) => r.messageId === m.id);
     return {
       id: m.id,
-      role: m.role,
+      role: m.role as LoadedMessage["role"],
       content: m.content,
       ...(own.length > 0 ? { attachments: own.map((r) => toAttachmentView(r, urls.get(r.id))) } : {}),
     };

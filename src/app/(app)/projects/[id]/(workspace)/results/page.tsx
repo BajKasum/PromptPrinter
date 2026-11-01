@@ -31,12 +31,6 @@ type Params = Promise<{ id: string }>;
 
 // Ein gespeicherter Prompt = eine Zeile in `saved_prompts` mit
 // outputs = { prompt, title } (siehe save-prompt-button.tsx).
-type SavedPromptRow = {
-  id: string;
-  created_at: string;
-  outputs: Record<string, unknown> | null;
-};
-
 // The Ergebnisse area of a project workspace (REDESIGN.md, Phase 3): the prompts
 // the user chose to keep out of their chats, newest first. Save happens in the
 // chat (chat-result-panel.tsx's "Speichern"); this page reads, copies, exports
@@ -75,7 +69,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
-    (rowsRaw as SavedPromptRow[] | null) ?? [],
+    rowsRaw ?? [],
     RESULTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);
