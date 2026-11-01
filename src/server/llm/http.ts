@@ -1,5 +1,6 @@
 import "server-only";
 
+import { optionalEnv } from "@/server/env-value";
 import { parseRetryAfter } from "@/server/llm-retry";
 
 // Geteilt von den fetch-Wegen (Z.ai, Custom-Slot, Analyse): Fehler, Zeitlimit, Größengrenze,
@@ -105,13 +106,11 @@ export async function* readOpenAiCompatibleSse(
 // Unlike Z.ai's own fixed endpoint, `endpoint` here is a user-supplied URL
 // that already passed the SSRF check (url-safety.ts) but has none of Z.ai's
 // uptime/latency/size guarantees, any signed-in Free user can point it at
-// anything reachable, so both requests get two bounds Z.ai doesn't need:
+// anything reachable, so the requests get two bounds Z.ai doesn't need:
 //
-// CUSTOM_PROVIDER_TIMEOUT_MS: a hanging endpoint would otherwise tie up the
-// request for as long as the platform allows (/api/chat's maxDuration=300s).
-// One fixed duration for the whole request (headers + body), not a per-chunk
-// idle timeout, simpler, and a genuinely slow-but-steadily-streaming reply
-// near the model's own output-token ceiling should still comfortably fit.
+// Eine Zeitgrenze (streamDeadlines für Ströme, withProviderTimeout für die nicht gestreamten
+// Aufrufe): ein hängender Endpunkt würde sonst die Anfrage so lange binden, wie die Plattform
+// es erlaubt (/api/chat: maxDuration 300 s).
 //
 // MAX_RESPONSE_BYTES: an unbounded read would otherwise let a misbehaving or
 // malicious endpoint force an arbitrarily large response straight into
@@ -122,10 +121,76 @@ export async function* readOpenAiCompatibleSse(
 const CUSTOM_PROVIDER_TIMEOUT_MS = 60_000;
 export const MAX_RESPONSE_BYTES = 2_000_000; // ~2 MB, generous over a real reply's realistic size
 
+/** So lange darf der Custom-Slot bis zum ersten Textstück brauchen (Z.ai: ZAI_FIRST_CHUNK_TIMEOUT_MS). */
+export const CUSTOM_FIRST_CHUNK_TIMEOUT_MS = 60_000;
+
 /**
- * Merges the caller's own AbortSignal (propagated from /api/chat so a
- * client-side stop still cancels the upstream call, see chatCompleteStream)
- * with the fixed timeout above.
+ * So lange darf ein Strom nach dem ersten Textstück schweigen, bevor er als hängend gilt.
+ * Jedes Textstück startet die Frist neu: eine langsame, aber stetig schreibende Antwort ist
+ * kein Ausfall. Überschreibbar über LLM_STREAM_IDLE_TIMEOUT_MS.
+ */
+export const STREAM_IDLE_TIMEOUT_MS = 45_000;
+
+/**
+ * Gesamtgrenze eines Stroms. Sie liegt deutlich unter maxDuration der Route (300 s), damit die
+ * Route danach noch `error` senden, die Reservierungen zurückgeben und die Frage zurücknehmen
+ * kann, statt vom Hosting hart beendet zu werden. Überschreibbar über LLM_STREAM_TOTAL_TIMEOUT_MS,
+ * aber nie über STREAM_TOTAL_TIMEOUT_CEILING_MS.
+ */
+export const STREAM_TOTAL_TIMEOUT_MS = 270_000;
+export const STREAM_TOTAL_TIMEOUT_CEILING_MS = 285_000;
+
+/** Eine positive Zahl aus der Umgebung in Millisekunden, sonst der Standard. */
+function msFromEnv(name: string, fallback: number): number {
+  const value = Number(optionalEnv(name));
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+/**
+ * Die Zeitgrenzen eines Stroms, ein Baustein für Z.ai und den Custom-Slot: eine Frist bis zum
+ * ersten Textstück (`firstChunkMs`), danach eine Leerlauf-Frist, die mit jedem Textstück neu
+ * startet, und eine Gesamtgrenze. Läuft eine ab, bricht `signal` mit einem TimeoutError ab, auch
+ * mitten im Lesen des Bodys. Ein TimeoutError ist für llm-retry.ts kein "gleich nochmal" (jeder
+ * Versuch kostete sonst wieder die ganze Frist), für llm-failover.ts aber genau der Fall, in dem
+ * ein anderer Anbieter die richtige Antwort ist. Der Abbruch des Nutzers bleibt ein AbortError
+ * und löst nichts davon aus.
+ *
+ * Die Frist bis zum ersten Textstück läuft ab dem Aufruf. `received()` pausiert die Anbieter-Frist,
+ * solange der Verbraucher ein Stück verarbeitet (sonst zählte seine Langsamkeit gegen den
+ * Anbieter), `awaiting()` startet danach die Leerlauf-Frist, `stop()` räumt im `finally` alles ab.
+ */
+export function streamDeadlines(signal: AbortSignal | undefined, firstChunkMs: number) {
+  const controller = new AbortController();
+  const idleMs = msFromEnv("LLM_STREAM_IDLE_TIMEOUT_MS", STREAM_IDLE_TIMEOUT_MS);
+  const totalMs = Math.min(
+    msFromEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", STREAM_TOTAL_TIMEOUT_MS),
+    STREAM_TOTAL_TIMEOUT_CEILING_MS
+  );
+  const expire = (what: string, ms: number) =>
+    controller.abort(new DOMException(`${what} within ${ms} ms`, "TimeoutError"));
+
+  let phase: ReturnType<typeof setTimeout> | undefined;
+  const arm = (what: string, ms: number) => {
+    clearTimeout(phase);
+    phase = setTimeout(() => expire(what, ms), ms);
+  };
+  arm("no first chunk", firstChunkMs);
+  const total = setTimeout(() => expire("stream not finished", totalMs), totalMs);
+
+  return {
+    signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
+    received: () => clearTimeout(phase),
+    awaiting: () => arm("no chunk", idleMs),
+    stop: () => {
+      clearTimeout(phase);
+      clearTimeout(total);
+    },
+  };
+}
+
+/**
+ * Merges the caller's own AbortSignal with the fixed total timeout above, für die nicht
+ * gestreamten Aufrufe (Strom-Aufrufe nehmen streamDeadlines).
  */
 export function withProviderTimeout(signal?: AbortSignal): AbortSignal {
   const timeout = AbortSignal.timeout(CUSTOM_PROVIDER_TIMEOUT_MS);

@@ -347,6 +347,20 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     expect(deleteCalls.conversations ?? 0).toBe(1);
   });
 
+  it("Strom bleibt nach dem ersten Wort stehen (Zeitlimit): Fehlerereignis, beide gehen zurück, die Frage wird zurückgenommen", async () => {
+    chatCompleteStream.mockImplementation(async function* () {
+      yield "halbe ";
+      throw new DOMException("no chunk within 45000 ms", "TimeoutError");
+    });
+    const body = await text(await POST(req()));
+    expect(body).toContain("event: error");
+    expect(body).not.toContain("event: done");
+    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(budgetRelease)).toBe(1);
+    expect(deleteCalls.conversations ?? 0).toBe(1);
+    expect(insertCalls.messages?.some((r) => (r as { role?: string }).role === "assistant") ?? false).toBe(false);
+  });
+
   it("leere Antwort des Anbieters: wie ein Fehler, beide gehen zurück", async () => {
     chatCompleteStream.mockImplementation(async function* () {
       yield "   ";
