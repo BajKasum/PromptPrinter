@@ -78,7 +78,7 @@ export default async function ComparisonPage({ params }: Props) {
           headline: comparison.question,
           description: comparison.summary,
           path,
-          published: COMPARISONS_UPDATED,
+          published: comparison.published,
           updated: COMPARISONS_UPDATED,
         })}
       />

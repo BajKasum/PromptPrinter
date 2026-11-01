@@ -5,9 +5,8 @@ import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { JsonLd } from "@/shared/ui/json-ld";
-import { AUTHOR_PATH } from "@/features/marketing/lib/article-schema";
+import { profilePageJsonLd } from "@/features/marketing/lib/site-schema";
 import { LEGAL } from "@/shared/lib/legal";
-import { siteUrl } from "@/shared/lib/site-url";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
@@ -38,23 +37,14 @@ const PROMISES = [
   },
 ];
 
-// Der Mensch, auf den jede Autorenzeile verlinkt (Byline, article-schema.ts).
-// Nur Name und Adresse der Seite: mehr steht auch im sichtbaren Text nicht,
+// Der Mensch, auf den jede Autorenzeile verlinkt (Byline, article-schema.ts). Der Knoten steht in
+// features/marketing/lib/site-schema.ts: nur Name und Adresse der Seite, mehr steht auch im sichtbaren Text nicht,
 // und Structured Data darf nichts behaupten, was die Seite nicht zeigt.
-function personJsonLd() {
-  const url = siteUrl(AUTHOR_PATH);
-  return {
-    "@context": "https://schema.org",
-    "@type": "ProfilePage",
-    url,
-    mainEntity: { "@type": "Person", name: LEGAL.operator, url },
-  };
-}
 
 export default function UeberPage() {
   return (
     <>
-      <JsonLd data={personJsonLd()} />
+      <JsonLd data={profilePageJsonLd()} />
 
       <section
         id="main-content"
