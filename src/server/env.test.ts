@@ -5,6 +5,7 @@ import {
   hasInsecureAppUrl,
   hasInvalidCheckoutUrl,
   hasNoModelProvider,
+  hasNoTrustedClientIp,
   hasOpenEncryptionRotation,
   missingProductionEnv,
 } from "@/server/env";
@@ -147,6 +148,18 @@ describe("assertEnv", () => {
 // Zahlungen sind optional konfigurierbar, aber eine falsch konfigurierte
 // Adresse ist schlimmer als gar keine: die Seite sieht normal aus, nur kauft
 // niemand mehr. Deshalb dieselbe Sorte Prüfung wie bei NEXT_PUBLIC_APP_URL.
+describe("hasNoTrustedClientIp", () => {
+  it("meldet eine eigene Installation in Produktion ohne TRUSTED_PROXY_HOPS", () => {
+    expect(hasNoTrustedClientIp({ NODE_ENV: "production" })).toBe(true);
+  });
+
+  it("schweigt auf Vercel, mit TRUSTED_PROXY_HOPS und in der Entwicklung", () => {
+    expect(hasNoTrustedClientIp({ NODE_ENV: "production", VERCEL: "1" })).toBe(false);
+    expect(hasNoTrustedClientIp({ NODE_ENV: "production", TRUSTED_PROXY_HOPS: "1" })).toBe(false);
+    expect(hasNoTrustedClientIp({ NODE_ENV: "development" })).toBe(false);
+  });
+});
+
 describe("hasInvalidCheckoutUrl", () => {
   it("stays quiet when payments are deliberately not configured", () => {
     expect(hasInvalidCheckoutUrl({})).toBe(false);

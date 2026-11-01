@@ -319,10 +319,9 @@ export type RateLimitScope =
  * just defence in depth for the one Enterprise case (a Trusted Proxy in
  * front of Vercel) where it could legitimately be a chain again.
  *
- * Note that every route now requires a session (see /api/chat, /api/projects,
- * /api/settings/api-key, /api/account), so the IP branch is currently
- * unreachable in practice. It stays correct for whatever anonymous endpoint
- * comes next — that is exactly how the old bug survived unnoticed.
+ * Der IP-Zweig ist die einzige Bremse der anonymen Routen: auth, contact,
+ * cli-device, cli-token, cli-refresh und cli-logout rufen ohne Nutzer auf. Ausserhalb
+ * von Vercel gelten die Köpfe nur nach TRUSTED_PROXY_HOPS (siehe clientIp).
  */
 export function rateLimitKey(
   req: Request,
@@ -339,8 +338,16 @@ export function rateLimitKey(
  * siteverify as `remoteip`. Same header precedence, same reasoning, one
  * implementation — deriving the address a second time somewhere else is how
  * the spoofable-bucket bug above would come back.
+ *
+ * Weiterleitungs-Köpfe sagen nur dann die Wahrheit, wenn ein Rand sie setzt. Auf
+ * Vercel (VERCEL ist dort immer gesetzt) ist das so. Eine eigene Installation
+ * nennt in TRUSTED_PROXY_HOPS, wie viele Proxys vor ihr stehen; ohne die Angabe
+ * schickt der Client den Kopf selbst und jeder Wert wäre ein frischer Zähler, also
+ * gilt "unknown": alle anonymen Anfragen teilen sich einen Zähler (docs/DOCKER.md).
  */
 export function clientIp(req: Request): string {
+  if (!process.env.VERCEL) return selfHostedClientIp(req);
+
   // x-vercel-forwarded-for first: identical to x-forwarded-for, but immune to
   // being overwritten by a proxy the customer places in front of Vercel.
   for (const header of ["x-vercel-forwarded-for", "x-forwarded-for"]) {
@@ -358,4 +365,16 @@ export function clientIp(req: Request): string {
   if (real) return real;
 
   return "unknown";
+}
+
+/**
+ * Jeder Proxy hängt an, was er gesehen hat. Bei n vertrauten Proxys steht der Client also an der n-ten
+ * Stelle von hinten, alles davor hat er selbst geschickt. Eine kürzere Kette ist nicht durch diese
+ * Proxys gelaufen und zählt nicht.
+ */
+function selfHostedClientIp(req: Request): string {
+  const hops = Number(process.env.TRUSTED_PROXY_HOPS);
+  if (!Number.isInteger(hops) || hops < 1) return "unknown";
+  const chain = req.headers.get("x-forwarded-for")?.split(",") ?? [];
+  return chain.at(-hops)?.trim() || "unknown";
 }

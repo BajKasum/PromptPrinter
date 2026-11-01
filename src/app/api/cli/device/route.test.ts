@@ -23,6 +23,7 @@ function post(body: unknown, raw?: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://promptprinter.app");
+  vi.stubEnv("VERCEL", "1");
   rateLimit.mockResolvedValue({ allowed: true, remaining: 19, resetAt: Date.now() + 1000 });
   createDeviceRequest.mockResolvedValue({
     deviceCode: "D".repeat(43),
