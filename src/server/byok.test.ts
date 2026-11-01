@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const decrypt = vi.fn();
 vi.mock("@/server/security/crypto", () => ({ decrypt: (blob: string) => decrypt(blob) }));
+const captureError = vi.fn();
+vi.mock("@/shared/lib/observability", () => ({
+  captureError: (...args: unknown[]) => captureError(...args),
+}));
 
 type Row = Record<string, unknown> | null;
 
@@ -35,6 +39,7 @@ const { getConfiguredProviders, getCustomProvider, getUserOverride } = await imp
 describe("getUserOverride", () => {
   beforeEach(() => {
     decrypt.mockReset();
+    captureError.mockReset();
     decrypt.mockImplementation((blob: string) => `plain:${blob}`);
     adminResult = { data: null };
   });
@@ -68,24 +73,38 @@ describe("getUserOverride", () => {
     });
   });
 
-  // Degrading to "no override" means the request falls back to the server's own
-  // provider, which is the safe direction: the alternative is a hard failure on
-  // a chat the user can otherwise have.
-  it("degrades to null when the stored blob cannot be decrypted", async () => {
+  it("meldet einen nicht entschlüsselbaren Key als unreadable, genau einmal und ohne Geheimnis", async () => {
     decrypt.mockImplementation(() => {
       throw new Error("bad auth tag");
     });
     adminResult = { data: { provider: "openai", encrypted_key: "tampered" } };
-    const override = await getUserOverride("user-1");
-    expect(override).toBeNull();
+    expect(await getUserOverride("user-1")).toBe("unreadable");
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(captureError).toHaveBeenCalledWith("byok.key_unreadable", expect.any(Error), {
+      userId: "user-1",
+      provider: "openai",
+    });
+    expect(JSON.stringify(captureError.mock.calls[0][2])).not.toContain("tampered");
   });
 
-  it("degrades to null on an inconsistent custom row rather than crashing", async () => {
+  it("meldet eine widersprüchliche Custom-Zeile als unreadable", async () => {
     adminResult = {
       data: { provider: "custom", encrypted_key: "blob", base_url: null, model: null },
     };
-    const override = await getUserOverride("user-1");
-    expect(override).toBeNull();
+    expect(await getUserOverride("user-1")).toBe("unreadable");
+    expect(captureError).toHaveBeenCalledTimes(1);
+  });
+
+  it("ein Key unter einem anderen Secret ist unreadable, nicht \"kein Key\" (echte Verschlüsselung)", async () => {
+    const real = await vi.importActual<typeof import("@/server/security/crypto")>("@/server/security/crypto");
+    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", "das-alte-secret");
+    const blob = real.encrypt("sk-geheim");
+    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", "das-falsche-secret");
+    decrypt.mockImplementation(real.decrypt);
+    adminResult = { data: { provider: "openai", encrypted_key: blob } };
+    expect(await getUserOverride("user-1")).toBe("unreadable");
+    expect(JSON.stringify(captureError.mock.calls)).not.toContain("sk-geheim");
+    vi.unstubAllEnvs();
   });
 });
 

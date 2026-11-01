@@ -161,6 +161,9 @@ export async function POST(req: Request, { params }: Params) {
     supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
     getUserOverride(userId),
   ]);
+  if (override === "unreadable") {
+    return problem(409, m.byokUnreadable, { kind: "byokUnreadable" });
+  }
   const { plan, isAdmin, limits } = resolvePlan(profile);
 
   const reservations: (() => Promise<void>)[] = [];

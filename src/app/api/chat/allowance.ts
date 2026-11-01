@@ -23,7 +23,7 @@ import type { SupabaseClient } from "./gate";
 
 export type Allowance = {
   /** Der eigene Key des Nutzers (BYOK), oder null: dann laeuft der Zug auf dem Server-Key. */
-  override: Awaited<ReturnType<typeof getUserOverride>>;
+  override: Exclude<Awaited<ReturnType<typeof getUserOverride>>, "unreadable">;
   /** Gibt jede Reservierung dieses Zugs zurueck. Aufzurufen, sobald der Zug nichts gekostet hat. */
   releaseReservations: () => Promise<void>;
 };
@@ -52,6 +52,10 @@ export async function reserveAllowance(args: {
     supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
     getUserOverride(userId),
   ]);
+  // Vor jeder Reservierung, eine Ablehnung kostet nichts. Kein Rückfall auf den Server-Key (byok.ts).
+  if (override === "unreadable") {
+    return problem(409, m.byokUnreadable, { kind: "byokUnreadable" });
+  }
 
   // One row per turn, completeTurn always inserts exactly one assistant reply
   // alongside the user message, so counting only that role avoids

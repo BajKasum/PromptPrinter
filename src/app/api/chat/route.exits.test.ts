@@ -267,6 +267,15 @@ describe("Ausstiege vor jeder Reservierung reservieren nichts", () => {
     expect((await res.json()).kind).toBe("byokRequired");
     untouched();
   });
+
+  it("gespeicherter Key nicht lesbar (409): kein Kontingent, kein Rückfall auf den Server-Key", async () => {
+    tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+    getUserOverride.mockImplementation(async () => "unreadable");
+    const res = await POST(req());
+    expect(res.status).toBe(409);
+    expect((await res.json()).kind).toBe("byokUnreadable");
+    untouched();
+  });
 });
 
 // ─── Ausstiege NACH einer Reservierung: Rückgabe oder Behalten ───────────────

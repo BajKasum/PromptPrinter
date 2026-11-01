@@ -265,6 +265,15 @@ describe("POST /api/projects/[id]/brain", () => {
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
 
+    it("refuses when the stored key is unreadable, without falling back to the server key", async () => {
+      tableResults.profiles = { data: { plan: "pro", is_admin: false }, error: null };
+      getUserOverride.mockResolvedValue("unreadable");
+      const res = await POST(req(), params);
+      expect(res.status).toBe(409);
+      expect((await res.json()).kind).toBe("byokUnreadable");
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+    });
+
     it("lets a free account through on its own key", async () => {
       tableResults.profiles = { data: { plan: "free", is_admin: false }, error: null };
       getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-x" });

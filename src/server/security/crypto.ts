@@ -53,9 +53,9 @@ function deriveKey(secret: string): Buffer {
  * The previous secret during a rotation, or null when none is in progress.
  *
  * Rotating API_KEY_ENCRYPTION_SECRET used to be impossible: every stored key was
- * encrypted under the one secret, so changing it made all of them unreadable —
- * and getUserOverride degrades an unreadable key to "no override", i.e. silently
- * drops every BYOK user back onto the server's key and its plan limits. With
+ * encrypted under the one secret, so changing it made all of them unreadable,
+ * and getUserOverride then reports "unreadable" for every BYOK user, whose chats
+ * are refused until they enter the key again. With
  * API_KEY_ENCRYPTION_SECRET_PREVIOUS set, decrypt() still reads the old rows
  * while encrypt() already writes under the new secret; scripts/rotate-byok-secret.mjs
  * then re-encrypts what is left, after which the variable is removed again.

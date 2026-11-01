@@ -705,6 +705,8 @@ export const en: Messages = {
       "Before I answer, I need your consent for your messages to go to Z.ai in Singapore. You can give it in the chat or in settings.",
     byokRequired:
       "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings, or switch to Pro.",
+    byokUnreadable:
+      "Your saved AI key can't be read. Please enter it again in the settings.",
     byokRequiredSoon:
       "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings.",
     chatLimit:

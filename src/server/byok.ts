@@ -2,6 +2,7 @@ import "server-only";
 
 import { decrypt } from "@/server/security/crypto";
 import { createAdminClient } from "@/server/supabase/admin";
+import { captureError } from "@/shared/lib/observability";
 import type { createClient } from "@/server/supabase/server";
 import type { ByokProvider, LlmOverride } from "@/server/llm";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
@@ -10,10 +11,12 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
 
 /**
  * A signed-in user's stored BYOK key, ready to pass as chatComplete's
- * `override`, or null if they haven't configured one (or a stored row
- * fails to decrypt, which degrades to "no override" rather than a hard
- * failure, since /api/chat has a working fallback either way: the server's
- * own configured provider).
+ * `override`, or null if they haven't configured one.
+ *
+ * "unreadable" heisst: es gibt eine Zeile, aber sie lässt sich nicht verwenden (falsches
+ * API_KEY_ENCRYPTION_SECRET, Rotation ohne PREVIOUS, kaputte Zeile). Die Aufrufer lehnen dann
+ * mit einer eigenen Meldung ab und fallen bewusst nicht auf den Server-Key zurück: das Konto hat
+ * einen eigenen Key gewählt, und ein stiller Wechsel fiele erst auf der Rechnung auf.
  *
  * QA finding S-3: `encrypted_key` used to be readable by the `authenticated`
  * role (a blanket table-level SELECT grant covered every column), which a
@@ -36,7 +39,7 @@ type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>
  * row set that somehow has none active; it can only be reached if the
  * migration's backfill and the delete-promotion trigger both failed to apply.
  */
-export async function getUserOverride(userId: string): Promise<LlmOverride | null> {
+export async function getUserOverride(userId: string): Promise<LlmOverride | null | "unreadable"> {
   const { data } = await createAdminClient()
     .from("user_api_keys")
     .select("provider, encrypted_key, base_url, model")
@@ -47,21 +50,21 @@ export async function getUserOverride(userId: string): Promise<LlmOverride | nul
     .maybeSingle();
   if (!data) return null;
 
+  const provider = data.provider as ByokProvider;
   try {
     const apiKey = decrypt(data.encrypted_key as string);
-    const provider = data.provider as ByokProvider;
     if (provider === "custom") {
       const baseUrl = data.base_url as string | null;
       const model = data.model as string | null;
       // The DB constraint guarantees these alongside provider='custom'; a
-      // null here means something is inconsistent, degrade to "no override"
-      // rather than crash the caller.
-      if (!baseUrl || !model) return null;
+      // null here means the row is inconsistent.
+      if (!baseUrl || !model) throw new Error("custom row without base_url or model");
       return { provider: "custom", apiKey, baseUrl, model };
     }
     return { provider, apiKey };
-  } catch {
-    return null;
+  } catch (err) {
+    captureError("byok.key_unreadable", err, { userId, provider });
+    return "unreadable";
   }
 }
 

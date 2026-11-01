@@ -708,6 +708,8 @@ export const es: Messages = {
       "Antes de responder necesito tu consentimiento para que tus mensajes se envíen a Z.ai en Singapur. Puedes darlo en el chat o en los ajustes.",
     byokRequired:
       "Free solo funciona con tu propia clave de IA. Añade una clave de Anthropic, OpenAI o Gemini en la configuración, o pásate a Pro.",
+    byokUnreadable:
+      "No se puede leer tu clave de IA guardada. Vuelve a introducirla en la configuración.",
     byokRequiredSoon:
       "Free solo funciona con tu propia clave de IA. Añade una clave de Anthropic, OpenAI o Gemini en la configuración.",
     chatLimit:

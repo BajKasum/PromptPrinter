@@ -723,6 +723,8 @@ export const de = {
       "Bevor ich antworte, brauche ich deine Zustimmung, dass deine Nachrichten an Z.ai in Singapur gehen. Du kannst sie im Chat oder in den Einstellungen erteilen.",
     byokRequired:
       "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
+    byokUnreadable:
+      "Dein gespeicherter KI-Key lässt sich nicht lesen. Trag ihn in den Einstellungen bitte neu ein.",
     byokRequiredSoon:
       "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen.",
     chatLimit:

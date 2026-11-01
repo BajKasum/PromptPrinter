@@ -38,9 +38,8 @@ describe("encrypt/decrypt", () => {
 });
 
 // Rotation (Betriebs-Audit 04.10.2026): ohne API_KEY_ENCRYPTION_SECRET_PREVIOUS
-// machte jede Änderung des Secrets alle gespeicherten Keys unlesbar, und
-// getUserOverride() stuft einen unlesbaren Key stillschweigend auf "kein eigener
-// Key" zurück, also auf den Server-Key.
+// macht jede Änderung des Secrets alle gespeicherten Keys unlesbar, und
+// getUserOverride() meldet dann für jedes Konto "unreadable".
 describe("Rotation mit API_KEY_ENCRYPTION_SECRET_PREVIOUS", () => {
   const prevCurrent = process.env.API_KEY_ENCRYPTION_SECRET;
   const prevPrevious = process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
