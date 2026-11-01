@@ -14,7 +14,7 @@
  * "prod" run therefore depends on TWO files at once, for two different
  * reasons, and it is easy to fill in one and forget the other.
  *
- * Mirrors src/lib/env.ts's own required-variable list (kept in sync by hand:
+ * Mirrors src/server/env.ts's own required-variable list (kept in sync by hand:
  * that file is a TS module meant for the Next.js runtime, not something this
  * plain Node script can import without a build step) — with one deliberate
  * difference: `dev` only requires what dev genuinely cannot run without.

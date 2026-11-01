@@ -33,6 +33,8 @@ export type ComparisonSection = {
 
 export type Comparison = {
   slug: string;
+  /** ISO-Datum, an dem diese Adresse zum ersten Mal erreichbar war (datePublished). */
+  published: string;
   /** Die Frage, als h1 und als Seitentitel. */
   question: string;
   /** Kurzform für Übersicht, Breadcrumb und llms.txt. */
@@ -60,6 +62,7 @@ const PRICE_ROW = PRO_AVAILABLE
 export const COMPARISONS: Comparison[] = [
   {
     slug: "chatgpt-oder-claude-direkt-fragen",
+    published: "2026-10-01",
     question: "PromptPrinter oder ChatGPT direkt fragen?",
     label: "ChatGPT oder Claude direkt fragen",
     summary:
@@ -138,6 +141,7 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "prompt-vorlagen",
+    published: "2026-10-01",
     question: "PromptPrinter oder Prompt-Vorlagen?",
     label: "Prompt-Vorlagen",
     summary:
@@ -208,6 +212,7 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "direkt-in-die-ki-tippen",
+    published: "2026-10-11",
     question: "Direkt in die KI tippen, oder erst PromptPrinter?",
     label: "Direkt in die KI tippen",
     summary:

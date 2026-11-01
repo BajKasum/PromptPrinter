@@ -7,7 +7,7 @@ import { DOCS_GROUPS, DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Hilfe",
+  title: "Hilfe und Anleitungen",
   description:
     "Alles, was PromptPrinter kann: Chat mit Finn, Projekte, Dateien, eigene API-Keys, Pläne und Limits. Von vorne lesbar oder gezielt nachschlagen.",
   path: "/docs",

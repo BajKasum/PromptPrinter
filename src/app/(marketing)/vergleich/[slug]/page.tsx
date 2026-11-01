@@ -11,7 +11,7 @@ import {
 } from "@/features/marketing/lib/comparisons";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { Rise } from "@/shared/motion/rise";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { comparisonMetadata } from "@/features/marketing/lib/article-metadata";
 import { siteUrl } from "@/shared/lib/site-url";
 import { Button } from "@/shared/ui/button";
 import { JsonLd } from "@/shared/ui/json-ld";
@@ -31,13 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const comparison = comparisonBySlug(slug);
   if (!comparison) return {};
 
-  return pageMetadata({
-    title: comparison.question,
-    description: comparison.summary,
-    path: comparisonHref(comparison.slug),
-    // Jede Frage nennt PromptPrinter schon selbst.
-    titleStandsAlone: true,
-  });
+  return comparisonMetadata(comparison);
 }
 
 export default async function ComparisonPage({ params }: Props) {
@@ -78,7 +72,7 @@ export default async function ComparisonPage({ params }: Props) {
           headline: comparison.question,
           description: comparison.summary,
           path,
-          published: COMPARISONS_UPDATED,
+          published: comparison.published,
           updated: COMPARISONS_UPDATED,
         })}
       />

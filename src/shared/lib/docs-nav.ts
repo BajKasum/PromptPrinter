@@ -110,7 +110,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Konto und Daten",
         summary:
           "Passwort ändern, E-Mail-Adresse wechseln, Anmeldewege, was gespeichert wird, wie du deine Daten herunterlädst und dein Konto restlos wieder löschst.",
-        updated: "2026-10-22",
+        updated: "2026-11-01",
       },
       {
         slug: "terminal-anmeldung",

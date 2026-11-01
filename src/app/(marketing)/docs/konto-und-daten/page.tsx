@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
-import { docBySlug, docHref } from "@/shared/lib/docs-nav";
+import { docBySlug } from "@/shared/lib/docs-nav";
 import { LEGAL } from "@/shared/lib/legal";
-import { pageMetadata } from "@/shared/lib/page-metadata";
+import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("konto-und-daten")!;
 
-export const metadata: Metadata = pageMetadata({
-  title: doc.title,
-  description: doc.summary,
-  path: docHref(doc.slug),
-});
+export const metadata: Metadata = docMetadata(doc);
 
 export default function Page() {
   return (
@@ -56,6 +52,15 @@ export default function Page() {
       <p>
         Ausserdem stellst du dort das Erscheinungsbild ein, hell, dunkel oder
         nach Systemeinstellung.
+      </p>
+
+      <h2>In welchen Sprachen funktioniert PromptPrinter?</h2>
+      <p>
+        Die Oberfläche der App gibt es auf Deutsch, Englisch, Französisch,
+        Italienisch und Spanisch. Welche du siehst, stellst du unter{" "}
+        <strong>Einstellungen</strong> bei <strong>Sprache</strong> ein. Finn
+        antwortet in der Sprache, in der du schreibst. Die öffentlichen Seiten,
+        also Startseite, Hilfe und Rechtstexte, gibt es nur auf Deutsch.
       </p>
 
       <h2>Welche Daten speichert PromptPrinter?</h2>

@@ -34,7 +34,7 @@
  *   node scripts/reconcile-project-files-storage.mjs --delete                      # then delete
  *   node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments     # the other bucket
  *
- * Needs the same service-role access as src/lib/supabase/admin.ts, read here
+ * Needs the same service-role access as src/server/supabase/admin.ts, read here
  * from .env.local (dev) or .env (prod) — whichever exists, .env.local first,
  * same lookup order as scripts/take-screenshots.mjs.
  */

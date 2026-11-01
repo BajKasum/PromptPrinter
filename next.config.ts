@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 // Baseline security headers, applied to every response. Content-Security-Policy
 // is deliberately NOT here: it needs a per-request nonce (next-themes' anti-flash
 // inline script, Next's own hydration scripts), which this static headers()
-// config can't produce. See src/middleware.ts + src/lib/csp.ts instead.
+// config can't produce. See src/middleware.ts + src/server/security/csp.ts instead.
 const securityHeaders = [
   // Force HTTPS for two years incl. subdomains. Ignored over plain http (dev),
   // so it only ever hardens production. No `preload` — that's an irreversible
@@ -17,7 +17,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Drop powerful features the app never uses, and opt out of Topics.
   //
-  // `microphone=(self)` rather than `()`: voice mode (voice-overlay.tsx) calls
+  // `microphone=(self)` rather than `()`: voice mode (voice-bar.tsx) calls
   // getUserMedia, and an empty allowlist denies the feature to EVERY origin
   // including this one — the promise rejects with NotAllowedError before the
   // browser ever shows a permission prompt, which looks exactly like the user
