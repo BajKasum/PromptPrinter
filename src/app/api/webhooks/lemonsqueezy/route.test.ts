@@ -99,6 +99,58 @@ afterEach(() => {
 });
 
 describe("POST /api/webhooks/lemonsqueezy", () => {
+  describe("Datenbankfehler sind kein Kauf ohne Konto", () => {
+    const dbError = { message: "connection reset" };
+    const paid = (customData?: Record<string, unknown>) =>
+      body("order_created", { type: "orders", attributes: { status: "paid", customer_id: 42 } }, customData);
+
+    it("die Abfrage über die Konto-ID scheitert: 503 und Status failed", async () => {
+      // Nur die erste Abfrage scheitert: der Weg über die Kundennummer fände sonst ein Konto.
+      profileSelect.mockResolvedValueOnce({ data: null, error: dbError });
+      const res = await POST(req(paid({ user_id: USER_ID })));
+      expect(res.status).toBe(503);
+      expect(eventUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ status: "failed" }), "evt_1");
+      expect(logWarning).not.toHaveBeenCalledWith("billing.webhook_unmatched", expect.anything());
+    });
+
+    it("die Abfrage über die Kundennummer scheitert: 503 und Status failed", async () => {
+      profileSelect.mockResolvedValue({ data: null, error: dbError });
+      const res = await POST(req(paid()));
+      expect(res.status).toBe(503);
+      expect(eventUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ status: "failed" }), "evt_1");
+      expect(logWarning).not.toHaveBeenCalledWith("billing.webhook_unmatched", expect.anything());
+    });
+
+    it("dieselbe Zustellung läuft danach durch, sobald die Datenbank wieder antwortet", async () => {
+      profileSelect.mockResolvedValueOnce({ data: null, error: dbError });
+      expect((await POST(req(paid()))).status).toBe(503);
+
+      claimUpsert.mockResolvedValue({ data: null });
+      eventSelect.mockResolvedValue({ data: { id: "evt_1", status: "failed" } });
+      profileSelect.mockResolvedValue({ data: { id: USER_ID } });
+      const res = await POST(req(paid()));
+      expect(res.status).toBe(200);
+      expect(profileUpdate).toHaveBeenCalled();
+      expect(eventUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ status: "processed" }), "evt_1");
+    });
+
+    it("finish scheitert: 503, damit die Zustellung wiederkommt", async () => {
+      eventUpdate.mockResolvedValueOnce({ error: dbError });
+      const res = await POST(req(paid()));
+      expect(res.status).toBe(503);
+      expect(captureError).toHaveBeenCalledWith("billing.webhook_failed", dbError, expect.anything());
+    });
+
+    it("die Wiederaufnahme einer gescheiterten Zeile scheitert: 503, ohne das Profil anzufassen", async () => {
+      claimUpsert.mockResolvedValue({ data: null });
+      eventSelect.mockResolvedValue({ data: { id: "evt_1", status: "failed" } });
+      eventUpdate.mockResolvedValueOnce({ error: dbError });
+      const res = await POST(req(paid()));
+      expect(res.status).toBe(503);
+      expect(profileUpdate).not.toHaveBeenCalled();
+    });
+  });
+
   describe("Echtheit", () => {
     it("weist eine falsche Signatur mit 401 ab und rührt kein Profil an", async () => {
       const res = await POST(req(body("subscription_created"), "deadbeef"));
@@ -586,9 +638,9 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
         // passiert, siehe den Kommentar in route.ts.
         eventName: "order_created",
         customerId: "42",
-        email: "kaeufer@example.test",
         resourceId: "order_9",
       });
+      expect(JSON.stringify(logWarning.mock.calls)).not.toContain("kaeufer@example.test");
       expect(eventUpdate).toHaveBeenLastCalledWith(
         expect.objectContaining({ status: "ignored" }),
         "evt_1"

@@ -25,6 +25,13 @@ describe("redactContext", () => {
     }
   );
 
+  it.each(["email", "userEmail", "user_email", "mail", "phone", "phoneNumber"])(
+    "redacts %s, personal data has no place in a log line",
+    (key) => {
+      expect(redactContext({ [key]: "kaeufer@example.test" })[key]).toBe("[redacted]");
+    }
+  );
+
   it.each(["apiKey", "api_key", "token", "password", "secret", "authorization"])(
     "redacts %s, so a credential never reaches a log drain",
     (key) => {
