@@ -1,11 +1,12 @@
 import { comparisonBySlug } from "./comparisons";
+import { taskGuideBySlug } from "./task-guides";
 import { docBySlug } from "@/shared/lib/docs-nav";
 
-// Die Vorschaukarte einer Hilfe- oder Vergleichsseite (#253): dieselbe Karte wie die der Startseite, aber mit
+// Die Vorschaukarte einer Hilfe-, Vergleichs- oder Aufgabenseite (#253): dieselbe Karte wie die der Startseite, aber mit
 // dem Titel der Seite. Diese Datei sagt, welche Karten es gibt und was darauf steht; gezeichnet wird sie in
 // app/og/[kind]/[slug]/route.tsx.
 
-export type SocialCardKind = "docs" | "vergleich";
+export type SocialCardKind = "docs" | "vergleich" | "aufgaben";
 
 export type SocialCard = {
   /** Die kleine Zeile über dem Titel. */
@@ -35,6 +36,10 @@ export function socialCardFor(kind: string, slug: string): SocialCard | null {
   if (kind === "vergleich") {
     const comparison = comparisonBySlug(slug);
     return comparison ? { label: "Vergleich", title: comparison.question } : null;
+  }
+  if (kind === "aufgaben") {
+    const guide = taskGuideBySlug(slug);
+    return guide ? { label: "Aufgabe", title: guide.question } : null;
   }
   return null;
 }

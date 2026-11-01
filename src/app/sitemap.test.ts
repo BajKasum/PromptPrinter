@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPARISONS, COMPARISONS_UPDATED, comparisonHref } from "@/features/marketing/lib/comparisons";
+import { TASK_GUIDES, TASK_GUIDES_UPDATED, taskGuideHref } from "@/features/marketing/lib/task-guides";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import sitemap from "./sitemap";
 
@@ -63,6 +64,14 @@ describe("sitemap", () => {
       expect(entries.get("/vergleich")).toBe(COMPARISONS_UPDATED);
       for (const comparison of COMPARISONS) {
         expect(entries.get(comparisonHref(comparison.slug)), comparison.slug).toBe(COMPARISONS_UPDATED);
+      }
+    });
+
+    it("nimmt für Aufgabenseiten und die Übersicht TASK_GUIDES_UPDATED", () => {
+      const entries = byPath();
+      expect(entries.get("/aufgaben")).toBe(TASK_GUIDES_UPDATED);
+      for (const guide of TASK_GUIDES) {
+        expect(entries.get(taskGuideHref(guide.slug)), guide.slug).toBe(TASK_GUIDES_UPDATED);
       }
     });
 
