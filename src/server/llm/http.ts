@@ -2,6 +2,8 @@ import "server-only";
 
 import { optionalEnv } from "@/server/env-value";
 import { parseRetryAfter } from "@/server/llm-retry";
+import { LlmEmptyReplyError, type LlmResult } from "@/server/llm/types";
+import { captureError } from "@/shared/lib/observability";
 
 // Geteilt von den fetch-Wegen (Z.ai, Custom-Slot, Analyse): Fehler, Zeitlimit, Größengrenze,
 // SSE-Leser. (Teil von src/server/llm/, siehe index.ts)
@@ -27,6 +29,56 @@ export type OpenAiCompatibleResponse = {
   usage?: { prompt_tokens?: number; completion_tokens?: number };
   error?: { message?: string };
 };
+
+/**
+ * Liest eine nicht erfolgreiche Antwort eines fetch-Wegs und wirft den Fehler dazu. Nur eine
+ * GEPARSTE Fehlermeldung in der erwarteten JSON-Form wird weitergegeben, nie der rohe Body: kam
+ * `endpoint` an der SSRF-Prüfung vorbei (oder ist ein Anbieter kompromittiert), darf ein beliebiger
+ * Body kein Kanal zum Nutzer sein. Einzige Ausnahme ist `rawFallbackChars` für Z.ai, dessen feste
+ * Adresse vertrauenswürdig ist: fehlt die Form, gehen so viele Zeichen Rohtext in die Meldung.
+ * `reportUnparsable` meldet eine Antwort ohne lesbare Meldung ins Log (nur Status und Länge).
+ */
+export async function throwProviderError(
+  label: string,
+  res: Response,
+  opts: { rawFallbackChars?: number; reportUnparsable?: boolean } = {}
+): Promise<never> {
+  const raw = await readCappedText(res, MAX_RESPONSE_BYTES).catch(() => "");
+  let detail = opts.rawFallbackChars ? raw.slice(0, opts.rawFallbackChars) : "";
+  try {
+    const parsed = JSON.parse(raw) as OpenAiCompatibleResponse;
+    if (parsed.error?.message) detail = parsed.error.message;
+  } catch {
+    // Nicht die erwartete Form: aus dem Body nichts weitergeben (außer dem Rohtext-Rückfall).
+  }
+  if (opts.reportUnparsable && !detail) {
+    captureError("llm.custom_provider_unparsable_error", new Error(`HTTP ${res.status}`), {
+      status: res.status,
+      bodyChars: raw.length,
+    });
+  }
+  throw providerHttpError(label, res, detail);
+}
+
+/**
+ * Text und Verbrauch aus einer erfolgreichen, nicht gestreamten Antwort. `content` ist die
+ * eigentliche Antwort, `reasoning_content` springt nur ein, wenn sonst nichts da ist. Verbrauch
+ * gibt es nur, wenn der Anbieter beide Zahlen liefert.
+ */
+export function readCompletion(json: OpenAiCompatibleResponse, label: string): LlmResult {
+  const message = json.choices?.[0]?.message;
+  const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
+  if (!text) throw new LlmEmptyReplyError(label);
+
+  const usage =
+    json.usage &&
+    typeof json.usage.prompt_tokens === "number" &&
+    typeof json.usage.completion_tokens === "number"
+      ? { inputTokens: json.usage.prompt_tokens, outputTokens: json.usage.completion_tokens }
+      : null;
+
+  return { text, usage };
+}
 
 type OpenAiStreamChunk = {
   choices?: { delta?: { content?: string; reasoning_content?: string } }[];
@@ -100,7 +152,7 @@ export async function* readOpenAiCompatibleSse(
 // The user supplies their own endpoint + model alongside the key (settings →
 // "Eigene API-Keys" → "Custom"), so this covers Z.ai, DeepSeek, Groq,
 // OpenRouter, a self-hosted gateway, anything speaking the OpenAI chat/
-// completions shape. No "thinking" flag here unlike zaiComplete, that's a
+// completions shape. No "thinking" flag here unlike the Z.ai request, that's a
 // Z.ai-specific quirk, not something to impose on an arbitrary endpoint.
 //
 // Unlike Z.ai's own fixed endpoint, `endpoint` here is a user-supplied URL

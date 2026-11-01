@@ -411,12 +411,12 @@ describe("Gemini", () => {
   it("als Server-Anbieter (nur GEMINI_API_KEY): Modell aus GEMINI_MODEL, Schlüssel aus der Umgebung", async () => {
     vi.stubEnv("GEMINI_API_KEY", "env-gem");
     vi.stubEnv("GEMINI_MODEL", "gemini-test-model");
-    sdk.generateContent.mockResolvedValue({ text: "ok" });
+    sdk.generateContentStream.mockResolvedValue(events([{ text: "ok" }]));
 
-    await chatComplete({ system: "S", messages: [{ role: "user", content: "x" }] });
+    await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }));
 
     expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
-    expect(sdk.generateContent.mock.calls[0][0].model).toBe("gemini-test-model");
+    expect(sdk.generateContentStream.mock.calls[0][0].model).toBe("gemini-test-model");
   });
 
   it("als Server-Anbieter im Stream und in der Analyse: der Schlüssel geht ohne Leerraum an den SDK", async () => {
@@ -436,12 +436,12 @@ describe("Gemini", () => {
   it("als Server-Anbieter: leer gesetztes GEMINI_MODEL ergibt das Standardmodell, der Schlüssel geht ohne Leerraum an den SDK", async () => {
     vi.stubEnv("GEMINI_API_KEY", " env-gem\n");
     vi.stubEnv("GEMINI_MODEL", "");
-    sdk.generateContent.mockResolvedValue({ text: "ok" });
+    sdk.generateContentStream.mockResolvedValue(events([{ text: "ok" }]));
 
-    await chatComplete({ system: "S", messages: [{ role: "user", content: "x" }] });
+    await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }));
 
     expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
-    expect(sdk.generateContent.mock.calls[0][0].model).toBe("gemini-3.5-flash");
+    expect(sdk.generateContentStream.mock.calls[0][0].model).toBe("gemini-3.5-flash");
   });
 
   it("analyzeComplete: Text und Bilder in EINER Nutzer-Nachricht, 1500 Token, Signal, Modell im Ergebnis", async () => {
@@ -613,7 +613,7 @@ describe("analyzeComplete über fetch", () => {
 
   it("ohne konfigurierten Anbieter (und ohne eigenen Key) gibt es einen klaren Fehler", async () => {
     await expect(analyzeComplete({ system: "S", text: "T" })).rejects.toThrow("no LLM provider configured");
-    await expect(chatComplete({ system: "S", messages: [{ role: "user", content: "x" }] })).rejects.toThrow(
+    await expect(collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }))).rejects.toThrow(
       "no LLM provider configured"
     );
   });
@@ -624,12 +624,11 @@ describe("analyzeComplete über fetch", () => {
 describe("Standardwerte des Chats", () => {
   it("ohne eigene Grenze gehen 6144 Token an Z.ai, eigene Grenzen werden durchgereicht", async () => {
     vi.stubEnv("ZAI_API_KEY", "zk");
-    const ok = JSON.stringify({ choices: [{ message: { content: "ok" } }] });
-    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, statusText: "", text: async () => ok, json: async () => JSON.parse(ok) }) as unknown as Response);
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, statusText: "", body: new Response("data: [DONE]\n\n").body }) as unknown as Response);
     vi.stubGlobal("fetch", fetchMock);
 
-    await chatComplete({ system: "S", messages: [{ role: "user", content: "x" }] });
-    await chatComplete({ system: "S", messages: [{ role: "user", content: "x" }], maxOutputTokens: 99 });
+    await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }));
+    await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }], maxOutputTokens: 99 }));
 
     const tokens = fetchMock.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string).max_tokens);
     expect(tokens).toEqual([6144, 99]);
