@@ -11,6 +11,16 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: Zweite Nachkontrolle (Branch `fix/nachkontrolle-2-2026-11-01`)
+
+Kontrolle der PRs #265, #268 und #270: Gate, Code der neuen Chat-Teile, Live-Seite auf Desktop und bei 375 Pixeln, Prüfsumme des Skills gegen die echte Datei. Geändert:
+- **`/skill`:** Prüfsumme und Befehle standen als Textwand direkt unter dem Download-Knopf, dem Kasten, den Kasum bewusst schlicht wollte. Sie stehen jetzt aufklappbar darunter (#240 bleibt erfüllt).
+- **`/api/projects/[id]/brain/status`:** eigene Stundengrenze; ohne sie gab es keine Bremse je Konto vor den Anfragen an GitHub.
+- **#202:** letzte Stelle (`move-to-project.tsx`) liest den Fehler, die Ausnahmeliste des Guards ist leer.
+- **`testTimeout` 20 s:** im vollen lokalen Lauf rissen gesunde Tests die 5 s, wenn alle Kerne belegt waren (einzeln rund 1 s, CI grün).
+
+---
+
 ## 2026-11-01: CI, Browser-Test im Produktionsaufbau, Abdeckung, Skill-Prüfsumme, Startseite und Aufgabenseiten (PR #270, Branch `chore/ci-marketing-2026-11-v2`; #266 ging wegen eines Merge-Commits nicht per Rebase und ist ersetzt)
 
 - **#222 Ein Lauf je Commit:** `ci.yml`, `e2e.yml`, `docker.yml` und die neuen Workflows hören bei `push` nur auf `main`, jeder Branch mit PR läuft über `pull_request` (Stand nach dem Merge in `main`). **Entscheid:** das einzige Mittel, bei dem jeder Lauf nur einmal *startet* (eine gemeinsame Concurrency-Gruppe hätte beide gestartet und einen abgebrochen). **Folge:** ein Branch ohne PR hat keinen Lauf (`workflow_dispatch` in `ci.yml`), und ein PR mit Merge-Konflikt bekommt keinen. `verify` hat `timeout-minutes: 20` (längster Lauf der letzten 30: 303 s); `workflows.test.ts` verlangt je Job eine Zeitgrenze und push nur auf `main`, wo `pull_request` mitläuft. Gegengeprüft, beide rot. Beleg am PR: je Commit ein Lauf je Workflow, keiner doppelt.
