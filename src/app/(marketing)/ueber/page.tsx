@@ -11,7 +11,8 @@ import { siteUrl } from "@/shared/lib/site-url";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Über",
+  title: "Über PromptPrinter: wer es baut und warum",
+  titleStandsAlone: true,
   description:
     "Wer hinter PromptPrinter steckt, warum es das gibt und was ich dir verspreche, solange ich es allein baue.",
   path: "/ueber",

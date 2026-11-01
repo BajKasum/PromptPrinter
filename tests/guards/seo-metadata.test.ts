@@ -129,6 +129,14 @@ describe("SEO-Metadaten der öffentlichen Seiten", () => {
     ).toEqual([]);
   });
 
+  // #250: ein Wort als Titel passt nur auf Suchen nach dem Seitennamen. /skill ist die einzige Seite für
+  // Leute, die nach dem Claude-Code-Skill suchen, und muss das in Titel und Beschreibung sagen.
+  it("nennt auf /skill Claude Code in Titel und Beschreibung", () => {
+    const skill = pages.find((page) => page.route === "/skill");
+    expect(titleOf(skill?.metadata)).toContain("Claude Code");
+    expect(skill?.metadata?.description).toContain("Claude Code");
+  });
+
   it("vergibt jeden Titel nur einmal", () => {
     const titles = subpages().map((page) => titleOf(page.metadata));
     expect(titles).not.toContain("");
