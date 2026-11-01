@@ -10,6 +10,7 @@ import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import type { ProjectTools } from "@/features/projects/types";
 import { getT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
+import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.projects };
@@ -56,7 +57,7 @@ export default async function ProjectsPage() {
   if (!user) redirect("/login");
 
   const t = await getT();
-  const [{ data: rawProjects }, { data: rawSummaries }] = await Promise.all([
+  const [rawProjectsResult, rawSummariesResult] = await Promise.all([
     // Capped + over-fetched by one (see LIST_LOAD_LIMIT): this was unbounded.
     // project_summaries stays uncapped on purpose — it returns one small
     // counts row per project and is joined by id below, so rows past the cap
@@ -69,6 +70,8 @@ export default async function ProjectsPage() {
       .range(0, LIST_LOAD_LIMIT),
     supabase.rpc("project_summaries"),
   ]);
+  const { data: rawProjects } = orThrow(rawProjectsResult, "projects");
+  const { data: rawSummaries } = orThrow(rawSummariesResult, "project_summaries");
 
   const { items: projects, hasMore } = splitAtLimit(
     (rawProjects as ProjectQueryRow[] | null) ?? []

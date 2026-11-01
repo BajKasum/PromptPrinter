@@ -9,6 +9,7 @@ import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/sess
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { getT } from "@/server/i18n";
+import { orThrow } from "@/server/supabase/query";
 
 export const dynamic = "force-dynamic";
 
@@ -33,19 +34,22 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   // before (Security-Audit finding L-3) — project.userId is guaranteed
   // non-null here since getProject() above already redirected an
   // unauthenticated caller to /login.
-  const { data: convo } = await supabase
+  const { data: convo } = orThrow(
+    await supabase
     .from("conversations")
     .select("id, title, project_id")
     .eq("id", cid)
     .eq("user_id", project.userId)
-    .maybeSingle();
+    .maybeSingle(),
+    "conversations"
+  );
 
   if (!convo) notFound();
   // A chat that lives elsewhere gets forwarded to its true home.
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [initialMessages, { data: savedPromptRows, count: resultCount }, profile, needsKey] =
+  const [initialMessages, savedPromptRowsResult, profile, needsKey] =
     await Promise.all([
       // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
       // zuerst, mit Limit, dann umgedreht, QA-Befund P-1) steht in
@@ -66,6 +70,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       getSessionProfile(),
       getNeedsOwnKey(),
     ]);
+  const { data: savedPromptRows, count: resultCount } = orThrow(savedPromptRowsResult, "saved_prompts");
 
   const t = await getT();
   const name = profile?.display_name || user?.email?.split("@")[0] || null;

@@ -76,7 +76,7 @@ async function dropOldVersion(args: {
   }
 }
 
-export function replyStream(args: {
+type ReplyStreamArgs = {
   req: Request;
   supabase: SupabaseClient;
   userId: string;
@@ -92,30 +92,210 @@ export function replyStream(args: {
   modelWindow: ChatMessage[];
   modelMessages: LlmMessage[];
   attachmentStats: { images: number; files: number };
-}): ReadableStream<Uint8Array> {
-  const {
-    req,
-    supabase,
+};
+
+type SseWriter = ReturnType<typeof createSseWriter>;
+
+/** Was ein Zug bis hierher erzeugt hat: auch nach einem Fehler oder Abbruch gilt der Stand bis dahin. */
+type ReplyProgress = {
+  reply: string;
+  mode: "stub" | "generated";
+  // Der Anbieter, auf dem der Zug WIRKLICH lief: bei einem Failover von Z.ai
+  // auf Gemini (llm-failover.ts) ist das nicht der, den llmConfig() nennt, und
+  // fuer eine Kostenauswertung im Log ist genau das der Unterschied.
+  usedProvider: string | undefined;
+};
+
+/** Erzeugt die Antwort und sendet sie Stück für Stück; `progress` hält den Stand. Wirft bei Fehler oder Abbruch. */
+async function streamReply(args: ReplyStreamArgs, send: SseWriter["send"], progress: ReplyProgress): Promise<void> {
+  const { req, input, override, systemInstruction, modelMessages } = args;
+  if (!llmConfig() && !override) {
+    const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
+    progress.reply = stubReply(lastUser?.content ?? "");
+    progress.mode = "stub";
+    send("delta", { text: progress.reply });
+    return;
+  }
+  progress.mode = "generated";
+  for await (const chunk of chatCompleteStream({
+    system: systemInstruction,
+    messages: modelMessages,
+    override: override ?? undefined,
+    signal: req.signal,
+    onRetry: ({ failedAttempt, maxAttempts }) =>
+      send("status", { phase: "retrying", attempt: failedAttempt + 1, maxAttempts }),
+    onProvider: (provider) => {
+      progress.usedProvider = provider;
+    },
+  })) {
+    progress.reply += chunk;
+    send("delta", { text: chunk });
+  }
+  // Same "empty" bucket as llm.ts's own non-streaming check (this
+  // stream-consuming loop can't rely on that one, see chatCompleteStream's
+  // own docs), so describeLlmFailure below treats both identically.
+  if (!progress.reply.trim()) {
+    throw new LlmEmptyReplyError(override?.provider ?? llmConfig()?.provider ?? "provider");
+  }
+}
+
+// The client stopped generation itself, or closed the tab (not a
+// provider failure): the connection is already gone, so there's no
+// "done"/"error" event left to deliver either way. Best-effort save
+// whatever partial reply had already streamed, so stopping early
+// doesn't silently lose it on the next reload (the client keeps its
+// own local copy of the same partial text).
+//
+// Seit C-1 ist der wichtige Teil das, was hier NICHT steht: die
+// Frage bleibt in jedem Fall stehen, weil openTurn sie laengst
+// geschrieben hat. Genau das war der Verlust, den dieser Planpunkt
+// behebt — vorher war ohne Teiltext der ganze Zug weg, inklusive
+// der eigenen Nachricht.
+//
+// Mit Teiltext wird die alte Fassung wie nach einem vollstaendigen Zug
+// weggeraeumt, ohne ihn zeigt der Bildschirm nach einem Stopp schon den
+// neuen Stand und ein Reload den alten und den neuen zugleich (#129).
+// Ohne Teiltext gibt es beim Neu-Erzeugen nichts Neues: die alte Antwort
+// bleibt, die Oberflaeche stellt sie wieder her (run-chat-turn.ts). Beim
+// Bearbeiten steht die neue Frage (openTurn) und ersetzt die alte so oder so.
+async function finishAborted(args: ReplyStreamArgs, reply: string): Promise<void> {
+  const { supabase, userId, input, opened, releaseReservations, verifiedProjectId, inheritFrom } = args;
+  const hasReply = reply.trim().length > 0;
+  try {
+    if (hasReply) {
+      await completeTurn(supabase, userId, opened.conversationId, reply);
+    } else {
+      await releaseReservations();
+    }
+    if (hasReply || input.supersededMessageIds?.length) {
+      await dropOldVersion({
+        supabase,
+        userId,
+        conversationId: opened.conversationId,
+        input,
+        userMessageId: opened.userMessageId,
+        inheritFrom,
+        withReplacedReply: hasReply,
+      });
+    }
+  } catch (abortErr) {
+    captureError("chat.persist_failed", abortErr, {
+      userId,
+      projectId: verifiedProjectId,
+      aborted: true,
+    });
+  }
+}
+
+// The call never produced a (full) reply, so it never actually cost
+// anything, release the reservation instead of burning a slot on
+// nothing. The status line is already committed at this point (200),
+// so a failure mid-stream can only be conveyed as an "error" event,
+// not a 502, the client treats the two the same way either way.
+async function finishFailed(
+  args: ReplyStreamArgs,
+  err: unknown,
+  send: SseWriter["send"],
+  progress: ReplyProgress,
+  telemetry: { startedAt: number; promptChars: number }
+): Promise<void> {
+  const { supabase, userId, m, opened, override, releaseReservations } = args;
+  await releaseReservations();
+  // Und die Frage wieder wegnehmen: die Oberflaeche rollt sie bei einem
+  // Anbieter-Fehler zurueck und stellt die Eingabe wieder her (F-4/U-6).
+  // Bliebe die Zeile stehen, staende sie nach einem Reload wieder da und
+  // in der Seitenleiste haenge ein Chat, der nur aus ihr besteht. Das
+  // gilt ausdruecklich NICHT fuer den Abbruch.
+  await rollbackTurn(supabase, userId, opened);
+  captureError("chat.turn_failed", err, {
     userId,
-    m,
-    input,
-    uploads,
-    opened,
-    override,
-    releaseReservations,
-    systemInstruction,
-    verifiedProjectId,
-    inheritFrom,
-    modelWindow,
-    modelMessages,
-    attachmentStats,
-  } = args;
+    byok: Boolean(override),
+    provider: progress.usedProvider,
+    latencyMs: Date.now() - telemetry.startedAt,
+    promptChars: telemetry.promptChars,
+    partialReplyChars: progress.reply.length,
+    // Wie oft der Anbieter gefragt wurde, bevor aufgegeben wurde. Fehlt
+    // bei einem Fehler, der gar nicht erst wiederholt wird (falscher Key).
+    attempts: attemptsOf(err),
+  });
+  send("error", { detail: describeLlmFailure(classifyLlmFailure(err), m) });
+}
+
+// Die Antwort an den bereits geoeffneten Zug haengen. Die Konversation
+// und die Frage stehen seit openTurn (C-1), hier fehlt nur noch das
+// Ergebnis. Persistence failures are surfaced but never block the reply
+// the user is waiting on.
+async function finishCompleted(
+  args: ReplyStreamArgs,
+  send: SseWriter["send"],
+  progress: ReplyProgress,
+  telemetry: { startedAt: number; promptChars: number }
+): Promise<void> {
+  const { supabase, userId, input, uploads, opened, override, verifiedProjectId, inheritFrom, attachmentStats } = args;
+  const { reply, mode, usedProvider } = progress;
+  const conversationId: string = opened.conversationId;
+  // A stable CODE, never the underlying message (Security-Audit finding
+  // M-1). This used to carry err.message straight to the browser, i.e.
+  // PostgREST/Postgres text naming constraints, columns and policies —
+  // free schema disclosure. The client only ever tested this for
+  // truthiness to show its own fixed German warning (chat.tsx), so the
+  // text was never read by anyone but an attacker. captureError below
+  // still gets the original for the logs.
+  let persistError: string | null = null;
+  // Die echte Zeilen-ID der gespeicherten Antwort (K-2, Audit
+  // 06.09.2026) — geht im `done`-Ereignis an den Client, der damit seine
+  // optimistische `randomId()` ersetzt. Bleibt null bei einem
+  // persistError, dann gibt es keine Zeile, deren ID man mitschicken
+  // koennte.
+  let assistantMessageId: string | null = null;
+  try {
+    assistantMessageId = await completeTurn(supabase, userId, conversationId, reply);
+    await dropOldVersion({
+      supabase,
+      userId,
+      conversationId,
+      input,
+      userMessageId: opened.userMessageId,
+      inheritFrom,
+      withReplacedReply: true,
+    });
+  } catch (err) {
+    persistError = "persist_failed";
+    captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });
+  }
+
+  logEvent("chat.turn", {
+    userId,
+    mode,
+    byok: Boolean(override),
+    provider: usedProvider,
+    inProject: Boolean(verifiedProjectId),
+    turns: input.messages.length,
+    // Nur Zaehler, nie Namen oder Inhalte (observability.ts).
+    attachmentsAdded: uploads.length,
+    attachmentImages: attachmentStats.images,
+    promptChars: telemetry.promptChars,
+    replyChars: reply.length,
+    latencyMs: Date.now() - telemetry.startedAt,
+    persisted: !persistError,
+  });
+
+  send("done", {
+    mode,
+    conversationId,
+    ...(assistantMessageId ? { assistantMessageId } : {}),
+    ...(persistError ? { persistError } : {}),
+  });
+}
+
+export function replyStream(args: ReplyStreamArgs): ReadableStream<Uint8Array> {
+  const { req, override, opened, systemInstruction, modelWindow, modelMessages } = args;
   // 7. Die Antwort erzeugen und speichern, als Strom an den Client, statt als eine undurchsichtige
   //    Runde: alles davor (Prüfung, Kontingent, Stundenlimit, Systemprompt) antwortet bei einem
   //    Fehler weiter mit einer JSON-Problem-Antwort, erst die Antwort selbst wird ein SSE-Strom.
   //    Welche Ereignisse es gibt (meta, status, delta, done, error), in welcher Reihenfolge und
   //    mit welcher Nutzlast, steht in shared/lib/chat-stream.ts; `send` nimmt nur diese Formen.
-  const stream = new ReadableStream<Uint8Array>({
+  return new ReadableStream<Uint8Array>({
     async start(controller) {
       const { send, closeQuietly } = createSseWriter(controller);
 
@@ -131,190 +311,37 @@ export function replyStream(args: {
       // (they arrive in a final chunk the shared SSE reader doesn't surface),
       // and ~4 chars per token is close enough to spot a trend or a spike.
       // Never the text itself, see observability.ts.
-      const startedAt = Date.now();
-      const promptChars =
-        systemInstruction.length +
-        (modelMessages.length > 0 ? modelMessages : modelWindow).reduce(
-          (sum, m) => sum + m.content.length,
-          0
-        );
+      const telemetry = {
+        startedAt: Date.now(),
+        promptChars:
+          systemInstruction.length +
+          (modelMessages.length > 0 ? modelMessages : modelWindow).reduce(
+            (sum, m) => sum + m.content.length,
+            0
+          ),
+      };
 
-      let reply = "";
-      let mode: "stub" | "generated";
-      // Der Anbieter, auf dem der Zug WIRKLICH lief: bei einem Failover von Z.ai
-      // auf Gemini (llm-failover.ts) ist das nicht der, den llmConfig() nennt, und
-      // fuer eine Kostenauswertung im Log ist genau das der Unterschied.
-      let usedProvider: string | undefined = override?.provider ?? llmConfig()?.provider;
+      const progress: ReplyProgress = {
+        reply: "",
+        mode: "generated",
+        usedProvider: override?.provider ?? llmConfig()?.provider,
+      };
       try {
-        if (!llmConfig() && !override) {
-          const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
-          reply = stubReply(lastUser?.content ?? "");
-          mode = "stub";
-          send("delta", { text: reply });
-        } else {
-          mode = "generated";
-          for await (const chunk of chatCompleteStream({
-            system: systemInstruction,
-            messages: modelMessages,
-            override: override ?? undefined,
-            signal: req.signal,
-            onRetry: ({ failedAttempt, maxAttempts }) =>
-              send("status", { phase: "retrying", attempt: failedAttempt + 1, maxAttempts }),
-            onProvider: (provider) => {
-              usedProvider = provider;
-            },
-          })) {
-            reply += chunk;
-            send("delta", { text: chunk });
-          }
-          // Same "empty" bucket as llm.ts's own non-streaming check (this
-          // stream-consuming loop can't rely on that one, see chatCompleteStream's
-          // own docs), so describeLlmFailure below treats both identically.
-          if (!reply.trim()) {
-            throw new LlmEmptyReplyError(override?.provider ?? llmConfig()?.provider ?? "provider");
-          }
-        }
+        await streamReply(args, send, progress);
       } catch (err) {
-        if (req.signal.aborted) {
-          // The client stopped generation itself, or closed the tab (not a
-          // provider failure): the connection is already gone, so there's no
-          // "done"/"error" event left to deliver either way. Best-effort save
-          // whatever partial reply had already streamed, so stopping early
-          // doesn't silently lose it on the next reload (the client keeps its
-          // own local copy of the same partial text).
-          //
-          // Seit C-1 ist der wichtige Teil das, was hier NICHT steht: die
-          // Frage bleibt in jedem Fall stehen, weil openTurn sie laengst
-          // geschrieben hat. Genau das war der Verlust, den dieser Planpunkt
-          // behebt — vorher war ohne Teiltext der ganze Zug weg, inklusive
-          // der eigenen Nachricht.
-          //
-          // Mit Teiltext wird die alte Fassung wie nach einem vollstaendigen Zug
-          // weggeraeumt, ohne ihn zeigt der Bildschirm nach einem Stopp schon den
-          // neuen Stand und ein Reload den alten und den neuen zugleich (#129).
-          // Ohne Teiltext gibt es beim Neu-Erzeugen nichts Neues: die alte Antwort
-          // bleibt, die Oberflaeche stellt sie wieder her (run-chat-turn.ts). Beim
-          // Bearbeiten steht die neue Frage (openTurn) und ersetzt die alte so oder so.
-          const hasReply = reply.trim().length > 0;
-          try {
-            if (hasReply) {
-              await completeTurn(supabase, userId, opened.conversationId, reply);
-            } else {
-              await releaseReservations();
-            }
-            if (hasReply || input.supersededMessageIds?.length) {
-              await dropOldVersion({
-                supabase,
-                userId,
-                conversationId: opened.conversationId,
-                input,
-                userMessageId: opened.userMessageId,
-                inheritFrom,
-                withReplacedReply: hasReply,
-              });
-            }
-          } catch (abortErr) {
-            captureError("chat.persist_failed", abortErr, {
-              userId,
-              projectId: verifiedProjectId,
-              aborted: true,
-            });
-          }
-          // Den Stream trotzdem schliessen. Fuer den echten Abbruch ist das
-          // folgenlos (es hoert niemand mehr zu, closeQuietly schluckt den
-          // Fehler eines bereits geschlossenen Controllers), aber ein
-          // ReadableStream, der nie endet, bleibt sonst offen — im Test haengt
-          // dadurch jedes Auslesen der Antwort bis zum Timeout.
-          closeQuietly();
-          return;
-        }
-        // The call never produced a (full) reply, so it never actually cost
-        // anything, release the reservation instead of burning a slot on
-        // nothing. The status line is already committed at this point (200),
-        // so a failure mid-stream can only be conveyed as an "error" event,
-        // not a 502, the client treats the two the same way either way.
-        await releaseReservations();
-        // Und die Frage wieder wegnehmen: die Oberflaeche rollt sie bei einem
-        // Anbieter-Fehler zurueck und stellt die Eingabe wieder her (F-4/U-6).
-        // Bliebe die Zeile stehen, staende sie nach einem Reload wieder da und
-        // in der Seitenleiste haenge ein Chat, der nur aus ihr besteht. Das
-        // gilt ausdruecklich NICHT fuer den Abbruch oben.
-        await rollbackTurn(supabase, userId, opened);
-        captureError("chat.turn_failed", err, {
-          userId,
-          byok: Boolean(override),
-          provider: usedProvider,
-          latencyMs: Date.now() - startedAt,
-          promptChars,
-          partialReplyChars: reply.length,
-          // Wie oft der Anbieter gefragt wurde, bevor aufgegeben wurde. Fehlt
-          // bei einem Fehler, der gar nicht erst wiederholt wird (falscher Key).
-          attempts: attemptsOf(err),
-        });
-        send("error", { detail: describeLlmFailure(classifyLlmFailure(err), m) });
+        if (req.signal.aborted) await finishAborted(args, progress.reply);
+        else await finishFailed(args, err, send, progress, telemetry);
+        // Den Stream auch nach einem Abbruch schliessen. Dort ist das
+        // folgenlos (es hoert niemand mehr zu, closeQuietly schluckt den
+        // Fehler eines bereits geschlossenen Controllers), aber ein
+        // ReadableStream, der nie endet, bleibt sonst offen — im Test haengt
+        // dadurch jedes Auslesen der Antwort bis zum Timeout.
         closeQuietly();
         return;
       }
 
-      // Die Antwort an den bereits geoeffneten Zug haengen. Die Konversation
-      // und die Frage stehen seit openTurn (C-1), hier fehlt nur noch das
-      // Ergebnis. Persistence failures are surfaced but never block the reply
-      // the user is waiting on.
-      const conversationId: string = opened.conversationId;
-      // A stable CODE, never the underlying message (Security-Audit finding
-      // M-1). This used to carry err.message straight to the browser, i.e.
-      // PostgREST/Postgres text naming constraints, columns and policies —
-      // free schema disclosure. The client only ever tested this for
-      // truthiness to show its own fixed German warning (chat.tsx), so the
-      // text was never read by anyone but an attacker. captureError below
-      // still gets the original for the logs.
-      let persistError: string | null = null;
-      // Die echte Zeilen-ID der gespeicherten Antwort (K-2, Audit
-      // 06.09.2026) — geht im `done`-Ereignis an den Client, der damit seine
-      // optimistische `randomId()` ersetzt. Bleibt null bei einem
-      // persistError, dann gibt es keine Zeile, deren ID man mitschicken
-      // koennte.
-      let assistantMessageId: string | null = null;
-      try {
-        assistantMessageId = await completeTurn(supabase, userId, conversationId, reply);
-        await dropOldVersion({
-          supabase,
-          userId,
-          conversationId,
-          input,
-          userMessageId: opened.userMessageId,
-          inheritFrom,
-          withReplacedReply: true,
-        });
-      } catch (err) {
-        persistError = "persist_failed";
-        captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });
-      }
-
-      logEvent("chat.turn", {
-        userId,
-        mode,
-        byok: Boolean(override),
-        provider: usedProvider,
-        inProject: Boolean(verifiedProjectId),
-        turns: input.messages.length,
-        // Nur Zaehler, nie Namen oder Inhalte (observability.ts).
-        attachmentsAdded: uploads.length,
-        attachmentImages: attachmentStats.images,
-        promptChars,
-        replyChars: reply.length,
-        latencyMs: Date.now() - startedAt,
-        persisted: !persistError,
-      });
-
-      send("done", {
-        mode,
-        conversationId,
-        ...(assistantMessageId ? { assistantMessageId } : {}),
-        ...(persistError ? { persistError } : {}),
-      });
+      await finishCompleted(args, send, progress, telemetry);
       closeQuietly();
     },
   });
-  return stream;
 }

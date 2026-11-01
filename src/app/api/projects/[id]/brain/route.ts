@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
-import { reserveModelCall } from "@/server/model-call";
+import { reserveModelCall, type ModelCallAllowance } from "@/server/model-call";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { problem } from "@/server/http/api-problem";
 import {
@@ -64,10 +64,7 @@ type Params = { params: Promise<{ id: string }> };
 // server/security/rate-limit.ts), nicht mit einem eigenen. Ein zweiter Zähler
 // wäre ein zweites Versprechen, das die Preisseite gar nicht macht
 // („400 Nachrichten pro Monat"), und der Nutzer müsste plötzlich zwei Budgets
-// im Kopf haben. Bis 06.09.2026 (M-3) baute diese Datei denselben
-// Schlüsselstring per Hand nach statt die geteilte Funktion zu importieren —
-// stimmte zufällig überein, war aber genau die Art Duplikat, die irgendwann
-// leise auseinanderdriftet.
+// im Kopf haben.
 //
 // Der Aufruf ist beim Input teurer als ein Chat-Zug (bis zu 60 000 Zeichen
 // Quellen), beim Output deutlich billiger (rund 250 Token statt bis zu 6144).
@@ -80,79 +77,13 @@ export async function POST(req: Request, { params }: Params) {
   const m = requestT(req).t.api;
   const { id: projectId } = await params;
 
-  // 1. Session vor dem Body (Security-Audit H-3).
-  let supabase: Awaited<ReturnType<typeof createClient>>;
-  try {
-    supabase = await createClient();
-  } catch {
-    return problem(503, m.brainUnavailable);
-  }
+  const request = await authorizeBrainRequest(req, m, projectId);
+  if (request instanceof Response) return request;
+  const { supabase, user, userId, project, requestedRepoUrl } = request;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
-  const userId = user.id;
-
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
-    return problem(400, m.unreadable);
-  }
-
-  const parsed = brainRequestSchema.safeParse(body ?? {});
-  if (!parsed.success) return problem(400, m.unprocessable);
-
-  // 2. Eigentümerschaft. Explizites user_id neben RLS, hier nicht nur
-  //    Defense-in-depth: die Schreibzugriffe unten laufen über den
-  //    Service-Role-Client, für den RLS gar nicht greift, also ist das hier
-  //    die einzige Stelle, die „gehört dir" überhaupt noch feststellt.
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .select("name, type")
-    .eq("id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle<{ name: string; type?: string | null }>();
-  // Ein Lesefehler ist kein "nicht gefunden": 503, nicht 404.
-  if (projectError) {
-    captureError("brain.project_read_failed", projectError, { userId, projectId });
-    return problem(503, m.brainUnavailable);
-  }
-  // Fremd und nicht vorhanden bekommen dieselbe Antwort — sonst verrät die
-  // Route, welche Projekt-IDs existieren.
-  if (!project) return problem(404, m.projectNotFound);
-
-  // 3. Repo-URL auflösen: mitgeschickte gewinnt, sonst die gespeicherte.
   const admin = createAdminClient();
-  const { data: existing, error: existingError } = await admin
-    .from("project_brains")
-    .select("repo_url")
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
-    .maybeSingle<{ repo_url: string | null }>();
-  // Ohne die gespeicherte Adresse würde das upsert unten ein hinterlegtes Repo stillschweigend löschen.
-  if (existingError) {
-    captureError("brain.brain_read_failed", existingError, { userId, projectId });
-    return problem(503, m.brainUnavailable);
-  }
-
-  let repoUrl: string | null = existing?.repo_url ?? null;
-  if (parsed.data.repoUrl !== undefined) {
-    const raw = parsed.data.repoUrl;
-    if (raw === null || raw === "") {
-      repoUrl = null;
-    } else {
-      const ref = parseGithubRepoUrl(raw);
-      if (!ref) {
-        return problem(400, m.repoInvalid, {
-          code: "repo_invalid_url",
-        });
-      }
-      repoUrl = ref.url;
-    }
-  }
+  const repoUrl = await resolveRepoUrl(admin, projectId, userId, requestedRepoUrl, m);
+  if (repoUrl instanceof Response) return repoUrl;
 
   // 4. Plan, BYOK, Kontingente: dieselbe Kette wie /api/chat (server/model-call.ts), weil dahinter
   //    derselbe Kostentreiber steht, ein Modellaufruf auf dem Server-Key. Eigenes, knappes
@@ -203,86 +134,12 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   try {
-    const collected = await collectBrainSources(supabase, userId, projectId, {
-      projectName: project.name,
-      repoUrl,
-      signal: req.signal,
-    });
-
-    const { facts, model } = await analyzeProjectBrain(collected.input, {
-      override: override ?? undefined,
-      signal: req.signal,
-      // Das Gedächtnis erscheint in der Rail, also in der Sprache der App.
-      language: LOCALE_ENGLISH_NAMES[requestT(req).locale],
-      // Ein Lebenslauf braucht andere Fragen als ein Repository (#154).
-      kind: projectKind(project.type),
-    });
-
-    const analyzedAt = new Date().toISOString();
-    const { error: saveError } = await admin
-      .from("project_brains")
-      .update({
-        status: "ready",
-        facts,
-        sources: collected.sources,
-        source_digest: collected.digest,
-        repo_url: collected.repoUrl,
-        repo_ref: collected.repoRef,
-        model,
-        error_code: null,
-        analyzed_at: analyzedAt,
-        updated_at: analyzedAt,
-      })
-      .eq("project_id", projectId)
-      .eq("user_id", userId);
-    // Nicht gespeichert heißt nicht fertig: der catch unten gibt die Reservierungen zurück und meldet den Fehler.
-    if (saveError) throw saveError;
-
-    logEvent("brain.analyzed", {
-      userId,
-      projectId,
-      byok: Boolean(override),
-      model,
-      sources: collected.sources.length,
-      images: collected.input.images.length,
-      hasRepo: Boolean(collected.input.repo),
-      confidence: facts.confidence,
-      latencyMs: Date.now() - startedAt,
-    });
-
-    return NextResponse.json({
-      status: "ready" as const,
-      facts: facts satisfies ProjectBrainFacts,
-      sources: collected.sources,
-      sourceDigest: collected.digest,
-      repoUrl: collected.repoUrl,
-      model,
-      analyzedAt,
-    });
+    return await analyzeAndSave({ req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt });
   } catch (err) {
     // Der Aufruf hat nichts Verwertbares geliefert, also auch nichts gekostet,
     // was jemandem angerechnet werden sollte — dieselbe Logik wie im Chat.
     await releaseReservations();
-
-    const code = errorCode(err);
-    captureError("brain.analysis_failed", err, {
-      userId,
-      projectId,
-      code,
-      byok: Boolean(override),
-      latencyMs: Date.now() - startedAt,
-    });
-
-    const { error: failedWriteError } = await admin
-      .from("project_brains")
-      .update({ status: "failed", error_code: code, updated_at: new Date().toISOString() })
-      .eq("project_id", projectId)
-      .eq("user_id", userId);
-    // Best effort: die Antwort unten meldet den Fehler so oder so; nur der Status bleibt dann auf "analyzing" stehen,
-    // den die Leseseite nach einer Frist selbst auflöst (isAnalysisRunning).
-    if (failedWriteError) captureError("brain.failed_status_write_failed", failedWriteError, { userId, projectId });
-
-    return problem(502, describeBrainFailure(code, m), { code });
+    return reportAnalysisFailure(err, { admin, projectId, userId, byok: Boolean(override), startedAt, m });
   }
 }
 
@@ -331,6 +188,194 @@ export async function DELETE(req: Request, { params }: Params) {
   }
 
   return NextResponse.json({ status: "idle" as const });
+}
+
+async function authorizeBrainRequest(req: Request, m: Messages["api"], projectId: string) {
+  // 1. Session vor dem Body (Security-Audit H-3).
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch {
+    return problem(503, m.brainUnavailable);
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return problem(401, m.signInRequired);
+  const userId = user.id;
+
+  let body: unknown;
+  try {
+    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
+  } catch (err) {
+    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
+    return problem(400, m.unreadable);
+  }
+
+  const parsed = brainRequestSchema.safeParse(body ?? {});
+  if (!parsed.success) return problem(400, m.unprocessable);
+
+  // 2. Eigentümerschaft. Explizites user_id neben RLS, hier nicht nur
+  //    Defense-in-depth: die Schreibzugriffe unten laufen über den
+  //    Service-Role-Client, für den RLS gar nicht greift, also ist das hier
+  //    die einzige Stelle, die „gehört dir" überhaupt noch feststellt.
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("name, type")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  // Ein Lesefehler ist kein "nicht gefunden": 503, nicht 404.
+  if (projectError) {
+    captureError("brain.project_read_failed", projectError, { userId, projectId });
+    return problem(503, m.brainUnavailable);
+  }
+  // Fremd und nicht vorhanden bekommen dieselbe Antwort — sonst verrät die
+  // Route, welche Projekt-IDs existieren.
+  if (!project) return problem(404, m.projectNotFound);
+  return { supabase, user, userId, project, requestedRepoUrl: parsed.data.repoUrl };
+}
+
+async function resolveRepoUrl(
+  admin: ReturnType<typeof createAdminClient>,
+  projectId: string,
+  userId: string,
+  requested: string | null | undefined,
+  m: Messages["api"]
+): Promise<string | null | Response> {
+  // 3. Repo-URL auflösen: mitgeschickte gewinnt, sonst die gespeicherte.
+  const { data: existing, error: existingError } = await admin
+    .from("project_brains")
+    .select("repo_url")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  // Ohne die gespeicherte Adresse würde das upsert unten ein hinterlegtes Repo stillschweigend löschen.
+  if (existingError) {
+    captureError("brain.brain_read_failed", existingError, { userId, projectId });
+    return problem(503, m.brainUnavailable);
+  }
+
+  let repoUrl: string | null = existing?.repo_url ?? null;
+  if (requested !== undefined) {
+    const raw = requested;
+    if (raw === null || raw === "") {
+      repoUrl = null;
+    } else {
+      const ref = parseGithubRepoUrl(raw);
+      if (!ref) {
+        return problem(400, m.repoInvalid, {
+          code: "repo_invalid_url",
+        });
+      }
+      repoUrl = ref.url;
+    }
+  }
+  return repoUrl;
+}
+
+async function analyzeAndSave(ctx: {
+  req: Request;
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  projectId: string;
+  project: { name: string; type: string };
+  repoUrl: string | null;
+  override: ModelCallAllowance["override"];
+  startedAt: number;
+}): Promise<Response> {
+  const { req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt } = ctx;
+  const collected = await collectBrainSources(supabase, userId, projectId, {
+    projectName: project.name,
+    repoUrl,
+    signal: req.signal,
+  });
+
+  const { facts, model } = await analyzeProjectBrain(collected.input, {
+    override: override ?? undefined,
+    signal: req.signal,
+    // Das Gedächtnis erscheint in der Rail, also in der Sprache der App.
+    language: LOCALE_ENGLISH_NAMES[requestT(req).locale],
+    // Ein Lebenslauf braucht andere Fragen als ein Repository (#154).
+    kind: projectKind(project.type),
+  });
+
+  const analyzedAt = new Date().toISOString();
+  const { error: saveError } = await admin
+    .from("project_brains")
+    .update({
+      status: "ready",
+      facts,
+      sources: collected.sources,
+      source_digest: collected.digest,
+      repo_url: collected.repoUrl,
+      repo_ref: collected.repoRef,
+      model,
+      error_code: null,
+      analyzed_at: analyzedAt,
+      updated_at: analyzedAt,
+    })
+    .eq("project_id", projectId)
+    .eq("user_id", userId);
+  // Nicht gespeichert heißt nicht fertig: der catch unten gibt die Reservierungen zurück und meldet den Fehler.
+  if (saveError) throw saveError;
+
+  logEvent("brain.analyzed", {
+    userId,
+    projectId,
+    byok: Boolean(override),
+    model,
+    sources: collected.sources.length,
+    images: collected.input.images.length,
+    hasRepo: Boolean(collected.input.repo),
+    confidence: facts.confidence,
+    latencyMs: Date.now() - startedAt,
+  });
+
+  return NextResponse.json({
+    status: "ready" as const,
+    facts: facts satisfies ProjectBrainFacts,
+    sources: collected.sources,
+    sourceDigest: collected.digest,
+    repoUrl: collected.repoUrl,
+    model,
+    analyzedAt,
+  });
+}
+
+async function reportAnalysisFailure(
+  err: unknown,
+  ctx: {
+    admin: ReturnType<typeof createAdminClient>;
+    projectId: string;
+    userId: string;
+    byok: boolean;
+    startedAt: number;
+    m: Messages["api"];
+  }
+): Promise<Response> {
+  const { admin, projectId, userId, byok, startedAt, m } = ctx;
+  const code = errorCode(err);
+  captureError("brain.analysis_failed", err, {
+    userId,
+    projectId,
+    code,
+    byok,
+    latencyMs: Date.now() - startedAt,
+  });
+
+  const { error: failedWriteError } = await admin
+    .from("project_brains")
+    .update({ status: "failed", error_code: code, updated_at: new Date().toISOString() })
+    .eq("project_id", projectId)
+    .eq("user_id", userId);
+  // Best effort: die Antwort unten meldet den Fehler so oder so; nur der Status bleibt dann auf "analyzing" stehen,
+  // den die Leseseite nach einer Frist selbst auflöst (isAnalysisRunning).
+  if (failedWriteError) captureError("brain.failed_status_write_failed", failedWriteError, { userId, projectId });
+
+  return problem(502, describeBrainFailure(code, m), { code });
 }
 
 /** Stabiler Code aus dem geworfenen Fehler, nie dessen Wortlaut (M-1). */

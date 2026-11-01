@@ -58,7 +58,7 @@ export async function GET(req: Request) {
   // Ein Export liest viel. Wenige pro Stunde reichen jedem, der ihn wirklich
   // braucht, und halten die Route als Lastquelle klein. Wie überall: der
   // Betreiber ist ausgenommen.
-  const isAdmin = (profile as { is_admin?: boolean } | null)?.is_admin ?? false;
+  const isAdmin = profile?.is_admin ?? false;
   if (!isAdmin) {
     const rl = await rateLimit(rateLimitKey(req, "account-export", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
   const stream = accountExportStream({
     supabase,
     userId: user.id,
-    account: buildAccountSection(user, profile as Record<string, unknown> | null),
+    account: buildAccountSection(user, profile),
     note: m.accountExportNote,
     now,
   });

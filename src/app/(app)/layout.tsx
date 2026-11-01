@@ -9,6 +9,7 @@ import { getSessionProfile, getSessionUser } from "@/server/session";
 import { I18nProvider } from "@/shared/i18n/provider";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale } from "@/shared/i18n/locales";
 import { localeFromSettings, messagesFor } from "@/server/i18n";
+import { orThrow } from "@/server/supabase/query";
 
 type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
@@ -46,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // fragten vorher unabhaengig voneinander nach display_name bzw. plan.
   // Bleibt im selben Promise.all: die Abfrage laeuft dadurch weiterhin
   // parallel zu den beiden Listen, nur eben genau einmal pro Request.
-  const [profile, { data: rawChats }, { data: rawProjects }] = await Promise.all([
+  const [profile, rawChatsResult, rawProjectsResult] = await Promise.all([
     getSessionProfile(),
     supabase
       .from("conversations")
@@ -61,6 +62,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .order("updated_at", { ascending: false })
       .limit(5),
   ]);
+  const { data: rawChats } = orThrow(rawChatsResult, "conversations");
+  const { data: rawProjects } = orThrow(rawProjectsResult, "projects");
 
   // Sprache (29.09.2026): Cookie zuerst, sonst die im Profil gespeicherte
   // Wahl (neues Gerät), sonst Deutsch. Das Profil kam oben ohnehin, die

@@ -9,6 +9,7 @@ import { createClient } from "@/server/supabase/server";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
+import { orThrow } from "@/server/supabase/query";
 
 export const dynamic = "force-dynamic";
 
@@ -49,13 +50,16 @@ export default async function ProjectOverviewPage({ params }: { params: Params }
   //
   // Capped + over-fetched by one (see LIST_LOAD_LIMIT); the select was
   // unbounded before, same class of problem as /chats.
-  const { data: raw } = await supabase
+  const { data: raw } = orThrow(
+    await supabase
     .from("conversations")
     .select("id, title, updated_at, messages(count)")
     .eq("project_id", id)
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
-    .range(0, LIST_LOAD_LIMIT);
+    .range(0, LIST_LOAD_LIMIT),
+    "conversations"
+  );
 
   const { items: rows, hasMore } = splitAtLimit(
     (raw as ConversationQueryRow[] | null) ?? []

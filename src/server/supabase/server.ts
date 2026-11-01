@@ -5,12 +5,13 @@ import { createClient as createTokenClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { bearerToken } from "@/server/supabase/bearer";
 import { secureCookieOptions } from "@/server/supabase/cookie-options";
+import type { Database } from "@/shared/supabase/database.types";
 
 type CookieSet = { name: string; value: string; options: CookieOptions };
 
 export async function createClient() {
   const cookieStore = await cookies();
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -42,7 +43,7 @@ export async function createClient() {
 export async function createClientForRequest(req: Request) {
   const token = bearerToken(req);
   if (token === null) return createClient();
-  return createTokenClient(
+  return createTokenClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

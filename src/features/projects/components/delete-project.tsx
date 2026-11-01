@@ -49,11 +49,21 @@ export function DeleteProjectButton({
     // otherwise every deleted project leaks its files in the bucket forever.
     // Explicit user_id alongside project_id: RLS-only before (Security-Audit
     // finding L-3).
-    const { data: files } = await supabase
+    const { data: files, error: filesError } = await supabase
       .from("project_files")
       .select("storage_path")
       .eq("project_id", projectId)
       .eq("user_id", user.id);
+    // Ohne die Pfade blieben alle Dateien des Projekts für immer im Bucket: lieber gar nicht löschen.
+    if (filesError) {
+      setDeleting(false);
+      toast({
+        title: t.projects.deleteFailed,
+        description: t.projects.tryAgain,
+        variant: "error",
+      });
+      return;
+    }
     if (files && files.length > 0) {
       await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
     }

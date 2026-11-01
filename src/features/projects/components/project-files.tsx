@@ -97,11 +97,12 @@ export function ProjectFiles({
       // the race a step earlier instead of relying solely on the rollback.
       // Explicit user_id alongside project_id: RLS-only before (Security-Audit
       // finding L-3), and `user.id` is already in hand for the storage path.
-      const { count: currentCount } = await supabase
+      const { count: currentCount, error: countError } = await supabase
         .from("project_files")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId)
         .eq("user_id", user.id);
+      if (countError) throw countError;
       if ((currentCount ?? 0) >= MAX_FILES_PER_PROJECT) {
         setError(fmt(t.projects.filesMax, { max: MAX_FILES_PER_PROJECT }));
         setUploading(false);

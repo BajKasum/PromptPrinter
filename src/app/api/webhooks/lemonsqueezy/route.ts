@@ -8,6 +8,7 @@ import {
   webhookPayloadSchema,
   type ProfileBillingPatch,
 } from "@/server/billing/lemonsqueezy";
+import type { LemonSqueezyWebhookPayload } from "@/server/billing/lemonsqueezy";
 import { createAdminClient } from "@/server/supabase/admin";
 import { problem } from "@/server/http/api-problem";
 import {
@@ -51,7 +52,6 @@ export const runtime = "nodejs";
  * (Migration 0039): sonst setzte sich jeder sein Abo selbst auf "active".
  */
 
-type EventRow = { id: string; status: string };
 
 export async function POST(req: Request): Promise<Response> {
   const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
@@ -63,6 +63,57 @@ export async function POST(req: Request): Promise<Response> {
     return problem(503, "Webhook ist nicht konfiguriert.");
   }
 
+  const verified = await readVerifiedPayload(req, secret);
+  if (verified instanceof Response) return verified;
+  const { raw, payload } = verified;
+  // Wandert unten als `eventName` in jeden Log-Kontext, NICHT als `event`.
+  // observability.ts baut die Zeile als `{ ts, level, event, ...context }` —
+  // ein Kontext-Schlüssel namens `event` überschreibt also den Ereignisnamen
+  // der Zeile. Beim ersten echten Lauf stand deshalb
+  // `"event":"subscription_created"` statt `"event":"billing.webhook_unmatched"`
+  // im Log: ausgerechnet die Angabe weg, nach der man greppt, und den
+  // Unit-Tests nicht anzusehen, weil die nur den Kontext prüfen.
+  const event = payload.meta.event_name;
+  // Folgesitzung 2026-10-07: stammt das Ereignis aus dem Testmodus des Shops? Nur fürs
+  // Protokoll (undefined, wenn die Nutzlast es nicht sagt, dann fehlt der Schlüssel): am
+  // ersten echten Ereignis soll man sehen können, ob es ein Test war.
+  const testMode = isTestMode(payload) ?? undefined;
+  const key = eventKey(raw);
+  const admin = createAdminClient();
+
+  const claim = await claimEvent(admin, key, event, payload.data.id);
+  if (typeof claim !== "string") return claim;
+  const eventRowId: string = claim;
+
+  // Wirft, wenn der Status nicht ankommt: eine Zeile, die auf "processing" stehen bleibt,
+  // schickt jede Wiederholung in den Duplikat-Zweig. Der catch unten antwortet dann 503.
+  async function finish(
+    status: "processed" | "ignored" | "failed",
+    detail: string | null,
+    userId: string | null
+  ): Promise<void> {
+    const { error } = await admin
+      .from("billing_events")
+      .update({ status, detail: detail?.slice(0, 500) ?? null, user_id: userId })
+      .eq("id", eventRowId);
+    if (error) throw error;
+  }
+
+  try {
+    return await applyEvent(admin, payload, event, testMode, finish);
+  } catch (err) {
+    captureError("billing.webhook_failed", err, { eventName: event, resourceId: payload.data.id });
+    // Scheitert auch das Protokollieren, bleibt die Zeile auf "processing" stehen und
+    // die Wiederholung von Lemon Squeezy läuft in den Duplikat-Zweig. Das ist der
+    // schlechtere, aber sichere Ausgang.
+    await finish("failed", err instanceof Error ? err.message : "unbekannt", null).catch(() => {});
+    // 500, damit erneut zugestellt wird: eine klemmende Datenbank ist genau
+    // die Sorte Fehler, die beim zweiten Versuch weg sein kann.
+    return problem(503, "Ereignis konnte nicht verarbeitet werden.");
+  }
+}
+
+async function readVerifiedPayload(req: Request, secret: string): Promise<{ raw: string; payload: LemonSqueezyWebhookPayload } | Response> {
   let raw: string;
   try {
     raw = await readCappedText(req, MAX_WEBHOOK_BODY_BYTES);
@@ -91,23 +142,16 @@ export async function POST(req: Request): Promise<Response> {
     captureError("billing.webhook_unparsable", new Error(parsed.error.message));
     return problem(400, "Nutzlast hat eine unerwartete Form.");
   }
+  return { raw, payload: parsed.data };
+}
 
-  const payload = parsed.data;
-  // Wandert unten als `eventName` in jeden Log-Kontext, NICHT als `event`.
-  // observability.ts baut die Zeile als `{ ts, level, event, ...context }` —
-  // ein Kontext-Schlüssel namens `event` überschreibt also den Ereignisnamen
-  // der Zeile. Beim ersten echten Lauf stand deshalb
-  // `"event":"subscription_created"` statt `"event":"billing.webhook_unmatched"`
-  // im Log: ausgerechnet die Angabe weg, nach der man greppt, und den
-  // Unit-Tests nicht anzusehen, weil die nur den Kontext prüfen.
-  const event = payload.meta.event_name;
-  // Folgesitzung 2026-10-07: stammt das Ereignis aus dem Testmodus des Shops? Nur fürs
-  // Protokoll (undefined, wenn die Nutzlast es nicht sagt, dann fehlt der Schlüssel): am
-  // ersten echten Ereignis soll man sehen können, ob es ein Test war.
-  const testMode = isTestMode(payload) ?? undefined;
-  const key = eventKey(raw);
-  const admin = createAdminClient();
-
+/** Meldet den Anspruch auf dieses Ereignis an: die ID der Zeile, oder die Antwort, wenn hier nichts zu tun ist. */
+async function claimEvent(
+  admin: ReturnType<typeof createAdminClient>,
+  key: string,
+  event: string,
+  resourceId: string
+): Promise<string | Response> {
   // ─── Anspruch anmelden ──────────────────────────────────────────────────
   // Der Unique-Index auf event_key ist die eigentliche Sperre: von zwei
   // gleichzeitigen Zustellungen derselben Sache gewinnt genau eine das
@@ -117,11 +161,11 @@ export async function POST(req: Request): Promise<Response> {
   const { data: claimed, error: claimError } = await admin
     .from("billing_events")
     .upsert(
-      { event_key: key, event_name: event, resource_id: payload.data.id, status: "processing" },
+      { event_key: key, event_name: event, resource_id: resourceId, status: "processing" },
       { onConflict: "event_key", ignoreDuplicates: true }
     )
     .select("id, status")
-    .maybeSingle<EventRow>();
+    .maybeSingle();
 
   if (claimError) {
     captureError("billing.webhook_claim_failed", claimError, { eventName: event });
@@ -135,7 +179,7 @@ export async function POST(req: Request): Promise<Response> {
       .from("billing_events")
       .select("id, status")
       .eq("event_key", key)
-      .maybeSingle<EventRow>();
+      .maybeSingle();
 
     if (readError || !existing) {
       captureError("billing.webhook_lookup_failed", readError ?? new Error("Zeile verschwunden"), {
@@ -165,73 +209,59 @@ export async function POST(req: Request): Promise<Response> {
       return problem(503, "Ereignis konnte nicht angenommen werden.");
     }
   }
+  return eventId;
+}
 
-  // Wirft, wenn der Status nicht ankommt: eine Zeile, die auf "processing" stehen bleibt,
-  // schickt jede Wiederholung in den Duplikat-Zweig. Der catch unten antwortet dann 503.
-  async function finish(
-    status: "processed" | "ignored" | "failed",
-    detail: string | null,
-    userId: string | null
-  ): Promise<void> {
-    const { error } = await admin
-      .from("billing_events")
-      .update({ status, detail: detail?.slice(0, 500) ?? null, user_id: userId })
-      .eq("id", eventId);
-    if (error) throw error;
+type FinishEvent = (status: "processed" | "ignored" | "failed", detail: string | null, userId: string | null) => Promise<void>;
+
+async function applyEvent(
+  admin: ReturnType<typeof createAdminClient>,
+  payload: LemonSqueezyWebhookPayload,
+  event: string,
+  testMode: boolean | undefined,
+  finish: FinishEvent
+): Promise<Response> {
+  const decision = decideBillingUpdate(payload);
+  if (decision.kind === "ignore") {
+    logEvent("billing.webhook_ignored", { eventName: event, reason: decision.reason, testMode });
+    await finish("ignored", decision.reason, null);
+    return NextResponse.json({ received: true, ignored: true });
   }
 
-  try {
-    const decision = decideBillingUpdate(payload);
-    if (decision.kind === "ignore") {
-      logEvent("billing.webhook_ignored", { eventName: event, reason: decision.reason, testMode });
-      await finish("ignored", decision.reason, null);
-      return NextResponse.json({ received: true, ignored: true });
-    }
-
-    const userId = await resolveUserId(admin, payload, decision.patch);
-    if (!userId) {
-      // Der wichtigste Log-Satz dieser Route. Häufigster Grund: jemand hat auf
-      // der öffentlichen Preisseite gekauft, ohne angemeldet zu sein — dann
-      // trägt der Kauf keine Konto-ID, und es gibt noch keine Kundennummer im
-      // Profil, über die man ihn fände. Das Geld ist da, das Konto nicht
-      // zuzuordnen. Kundennummer und Bestellnummer stehen deshalb hier: die
-      // Mailadresse für die Freischaltung von Hand steht im Lemon-Squeezy-Dashboard.
-      // Sie gehört nicht ins Log, hier geht es um Menschen ohne Konto bei uns.
-      logWarning("billing.webhook_unmatched", {
-        eventName: event,
-        customerId: decision.patch.subscription_customer_id ?? null,
-        resourceId: payload.data.id,
-        testMode,
-      });
-      await finish("ignored", "Kein Konto zu diesem Kauf gefunden", null);
-      return NextResponse.json({ received: true, unmatched: true });
-    }
-
-    const { error: updateError } = await admin
-      .from("profiles")
-      .update(decision.patch)
-      .eq("id", userId);
-    if (updateError) throw updateError;
-
-    logEvent("billing.webhook_applied", {
+  const userId = await resolveUserId(admin, payload, decision.patch);
+  if (!userId) {
+    // Der wichtigste Log-Satz dieser Route. Häufigster Grund: jemand hat auf
+    // der öffentlichen Preisseite gekauft, ohne angemeldet zu sein — dann
+    // trägt der Kauf keine Konto-ID, und es gibt noch keine Kundennummer im
+    // Profil, über die man ihn fände. Das Geld ist da, das Konto nicht
+    // zuzuordnen. Kundennummer und Bestellnummer stehen deshalb hier: die
+    // Mailadresse für die Freischaltung von Hand steht im Lemon-Squeezy-Dashboard.
+    // Sie gehört nicht ins Log, hier geht es um Menschen ohne Konto bei uns.
+    logWarning("billing.webhook_unmatched", {
       eventName: event,
-      userId,
-      plan: decision.patch.plan ?? null,
-      subscriptionStatus: decision.patch.subscription_status ?? null,
+      customerId: decision.patch.subscription_customer_id ?? null,
+      resourceId: payload.data.id,
       testMode,
     });
-    await finish("processed", null, userId);
-    return NextResponse.json({ received: true });
-  } catch (err) {
-    captureError("billing.webhook_failed", err, { eventName: event, resourceId: payload.data.id });
-    // Scheitert auch das Protokollieren, bleibt die Zeile auf "processing" stehen und
-    // die Wiederholung von Lemon Squeezy läuft in den Duplikat-Zweig. Das ist der
-    // schlechtere, aber sichere Ausgang.
-    await finish("failed", err instanceof Error ? err.message : "unbekannt", null).catch(() => {});
-    // 500, damit erneut zugestellt wird: eine klemmende Datenbank ist genau
-    // die Sorte Fehler, die beim zweiten Versuch weg sein kann.
-    return problem(503, "Ereignis konnte nicht verarbeitet werden.");
+    await finish("ignored", "Kein Konto zu diesem Kauf gefunden", null);
+    return NextResponse.json({ received: true, unmatched: true });
   }
+
+  const { error: updateError } = await admin
+    .from("profiles")
+    .update(decision.patch)
+    .eq("id", userId);
+  if (updateError) throw updateError;
+
+  logEvent("billing.webhook_applied", {
+    eventName: event,
+    userId,
+    plan: decision.patch.plan ?? null,
+    subscriptionStatus: decision.patch.subscription_status ?? null,
+    testMode,
+  });
+  await finish("processed", null, userId);
+  return NextResponse.json({ received: true });
 }
 
 /**
@@ -296,7 +326,7 @@ async function resolveUserId(
         .from("profiles")
         .select("id, subscription_customer_id")
         .eq("id", fromCheckout)
-        .maybeSingle<{ id: string; subscription_customer_id: string | null }>();
+        .maybeSingle();
       if (error) throw error;
       if (data) {
         const incomingCustomerId = patch.subscription_customer_id;
@@ -318,7 +348,7 @@ async function resolveUserId(
       .from("profiles")
       .select("id")
       .eq("subscription_customer_id", customerId)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle();
     if (error) throw error;
     if (data) return data.id;
   }

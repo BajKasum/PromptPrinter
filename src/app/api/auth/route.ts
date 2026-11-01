@@ -99,7 +99,32 @@ const RATE_LIMIT = { limit: 30, windowMs: 10 * 60 * 1000 };
 // Länger als ein gewöhnlicher Mailversand über SMTP. Nicht gegen den echten Versand gemessen.
 const MAIL_ACTION_MIN_MS = 1500;
 
+type AuthRequest = z.infer<typeof requestSchema>;
+
 export async function POST(req: Request) {
+  const input = await readAuthRequest(req);
+  if (input instanceof Response) return input;
+
+  // ── The gate. Everything below this line is reached only by a redeemed token.
+  const verdict = await verifyTurnstileToken(input.turnstileToken, clientIp(req));
+  if (!verdict.ok) {
+    // No email in the log line: this fires on ordinary human retries too (an
+    // expired token, a resubmitted form), so it must not become a record of who
+    // tried to sign in and when.
+    logWarning("turnstile.rejected", { action: input.action, reason: verdict.reason });
+    return problem(
+      403,
+      "Die Mensch-Prüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuch es erneut.",
+      { kind: "captcha" }
+    );
+  }
+
+  const supabase = await createClient();
+
+  return runAuthAction(input, supabase);
+}
+
+async function readAuthRequest(req: Request): Promise<AuthRequest | Response> {
   const rl = await rateLimit(rateLimitKey(req, "auth"), RATE_LIMIT);
   if (!rl.allowed) {
     return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.", {
@@ -118,115 +143,112 @@ export async function POST(req: Request) {
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) return validationProblem(de.api, parsed.error.issues);
-  const input = parsed.data;
+  return parsed.data;
+}
 
-  // ── The gate. Everything below this line is reached only by a redeemed token.
-  const verdict = await verifyTurnstileToken(input.turnstileToken, clientIp(req));
-  if (!verdict.ok) {
-    // No email in the log line: this fires on ordinary human retries too (an
-    // expired token, a resubmitted form), so it must not become a record of who
-    // tried to sign in and when.
-    logWarning("turnstile.rejected", { action: input.action, reason: verdict.reason });
-    return problem(
-      403,
-      "Die Mensch-Prüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuch es erneut.",
-      { kind: "captcha" }
-    );
+type AuthClient = Awaited<ReturnType<typeof createClient>>;
+
+// Supabase's own message, translated here rather than passed through raw
+// (Security-Audit finding M-1). These are 400s across the board on purpose:
+// the client only ever renders `detail`, and mapping GoTrue's mix of
+// credential, validation and throttling failures onto distinct statuses would
+// invent a contract nothing reads.
+const authFailure = (message: string, action: AuthRequest["action"]) => {
+  const detail = translateAuthError(message);
+  // Der Wortlaut bleibt im Log, der Besucher sieht ihn nicht. Unbekannt heisst: hier fehlt vielleicht eine Übersetzung.
+  // GoTrue nennt in manchen Meldungen die Adresse, und die gehört nicht ins Log.
+  if (detail === UNKNOWN_AUTH_ERROR) {
+    logWarning("auth.unknown_error", { action, message: message.replace(/\S+@\S+/g, "[adresse]") });
   }
+  return problem(400, detail, { kind: "auth" });
+};
 
-  const supabase = await createClient();
-
-  // Supabase's own message, translated here rather than passed through raw
-  // (Security-Audit finding M-1). These are 400s across the board on purpose:
-  // the client only ever renders `detail`, and mapping GoTrue's mix of
-  // credential, validation and throttling failures onto distinct statuses would
-  // invent a contract nothing reads.
-  const authFailure = (message: string) => {
-    const detail = translateAuthError(message);
-    // Der Wortlaut bleibt im Log, der Besucher sieht ihn nicht. Unbekannt heisst: hier fehlt vielleicht eine Übersetzung.
-    // GoTrue nennt in manchen Meldungen die Adresse, und die gehört nicht ins Log.
-    if (detail === UNKNOWN_AUTH_ERROR) {
-      logWarning("auth.unknown_error", { action: input.action, message: message.replace(/\S+@\S+/g, "[adresse]") });
-    }
-    return problem(400, detail, { kind: "auth" });
-  };
-
+function runAuthAction(input: AuthRequest, supabase: AuthClient): Promise<Response> {
   switch (input.action) {
-    case "sign-in": {
-      // Auch das richtige Passwort prallt ab, sonst wäre die Sperre ein Orakel. Der Text sagt nichts über das
-      // Konto: unbekannte Adressen zählen genauso (server/security/sign-in-throttle.ts).
-      if (await isSignInThrottled(input.email)) {
-        return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.");
-      }
-      const { error } = await supabase.auth.signInWithPassword({
-        email: input.email,
-        password: input.password,
-      });
-      if (error) {
-        if (isInvalidCredentialsError(error.message)) await recordFailedSignIn(input.email);
-        return authFailure(error.message);
-      }
-      // The session cookies were written by the server client on the way
-      // through (server/supabase/server.ts), so they ride out on this response.
-      return NextResponse.json({ ok: true });
-    }
-
-    case "sign-up": {
-      // Bewusst offen: mit "Confirm email" aus (Entscheid, docs/SETUP.md, "Auth-Mails") antwortet GoTrue für eine
-      // vergebene Adresse mit "User already registered", und die Seite sagt es. Das zeigt, ob eine Adresse ein Konto
-      // hat. Verbergen ginge hier nicht: eine neue Adresse bekommt sofort eine Sitzung, eine vergebene nie.
-      // Bekannte und naheliegende Passwörter (password.ts, Betriebs-Audit
-      // 04.10.2026): Supabases Prüfung gegen geleakte Passwörter ist auf dem
-      // Free-Tarif aus, die Länge allein hält "password123" nicht auf. Hier, nicht
-      // nur im Formular, weil das Formular ein Rat ist und diese Route die
-      // Schranke: wer sie direkt aufruft, kommt an der Prüfung nicht vorbei. Der
-      // Fehler trägt `kind`, damit die Oberfläche ihn von einem Supabase-Fehler
-      // unterscheiden kann.
-      const weak = weakPasswordReason(input.password, input.email);
-      if (weak) {
-        return problem(400, weakPasswordMessage(weak), { kind: "weak-password", reason: weak });
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email: input.email,
-        password: input.password,
-        options: { emailRedirectTo: callbackUrl(input.next) },
-      });
-      if (error) return authFailure(error.message);
-      // No session means email confirmation is switched on and the form has to
-      // show its "check your inbox" state instead of celebrating.
-      return NextResponse.json({ ok: true, session: Boolean(data.session) });
-    }
-
-    case "resend": {
-      const { error } = await atLeast(
-        MAIL_ACTION_MIN_MS,
-        supabase.auth.resend({
-          type: "signup",
-          email: input.email,
-          options: { emailRedirectTo: callbackUrl(input.next) },
-        })
-      );
-      // Der Mail-Cooldown gilt nur für bestehende Konten, seine Meldung verriete also das Konto (siehe unten).
-      if (error && !isMailCooldownError(error.message)) return authFailure(error.message);
-      return NextResponse.json({ ok: true });
-    }
-
-    case "reset-password": {
-      // Immer dieselbe Antwort, jeder Fehler eingeschlossen: sie darf nie verraten, ob die Adresse ein Konto hat.
-      // Auch der Mail-Cooldown nicht, denn GoTrue drosselt nur bestehende Konten, zwei Anfragen in Folge zeigten
-      // den Unterschied sonst. Der Preis: eine zweite Anforderung innerhalb einer Minute sieht aus wie Erfolg,
-      // die Mail der ersten ist aber unterwegs, und die Seite nennt die Wartezeit. Die Mindestdauer deckt den
-      // Unterschied in der Laufzeit, denn nur für ein bestehendes Konto wartet GoTrue auf den Mailversand.
-      await atLeast(
-        MAIL_ACTION_MIN_MS,
-        supabase.auth.resetPasswordForEmail(input.email, {
-          redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
-        })
-      );
-      return NextResponse.json({ ok: true });
-    }
+    case "sign-in":
+      return signIn(input, supabase);
+    case "sign-up":
+      return signUp(input, supabase);
+    case "resend":
+      return resendConfirmation(input, supabase);
+    case "reset-password":
+      return resetPassword(input, supabase);
   }
+}
+
+async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supabase: AuthClient): Promise<Response> {
+  // Auch das richtige Passwort prallt ab, sonst wäre die Sperre ein Orakel. Der Text sagt nichts über das
+  // Konto: unbekannte Adressen zählen genauso (server/security/sign-in-throttle.ts).
+  if (await isSignInThrottled(input.email)) {
+    return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.");
+  }
+  const { error } = await supabase.auth.signInWithPassword({
+    email: input.email,
+    password: input.password,
+  });
+  if (error) {
+    if (isInvalidCredentialsError(error.message)) await recordFailedSignIn(input.email);
+    return authFailure(error.message, input.action);
+  }
+  // The session cookies were written by the server client on the way
+  // through (server/supabase/server.ts), so they ride out on this response.
+  return NextResponse.json({ ok: true });
+}
+
+async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supabase: AuthClient): Promise<Response> {
+  // Bewusst offen: mit "Confirm email" aus (Entscheid, docs/SETUP.md, "Auth-Mails") antwortet GoTrue für eine
+  // vergebene Adresse mit "User already registered", und die Seite sagt es. Das zeigt, ob eine Adresse ein Konto
+  // hat. Verbergen ginge hier nicht: eine neue Adresse bekommt sofort eine Sitzung, eine vergebene nie.
+  // Bekannte und naheliegende Passwörter (password.ts, Betriebs-Audit
+  // 04.10.2026): Supabases Prüfung gegen geleakte Passwörter ist auf dem
+  // Free-Tarif aus, die Länge allein hält "password123" nicht auf. Hier, nicht
+  // nur im Formular, weil das Formular ein Rat ist und diese Route die
+  // Schranke: wer sie direkt aufruft, kommt an der Prüfung nicht vorbei. Der
+  // Fehler trägt `kind`, damit die Oberfläche ihn von einem Supabase-Fehler
+  // unterscheiden kann.
+  const weak = weakPasswordReason(input.password, input.email);
+  if (weak) {
+    return problem(400, weakPasswordMessage(weak), { kind: "weak-password", reason: weak });
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email,
+    password: input.password,
+    options: { emailRedirectTo: callbackUrl(input.next) },
+  });
+  if (error) return authFailure(error.message, input.action);
+  // No session means email confirmation is switched on and the form has to
+  // show its "check your inbox" state instead of celebrating.
+  return NextResponse.json({ ok: true, session: Boolean(data.session) });
+}
+
+async function resendConfirmation(input: Extract<AuthRequest, { action: "resend" }>, supabase: AuthClient): Promise<Response> {
+  const { error } = await atLeast(
+    MAIL_ACTION_MIN_MS,
+    supabase.auth.resend({
+      type: "signup",
+      email: input.email,
+      options: { emailRedirectTo: callbackUrl(input.next) },
+    })
+  );
+  // Der Mail-Cooldown gilt nur für bestehende Konten, seine Meldung verriete also das Konto (siehe unten).
+  if (error && !isMailCooldownError(error.message)) return authFailure(error.message, input.action);
+  return NextResponse.json({ ok: true });
+}
+
+async function resetPassword(input: Extract<AuthRequest, { action: "reset-password" }>, supabase: AuthClient): Promise<Response> {
+  // Immer dieselbe Antwort, jeder Fehler eingeschlossen: sie darf nie verraten, ob die Adresse ein Konto hat.
+  // Auch der Mail-Cooldown nicht, denn GoTrue drosselt nur bestehende Konten, zwei Anfragen in Folge zeigten
+  // den Unterschied sonst. Der Preis: eine zweite Anforderung innerhalb einer Minute sieht aus wie Erfolg,
+  // die Mail der ersten ist aber unterwegs, und die Seite nennt die Wartezeit. Die Mindestdauer deckt den
+  // Unterschied in der Laufzeit, denn nur für ein bestehendes Konto wartet GoTrue auf den Mailversand.
+  await atLeast(
+    MAIL_ACTION_MIN_MS,
+    supabase.auth.resetPasswordForEmail(input.email, {
+      redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
+    })
+  );
+  return NextResponse.json({ ok: true });
 }
 
 /** Wartet auf `work`, aber mindestens `ms`, damit die Dauer nichts über das Ergebnis sagt. */

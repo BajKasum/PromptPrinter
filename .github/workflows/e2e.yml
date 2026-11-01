@@ -99,6 +99,12 @@ jobs:
       - name: Stack prüfen
         run: supabase status
 
+      # Migration und Typdatei dürfen nicht auseinanderlaufen: sonst prüft der Typprüfer gegen ein altes Schema.
+      - name: Datenbank-Typen sind aktuell
+        run: |
+          supabase gen types typescript --local --schema public > src/shared/supabase/database.types.ts
+          git diff --exit-code -- src/shared/supabase/database.types.ts
+
       - name: Playwright-Browser (Cache)
         id: playwright-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6

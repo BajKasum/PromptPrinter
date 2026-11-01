@@ -124,6 +124,12 @@ describe("getConfiguredProviders", () => {
     expect(providers).toEqual(["openai", "custom"]);
   });
 
+  it("wirft bei einem Lesefehler, statt \"nichts eingerichtet\" zu melden", async () => {
+    await expect(
+      getConfiguredProviders(supabaseWith({ data: null, error: { message: "db down" } }), "user-1")
+    ).rejects.toThrow("database read failed");
+  });
+
   it("returns an empty list rather than null when nothing is configured", async () => {
     expect(await getConfiguredProviders(supabaseWith({ data: [] }), "user-1")).toEqual([]);
   });
