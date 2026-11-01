@@ -1,7 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import SkillPage from "./page";
-import { SKILL_REPO_URL, SKILL_ZIP_URL } from "@/features/marketing/lib/skill-data";
+import {
+  SKILL_COMMIT,
+  SKILL_REPO_URL,
+  SKILL_ZIP_FILENAME,
+  SKILL_ZIP_SHA256,
+  SKILL_ZIP_URL,
+} from "@/features/marketing/lib/skill-data";
 
 // Der Download steht direkt unter der Überschrift, in einem hellblauen Kasten, die Erklärung danach. Der Test
 // liest, was auf der Seite STEHT, nicht nur was in den Daten steht.
@@ -34,11 +40,22 @@ describe("Seite /skill", () => {
     render(<SkillPage />);
     const zip = screen.getByRole("link", { name: /ZIP herunterladen/ });
     expect(zip).toHaveAttribute("href", SKILL_ZIP_URL);
-    expect(SKILL_ZIP_URL).toBe("https://github.com/BajKasum/promptprinter-pp/archive/refs/tags/v0.3.0.zip");
+    // Ein fester Commit, kein Tag (#240): was die Seite zeigt, kann sich nicht unter den Besuchern verschieben.
+    expect(SKILL_ZIP_URL).toBe(`https://github.com/BajKasum/promptprinter-pp/archive/${SKILL_COMMIT}.zip`);
     const repo = screen.getByRole("link", { name: /Auf GitHub ansehen/ });
     expect(repo).toHaveAttribute("href", SKILL_REPO_URL);
     expect(repo).toHaveAttribute("target", "_blank");
     expect(repo.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("zeigt die SHA-256 der Datei, die der Knopf lädt, im Kasten und sagt, wie man sie vergleicht", () => {
+    render(<SkillPage />);
+    const box = screen.getByRole("region", { name: "So bekommst du ihn" });
+    expect(within(box).getByTestId("skill-sha256")).toHaveTextContent(SKILL_ZIP_SHA256);
+    // Die Befehle nennen den Dateinamen, den GitHub vergibt, nicht einen erfundenen.
+    expect(box.textContent).toContain(`shasum -a 256 ${SKILL_ZIP_FILENAME}`);
+    expect(box.textContent).toContain(`Get-FileHash ${SKILL_ZIP_FILENAME}`);
+    expect(box.textContent).toContain(SKILL_COMMIT.slice(0, 7));
   });
 
   it("nennt den Installationsbefehl und den Aufruf", () => {
