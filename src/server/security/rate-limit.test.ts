@@ -349,14 +349,13 @@ describe("reserveMonthlyQuota", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
     const incr = vi.fn().mockResolvedValue(5);
     const decr = vi.fn().mockResolvedValue(4);
-    const expire = vi.fn().mockResolvedValue(1);
-    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ incr, decr, expire }) } }));
+    const expire = vi.fn().mockResolvedValue(0);
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => counterRedisDouble({ incr, decr, expire }) } }));
     vi.resetModules();
     const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
 
     const reservation = await reserveMonthlyQuota("chat-quota:u1:2026-07", 200);
     expect(reservation?.allowed).toBe(true);
-    expect(expire).not.toHaveBeenCalled(); // not the first hit this month (count=5)
 
     await reservation?.release();
     expect(decr).toHaveBeenCalledWith("chat-quota:u1:2026-07");
@@ -368,13 +367,13 @@ describe("reserveMonthlyQuota", () => {
     const incr = vi.fn().mockResolvedValue(1);
     const expire = vi.fn().mockResolvedValue(1);
     vi.doMock("@upstash/redis", () => ({
-      Redis: { fromEnv: () => ({ incr, expire, decr: vi.fn() }) },
+      Redis: { fromEnv: () => counterRedisDouble({ incr, expire, decr: vi.fn() }) },
     }));
     vi.resetModules();
     const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
 
     await reserveMonthlyQuota("chat-quota:u1:2026-07", 200);
-    expect(expire).toHaveBeenCalledWith("chat-quota:u1:2026-07", 45 * 24 * 60 * 60);
+    expect(expire).toHaveBeenCalledWith("chat-quota:u1:2026-07", 45 * 24 * 60 * 60, "NX");
   });
 
   it("rejects once the reserved count exceeds the limit", async () => {
@@ -382,7 +381,7 @@ describe("reserveMonthlyQuota", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
     const incr = vi.fn().mockResolvedValue(201);
     vi.doMock("@upstash/redis", () => ({
-      Redis: { fromEnv: () => ({ incr, expire: vi.fn(), decr: vi.fn() }) },
+      Redis: { fromEnv: () => counterRedisDouble({ incr, expire: vi.fn(), decr: vi.fn() }) },
     }));
     vi.resetModules();
     const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
@@ -488,7 +487,7 @@ describe("reserveFailoverCall", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
     const redis = { incr, decr: vi.fn(), expire: vi.fn() };
-    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => redis } }));
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => counterRedisDouble(redis) } }));
     vi.resetModules();
     return await import("@/server/security/rate-limit");
   }
@@ -529,7 +528,7 @@ describe("reserveServerKeyCall", () => {
   async function withRedis(incr: ReturnType<typeof vi.fn>, decr = vi.fn(), expire = vi.fn()) {
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ incr, decr, expire }) } }));
+    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => counterRedisDouble({ incr, decr, expire }) } }));
     vi.resetModules();
     return await import("@/server/security/rate-limit");
   }
@@ -593,7 +592,7 @@ describe("reserveServerKeyCall", () => {
 
     const day = new Date().toISOString().slice(0, 10);
     expect(incr).toHaveBeenCalledWith(`llm-daily-calls:${day}`);
-    expect(expire).toHaveBeenCalledWith(`llm-daily-calls:${day}`, 2 * 24 * 60 * 60);
+    expect(expire).toHaveBeenCalledWith(`llm-daily-calls:${day}`, 2 * 24 * 60 * 60, "NX");
   });
 
   it("release() gives the slot back, so a failed turn costs no budget", async () => {

@@ -14,6 +14,7 @@ import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
 import { logWarning } from "@/shared/lib/observability";
 import { redis } from "@/server/security/redis-client";
+import { reserveCounter } from "@/server/security/reserve-counter";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -192,26 +193,7 @@ export async function reserveMonthlyQuota(
   key: string,
   limit: number
 ): Promise<{ allowed: boolean; release: () => Promise<void> } | null> {
-  if (!redis) return null;
-  try {
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, 45 * 24 * 60 * 60);
-    }
-    return {
-      allowed: count <= limit,
-      release: async () => {
-        try {
-          await redis!.decr(key);
-        } catch {
-          // Best-effort: a missed release only leaves this slot reserved for
-          // the rest of the month, never an over-grant.
-        }
-      },
-    };
-  } catch {
-    return null;
-  }
+  return reserveCounter({ key, limit, ttlSeconds: 45 * 24 * 60 * 60 });
 }
 
 /**

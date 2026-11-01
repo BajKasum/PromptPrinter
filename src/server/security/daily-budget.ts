@@ -2,10 +2,18 @@ import "server-only";
 
 import { logWarning } from "@/shared/lib/observability";
 import { redis } from "@/server/security/redis-client";
+import { reserveCounter, type CounterReservation } from "@/server/security/reserve-counter";
 
 // Die Tagesbudgets des Servers (Serverschlüssel und Ausweich-Anbieter), aus rate-limit.ts ausgelagert
 // (Dateigröße, Betriebs-Audit Folgesitzung 2026-10-07). Unverändert verschoben; rate-limit.ts reicht die drei
 // Funktionen weiter, die Aufrufer importieren wie bisher von dort.
+
+const TWO_DAYS_SECONDS = 2 * 24 * 60 * 60;
+
+/** Der UTC-Tag als YYYY-MM-DD, der Tagesanteil beider Schlüssel. */
+function utcDay(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 // ─── Global daily budget for the server's own provider key ──────────────────
 
@@ -49,7 +57,7 @@ export async function readDailyServerKeyUsage(): Promise<{
   const budget = dailyServerKeyBudget();
   if (!redis) return null;
   try {
-    const day = new Date().toISOString().slice(0, 10);
+    const day = utcDay();
     const used = await redis.get<number>(`llm-daily-calls:${day}`);
     return { used: Number(used ?? 0), budget };
   } catch {
@@ -57,7 +65,8 @@ export async function readDailyServerKeyUsage(): Promise<{
   }
 }
 
-let warnedBudgetExhausted = false;
+// Der Tag der letzten Warnung, kein Boolean: ein langlebiger Container soll jeden erschöpften Tag melden.
+let budgetWarnedOn: string | null = null;
 
 /**
  * The circuit breaker behind QA finding S-1's per-route fixes: a global ceiling
@@ -78,43 +87,24 @@ let warnedBudgetExhausted = false;
  * Fails OPEN when Redis is unavailable, matching reserveMonthlyQuota: a hiccup
  * must not take chat down for everyone, and the hourly limit still applies.
  */
-export async function reserveServerKeyCall(): Promise<{
-  allowed: boolean;
-  release: () => Promise<void>;
-} | null> {
-  if (!redis) return null;
-
-  const day = new Date().toISOString().slice(0, 10); // UTC, YYYY-MM-DD
-  const key = `llm-daily-calls:${day}`;
-  try {
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, 2 * 24 * 60 * 60);
-    }
-    const budget = dailyServerKeyBudget();
-    if (count > budget && !warnedBudgetExhausted) {
-      warnedBudgetExhausted = true;
+export async function reserveServerKeyCall(): Promise<CounterReservation | null> {
+  const day = utcDay();
+  const budget = dailyServerKeyBudget();
+  return reserveCounter({
+    key: `llm-daily-calls:${day}`,
+    limit: budget,
+    ttlSeconds: TWO_DAYS_SECONDS,
+    onExhausted: (used) => {
+      if (budgetWarnedOn === day) return;
+      budgetWarnedOn = day;
       logWarning("spend_guard.budget_exhausted", {
         day,
-        used: count,
+        used,
         budget,
         note: "Server-Key gesperrt, BYOK laeuft weiter. LLM_DAILY_CALL_BUDGET pruefen.",
       });
-    }
-    return {
-      allowed: count <= budget,
-      release: async () => {
-        try {
-          await redis!.decr(key);
-        } catch {
-          // Best-effort, same as reserveMonthlyQuota: a missed release only
-          // holds one slot for the rest of the day, never over-grants.
-        }
-      },
-    };
-  } catch {
-    return null;
-  }
+    },
+  });
 }
 
 /**
@@ -140,7 +130,7 @@ function dailyFailoverBudget(): number {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_DAILY_FAILOVER_CALLS;
 }
 
-let warnedFailoverBudgetExhausted = false;
+let failoverBudgetWarnedOn: string | null = null;
 
 /**
  * Reserviert einen Failover-Zug fuer heute (UTC). Gleiche Form wie
@@ -148,40 +138,22 @@ let warnedFailoverBudgetExhausted = false;
  * keine Obergrenze, ein Zug auf dem Ausweich-Anbieter ist besser als keiner), und
  * `release()` gibt den Platz zurueck, wenn auch Gemini scheitert.
  */
-export async function reserveFailoverCall(): Promise<{
-  allowed: boolean;
-  release: () => Promise<void>;
-} | null> {
-  if (!redis) return null;
-
-  const day = new Date().toISOString().slice(0, 10);
-  const key = `llm-failover-calls:${day}`;
-  try {
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, 2 * 24 * 60 * 60);
-    }
-    const budget = dailyFailoverBudget();
-    if (count > budget && !warnedFailoverBudgetExhausted) {
-      warnedFailoverBudgetExhausted = true;
+export async function reserveFailoverCall(): Promise<CounterReservation | null> {
+  const day = utcDay();
+  const budget = dailyFailoverBudget();
+  return reserveCounter({
+    key: `llm-failover-calls:${day}`,
+    limit: budget,
+    ttlSeconds: TWO_DAYS_SECONDS,
+    onExhausted: (used) => {
+      if (failoverBudgetWarnedOn === day) return;
+      failoverBudgetWarnedOn = day;
       logWarning("spend_guard.failover_budget_exhausted", {
         day,
-        used: count,
+        used,
         budget,
         note: "Ausweich-Anbieter gesperrt, solange Z.ai ausfaellt antworten Zuege mit einem Fehler. LLM_FAILOVER_DAILY_CALLS pruefen.",
       });
-    }
-    return {
-      allowed: count <= budget,
-      release: async () => {
-        try {
-          await redis!.decr(key);
-        } catch {
-          // Best effort wie bei reserveServerKeyCall.
-        }
-      },
-    };
-  } catch {
-    return null;
-  }
+    },
+  });
 }
