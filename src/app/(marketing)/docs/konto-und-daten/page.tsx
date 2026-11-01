@@ -58,6 +58,15 @@ export default function Page() {
         nach Systemeinstellung.
       </p>
 
+      <h2>In welchen Sprachen funktioniert PromptPrinter?</h2>
+      <p>
+        Die Oberfläche der App gibt es auf Deutsch, Englisch, Französisch,
+        Italienisch und Spanisch. Welche du siehst, stellst du unter{" "}
+        <strong>Einstellungen</strong> bei <strong>Sprache</strong> ein. Finn
+        antwortet in der Sprache, in der du schreibst. Die öffentlichen Seiten,
+        also Startseite, Hilfe und Rechtstexte, gibt es nur auf Deutsch.
+      </p>
+
       <h2>Welche Daten speichert PromptPrinter?</h2>
       <ul>
         <li>dein Konto: E-Mail, Anzeigename</li>

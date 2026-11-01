@@ -42,7 +42,7 @@ export function buildLlmsTxt(): string {
 
 > Ein KI-Chat, der nachfragt, bis klar ist, was du brauchst, und dir dann den fertigen Prompt liefert, für jede KI und jede Aufgabe.
 
-PromptPrinter ist für alle, die eine KI für etwas einsetzen wollen und dafür einen guten Prompt brauchen, ob für ein Dokument, eine Webseite, eine Datenbank oder eine Sicherheitsprüfung. Bevor der Prompt entsteht, stellt der Chat-Assistent Finn eine gebündelte Rückfrage zu dem, was für die Aufgabe zählt, und liefert danach den fertigen Prompt, der in jeder KI funktioniert und auf Wunsch auf eine bestimmte zugeschnitten ist. Solo-Projekt von ${LEGAL.operator}, ${LEGAL.postalCity}, ${LEGAL.country}.
+PromptPrinter ist für alle, die eine KI für etwas einsetzen wollen und dafür einen guten Prompt brauchen, ob für ein Dokument, eine Webseite, eine Datenbank oder eine Sicherheitsprüfung. Bevor der Prompt entsteht, stellt der Chat-Assistent Finn eine gebündelte Rückfrage zu dem, was für die Aufgabe zählt, und liefert danach den fertigen Prompt, der in jeder KI funktioniert und auf Wunsch auf eine bestimmte zugeschnitten ist. Die App gibt es auf Deutsch, Englisch, Französisch, Italienisch und Spanisch, Finn antwortet in der Sprache, in der man schreibt; die öffentlichen Seiten sind nur auf Deutsch. Solo-Projekt von ${LEGAL.operator}, ${LEGAL.postalCity}, ${LEGAL.country}.
 
 ## Preise
 ${plans}
@@ -68,5 +68,8 @@ ${comparisons}
 - [AGB](${base}/agb)
 - [Nutzungsrichtlinie](${base}/nutzungsrichtlinie)
 - [Rückerstattung](${base}/rueckerstattung)
+
+## English
+PromptPrinter is an AI chat that asks one bundled clarifying question and then writes a finished, copy-ready prompt for any AI and any task. The app interface is available in German, English, French, Italian and Spanish, and Finn answers in the language you write in. The public website is in German only.
 `;
 }

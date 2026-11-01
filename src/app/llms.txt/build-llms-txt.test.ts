@@ -51,6 +51,18 @@ describe("llms.txt", () => {
     }
   });
 
+  // #252: Antwortmaschinen sollen die Sprachen der App kennen, ohne dass die Seiten übersetzt sind.
+  it("nennt die fünf Sprachen der App auf Deutsch und in einer englischen Zusammenfassung", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
+    const text = buildLlmsTxt();
+
+    expect(text).toContain("Deutsch, Englisch, Französisch, Italienisch und Spanisch");
+    const english = text.split("## English")[1];
+    expect(english).toBeDefined();
+    expect(english).toContain("German, English, French, Italian and Spanish");
+    expect(english).toContain("public website is in German only");
+  });
+
   it("lists the comparison pages with their question", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
     const text = buildLlmsTxt();
