@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
-import {
-  chatQuotaKey,
-  rateLimit,
-  rateLimitKey,
-  reserveMonthlyQuota,
-  reserveServerKeyCall,
-} from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
-import { llmConfig } from "@/server/llm";
-import { getUserOverride } from "@/server/byok";
-import { hasZaiConsent } from "@/server/consent";
-import { resolvePlan } from "@/shared/lib/plans";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
+import { reserveModelCall } from "@/server/model-call";
+import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { problem } from "@/server/http/api-problem";
 import {
   MAX_SMALL_BODY_BYTES,
@@ -28,7 +18,6 @@ import type { ProjectBrainFacts } from "@/shared/lib/project-brain";
 import { projectKind } from "@/shared/lib/project-kind";
 import { requestT } from "@/server/i18n";
 import type { Messages } from "@/shared/i18n/messages/de";
-import { fmt } from "@/shared/i18n/format";
 import { LOCALE_ENGLISH_NAMES } from "@/shared/i18n/locales";
 
 export const runtime = "nodejs";
@@ -155,90 +144,30 @@ export async function POST(req: Request, { params }: Params) {
     }
   }
 
-  // 4. Plan, BYOK, Kontingente — dieselbe Kette wie /api/chat, weil dahinter
-  //    derselbe Kostentreiber steht: ein Modellaufruf auf dem Server-Key.
-  const [{ data: profile }, override] = await Promise.all([
-    supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
-    getUserOverride(userId),
-  ]);
-  if (override === "unreadable") {
-    return problem(409, m.byokUnreadable, { kind: "byokUnreadable" });
-  }
-  const { plan, isAdmin, limits } = resolvePlan(profile);
-
-  const reservations: (() => Promise<void>)[] = [];
-  const releaseReservations = async () => {
-    for (const release of reservations) await release();
-    reservations.length = 0;
-  };
-
-  if (!override) {
-    if (limits.chatMessages <= 0) {
-      return problem(
-        403,
-        PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon,
-        { kind: "byokRequired", plan }
-      );
-    }
-    // Dieselbe Zustimmung wie im Chat (server/consent.ts): die Analyse schickt Projektdateien und
-    // Repository-Inhalte an Z.ai. Vor jeder Reservierung, eine Ablehnung kostet nichts.
-    if (llmConfig()?.provider === "zai" && !hasZaiConsent(user.app_metadata)) {
-      return problem(403, m.consentRequired, { kind: "consentRequired" });
-    }
-    const reservation = await reserveMonthlyQuota(chatQuotaKey(userId), limits.chatMessages);
-    if (reservation && !reservation.allowed) {
-      await reservation.release();
-      return problem(
-        403,
-        fmt(m.brainLimit, { plan, limit: limits.chatMessages }),
-        { kind: "chatMessages", limit: limits.chatMessages, plan }
-      );
-    }
-    if (reservation) reservations.push(reservation.release);
-  }
-
-  // Eigenes, knappes Stundenlimit statt der 120 des Chats: eine Analyse liest
-  // ein ganzes Repo und ist damit die teuerste Einzelaktion der App. Fünf pro
-  // Stunde decken jedes echte Arbeitsmuster ab (man analysiert ein Projekt
-  // einmal und danach, wenn sich Quellen ändern) und deckeln die
-  // GitHub-Requests gleich mit.
-  if (!isAdmin) {
-    const rl = await rateLimit(rateLimitKey(req, "brain", userId), {
-      limit: 5,
-      windowMs: 60 * 60 * 1000,
-    });
-    if (!rl.allowed) {
-      await releaseReservations();
-      return problem(429, m.brainTooMany, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
-
-  if (!override) {
-    const budget = await reserveServerKeyCall();
-    if (budget && !budget.allowed) {
-      await budget.release();
-      await releaseReservations();
-      return problem(
-        503,
-        m.brainBudget
-      );
-    }
-    if (budget) reservations.push(budget.release);
-  }
-
-  // Kein Stub-Modus für die Analyse: eine erfundene Faktenliste ist schlimmer
-  // als gar keine, weil sie danach in JEDEN Prompt dieses Projekts wandert.
-  // Deshalb hier — anders als im Chat — auch in der Entwicklung eine klare
-  // Absage statt einer Platzhalterantwort.
-  if (!llmConfig() && !override) {
-    await releaseReservations();
-    return problem(
-      503,
-      m.brainNotConfigured
-    );
-  }
+  // 4. Plan, BYOK, Kontingente: dieselbe Kette wie /api/chat (server/model-call.ts), weil dahinter
+  //    derselbe Kostentreiber steht, ein Modellaufruf auf dem Server-Key. Eigenes, knappes
+  //    Stundenlimit statt der 120 des Chats: eine Analyse liest ein ganzes Repo und ist damit die
+  //    teuerste Einzelaktion der App. Fünf pro Stunde decken jedes echte Arbeitsmuster ab (man
+  //    analysiert ein Projekt einmal und danach, wenn sich Quellen ändern) und deckeln die
+  //    GitHub-Requests gleich mit. Kein Stub-Modus: eine erfundene Faktenliste ist schlimmer als
+  //    gar keine, weil sie danach in JEDEN Prompt dieses Projekts wandert, deshalb auch in der
+  //    Entwicklung eine klare Absage statt einer Platzhalterantwort.
+  const allowance = await reserveModelCall({
+    supabase,
+    userId,
+    appMetadata: user.app_metadata,
+    m,
+    checkHourlyLimit: () => rateLimit(rateLimitKey(req, "brain", userId), { limit: 5, windowMs: 60 * 60 * 1000 }),
+    texts: {
+      monthlyLimit: m.brainLimit,
+      tooMany: m.brainTooMany,
+      budget: m.brainBudget,
+      notConfigured: m.brainNotConfigured,
+    },
+    stubOutsideProduction: false,
+  });
+  if (allowance instanceof Response) return allowance;
+  const { override, releaseReservations } = allowance;
 
   // 5. Status auf „läuft" setzen, damit ein Reload den Spinner zeigt statt
   //    einen scheinbar unveränderten Leerzustand.
