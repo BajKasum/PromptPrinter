@@ -8,9 +8,12 @@ import { GithubIcon } from "@/shared/ui/github-icon";
 import { PageHeader } from "@/features/marketing/components/page-header";
 import {
   SKILL_CARDS,
+  SKILL_COMMIT,
   SKILL_INSTALL_STEPS,
   SKILL_REPO_URL,
   SKILL_VERSION,
+  SKILL_ZIP_FILENAME,
+  SKILL_ZIP_SHA256,
   SKILL_ZIP_URL,
 } from "@/features/marketing/lib/skill-data";
 import { pageMetadata } from "@/shared/lib/page-metadata";
@@ -69,6 +72,34 @@ export default function SkillPage() {
                   Auf GitHub ansehen
                 </a>
               </Button>
+            </div>
+
+            {/* Die Prüfsumme der Datei, die der Knopf lädt (#240): ein Commit, kein Tag, den jemand verschieben könnte. */}
+            <div className="mt-5 text-[14px] leading-[1.6] text-foreground/75">
+              <p>
+                Das ZIP ist der Stand des Commits{" "}
+                <code className="rounded border border-border bg-surface px-1.5 py-0.5 text-[13px] text-foreground">
+                  {SKILL_COMMIT.slice(0, 7)}
+                </code>
+                . SHA-256 der Datei <span className="break-all">{SKILL_ZIP_FILENAME}</span>:
+              </p>
+              <code
+                data-testid="skill-sha256"
+                className="mt-2 block break-all rounded-xl border border-border bg-surface-raised px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground"
+              >
+                {SKILL_ZIP_SHA256}
+              </code>
+              <p className="mt-2">
+                Vergleichen vor dem Entpacken, unter macOS und Linux mit{" "}
+                <code className="break-all rounded border border-border bg-surface px-1.5 py-0.5 text-[13px] text-foreground">
+                  shasum -a 256 {SKILL_ZIP_FILENAME}
+                </code>
+                , unter Windows mit{" "}
+                <code className="break-all rounded border border-border bg-surface px-1.5 py-0.5 text-[13px] text-foreground">
+                  Get-FileHash {SKILL_ZIP_FILENAME}
+                </code>
+                . Stimmen die Werte nicht überein, führ nichts aus.
+              </p>
             </div>
 
             <ol className="mt-8 space-y-5">

@@ -4,14 +4,29 @@
 
 export const SKILL_REPO_URL = "https://github.com/BajKasum/promptprinter-pp";
 
-/**
- * Das ZIP ist der Stand des Tags v0.3.0 (die Fassung unten) und ändert sich nicht, wenn `main` im Schwester-Repo
- * weiterzieht. Wird `SKILL_VERSION` angehoben, muss der Tag dort angelegt und hier mitgezogen werden.
- */
-export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/refs/tags/v0.3.0.zip`;
-
 /** Der Skill in der Fassung, die das Schwester-Repo trägt (Datei SKILL.md, Feld version). */
 export const SKILL_VERSION = "0.3.0";
+
+/**
+ * Der Commit des Schwester-Repos, den die Seite ausliefert (die Spitze von v0.3.0, volle 40 Stellen). Ein Tag lässt
+ * sich verschieben oder löschen, ein Commit nicht: wer den Download prüft, prüft immer dieselben Dateien. Version,
+ * Commit und Prüfsumme ändern sich nur zusammen; skill-data.test.ts hält das Tripel fest, und
+ * scripts/verify-skill-archive.mjs lädt das ZIP und rechnet nach (`--print` gibt die neue Prüfsumme aus).
+ */
+export const SKILL_COMMIT = "4451250e7b3d5deadf922504ef4a5861ee68aeb4";
+
+/** Das ZIP genau dieses Commits (kein Tag, kein Branch). */
+export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/${SKILL_COMMIT}.zip`;
+
+/** Der Dateiname, unter dem GitHub das ZIP ausliefert (Content-Disposition). */
+export const SKILL_ZIP_FILENAME = `promptprinter-pp-${SKILL_COMMIT}.zip`;
+
+/**
+ * SHA-256 der Datei, die SKILL_ZIP_URL ausliefert: zweimal nacheinander geladen (2026-11-01) und verglichen, beide
+ * Male dieselbe. GitHub sagt nicht zu, dass sie für immer gleich bleibt; die wöchentliche Prüfung steht in
+ * .github/workflows/skill-archive.yml.
+ */
+export const SKILL_ZIP_SHA256 = "88bceb21837d06ac04eb3902ff83a38dd4015d188e041f78e4bb74e88ce75e37";
 
 export const SKILL_CARDS = [
   {
@@ -34,7 +49,7 @@ export const SKILL_CARDS = [
 export const SKILL_INSTALL_STEPS = [
   {
     title: "Herunterladen",
-    body: "Das ZIP von GitHub laden und entpacken, oder das Repository klonen.",
+    body: "Das ZIP von GitHub laden, seine Prüfsumme mit der oben vergleichen und entpacken, oder das Repository klonen.",
   },
   {
     title: "Installieren",
