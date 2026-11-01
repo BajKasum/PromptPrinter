@@ -9,7 +9,7 @@
 // 2. Das Beispiel ist ein Prompt, den der Autor nach genau diesen Regeln von Hand geschrieben hat: ein Gespräch in
 //    drei Schritten (Idee, Rückfrage, Antwort) und der fertige Prompt. Es ist als Beispiel gekennzeichnet und stammt
 //    nicht aus einem echten Gespräch. Keine Messwerte, keine Kundenstimmen, kein Versprechen über das Ergebnis.
-// 3. Jede Seite sagt, wann man das nicht braucht (dasselbe Versprechen wie in comparisons.ts und auf /ueber).
+// 3. Jede Seite sagt, wann man das nicht braucht (dasselbe Versprechen wie in comparisons.ts und auf der Seite Über).
 // 4. Keine fremden Werkzeuge als Versprechen, keine Gesetze und Paragrafen, keine Preise. Persönliche Daten stehen
 //    als Platzhalter wie [mein Name] im Prompt, nie als Angabe.
 //

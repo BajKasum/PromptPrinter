@@ -22,7 +22,7 @@ export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/${SKILL_COMMIT}.zip`;
 export const SKILL_ZIP_FILENAME = `promptprinter-pp-${SKILL_COMMIT}.zip`;
 
 /**
- * SHA-256 der Datei, die SKILL_ZIP_URL ausliefert: zweimal nacheinander geladen (2026-11-01) und verglichen, beide
+ * SHA-256 der Datei, die SKILL_ZIP_URL ausliefert: zweimal nacheinander geladen und verglichen, beide
  * Male dieselbe. GitHub sagt nicht zu, dass sie für immer gleich bleibt; die wöchentliche Prüfung steht in
  * .github/workflows/skill-archive.yml.
  */

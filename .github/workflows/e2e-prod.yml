@@ -8,8 +8,8 @@ name: E2E Produktion
 # Kurz: die Smoketests in e2e.yml laufen im Entwicklungsmodus, dort gilt eine
 # andere Content-Security-Policy ('unsafe-eval' ist erlaubt), und es läuft weder
 # das gebaute Bundle noch ein statisch ausgelieferter Seitenbaum. Ein Fehler in
-# der Policy macht aber genau dort alle öffentlichen Seiten leer (05.08.2026,
-# csp.ts) und blieb bis zu den ersten echten Besuchern unsichtbar.
+# der Policy macht aber genau dort alle öffentlichen Seiten leer (Vorfall im
+# Kopfkommentar von csp.ts) und blieb bis zu den ersten echten Besuchern unsichtbar.
 #
 # Eigener Workflow statt ein Schritt in e2e.yml: der Lauf baut die App einmal
 # vollständig (einige Minuten), und e2e.yml bekommt von anderer Stelle eigene
