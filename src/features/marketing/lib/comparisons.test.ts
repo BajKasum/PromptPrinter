@@ -82,4 +82,12 @@ describe("Vergleiche", () => {
     expect(Number.isNaN(Date.parse(COMPARISONS_UPDATED))).toBe(false);
     expect(COMPARISONS_UPDATED <= today).toBe(true);
   });
+
+  // #248: datePublished ist die erste Veröffentlichung, nicht der Stand der letzten Prüfung.
+  it("trägt je Vergleich ein Erscheinungsdatum, das nicht nach der letzten Prüfung liegt", () => {
+    for (const comparison of COMPARISONS) {
+      expect(comparison.published, comparison.slug).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(comparison.published <= COMPARISONS_UPDATED, comparison.slug).toBe(true);
+    }
+  });
 });
