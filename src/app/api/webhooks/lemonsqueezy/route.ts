@@ -156,18 +156,28 @@ export async function POST(req: Request): Promise<Response> {
     // Beim letzten Mal gescheitert — das ist genau der Fall, für den Lemon
     // Squeezy wiederholt.
     eventId = existing.id;
-    await admin.from("billing_events").update({ status: "processing" }).eq("id", eventId);
+    const { error: reclaimError } = await admin
+      .from("billing_events")
+      .update({ status: "processing" })
+      .eq("id", eventId);
+    if (reclaimError) {
+      captureError("billing.webhook_claim_failed", reclaimError, { eventName: event });
+      return problem(503, "Ereignis konnte nicht angenommen werden.");
+    }
   }
 
+  // Wirft, wenn der Status nicht ankommt: eine Zeile, die auf "processing" stehen bleibt,
+  // schickt jede Wiederholung in den Duplikat-Zweig. Der catch unten antwortet dann 503.
   async function finish(
     status: "processed" | "ignored" | "failed",
     detail: string | null,
     userId: string | null
   ): Promise<void> {
-    await admin
+    const { error } = await admin
       .from("billing_events")
       .update({ status, detail: detail?.slice(0, 500) ?? null, user_id: userId })
       .eq("id", eventId);
+    if (error) throw error;
   }
 
   try {
@@ -184,12 +194,12 @@ export async function POST(req: Request): Promise<Response> {
       // der öffentlichen Preisseite gekauft, ohne angemeldet zu sein — dann
       // trägt der Kauf keine Konto-ID, und es gibt noch keine Kundennummer im
       // Profil, über die man ihn fände. Das Geld ist da, das Konto nicht
-      // zuzuordnen. Kundennummer und Mail stehen deshalb hier, damit die
-      // Freischaltung von Hand eine Minute dauert und keine Suche.
+      // zuzuordnen. Kundennummer und Bestellnummer stehen deshalb hier: die
+      // Mailadresse für die Freischaltung von Hand steht im Lemon-Squeezy-Dashboard.
+      // Sie gehört nicht ins Log, hier geht es um Menschen ohne Konto bei uns.
       logWarning("billing.webhook_unmatched", {
         eventName: event,
         customerId: decision.patch.subscription_customer_id ?? null,
-        email: payload.data.attributes?.user_email ?? null,
         resourceId: payload.data.id,
         testMode,
       });
@@ -214,10 +224,9 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ received: true });
   } catch (err) {
     captureError("billing.webhook_failed", err, { eventName: event, resourceId: payload.data.id });
-    // Absichtlich ohne await-Fehlerbehandlung verkettet: scheitert auch das
-    // Protokollieren, bleibt die Zeile auf "processing" stehen und die
-    // Wiederholung von Lemon Squeezy läuft trotzdem in den Duplikat-Zweig.
-    // Das ist der schlechtere, aber sichere Ausgang.
+    // Scheitert auch das Protokollieren, bleibt die Zeile auf "processing" stehen und
+    // die Wiederholung von Lemon Squeezy läuft in den Duplikat-Zweig. Das ist der
+    // schlechtere, aber sichere Ausgang.
     await finish("failed", err instanceof Error ? err.message : "unbekannt", null).catch(() => {});
     // 500, damit erneut zugestellt wird: eine klemmende Datenbank ist genau
     // die Sorte Fehler, die beim zweiten Versuch weg sein kann.
@@ -268,6 +277,10 @@ export async function POST(req: Request): Promise<Response> {
  * Konto-ID aus dem Checkout gilt nur, solange sie keine bereits hinterlegte,
  * ANDERE Kundennummer überschreiben würde. Ein Konto ohne eigene Kundennummer
  * (frisch, nie gekauft) bleibt wie zuvor kostenlos hochstufbar.
+ *
+ * `null` heisst nur "Abfrage in Ordnung, kein Konto". Eine gescheiterte Abfrage wirft:
+ * supabase-js liefert sie als `{ data: null, error }`, und ohne die Prüfung würde ein
+ * Datenbankaussetzer als "Kauf ohne Konto" quittiert und nie wiederholt.
  */
 async function resolveUserId(
   admin: ReturnType<typeof createAdminClient>,
@@ -279,11 +292,12 @@ async function resolveUserId(
   if (!isRevocation) {
     const fromCheckout = customUserId(payload);
     if (fromCheckout) {
-      const { data } = await admin
+      const { data, error } = await admin
         .from("profiles")
         .select("id, subscription_customer_id")
         .eq("id", fromCheckout)
         .maybeSingle<{ id: string; subscription_customer_id: string | null }>();
+      if (error) throw error;
       if (data) {
         const incomingCustomerId = patch.subscription_customer_id;
         const overwritesDifferentCustomer =
@@ -300,11 +314,12 @@ async function resolveUserId(
 
   const customerId = patch.subscription_customer_id;
   if (customerId) {
-    const { data } = await admin
+    const { data, error } = await admin
       .from("profiles")
       .select("id")
       .eq("subscription_customer_id", customerId)
       .maybeSingle<{ id: string }>();
+    if (error) throw error;
     if (data) return data.id;
   }
 

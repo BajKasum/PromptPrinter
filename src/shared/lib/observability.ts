@@ -78,6 +78,9 @@ const FORBIDDEN_WORDS = [
   "jwt",
   "bearer",
   "signature",
+  "email",
+  "mail",
+  "phone",
 ];
 
 /**
