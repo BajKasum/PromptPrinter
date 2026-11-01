@@ -84,6 +84,27 @@ describe("middleware", () => {
     expect(first).not.toBe(second);
   });
 
+  it("weist eine fremde Anfrage ab, bevor die Sitzung geprüft wird", async () => {
+    const res = await middleware(
+      new NextRequest(new URL("https://promptprinter.app/api/consent/zai"), {
+        method: "POST",
+        headers: { "sec-fetch-site": "cross-site" },
+      })
+    );
+    expect(res.status).toBe(403);
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
+  it("lässt eine Anfrage derselben Seite durch", async () => {
+    const res = await middleware(
+      new NextRequest(new URL("https://promptprinter.app/api/consent/zai"), {
+        method: "POST",
+        headers: { "sec-fetch-site": "same-origin" },
+      })
+    );
+    expect(res.status).toBe(200);
+  });
+
   it("die statische Policy ist für jede öffentliche Route dieselbe, ohne Nonce-Zufall", async () => {
     const first = cspOf(await middleware(request("/pricing")));
     const second = cspOf(await middleware(request("/pricing")));
