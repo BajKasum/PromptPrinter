@@ -34,6 +34,7 @@ export async function reserveAllowance(args: {
       tooMany: m.tooManyRequests,
       budget: m.chatBudget,
       notConfigured: m.chatNotConfigured,
+      unavailable: m.chatUnavailable,
     },
     stubOutsideProduction: true,
   });

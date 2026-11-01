@@ -55,14 +55,20 @@ export async function POST(req: Request) {
   // depth; this count enforces a limit). Runs before the rate limit so its
   // is_admin result can exempt the account from that too, admin used to
   // only bypass the project cap, not the hourly rate limit.
-  const [{ data: profile }, { count: projectCount }] = await Promise.all([
+  const [profileResult, countResult] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
     supabase
       .from("projects")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
   ]);
-  const { plan, isAdmin, limits } = resolvePlan(profile);
+  // Ein Lesefehler lockert das Limit nicht: Zählung 0 hieße "unter der Grenze", Profil null hieße Plan Free.
+  if (profileResult.error || countResult.error) {
+    captureError("projects.limit_read_failed", profileResult.error ?? countResult.error, { userId: user.id });
+    return problem(503, m.projectCreateFailed);
+  }
+  const { plan, isAdmin, limits } = resolvePlan(profileResult.data);
+  const projectCount = countResult.count;
   if ((projectCount ?? 0) >= limits.projects) {
     return problem(
       403,

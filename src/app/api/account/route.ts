@@ -118,11 +118,16 @@ export async function DELETE(req: Request) {
   // action doesn't need much headroom, this is only to blunt hammering the
   // endpoint with retries, not a real usage allowance. Admin exemption
   // mirrors the other three routes.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin, subscription_id")
     .eq("id", user.id)
     .maybeSingle();
+  // Ohne das Profil wüsste die Route nichts vom Abo: das Konto wäre gelöscht, das Abo liefe weiter und würde abgebucht.
+  if (profileError) {
+    captureError("account.delete_profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m.accountDeleteFailed);
+  }
   if (!(profile?.is_admin ?? false)) {
     const rl = await rateLimit(rateLimitKey(req, "account-delete", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
     if (!rl.allowed) {

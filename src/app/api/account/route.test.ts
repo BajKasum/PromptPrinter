@@ -103,6 +103,17 @@ describe("DELETE /api/account", () => {
     cancelSubscriptionImmediately.mockResolvedValue({ ok: true, skipped: true });
   });
 
+  // #202: ohne das Profil wüsste die Route nichts vom Abo; das Konto wäre gelöscht und das Abo liefe weiter.
+  it("löscht nichts und antwortet 503, wenn das Profil nicht gelesen werden kann", async () => {
+    profileSelect.mockResolvedValue({ data: null, error: { message: "connection reset" } });
+    const res = await DELETE(req());
+    expect(res.status).toBe(503);
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(storageRemove).not.toHaveBeenCalled();
+    expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
+    expect(captureError).toHaveBeenCalled();
+  });
+
   it("requires authentication", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     const res = await DELETE(req());

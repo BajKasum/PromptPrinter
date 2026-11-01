@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
+import { orThrow } from "@/server/supabase/query";
 import { requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
 
 // Die eine Stelle, die pro Request nach dem angemeldeten Nutzer und seinem
@@ -77,11 +78,15 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
   if (!user) return null;
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("plan, is_admin, display_name, settings")
-    .eq("id", user.id)
-    .maybeSingle<SessionProfile>();
+  // Ein Lesefehler ist NICHT "kein Profil" (das hieße Plan Free): er wirft, die Seite zeigt ihre Fehlerseite.
+  const { data } = orThrow(
+    await supabase
+      .from("profiles")
+      .select("plan, is_admin, display_name, settings")
+      .eq("id", user.id)
+      .maybeSingle<SessionProfile>(),
+    "profiles"
+  );
 
   return data ?? null;
 });
@@ -108,11 +113,10 @@ export const getNeedsOwnKey = cache(async (): Promise<boolean> => {
   if (!requiresOwnKey(plan, isAdmin, false)) return false;
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("user_api_keys")
-    .select("provider")
-    .eq("user_id", user.id)
-    .limit(1);
+  const { data } = orThrow(
+    await supabase.from("user_api_keys").select("provider").eq("user_id", user.id).limit(1),
+    "user_api_keys"
+  );
 
   return requiresOwnKey(plan, isAdmin, (data?.length ?? 0) > 0);
 });

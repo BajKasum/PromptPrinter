@@ -7,6 +7,7 @@ import {
   type ProjectBrainFacts,
 } from "@/shared/lib/project-brain";
 import type { createClient } from "@/server/supabase/server";
+import { orThrow } from "@/server/supabase/query";
 
 // Builds the "PROJECT CONTEXT" block /api/chat appends to a project chat's
 // system instruction. Split out of route.ts (QA finding C-1) purely to shrink
@@ -73,7 +74,7 @@ export async function buildProjectContext(
   // billige Teil, die Storage-Downloads sind der teure — die vorzuziehen und
   // hinterher weniger davon zu verwenden kostet nichts, sie zu serialisieren
   // schon.
-  const [{ data: project }, { data: latestSaved }, { data: brainRow }, files] = await Promise.all([
+  const [projectResult, savedResult, brainResult, files] = await Promise.all([
     supabase
       .from("projects")
       .select("name, idea, instructions, context, tools")
@@ -96,6 +97,11 @@ export async function buildProjectContext(
       .maybeSingle(),
     loadProjectFiles(supabase, userId, projectId),
   ]);
+  // Ein Lesefehler ist NICHT "nicht gefunden oder nicht deins": der Chat liefe ohne Projektkontext weiter, und openTurn
+  // legte die Konversation mit project_id = null an, der Chat gehörte danach nicht mehr zum Projekt. Er wirft.
+  const { data: project } = orThrow(projectResult, "projects");
+  const { data: latestSaved } = orThrow(savedResult, "saved_prompts");
+  const { data: brainRow } = orThrow(brainResult, "project_brains");
   if (!project) return null;
 
   const brainBlock = formatReadyBrain(brainRow as { status?: unknown; facts?: unknown } | null);
@@ -190,12 +196,15 @@ async function loadProjectFiles(
 ): Promise<LoadedFile[]> {
   // Explicit user_id alongside project_id (Security-Audit finding L-3): was
   // RLS-only before, same as the two reads in the caller above.
-  const { data: filesRaw } = await supabase
-    .from("project_files")
-    .select("name, storage_path")
-    .eq("project_id", projectId)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
+  const { data: filesRaw } = orThrow(
+    await supabase
+      .from("project_files")
+      .select("name, storage_path")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true }),
+    "project_files"
+  );
   const files = (filesRaw as StoredFile[] | null) ?? [];
   if (files.length === 0) return [];
 

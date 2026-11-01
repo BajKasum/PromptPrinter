@@ -95,6 +95,19 @@ describe("POST /api/projects", () => {
       expect(rateLimit).not.toHaveBeenCalled();
     });
 
+    // #202: ein Lesefehler lockert das Limit nicht (Zählung 0 hieße "unter der Grenze").
+    it("antwortet 503 und legt nichts an, wenn die Zählung nicht gelesen werden kann", async () => {
+      tableResults.projects = { data: null, error: { message: "connection reset" }, count: 0 };
+      const res = await POST(req());
+      expect(res.status).toBe(503);
+    });
+
+    it("antwortet 503, wenn das Profil nicht gelesen werden kann", async () => {
+      tableResults.profiles = { data: null, error: { message: "connection reset" } };
+      const res = await POST(req());
+      expect(res.status).toBe(503);
+    });
+
     it("treats an unknown plan value as free rather than as unlimited", async () => {
       tableResults.profiles = { data: { plan: "enterprise", is_admin: false } };
       tableResults.projects = { data: null, error: null, count: 3 };
