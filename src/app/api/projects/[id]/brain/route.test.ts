@@ -15,7 +15,7 @@ const collectBrainSources = vi.fn();
 const analyzeProjectBrain = vi.fn();
 
 /** Was die Tabellen des RLS-gebundenen Clients zurueckgeben. */
-const tableResults: Record<string, { data?: unknown; error?: unknown }> = {};
+const tableResults: Record<string, { data?: unknown; error?: unknown; count?: number }> = {};
 /** Was der Service-Role-Client geschrieben hat. */
 const adminWrites: { table: string; op: string; values: Record<string, unknown> }[] = [];
 const adminReads: Record<string, { data?: unknown }> = {};
@@ -27,7 +27,7 @@ function builder(table: string) {
     single: async () => result(),
     then: (resolve: (v: unknown) => unknown) => resolve(result()),
   };
-  for (const m of ["select", "eq", "order", "limit"]) chain[m] = () => chain;
+  for (const m of ["select", "eq", "gte", "order", "limit"]) chain[m] = () => chain;
   return chain;
 }
 
@@ -128,6 +128,7 @@ describe("POST /api/projects/[id]/brain", () => {
     vi.clearAllMocks();
     adminWrites.length = 0;
     for (const key of Object.keys(adminReads)) delete adminReads[key];
+    delete tableResults.messages;
 
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
@@ -290,6 +291,26 @@ describe("POST /api/projects/[id]/brain", () => {
         expect.stringMatching(/^chat-quota:user-1:\d{4}-\d{2}$/),
         400
       );
+    });
+
+    // Redis kann nicht entscheiden (nicht erreichbar): wie im Chat zählt dann die Datenbank. Eine
+    // Analyse darf ohne Redis nicht mehr, als ein aufgebrauchtes Monatskontingent mit Redis erlaubte
+    // (Entscheid zu #213: angleichen; vorher entfiel das Kontingent hier ganz, es blieb das Stundenlimit).
+    it("Redis nicht erreichbar: ein aufgebrauchtes Monatskontingent blockiert auch die Analyse", async () => {
+      reserveMonthlyQuota.mockResolvedValue(null);
+      tableResults.messages = { data: null, error: null, count: 400 };
+      const res = await POST(req(), params);
+      expect(res.status).toBe(403);
+      expect(await res.json()).toMatchObject({ kind: "chatMessages", limit: 400, current: 400 });
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+    });
+
+    it("Redis nicht erreichbar: unter dem Monatskontingent läuft die Analyse", async () => {
+      reserveMonthlyQuota.mockResolvedValue(null);
+      tableResults.messages = { data: null, error: null, count: 399 };
+      expect((await POST(req(), params)).status).toBe(200);
+      expect(analyzeProjectBrain).toHaveBeenCalledTimes(1);
     });
 
     it("blocks when the monthly allowance is used up", async () => {
