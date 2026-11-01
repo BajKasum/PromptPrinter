@@ -11,6 +11,15 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-01: Nachkontrolle der drei Sessions (Branch `fix/nachkontrolle-2026-11-01`)
+
+Unabhängig gelesen und live geprüft (CSRF-Schranke, `security.txt`, Sitemap, OG-Bilder, Structured Data). Zwei Funde:
+`auth.unknown_error` konnte eine Mailadresse aus der GoTrue-Meldung ins Log tragen, und ein Test der Befehlspalette (#151) scheiterte im
+vollen Lauf unter Last, weil er den Fokus sofort nach dem Schliessen las. Beides behoben. `EXPIRE … NX` in `reserveCounter` ist nicht gegen
+das echte Upstash geprüft; schlüge es dort fehl, gäbe der Zähler `null` zurück und die Grenzen liefen still offen.
+
+---
+
 ## 2026-11-01: Modellzugang und Chat-Umbau (PR #262, Branch `refactor/llm-chat-2026-11`)
 
 - **#204 Zeitgrenzen:** Z.ai und der Custom-Slot teilen `streamDeadlines` (`server/llm/http.ts`): Frist bis zum ersten Textstück (Z.ai 30 s, Custom 60 s), danach 45 s Leerlauf (jedes Textstück startet neu), dazu 270 s Gesamtgrenze unter `maxDuration` 300 s. Überschreibbar mit `LLM_STREAM_IDLE_TIMEOUT_MS` und `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze nie über 285 s. Die Zeit, die der Verbraucher für ein Stück braucht, zählt nicht gegen den Anbieter. Nicht gegen einen echten Anbieter geprüft.

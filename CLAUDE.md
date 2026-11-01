@@ -301,7 +301,7 @@ src/server/    Nie im Browser, jede Datei mit `import "server-only"`.
                security/ (crypto, csp, rate-limit, turnstile, url-safety),
                brain/ (github.ts, analyze.ts — Projekt-Gedaechtnis),
                billing/, observability/, http/, supabase/, llm/ (je Anbieter eine Datei), llm-retry.ts,
-               llm-failover.ts, env.ts, byok.ts, project.ts, system-prompt.ts
+               llm-failover.ts, model-call.ts (Kostenkette), env.ts, byok.ts, project.ts, system-prompt.ts
 src/shared/    Von überall nutzbar, kennt niemanden über sich:
                ui/ brand/ motion/ providers/ lib/ supabase/
 tests/guards/  Repo-weite Invarianten (Kontrast, server-only, Schichtgrenzen,
@@ -336,7 +336,7 @@ Ausstieg hält `route.exits.test.ts` fest. Was keine Reservierung und kein Featu
 **Der Chat im Browser** (`features/chat/`): `components/chat.tsx` setzt nur zusammen
 (`chat-thread.tsx`, `chat-notices.tsx`, Composer, Sprachleiste). Der Zustandsautomat
 eines Zugs steht in `hooks/use-chat-turn.ts`, die Anfrage samt Stromlesen in
-`hooks/run-chat-turn.ts`, dazu `use-chat-scroll.ts`, `use-attach-notice.ts` und
+`hooks/run-chat-turn.ts` (reine Teile: `lib/turn-state.ts`, `lib/turn-outcome.ts`), dazu `use-chat-scroll.ts`, `use-attach-notice.ts` und
 `lib/chat-wire.ts`. `chat.turn.test.tsx` hält den Automaten fest, `chat.test.tsx` die
 Oberfläche.
 
