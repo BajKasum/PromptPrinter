@@ -59,59 +59,17 @@ const nextConfig: NextConfig = {
   // Vercel sets on every build (never set locally or in the Docker image), so
   // this is a no-op everywhere except Vercel's own build.
   output: process.env.VERCEL ? undefined : "standalone",
-  // Polling-based file watching, ONLY when WATCHPACK_POLLING is set (the dev
-  // Docker container's own compose file sets it, the host's shell/.env.local
-  // never does — so this is a no-op everywhere except that one container).
-  //
-  // The Docker dev container's file watching over its Windows bind mount was
-  // broken (a host-side edit never triggered a recompile — a real edit
-  // followed by a fresh request kept serving the stale compiled page in
-  // ~400ms, no "Compiling ..." log line, where a genuine recompile takes
-  // 20-30s+ on this project). Root cause was Turbopack itself: its native
-  // watcher (the Rust `notify` crate) never receives filesystem events across
-  // that bind mount, and — confirmed by testing this exact option, not
-  // assumed — Turbopack does not act on `watchOptions.pollIntervalMs` either,
-  // despite it being Next's own documented, bundler-agnostic replacement for
-  // WATCHPACK_POLLING/CHOKIDAR_USEPOLLING (which Turbopack also ignores; both
-  // only ever appear inside Next's bundled webpack/chokidar, confirmed by
-  // searching the compiled package). The actual fix was switching the Docker
-  // dev container to webpack (`npm run dev:docker`, see Dockerfile's `dev`
-  // stage) — the host's `npm run dev` keeps Turbopack, there's no bind-mount
-  // boundary there to work around. `watchOptions` stays set here as
-  // defense-in-depth for that webpack path: it's the modern equivalent of the
-  // env vars below and costs nothing when unset.
+  // Polling nur, wenn WATCHPACK_POLLING gesetzt ist, also im Dev-Container (webpack, siehe Dockerfile): dessen
+  // Bind-Mount unter Windows meldet keine Dateiänderungen. Turbopack beachtet die Option nicht.
   watchOptions:
     process.env.WATCHPACK_POLLING === "true" ? { pollIntervalMs: 1000 } : undefined,
-  // No `images.remotePatterns` on purpose (Security-Audit finding H-2). It used
-  // to allowlist the two OAuth avatar hosts, but nothing ever routed a remote
-  // URL through next/image: <Mascot> is the only next/image call site and it
-  // only ever loads first-party PNGs from /public/mascot, while every avatar
-  // (sidebar, settings) renders through a plain <img>. Keeping the patterns
-  // meant next/image's optimizer — i.e. sharp, a native libvips binding with a
-  // history of CVEs — stayed reachable for third-party bytes for no benefit.
-  // Without them, sharp only ever processes our own bundled artwork.
-  // Seit dem Entfernen des Profilbild-Uploads zeigt kein <img> mehr einen Avatar,
-  // und die CSP (server/security/csp.ts) kennt die Hosts auch nicht mehr.
+  // Bewusst keine `images.remotePatterns`: next/image lädt nur eigene Bilder aus /public/mascot, so verarbeitet
+  // der Bildoptimierer (sharp) keine fremden Bytes. Auch die CSP (server/security/csp.ts) kennt keine fremden Bildhosts.
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // /features was a page for one day (2026-07-29 → 2026-07-30) before its
-  // content moved back into the landing page. Nothing outside this repo should
-  // be holding that URL yet — the app isn't hosted — but the route also existed
-  // in the sitemap, so this keeps the address answering instead of 404ing, and
-  // costs one config entry. next.config redirects run before middleware, so
-  // this resolves before the auth check ever sees the path (which is why
-  // /features could be dropped from the middleware's public prefixes).
-  //
-  // /admin ("Betrieb") ist seit 2026-09-29 ein Abschnitt der Seite /usage
-  // ("Nutzung"), sichtbar nur für is_admin. Die Umleitung hält alte
-  // Lesezeichen am Leben; ein Nicht-Admin landet auf seiner eigenen
-  // Nutzungsseite, wie jeder andere Weg dorthin auch.
-  //
-  // /vergleich/direkt-im-bau-tool-prompten heisst seit der Neuausrichtung
-  // vom 11.10.2026 (Prompts für jede KI, nicht nur für Bau-Tools)
-  // /vergleich/direkt-in-die-ki-tippen. Die alte Adresse war öffentlich und in
-  // der Sitemap, sie bleibt über die Umleitung erreichbar.
+  // Alte öffentliche Adressen bleiben erreichbar. Diese Umleitungen laufen vor der Middleware, die Auth-Prüfung
+  // sieht die Pfade also nicht. /admin ist heute ein Abschnitt von /usage, sichtbar nur für is_admin.
   async redirects() {
     return [
       { source: "/features", destination: "/#funktionen", permanent: true },
