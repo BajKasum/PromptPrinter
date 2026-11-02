@@ -13,6 +13,7 @@ import "server-only";
  */
 import { Ratelimit } from "@upstash/ratelimit";
 import { logWarning } from "@/shared/lib/observability";
+import { logRateLimited } from "@/server/security/security-log";
 import { redis } from "@/server/security/redis-client";
 import { reserveCounter } from "@/server/security/reserve-counter";
 
@@ -109,7 +110,13 @@ function getLimiter(limit: number, windowMs: number): Ratelimit {
   return limiter;
 }
 
-export async function rateLimit(
+export async function rateLimit(key: string, ceiling: { limit: number; windowMs: number }): Promise<RateLimitResult> {
+  const result = await checkRateLimit(key, ceiling);
+  if (!result.allowed) logRateLimited(key);
+  return result;
+}
+
+async function checkRateLimit(
   key: string,
   { limit, windowMs }: { limit: number; windowMs: number }
 ): Promise<RateLimitResult> {

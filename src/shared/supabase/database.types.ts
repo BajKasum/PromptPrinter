@@ -219,6 +219,19 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"security_events": {
+                  Row: {
+                    "created_at": string,"details": NonNullable<Json>,"event": string,"id": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "created_at"?: string,"details"?: NonNullable<Json>,"event": string,"id"?: string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"details"?: NonNullable<Json>,"event"?: string,"id"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+
+                  ]
                 },"user_api_keys": {
                   Row: {
                     "base_url": string | null,"created_at": string,"encrypted_key": string,"id": string,"is_active": boolean,"label": string | null,"model": string | null,"provider": string,"user_id": string
@@ -251,6 +264,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "chat_count": number,"project_id": string,"saved_count": number
             }[]
+                           },
+"prune_security_events":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "set_active_byok_provider":
 { Args: { "target_provider": string }; Returns: undefined

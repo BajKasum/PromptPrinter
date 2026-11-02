@@ -21,6 +21,7 @@ import {
 import { siteUrl, safeNextPath } from "@/shared/lib/site-url";
 import { MIN_PASSWORD_LENGTH, weakPasswordMessage, weakPasswordReason } from "@/shared/lib/password";
 import { logWarning } from "@/shared/lib/observability";
+import { logSecurityEvent } from "@/server/security/security-log";
 
 export const runtime = "nodejs";
 
@@ -180,16 +181,21 @@ async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supaba
   // Auch das richtige Passwort prallt ab, sonst wäre die Sperre ein Orakel. Der Text sagt nichts über das
   // Konto: unbekannte Adressen zählen genauso (server/security/sign-in-throttle.ts).
   if (await isSignInThrottled(input.email)) {
+    logSecurityEvent("auth.sign_in_failed", { reason: "throttled" });
     return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.");
   }
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: input.email,
     password: input.password,
   });
   if (error) {
-    if (isInvalidCredentialsError(error.message)) await recordFailedSignIn(input.email);
+    const invalid = isInvalidCredentialsError(error.message);
+    if (invalid) await recordFailedSignIn(input.email);
+    // Ohne Adresse: ein Fehlversuch nennt kein Konto, auch nicht im Log.
+    logSecurityEvent("auth.sign_in_failed", { reason: invalid ? "invalid_credentials" : "other" });
     return authFailure(error.message, input.action);
   }
+  logSecurityEvent("auth.sign_in_succeeded", { userId: data?.user?.id ?? null });
   // The session cookies were written by the server client on the way
   // through (server/supabase/server.ts), so they ride out on this response.
   return NextResponse.json({ ok: true });
@@ -208,6 +214,7 @@ async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supaba
   // unterscheiden kann.
   const weak = weakPasswordReason(input.password, input.email);
   if (weak) {
+    logSecurityEvent("auth.sign_up_failed", { reason: "weak_password" });
     return problem(400, weakPasswordMessage(weak), { kind: "weak-password", reason: weak });
   }
 
@@ -216,7 +223,11 @@ async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supaba
     password: input.password,
     options: { emailRedirectTo: callbackUrl(input.next) },
   });
-  if (error) return authFailure(error.message, input.action);
+  if (error) {
+    logSecurityEvent("auth.sign_up_failed", { reason: "rejected" });
+    return authFailure(error.message, input.action);
+  }
+  logSecurityEvent("auth.sign_up_succeeded", { userId: data.user?.id ?? null, session: Boolean(data.session) });
   // No session means email confirmation is switched on and the form has to
   // show its "check your inbox" state instead of celebrating.
   return NextResponse.json({ ok: true, session: Boolean(data.session) });
@@ -233,6 +244,7 @@ async function resendConfirmation(input: Extract<AuthRequest, { action: "resend"
   );
   // Der Mail-Cooldown gilt nur für bestehende Konten, seine Meldung verriete also das Konto (siehe unten).
   if (error && !isMailCooldownError(error.message)) return authFailure(error.message, input.action);
+  logSecurityEvent("auth.confirmation_resent");
   return NextResponse.json({ ok: true });
 }
 
@@ -248,6 +260,7 @@ async function resetPassword(input: Extract<AuthRequest, { action: "reset-passwo
       redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
     })
   );
+  logSecurityEvent("auth.password_reset_requested");
   return NextResponse.json({ ok: true });
 }
 

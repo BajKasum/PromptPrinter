@@ -38,7 +38,8 @@ vi.mock("@/server/security/turnstile", () => ({
   verifyTurnstileToken: (...a: unknown[]) => verifyTurnstileToken(...a),
   MAX_TURNSTILE_TOKEN_CHARS: 4096,
 }));
-vi.mock("@/shared/lib/observability", () => ({ logWarning: vi.fn(), captureError: vi.fn() }));
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()), logWarning: vi.fn(), captureError: vi.fn() }));
 
 function request(c: Case) {
   return new Request("https://promptprinter.app/api/auth", {

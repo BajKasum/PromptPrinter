@@ -52,12 +52,18 @@ vi.mock("@/server/supabase/admin", () => ({
   })),
 }));
 
+const recordSecurityEvent = vi.fn();
+vi.mock("@/server/security/security-events", () => ({
+  recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
+}));
+
 vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...args: unknown[]) => rateLimit(...args),
   rateLimitKey: () => "u:user-1",
 }));
 
-vi.mock("@/shared/lib/observability", () => ({
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()),
   captureError: (...args: unknown[]) => captureError(...args),
 }));
 
@@ -112,6 +118,20 @@ describe("DELETE /api/account", () => {
     expect(storageRemove).not.toHaveBeenCalled();
     expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
     expect(captureError).toHaveBeenCalled();
+  });
+
+  it("hält das Löschen fest, nachdem es gelungen ist, und nur die Kennung", async () => {
+    const res = await DELETE(new Request("https://promptprinter.app/api/account", { method: "DELETE" }));
+    expect(res.status).toBe(200);
+    expect(recordSecurityEvent.mock.calls).toEqual([["account.deleted", "user-1"]]);
+  });
+
+  it("hält nichts fest, wenn das Löschen scheitert", async () => {
+    deleteUser.mockResolvedValueOnce({ error: new Error("auth down") });
+    const res = await DELETE(new Request("https://promptprinter.app/api/account", { method: "DELETE" }));
+    expect(res.status).toBe(500);
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
+    expect(captureError).toHaveBeenCalledWith("account.delete_failed", expect.any(Error), { userId: "user-1" });
   });
 
   it("requires authentication", async () => {

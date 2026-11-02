@@ -27,7 +27,8 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: (_req: unknown, scope: string, userId: string) => `${scope}:u:${userId}`,
 }));
 vi.mock("@/server/brain/repo-status", () => ({ isRepoStale: (...args: unknown[]) => isRepoStale(...args) }));
-vi.mock("@/shared/lib/observability", () => ({ captureError: vi.fn(), logEvent: vi.fn(), logWarning: vi.fn() }));
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()), captureError: vi.fn(), logEvent: vi.fn(), logWarning: vi.fn() }));
 
 import { GET } from "./route";
 

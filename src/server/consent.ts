@@ -1,5 +1,6 @@
 import "server-only";
 
+import { recordSecurityEvent } from "@/server/security/security-events";
 import { createAdminClient } from "@/server/supabase/admin";
 
 /**
@@ -20,8 +21,10 @@ import { createAdminClient } from "@/server/supabase/admin";
  *
  * Gespeichert wird beim Konto, in `app_metadata` (Supabase Auth): nur mit dem
  * Service-Role-Schlüssel beschreibbar, der Nutzer kann es nicht selbst setzen
- * und braucht dafür keine Tabelle und keine Migration. Wer den Hinweistext
- * wesentlich ändert, setzt ZAI_CONSENT_VERSION hoch, dann fragt der Chat neu.
+ * und braucht dafür keine Tabelle und keine Migration. Dort steht nur der letzte
+ * Stand; dass und wann erteilt oder widerrufen wurde, hält das Sicherheitsprotokoll
+ * fest (server/security/security-events.ts). Wer den Hinweistext wesentlich ändert,
+ * setzt ZAI_CONSENT_VERSION hoch, dann fragt der Chat neu.
  */
 export const ZAI_CONSENT_VERSION = "2026-10-17";
 
@@ -46,4 +49,7 @@ export async function setZaiConsent(userId: string, granted: boolean): Promise<v
     app_metadata: { zai_consent: granted ? { version: ZAI_CONSENT_VERSION, at: new Date().toISOString() } : null },
   });
   if (error) throw error;
+  await recordSecurityEvent(granted ? "consent.zai_granted" : "consent.zai_withdrawn", userId, {
+    version: ZAI_CONSENT_VERSION,
+  });
 }

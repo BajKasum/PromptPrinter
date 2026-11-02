@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/server/supabase/server";
 import { problem } from "@/server/http/api-problem";
+import { denied } from "@/server/security/security-log";
 import { captureError } from "@/shared/lib/observability";
 import { isRepoStale } from "@/server/brain/repo-status";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
@@ -24,7 +25,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function GET(req: Request, { params }: Params) {
   const m = requestT(req).t.api;
   const { id: projectId } = await params;
-  if (!UUID.test(projectId)) return problem(404, m.projectNotFound);
+  if (!UUID.test(projectId)) return denied("brain-status", problem(404, m.projectNotFound));
 
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
@@ -36,7 +37,7 @@ export async function GET(req: Request, { params }: Params) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("brain-status", problem(401, m.signInRequired));
 
   // Die Karte fragt höchstens einmal je Öffnen; mehr ist kein Mensch. Über der Grenze "unbekannt", also kein Hinweis
   // und keine Anfrage an GitHub: fehlt der Hinweis, geht nichts kaputt.

@@ -475,6 +475,38 @@ Einstellungen der Produktion, am 2026-11-02 im Dashboard gelesen (Authentication
 
 Eine Sitzung läuft also nicht von selbst ab. Was sie beendet: Abmelden, Löschen des Kontos oder die Wiederverwendung eines rotierten Tokens, die bei einem gestohlenen Token auffällt, sobald Angreifer und Nutzer es beide erneuern.
 
+## Sicherheitsprotokoll
+
+Zwei Stufen, beide nur mit der Kennung des Kontos: nie eine Adresse, ein Key oder Inhalt. `redactContext` schwärzt nach dem Namen des Felds, `safeSecurityContext` (`src/server/security/security-log.ts`) zusätzlich Adressen und Keys in den Werten.
+
+| Vorgang | Ereignis | Wo es steht |
+|---|---|---|
+| Anmelden | `auth.sign_in_succeeded`, `auth.sign_in_failed` (Grund: `invalid_credentials`, `throttled`, `other`) | Log |
+| Registrieren | `auth.sign_up_succeeded`, `auth.sign_up_failed` (Grund: `rejected`, `weak_password`) | Log |
+| Passwort-Reset, Bestätigung erneut senden | `auth.password_reset_requested`, `auth.confirmation_resent` | Log |
+| Abgelehnter Zugriff (401, 403, 404 auf eine fremde Kennung) | `access.denied`, mit Route und Status, jede zehnte Absage | Log |
+| Absage des Ratenlimits | `rate_limit.rejected`, mit Bereich und Konto, jede zehnte, nie die Adresse | Log |
+| Eigener Key gespeichert, ersetzt, aktiviert, entfernt | `api_key.saved`, `api_key.activated`, `api_key.removed` | Log und Tabelle |
+| Einwilligung in Z.ai erteilt, widerrufen | `consent.zai_granted`, `consent.zai_withdrawn` | Log und Tabelle |
+| Konto gelöscht | `account.deleted` | Log und Tabelle |
+| Planwechsel | stehen schon in `billing_events` (Webhook) | Tabelle `billing_events` |
+
+Aufbewahrung:
+
+- **Log:** das Laufzeit-Log von Vercel, auf dem Hobby-Tarif **eine Stunde** ([Vercel, "Runtime Logs"](https://vercel.com/docs/logs/runtime), gelesen am 2026-11-02). Ein Angriffsmuster lässt sich dort live sehen, nach einem Tag ist nichts mehr da. Anmeldungen stehen zusätzlich im eigenen Protokoll von Supabase Auth, ohne Bezug zu diesen Einträgen.
+- **Tabelle `public.security_events`:** **180 Tage.** Der Job `prune-security-events` (pg_cron, täglich 03:17 UTC) ruft `prune_security_events()` auf und löscht nur, was älter ist. Die Tabelle ist nur zum Anhängen: `anon` und `authenticated` haben kein Recht, `service_role` darf lesen und schreiben, aber weder ändern noch löschen. `user_id` hat bewusst keinen Fremdschlüssel: "Konto gelöscht" muss das Konto überleben, nur diese eine Kennung bleibt bis zum Ablauf der Frist.
+
+Einen Vorfall nachsehen (SQL-Editor im Dashboard):
+
+```sql
+select created_at, event, details from public.security_events
+where user_id = '<konto>' order by created_at desc;
+```
+
+Prüfen, ob der Job läuft: `select jobname, schedule, active from cron.job;` und `select status, start_time from cron.job_run_details order by start_time desc limit 5;`.
+
+Administrator-Aktionen gibt es in der App keine: `profiles.is_admin` hebt nur Grenzen auf, und Änderungen am Konto laufen im Supabase-Dashboard. Nicht geprüft ist der Betrieb an einem echten Tag: es gibt kein Staging, und die Menge der Logzeilen ist nicht gemessen.
+
 ## Kontaktformular
 
 `/kontakt` hat neben der Mailadresse ein Formular (`ContactForm`, Name freiwillig, E-Mail, Thema, Nachricht

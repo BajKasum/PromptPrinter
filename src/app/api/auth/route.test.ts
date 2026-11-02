@@ -14,6 +14,7 @@ const verifyTurnstileToken = vi.fn();
 const logWarning = vi.fn();
 const isSignInThrottled = vi.fn();
 const recordFailedSignIn = vi.fn();
+const logEvent = vi.fn();
 
 vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
@@ -42,8 +43,10 @@ vi.mock("@/server/security/turnstile", () => ({
   MAX_TURNSTILE_TOKEN_CHARS: 4096,
 }));
 
-vi.mock("@/shared/lib/observability", () => ({
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()),
   logWarning: (...a: unknown[]) => logWarning(...a),
+  logEvent: (...a: unknown[]) => logEvent(...a),
   captureError: vi.fn(),
 }));
 
@@ -72,6 +75,59 @@ describe("POST /api/auth", () => {
     resend.mockResolvedValue({ error: null });
     resetPasswordForEmail.mockResolvedValue({ error: null });
     isSignInThrottled.mockResolvedValue(false);
+  });
+
+  describe("Sicherheitsprotokoll", () => {
+    const events = () => logEvent.mock.calls.map(([event, context]) => ({ event, ...context }));
+
+    it("Anmeldung gelungen: mit der Kennung des Kontos, ohne Adresse", async () => {
+      signInWithPassword.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+      expect((await POST(req(signIn))).status).toBe(200);
+      expect(events()).toEqual([{ event: "auth.sign_in_succeeded", userId: "user-1" }]);
+    });
+
+    it("falsches Passwort: ein Eintrag mit Grund, ohne Adresse und ohne Passwort", async () => {
+      signInWithPassword.mockResolvedValue({ data: {}, error: { message: "Invalid login credentials" } });
+      expect((await POST(req(signIn))).status).toBe(400);
+      expect(events()).toEqual([{ event: "auth.sign_in_failed", reason: "invalid_credentials" }]);
+      expect(JSON.stringify(logEvent.mock.calls)).not.toContain("du@example.com");
+      expect(JSON.stringify(logEvent.mock.calls)).not.toContain("hunter2");
+    });
+
+    it("anderer Fehler beim Anmelden: eigener Grund", async () => {
+      signInWithPassword.mockResolvedValue({ data: {}, error: { message: "Database error" } });
+      await POST(req(signIn));
+      expect(events()).toEqual([{ event: "auth.sign_in_failed", reason: "other" }]);
+    });
+
+    it("gesperrt wegen zu vieler Versuche: eigener Grund", async () => {
+      isSignInThrottled.mockResolvedValue(true);
+      expect((await POST(req(signIn))).status).toBe(429);
+      expect(events()).toEqual([{ event: "auth.sign_in_failed", reason: "throttled" }]);
+    });
+
+    it("Registrierung gelungen, abgewiesen und mit schwachem Passwort", async () => {
+      const signUpBody = { action: "sign-up", email: "du@example.com", password: "Kiefer-Wolke-Ozean-84!" };
+
+      signUp.mockResolvedValue({ data: { user: { id: "user-2" }, session: null }, error: null });
+      await POST(req(signUpBody));
+      expect(events().at(-1)).toEqual({ event: "auth.sign_up_succeeded", userId: "user-2", session: false });
+
+      signUp.mockResolvedValue({ data: {}, error: { message: "User already registered" } });
+      await POST(req(signUpBody));
+      expect(events().at(-1)).toEqual({ event: "auth.sign_up_failed", reason: "rejected" });
+
+      await POST(req({ ...signUpBody, password: "password1234" }));
+      expect(events().at(-1)).toEqual({ event: "auth.sign_up_failed", reason: "weak_password" });
+      expect(JSON.stringify(logEvent.mock.calls)).not.toContain("du@example.com");
+    });
+
+    it("Reset und erneute Bestätigung: Eintrag ohne Adresse", async () => {
+      await POST(req({ action: "reset-password", email: "du@example.com" }));
+      await POST(req({ action: "resend", email: "du@example.com" }));
+      expect(events().map((e) => e.event)).toEqual(["auth.password_reset_requested", "auth.confirmation_resent"]);
+      expect(JSON.stringify(logEvent.mock.calls)).not.toContain("du@example.com");
+    });
   });
 
   describe("the captcha gate", () => {

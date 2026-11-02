@@ -39,6 +39,10 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "u:user-1",
 }));
 vi.mock("@/server/llm", () => ({ chatComplete: (...a: unknown[]) => chatComplete(...a) }));
+const recordSecurityEvent = vi.fn();
+vi.mock("@/server/security/security-events", () => ({
+  recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
+}));
 vi.mock("@/server/security/crypto", () => ({
   encrypt: (v: string, binding: unknown) => encrypt(v, binding),
   decrypt: vi.fn(),
@@ -66,6 +70,60 @@ function del(provider?: string) {
     : "https://promptprinter.app/api/settings/api-key";
   return new Request(url, { method: "DELETE" });
 }
+
+describe("Sicherheitsprotokoll der Keys", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
+    rateLimit.mockResolvedValue({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 });
+    chatComplete.mockResolvedValue({ text: "OK", usage: null });
+    encrypt.mockReturnValue("ENCRYPTED_BLOB");
+    upsert.mockResolvedValue({ error: null });
+    deleteRow.mockReturnValue({ error: null });
+    rpc.mockResolvedValue({ error: null });
+    tableResults.profiles = { data: { is_admin: false } };
+    tableResults.user_api_keys = { data: null };
+  });
+
+  it("hält einen neuen Key fest, und dass er von selbst aktiv wurde", async () => {
+    expect((await POST(post({ apiKey: "sk-ant-secret" }))).status).toBe(200);
+    expect(recordSecurityEvent.mock.calls).toEqual([
+      ["api_key.saved", "user-1", { provider: "anthropic", replaced: false }],
+      ["api_key.activated", "user-1", { provider: "anthropic", automatic: true }],
+    ]);
+  });
+
+  it("unterscheidet einen ersetzten Key und aktiviert nichts Neues", async () => {
+    tableResults.user_api_keys = { data: { provider: "anthropic" } };
+    expect((await POST(post({ apiKey: "sk-ant-secret" }))).status).toBe(200);
+    expect(recordSecurityEvent.mock.calls).toEqual([
+      ["api_key.saved", "user-1", { provider: "anthropic", replaced: true }],
+    ]);
+  });
+
+  it("hält ein Umschalten des aktiven Keys fest", async () => {
+    tableResults.user_api_keys = { data: { provider: "openai" } };
+    expect((await PATCH(patch({ provider: "openai" }))).status).toBe(200);
+    expect(recordSecurityEvent.mock.calls).toEqual([
+      ["api_key.activated", "user-1", { provider: "openai", automatic: false }],
+    ]);
+  });
+
+  it("hält das Entfernen fest", async () => {
+    expect((await DELETE(del("openai"))).status).toBe(200);
+    expect(recordSecurityEvent.mock.calls).toEqual([["api_key.removed", "user-1", { provider: "openai" }]]);
+  });
+
+  it("schreibt nichts, wenn das Speichern scheitert, und nie den Key", async () => {
+    upsert.mockResolvedValue({ error: { message: "constraint" } });
+    expect((await POST(post({ apiKey: "sk-ant-secret" }))).status).toBe(500);
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
+
+    upsert.mockResolvedValue({ error: null });
+    await POST(post({ apiKey: "sk-ant-secret" }));
+    expect(JSON.stringify(recordSecurityEvent.mock.calls)).not.toContain("sk-ant-secret");
+  });
+});
 
 describe("POST /api/settings/api-key", () => {
   beforeEach(() => {
