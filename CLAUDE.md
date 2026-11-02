@@ -59,18 +59,18 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   CAPTCHA bleibt aus** (ein Token ist einmal einlösbar, zwei Prüfer brächen jeden
   Login). Reset und Bestätigung laufen über `/auth/callback` (`token_hash` + `type`,
   `src/features/auth/lib/recovery-session.ts`), die Mail-Vorlagen liegen in
-  `supabase/templates/`.
+  `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
-  Migrationen 0001 bis 0055 in `supabase/migrations/`, alle in Produktion angewendet (0051 am 2026-11-02,
-  Version `20261102211918`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Migrationen 0001 bis 0055 in `supabase/migrations/`, alle in Produktion angewendet (0055 am 2026-11-03,
+  Version `20261102235100`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
-  ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
+  ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsprotokoll: Tabelle `security_events`, nur zum Anhängen, 180 Tage per `pg_cron` (`docs/SETUP.md`). Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Terminal-Anmeldung (Server-Teil der Terminal-App):** Geräte-Code unter `src/app/api/cli/`, Bestätigungsseite `/cli`,
   Bearer neben dem Cookie nur im Chat (`createClientForRequest`, Guard `bearer-routes.test.ts`). Migration 0050
-  und Code sind in Produktion. Verlauf und Messungen: Changelog 2026-10-29.
+  und Code sind in Produktion. Entscheid #228: echte Supabase-Sitzung, kein eigener Token-Typ; `cli_sessions` macht sie sichtbar, einzeln widerrufbar und höchstens 30 Tage gültig. Verlauf: Changelog 2026-10-29 und 2026-11-02.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
   nur im Produktions-Build. Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
   Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen

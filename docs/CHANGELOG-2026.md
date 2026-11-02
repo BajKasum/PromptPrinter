@@ -11,6 +11,31 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-02: Sicherheits-Runde, BYOK-Format, Protokoll, Terminal-Sitzungen, zweiter Faktor (PRs #283, #285, #288, #290, #291, #293, #294, Issues #228, #235, #237, #238, #239)
+
+**Migrationen (je mit Kasums Ja, erst Migration, dann Merge):** 0052 `20261102224736`, 0053 `20261102231453`, 0054 `20261102233122`, 0055 `20261102235100`. Lesend geprüft: RLS, Rechte, zwei Jobs in `cron.job`.
+
+**#238:** `'unsafe-inline'` bleibt auf den Anmeldeseiten (Messung im Issue). Die Bedingung für einen neuen Entscheid steht in `server/security/csp.ts`.
+
+**#239:** Kein fester Rückfallschlüssel mehr, Format `pp2.<kid>.<payload>` mit HKDF statt scrypt und `user_id|provider` als authentifizierte Daten. Der Start verlangt mindestens 32 Zeichen und keinen Platzhalter; Kasum hat die Länge bestätigt, ohne den Wert zu nennen, und die Vorschau lief mit dem echten Wert, bevor der Code live ging. In Produktion liegen 0 Zeilen in `user_api_keys`, das Skript lief dort nicht. **Bewusst offen:** die Leseseite des alten Formats, nur dort gilt die Bindung noch nicht.
+
+**Konto löschen (kein Issue, beim Aufräumen von #239 gefunden):** Ein Konto mit aktivem eigenem Key liess sich nicht löschen, `/api/account` antwortete 500. Der Löschtrigger auf `user_api_keys` feuert bei der Kaskade aus `auth.users` erst am Ende des äusseren Befehls, also als `supabase_auth_admin`. Erst der Test allein rot, dann mit Migration 0052 (`security definer`) grün. Betroffen war niemand.
+
+**#235:** `security-log.ts` fürs Log (Absagen als Stichprobe, jede zehnte), Tabelle `security_events` für Keys, Einwilligung, Terminals, zweiten Faktor und Konto löschen. Ohne Fremdschlüssel, weil "Konto gelöscht" das Konto überleben muss; auch die Service-Role kann nichts ändern. Nach 180 Tagen löscht ein Job in der Datenbank. Der Datenschutz nennt das seit PR #291 (Wortlaut von Kasum freigegeben, juristisch nicht geprüft). **Nicht geprüft:** die Menge an einem echten Tag, es gibt kein Staging.
+
+**#228, Entscheid von Kasum: absichern, kein neuer Token-Typ** (`docs/SETUP.md`, "Terminal-Anmeldung"). `/cli` zeigt Adresse, Ort und Programm der Anfrage, `cli_sessions` listet die Terminals, der Einzelwiderruf löscht die Zeile in `auth.sessions`, Höchstalter 30 Tage per Prüfung und stündlichem Job. Grenze: Ein ausgestelltes Access-Token gilt an der Data API noch bis zu einer Stunde.
+
+**#237, Entscheid von Kasum: optionales TOTP.** AAL2 für Konto löschen, Keys verwalten, Terminal freigeben. Rückweg: zehn Wiederherstellungscodes (nur als Hash), danach der Betreiber. Beim Gegenlesen dazugekommen: Einrichten verlangt eine frische Anmeldung, sonst sperrt ein gestohlenes Cookie den Besitzer mit einem fremden Faktor aus. **Grenze:** Eine AAL1-Sitzung erreicht weiter Chat, Export und Data API, RLS verlangt kein AAL2. **Nicht geprüft:** ein Faktor auf dem Produktionsprojekt.
+
+**Geprüft:** Browser-Tests gegen den lokalen Stack in der CI auf jedem PR, Mutationen je Änderung: #239 22, #235 28, #228 29, #237 37, alle erkannt.
+
+**Fallen:**
+- Ein Einfügen mehrerer Zeilen über PostgREST setzt fehlende Spalten auf `null`, nicht auf ihren Standardwert, sobald eine Zeile sie nennt.
+- `getByRole("alert")` trifft auch `#__next-route-announcer__`: immer nach Text filtern oder auf `form` eingrenzen.
+- Die Suite kam über 30 Anmeldungen in zehn Minuten und damit ins Ratenlimit: `signIn()` nennt je Konto eine eigene Adresse, dafür `TRUSTED_PROXY_HOPS=1` im Testserver.
+- `database.types.ts` wird Byte für Byte verglichen, leere `Relationships` tragen 20 Leerzeichen. Die erzeugte Datei ist von `file-size.test.ts` ausgenommen.
+- `gh api … -F x=y` sendet POST, auch ohne `-X`: zum Lesen `-X GET`.
+
 ## 2026-11-02: Grenzen je Konto in der Datenbank, Eigentümer der Elternzeile, Tag-Schutz, SHA-Pinning (PRs #281, #286, Issues #227, #232, #233, #240, #241)
 
 **#227 und #233, Migration 0051 (Kasums Ja, auf Produktion seit 2026-11-02, Version `20261102211918`).** Der Browser schreibt direkt in die Tabellen, die Grenzen galten nur in den Routen.

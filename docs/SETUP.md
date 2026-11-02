@@ -701,6 +701,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `billing-webhook.spec.ts` | der Zahlungsweg mit **selbst signierten** Lemon-Squeezy-Ereignissen gegen die lokale Datenbank: Abo wird Pro, dieselbe Zustellung zweimal wirkt nur einmal, Kündigung und Ablauf, falsche Signatur wird abgewiesen, Konto-Übernahme gelingt nicht, Teilerstattung lässt Pro stehen |
 | `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
 | `byok-rotation.spec.ts` | `scripts/rotate-byok-secret.mjs` als eigener Prozess gegen echte Zeilen: Formatwechsel, Rotation, getauschte Chiffretexte, keine Ausgabe von Secrets |
+| `account-deletion.spec.ts` | Konto mit aktivem eigenem Key lässt sich löschen, der nächste Key rückt beim Löschen des aktiven nach |
 | `security-events.spec.ts` | Sicherheitsprotokoll: Routen schreiben hinein, Browser kommt nicht heran, der Server kann nichts umschreiben, die 180 Tage greifen |
 | `cli-login.spec.ts` | Anmeldung des Terminals: Code, Freigabe, einmal abholen, Chat per Bearer, Details auf `/cli`, Einzelwiderruf in den Einstellungen, Höchstalter, Job in der Datenbank |
 | `mfa.spec.ts` | Zweiter Faktor mit echten Codes: einrichten, Anmelden mit und ohne, die heiklen Aktionen auf AAL1, Rückweg mit Wiederherstellungscode, Passwort-Reset, Zusammenspiel mit Terminals |
