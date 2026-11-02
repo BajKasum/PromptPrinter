@@ -49,6 +49,13 @@ updates:
         update-types:
           - "version-update:semver-major"
     groups:
+      # Auch Majors gemeinsam: `@vitest/coverage-v8` verlangt als Peer genau dieselbe
+      # Version wie `vitest`, einzeln scheitert jeder Sprung an `npm ci` (ERESOLVE).
+      # Steht vor der Sammel-Gruppe, weil ein Paket in der ersten passenden Gruppe landet.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
       # Minor und Patch in einem PR (ein Gate-Lauf statt zehn). Majors sind in
       # keiner Gruppe und kommen deshalb einzeln: ein Sprung mit Breaking Change
       # soll für sich beurteilt und für sich zurückgenommen werden können.

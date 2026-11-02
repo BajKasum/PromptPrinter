@@ -24,13 +24,16 @@
     "\"use the direct dependency's own range\") and not a copy of the range. A copy",
     "makes npm fail with EOVERRIDE the moment Dependabot raises the direct entry",
     "(06.10.2026: its group refresh failed with \"Override for postcss@8.5.28",
-    "conflicts with direct dependency\")."
+    "conflicts with direct dependency\").",
+    "minimatch is the one major in this list: GHSA-g3hv-75wg-m249 covers everything below",
+    "11.0.1 and ESLint with its plugins still ask for 3 and 10. Version 11 has no callable",
+    "default export, so a rule calling `minimatch(...)` crashes the lint (exit 2). Active",
+    "today: none. Before enabling jsx-a11y/label-has-associated-control or the glob options",
+    "of eslint-plugin-import and eslint-plugin-react, re-check this entry."
   ],
   "overrides": {
     "brace-expansion": "^5.0.12",
-    "minimatch@^3.1.2": {
-      "brace-expansion": "^1.1.12"
-    },
+    "minimatch": "^11.0.4",
     "js-yaml": "^4.3.0",
     "postcss": "$postcss",
     "protobufjs": "^7.6.5",
@@ -90,7 +93,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "@vitest/coverage-v8": "^4.1.12",
+    "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^9.18.0",
     "eslint-config-next": "^16.4.3",
     "jsdom": "^30.1.3",
@@ -98,6 +101,6 @@
     "puppeteer-core": "^25.16.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.12"
+    "vitest": "^5.0.5"
   }
 }

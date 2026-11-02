@@ -173,10 +173,10 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
   ausgelieferten Baum (`npm audit --omit=dev`) blockiert immer, **ohne Ausnahmen und ohne
   Fristen**. Ein Fund nur in einem Entwicklungswerkzeug blockiert, wenn es eine gepatchte
   Version gibt (dann anheben), und wird nur **gemeldet**, wenn keine gepatchte Version
-  existiert (der Bereich des Pakets im Bericht ist `*`). Aktuell gemeldet: GHSA-vfj7-8cjw-p6xm
-  (`braces` über `eslint-config-next`). Es gibt keine Ausnahmeliste mehr, also auch kein
-  Ablaufdatum, das jemand vergessen kann; die Bedingung prüft das Gate bei jedem Lauf selbst
-  (zieht jemand `braces` in den ausgelieferten Baum, scheitert es).
+  existiert (der Bereich des Pakets im Bericht ist `*`). Aktuell: nichts gemeldet, `npm audit` meldet 0
+  (`minimatch` 11 per Override, Falle im `//overrides` von `package.json`). Es gibt keine Ausnahmeliste
+  mehr, also auch kein Ablaufdatum, das jemand vergessen kann; die Bedingung prüft das Gate bei jedem
+  Lauf selbst. Funde unter "high" blockieren nicht: dafür Dependabot-Alarme und `audit.yml` lesen.
 - **Die Schritte des Gates nie durch `| tail` oder `| head` leiten.** Eine Pipe gibt
   den Exit-Code des letzten Befehls zurück, und der ist immer 0: ein roter
   `npm audit` sah so einen Lauf lang grün aus. Ausgabe in eine Datei schreiben und
