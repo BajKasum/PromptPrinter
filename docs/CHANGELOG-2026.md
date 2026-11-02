@@ -11,6 +11,16 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-02: GitHub aufgeräumt, Vitest 5, minimatch 11, Webhook ignoriert den Testmodus (Branch `chore/github-aufraeumen-2026-11-02`)
+
+Kasums Auftrag: nur die 16 Issues bleiben offen, alle PRs durch, keine Scanner-Funde. Vorher: #273 grün, #274 rot, Dependabot-Alarm #3, `npm audit` 16 moderate (eine Ursache), drei Advisory-Entwürfe.
+- **Vitest 5 und `@vitest/coverage-v8` 5 zusammen:** #274 hob nur die Abdeckung, sie verlangt als Peer genau dieselbe Vitest-Version, `npm ci` scheiterte mit ERESOLVE. Den Vitest-Sprung (#163) hatten wir am 19.10. geschlossen, Dependabot schlug ihn deshalb nicht wieder vor. In `dependabot.yml` jetzt eine eigene Gruppe `vitest`, auch für Majors.
+- **`minimatch` 11 per Override (GHSA-g3hv-75wg-m249):** betroffen ist laut Advisory alles unter 11.0.1, Dependabot kann es nicht selbst heben (`security_update_not_possible`), ESLint und seine Plugins verlangen weiter 3 und 10. **Geprüft:** ESLint liest mit 11 und mit 3.1.5 dieselben 673 Dateien und meldet bei eingebauten Fehlern dasselbe, `.next` bleibt ignoriert. **Falle:** 11 hat keinen aufrufbaren Default-Export, `jsx-a11y/label-has-associated-control` stürzt damit ab (Exit 2), heute ist keine solche Regel aktiv. Steht im `//overrides` von `package.json`. Erreichbar war der Fehler nicht: 3.1.5 kennt `optimizationLevel` gar nicht, 10.2.6 nur ab Stufe 2, und niemand setzt sie.
+- **Webhook (GHSA-4hvx-rhrq-fr4r):** `test_mode: true` ändert kein Konto mehr, 200 und `ignored` in `billing_events`, auch für einen Entzug. Vorher schaltete ein Testkauf Pro frei, und Testkarten sind öffentlich. Schalter `LEMON_SQUEEZY_ACCEPT_TEST_MODE=1` für Prüfungen ausserhalb der Produktion, auf Vercel mit `VERCEL_ENV=production` wirkungslos; kein neuer Wert in Vercel nötig. **Mutationstest:** Schranke weg, Schranke immer, Produktionssperre weg, Schalter ohne Wert: alle vier erkannt. **Offen, bei Kasum:** im Lemon-Squeezy-Dashboard prüfen, ob ein Testmodus-Webhook auf die Live-Adresse zeigt und das Testprodukt noch da ist, erst dann wird der Entwurf geschlossen.
+- **Bleibt offen:** GHSA-r5hq-66jj-rwjv ("Confirm email" aus): Mail-Test und Dashboard-Schalter bei Kasum.
+
+---
+
 ## 2026-11-01: Zweite Nachkontrolle (Branch `fix/nachkontrolle-2-2026-11-01`)
 
 Kontrolle der PRs #265, #268 und #270: Gate, Code der neuen Chat-Teile, Live-Seite auf Desktop und bei 375 Pixeln, Prüfsumme des Skills gegen die echte Datei. Geändert:
