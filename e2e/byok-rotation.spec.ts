@@ -92,7 +92,9 @@ test.describe("Umschlüsseln der BYOK-Keys", () => {
     first = await createAccount("byok-a");
     second = await createAccount("byok-b");
   });
+  // Die Zeilen zuerst: das Skript liest die ganze Tabelle, und ein Rest aus diesem Test wäre im nächsten eine fremde Zeile.
   test.afterEach(async () => {
+    await adminClient().from("user_api_keys").delete().in("user_id", [first.id, second.id]);
     await removeAccount(first.id);
     await removeAccount(second.id);
   });
