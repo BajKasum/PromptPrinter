@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildCsp, buildStaticCsp, thirdPartiesFor, type ThirdParties } from "@/server/security/csp";
+import { isAppPath } from "@/shared/lib/app-routes";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -270,4 +271,19 @@ describe("buildStaticCsp", () => {
     expect(csp).toContain("form-action 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
   });
+
+  // Der Entscheid aus #238 als Test: wer die drei Anmeldeseiten auf die Nonce-Policy umstellt, ändert ihn bewusst.
+  it.each(["/login", "/signup", "/reset-password"])(
+    "%s bleibt statisch: 'unsafe-inline' ohne Nonce, Inline-Handler gesperrt, nur Turnstile als Drittanbieter",
+    (path) => {
+      expect(isAppPath(path)).toBe(false);
+      const csp = buildStaticCsp(thirdPartiesFor(path));
+      const scriptSrc = directive(csp, "script-src");
+      expect(scriptSrc).toContain("'unsafe-inline'");
+      expect(scriptSrc).not.toMatch(/'nonce-/);
+      expect(scriptSrc).toContain("https://challenges.cloudflare.com");
+      expect(csp).not.toContain("lemonsqueezy");
+      expect(directive(csp, "script-src-attr")).toBe("script-src-attr 'none'");
+    }
+  );
 });
