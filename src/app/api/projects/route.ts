@@ -6,6 +6,7 @@ import { resolvePlan } from "@/shared/lib/plans";
 import { problem } from "@/server/http/api-problem";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
+import { denied } from "@/server/security/security-log";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("projects", problem(401, m.signInRequired));
 
   let body: unknown;
   try {

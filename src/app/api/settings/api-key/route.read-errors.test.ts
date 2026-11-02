@@ -21,7 +21,8 @@ function builder(table: string) {
   return chain;
 }
 
-vi.mock("@/shared/lib/observability", () => ({ captureError: (...a: unknown[]) => captureError(...a) }));
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()), captureError: (...a: unknown[]) => captureError(...a) }));
 vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: "user-1" } } }) },
@@ -34,6 +35,7 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "u:user-1",
 }));
 vi.mock("@/server/llm", () => ({ chatComplete: async () => "ok" }));
+vi.mock("@/server/security/security-events", () => ({ recordSecurityEvent: vi.fn() }));
 vi.mock("@/server/security/crypto", () => ({ encrypt: () => "encrypted", decrypt: vi.fn() }));
 
 const URL = "https://promptprinter.app/api/settings/api-key";

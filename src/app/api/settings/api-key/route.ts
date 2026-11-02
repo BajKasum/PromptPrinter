@@ -7,6 +7,8 @@ import { byokRow, type ByokRow, type ByokTarget } from "@/server/byok";
 import { problem } from "@/server/http/api-problem";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
+import { recordSecurityEvent } from "@/server/security/security-events";
+import { denied } from "@/server/security/security-log";
 import { detectProviderFromKey } from "@/shared/lib/byok-detect";
 import {
   MAX_SMALL_BODY_BYTES,
@@ -65,7 +67,7 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("api_key", problem(401, m.signInRequired));
 
   const request = await readSaveRequest(req, m);
   if (request instanceof Response) return request;
@@ -92,6 +94,14 @@ export async function POST(req: Request) {
     return problem(500, m.keySaveFailed);
   }
 
+  // Neu oder ersetzt: das Protokoll soll beides unterscheiden können. Ein Lesefehler hält das Speichern nicht auf.
+  const { data: before, error: beforeError } = await supabase
+    .from("user_api_keys")
+    .select("provider")
+    .eq("user_id", user.id)
+    .eq("provider", provider)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("user_api_keys")
     .upsert(row, { onConflict: "user_id,provider" });
@@ -105,6 +115,7 @@ export async function POST(req: Request) {
     captureError("api_key.save_failed", error, { userId: user.id, provider });
     return problem(500, m.keySaveFailed);
   }
+  await recordSecurityEvent("api_key.saved", user.id, { provider, replaced: beforeError ? null : Boolean(before) });
 
   // A first key has to become the active one, or it would be stored and then
   // ignored — the exact silence Security-Audit finding M-6 is about. Later keys
@@ -129,6 +140,8 @@ export async function POST(req: Request) {
     });
     if (activateError) {
       captureError("api_key.activate_failed", activateError, { userId: user.id, provider });
+    } else {
+      await recordSecurityEvent("api_key.activated", user.id, { provider, automatic: true });
     }
   }
 
@@ -152,7 +165,7 @@ export async function PATCH(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("api_key", problem(401, m.signInRequired));
 
   // Security-Audit finding L-7: PATCH and DELETE on this route were the only
   // authenticated mutations in the project with no ceiling at all — POST
@@ -205,7 +218,7 @@ export async function PATCH(req: Request) {
     captureError("api_key.existing_read_failed", existingError, { userId: user.id, provider });
     return problem(503, m.keyActivateFailed);
   }
-  if (!existing) return problem(404, m.keyNotFound);
+  if (!existing) return denied("api_key", problem(404, m.keyNotFound), { userId: user.id, provider });
 
   const { error } = await supabase.rpc("set_active_byok_provider", {
     target_provider: provider,
@@ -214,6 +227,7 @@ export async function PATCH(req: Request) {
     captureError("api_key.activate_failed", error, { userId: user.id, provider });
     return problem(500, m.keyActivateFailed);
   }
+  await recordSecurityEvent("api_key.activated", user.id, { provider, automatic: false });
 
   return NextResponse.json({ ok: true });
 }
@@ -230,7 +244,7 @@ export async function DELETE(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("api_key", problem(401, m.signInRequired));
 
   // Security-Audit finding L-7: the one unlimited authenticated mutation in
   // this route (and, before this, in the project) — see the same block on
@@ -262,6 +276,7 @@ export async function DELETE(req: Request) {
     captureError("api_key.delete_failed", error, { userId: user.id, provider });
     return problem(500, m.keyRemoveFailed);
   }
+  await recordSecurityEvent("api_key.removed", user.id, { provider });
 
   return NextResponse.json({ ok: true });
 }

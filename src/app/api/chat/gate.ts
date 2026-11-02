@@ -9,6 +9,7 @@ import {
   readJsonBody,
 } from "@/server/http/request-body";
 import { captureError } from "@/shared/lib/observability";
+import { denied } from "@/server/security/security-log";
 import {
   AttachmentError,
   attachmentBytesUsed,
@@ -79,7 +80,7 @@ export async function authenticate(
     // Auth lookup failed — treat as "not signed in", never as "anonymous, go ahead".
   }
   if (!sessionUserId) {
-    return problem(401, m.signInToChat);
+    return denied("chat", problem(401, m.signInToChat));
   }
   // Re-bound as a const so the narrowing survives into the stream closure below
   // (TypeScript widens a `let` back to `string | null` inside a callback, since

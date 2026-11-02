@@ -1,4 +1,5 @@
 import { createClient } from "@/server/supabase/server";
+import { denied } from "@/server/security/security-log";
 import { problem } from "@/server/http/api-problem";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import {
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
   const m = t.api;
 
   if (req.headers.get("sec-fetch-site") === "cross-site") {
-    return problem(403, "Cross-site export requests are not allowed.");
+    return denied("account-export", problem(403, "Cross-site export requests are not allowed."));
   }
 
   const supabase = await createClient();
@@ -43,7 +44,7 @@ export async function GET(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   // Die Kennung kommt aus der geprüften Sitzung, nie aus der Anfrage.
-  if (!user) return problem(401, m.accountNotSignedIn);
+  if (!user) return denied("account-export", problem(401, m.accountNotSignedIn));
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")

@@ -14,7 +14,8 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: (_req: Request, scope: string, userId?: string) => `${scope}:u:${userId}`,
 }));
 vi.mock("@/server/consent", () => ({ setZaiConsent: (...a: unknown[]) => setZaiConsent(...a) }));
-vi.mock("@/shared/lib/observability", () => ({
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()),
   captureError: (...a: unknown[]) => captureError(...a),
   logWarning: vi.fn(),
 }));

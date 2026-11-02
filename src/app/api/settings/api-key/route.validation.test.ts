@@ -45,6 +45,7 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "u:user-1",
 }));
 vi.mock("@/server/llm", () => ({ chatComplete: (...a: unknown[]) => chatComplete(...a) }));
+vi.mock("@/server/security/security-events", () => ({ recordSecurityEvent: vi.fn() }));
 vi.mock("@/server/security/crypto", () => ({
   encrypt: (v: string, binding: unknown) => encrypt(v, binding),
   decrypt: vi.fn(),

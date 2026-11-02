@@ -6,6 +6,11 @@ vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: () => ({ auth: { admin: { updateUserById: (...a: unknown[]) => updateUserById(...a) } } }),
 }));
 
+const recordSecurityEvent = vi.fn();
+vi.mock("@/server/security/security-events", () => ({
+  recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
+}));
+
 const current = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T10:00:00.000Z" } };
 
 describe("zaiConsentOf / hasZaiConsent", () => {
@@ -50,6 +55,21 @@ describe("setZaiConsent", () => {
     await setZaiConsent("user-1", false);
 
     expect(updateUserById).toHaveBeenCalledWith("user-1", { app_metadata: { zai_consent: null } });
+  });
+
+  it("hält Zustimmung und Widerruf im Protokoll fest, denn app_metadata kennt nur den letzten Stand", async () => {
+    await setZaiConsent("user-1", true);
+    await setZaiConsent("user-1", false);
+    expect(recordSecurityEvent.mock.calls).toEqual([
+      ["consent.zai_granted", "user-1", { version: ZAI_CONSENT_VERSION }],
+      ["consent.zai_withdrawn", "user-1", { version: ZAI_CONSENT_VERSION }],
+    ]);
+  });
+
+  it("hält nichts fest, wenn das Speichern scheitert", async () => {
+    updateUserById.mockResolvedValue({ error: new Error("auth down") });
+    await expect(setZaiConsent("user-1", true)).rejects.toThrow("auth down");
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
   });
 
   it("wirft, wenn Supabase einen Fehler meldet, statt still zu scheitern", async () => {

@@ -5,6 +5,7 @@ import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { setZaiConsent } from "@/server/consent";
 import { requestT } from "@/server/i18n";
 import { captureError } from "@/shared/lib/observability";
+import { denied } from "@/server/security/security-log";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,7 @@ async function change(req: Request, granted: boolean): Promise<Response> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("consent", problem(401, m.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "consent", user.id), LIMIT);
   if (!rl.allowed) {
