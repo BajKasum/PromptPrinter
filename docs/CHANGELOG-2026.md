@@ -11,6 +11,26 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-02: Grenzen je Konto in der Datenbank, Eigentümer der Elternzeile, Tag-Schutz, SHA-Pinning (PRs #281, #286, Issues #227, #232, #233, #240, #241)
+
+**#227 und #233, Migration 0051 (Kasums Ja, auf Produktion seit 2026-11-02, Version `20261102211918`).** Der Browser schreibt direkt in die Tabellen, die Grenzen galten nur in den Routen.
+- **Trigger nach dem Befehl statt vor jeder Zeile, anders als im Issue vorgeschlagen:** ein Befehl mit vielen Zeilen zählt einmal, und die Policy hat vorher geprüft, die Sperre nimmt also nie ein fremdes Konto.
+- **Zeilen und Bytes:** 50 000 Nachrichten mit je 40 000 Zeichen wären 2 GB bei 500 MB Kontingent. Gezählt wird `pg_column_size`, es liest ausgelagerte Werte nicht.
+- **Budget im Bucket, nicht an `project_files`:** Objekte brauchen keine Zeile und überleben das Löschen ihres Projekts, Anlegen und Löschen im Kreis liefe sonst an jeder Grenze je Projekt vorbei.
+- **Nur die Policy ist die Prüfung für #233**, nicht zusammengesetzte Fremdschlüssel: der Service-Role-Weg bleibt ungeprüft, er geht nur über Routen, die schon prüfen.
+- **Geprüft:** `e2e/account-limits.spec.ts` als `authenticated` gegen den lokalen Stack. Mutationstest: ohne Sperre 4 statt 3 Projekte, ohne Trigger und Policy-Bedingungen 10 von 10 rot, der Guard schlägt bei geänderten Zahlen an. Objekt 500 und 501 einmal von Hand über die echte Storage-API. Auf Produktion nur lesend: vorher 6 Konten, keines über einer Grenze, 0 fremde Elternzeilen; nachher dieselben Mengen, Trigger und Policies wie in der Datei. **Die Grenzen wurden auf Produktion nie ausgelöst**, die Anzeige an einer Grenze hat niemand gesehen.
+- **Bewusst offen:** Viele Konten zusammen können die Kontingente weiter füllen. An einer Grenze erscheint die allgemeine Fehlermeldung, die freundliche Absage von `/api/projects` bleibt, wie sie ist.
+
+**#232:** Auth-Werte der Produktion im Dashboard gelesen, nichts geändert: Time-box und Inaktivität 0 (nie, nur im Pro-Tarif änderbar), Access-Token 3600 Sekunden, Erkennung wiederverwendeter Refresh-Tokens an, Reuse-Intervall 10 Sekunden. Stehen in `docs/SETUP.md`, "Sitzungs-Cookie". Eine Sitzung läuft also nicht von selbst ab.
+
+**#240:** Ruleset 26395833 in `BajKasum/promptprinter-pp` (Kasums Ja): `refs/tags/v*`, kein Verschieben, kein Löschen, keine Ausnahmen. Lesend geprüft, ein echtes Verschieben nicht versucht.
+
+**#241, Punkt 5:** `sha_pinning_required` an (Kasums Ja). Danach grün: CI, E2E, E2E Produktion, Docker, Audit, Skill-Archiv (`workflow_dispatch`), CodeQL auf PR #281, Dependabot `github_actions` über "Check for updates". **Falle:** Läufe von CodeQL und Dependabot (`dynamic`) lassen sich nicht per `gh run rerun` wiederholen. Dependabot für npm unter der Einstellung nicht gesehen, kommt mit dem Montagslauf.
+
+**Falle:** `claude-md-state.test.ts` verlangt die höchste Migration in `CLAUDE.md` im selben Branch wie die Migration; die Zeile lässt sich also nicht bis in den Changelog-Branch aufschieben.
+
+---
+
 ## 2026-11-02: Tippflächen gemessen, Antwortvorschläge und Qualitätszeile ausgebaut, Live-Prüfliste der Suche (PR #282, Issues #225, #243, #245, #246, #249, #254)
 
 **Messungen am echten Modell** (`glm-4.5-air`, Aufruf wie `src/server/llm/zai.ts`, in Vercel ist kein `ZAI_MODEL` gesetzt, also dasselbe Modell wie in Produktion; nur erfundene Eingaben; ein Lauf je Messung; Skripte nur im Scratchpad). Die Zahlen im Einzelnen stehen in den Issues.
