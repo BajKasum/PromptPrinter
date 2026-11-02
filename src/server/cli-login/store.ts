@@ -8,6 +8,7 @@ import {
   newDeviceCode,
   newUserCode,
 } from "@/server/cli-login/codes";
+import type { RequestContext } from "@/server/cli-login/request-context";
 
 // Die Anfragen der Geräte-Anmeldung in cli_device_requests (Migration 0050). Nur der Server liest und
 // schreibt, mit dem Service-Role-Client: anon und authenticated haben auf der Tabelle kein Recht. Jede
@@ -27,7 +28,7 @@ export type DeviceRequest = Pick<
 >;
 
 /** Legt eine Anfrage an. Gibt die beiden Codes im Klartext zurück, zum einzigen Mal. */
-export async function createDeviceRequest(clientName: string): Promise<{
+export async function createDeviceRequest(clientName: string, context: RequestContext): Promise<{
   deviceCode: string;
   userCode: string;
   expiresAt: string;
@@ -51,6 +52,9 @@ export async function createDeviceRequest(clientName: string): Promise<{
       user_code: userCode,
       client_name: clientName,
       expires_at: expiresAt,
+      request_ip: context.ip,
+      request_location: context.location,
+      request_user_agent: context.userAgent,
     });
     if (!error) return { deviceCode, userCode, expiresAt };
     if (error.code !== UNIQUE_VIOLATION) throw new Error(`cli_device_requests insert: ${error.message}`);
@@ -61,16 +65,24 @@ export async function createDeviceRequest(clientName: string): Promise<{
 /** Die offene, noch gültige Anfrage zu diesem Nutzer-Code, für die Bestätigungsseite. */
 export async function findPendingRequest(
   userCode: string
-): Promise<{ clientName: string; createdAt: string } | null> {
+): Promise<({ clientName: string; createdAt: string } & RequestContext) | null> {
   const { data, error } = await createAdminClient()
     .from(TABLE)
-    .select("client_name, created_at")
+    .select("client_name, created_at, request_ip, request_location, request_user_agent")
     .eq("user_code", userCode)
     .eq("status", "pending")
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
   if (error) throw new Error(`cli_device_requests select: ${error.message}`);
-  return data ? { clientName: data.client_name, createdAt: data.created_at } : null;
+  return data
+    ? {
+        clientName: data.client_name,
+        createdAt: data.created_at,
+        ip: data.request_ip,
+        location: data.request_location,
+        userAgent: data.request_user_agent,
+      }
+    : null;
 }
 
 /**
@@ -115,18 +127,19 @@ export async function markPolled(id: string): Promise<void> {
 
 /**
  * Holt eine freigegebene Anfrage ab: ein einziges Update von approved auf consumed, das nur trifft, wenn
- * die Anfrage noch approved und gültig ist. Bei zwei gleichzeitigen Abfragen bekommt genau eine die
- * Nutzer-ID zurück, die andere null. Danach ist der Geräte-Code verbraucht, auch wenn das Ausstellen der
+ * die Anfrage noch approved und gültig ist. Bei zwei gleichzeitigen Abfragen bekommt genau eine Konto und
+ * Gerätename zurück, die andere null. Danach ist der Geräte-Code verbraucht, auch wenn das Ausstellen der
  * Sitzung scheitert: lieber neu anmelden als zweimal ausliefern.
  */
-export async function claimApprovedRequest(id: string): Promise<string | null> {
+export async function claimApprovedRequest(id: string): Promise<{ userId: string; clientName: string } | null> {
   const { data, error } = await createAdminClient()
     .from(TABLE)
     .update({ status: "consumed" })
     .eq("id", id)
     .eq("status", "approved")
     .gt("expires_at", new Date().toISOString())
-    .select("user_id");
+    .select("user_id, client_name");
   if (error) throw new Error(`cli_device_requests claim: ${error.message}`);
-  return data?.[0]?.user_id ?? null;
+  const claimed = data?.[0];
+  return claimed?.user_id ? { userId: claimed.user_id, clientName: claimed.client_name } : null;
 }

@@ -8,7 +8,16 @@ import { LOCALE_TAGS } from "@/shared/i18n/locales";
 import { fmt } from "@/shared/i18n/format";
 import { USER_CODE_ALPHABET, USER_CODE_LENGTH, formatUserCode, normalizeUserCode } from "@/shared/lib/cli-user-code";
 
-type Pending = { userCode: string; clientName: string; createdAt: string };
+type Pending = {
+  userCode: string;
+  clientName: string;
+  createdAt: string;
+  ip: string | null;
+  location: string | null;
+  userAgent: string | null;
+  sameAddress: boolean | null;
+  maxAgeDays: number | null;
+};
 type Step = { kind: "enter" } | { kind: "confirm"; pending: Pending } | { kind: "done"; approved: boolean };
 
 /** Was getippt wurde, auf die erlaubten Zeichen gekürzt und als `XXXX-XXXX` gezeigt. */
@@ -18,10 +27,13 @@ function maskCode(raw: string): string {
   return code.length > 4 ? formatUserCode(code.padEnd(USER_CODE_LENGTH)).trimEnd() : code;
 }
 
+const text = (value: unknown) => (typeof value === "string" && value ? value : null);
+
 /**
  * Die Seite, auf der man die Anmeldung seines Terminals bestätigt (/cli). Der Code wird ABGETIPPT: weder
  * die Adresse noch sonst etwas füllt ihn vor, sonst könnte jemand einem Nutzer den Code seines eigenen
- * Geräts unterschieben. Erst `lookup` (zeigt Gerätename und Uhrzeit), dann `approve` oder `deny`.
+ * Geräts unterschieben. Erst `lookup` (zeigt Gerätename, Uhrzeit und woher die Anfrage kommt), dann `approve`
+ * oder `deny`. Den Gerätenamen wählt der Anfragende selbst, deshalb stehen Adresse, Ort und Programm daneben.
  */
 export function CliApproval() {
   const t = useT();
@@ -51,7 +63,19 @@ export function CliApproval() {
     try {
       const { res, body } = await send(code, "lookup");
       if (res.ok && body && typeof body.clientName === "string" && typeof body.createdAt === "string") {
-        setStep({ kind: "confirm", pending: { userCode: code, clientName: body.clientName, createdAt: body.createdAt } });
+        setStep({
+          kind: "confirm",
+          pending: {
+            userCode: code,
+            clientName: body.clientName,
+            createdAt: body.createdAt,
+            ip: text(body.ip),
+            location: text(body.location),
+            userAgent: text(body.userAgent),
+            sameAddress: typeof body.sameAddress === "boolean" ? body.sameAddress : null,
+            maxAgeDays: typeof body.maxAgeDays === "number" ? body.maxAgeDays : null,
+          },
+        });
       } else {
         setError(body?.detail ?? c.errors.network);
       }
@@ -136,9 +160,31 @@ export function CliApproval() {
             </p>
             <p className="mt-0.5 text-[13px] text-secondary">{fmt(c.requestedAt, { time: time(step.pending.createdAt) })}</p>
           </div>
+          <dl className="space-y-1 text-[13px]">
+            {[
+              [c.address, step.pending.ip],
+              [c.location, step.pending.location],
+              [c.program, step.pending.userAgent],
+            ].map(([label, value]) =>
+              value ? (
+                <div key={label} className="flex flex-wrap gap-x-2">
+                  <dt className="text-secondary">{label}</dt>
+                  <dd className="min-w-0 break-words text-foreground">{value}</dd>
+                </div>
+              ) : null
+            )}
+          </dl>
+          {step.pending.sameAddress === false && (
+            <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-2.5 text-[13px] text-foreground" role="note">
+              {c.otherAddress}
+            </p>
+          )}
           <p className="text-[14px] leading-relaxed text-foreground" role="note">
             {c.warning}
           </p>
+          {step.pending.maxAgeDays !== null && (
+            <p className="text-[13px] text-secondary">{fmt(c.maxAge, { days: step.pending.maxAgeDays })}</p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => void decide(step.pending, "approve")} disabled={busy}>
               {c.approve}

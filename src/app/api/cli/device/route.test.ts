@@ -47,7 +47,7 @@ describe("POST /api/cli/device", () => {
     });
     // Die Adresse trägt keinen Code: ein vorausgefüllter Link würde Unterschiebungen erleichtern.
     expect(json.verificationUri).not.toMatch(/[?#=]|BCDF/);
-    expect(createDeviceRequest).toHaveBeenCalledWith("pp auf Laptop");
+    expect(createDeviceRequest).toHaveBeenCalledWith("pp auf Laptop", { ip: "203.0.113.7", location: null, userAgent: null });
   });
 
   it("zählt gegen den Bereich cli-device je Adresse und weist darüber hinaus mit 429 ab, bevor es etwas anlegt", async () => {

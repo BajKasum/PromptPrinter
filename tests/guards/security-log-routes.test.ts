@@ -19,6 +19,7 @@ const ROUTES = [
   "src/app/api/projects/[id]/brain/status/route.ts",
   "src/app/api/chat/gate.ts",
   "src/app/api/cli/approve/route.ts",
+  "src/app/api/cli/sessions/route.ts",
 ];
 
 function sourceFiles(dir: string): string[] {

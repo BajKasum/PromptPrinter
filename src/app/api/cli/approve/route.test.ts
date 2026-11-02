@@ -11,6 +11,11 @@ vi.mock("@/server/cli-login/store", () => ({
   decideRequest: (...a: unknown[]) => decideRequest(...a),
 }));
 
+const recordSecurityEvent = vi.fn();
+vi.mock("@/server/security/security-events", () => ({
+  recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
+}));
+
 import { POST } from "./route";
 
 let counter = 0;
@@ -34,17 +39,52 @@ beforeEach(() => {
   counter += 1;
   currentUser = `user-${counter}`;
   getUser.mockResolvedValue({ data: { user: { id: currentUser } } });
-  findPendingRequest.mockResolvedValue({ clientName: "pp auf Laptop", createdAt: "2026-10-29T10:00:00Z" });
+  vi.stubEnv("VERCEL", "1");
+  findPendingRequest.mockResolvedValue({
+    clientName: "pp auf Laptop",
+    createdAt: "2026-10-29T10:00:00Z",
+    ip: "203.0.113.7",
+    location: "Basel, CH",
+    userAgent: "promptprinter-cli/1.0",
+  });
   decideRequest.mockResolvedValue(true);
 });
 
 describe("POST /api/cli/approve", () => {
-  it("lookup zeigt Gerätename und Zeit, ohne etwas zu entscheiden", async () => {
+  it("lookup zeigt Gerätename, Zeit und woher die Anfrage kommt, ohne etwas zu entscheiden", async () => {
     const res = await POST(post({ userCode: "bcdf-ghjk", action: "lookup" }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ clientName: "pp auf Laptop", createdAt: "2026-10-29T10:00:00Z" });
+    expect(await res.json()).toEqual({
+      clientName: "pp auf Laptop",
+      createdAt: "2026-10-29T10:00:00Z",
+      ip: "203.0.113.7",
+      location: "Basel, CH",
+      userAgent: "promptprinter-cli/1.0",
+      sameAddress: false,
+      maxAgeDays: 30,
+    });
     expect(findPendingRequest).toHaveBeenCalledWith("BCDFGHJK");
     expect(decideRequest).not.toHaveBeenCalled();
+  });
+
+  it("sameAddress sagt, ob Browser und Terminal von derselben Adresse kommen", async () => {
+    const same = await POST(
+      post({ userCode: "bcdf-ghjk", action: "lookup" }, { headers: { "x-vercel-forwarded-for": "203.0.113.7" } })
+    );
+    expect((await same.json()).sameAddress).toBe(true);
+
+    findPendingRequest.mockResolvedValue({ clientName: "", createdAt: "2026-10-29T10:00:00Z", ip: null, location: null, userAgent: null });
+    const unknown = await POST(post({ userCode: "bcdf-ghjk", action: "lookup" }));
+    expect((await unknown.json()).sameAddress).toBeNull();
+  });
+
+  it("hält Freigabe und Ablehnung im Protokoll fest, das Nachsehen nicht", async () => {
+    await POST(post({ userCode: "BCDFGHJK", action: "lookup" }));
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
+    await POST(post({ userCode: "BCDFGHJK", action: "approve" }));
+    expect(recordSecurityEvent).toHaveBeenLastCalledWith("cli.login_approved", currentUser);
+    await POST(post({ userCode: "BCDFGHJK", action: "deny" }));
+    expect(recordSecurityEvent).toHaveBeenLastCalledWith("cli.login_denied", currentUser);
   });
 
   it("approve und deny entscheiden für genau diesen Nutzer", async () => {

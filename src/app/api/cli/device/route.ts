@@ -10,6 +10,7 @@ import {
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { cleanClientName, DEVICE_REQUEST_TTL_MS, POLL_INTERVAL_SECONDS } from "@/server/cli-login/codes";
+import { requestContext } from "@/server/cli-login/request-context";
 import { createDeviceRequest } from "@/server/cli-login/store";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
 import { formatUserCode } from "@/shared/lib/cli-user-code";
@@ -22,8 +23,9 @@ export const runtime = "nodejs";
 // nichts; deshalb das Ratenlimit je Adresse vor allem anderen, auch vor dem Lesen des Bodys. 20 in zehn
 // Minuten sind weit mehr, als ein Mensch Anmeldungen startet, und halten die Tabelle klein.
 //
-// Der Geräte-Code geht nur an das Terminal zurück (und wird nur als Hash gespeichert), der Nutzer-Code
-// ist für den Menschen. Die Adresse der Bestätigungsseite trägt KEINEN Code: ein vorausgefüllter Link
+// Adresse, ungefährer Ort und Programm bleiben bei der Anfrage: die Bestätigungsseite zeigt sie, damit der Nutzer eine
+// fremde Anfrage erkennt. Der Geräte-Code geht nur an das Terminal zurück (und wird nur als Hash gespeichert), der
+// Nutzer-Code ist für den Menschen. Die Adresse der Bestätigungsseite trägt KEINEN Code: ein vorausgefüllter Link
 // würde jedem helfen, dem Nutzer den Code eines fremden Geräts unterzuschieben.
 const RATE_LIMIT = { limit: 20, windowMs: 10 * 60 * 1000 };
 
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return validationProblem(m, parsed.error.issues);
 
   try {
-    const created = await createDeviceRequest(cleanClientName(parsed.data.clientName));
+    const created = await createDeviceRequest(cleanClientName(parsed.data.clientName), requestContext(req));
     logEvent("cli.device_requested", {});
     return NextResponse.json(
       {

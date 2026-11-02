@@ -17,6 +17,7 @@ import {
   Loader2,
   Check,
   SunMoon,
+  Terminal,
 } from "lucide-react";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
@@ -27,6 +28,7 @@ import { DataExport } from "@/features/settings/components/data-export";
 import { ZaiConsent } from "@/features/settings/components/zai-consent";
 import { ThemePreference } from "@/features/settings/components/theme-preference";
 import { ApiKeys } from "@/features/settings/components/api-keys";
+import { TerminalSessions } from "@/features/settings/components/terminal-sessions";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
@@ -265,6 +267,16 @@ export function SettingsWorkspace({
           description={t.settings.securityHint}
         >
           <ChangePassword />
+        </SettingsCard>
+
+        <SettingsCard
+          id="terminals"
+          Icon={Terminal}
+          accent="--accent"
+          title={t.settings.terminalSessions.title}
+          description={t.settings.terminalSessions.hint}
+        >
+          <TerminalSessions />
         </SettingsCard>
 
         {/* Zustimmung zur Übermittlung an Z.ai (Pro, Server-Key), Rechts-Audit R-1.

@@ -5,7 +5,8 @@ import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { revokeCliSession } from "@/server/cli-login/session";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
-import { captureError, logEvent } from "@/shared/lib/observability";
+import { captureError } from "@/shared/lib/observability";
+import { recordSecurityEvent } from "@/server/security/security-events";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     const result = await revokeCliSession(token);
     if (result === "unauthorized") return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
     if (result === null) return problem(503, CLI_PROBLEMS.unavailable, { kind: "unavailable" });
-    logEvent("cli.logout", {});
+    await recordSecurityEvent("cli.session_revoked", result.userId, { via: "terminal" });
     return NextResponse.json({ ok: true });
   } catch (err) {
     captureError("cli.logout_failed", err);

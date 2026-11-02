@@ -27,6 +27,21 @@ test.describe("Sicherheitsprotokoll", () => {
     expect(JSON.stringify(events)).not.toContain(account.email);
   });
 
+  test("Terminal-Ereignisse tragen nur die Kennung", async ({ signedIn: { page, account } }) => {
+    const device = await page.request.post("/api/cli/device", { data: { clientName: "Geheimer Laptop" } });
+    const { userCode } = await device.json();
+    const approve = await page.request.post("/api/cli/approve", {
+      headers: { origin: E2E_ORIGIN },
+      data: { userCode, action: "approve" },
+    });
+    expect(approve.status(), await approve.text()).toBe(200);
+
+    const events = await eventsOf(account.id);
+    expect(events.map((e) => e.event)).toEqual(["cli.login_approved"]);
+    expect(JSON.stringify(events)).not.toContain("Geheimer Laptop");
+    expect(JSON.stringify(events)).not.toContain(account.email);
+  });
+
   test("das Löschen eines Kontos überlebt das Konto", async ({ browser }) => {
     const account = await createAccount("protokoll-weg");
     const context = await browser.newContext({ baseURL: E2E_ORIGIN });
