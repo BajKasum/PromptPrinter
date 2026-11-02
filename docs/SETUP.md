@@ -623,8 +623,8 @@ gestoppt. Port 3101 (`E2E_PROD_PORT`), neben dem Dev-Server der Smoketests auf 3
 
 | Prüfung | Inhalt |
 |---|---|
-| Öffentliche Seiten (`/`, `/login`, `/pricing`, `/docs`, `/skill`, `/vergleich`, `/ueber`, eine 404-Seite) | Antwort mit der statischen Policy (`'unsafe-inline'`, kein Nonce, **kein** `'unsafe-eval'`, `script-src-attr 'none'`), HSTS und die übrigen Köpfe aus `next.config.ts`, kein `securitypolicyviolation`, keine Konsolenfehler, keine fehlgeschlagene Anfrage |
-| Hydration | das Menü der Navigation öffnet sich im Telefonmaß (`/`, `/pricing`, `/docs`): es reagiert nur, wenn Nexts Hydrationsskripte gelaufen sind |
+| Öffentliche Seiten (`/`, `/login`, `/signup`, `/reset-password`, `/pricing`, `/docs`, `/skill`, `/vergleich`, `/ueber`, eine 404-Seite) | Antwort mit der statischen Policy (`'unsafe-inline'`, kein Nonce, **kein** `'unsafe-eval'`, `script-src-attr 'none'`), HSTS und die übrigen Köpfe aus `next.config.ts`, kein `securitypolicyviolation`, keine Konsolenfehler, keine fehlgeschlagene Anfrage |
+| Hydration | das Menü der Navigation öffnet sich im Telefonmaß (`/`, `/pricing`, `/docs`): es reagiert nur, wenn Nexts Hydrationsskripte gelaufen sind. Auf den Anmeldeseiten, die bewusst bei `'unsafe-inline'` bleiben (#238): der Knopf am Passwortfeld (`/login`, `/signup`), die Prüfung der Adresse im Formular (`/reset-password`). Turnstile lädt hier nicht, die Umgebung hat keinen Site-Key |
 | `/api/health` | `ok`: der Start in Produktion (`env.ts`) ist mit den dokumentierten Pflichtvariablen durchgelaufen |
 | `/chats/new` mit Anmeldung | Nonce-Policy ohne `'unsafe-inline'`; jedes Inline-Skript trägt genau diesen Nonce; die Eingabe reagiert; ein eingeschleustes Inline-Skript ohne Nonce läuft **nicht** und wird gemeldet (Gegenprobe, damit der Hörer nicht still bleibt, weil er nichts mehr sieht) |
 

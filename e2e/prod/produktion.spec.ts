@@ -134,6 +134,8 @@ async function sessionCookies(account: Account): Promise<{ name: string; value: 
 const PUBLIC_PAGES: { path: string; status: number }[] = [
   { path: "/", status: 200 },
   { path: "/login", status: 200 },
+  { path: "/signup", status: 200 },
+  { path: "/reset-password", status: 200 },
   { path: "/pricing", status: 200 },
   { path: "/docs", status: 200 },
   { path: "/skill", status: 200 },
@@ -182,6 +184,30 @@ test.describe("Öffentliche Seiten im Produktionsaufbau", () => {
       await expectClean(seen);
     });
   }
+
+  // Die drei Anmeldeseiten bleiben statisch mit 'unsafe-inline' (#238, csp.ts), und auch dort heißt hydriert: eine
+  // Eingabe wirkt. Turnstile prüft dieser Lauf nicht: die Umgebung hat keinen Site-Key (e2e/support/env.ts).
+  for (const path of ["/login", "/signup"]) {
+    test(`${path}: der Knopf am Passwortfeld wirkt (die Seite ist hydriert)`, async ({ page }) => {
+      const seen = await watch(page);
+      await page.goto(path);
+
+      await page.getByRole("button", { name: "Passwort anzeigen" }).click();
+      await expect(page.getByRole("button", { name: "Passwort verbergen" })).toHaveAttribute("aria-pressed", "true");
+      await expectClean(seen);
+    });
+  }
+
+  test("/reset-password: das Formular prüft die Adresse im Browser (die Seite ist hydriert)", async ({ page }) => {
+    const seen = await watch(page);
+    await page.goto("/reset-password");
+
+    // `a@b` besteht die Prüfung des Browsers, aber nicht die des Formulars: die Meldung kommt nur aus dem Client-Code.
+    await page.getByLabel("Email").fill("a@b");
+    await page.getByRole("button", { name: "Link senden" }).click();
+    await expect(page.getByText("Bitte eine gültige Email eingeben")).toBeVisible();
+    await expectClean(seen);
+  });
 
   test("/api/health: die Pflichtvariablen sind da, der Start in Produktion ist durchgelaufen", async ({ request }) => {
     const health = await request.get("/api/health");

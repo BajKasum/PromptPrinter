@@ -181,6 +181,14 @@ export function buildCsp(nonce: string, parties: ThirdParties = NO_THIRD_PARTIES
  * Seiten Nutzer- oder Drittinhalt als HTML rendert. Die Wirkung ist begrenzt
  * durch `script-src-attr 'none'` und dadurch, dass nur die Routen Drittanbieter
  * zugelassen bekommen, die sie einbinden (`thirdPartiesFor`).
+ *
+ * Das gilt bewusst auch für `/login`, `/signup` und `/reset-password`, obwohl sie
+ * Passwörter annehmen (#238, Messung im Issue): die Nonce-Policy macht aus jedem
+ * Aufruf eine Funktion statt einer fertigen Seite, verdoppelt bis verdreifacht lokal
+ * die Zeit bis zum ersten Byte und das HTML von `/login` und `/signup`, und sie hilft
+ * nur zusammen mit einer Skript-Injektion, die es dort nicht gibt.
+ * Neu zu entscheiden, sobald eine der drei Seiten fremden Inhalt als HTML rendert
+ * oder Next Hashes für die Inline-Skripte statischer Seiten stabil anbietet.
  */
 export function buildStaticCsp(parties: ThirdParties = NO_THIRD_PARTIES): string {
   const scriptSrc = [
