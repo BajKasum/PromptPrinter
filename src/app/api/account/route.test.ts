@@ -390,6 +390,7 @@ describe("DELETE /api/account", () => {
     deleteUser.mockResolvedValue({ error: new Error("admin credentials missing") });
     const res = await DELETE(req());
     expect(res.status).toBe(500);
+    expect(captureError).toHaveBeenCalledWith("account.delete_failed", expect.any(Error), expect.objectContaining({ userId: expect.any(String) }));
     const json = await res.json();
     expect(json.detail).toContain("Service-Role-Key");
   });

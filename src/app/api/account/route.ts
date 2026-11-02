@@ -145,6 +145,7 @@ export async function DELETE(req: Request) {
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) throw error;
   } catch (err) {
+    captureError("account.delete_failed", err, { userId: user.id });
     const message =
       err instanceof Error && err.message.includes("admin credentials")
         ? m.accountConfigIncomplete
