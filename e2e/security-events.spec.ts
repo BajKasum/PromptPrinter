@@ -93,7 +93,7 @@ test.describe("Sicherheitsprotokoll", () => {
     const inserted = await admin.from("security_events").insert([
       { event: "e2e.alt", user_id: account.id, created_at: days(181) },
       { event: "e2e.grenze", user_id: account.id, created_at: days(179) },
-      { event: "e2e.neu", user_id: account.id },
+      { event: "e2e.neu", user_id: account.id, created_at: days(0) },
     ]);
     expect(inserted.error).toBeNull();
 

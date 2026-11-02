@@ -62,6 +62,8 @@ export async function removeAccount(id: string): Promise<void> {
  */
 export async function signIn(page: Page, account: Account): Promise<void> {
   const res = await page.request.post("/api/auth", {
+    // Je Konto eine eigene Adresse: das Ratenlimit zählt je Adresse (30 in zehn Minuten), die Suite meldet sich öfter an.
+    headers: { "x-forwarded-for": `10.0.${parseInt(account.id.slice(0, 2), 16)}.${parseInt(account.id.slice(2, 4), 16)}` },
     data: { action: "sign-in", email: account.email, password: account.password },
   });
   expect(res.status(), `Anmelden über /api/auth: ${await res.text()}`).toBe(200);

@@ -166,6 +166,8 @@ function sharedServerEnv(origin: string): Record<string, string> {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabase.anonKey,
     SUPABASE_SERVICE_ROLE_KEY: supabase.serviceRoleKey,
     NEXT_PUBLIC_APP_URL: origin,
+    // Damit signIn() je Konto eine eigene Adresse nennen kann (e2e/support/fixtures.ts).
+    TRUSTED_PROXY_HOPS: "1",
     API_KEY_ENCRYPTION_SECRET: runSecret("E2E_BYOK_SECRET"),
     API_KEY_ENCRYPTION_SECRET_PREVIOUS: "",
     ZAI_API_KEY: "",
