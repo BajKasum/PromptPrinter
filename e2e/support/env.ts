@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 
 // Wie die Ende-zu-Ende-Tests an ihre Umgebung kommen, und die eine Sperre, die
 // sie von der Produktion fernhält (Betriebs-Audit, M1/M2).
@@ -90,13 +91,22 @@ export function localSupabase(): LocalSupabase {
 }
 
 /**
+ * Ein Secret je Testlauf, nie im Repository. Playwright lädt diese Datei im Hauptprozess und in jedem Worker: der erste
+ * Aufruf legt den Wert in der Umgebung ab, die Worker erben ihn, so sehen Server und Test denselben.
+ */
+function runSecret(name: string): string {
+  process.env[name] ||= randomBytes(32).toString("base64url");
+  return process.env[name];
+}
+
+/**
  * Signing-Secret des Webhook-Tests (e2e/billing-webhook.spec.ts), ein Wert nur für diesen
  * Test: der Next-Server der Tests und der Test selbst lesen ihn von hier, das echte Secret
  * aus dem Lemon-Squeezy-Dashboard kommt nirgends vor. Er schaltet nichts frei, was ein
  * Fremder nutzen könnte: der Server lauscht nur auf localhost und schreibt in den lokalen
  * Stack.
  */
-export const E2E_WEBHOOK_SECRET = "e2e-only-webhook-signing-secret-0123456789";
+export const E2E_WEBHOOK_SECRET = runSecret("E2E_WEBHOOK_SECRET");
 
 /** Port des Next-Servers der Tests, bewusst nicht 3000: dort läuft oft der eigene Dev-Server. */
 export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100);
@@ -156,7 +166,7 @@ function sharedServerEnv(origin: string): Record<string, string> {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabase.anonKey,
     SUPABASE_SERVICE_ROLE_KEY: supabase.serviceRoleKey,
     NEXT_PUBLIC_APP_URL: origin,
-    API_KEY_ENCRYPTION_SECRET: "e2e-only-secret-used-by-nothing-else-0123456789",
+    API_KEY_ENCRYPTION_SECRET: runSecret("E2E_BYOK_SECRET"),
     API_KEY_ENCRYPTION_SECRET_PREVIOUS: "",
     ZAI_API_KEY: "",
     ZAI_MODEL: "",

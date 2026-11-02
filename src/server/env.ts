@@ -40,7 +40,7 @@ const REQUIRED_IN_PRODUCTION: EnvRequirement[] = [
   },
   {
     name: "API_KEY_ENCRYPTION_SECRET",
-    why: "BYOK wirft beim Speichern eines eigenen Keys (lib/crypto.ts).",
+    why: "BYOK wirft beim Speichern eines eigenen Keys (server/security/crypto.ts).",
   },
   {
     name: "UPSTASH_REDIS_REST_URL",
@@ -61,6 +61,43 @@ type EnvLike = Record<string, string | undefined>;
 
 function isBlank(value: string | undefined): boolean {
   return value === undefined || value.trim() === "";
+}
+
+/** 32 Zeichen Zufall tragen als Hex 128 Bit, als Base64 192 Bit: genug, dass Raten gegen einen Datenbank-Abzug nichts bringt. */
+export const MIN_ENCRYPTION_SECRET_LENGTH = 32;
+
+// Teile von Platzhaltern aus Vorlagen. Lang genug, dass ein echter Zufallswert sie nicht zufällig enthält: diese
+// Prüfung darf eine laufende Produktion nie aus Pech anhalten. Bewusst nicht "secret" oder "test" allein.
+const PLACEHOLDER_MARKERS = [
+  "placeholder",
+  "changeme",
+  "change-me",
+  "change_me",
+  "replaceme",
+  "replace-me",
+  "replace_me",
+  "your-secret",
+  "your_secret",
+  "yoursecret",
+  "do-not-use",
+  "insecure",
+  "example",
+];
+
+/** So wenige verschiedene Zeichen hat kein Zufallswert dieser Länge, auch nicht in Hex ("aaaa…", "abcabc…"). */
+const MIN_DISTINCT_SECRET_CHARS = 8;
+
+/**
+ * Was gegen diesen Wert von API_KEY_ENCRYPTION_SECRET spricht, sonst null. Er wird direkt zu Schlüsselmaterial
+ * (server/security/crypto.ts), deshalb muss er selbst langer Zufall sein. Gilt nicht für den alten Wert einer
+ * Rotation: von einem schwachen Secret soll man weg können. Der Wert selbst steht nie in einer Meldung.
+ */
+export function encryptionSecretProblem(secret: string): "too_short" | "placeholder" | null {
+  if (secret.length < MIN_ENCRYPTION_SECRET_LENGTH) return "too_short";
+  const lower = secret.toLowerCase();
+  if (PLACEHOLDER_MARKERS.some((marker) => lower.includes(marker))) return "placeholder";
+  if (new Set(secret).size < MIN_DISTINCT_SECRET_CHARS) return "placeholder";
+  return null;
 }
 
 /**
@@ -255,6 +292,20 @@ export function assertEnv(env: EnvLike = process.env): void {
         "Mit scripts/rotate-byok-secret.mjs umschlüsseln, dann die Variable löschen " +
         "(Ablauf im Kopfkommentar des Skripts)."
     );
+  }
+
+  const secret = env.API_KEY_ENCRYPTION_SECRET;
+  const secretProblem = isBlank(secret) ? null : encryptionSecretProblem(secret!);
+  if (secretProblem) {
+    const detail =
+      "[env] API_KEY_ENCRYPTION_SECRET ist " +
+      (secretProblem === "too_short"
+        ? `kürzer als ${MIN_ENCRYPTION_SECRET_LENGTH} Zeichen`
+        : "ein Platzhalter oder kein Zufall") +
+      ". Einen neuen Wert erzeugen (.env.example); gibt es schon gespeicherte Keys, über die Rotation " +
+      "(docs/SETUP.md, \"BYOK-Secret rotieren\").";
+    if (isProduction) throw new Error(detail);
+    console.warn(`${detail} (In der Entwicklung nur ein Hinweis, in Produktion ein Fehler.)`);
   }
 
   if (missing.length === 0) return;

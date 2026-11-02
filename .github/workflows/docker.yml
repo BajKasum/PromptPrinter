@@ -75,6 +75,7 @@ jobs:
       # Laufzeit-Variablen aus `.env` (env_file) UND die NEXT_PUBLIC_*-Build-
       # Argumente per --env-file: hier ist es dieselbe Datei für beides. Die
       # Datei steht nur im Arbeitsverzeichnis dieses Laufs und ist gitignored.
+      # Das Secret entsteht je Lauf: einen Platzhalter weist der Start zurück (env.ts).
       - name: Platzhalter-Umgebung anlegen
         run: |
           cat > .env <<'EOF'
@@ -82,10 +83,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           NEXT_PUBLIC_APP_URL=https://example.test
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
-          API_KEY_ENCRYPTION_SECRET=placeholder-secret-for-ci-only
           UPSTASH_REDIS_REST_URL=https://placeholder.upstash.io
           UPSTASH_REDIS_REST_TOKEN=placeholder-token
           EOF
+          echo "API_KEY_ENCRYPTION_SECRET=$(openssl rand -hex 32)" >> .env
 
       - name: Produktions-Stack bauen und starten
         run: docker compose -f docker-compose.prod.yml --env-file .env up --build -d

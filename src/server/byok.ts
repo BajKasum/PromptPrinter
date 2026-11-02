@@ -1,6 +1,6 @@
 import "server-only";
 
-import { decrypt } from "@/server/security/crypto";
+import { decrypt, encrypt } from "@/server/security/crypto";
 import { createAdminClient } from "@/server/supabase/admin";
 import { orThrow } from "@/server/supabase/query";
 import { captureError } from "@/shared/lib/observability";
@@ -9,6 +9,34 @@ import type { ByokProvider, LlmOverride } from "@/server/llm";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 
 type SupabaseServerClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
+
+/** Wofür ein Key gespeichert wird: ein benannter Anbieter oder ein eigener Endpunkt mit Name, Adresse und Modell. */
+export type ByokTarget =
+  | { provider: "anthropic" | "openai" | "gemini" }
+  | { provider: "custom"; label: string; baseUrl: string; model: string };
+
+/** Eine Zeile für user_api_keys. Immer alle Spalten: bei einem benannten Anbieter stehen die des Endpunkts auf null. */
+export type ByokRow = {
+  user_id: string;
+  provider: ByokTarget["provider"];
+  encrypted_key: string;
+  label: string | null;
+  base_url: string | null;
+  model: string | null;
+};
+
+/** Verschlüsselt den Key für genau diese Zeile. Wirft ohne API_KEY_ENCRYPTION_SECRET (server/security/crypto.ts). */
+export function byokRow(userId: string, apiKey: string, target: ByokTarget): ByokRow {
+  const custom = target.provider === "custom" ? target : null;
+  return {
+    user_id: userId,
+    provider: target.provider,
+    encrypted_key: encrypt(apiKey, { userId, provider: target.provider }),
+    label: custom?.label ?? null,
+    base_url: custom?.baseUrl ?? null,
+    model: custom?.model ?? null,
+  };
+}
 
 /**
  * A signed-in user's stored BYOK key, ready to pass as chatComplete's
@@ -58,7 +86,7 @@ export async function getUserOverride(userId: string): Promise<LlmOverride | nul
 
   const provider = data.provider as ByokProvider;
   try {
-    const apiKey = decrypt(data.encrypted_key as string);
+    const apiKey = decrypt(data.encrypted_key as string, { userId, provider });
     if (provider === "custom") {
       const baseUrl = data.base_url as string | null;
       const model = data.model as string | null;

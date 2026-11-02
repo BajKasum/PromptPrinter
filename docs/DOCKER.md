@@ -42,13 +42,12 @@ Befehl, den der blanke `docker compose up --build` sowieso ausführt —
   `dev`-Build-Target (installiert Abhängigkeiten in einer gecachten Schicht,
   genau wie der Produktions-Build). Erster Start dauert etwas, jeder folgende
   ist schnell, solange sich `package-lock.json` nicht ändert.
-- Braucht **kein** `UPSTASH_REDIS_REST_URL`/`_TOKEN` und kein
-  `API_KEY_ENCRYPTION_SECRET` mehr: `src/server/security/rate-limit.ts` fällt
-  ausserhalb von Produktion auf einen In-Memory-Limiter zurück,
-  `src/server/security/crypto.ts` auf einen festen, klar als unsicher
-  markierten Dev-Schlüssel (Konsolen-Warnung macht das sichtbar). Beides nur
-  ausserhalb `NODE_ENV=production` aktiv, in Produktion bleibt es beim
-  strikten Verhalten.
+- Braucht **kein** `UPSTASH_REDIS_REST_URL`/`_TOKEN`:
+  `src/server/security/rate-limit.ts` fällt ausserhalb von Produktion auf einen
+  In-Memory-Limiter zurück.
+- `API_KEY_ENCRYPTION_SECRET` ist auch hier optional, aber ohne ihn lässt sich unter
+  "Eigene API-Keys" nichts speichern: einen festen Ersatzschlüssel gibt es nicht. Einen
+  Wegwerfwert erzeugt der Befehl in `.env.example`.
 
 **Stoppen:** im selben Terminal **`Strg + C`**, danach sauber aufräumen:
 

@@ -1,80 +1,92 @@
 /**
- * Schlüsselt die gespeicherten BYOK-Keys (user_api_keys.encrypted_key) von
- * API_KEY_ENCRYPTION_SECRET_PREVIOUS auf API_KEY_ENCRYPTION_SECRET um.
+ * Bringt die gespeicherten BYOK-Keys (user_api_keys.encrypted_key) auf das aktuelle Format und unter das aktuelle
+ * API_KEY_ENCRYPTION_SECRET. Zwei Anlässe, derselbe Ablauf:
  *
- * ─── Warum es das gibt ──────────────────────────────────────────────────────
- * Bis zum Betriebs-Audit vom 04.10.2026 hing jeder gespeicherte Nutzer-Key an
- * genau einem Secret. Wer es ändern wollte (Verdacht auf Abfluss, Mitarbeiter-
- * wechsel, Pflicht-Rotation), machte damit alle Keys unlesbar, und
- * getUserOverride() stuft einen unlesbaren Key stillschweigend auf "kein
- * eigener Key" zurück: jeder BYOK-Nutzer läuft dann unbemerkt auf dem Server-Key
- * und unter den Plan-Grenzen. crypto.ts liest deshalb während einer Rotation mit
- * beiden Secrets. Dieses Skript ist der zweite Schritt: es schreibt die Zeilen,
- * die nur das alte Secret öffnet, unter dem neuen neu, damit das alte danach
- * wirklich weg kann.
+ *   - Formatwechsel ohne neues Secret: alte Zeilen (scrypt, ohne Bindung an die Zeile) werden `pp2.…`.
+ *     API_KEY_ENCRYPTION_SECRET_PREVIOUS bleibt leer.
+ *   - Rotation: das alte Secret steht in API_KEY_ENCRYPTION_SECRET_PREVIOUS, das neue in API_KEY_ENCRYPTION_SECRET.
+ *     Ablauf (docs/SETUP.md, "BYOK-Secret rotieren"):
+ *       1. Neues Secret erzeugen (mindestens 32 Zeichen Zufall, siehe .env.example).
+ *       2. In Vercel: PREVIOUS = altes Secret, API_KEY_ENCRYPTION_SECRET = neues Secret. Deployen. Ab jetzt öffnet
+ *          die App beide, schreibt aber nur noch unter dem neuen.
+ *       3. Dieses Skript im Probelauf (ohne --apply). Es zählt, schreibt nichts.
+ *       4. Mit --apply umschlüsseln.
+ *       5. Probelauf noch einmal: "offen: 0".
+ *       6. PREVIOUS in Vercel löschen, deployen.
  *
- * ─── Ablauf einer Rotation ──────────────────────────────────────────────────
- *   1. Neues Secret erzeugen (lang, zufällig).
- *   2. In Vercel: API_KEY_ENCRYPTION_SECRET_PREVIOUS = altes Secret,
- *      API_KEY_ENCRYPTION_SECRET = neues Secret. Deployen. Ab jetzt öffnet die
- *      App beide, schreibt aber nur noch unter dem neuen.
- *   3. Dieses Skript im Probelauf (ohne --apply). Es zählt, schreibt nichts.
- *   4. Mit --apply umschlüsseln.
- *   5. Probelauf noch einmal: es muss "nur neues Secret" für alle Zeilen melden.
- *   6. API_KEY_ENCRYPTION_SECRET_PREVIOUS in Vercel löschen, deployen.
+ * Warum überhaupt: getUserOverride() meldet einen Key, den das Secret nicht öffnet, als "unreadable", und der Chat
+ * dieses Kontos wird abgelehnt. Eine Zeile bleibt also lesbar, bis sie umgeschlüsselt ist, und erst danach kann das
+ * alte Secret oder das alte Format wirklich weg.
  *
- * Aufruf (die Werte stehen NICHT in einer .env-Datei, die das Skript liest:
- * eine Rotation soll nie versehentlich gegen die falsche Datenbank laufen,
- * deshalb muss man sie bewusst mitgeben):
+ * Aufruf (die Werte stehen NICHT in einer .env-Datei, die das Skript liest: es soll nie versehentlich gegen die
+ * falsche Datenbank laufen, deshalb muss man sie bewusst mitgeben):
  *
  *   SUPABASE_URL=https://<projekt>.supabase.co \
  *   SUPABASE_SERVICE_ROLE_KEY=... \
- *   API_KEY_ENCRYPTION_SECRET=<neu> \
- *   API_KEY_ENCRYPTION_SECRET_PREVIOUS=<alt> \
+ *   API_KEY_ENCRYPTION_SECRET=<aktuell> \
+ *   API_KEY_ENCRYPTION_SECRET_PREVIOUS=<alt, nur bei einer Rotation> \
  *   node scripts/rotate-byok-secret.mjs [--apply]
  *
- * Es gibt nie einen Key, ein Secret oder einen Chiffretext aus, nur Zahlen und
- * Zeilen-IDs. Jede Zeile wird vor dem Schreiben mit dem neuen Secret zurück-
- * gelesen, und geschrieben wird nur, solange der alte Chiffretext noch in der
- * Zeile steht (hat der Nutzer inzwischen neu gespeichert, bleibt sein Wert).
+ * Es gibt nie einen Key, ein Secret oder einen Chiffretext aus, nur Zahlen und Zeilen-IDs. Jede Zeile wird vor dem
+ * Schreiben zurückgelesen, und geschrieben wird nur, solange der alte Chiffretext noch in der Zeile steht (hat der
+ * Nutzer inzwischen neu gespeichert, bleibt sein Wert).
  *
- * Exit: 0 alles unter dem neuen Secret · 1 es sind Zeilen offen (Probelauf)
- *       oder ein Schreiben ist gescheitert · 2 falscher Aufruf/Datenbankfehler ·
- *       3 Zeilen, die KEIN Secret öffnet (der Nutzer muss den Key neu eingeben;
- *       das Skript löscht nie etwas).
+ * Exit: 0 alles fertig · 1 es sind Zeilen offen (Probelauf) oder ein Schreiben ist gescheitert · 2 falscher
+ *       Aufruf/Datenbankfehler · 3 Zeilen, die KEIN Secret öffnet (der Nutzer muss den Key neu eingeben; das Skript
+ *       löscht nie etwas).
  *
- * Die Verschlüsselung hier ist eine Kopie von src/server/security/crypto.ts
- * (AES-256-GCM, scrypt mit festem Salt, iv + Tag + Chiffretext als base64).
- * Eine Kopie, weil ein TypeScript-Modul mit `server-only` kein Skript-Import ist.
- * tests/guards/rotate-byok-secret.test.ts hält beide gegeneinander fest: ein
- * Blob aus dem einen muss das andere öffnen.
+ * Die Verschlüsselung hier ist eine Kopie von src/server/security/crypto.ts, weil ein TypeScript-Modul mit
+ * `server-only` kein Skript-Import ist. tests/guards/rotate-byok-secret.test.ts hält beide gegeneinander fest: ein
+ * Wert aus dem einen muss das andere öffnen.
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, scryptSync } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
-const SALT = "promptprinter-byok";
+const TAG_LENGTH = 16;
+const FORMAT_PREFIX = "pp2";
+const HKDF_NO_SALT = Buffer.alloc(0);
+const KEY_INFO = "promptprinter/byok/v2/aes-256-gcm";
+const KID_INFO = "promptprinter/byok/v2/key-id";
+const LEGACY_SCRYPT_SALT = "promptprinter-byok";
 
-export function deriveKey(secret) {
-  return scryptSync(secret, SALT, 32);
-}
+/** Wie src/server/env.ts: darunter schlüsselt das Skript nicht um, sonst läge danach alles unter einem schwachen Wert. */
+export const MIN_SECRET_LENGTH = 32;
 
-export function encryptWith(secret, plaintext) {
+const hkdf = (secret, info, length) => Buffer.from(hkdfSync("sha256", secret, HKDF_NO_SALT, info, length));
+
+export const keyId = (secret) => hkdf(secret, KID_INFO, 4).toString("hex");
+
+const additionalData = ({ user_id, provider }) => Buffer.from(`${user_id}|${provider}`, "utf8");
+
+/** @param {{ user_id: string, provider: string }} row die Zeile, an die der Wert gebunden wird */
+export function encryptWith(secret, plaintext, row) {
   const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv(ALGORITHM, deriveKey(secret), iv);
+  const cipher = createCipheriv(ALGORITHM, hkdf(secret, KEY_INFO, 32), iv);
+  cipher.setAAD(additionalData(row));
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString("base64");
+  const payload = Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString("base64url");
+  return `${FORMAT_PREFIX}.${keyId(secret)}.${payload}`;
 }
 
-/** Klartext oder null (falsches Secret / beschädigter Blob). Wirft nie. */
-export function decryptWith(secret, blob) {
+function open(key, raw, aad) {
+  const decipher = createDecipheriv(ALGORITHM, key, raw.subarray(0, IV_LENGTH));
+  decipher.setAuthTag(raw.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH));
+  if (aad) decipher.setAAD(aad);
+  return Buffer.concat([decipher.update(raw.subarray(IV_LENGTH + TAG_LENGTH)), decipher.final()]).toString("utf8");
+}
+
+/** Klartext oder null (falsches Secret, fremde Zeile, beschädigter Wert). Wirft nie. Liest beide Formate. */
+export function decryptWith(secret, blob, row) {
   try {
-    const raw = Buffer.from(blob, "base64");
-    const decipher = createDecipheriv(ALGORITHM, deriveKey(secret), raw.subarray(0, IV_LENGTH));
-    decipher.setAuthTag(raw.subarray(IV_LENGTH, IV_LENGTH + 16));
-    return Buffer.concat([decipher.update(raw.subarray(IV_LENGTH + 16)), decipher.final()]).toString("utf8");
+    if (blob.startsWith(`${FORMAT_PREFIX}.`)) {
+      const [, kid, payload] = blob.split(".");
+      if (kid !== keyId(secret)) return null;
+      return open(hkdf(secret, KEY_INFO, 32), Buffer.from(payload ?? "", "base64url"), additionalData(row));
+    }
+    return open(scryptSync(secret, LEGACY_SCRYPT_SALT, 32), Buffer.from(blob, "base64"));
   } catch {
     return null;
   }
@@ -82,18 +94,20 @@ export function decryptWith(secret, blob) {
 
 /**
  * In welchem Zustand ist eine Zeile?
- *   "current"   das neue Secret öffnet sie, nichts zu tun
- *   "previous"  nur das alte öffnet sie, muss umgeschlüsselt werden
- *   "unreadable" keins von beiden
- * Das aktuelle Secret gewinnt immer: öffnet es die Zeile, ist sie fertig, egal
- * ob das alte sie auch öffnen würde.
+ *   "current"    aktuelles Format unter dem aktuellen Secret, nichts zu tun
+ *   "open"       lesbar, aber altes Format oder altes Secret: muss umgeschlüsselt werden
+ *   "unreadable" kein Secret öffnet sie
  *
- * @returns {{ state: "current" | "previous" | "unreadable", plaintext?: string }}
+ * @returns {{ state: "current" | "open" | "unreadable", plaintext?: string }}
  */
-export function classify(blob, { current, previous }) {
-  if (decryptWith(current, blob) !== null) return { state: "current" };
-  const plaintext = previous ? decryptWith(previous, blob) : null;
-  if (plaintext !== null) return { state: "previous", plaintext };
+export function classify(row, { current, previous }) {
+  const blob = row.encrypted_key;
+  const underCurrent = decryptWith(current, blob, row);
+  if (underCurrent !== null) {
+    return blob.startsWith(`${FORMAT_PREFIX}.`) ? { state: "current" } : { state: "open", plaintext: underCurrent };
+  }
+  const plaintext = previous ? decryptWith(previous, blob, row) : null;
+  if (plaintext !== null) return { state: "open", plaintext };
   return { state: "unreadable" };
 }
 
@@ -114,7 +128,7 @@ async function api(deps, path, init = {}) {
 async function loadRows(deps) {
   const rows = [];
   for (let from = 0; ; from += PAGE) {
-    const response = await api(deps, "user_api_keys?select=id,encrypted_key&order=created_at.asc", {
+    const response = await api(deps, "user_api_keys?select=id,user_id,provider,encrypted_key&order=created_at.asc", {
       headers: { range: `${from}-${from + PAGE - 1}` },
     });
     const page = await response.json();
@@ -124,15 +138,14 @@ async function loadRows(deps) {
 }
 
 /**
- * Der ganze Ablauf, ohne process.exit und mit einstellbarem fetch, damit ein
- * Test ihn gegen eine Fake-Datenbank laufen lassen kann. Gibt den Exit-Code
- * zurück (Bedeutung im Kopfkommentar).
+ * Der ganze Ablauf, ohne process.exit und mit einstellbarem fetch, damit ein Test ihn gegen eine Fake-Datenbank laufen
+ * lassen kann. Gibt den Exit-Code zurück (Bedeutung im Kopfkommentar).
  *
- * @param {{ apply?: boolean, base: string, serviceKey: string, current: string, previous: string,
+ * @param {{ apply?: boolean, base: string, serviceKey: string, current: string, previous?: string,
  *           fetchImpl?: typeof fetch, log?: (line: string) => void, logError?: (line: string) => void }} options
  */
 export async function run(options) {
-  const { apply = false, current, previous, log = console.log, logError = console.error } = options;
+  const { apply = false, current, previous = "", log = console.log, logError = console.error } = options;
   const deps = {
     base: options.base.replace(/\/+$/, ""),
     serviceKey: options.serviceKey,
@@ -143,7 +156,6 @@ export async function run(options) {
     ["SUPABASE_URL", deps.base],
     ["SUPABASE_SERVICE_ROLE_KEY", deps.serviceKey],
     ["API_KEY_ENCRYPTION_SECRET", current],
-    ["API_KEY_ENCRYPTION_SECRET_PREVIOUS", previous],
   ]
     .filter(([, value]) => !value)
     .map(([name]) => name);
@@ -151,8 +163,12 @@ export async function run(options) {
     logError(`rotate-byok-secret: fehlt: ${missing.join(", ")} (siehe Kopfkommentar).`);
     return 2;
   }
+  if (current.length < MIN_SECRET_LENGTH) {
+    logError(`rotate-byok-secret: API_KEY_ENCRYPTION_SECRET ist kürzer als ${MIN_SECRET_LENGTH} Zeichen.`);
+    return 2;
+  }
   if (previous === current) {
-    logError("rotate-byok-secret: altes und neues Secret sind gleich, es gibt nichts umzuschlüsseln.");
+    logError("rotate-byok-secret: altes und neues Secret sind gleich. Für einen reinen Formatwechsel PREVIOUS weglassen.");
     return 2;
   }
 
@@ -164,17 +180,17 @@ export async function run(options) {
     return 2;
   }
 
-  const result = { current: 0, previous: [], unreadable: [] };
+  const result = { current: 0, open: [], unreadable: [] };
   for (const row of rows) {
-    const verdict = classify(row.encrypted_key, { current, previous });
+    const verdict = classify(row, { current, previous });
     if (verdict.state === "current") result.current += 1;
-    else if (verdict.state === "previous") result.previous.push({ ...row, plaintext: verdict.plaintext });
+    else if (verdict.state === "open") result.open.push({ ...row, plaintext: verdict.plaintext });
     else result.unreadable.push(row.id);
   }
 
   log(`Zeilen gesamt:        ${rows.length}`);
-  log(`  nur neues Secret:   ${result.current}  (fertig)`);
-  log(`  nur altes Secret:   ${result.previous.length}  (müssen umgeschlüsselt werden)`);
+  log(`  fertig:             ${result.current}`);
+  log(`  offen:              ${result.open.length}  (altes Format oder altes Secret)`);
   log(`  von keinem lesbar:  ${result.unreadable.length}`);
   if (result.unreadable.length > 0) {
     log(`  Zeilen-IDs: ${result.unreadable.join(", ")} (Nutzer muss den Key neu eingeben)`);
@@ -182,19 +198,18 @@ export async function run(options) {
 
   let failed = 0;
   let written = 0;
-  if (apply && result.previous.length > 0) {
-    for (const row of result.previous) {
-      const fresh = encryptWith(current, row.plaintext);
-      // Vor dem Schreiben zurücklesen: ein Blob, den das neue Secret nicht
-      // selbst öffnet, darf nie in die Datenbank.
-      if (decryptWith(current, fresh) !== row.plaintext) {
+  if (apply && result.open.length > 0) {
+    for (const row of result.open) {
+      const fresh = encryptWith(current, row.plaintext, row);
+      // Vor dem Schreiben zurücklesen: ein Wert, den das aktuelle Secret nicht selbst öffnet, darf nie in die Datenbank.
+      if (decryptWith(current, fresh, row) !== row.plaintext) {
         failed += 1;
         logError(`  Zeile ${row.id}: Rücklese-Probe fehlgeschlagen, nicht geschrieben.`);
         continue;
       }
       try {
-        // Nur schreiben, solange noch der ALTE Chiffretext in der Zeile steht:
-        // hat der Nutzer zwischendurch neu gespeichert, gewinnt sein Wert.
+        // Nur schreiben, solange noch der ALTE Chiffretext in der Zeile steht: hat der Nutzer zwischendurch neu
+        // gespeichert, gewinnt sein Wert.
         const response = await api(
           deps,
           `user_api_keys?id=eq.${encodeURIComponent(row.id)}&encrypted_key=eq.${encodeURIComponent(row.encrypted_key)}&select=id`,
@@ -213,21 +228,18 @@ export async function run(options) {
       }
     }
     log(`\numgeschlüsselt: ${written} · fehlgeschlagen: ${failed}`);
-  } else if (!apply && result.previous.length > 0) {
+  } else if (!apply && result.open.length > 0) {
     log("\nProbelauf, nichts geschrieben. Mit --apply umschlüsseln.");
   }
 
   if (failed > 0) return 1;
   if (result.unreadable.length > 0) return 3;
   if (apply) {
-    log(
-      '\nJetzt ohne --apply erneut prüfen. Erst wenn dort "nur altes Secret: 0" steht, ' +
-        "API_KEY_ENCRYPTION_SECRET_PREVIOUS entfernen."
-    );
+    log('\nJetzt ohne --apply erneut prüfen. Erst wenn dort "offen: 0" steht, ist das alte Secret oder Format entbehrlich.');
     return 0;
   }
-  if (result.previous.length > 0) return 1;
-  log("\nFertig: das neue Secret öffnet jede Zeile. API_KEY_ENCRYPTION_SECRET_PREVIOUS kann entfernt werden.");
+  if (result.open.length > 0) return 1;
+  log("\nFertig: jede Zeile hat das aktuelle Format unter dem aktuellen Secret.");
   return 0;
 }
 

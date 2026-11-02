@@ -21,18 +21,13 @@
  * `prod` requires everything env.ts's boot check would refuse to start
  * without, unchanged.
  *
- * `API_KEY_ENCRYPTION_SECRET` and the two UPSTASH_* vars are NOT in
- * DEV_RUNTIME_REQUIRED on purpose: crypto.ts now derives a fixed, insecure
- * dev-only key when the secret is absent and NODE_ENV isn't "production",
- * and rate-limit.ts already fell back to an in-memory limiter outside
- * production before this script existed. Neither ever needed Upstash or a
- * real secret to run locally — this script was simply stricter than the
- * runtime it was gating, forcing every `npm run docker:dev` to have
- * production-grade secrets configured for a container that never actually
- * required them. `SUPABASE_SERVICE_ROLE_KEY` and the Supabase/App-URL vars
- * stay required in both modes: there is no local fallback for an entire
- * auth+database backend, unlike Upstash and the encryption secret, which
- * this codebase already has real dev-safe substitutes for.
+ * `API_KEY_ENCRYPTION_SECRET` und die beiden UPSTASH_*-Werte fehlen in
+ * DEV_RUNTIME_REQUIRED mit Absicht: ohne das Secret läuft die App lokal, nur
+ * "Eigene API-Keys" lässt sich nicht speichern (crypto.ts wirft, einen festen
+ * Ersatzschlüssel gibt es nicht), und rate-limit.ts nimmt ausserhalb der
+ * Produktion einen Limiter im Speicher. `SUPABASE_SERVICE_ROLE_KEY` und die
+ * Werte für Supabase und die App-Adresse gelten in beiden Modi: für ein ganzes
+ * Auth- und Datenbank-Backend gibt es keinen lokalen Ersatz.
  *
  * Usage: node scripts/check-env.mjs dev | prod
  * Wired into `npm run docker:dev` / `npm run docker:prod` (package.json).
@@ -46,9 +41,9 @@ const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
 
 // What a LOCAL dev container genuinely cannot run without. Supabase is a
 // hosted backend with no in-process substitute in this codebase; everything
-// else either has a working dev-safe fallback already (Upstash, the BYOK
-// encryption secret) or only degrades a specific feature (ZAI_API_KEY ->
-// stub-mode chat replies, handled by assertEnv's warning, not this gate).
+// else has a dev-safe fallback (Upstash) or only degrades a specific feature
+// (the BYOK secret -> own keys can't be saved, ZAI_API_KEY -> stub-mode chat
+// replies, both handled by assertEnv's warning, not this gate).
 const DEV_RUNTIME_REQUIRED = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",

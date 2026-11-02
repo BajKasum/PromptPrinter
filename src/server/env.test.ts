@@ -1,6 +1,8 @@
+import { randomBytes } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import {
   assertEnv,
+  encryptionSecretProblem,
   hasCheckoutWithoutWebhook,
   hasInsecureAppUrl,
   hasInvalidCheckoutUrl,
@@ -20,11 +22,76 @@ const complete: Record<string, string | undefined> = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon",
   SUPABASE_SERVICE_ROLE_KEY: "service",
   NEXT_PUBLIC_APP_URL: "https://promptprinter.app",
-  API_KEY_ENCRYPTION_SECRET: "secret",
+  API_KEY_ENCRYPTION_SECRET: randomBytes(32).toString("base64"),
   UPSTASH_REDIS_REST_URL: "https://example.upstash.io",
   UPSTASH_REDIS_REST_TOKEN: "token",
   ZAI_API_KEY: "zai",
 };
+
+describe("API_KEY_ENCRYPTION_SECRET beim Start", () => {
+  const production = (secret: string | undefined) => ({
+    ...complete,
+    NODE_ENV: "production",
+    API_KEY_ENCRYPTION_SECRET: secret,
+  });
+
+  it("startet in Produktion mit langem Zufall, in Hex wie in Base64", () => {
+    expect(() => assertEnv(production(randomBytes(16).toString("hex")))).not.toThrow();
+    expect(() => assertEnv(production(randomBytes(32).toString("base64")))).not.toThrow();
+    expect(() => assertEnv(production(randomBytes(32).toString("base64url")))).not.toThrow();
+  });
+
+  it("bricht in Produktion ab, wenn er fehlt oder leer ist", () => {
+    expect(() => assertEnv(production(undefined))).toThrow(/API_KEY_ENCRYPTION_SECRET/);
+    expect(() => assertEnv(production("   "))).toThrow(/API_KEY_ENCRYPTION_SECRET/);
+  });
+
+  it("bricht in Produktion ab, wenn er zu kurz ist, und nennt den Wert nicht", () => {
+    const short = randomBytes(15).toString("hex"); // 30 Zeichen
+    expect(() => assertEnv(production(short))).toThrow(/kürzer als 32 Zeichen/);
+    let message = "";
+    try {
+      assertEnv(production(short));
+    } catch (err) {
+      message = String(err);
+    }
+    expect(message).not.toContain(short);
+  });
+
+  it.each([
+    ["Vorlage", "placeholder-secret-for-ci-only-0123456789"],
+    ["Aufforderung", "please-change-me-before-you-deploy-this"],
+    ["alter Rückfallwert", "promptprinter-dev-only-insecure-fallback-do-not-use-in-production"],
+    ["Beispiel", "this-is-an-example-value-of-some-length"],
+    ["ein Zeichen wiederholt", "a".repeat(40)],
+    ["kurzes Muster wiederholt", "abcabc".repeat(8)],
+  ])("bricht in Produktion ab bei einem Platzhalter: %s", (_label, value) => {
+    expect(encryptionSecretProblem(value)).toBe("placeholder");
+    expect(() => assertEnv(production(value))).toThrow(/Platzhalter/);
+  });
+
+  it("warnt ausserhalb der Produktion nur, und schweigt dort, wenn er fehlt (BYOK ist dann aus)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() => assertEnv({ ...complete, NODE_ENV: "development", API_KEY_ENCRYPTION_SECRET: "kurz" })).not.toThrow();
+    expect(warn.mock.calls.flat().join(" ")).toMatch(/kürzer als 32 Zeichen/);
+    warn.mockRestore();
+  });
+
+  it("prüft das alte Secret einer Rotation nicht: von einem schwachen Wert soll man weg können", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() =>
+      assertEnv({ ...production(randomBytes(32).toString("base64")), API_KEY_ENCRYPTION_SECRET_PREVIOUS: "kurz" })
+    ).not.toThrow();
+    warn.mockRestore();
+  });
+
+  it("ein Zufallswert löst die Platzhalter-Prüfung nicht aus", () => {
+    for (let i = 0; i < 200; i += 1) {
+      expect(encryptionSecretProblem(randomBytes(16).toString("hex"))).toBeNull();
+      expect(encryptionSecretProblem(randomBytes(24).toString("base64"))).toBeNull();
+    }
+  });
+});
 
 describe("missingProductionEnv", () => {
   it("reports nothing when everything is set", () => {
@@ -257,18 +324,19 @@ describe("hasOpenEncryptionRotation", () => {
 
   it("assertEnv warnt beim Start, ohne den Start zu verhindern, und nennt kein Secret", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const [fresh, old] = [randomBytes(32).toString("base64"), randomBytes(32).toString("base64")];
     expect(() =>
       assertEnv({
         ...complete,
         NODE_ENV: "production",
-        API_KEY_ENCRYPTION_SECRET: "the-new-secret",
-        API_KEY_ENCRYPTION_SECRET_PREVIOUS: "the-old-secret",
+        API_KEY_ENCRYPTION_SECRET: fresh,
+        API_KEY_ENCRYPTION_SECRET_PREVIOUS: old,
       })
     ).not.toThrow();
     const lines = warn.mock.calls.map((c) => String(c[0]));
     expect(lines.some((l) => l.includes("API_KEY_ENCRYPTION_SECRET_PREVIOUS"))).toBe(true);
-    expect(lines.join(" | ")).not.toContain("the-new-secret");
-    expect(lines.join(" | ")).not.toContain("the-old-secret");
+    expect(lines.join(" | ")).not.toContain(fresh);
+    expect(lines.join(" | ")).not.toContain(old);
     warn.mockRestore();
   });
 });
@@ -282,7 +350,12 @@ describe("assertEnv mit einer http-Adresse in Produktion", () => {
   const complete = Object.fromEntries(
     missingProductionEnv({ NODE_ENV: "production" }).map((m) => [m.name, "x"])
   );
-  const env = { ...complete, NODE_ENV: "production", NEXT_PUBLIC_APP_URL: "http://localhost:3001" };
+  const env = {
+    ...complete,
+    NODE_ENV: "production",
+    NEXT_PUBLIC_APP_URL: "http://localhost:3001",
+    API_KEY_ENCRYPTION_SECRET: randomBytes(32).toString("base64"),
+  };
 
   it("bricht den Start ab", () => {
     expect(() => assertEnv(env)).toThrow(/ALLOW_INSECURE_APP_URL/);
