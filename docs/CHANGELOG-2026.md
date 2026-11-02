@@ -11,6 +11,24 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-02: Tippflächen gemessen, Antwortvorschläge und Qualitätszeile ausgebaut, Live-Prüfliste der Suche (PR #282, Issues #225, #243, #245, #246, #249, #254)
+
+**Messungen am echten Modell** (`glm-4.5-air`, Aufruf wie `src/server/llm/zai.ts`, in Vercel ist kein `ZAI_MODEL` gesetzt, also dasselbe Modell wie in Produktion; nur erfundene Eingaben; ein Lauf je Messung; Skripte nur im Scratchpad). Die Zahlen im Einzelnen stehen in den Issues.
+
+- **#245 Verfeinern per Tipp: bestanden, bleibt.** 12 Prompts aus deutschen Gesprächen, alle fünf Tipps: 60 von 60 mit vollständigem Prompt, "Auf Englisch" 12 von 12 englisch. Zusatz in en, fr, it, es: 40 von 40, englisch 8 von 8. Der Wortlaut bleibt. "Vollständig" ist eine Heuristik (Codeblock, kein Diff, nicht abgebrochen, nicht zusammengefallen), die kürzesten Fälle sind gelesen. **Bekannte Schwäche:** "Kürzer" gab in 2 von 20 Fällen denselben Prompt Byte für Byte zurück, der Tipp kostet dann einen Zug und bewirkt nichts.
+- **#225 Antwortvorschläge: verfehlt, ausgebaut.** 10 von 20 in der strengen Form (verlangt 16; nur Rückfragen als Nenner: 9 von 15), einmal ein Block neben Rückfragen, die in einem `text`-Block standen und als "Dein Prompt" erschienen wären. Fertige Prompts blind bewertet von einem frischen Subagenten: 7,10 mit Absatz gegen 8,55 ohne, 5 gegen 12 Paare besser. Ein Lauf, ein Modell als Bewerter; der Abstand trägt die Entscheidung trotzdem, weil die Form unabhängig davon durchfiel.
+- **#243 Qualitätszeile: verfehlt, ausgebaut.** 48 echte Prompts, 18 davon bewusst unvollständig, Etiketten von einem frischen Subagenten, der die Erkennung nicht kannte (schwächer als ein Mensch). Aufgabenart 72,9 % (verlangt 90), zu Unrecht "fehlt" 12,1 %, zu Unrecht "enthalten" 14,3 % (je höchstens 10). Die Erkennung traf handgeschriebene Prompts und nicht Finns; gerade bei unvollständigen Prompts meldete sie falsche Sicherheit. Das Issue sagt: reicht die Quote nicht, wird die Idee nicht gebaut.
+
+**Ausgebaut:** `CHOICES_RULE`, `ANSWER_CHOICES_ENABLED`, `features/chat/lib/choices.ts`, `choice-chips.tsx`, `prompt-quality.ts`, `prompt-quality-line.tsx`, die Wörterbuch-Schlüssel `chat.quality` und `chat.choices`, die Etiketten in `tests/support/prompt-corpus.ts`. Der Text des Systemprompts blieb Byte für Byte (SHA-256 gleich), beides war im Produkt nie an. Die Prompts der Sammlung bleiben für Prompt-Prüfer und Platzhalter.
+
+**#246 Live-Prüfliste per curl:** `http` auf `https`, `www` auf die Hauptadresse und `promptprinter.vercel.app` auf `promptprinter.app` je ein 308. `/pricing/`, `/features` und der alte Vergleich leiten um, `/gibtsnicht` gibt 404. `canonical`, `og:url` und alle 34 Sitemap-Adressen stehen auf `https://promptprinter.app`, alle 34 geben als Googlebot 200. `robots.txt`, `sitemap.xml`, `llms.txt` geben 200 für Googlebot, Bingbot, OAI-SearchBot und PerplexityBot. **Eine Abweichung:** `http://www.` braucht zwei Sprünge (Vercel wechselt erst auf HTTPS, dann auf die Hauptadresse), steht aber in keinem Link. Search Console und Bing sind nicht eingerichtet, das braucht Kasums Logins; das Issue bleibt offen.
+
+**#249:** Topics von `BajKasum/PromptPrinter` ergänzt, Homepage von `BajKasum/promptprinter-pp` auf `https://promptprinter.app/skill`, seine Beschreibung bleibt. **Der eine Standardsatz:** "An AI chat that asks what's missing and writes you the finished prompt, for any AI and any task." Die deutsche Fassung ist `SITE_DESCRIPTION`. Gewählte Verzeichnisse: AlternativeTo und Future Tools, die fertigen Texte stehen im Issue, einreichen tut Kasum. Offen, bis zwei Einträge live sind.
+
+**#254:** geschlossen. Es fehlten nur die Search-Console-Zahlen nach 8 bis 12 Wochen, sie stehen ab Februar 2027 unter "Offen" in `CLAUDE.md`.
+
+---
+
 ## 2026-11-02: GitHub aufgeräumt, Vitest 5, minimatch 11, Webhook ignoriert den Testmodus (Branch `chore/github-aufraeumen-2026-11-02`)
 
 Kasums Auftrag: nur die 16 Issues bleiben offen, alle PRs durch, keine Scanner-Funde. Vorher: #273 grün, #274 rot, Dependabot-Alarm #3, `npm audit` 16 moderate (eine Ursache), drei Advisory-Entwürfe.

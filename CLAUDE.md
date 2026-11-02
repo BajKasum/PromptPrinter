@@ -92,7 +92,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   K2 Alarm-Webhook (bewusst nicht eingerichtet), K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
   signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
   eingerichtet, ein echtes Ereignis steht aus.
-- **Wartet auf Kasum:** `RESEND_API_KEY` in Vercel für das Kontaktformular (docs/SETUP.md, "Kontaktformular"); Entscheid zum Fehler-Tracker;
+- **Wartet auf Kasum:** `RESEND_API_KEY` in Vercel für das Kontaktformular (docs/SETUP.md, "Kontaktformular"); Entscheid zum Fehler-Tracker; Search Console und Bing (#246); zwei Verzeichnis-Einträge (#249); **ab Februar 2027** die Search-Console-Zahlen der `/aufgaben`-Seiten ins Changelog;
   **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
   Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
