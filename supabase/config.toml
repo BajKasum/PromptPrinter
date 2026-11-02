@@ -77,6 +77,15 @@ content_path = "./supabase/templates/email_change.html"
 subject = "Du wurdest zu PromptPrinter eingeladen"
 content_path = "./supabase/templates/invite.html"
 
+# Der zweite Faktor per TOTP (src/app/api/auth/mfa/route.ts). Ausdrücklich, damit ein geänderter Standard der CLI auffällt:
+# auf gehosteten Projekten ist TOTP von sich aus an, im kostenlosen Tarif auch.
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 # Alles Weitere, was die App nicht nutzt, ist aus: weniger Container, kürzerer
 # Start, weniger, was in der CI schiefgehen kann.
 [realtime]

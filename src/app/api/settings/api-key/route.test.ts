@@ -6,6 +6,7 @@ import { DELETE, PATCH, POST } from "./route";
 // key fails loudly here or silently at the user's next chat turn.
 
 const getUser = vi.fn();
+const getClaims = vi.fn();
 const rateLimit = vi.fn();
 const chatComplete = vi.fn();
 const encrypt = vi.fn();
@@ -29,7 +30,7 @@ function builder(table: string) {
 
 vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser },
+    auth: { getUser, getClaims },
     from: (t: string) => builder(t),
     rpc: (fn: string, args: unknown) => rpc(fn, args),
   }),
@@ -70,6 +71,44 @@ function del(provider?: string) {
     : "https://promptprinter.app/api/settings/api-key";
   return new Request(url, { method: "DELETE" });
 }
+
+describe("zweiter Faktor", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", factors: [{ status: "verified" }] } } });
+    getClaims.mockResolvedValue({ data: { claims: { aal: "aal1" } } });
+    rateLimit.mockResolvedValue({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 });
+    chatComplete.mockResolvedValue({ text: "OK", usage: null });
+    encrypt.mockReturnValue("ENCRYPTED_BLOB");
+    upsert.mockResolvedValue({ error: null });
+    deleteRow.mockReturnValue({ error: null });
+    rpc.mockResolvedValue({ error: null });
+    tableResults.profiles = { data: { is_admin: false } };
+    tableResults.user_api_keys = { data: { provider: "openai" } };
+  });
+
+  it("speichert, schaltet und entfernt ohne Nachweis nichts, und fasst den Key gar nicht erst an", async () => {
+    for (const res of [
+      await POST(post({ apiKey: "sk-ant-secret" })),
+      await PATCH(patch({ provider: "openai" })),
+      await DELETE(del("openai")),
+    ]) {
+      expect(res.status).toBe(403);
+      expect((await res.json()).code).toBe("aal2_required");
+    }
+    expect(chatComplete).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+    expect(deleteRow).not.toHaveBeenCalled();
+  });
+
+  it("arbeitet mit Nachweis wie gewohnt", async () => {
+    getClaims.mockResolvedValue({ data: { claims: { aal: "aal2" } } });
+    expect((await POST(post({ apiKey: "sk-ant-secret" }))).status).toBe(200);
+    expect((await PATCH(patch({ provider: "openai" }))).status).toBe(200);
+    expect((await DELETE(del("openai"))).status).toBe(200);
+  });
+});
 
 describe("Sicherheitsprotokoll der Keys", () => {
   beforeEach(() => {

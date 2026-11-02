@@ -19,7 +19,11 @@ export type DurableSecurityEvent =
   | "cli.login_approved"
   | "cli.login_denied"
   | "cli.session_issued"
-  | "cli.session_revoked";
+  | "cli.session_revoked"
+  | "mfa.enabled"
+  | "mfa.disabled"
+  | "mfa.recovery_used"
+  | "mfa.recovery_codes_renewed";
 
 type Details = Record<string, string | number | boolean | null>;
 

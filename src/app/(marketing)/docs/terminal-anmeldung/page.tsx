@@ -69,6 +69,14 @@ export default function Page() {
         Löschst du dein Konto, ist jede Anmeldung eines Terminals ebenfalls sofort ungültig.
       </p>
 
+      <h2>Was ändert sich mit einem zweiten Faktor?</h2>
+      <p>
+        Ein Terminal anzumelden verlangt dann den Code aus deiner Authenticator-App. Das Terminal selbst fragt nicht
+        danach, und seine Anmeldung darf weder dein Passwort ändern noch weitere Terminals anmelden. Jede neue Anmeldung
+        im Browser mit zweitem Faktor meldet deine Terminals ab: das macht der Anmeldedienst so, und du meldest sie danach
+        neu an.
+      </p>
+
       <h2>Wie lange bleibt ein Terminal angemeldet?</h2>
       <p>
         Höchstens 30 Tage. Danach meldest du es neu an, mit einem neuen Code. Die Frist lässt sich nicht

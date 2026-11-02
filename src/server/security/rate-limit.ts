@@ -283,7 +283,10 @@ export type RateLimitScope =
   | "cli-refresh"
   | "cli-logout"
   | "cli-sessions"
-  | "cli-session-revoke";
+  | "cli-session-revoke"
+  | "mfa-status"
+  | "mfa-enroll"
+  | "mfa-code";
 
 /**
  * The bucket a request counts against: the signed-in user, or the caller's IP

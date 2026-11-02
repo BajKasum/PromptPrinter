@@ -86,6 +86,17 @@ describe("POST /api/auth", () => {
       expect(events()).toEqual([{ event: "auth.sign_in_succeeded", userId: "user-1" }]);
     });
 
+    it("sagt dem Formular, wenn noch der zweite Faktor fehlt", async () => {
+      signInWithPassword.mockResolvedValue({
+        data: { user: { id: "user-1", factors: [{ status: "verified" }] } },
+        error: null,
+      });
+      expect(await (await POST(req(signIn))).json()).toEqual({ ok: true, mfaRequired: true });
+
+      signInWithPassword.mockResolvedValue({ data: { user: { id: "user-1", factors: [] } }, error: null });
+      expect(await (await POST(req(signIn))).json()).toEqual({ ok: true });
+    });
+
     it("falsches Passwort: ein Eintrag mit Grund, ohne Adresse und ohne Passwort", async () => {
       signInWithPassword.mockResolvedValue({ data: {}, error: { message: "Invalid login credentials" } });
       expect((await POST(req(signIn))).status).toBe(400);
