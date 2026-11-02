@@ -22,6 +22,9 @@ const OVER_LIMIT: Record<string, number> = {
   "src/features/marketing/components/hero.tsx": 610,
 };
 
+/** Erzeugt (`supabase gen types`): wächst mit dem Schema und lässt sich nicht zerlegen. */
+const GENERATED = new Set(["src/shared/supabase/database.types.ts"]);
+
 /** Wörterbücher: Daten, nicht Logik. */
 const DICTIONARY_DIR = "src/shared/i18n/messages/";
 // 800 -> 900 am 2026-10-17: die Texte der Einwilligungen (Sprachmodus, Z.ai) kamen in fuenf Sprachen dazu.
@@ -48,7 +51,7 @@ describe("Dateigrößen", () => {
 
   it("jede Code-Datei hat höchstens 400 Zeilen, oder steht mit einer Obergrenze in der Liste", () => {
     const tooBig = files
-      .filter((f) => !f.path.startsWith(DICTIONARY_DIR))
+      .filter((f) => !f.path.startsWith(DICTIONARY_DIR) && !GENERATED.has(f.path))
       .filter((f) => f.lines > (OVER_LIMIT[f.path] ?? MAX_CODE_LINES))
       .map((f) => `${f.path}: ${f.lines} Zeilen (erlaubt: ${OVER_LIMIT[f.path] ?? MAX_CODE_LINES})`);
     expect(

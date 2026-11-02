@@ -4,6 +4,10 @@ const refreshCliSession = vi.fn();
 vi.mock("@/server/cli-login/session", () => ({
   refreshCliSession: (...a: unknown[]) => refreshCliSession(...a),
 }));
+const checkCliSession = vi.fn();
+vi.mock("@/server/cli-login/sessions", () => ({
+  checkCliSession: (...a: unknown[]) => checkCliSession(...a),
+}));
 
 import { POST } from "./route";
 
@@ -20,6 +24,24 @@ function post(body: unknown, raw?: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   refreshCliSession.mockResolvedValue(SESSION);
+  checkCliSession.mockResolvedValue("ok");
+});
+
+describe("POST /api/cli/refresh, Höchstalter und Eintrag", () => {
+  it.each(["expired", "unknown"])("%s: 401 invalid_token, und das neue Token geht nicht hinaus", async (verdict) => {
+    checkCliSession.mockResolvedValue(verdict);
+    const res = await POST(post({ refreshToken: "r1" }));
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.kind).toBe("invalid_token");
+    expect(body.session).toBeUndefined();
+    expect(checkCliSession).toHaveBeenCalledWith("a");
+  });
+
+  it("ein Datenbankfehler ist 503, keine Abmeldung", async () => {
+    checkCliSession.mockRejectedValue(new Error("db down"));
+    expect((await POST(post({ refreshToken: "r1" }))).status).toBe(503);
+  });
 });
 
 describe("POST /api/cli/refresh", () => {

@@ -59,6 +59,9 @@ vi.mock("@/features/settings/components/data-export", () => ({ DataExport: () =>
 vi.mock("@/features/settings/components/zai-consent", () => ({
   ZaiConsent: ({ consentAt }: { consentAt: string | null }) => <div data-testid="zai-consent" data-at={consentAt ?? ""} />,
 }));
+vi.mock("@/features/settings/components/terminal-sessions", () => ({
+  TerminalSessions: () => <div data-testid="terminal-sessions" />,
+}));
 vi.mock("@/features/settings/components/delete-account", () => ({
   DeleteAccount: ({ email }: { email: string }) => <div data-testid="delete-account" data-email={email} />,
 }));
@@ -106,7 +109,7 @@ afterEach(() => {
 });
 
 describe("Karten", () => {
-  it("zeigt die neun Karten in dieser Reihenfolge, jede mit Titel und Hinweis", () => {
+  it("zeigt die zehn Karten in dieser Reihenfolge, jede mit Titel und Hinweis", () => {
     renderIt({ plan: "pro" });
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual([
@@ -116,6 +119,7 @@ describe("Karten", () => {
       "Sprache",
       "Eigene API-Keys",
       "Sicherheit",
+      "Terminals",
       "Übermittlung an Z.ai",
       "Deine Daten",
       "Gefahrenzone",
@@ -134,11 +138,11 @@ describe("Karten", () => {
     }
   });
 
-  it("gibt nur Sprache und API-Keys einen Sprunganker (Key-Hinweis im Chat, Sprachwahl)", () => {
+  it("gibt nur Sprache, API-Keys und Terminals einen Sprunganker (Key-Hinweis im Chat, Sprachwahl)", () => {
     const { container } = renderIt({ plan: "pro" });
     const withId = Array.from(container.querySelectorAll("section[id]")).map((s) => s.id);
-    expect(withId).toEqual(["language", "api-keys"]);
-    expect(container.querySelectorAll("section")).toHaveLength(9);
+    expect(withId).toEqual(["language", "api-keys", "terminals"]);
+    expect(container.querySelectorAll("section")).toHaveLength(10);
     expect(container.querySelector("section#api-keys h2")?.textContent).toBe("Eigene API-Keys");
     expect(container.querySelector("section#language h2")?.textContent).toBe("Sprache");
   });
@@ -167,7 +171,7 @@ describe("Karten", () => {
       const { container } = renderIt({ plan: "free" });
       expect(screen.queryByTestId("zai-consent")).not.toBeInTheDocument();
       expect(screen.queryByText("Übermittlung an Z.ai")).not.toBeInTheDocument();
-      expect(container.querySelectorAll("section")).toHaveLength(8);
+      expect(container.querySelectorAll("section")).toHaveLength(9);
     });
 
     it("bleibt für ein Free-Konto sichtbar, das schon zugestimmt hat (der Widerruf muss immer gehen)", () => {
@@ -200,9 +204,9 @@ describe("Karten", () => {
     const iconColors = Array.from(container.querySelectorAll("section > header > svg")).map(
       (svg) => (svg as SVGElement).getAttribute("style") ?? ""
     );
-    expect(iconColors).toHaveLength(9);
-    expect(iconColors.slice(0, 8).every((c) => c.includes("--accent"))).toBe(true);
-    expect(iconColors[8]).toContain("--destructive");
+    expect(iconColors).toHaveLength(10);
+    expect(iconColors.slice(0, 9).every((c) => c.includes("--accent"))).toBe(true);
+    expect(iconColors[9]).toContain("--destructive");
   });
 });
 

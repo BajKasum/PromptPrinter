@@ -97,7 +97,7 @@ describe("revokeCliSession", () => {
   it("prüft das Token beim Auth-Server und beendet nur diese Sitzung (scope local)", async () => {
     adminGetUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
     adminSignOut.mockResolvedValue({ error: null });
-    expect(await revokeCliSession("tok")).toBe("ok");
+    expect(await revokeCliSession("tok")).toEqual({ userId: "u1" });
     expect(adminGetUser).toHaveBeenCalledWith("tok");
     expect(adminSignOut).toHaveBeenCalledWith("tok", "local");
   });

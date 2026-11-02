@@ -3,9 +3,10 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/server/supabase/admin";
 
-// Die eigene Supabase-Sitzung der Kommandozeile. Keine selbst gebaute Art von Token: die Routen lesen
-// und schreiben mit dem Client des Nutzers unter RLS, und ein Bearer-Token ist genau das Token, das
-// Supabase auch dem Browser gibt. Ausgestellt wird sie ohne Mail: generateLink erzeugt einen
+// Die eigene Supabase-Sitzung der Kommandozeile. Keine selbst gebaute Art von Token (Entscheid, docs/SETUP.md,
+// "Terminal-Anmeldung"): die Routen lesen und schreiben mit dem Client des Nutzers unter RLS, und ein Bearer-Token ist
+// genau das Token, das Supabase auch dem Browser gibt. Sichtbar und widerrufbar macht sie server/cli-login/sessions.ts.
+// Ausgestellt wird sie ohne Mail: generateLink erzeugt einen
 // Anmeldelink, dessen Hash der Server selbst einlöst (verifyOtp), der Link verlässt den Server nie.
 // Das Ergebnis ist eine neue Sitzung mit eigener session_id, getrennt von der des Browsers; der Link
 // ist nur einmal einlösbar. Nebenwirkung: app_metadata.provider steht danach auf "email", eigene
@@ -87,10 +88,10 @@ export async function refreshCliSession(refreshToken: string): Promise<CliSessio
 
 /**
  * Beendet genau die Sitzung, zu der dieses Access-Token gehört (scope local): die Browser-Sitzung und
- * andere Geräte bleiben. `"unauthorized"`, wenn das Token nicht (mehr) gilt, `null`, wenn der Auth-Server
- * nicht antwortet. Das Token wird vorher beim Auth-Server geprüft, nicht nur gelesen.
+ * andere Geräte bleiben. Gibt das Konto zurück, `"unauthorized"`, wenn das Token nicht (mehr) gilt, `null`,
+ * wenn der Auth-Server nicht antwortet. Das Token wird vorher beim Auth-Server geprüft, nicht nur gelesen.
  */
-export async function revokeCliSession(accessToken: string): Promise<"ok" | "unauthorized" | null> {
+export async function revokeCliSession(accessToken: string): Promise<{ userId: string } | "unauthorized" | null> {
   const admin = createAdminClient();
   const { data, error } = await admin.auth.getUser(accessToken);
   if (!data?.user) {
@@ -98,5 +99,5 @@ export async function revokeCliSession(accessToken: string): Promise<"ok" | "una
     return typeof status === "number" && status >= 400 && status < 500 ? "unauthorized" : null;
   }
   const { error: signOutError } = await admin.auth.admin.signOut(accessToken, "local");
-  return signOutError ? null : "ok";
+  return signOutError ? null : { userId: data.user.id };
 }

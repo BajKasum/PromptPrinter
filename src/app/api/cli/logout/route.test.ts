@@ -4,6 +4,10 @@ const revokeCliSession = vi.fn();
 vi.mock("@/server/cli-login/session", () => ({
   revokeCliSession: (...a: unknown[]) => revokeCliSession(...a),
 }));
+const recordSecurityEvent = vi.fn();
+vi.mock("@/server/security/security-events", () => ({
+  recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
+}));
 
 import { POST } from "./route";
 
@@ -16,7 +20,7 @@ function post(authorization?: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  revokeCliSession.mockResolvedValue("ok");
+  revokeCliSession.mockResolvedValue({ userId: "user-1" });
 });
 
 describe("POST /api/cli/logout", () => {
@@ -25,6 +29,7 @@ describe("POST /api/cli/logout", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     expect(revokeCliSession).toHaveBeenCalledWith("access-token");
+    expect(recordSecurityEvent).toHaveBeenCalledWith("cli.session_revoked", "user-1", { via: "terminal" });
   });
 
   it("ohne Bearer-Kopf, mit leerem oder fremdem Schema ergibt 401, ohne den Auth-Server zu fragen", async () => {

@@ -2,6 +2,8 @@ import { chatRequestSchema, type ChatRequest } from "@/shared/lib/schemas";
 import { MAX_ATTACHMENT_STORAGE_PER_USER } from "@/shared/lib/chat-limits";
 import { formatBytes } from "@/shared/lib/chat-attachments";
 import { createClientForRequest, type createClient } from "@/server/supabase/server";
+import { bearerToken } from "@/server/supabase/bearer";
+import { checkCliSession } from "@/server/cli-login/sessions";
 import { problem } from "@/server/http/api-problem";
 import {
   MAX_CHAT_BODY_BYTES,
@@ -82,6 +84,20 @@ export async function authenticate(
   if (!sessionUserId) {
     return denied("chat", problem(401, m.signInToChat));
   }
+
+  // Bearer gilt nur für ein eingetragenes Terminal, und nur bis zu seinem Höchstalter. Der Auth-Server kennt beides nicht:
+  // das Token einer Browser-Sitzung und eine zu alte Sitzung wären für ihn gültig.
+  const token = bearerToken(req);
+  if (token !== null) {
+    try {
+      const verdict = await checkCliSession(token);
+      if (verdict !== "ok") return denied("chat", problem(401, m.signInToChat), { userId: sessionUserId, reason: verdict });
+    } catch (err) {
+      captureError("chat.cli_session_check_failed", err, { userId: sessionUserId });
+      return problem(503, m.chatUnavailable);
+    }
+  }
+
   // Re-bound as a const so the narrowing survives into the stream closure below
   // (TypeScript widens a `let` back to `string | null` inside a callback, since
   // it can't prove nothing reassigns it in between).

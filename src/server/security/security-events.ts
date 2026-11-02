@@ -15,7 +15,11 @@ export type DurableSecurityEvent =
   | "api_key.removed"
   | "consent.zai_granted"
   | "consent.zai_withdrawn"
-  | "account.deleted";
+  | "account.deleted"
+  | "cli.login_approved"
+  | "cli.login_denied"
+  | "cli.session_issued"
+  | "cli.session_revoked";
 
 type Details = Record<string, string | number | boolean | null>;
 

@@ -1,6 +1,7 @@
+import { createClient } from "@supabase/supabase-js";
 import type { APIRequestContext, Page } from "@playwright/test";
-import { test, expect, adminClient, createAccount, makePro, removeAccount, type Account } from "./support/fixtures";
-import { E2E_ORIGIN } from "./support/env";
+import { test, expect, adminClient, createAccount, makePro, removeAccount, signIn, type Account } from "./support/fixtures";
+import { E2E_ORIGIN, localSupabase } from "./support/env";
 
 // Die Anmeldung der Kommandozeile per Geräte-Code (api/cli, Bestätigungsseite /cli) gegen den lokalen
 // Stack: das Terminal fragt einen Code an, der eingeloggte Nutzer bestätigt ihn im Browser, das Terminal
@@ -35,8 +36,8 @@ async function poll(cli: APIRequestContext, deviceCode: string) {
 }
 
 /** Der ganze Weg bis zur Sitzung, ohne die Oberfläche. */
-async function loginAs(cli: APIRequestContext, page: Page): Promise<Session> {
-  const { deviceCode, userCode } = await startLogin(cli);
+async function loginAs(cli: APIRequestContext, page: Page, clientName?: string): Promise<Session> {
+  const { deviceCode, userCode } = await startLogin(cli, clientName);
   const approved = await decideViaApi(page, userCode, "approve");
   expect(approved.status(), await approved.text()).toBe(200);
   const claimed = await poll(cli, deviceCode);
@@ -264,6 +265,142 @@ test.describe("Anmeldung der Kommandozeile", () => {
     const res = await chat(cli, session.access_token);
     expect(res.status()).toBe(403);
     expect((await res.json()).kind).toBe("byokRequired");
+  });
+
+  test("die Bestätigungsseite zeigt, woher die Anfrage kommt", async ({ signedIn: { page }, playwright }) => {
+    const terminal = await playwright.request.newContext({
+      baseURL: E2E_ORIGIN,
+      extraHTTPHeaders: { "user-agent": "promptprinter-cli/1.0 (e2e)" },
+    });
+    const { userCode } = await startLogin(terminal, "pp mit Absender");
+    await terminal.dispose();
+
+    await page.goto("/cli");
+    await page.getByLabel("Code aus dem Terminal").fill(userCode);
+    await page.getByRole("button", { name: "Weiter" }).click();
+    await expect(page.getByText("pp mit Absender")).toBeVisible();
+    await expect(page.getByText("promptprinter-cli/1.0 (e2e)")).toBeVisible();
+    await expect(page.getByText(/höchstens 30 Tage angemeldet/)).toBeVisible();
+  });
+
+  test("Einstellungen: ein Terminal einzeln abmelden, das andere und der Browser bleiben", async ({
+    signedIn: { page, account },
+    request: cli,
+  }) => {
+    await makePro(account);
+    const first = await loginAs(cli, page, "pp auf dem Laptop");
+    const second = await loginAs(cli, page, "pp im Büro");
+    expect((await chat(cli, first.access_token)).status()).toBe(200);
+
+    await page.goto("/settings#terminals");
+    const card = page.locator("section#terminals");
+    await expect(card.getByText("pp auf dem Laptop")).toBeVisible();
+    await expect(card.getByText("pp im Büro")).toBeVisible();
+    await expect(card.getByText(/Abmelden im Kontomenü beendet alle Sitzungen/)).toBeVisible();
+
+    await card.getByRole("button", { name: "Abmelden: pp auf dem Laptop" }).click();
+    await expect(card.getByText("pp auf dem Laptop")).toHaveCount(0);
+
+    // Das abgemeldete Terminal ist sofort draussen, sein Refresh-Token auch.
+    expect((await chat(cli, first.access_token)).status()).toBe(401);
+    const refreshed = await cli.post("/api/cli/refresh", { data: { refreshToken: first.refresh_token } });
+    expect(refreshed.status()).toBe(401);
+
+    // Das andere Terminal und der Browser merken nichts.
+    expect((await chat(cli, second.access_token, "Und noch eine Frage")).status()).toBe(200);
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: "Einstellungen", level: 1 })).toBeVisible();
+
+    // Beim Abmelden im Terminal verschwindet der Eintrag von selbst.
+    const out = await cli.post("/api/cli/logout", { headers: { authorization: `Bearer ${second.access_token}` } });
+    expect(out.status()).toBe(200);
+    const { data: rows } = await adminClient().from("cli_sessions").select("session_id").eq("user_id", account.id);
+    expect(rows).toEqual([]);
+
+    // Alles steht im Protokoll, ohne den Gerätenamen.
+    const { data: events } = await adminClient().from("security_events").select("event, details").eq("user_id", account.id);
+    expect(events?.map((e) => e.event).filter((e) => e === "cli.session_revoked")).toHaveLength(2);
+    expect(JSON.stringify(events)).not.toContain("Laptop");
+  });
+
+  test("ein fremdes Konto kann keine Terminal-Sitzung abmelden", async ({ signedIn: { page, account }, request: cli, browser }) => {
+    await makePro(account);
+    const session = await loginAs(cli, page);
+    const { data: rows } = await adminClient().from("cli_sessions").select("session_id").eq("user_id", account.id);
+    const sessionId = rows?.[0]?.session_id;
+    expect(sessionId).toBeTruthy();
+
+    const stranger = await createAccount("fremd");
+    const context = await browser.newContext({ baseURL: E2E_ORIGIN });
+    try {
+      const strangerPage = await context.newPage();
+      await signIn(strangerPage, stranger);
+      const attempt = await strangerPage.request.delete(`/api/cli/sessions?id=${sessionId}`, { headers: { origin: E2E_ORIGIN } });
+      expect(attempt.status()).toBe(404);
+      const list = await strangerPage.request.get("/api/cli/sessions");
+      expect((await list.json()).sessions).toEqual([]);
+    } finally {
+      await context.close();
+      await removeAccount(stranger.id);
+    }
+    expect((await chat(cli, session.access_token)).status()).toBe(200);
+  });
+
+  test("ein Terminal älter als das Höchstalter wird abgewiesen und beendet", async ({ signedIn: { page, account }, request: cli }) => {
+    await makePro(account);
+    const session = await loginAs(cli, page);
+    const admin = adminClient();
+
+    const { data: issued } = await admin.from("cli_sessions").select("created_at, expires_at").eq("user_id", account.id).single();
+    const days = (new Date(issued!.expires_at).getTime() - new Date(issued!.created_at).getTime()) / (24 * 60 * 60 * 1000);
+    expect(Math.round(days)).toBe(30);
+    expect((await chat(cli, session.access_token)).status()).toBe(200);
+
+    await admin.from("cli_sessions").update({ expires_at: new Date(Date.now() - 1000).toISOString() }).eq("user_id", account.id);
+    expect((await chat(cli, session.access_token)).status()).toBe(401);
+
+    // Beendet, nicht nur abgewiesen: Refresh-Token tot, Eintrag weg.
+    const refreshed = await cli.post("/api/cli/refresh", { data: { refreshToken: session.refresh_token } });
+    expect(refreshed.status()).toBe(401);
+    const { data: rows } = await admin.from("cli_sessions").select("session_id").eq("user_id", account.id);
+    expect(rows).toEqual([]);
+  });
+
+  test("der Job beendet eine abgelaufene Sitzung auch ohne Anfrage an die App", async ({ signedIn: { page, account }, request: cli }) => {
+    const session = await loginAs(cli, page);
+    const admin = adminClient();
+    await admin.from("cli_sessions").update({ expires_at: new Date(Date.now() - 1000).toISOString() }).eq("user_id", account.id);
+
+    const pruned = await admin.rpc("prune_cli_login");
+    expect(pruned.error).toBeNull();
+
+    const { data: rows } = await admin.from("cli_sessions").select("session_id").eq("user_id", account.id);
+    expect(rows).toEqual([]);
+    const refreshed = await cli.post("/api/cli/refresh", { data: { refreshToken: session.refresh_token } });
+    expect(refreshed.status()).toBe(401);
+  });
+
+  test("das Token einer Browser-Sitzung gilt nicht als Terminal", async ({ account, request: cli }) => {
+    await makePro(account);
+    const { url, anonKey } = localSupabase();
+    const browserClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data, error } = await browserClient.auth.signInWithPassword({ email: account.email, password: account.password });
+    expect(error).toBeNull();
+
+    expect((await chat(cli, data.session!.access_token)).status()).toBe(401);
+    const refreshed = await cli.post("/api/cli/refresh", { data: { refreshToken: data.session!.refresh_token } });
+    expect(refreshed.status()).toBe(401);
+  });
+
+  test("der Browser kommt weder an die Tabelle noch an die Funktionen", async ({ account }) => {
+    const { url, anonKey } = localSupabase();
+    const client = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    await client.auth.signInWithPassword({ email: account.email, password: account.password });
+
+    expect((await client.from("cli_sessions").select("session_id")).error?.code).toBe("42501");
+    const sessionId = "00000000-0000-4000-8000-000000000000";
+    expect((await client.rpc("end_cli_session", { target_session: sessionId, target_user: account.id })).error).not.toBeNull();
+    expect((await client.rpc("prune_cli_login")).error).not.toBeNull();
   });
 
   test("die Seite füllt den Code nie aus der Adresse vor", async ({ signedIn: { page } }) => {

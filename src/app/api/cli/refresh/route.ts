@@ -10,6 +10,7 @@ import {
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { refreshCliSession } from "@/server/cli-login/session";
+import { checkCliSession } from "@/server/cli-login/sessions";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
 import { captureError } from "@/shared/lib/observability";
 
@@ -49,6 +50,10 @@ export async function POST(req: Request) {
     const session = await refreshCliSession(parsed.data.refreshToken);
     if (session === "invalid") return problem(401, CLI_PROBLEMS.invalidToken, { kind: "invalid_token" });
     if (!session) return problem(503, CLI_PROBLEMS.unavailable, { kind: "unavailable" });
+    // Nur eingetragene Terminals, nur bis zum Höchstalter: das Refresh-Token einer Browser-Sitzung bekommt hier nichts.
+    if ((await checkCliSession(session.access_token)) !== "ok") {
+      return problem(401, CLI_PROBLEMS.invalidToken, { kind: "invalid_token" });
+    }
     return NextResponse.json({ session }, { headers: { "cache-control": "no-store" } });
   } catch (err) {
     captureError("cli.refresh_failed", err);
