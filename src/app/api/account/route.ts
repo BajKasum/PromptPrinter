@@ -4,6 +4,8 @@ import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { captureError } from "@/shared/lib/observability";
+import { recordSecurityEvent } from "@/server/security/security-events";
+import { denied } from "@/server/security/security-log";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
 import { signedInRecently } from "@/features/auth/lib/fresh-sign-in";
 import { collectStoragePaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
@@ -72,7 +74,8 @@ async function removeUserObjects(
 // That completeness is a promise the privacy policy makes out loud ( Ziffer 8
 // of /datenschutz), so it is a DSGVO/revDSG commitment, not an implementation
 // detail: anything user-scoped added later needs the same cascade, or that
-// paragraph silently becomes false.
+// paragraph silently becomes false. Die eine Ausnahme ist public.security_events:
+// "Konto gelöscht" muss das Konto überleben, nur die Kennung, höchstens 180 Tage.
 //
 // A running Lemon Squeezy subscription does NOT cascade with any of that
 // (K-5, Audit 06.09.2026): it lives entirely on Lemon Squeezy's side, keyed
@@ -101,7 +104,7 @@ export async function DELETE(req: Request) {
 
   // The id comes from the verified session, never from client input.
   if (!user) {
-    return problem(401, m.accountNotSignedIn);
+    return denied("account", problem(401, m.accountNotSignedIn));
   }
 
   // Die eine unumkehrbare Aktion der App verlangt eine frische Anmeldung (#132): ein ausgelesenes Cookie, ein
@@ -111,7 +114,7 @@ export async function DELETE(req: Request) {
   // erneuten Anmeldung (`code: "reauth_required"`).
   const { data: claims } = await supabase.auth.getClaims();
   if (!signedInRecently(claims?.claims.amr)) {
-    return problem(403, m.accountReauthRequired, { code: "reauth_required" });
+    return denied("account", problem(403, m.accountReauthRequired, { code: "reauth_required" }), { userId: user.id });
   }
 
   // Was the one route of the four that touch rateLimit (chat, projects,
@@ -152,6 +155,8 @@ export async function DELETE(req: Request) {
         : m.accountDeleteFailed;
     return problem(500, message);
   }
+
+  await recordSecurityEvent("account.deleted", user.id);
 
   // The user no longer exists, so just clear this browser's session cookies
   // locally, a global sign-out would round-trip to the auth server and fail.

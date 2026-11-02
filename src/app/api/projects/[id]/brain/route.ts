@@ -11,6 +11,7 @@ import {
   readJsonBody,
 } from "@/server/http/request-body";
 import { captureError, logEvent } from "@/shared/lib/observability";
+import { denied } from "@/server/security/security-log";
 import { analyzeProjectBrain, BrainAnalysisError } from "@/server/brain/analyze";
 import { GithubImportError, parseGithubRepoUrl } from "@/server/brain/github";
 import { collectBrainSources } from "@/features/projects/lib/brain-sources";
@@ -32,7 +33,7 @@ export const maxDuration = 300;
 // Die Analyse des Projekt-Gedächtnisses.
 //
 // ─── Warum die Analyse synchron in der Route läuft ─────────────────────────
-// Das Projekt hat kein Job-System (kein Cron, keine Queue, siehe das
+// Die App hat kein Job-System (kein Cron auf Vercel, keine Queue, siehe das
 // Vercel-Audit vom 01.08.), und eines nur hierfür einzuführen wäre ein
 // grösserer Eingriff als das Feature selbst. Die Analyse ist ein einzelner
 // Modellaufruf und dauert typischerweise Sekunden — das ist eine Wartezeit,
@@ -159,7 +160,7 @@ export async function DELETE(req: Request, { params }: Params) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("brain", problem(401, m.signInRequired));
 
   // Auch hier zuerst die Eigentümerschaft über den RLS-gebundenen Client, weil
   // das Löschen darunter am Service-Role-Client hängt.
@@ -173,7 +174,7 @@ export async function DELETE(req: Request, { params }: Params) {
     captureError("brain.project_read_failed", projectError, { userId: user.id, projectId });
     return problem(503, m.brainUnavailable);
   }
-  if (!project) return problem(404, m.projectNotFound);
+  if (!project) return denied("brain", problem(404, m.projectNotFound), { userId: user.id, projectId });
 
   const admin = createAdminClient();
   const { error } = await admin
@@ -202,7 +203,7 @@ async function authorizeBrainRequest(req: Request, m: Messages["api"], projectId
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("brain", problem(401, m.signInRequired));
   const userId = user.id;
 
   let body: unknown;
@@ -233,7 +234,7 @@ async function authorizeBrainRequest(req: Request, m: Messages["api"], projectId
   }
   // Fremd und nicht vorhanden bekommen dieselbe Antwort — sonst verrät die
   // Route, welche Projekt-IDs existieren.
-  if (!project) return problem(404, m.projectNotFound);
+  if (!project) return denied("brain", problem(404, m.projectNotFound), { userId, projectId });
   return { supabase, user, userId, project, requestedRepoUrl: parsed.data.repoUrl };
 }
 

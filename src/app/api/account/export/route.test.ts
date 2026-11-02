@@ -42,7 +42,8 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "u:user-1",
 }));
 
-vi.mock("@/shared/lib/observability", () => ({
+vi.mock("@/shared/lib/observability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/observability")>()),
   captureError: (...args: unknown[]) => captureError(...args),
   logEvent: (...args: unknown[]) => logEvent(...args),
 }));

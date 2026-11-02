@@ -14,6 +14,7 @@ import { requestT } from "@/server/i18n";
 import { decideRequest, findPendingRequest } from "@/server/cli-login/store";
 import { normalizeUserCode } from "@/shared/lib/cli-user-code";
 import { captureError, logEvent } from "@/shared/lib/observability";
+import { denied } from "@/server/security/security-log";
 
 export const runtime = "nodejs";
 
@@ -39,13 +40,13 @@ export async function POST(req: Request) {
   const m = t.api;
   const c = t.cliLogin;
 
-  if (!isSameOrigin(req)) return problem(403, c.errors.foreignOrigin, { kind: "origin" });
+  if (!isSameOrigin(req)) return denied("cli-approve", problem(403, c.errors.foreignOrigin, { kind: "origin" }));
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return problem(401, m.signInRequired);
+  if (!user) return denied("cli-approve", problem(401, m.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "cli-approve", user.id), RATE_LIMIT);
   if (!rl.allowed) {
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
 
   // Falsche Form, unbekannter, abgelaufener und schon entschiedener Code geben dieselbe Antwort: wer
   // Codes durchprobiert, erfährt nichts über den Zustand einer fremden Anfrage.
-  const notFound = () => problem(404, c.errors.notFound, { kind: "not_found" });
+  const notFound = () => denied("cli-approve", problem(404, c.errors.notFound, { kind: "not_found" }), { userId: user.id });
   const userCode = normalizeUserCode(parsed.data.userCode);
   if (!userCode) return notFound();
 
