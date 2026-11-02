@@ -61,7 +61,8 @@ describe("API_KEY_ENCRYPTION_SECRET beim Start", () => {
   it.each([
     ["Vorlage", "placeholder-secret-for-ci-only-0123456789"],
     ["Aufforderung", "please-change-me-before-you-deploy-this"],
-    ["alter Rückfallwert", "promptprinter-dev-only-insecure-fallback-do-not-use-in-production"],
+    ["Warnwort", "some-insecure-value-nobody-should-deploy-anywhere"],
+    ["Verbot", "this-value-says-do-not-use-it-in-any-deployment"],
     ["Beispiel", "this-is-an-example-value-of-some-length"],
     ["ein Zeichen wiederholt", "a".repeat(40)],
     ["kurzes Muster wiederholt", "abcabc".repeat(8)],
