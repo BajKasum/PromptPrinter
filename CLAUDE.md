@@ -61,9 +61,9 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `src/features/auth/lib/recovery-session.ts`), die Mail-Vorlagen liegen in
   `supabase/templates/`.
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
-  Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role).
-  Migrationen 0001 bis 0050 in `supabase/migrations/`, alle in Produktion angewendet (0050 am 2026-10-29,
-  Version `20261029183929`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
+  Migrationen 0001 bis 0051 in `supabase/migrations/`, alle in Produktion angewendet (0051 am 2026-11-02,
+  Version `20261102211918`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
@@ -81,7 +81,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
   Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit),
   `e2e.yml`, `e2e-prod.yml` (Produktionsaufbau), `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an
-  Commit-SHAs (`workflows.test.ts`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
+  Commit-SHAs (`workflows.test.ts`, dazu die Repo-Einstellung `sha_pinning_required`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
   ändern würde: [docs/SETUP.md](docs/SETUP.md), Abschnitt "Projekt-Gedächtnis".
 

@@ -41,14 +41,34 @@ export type PlanLimits = { projects: number; chatMessages: number };
 // just on average).
 //
 // Saving prompts to a project's Ergebnisse ("Prompt speichern") is deliberately
-// unmetered: it makes no model call, it just keeps text the user already has,
-// so there's no cost to ration. Only the project cap and the chat-message cap
-// bind. (The old per-month "Generierungen" allowance died with the automatic
+// unmetered by plan: it makes no model call, it just keeps text the user already
+// has, so there's no cost to ration. Only the project cap and the chat-message cap
+// bind per plan; ACCOUNT_CEILINGS below is a technical ceiling, not a plan limit.
+// (The old per-month "Generierungen" allowance died with the automatic
 // generation pipeline, 2026-07.)
+//
+// `free.projects` steht zusätzlich im Trigger enforce_project_cap der Datenbank, denn die
+// Route ist nicht der einzige Schreibweg (tests/guards/account-ceilings.test.ts hält beide gleich).
 export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
   free: { projects: 3, chatMessages: 0 },
   pro: { projects: Infinity, chatMessages: 400 },
 };
+
+const MIB = 1024 * 1024;
+
+/**
+ * Obergrenzen je Konto, für jeden Plan und auch für Admins. Sie schützen die gemeinsame Datenbank und den
+ * Speicher vor einem einzelnen Konto, normale Nutzung stösst nie an. Durchgesetzt werden sie in der Datenbank
+ * (Migration `*_account_ceilings.sql`), die Zahlen hier sind ihr Spiegel für Tests und Doku. Rechnung und
+ * Verhalten an der Grenze: docs/SETUP.md, "Grenzen je Konto".
+ */
+export const ACCOUNT_CEILINGS = {
+  conversations: { rows: 10_000 },
+  messages: { rows: 50_000, bytes: 50 * MIB },
+  savedPrompts: { rows: 5_000, bytes: 20 * MIB },
+  projectFiles: { rows: 500 },
+  projectFileStorage: { objects: 500, bytes: 100 * MIB },
+} as const;
 
 // Admin is a role (profiles.is_admin), not a plan, it never changes what
 // `plan` a profile is on, only whether its limits actually bind. Centralized

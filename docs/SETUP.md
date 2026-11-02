@@ -499,6 +499,31 @@ Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nac
 - **Nicht belegt:** dass eine Mail im Postfach ankommt. Der Versand lief nie gegen den echten Dienst
   (kein Schlüssel in der Entwicklung); der erste Test ist eine eigene Nachricht über das Formular.
 
+## Grenzen je Konto
+
+Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
+
+| Was | Grenze je Konto | Gilt für |
+|---|---|---|
+| Projekte | 3 | Plan Free. Pro und Admins ohne Grenze (`PLAN_LIMITS`) |
+| Chats (`conversations`) | 10 000 Zeilen | alle |
+| Nachrichten (`messages`) | 50 000 Zeilen, 50 MiB | alle |
+| Gespeicherte Prompts (`saved_prompts`) | 5 000 Zeilen, 20 MiB | alle |
+| Dateizeilen (`project_files`) | 500 Zeilen | alle |
+| Objekte im Bucket `project-files` | 500 Objekte, 100 MiB | alle |
+
+Dazu kommen die älteren Grenzen je Projekt (20 Dateien, 25 MiB) und je Konto für Chat-Anhänge (die Route, `chat-limits.ts`).
+
+**Warum diese Zahlen.** Das aktivste Konto der Produktion hatte am 2026-11-02 89 Nachrichten (48 kB), 19 Chats, 3 gespeicherte Prompts und keine Dateien, die Datenbank war 13 MB gross. 50 000 Nachrichten sind 40 am Tag über mehr als drei Jahre. Free erreicht mit 3 Projekten höchstens 75 MiB Dateien. Zeilen allein reichen nicht: 50 000 Nachrichten mit je 40 000 Zeichen wären 2 GB. Die Bytes zählt `pg_column_size`, also den belegten Platz nach der Kompression.
+
+**Was sie nicht leisten.** Ein Konto belegt höchstens rund 85 MiB Datenbank und 100 MiB Speicher. Bei den Kontingenten des Supabase-Free-Tarifs (500 MB, 1 GB) reichen also ein paar Konten, um sie zu füllen, die Grenzen machen das nur teurer. Davor stehen die Anmeldung mit Turnstile und das Ratenlimit. Die Belegung steht im Supabase-Dashboard unter Organization → Usage, einen Alarm dafür gibt es nicht.
+
+**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen nur beim Einfügen, auch ein Konto über einer Grenze kann alles lesen, ändern und löschen und legt wieder an, sobald es darunter liegt (etwa nach einem Wechsel von Pro zu Free). Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
+
+**Grenzfälle.** Parallele Einfügungen eines Kontos reiht eine Sperre (`pg_advisory_xact_lock`) hintereinander, die Grenze hält dabei genau. Im Bucket geht das nicht, weil die Grösse erst nach dem Hochladen feststeht: ein Upload kann die Bytes um höchstens ein Objekt (2 MiB) überschreiten, parallele Uploads um je eines. Die Zählung kostet an der Grenze von 50 000 Nachrichten rund 8 ms je Einfügung (lokal gemessen).
+
+**Wer eine Zahl ändert:** neue Migration mit `create or replace` beziehungsweise neuem Trigger, `ACCOUNT_CEILINGS` in `plans.ts`, dieser Abschnitt, und den Guard auf die neue Datei richten.
+
 ## Zahlungen: Webhook (Lemon Squeezy)
 
 `/api/webhooks/lemonsqueezy` schaltet Pro frei und nimmt es zurück. Im Lemon-Squeezy-
