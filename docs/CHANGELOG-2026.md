@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-02: Terminal-App, Phase 2: `GET /api/cli/me` (Kasums Entscheid D-T9)
+
+Das Terminal soll im Startbild sagen, wer angemeldet ist und ob der nächste Zug laufen kann. Dafür gab es keine Route: Bearer galt nur für Chat und Abmelden, und aus dem JWT liesse sich zwar die Adresse lesen, aber weder Plan noch Key. Ohne die Route erführe ein Free-Konto ohne Key erst nach der ersten Idee, dass nichts geht, genau das, was `getNeedsOwnKey` im Browser verhindert.
+
+- **Nur lesend, nur per Bearer**, ein Cookie gilt hier nicht. Antwort: `email`, `plan`, `hasOwnKey`, `needsOwnKey`, `needsConsent`. Kein Anbieter, kein Schlüssel.
+- **Keine Migration.** Liest mit dem Client des Nutzers unter RLS plus `.eq`, entscheidet über `getUser()` beim Auth-Server und, wie der Chat, über `checkCliSession`: das Token einer Browser-Sitzung gilt hier nicht. Ein Lesefehler ergibt 503, nie "Free ohne Key".
+- **Geprüft:** Routentest, `e2e/cli-me.spec.ts` gegen den lokalen Stack (echte Sitzung, gelöschtes Konto), Eintrag im Guard `bearer-routes.test.ts`, eigener Ratenlimit-Name.
+- **Das Programm selbst** liegt im Repo `BajKasum/promptprinter-cli`, Plan und Stand im Vault ("PromptPrinter Terminal-App Stand und Restplan").
+
+---
+
 ## 2026-11-02: Sicherheits-Runde, BYOK-Format, Protokoll, Terminal-Sitzungen, zweiter Faktor (PRs #283, #285, #288, #290, #291, #293, #294, Issues #228, #235, #237, #238, #239)
 
 **Migrationen (je mit Kasums Ja, erst Migration, dann Merge):** 0052 `20261102224736`, 0053 `20261102231453`, 0054 `20261102233122`, 0055 `20261102235100`. Lesend geprüft: RLS, Rechte, zwei Jobs in `cron.job`.
