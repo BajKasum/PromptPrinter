@@ -452,7 +452,18 @@ Das Sitzungs-Cookie von Supabase ist nicht `HttpOnly` und lebt 400 Tage (Vorgabe
 - **Ein kürzeres `maxAge` allein schützt kaum.** Ein ausgelesenes Refresh-Token hängt nicht am Cookie im Browser des Angreifers, und eine feste Höchstdauer der Sitzung bräuchte eine eigene Prüfung auf dem Server. Kosten für echte Nutzer: häufigeres Abmelden.
 - **Was den Schaden begrenzt:** CSP mit Nonce auf den App-Routen, kein rohes HTML aus Markdown, frische Anmeldung vor dem Löschen des Kontos (`features/auth/lib/fresh-sign-in.ts`).
 
-Die Einstellungen im Supabase-Dashboard (Time-box, Inaktivität, Wiederverwendung von Refresh-Tokens) sind **nicht gelesen**: die vorhandenen Werkzeuge zeigen sie nicht. Offen in #232.
+Einstellungen der Produktion, am 2026-11-02 im Dashboard gelesen (Authentication → Sessions), nichts geändert:
+
+| Einstellung | Wert | Bedeutung |
+|---|---|---|
+| Time-box user sessions | 0 (nie) | Keine Höchstdauer, nur im Pro-Tarif von Supabase änderbar |
+| Inactivity timeout | 0 (nie) | Kein Abmelden nach Inaktivität, nur im Pro-Tarif änderbar |
+| Enforce single session per user | aus | Mehrere Geräte zugleich, nur im Pro-Tarif änderbar |
+| Access token expiry | 3600 Sekunden | Ein ausgelesenes Access-Token gilt höchstens eine Stunde |
+| Detect and revoke compromised refresh tokens | an | Wird ein schon rotiertes Token wiederverwendet, widerruft Supabase die Sitzung |
+| Refresh token reuse interval | 10 Sekunden | Solange gilt ein rotiertes Token noch als derselbe Vorgang (für Tabs, die gleichzeitig erneuern) |
+
+Eine Sitzung läuft also nicht von selbst ab. Was sie beendet: Abmelden, Löschen des Kontos oder die Wiederverwendung eines rotierten Tokens, die bei einem gestohlenen Token auffällt, sobald Angreifer und Nutzer es beide erneuern.
 
 ## Kontaktformular
 
