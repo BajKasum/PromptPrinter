@@ -1,146 +1,126 @@
 import "server-only";
 
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto";
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, scryptSync } from "crypto";
 
-// Encrypts user-supplied AI provider API keys (BYOK, settings) before they
-// hit the database, see supabase/migrations/0015_user_api_keys.sql. AES-256-
-// GCM: authenticated encryption, so a tampered ciphertext fails loudly on
-// decrypt instead of silently returning garbage that gets sent to a provider
-// as someone's API key.
+// Verschlüsselt die API-Keys der Nutzer (BYOK, Einstellungen), bevor sie in die Datenbank gehen
+// (user_api_keys.encrypted_key). AES-256-GCM: ein veränderter Chiffretext scheitert beim Entschlüsseln laut,
+// statt still Unsinn zu liefern, der dann als API-Key an einen Anbieter ginge.
 //
-// API_KEY_ENCRYPTION_SECRET is a server-only env var, never in the database,
-// even a full DB dump of user_api_keys yields nothing usable without it.
+// API_KEY_ENCRYPTION_SECRET steht nur in der Umgebung des Servers, nie in der Datenbank und nie im Quelltext:
+// auch ein vollständiger Abzug der Tabelle nützt ohne ihn nichts. Ohne den Wert gibt es keine Verschlüsselung,
+// auch nicht in der Entwicklung (einen Wegwerfwert erzeugen: .env.example). Seine Stärke prüft env.ts beim Start.
+//
+// Ein gespeicherter Wert sieht so aus: `pp2.<kid>.<base64url(iv + tag + chiffretext)>`.
+//   - Den Schlüssel leitet HKDF aus dem Secret ab, mit einem Kontexttext. Kein Passwort-KDF und kein Salz: das
+//     Secret ist langer Zufall (env.ts), und dafür braucht HKDF beides nicht (RFC 5869, Abschnitt 3.1).
+//   - `kid` nennt das Secret: vier Byte aus demselben HKDF, daraus lässt sich nichts zurückrechnen. So findet
+//     decrypt() während einer Rotation das richtige Secret, ohne zu probieren.
+//   - `user_id|provider` gehen als zusätzliche authentifizierte Daten ein. Ein Wert lässt sich nur in seiner
+//     eigenen Zeile öffnen, ein Tausch zweier Chiffretexte in der Tabelle scheitert am Tag.
+//
+// scripts/rotate-byok-secret.mjs trägt eine Kopie davon, tests/guards/rotate-byok-secret.test.ts hält beide
+// gegeneinander fest. Das Skript hebt auch alte Zeilen auf dieses Format.
 
 const ALGORITHM = "aes-256-gcm";
-const IV_LENGTH = 12; // GCM's recommended nonce length
-const SALT = "promptprinter-byok"; // fixed, non-secret, scrypt still needs *a* salt
+const IV_LENGTH = 12; // die für GCM empfohlene Länge
+const TAG_LENGTH = 16;
 
-// Resolved once at module load, same convention as rate-limit.ts's own
-// isProduction — tests exercise a change via vi.resetModules() + a dynamic
-// re-import (see crypto.test.ts), not a per-call env read.
-const isProduction = process.env.NODE_ENV === "production";
+const FORMAT_PREFIX = "pp2";
+const HKDF_NO_SALT = Buffer.alloc(0);
+const KEY_INFO = "promptprinter/byok/v2/aes-256-gcm";
+const KID_INFO = "promptprinter/byok/v2/key-id";
 
-// DEV-ONLY fallback key material, reached only when isProduction is false (see
-// getKey() below) — production keeps throwing exactly as before. A FIXED
-// string, not something generated at process start: a random per-boot secret
-// would make a BYOK key saved before a dev-server restart undecryptable after
-// one, trading a missing-config error for a silent-corruption one. Anyone with
-// read access to this repository already has this value, which is precisely
-// why it must never be reachable once real user data exists — the throw below
-// is what guarantees that, not obscurity.
-const DEV_FALLBACK_SECRET =
-  "promptprinter-dev-only-insecure-fallback-do-not-use-in-production";
+/** Die Zeile, zu der ein Wert gehört. */
+export type KeyBinding = { userId: string; provider: string };
 
-let warnedDevFallback = false;
+function hkdf(secret: string, info: string, length: number): Buffer {
+  return Buffer.from(hkdfSync("sha256", secret, HKDF_NO_SALT, info, length));
+}
 
-// scrypt is deliberately slow (tens of milliseconds of CPU). getKey() used to
-// derive on EVERY call, i.e. once per chat turn of every BYOK user, for a value
-// that only changes when the secret does. Keyed by the secret itself, so a test
-// (or a rotation) that swaps the env var is still honoured on the next call.
-// Kept in memory only, never logged or serialised.
-const derivedKeys = new Map<string, Buffer>();
+const deriveKey = (secret: string) => hkdf(secret, KEY_INFO, 32);
+const keyId = (secret: string) => hkdf(secret, KID_INFO, 4).toString("hex");
+const additionalData = ({ userId, provider }: KeyBinding) => Buffer.from(`${userId}|${provider}`, "utf8");
 
-function deriveKey(secret: string): Buffer {
-  let key = derivedKeys.get(secret);
+function currentSecret(): string {
+  const secret = process.env.API_KEY_ENCRYPTION_SECRET;
+  if (!secret) throw new Error("API_KEY_ENCRYPTION_SECRET is not configured");
+  return secret;
+}
+
+/**
+ * Das alte Secret während einer Rotation, sonst null. Mit API_KEY_ENCRYPTION_SECRET_PREVIOUS liest decrypt() noch
+ * Werte unter dem alten Secret, encrypt() schreibt schon unter dem neuen; scripts/rotate-byok-secret.mjs schlüsselt
+ * den Rest um, danach kommt die Variable wieder weg. Ohne aktuelles Secret ist sie kein Ersatz dafür.
+ */
+function previousSecret(): string | null {
+  const previous = process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
+  const current = process.env.API_KEY_ENCRYPTION_SECRET;
+  if (!previous || !current || previous === current) return null;
+  return previous;
+}
+
+/** Verschlüsselt `plaintext` für genau diese Zeile. Das Ergebnis gehört nach `encrypted_key`. */
+export function encrypt(plaintext: string, binding: KeyBinding): string {
+  const secret = currentSecret();
+  const iv = randomBytes(IV_LENGTH);
+  const cipher = createCipheriv(ALGORITHM, deriveKey(secret), iv);
+  cipher.setAAD(additionalData(binding));
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const payload = Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString("base64url");
+  return `${FORMAT_PREFIX}.${keyId(secret)}.${payload}`;
+}
+
+function openWith(key: Buffer, raw: Buffer, aad?: Buffer): string {
+  const decipher = createDecipheriv(ALGORITHM, key, raw.subarray(0, IV_LENGTH));
+  decipher.setAuthTag(raw.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH));
+  if (aad) decipher.setAAD(aad);
+  return Buffer.concat([decipher.update(raw.subarray(IV_LENGTH + TAG_LENGTH)), decipher.final()]).toString("utf8");
+}
+
+function decryptBound(blob: string, binding: KeyBinding): string {
+  const [, kid, payload] = blob.split(".");
+  const secret = [currentSecret(), previousSecret()].find((candidate) => candidate && keyId(candidate) === kid);
+  if (!secret) throw new Error("no configured secret matches this key id");
+  return openWith(deriveKey(secret), Buffer.from(payload ?? "", "base64url"), additionalData(binding));
+}
+
+// ─── Das alte Format, nur noch zum Lesen ───────────────────────────────────
+// base64(iv + tag + chiffretext), Schlüssel per scrypt mit festem Salz, ohne Bindung an die Zeile. Bleibt, bis
+// scripts/rotate-byok-secret.mjs für die Produktion "altes Format: 0" meldet (docs/SETUP.md, "BYOK-Secret rotieren").
+// Ein alter Wert enthält nie einen Punkt, das Base64-Alphabet kennt keinen: die Formate lassen sich nicht verwechseln.
+const LEGACY_SCRYPT_SALT = "promptprinter-byok";
+
+// scrypt braucht je Aufruf Dutzende Millisekunden Rechenzeit. Bleibt im Speicher, wird nie geloggt.
+const legacyKeys = new Map<string, Buffer>();
+
+function legacyKey(secret: string): Buffer {
+  let key = legacyKeys.get(secret);
   if (!key) {
-    key = scryptSync(secret, SALT, 32);
-    derivedKeys.set(secret, key);
+    key = scryptSync(secret, LEGACY_SCRYPT_SALT, 32);
+    legacyKeys.set(secret, key);
   }
   return key;
 }
 
-/**
- * The previous secret during a rotation, or null when none is in progress.
- *
- * Rotating API_KEY_ENCRYPTION_SECRET used to be impossible: every stored key was
- * encrypted under the one secret, so changing it made all of them unreadable,
- * and getUserOverride then reports "unreadable" for every BYOK user, whose chats
- * are refused until they enter the key again. With
- * API_KEY_ENCRYPTION_SECRET_PREVIOUS set, decrypt() still reads the old rows
- * while encrypt() already writes under the new secret; scripts/rotate-byok-secret.mjs
- * then re-encrypts what is left, after which the variable is removed again.
- *
- * Ignored when it equals the current secret (nothing to fall back to) and
- * outside a real secret setup: the dev fallback is not a rotation partner.
- */
-function previousKey(): Buffer | null {
-  const previous = process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
-  const current = process.env.API_KEY_ENCRYPTION_SECRET;
-  if (!previous || !current || previous === current) return null;
-  return deriveKey(previous);
-}
-
-function getKey(): Buffer {
-  const secret = process.env.API_KEY_ENCRYPTION_SECRET;
-  // scrypt derives a proper 32-byte key regardless of the secret's own length/
-  // shape, so the env var can be any reasonably long random string.
-  if (secret) return deriveKey(secret);
-
-  if (isProduction) {
-    throw new Error("API_KEY_ENCRYPTION_SECRET is not configured");
-  }
-
-  // Development/test only. env.ts's own boot check already warns about a
-  // missing secret at startup ("In der Entwicklung nur ein Hinweis"); this is
-  // the functional half of that promise — without it, the warning was
-  // survivable right up until someone actually opened Settings -> "Eigene
-  // API-Keys" locally, where it turned into an unhandled throw. Every dev
-  // process derives the SAME key from this fixed string, so a value encrypted
-  // before a restart still decrypts after one.
-  if (!warnedDevFallback) {
-    warnedDevFallback = true;
-    console.warn(
-      "[crypto] API_KEY_ENCRYPTION_SECRET ist nicht gesetzt, nutze einen unsicheren " +
-        "Dev-Fallback-Schluessel. In Produktion nicht moeglich: env.ts verweigert dort " +
-        "den Start ohne einen echten Wert."
-    );
-  }
-  return deriveKey(DEV_FALLBACK_SECRET);
-}
-
-/**
- * Encrypts `plaintext` into a single opaque base64 string (iv + auth tag +
- * ciphertext, packed together), the one value stored in `encrypted_key`.
- */
-export function encrypt(plaintext: string): string {
-  const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv(ALGORITHM, getKey(), iv);
-  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const authTag = cipher.getAuthTag();
-  return Buffer.concat([iv, authTag, ciphertext]).toString("base64");
-}
-
-function decryptWith(key: Buffer, blob: string): string {
+function decryptLegacy(blob: string): string {
   const raw = Buffer.from(blob, "base64");
-  const iv = raw.subarray(0, IV_LENGTH);
-  const authTag = raw.subarray(IV_LENGTH, IV_LENGTH + 16);
-  const ciphertext = raw.subarray(IV_LENGTH + 16);
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
-  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
-}
-
-/**
- * Reverses `encrypt`. Throws if the secret is wrong or the blob was tampered
- * with (GCM's auth tag check), callers should treat any throw as "this key
- * is unusable," not attempt to recover a partial value.
- *
- * During a rotation (API_KEY_ENCRYPTION_SECRET_PREVIOUS set) a blob the current
- * secret cannot open is tried against the previous one. GCM's auth tag makes
- * that safe: a wrong key never yields a wrong plaintext, it fails. If neither
- * opens the blob, the error from the CURRENT secret is the one thrown, so a
- * leftover PREVIOUS never changes what a genuinely broken row looks like.
- */
-export function decrypt(blob: string): string {
   try {
-    return decryptWith(getKey(), blob);
+    return openWith(legacyKey(currentSecret()), raw);
   } catch (error) {
-    const previous = previousKey();
+    const previous = previousSecret();
     if (!previous) throw error;
     try {
-      return decryptWith(previous, blob);
+      return openWith(legacyKey(previous), raw);
     } catch {
       throw error;
     }
   }
+}
+
+/**
+ * Macht `encrypt` rückgängig. Wirft bei falschem Secret, veränderten Daten oder einer fremden Zeile (Tag von GCM).
+ * Jeder Wurf heisst: dieser Key ist nicht verwendbar, kein Versuch, einen Teil zu retten.
+ */
+export function decrypt(blob: string, binding: KeyBinding): string {
+  return blob.startsWith(`${FORMAT_PREFIX}.`) ? decryptBound(blob, binding) : decryptLegacy(blob);
 }

@@ -1,190 +1,201 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { encrypt, decrypt } from "@/server/security/crypto";
+import { createCipheriv, randomBytes, scryptSync } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { decrypt, encrypt } from "@/server/security/crypto";
+
+// Jedes Secret entsteht hier zur Laufzeit: im Quelltext steht keins, auch nicht in den Tests.
+const newSecret = () => randomBytes(32).toString("base64");
+
+const ROW = { userId: "11111111-1111-4111-8111-111111111111", provider: "anthropic" };
+const PLAIN = "sk-ant-api03-abc123";
+
+function use(current: string | undefined, previous?: string) {
+  if (current === undefined) vi.stubEnv("API_KEY_ENCRYPTION_SECRET", "");
+  else vi.stubEnv("API_KEY_ENCRYPTION_SECRET", current);
+  vi.stubEnv("API_KEY_ENCRYPTION_SECRET_PREVIOUS", previous ?? "");
+}
+
+/**
+ * Das alte Format, hier eingefroren und nicht aus dem Code geholt: ein Wert, wie er bis zur Umstellung in die
+ * Tabelle geschrieben wurde. Wer die Leseseite ändert, merkt es an diesem Test.
+ */
+function legacyBlob(secret: string, plaintext: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", scryptSync(secret, "promptprinter-byok", 32), iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString("base64");
+}
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("encrypt/decrypt", () => {
-  const prevSecret = process.env.API_KEY_ENCRYPTION_SECRET;
-
-  beforeEach(() => {
-    process.env.API_KEY_ENCRYPTION_SECRET = "test-secret-do-not-use-in-prod";
+  it("bringt den Klartext zurück", () => {
+    use(newSecret());
+    expect(decrypt(encrypt(PLAIN, ROW), ROW)).toBe(PLAIN);
   });
 
-  afterEach(() => {
-    process.env.API_KEY_ENCRYPTION_SECRET = prevSecret;
+  it("trägt Format und Schlüssel-ID vorn, nie den Klartext", () => {
+    use(newSecret());
+    const blob = encrypt(PLAIN, ROW);
+    expect(blob).toMatch(/^pp2\.[0-9a-f]{8}\.[A-Za-z0-9_-]+$/);
+    expect(blob).not.toContain(PLAIN);
   });
 
-  it("round-trips a plaintext value", () => {
-    const key = "sk-ant-api03-abc123";
-    expect(decrypt(encrypt(key))).toBe(key);
+  it("verschlüsselt jeden Wert neu (zufälliger IV)", () => {
+    use(newSecret());
+    expect(encrypt(PLAIN, ROW)).not.toBe(encrypt(PLAIN, ROW));
   });
 
-  it("produces a different ciphertext each time (random iv)", () => {
-    const key = "sk-ant-api03-abc123";
-    expect(encrypt(key)).not.toBe(encrypt(key));
+  it("wirft bei einem veränderten Chiffretext", () => {
+    use(newSecret());
+    const blob = encrypt(PLAIN, ROW);
+    const [prefix, kid, payload] = blob.split(".");
+    const raw = Buffer.from(payload, "base64url");
+    raw[raw.length - 1] ^= 0xff;
+    expect(() => decrypt(`${prefix}.${kid}.${raw.toString("base64url")}`, ROW)).toThrow();
   });
 
-  it("throws when the ciphertext has been tampered with", () => {
-    const blob = encrypt("sk-ant-api03-abc123");
-    const raw = Buffer.from(blob, "base64");
-    raw[raw.length - 1] ^= 0xff; // flip the last byte
-    const tampered = raw.toString("base64");
-    expect(() => decrypt(tampered)).toThrow();
+  it("wirft unter einem anderen Secret", () => {
+    use(newSecret());
+    const blob = encrypt(PLAIN, ROW);
+    use(newSecret());
+    expect(() => decrypt(blob, ROW)).toThrow();
   });
 
-  it("throws when decrypted with the wrong secret", () => {
-    const blob = encrypt("sk-ant-api03-abc123");
-    process.env.API_KEY_ENCRYPTION_SECRET = "a-different-secret";
-    expect(() => decrypt(blob)).toThrow();
+  it("wirft bei einem Wert ohne Nutzdaten", () => {
+    use(newSecret());
+    const [prefix, kid] = encrypt(PLAIN, ROW).split(".");
+    expect(() => decrypt(`${prefix}.${kid}.`, ROW)).toThrow();
+    expect(() => decrypt(`${prefix}.${kid}`, ROW)).toThrow();
   });
 });
 
-// Rotation (Betriebs-Audit 04.10.2026): ohne API_KEY_ENCRYPTION_SECRET_PREVIOUS
-// macht jede Änderung des Secrets alle gespeicherten Keys unlesbar, und
+describe("Bindung an die Zeile", () => {
+  const OTHER_USER = { ...ROW, userId: "22222222-2222-4222-8222-222222222222" };
+  const OTHER_PROVIDER = { ...ROW, provider: "openai" };
+
+  it("ein Wert aus der Zeile eines anderen Nutzers lässt sich nicht öffnen", () => {
+    use(newSecret());
+    expect(() => decrypt(encrypt(PLAIN, ROW), OTHER_USER)).toThrow();
+  });
+
+  it("ein Wert eines anderen Anbieters desselben Nutzers auch nicht", () => {
+    use(newSecret());
+    expect(() => decrypt(encrypt(PLAIN, ROW), OTHER_PROVIDER)).toThrow();
+  });
+
+  it("zwei getauschte Chiffretexte scheitern in beiden Zeilen", () => {
+    use(newSecret());
+    const mine = encrypt("sk-meiner", ROW);
+    const theirs = encrypt("sk-fremder", OTHER_USER);
+    expect(() => decrypt(theirs, ROW)).toThrow();
+    expect(() => decrypt(mine, OTHER_USER)).toThrow();
+  });
+});
+
+describe("altes Format", () => {
+  it("wird weiter gelesen, ohne Bindung und unter demselben Secret", () => {
+    const secret = newSecret();
+    use(secret);
+    expect(decrypt(legacyBlob(secret, PLAIN), ROW)).toBe(PLAIN);
+  });
+
+  it("wird auch während einer Rotation unter dem alten Secret gelesen", () => {
+    const old = newSecret();
+    use(newSecret(), old);
+    expect(decrypt(legacyBlob(old, PLAIN), ROW)).toBe(PLAIN);
+  });
+
+  it("wirft, wenn kein Secret passt", () => {
+    use(newSecret());
+    expect(() => decrypt(legacyBlob(newSecret(), PLAIN), ROW)).toThrow();
+  });
+
+  it("wirft bei einem veränderten Wert, auch mit PREVIOUS", () => {
+    const old = newSecret();
+    const raw = Buffer.from(legacyBlob(old, PLAIN), "base64");
+    raw[raw.length - 1] ^= 0xff;
+    use(newSecret(), old);
+    expect(() => decrypt(raw.toString("base64"), ROW)).toThrow();
+  });
+
+  it("ein neuer Wert schreibt nie mehr das alte Format", () => {
+    use(newSecret());
+    expect(encrypt(PLAIN, ROW).startsWith("pp2.")).toBe(true);
+  });
+});
+
+// Ohne API_KEY_ENCRYPTION_SECRET_PREVIOUS macht jede Änderung des Secrets alle gespeicherten Keys unlesbar, und
 // getUserOverride() meldet dann für jedes Konto "unreadable".
 describe("Rotation mit API_KEY_ENCRYPTION_SECRET_PREVIOUS", () => {
-  const prevCurrent = process.env.API_KEY_ENCRYPTION_SECRET;
-  const prevPrevious = process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
-  const PLAIN = "sk-ant-api03-abc123";
-
-  function use(current: string | undefined, previous?: string) {
-    if (current === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET;
-    else process.env.API_KEY_ENCRYPTION_SECRET = current;
-    if (previous === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS;
-    else process.env.API_KEY_ENCRYPTION_SECRET_PREVIOUS = previous;
-  }
-
-  afterEach(() => {
-    use(prevCurrent, prevPrevious);
-  });
-
   it("liest eine Zeile mit dem alten Secret weiter, sobald es als PREVIOUS gesetzt ist", () => {
-    use("old-secret");
-    const blob = encrypt(PLAIN);
+    const [old, fresh] = [newSecret(), newSecret()];
+    use(old);
+    const blob = encrypt(PLAIN, ROW);
 
-    use("new-secret");
-    expect(() => decrypt(blob)).toThrow(); // ohne PREVIOUS: die alte Lage
+    use(fresh);
+    expect(() => decrypt(blob, ROW)).toThrow();
 
-    use("new-secret", "old-secret");
-    expect(decrypt(blob)).toBe(PLAIN);
+    use(fresh, old);
+    expect(decrypt(blob, ROW)).toBe(PLAIN);
   });
 
-  it("schreibt nach der Umstellung nur noch unter dem NEUEN Secret", () => {
-    use("new-secret", "old-secret");
-    const blob = encrypt(PLAIN);
+  it("schreibt nach der Umstellung nur noch unter dem neuen Secret", () => {
+    const [old, fresh] = [newSecret(), newSecret()];
+    use(fresh, old);
+    const blob = encrypt(PLAIN, ROW);
 
-    use("new-secret"); // PREVIOUS weg: die neue Zeile muss trotzdem lesbar sein
-    expect(decrypt(blob)).toBe(PLAIN);
+    use(fresh);
+    expect(decrypt(blob, ROW)).toBe(PLAIN);
 
-    use("old-secret"); // und das alte Secret allein öffnet sie nicht mehr
-    expect(() => decrypt(blob)).toThrow();
+    use(old);
+    expect(() => decrypt(blob, ROW)).toThrow();
   });
 
-  it("zieht das aktuelle Secret vor, wenn beide eine Zeile öffnen könnten", () => {
-    use("same-everywhere");
-    const blob = encrypt(PLAIN);
-    use("same-everywhere", "another-one");
-    expect(decrypt(blob)).toBe(PLAIN);
-  });
-
-  it("wirft weiter, wenn weder das aktuelle noch das alte Secret die Zeile öffnet", () => {
-    use("some-third-secret");
-    const blob = encrypt(PLAIN);
-    use("new-secret", "old-secret");
-    expect(() => decrypt(blob)).toThrow();
-  });
-
-  it("lässt eine manipulierte Zeile auch mit PREVIOUS nicht durch (GCM-Tag)", () => {
-    use("old-secret");
-    const raw = Buffer.from(encrypt(PLAIN), "base64");
-    raw[raw.length - 1] ^= 0xff;
-    use("new-secret", "old-secret");
-    expect(() => decrypt(raw.toString("base64"))).toThrow();
+  it("wirft, wenn weder das aktuelle noch das alte Secret die Zeile öffnet", () => {
+    const third = newSecret();
+    use(third);
+    const blob = encrypt(PLAIN, ROW);
+    use(newSecret(), newSecret());
+    expect(() => decrypt(blob, ROW)).toThrow();
   });
 
   it("ignoriert ein PREVIOUS, das dem aktuellen Secret gleicht", () => {
-    use("same", "same");
-    expect(decrypt(encrypt(PLAIN))).toBe(PLAIN);
-  });
-
-  it("macht aus PREVIOUS allein keinen Ersatz für ein fehlendes aktuelles Secret", () => {
-    // Das alte Secret ist ein Rotationspartner, kein Standardwert: ohne ein
-    // echtes aktuelles Secret darf es die Dev-Rückfallstufe nicht verdrängen.
-    use("old-secret");
-    const blob = encrypt(PLAIN);
-    use(undefined, "old-secret");
-    expect(() => decrypt(blob)).toThrow();
-  });
-
-  it("verschlüsselt jeden Wert neu mit zufälligem IV, auch mit zwischengespeichertem Schlüssel", () => {
-    use("new-secret", "old-secret");
-    expect(encrypt(PLAIN)).not.toBe(encrypt(PLAIN));
+    const same = newSecret();
+    use(same, same);
+    expect(decrypt(encrypt(PLAIN, ROW), ROW)).toBe(PLAIN);
   });
 });
 
-// isProduction is a module-level singleton resolved from process.env at
-// import time (same convention as rate-limit.ts), so exercising both
-// configurations needs a fresh module instance per test (vi.resetModules() +
-// a dynamic re-import) rather than the statically-imported encrypt/decrypt
-// above, which always run under whatever NODE_ENV the test process itself
-// started under (vitest's own default, "test").
-describe("getKey, missing-secret behavior differs by environment", () => {
-  const prevSecret = process.env.API_KEY_ENCRYPTION_SECRET;
-
-  afterEach(() => {
-    if (prevSecret === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET;
-    else process.env.API_KEY_ENCRYPTION_SECRET = prevSecret;
-    vi.unstubAllEnvs();
-    vi.resetModules();
+describe("ohne Secret", () => {
+  it("wirft beim Verschlüsseln in jeder Umgebung", () => {
+    for (const nodeEnv of ["production", "development", "test"]) {
+      vi.stubEnv("NODE_ENV", nodeEnv);
+      use(undefined);
+      expect(() => encrypt(PLAIN, ROW), nodeEnv).toThrow("API_KEY_ENCRYPTION_SECRET is not configured");
+    }
   });
 
-  it("still throws in production when the secret is missing — unchanged from before", async () => {
-    delete process.env.API_KEY_ENCRYPTION_SECRET;
-    vi.stubEnv("NODE_ENV", "production");
-    vi.resetModules();
-    const { encrypt: prodEncrypt } = await import("@/server/security/crypto");
+  it("wirft beim Entschlüsseln, und PREVIOUS allein ersetzt das aktuelle Secret nicht", () => {
+    const old = newSecret();
+    use(old);
+    const blob = encrypt(PLAIN, ROW);
+    const legacy = legacyBlob(old, PLAIN);
 
-    expect(() => prodEncrypt("sk-ant-api03-abc123")).toThrow(
-      "API_KEY_ENCRYPTION_SECRET is not configured"
-    );
+    use(undefined, old);
+    expect(() => decrypt(blob, ROW)).toThrow();
+    expect(() => decrypt(legacy, ROW)).toThrow();
   });
+});
 
-  it("falls back to a fixed dev-only key outside production instead of throwing", async () => {
-    delete process.env.API_KEY_ENCRYPTION_SECRET;
-    vi.stubEnv("NODE_ENV", "development");
-    vi.resetModules();
-    const { encrypt: devEncrypt, decrypt: devDecrypt } = await import("@/server/security/crypto");
+describe("kein Schlüssel im Quelltext", () => {
+  const source = readFileSync(join(process.cwd(), "src/server/security/crypto.ts"), "utf8");
 
-    const key = "sk-ant-api03-abc123";
-    expect(() => devEncrypt(key)).not.toThrow();
-    expect(devDecrypt(devEncrypt(key))).toBe(key);
-  });
-
-  it("derives the same dev fallback key across separate module instances", async () => {
-    // The point of a FIXED fallback rather than a per-boot random one: a value
-    // encrypted before a dev-server restart must still decrypt after one.
-    delete process.env.API_KEY_ENCRYPTION_SECRET;
-    vi.stubEnv("NODE_ENV", "development");
-    vi.resetModules();
-    const first = await import("@/server/security/crypto");
-    const blob = first.encrypt("sk-ant-api03-abc123");
-
-    vi.resetModules();
-    const second = await import("@/server/security/crypto");
-    expect(second.decrypt(blob)).toBe("sk-ant-api03-abc123");
-  });
-
-  it("prefers a real secret over the dev fallback whenever one is set, even outside production", async () => {
-    process.env.API_KEY_ENCRYPTION_SECRET = "a-real-local-secret";
-    vi.stubEnv("NODE_ENV", "development");
-    vi.resetModules();
-    const withRealSecret = await import("@/server/security/crypto");
-    const blob = withRealSecret.encrypt("sk-ant-api03-abc123");
-
-    // A value encrypted under the REAL secret must not be readable by a
-    // process that only has the dev fallback — the fallback is a convenience
-    // for an unconfigured machine, not a bypass for a configured one.
-    delete process.env.API_KEY_ENCRYPTION_SECRET;
-    vi.resetModules();
-    const withFallbackOnly = await import("@/server/security/crypto");
-    expect(() => withFallbackOnly.decrypt(blob)).toThrow();
+  it("kennt keinen festen Rückfallwert mehr", () => {
+    expect(source).not.toMatch(/fallback/i);
+    expect(source).not.toMatch(/NODE_ENV/);
   });
 });

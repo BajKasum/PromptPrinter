@@ -86,7 +86,7 @@ beim Boot über `src/instrumentation.ts`):
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | dito |
 | `SUPABASE_SERVICE_ROLE_KEY` | Kontolöschung (`/api/account`) braucht Admin-Rechte |
 | `NEXT_PUBLIC_APP_URL` | Sonst verlinken Bestätigungs- und Reset-Mails auf `localhost:3000` |
-| `API_KEY_ENCRYPTION_SECRET` | BYOK wirft beim Speichern eines eigenen Keys |
+| `API_KEY_ENCRYPTION_SECRET` | BYOK wirft beim Speichern eines eigenen Keys. Mindestens 32 Zeichen Zufall: ein kürzerer Wert oder ein Platzhalter bricht den Start ebenfalls ab |
 | `UPSTASH_REDIS_REST_URL` | **Ohne Upstash antworten ALLE API-Routen mit 429** |
 | `UPSTASH_REDIS_REST_TOKEN` | dito |
 
@@ -106,24 +106,22 @@ Optional, aber für die Suche nützlich: `GOOGLE_SITE_VERIFICATION` und
 ### BYOK-Secret rotieren
 
 `API_KEY_ENCRYPTION_SECRET` verschlüsselt die Keys, die Nutzer in den
-Einstellungen hinterlegen. Bis zum 04.10.2026 hing jeder Key an genau diesem
-einen Wert: wer ihn änderte, machte alle Keys unlesbar, und `getUserOverride()`
-stuft einen unlesbaren Key stillschweigend auf "kein eigener Key" zurück. Jeder
-BYOK-Nutzer lief dann unbemerkt auf dem Server-Key und unter den Plan-Grenzen.
-Eine Rotation geht jetzt so:
+Einstellungen hinterlegen. Ein unlesbarer Key lehnt den Chat dieses Kontos ab
+(`getUserOverride()` meldet `unreadable`), deshalb darf der Wert nie einfach
+wechseln. Eine Rotation geht so:
 
-1. Neues Secret erzeugen (lang, zufällig).
+1. Neues Secret erzeugen (mindestens 32 Zeichen Zufall, Befehl in `.env.example`).
 2. In Vercel `API_KEY_ENCRYPTION_SECRET_PREVIOUS` = altes Secret,
    `API_KEY_ENCRYPTION_SECRET` = neues Secret. Deployen. Die App liest ab jetzt
    Keys unter beiden Secrets und schreibt nur noch unter dem neuen. Beim Start
    erscheint eine Warnung, solange die Rotation offen ist.
-3. `scripts/rotate-byok-secret.mjs` im Probelauf (ohne `--apply`): zählt, wie
-   viele Zeilen noch nur das alte Secret öffnet. Schreibt nichts.
+3. `scripts/rotate-byok-secret.mjs` im Probelauf (ohne `--apply`): zählt die
+   offenen Zeilen. Schreibt nichts.
 4. Dasselbe mit `--apply`: schlüsselt diese Zeilen unter dem neuen Secret neu.
    Es schreibt nur, solange noch der alte Chiffretext in der Zeile steht (hat
    ein Nutzer zwischendurch neu gespeichert, gewinnt sein Wert), und gibt nie
    einen Key oder ein Secret aus.
-5. Probelauf noch einmal: "nur altes Secret: 0".
+5. Probelauf noch einmal: "offen: 0".
 6. `API_KEY_ENCRYPTION_SECRET_PREVIOUS` in Vercel löschen, deployen. **Erst jetzt
    ist das alte Secret wirklich ungültig**, solange die Variable steht, öffnet
    es alles, was noch nicht umgeschlüsselt ist.
@@ -133,6 +131,18 @@ Exit 3 und Zeilen-ID. Es löscht nie etwas; der Nutzer muss den Key neu eingeben
 Das Skript liest die Werte bewusst nur aus der Umgebung, nie aus einer
 `.env`-Datei (Aufruf im Kopfkommentar), damit eine Rotation nicht versehentlich
 gegen die falsche Datenbank läuft.
+
+**Format.** Ein gespeicherter Wert sieht so aus: `pp2.<kid>.<base64url(iv + tag + chiffretext)>`
+(`src/server/security/crypto.ts`). Der Schlüssel entsteht per HKDF aus dem Secret, `kid` nennt das
+Secret, und `user_id|provider` gehen als zusätzliche authentifizierte Daten ein: ein Wert lässt sich
+nur in seiner eigenen Zeile öffnen. Der Start verlangt deshalb langen Zufall (Länge und Platzhalter in
+`src/server/env.ts`), ein Passwort-KDF steht nicht mehr davor.
+
+**Altes Format** (base64 ohne Präfix, scrypt mit festem Salz, ohne Bindung an die Zeile): die App liest
+es weiter und schreibt es nie mehr. Das Skript hebt solche Zeilen auch ohne neues Secret auf das neue
+Format, dann bleibt `API_KEY_ENCRYPTION_SECRET_PREVIOUS` leer. Die Leseseite in `crypto.ts` kann weg,
+sobald der Probelauf gegen die Produktion "offen: 0" meldet und kein alter Wert mehr hinzukommen kann.
+Die Probe mit echten Zeilen gegen Postgres und PostgREST läuft in `e2e/byok-rotation.spec.ts`.
 
 ## Docker
 

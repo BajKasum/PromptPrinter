@@ -34,7 +34,7 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "u:user-1",
 }));
 vi.mock("@/server/llm", () => ({ chatComplete: async () => "ok" }));
-vi.mock("@/server/security/crypto", () => ({ encrypt: () => "encrypted" }));
+vi.mock("@/server/security/crypto", () => ({ encrypt: () => "encrypted", decrypt: vi.fn() }));
 
 const URL = "https://promptprinter.app/api/settings/api-key";
 const send = (method: string, body: unknown) =>

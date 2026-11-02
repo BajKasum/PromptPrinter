@@ -3,7 +3,7 @@ import { z } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { chatComplete, type LlmOverride } from "@/server/llm";
-import { encrypt } from "@/server/security/crypto";
+import { byokRow, type ByokRow, type ByokTarget } from "@/server/byok";
 import { problem } from "@/server/http/api-problem";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
@@ -83,7 +83,14 @@ export async function POST(req: Request) {
   const unverified = await verifyKey(override, m);
   if (unverified) return unverified;
 
-  const row = keyRow(user.id, apiKey, resolved);
+  let row: ByokRow;
+  try {
+    row = byokRow(user.id, apiKey, resolved);
+  } catch (err) {
+    // Ohne API_KEY_ENCRYPTION_SECRET: in Produktion verhindert das der Start (env.ts), lokal fehlt der Wert oft.
+    captureError("api_key.encrypt_failed", err, { userId: user.id, provider });
+    return problem(500, m.keySaveFailed);
+  }
 
   const { error } = await supabase
     .from("user_api_keys")
@@ -259,11 +266,7 @@ export async function DELETE(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
-type Resolved =
-  | { provider: "anthropic" | "openai" | "gemini" }
-  | { provider: "custom"; label: string; baseUrl: string; model: string };
-
-async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiKey: string; resolved: Resolved } | Response> {
+async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiKey: string; resolved: ByokTarget } | Response> {
   let body: unknown;
   try {
     body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
@@ -292,7 +295,7 @@ async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiK
   // weiter unten sauber narrowt, statt zwei getrennte Variablen ausser
   // Sync geraten zu lassen oder ein `!`-Assertion zu brauchen.
   const apiKey = parsed.data.apiKey;
-  const resolved: Resolved | null = "provider" in parsed.data
+  const resolved: ByokTarget | null = "provider" in parsed.data
     ? {
         provider: parsed.data.provider,
         label: parsed.data.label,
@@ -366,28 +369,4 @@ async function verifyKey(override: LlmOverride, m: Messages["api"]): Promise<Res
     );
   }
   return null;
-}
-
-// Same shape either way (nulling the custom-only columns for named
-// providers), the explicit type keeps this one concrete row type instead
-// of a union the client's upsert typing can't resolve.
-type UserApiKeyRow = {
-  user_id: string;
-  provider: "anthropic" | "openai" | "gemini" | "custom";
-  encrypted_key: string;
-  label: string | null;
-  base_url: string | null;
-  model: string | null;
-};
-
-function keyRow(userId: string, apiKey: string, resolved: Resolved): UserApiKeyRow {
-  const custom = resolved.provider === "custom" ? resolved : null;
-  return {
-    user_id: userId,
-    provider: resolved.provider,
-    encrypted_key: encrypt(apiKey),
-    label: custom?.label ?? null,
-    base_url: custom?.baseUrl ?? null,
-    model: custom?.model ?? null,
-  };
 }

@@ -39,7 +39,10 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "u:user-1",
 }));
 vi.mock("@/server/llm", () => ({ chatComplete: (...a: unknown[]) => chatComplete(...a) }));
-vi.mock("@/server/security/crypto", () => ({ encrypt: (v: string) => encrypt(v) }));
+vi.mock("@/server/security/crypto", () => ({
+  encrypt: (v: string, binding: unknown) => encrypt(v, binding),
+  decrypt: vi.fn(),
+}));
 
 function post(body: unknown) {
   return new Request("https://promptprinter.app/api/settings/api-key", {
@@ -88,10 +91,22 @@ describe("POST /api/settings/api-key", () => {
     const res = await POST(post({ apiKey: "sk-ant-secret" }));
 
     expect(res.status).toBe(200);
-    expect(encrypt).toHaveBeenCalledWith("sk-ant-secret");
+    // Gebunden an die Zeile: der Wert lässt sich nur für diesen Nutzer und diesen Anbieter wieder öffnen.
+    expect(encrypt).toHaveBeenCalledWith("sk-ant-secret", { userId: "user-1", provider: "anthropic" });
     const [row] = upsert.mock.calls[0];
     expect(row).toMatchObject({ provider: "anthropic", encrypted_key: "ENCRYPTED_BLOB" });
     expect(JSON.stringify(row)).not.toContain("sk-ant-secret");
+  });
+
+  it("antwortet verständlich, wenn das Verschlüsseln scheitert (kein Secret), und speichert nichts", async () => {
+    encrypt.mockImplementation(() => {
+      throw new Error("API_KEY_ENCRYPTION_SECRET is not configured");
+    });
+    const res = await POST(post({ apiKey: "sk-ant-secret" }));
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(await res.json())).not.toContain("API_KEY_ENCRYPTION_SECRET");
+    expect(upsert).not.toHaveBeenCalled();
+    encrypt.mockReset();
   });
 
   it("erkennt einen OpenAI-Key am generischen sk--Praefix", async () => {

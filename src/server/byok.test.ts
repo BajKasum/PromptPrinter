@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // QA finding C-6: byok.ts decides whether a user's calls run on their own key
@@ -5,7 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // (/api/chat skips it entirely when an override exists). It had no test.
 
 const decrypt = vi.fn();
-vi.mock("@/server/security/crypto", () => ({ decrypt: (blob: string) => decrypt(blob) }));
+vi.mock("@/server/security/crypto", () => ({
+  decrypt: (blob: string, binding: unknown) => decrypt(blob, binding),
+}));
 const captureError = vi.fn();
 vi.mock("@/shared/lib/observability", () => ({
   captureError: (...args: unknown[]) => captureError(...args),
@@ -62,6 +65,12 @@ describe("getUserOverride", () => {
     expect(override).toEqual({ provider: "anthropic", apiKey: "plain:blob" });
   });
 
+  it("öffnet den Wert nur für die Zeile, aus der er stammt", async () => {
+    adminResult = { data: { provider: "anthropic", encrypted_key: "blob" } };
+    await getUserOverride("user-1");
+    expect(decrypt).toHaveBeenCalledWith("blob", { userId: "user-1", provider: "anthropic" });
+  });
+
   it("carries endpoint and model for a custom provider", async () => {
     adminResult = {
       data: {
@@ -104,13 +113,24 @@ describe("getUserOverride", () => {
 
   it("ein Key unter einem anderen Secret ist unreadable, nicht \"kein Key\" (echte Verschlüsselung)", async () => {
     const real = await vi.importActual<typeof import("@/server/security/crypto")>("@/server/security/crypto");
-    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", "das-alte-secret");
-    const blob = real.encrypt("sk-geheim");
-    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", "das-falsche-secret");
+    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", randomBytes(32).toString("base64"));
+    const blob = real.encrypt("sk-geheim", { userId: "user-1", provider: "openai" });
+    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", randomBytes(32).toString("base64"));
     decrypt.mockImplementation(real.decrypt);
     adminResult = { data: { provider: "openai", encrypted_key: blob } };
     expect(await getUserOverride("user-1")).toBe("unreadable");
     expect(JSON.stringify(captureError.mock.calls)).not.toContain("sk-geheim");
+    vi.unstubAllEnvs();
+  });
+
+  it("ein Chiffretext aus einer fremden Zeile ist unreadable, auch unter dem richtigen Secret", async () => {
+    const real = await vi.importActual<typeof import("@/server/security/crypto")>("@/server/security/crypto");
+    vi.stubEnv("API_KEY_ENCRYPTION_SECRET", randomBytes(32).toString("base64"));
+    const foreign = real.encrypt("sk-fremd", { userId: "user-2", provider: "openai" });
+    decrypt.mockImplementation(real.decrypt);
+    adminResult = { data: { provider: "openai", encrypted_key: foreign } };
+    expect(await getUserOverride("user-1")).toBe("unreadable");
+    expect(JSON.stringify(captureError.mock.calls)).not.toContain("sk-fremd");
     vi.unstubAllEnvs();
   });
 });
