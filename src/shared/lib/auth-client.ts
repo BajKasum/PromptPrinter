@@ -16,8 +16,8 @@ export type AuthActionRequest =
   | { action: "reset-password"; email: string };
 
 export type AuthActionResult =
-  /** `session` only means something for sign-up: false = confirmation mail sent. */
-  | { ok: true; session: boolean }
+  /** `session` only means something for sign-up: false = confirmation mail sent. `mfaRequired`: nur beim Anmelden. */
+  | { ok: true; session: boolean; mfaRequired?: boolean }
   | { ok: false; message: string; captchaFailed: boolean };
 
 export async function postAuthAction(
@@ -43,6 +43,7 @@ export async function postAuthAction(
 
   const payload = (await res.json().catch(() => null)) as {
     session?: boolean;
+    mfaRequired?: boolean;
     detail?: string;
     kind?: string;
   } | null;
@@ -57,5 +58,5 @@ export async function postAuthAction(
 
   // Absent for every action except sign-up, where the server states it
   // explicitly. Defaulting to true keeps "proceed" the meaning everywhere else.
-  return { ok: true, session: payload?.session ?? true };
+  return { ok: true, session: payload?.session ?? true, mfaRequired: payload?.mfaRequired === true };
 }

@@ -9,6 +9,7 @@ import {
 } from "@/server/http/request-body";
 import { isSameOrigin } from "@/server/http/same-origin";
 import { createClient } from "@/server/supabase/server";
+import { lacksSecondFactor } from "@/server/supabase/assurance";
 import { clientIp, rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { decideRequest, findPendingRequest } from "@/server/cli-login/store";
@@ -83,6 +84,11 @@ export async function POST(req: Request) {
         sameAddress: pending.ip === null ? null : pending.ip === clientIp(req),
         maxAgeDays: CLI_SESSION_MAX_AGE_MS / (24 * 60 * 60 * 1000),
       });
+    }
+
+    // Ein Terminal freigeben verlangt bei eingerichtetem Faktor den Nachweis. Ablehnen und Nachsehen geben nichts her.
+    if (parsed.data.action === "approve" && (await lacksSecondFactor(supabase, user))) {
+      return denied("cli-approve", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
     }
 
     const decision = parsed.data.action === "approve" ? "approved" : "denied";
