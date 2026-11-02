@@ -134,6 +134,29 @@ describe("DELETE /api/account", () => {
     expect(captureError).toHaveBeenCalledWith("account.delete_failed", expect.any(Error), { userId: "user-1" });
   });
 
+  it("verlangt mit eingerichtetem Faktor den Nachweis, auch bei frischer Anmeldung, und löscht sonst nichts", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", factors: [{ status: "verified" }] } } });
+    getClaims.mockResolvedValue({
+      data: { claims: { aal: "aal1", amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }] } },
+    });
+    const res = await DELETE(new Request("https://promptprinter.app/api/account", { method: "DELETE" }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("aal2_required");
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(storageRemove).not.toHaveBeenCalled();
+    expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
+  });
+
+  it("löscht mit eingerichtetem Faktor nach dem Nachweis", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "user-1", factors: [{ status: "verified" }] } } });
+    getClaims.mockResolvedValue({
+      data: { claims: { aal: "aal2", amr: [{ method: "totp", timestamp: Math.floor(Date.now() / 1000) }] } },
+    });
+    const res = await DELETE(new Request("https://promptprinter.app/api/account", { method: "DELETE" }));
+    expect(res.status).toBe(200);
+    expect(deleteUser).toHaveBeenCalledWith("user-1");
+  });
+
   it("requires authentication", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     const res = await DELETE(req());

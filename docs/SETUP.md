@@ -530,6 +530,38 @@ Was das nicht leistet:
 
 "Abmelden" im Kontomenü ruft `signOut()` mit dem Standard `global` auf und beendet alle Sitzungen des Kontos, auch die Terminals; die Einstellungen und der Hilfe-Artikel sagen das. Eine Sitzung, die vor dieser Tabelle ausgestellt wurde, hat keinen Eintrag und wird am Chat abgewiesen: neu anmelden.
 
+## Zweiter Faktor
+
+Optional, TOTP über Supabase Auth (#237). TOTP ist auf gehosteten Projekten kostenlos und von sich aus an ([Supabase, "Multi-Factor Authentication (TOTP)"](https://supabase.com/docs/guides/auth/auth-mfa/totp)). Die Einstellungen führen durchs Einrichten, die Anmeldung fragt danach (`/login/zweiter-faktor`), alles läuft über `/api/auth/mfa`.
+
+| Was | Verhalten mit eingerichtetem Faktor | Wo |
+|---|---|---|
+| Konto löschen | verlangt AAL2, zusätzlich zur frischen Anmeldung | `api/account` |
+| Eigene Keys speichern, umschalten, entfernen | verlangt AAL2 | `api/settings/api-key` |
+| Terminal freigeben | verlangt AAL2. Nachsehen und Ablehnen nicht, sie geben nichts her | `api/cli/approve` |
+| App-Seiten | Weiterleitung zum Nachweis, das Ziel bleibt erhalten | `server/supabase/middleware.ts` |
+| Passwort ändern | Supabase Auth verlangt AAL2, `/reset-password/update` schickt vorher zum Nachweis | `app/(auth)/reset-password/update` |
+| Faktor einrichten | verlangt eine frische Anmeldung (zehn Minuten): ein gestohlenes Cookie soll den Besitzer nicht mit einem fremden Faktor aussperren | `api/auth/mfa` |
+| Faktor ausschalten, neue Wiederherstellungscodes | verlangt einen Code aus der App, nicht nur eine AAL2-Sitzung: das Cookie ist für Skripte lesbar | `api/auth/mfa` |
+
+**Was das nicht leistet.** Ohne zweiten Nachweis hat eine Sitzung weiter AAL1, und alles ausser den Zeilen oben gilt dafür: Chat und Datenexport über ihre Routen, und vor allem die Data API direkt mit dem Anon-Key. RLS verlangt kein AAL2, denn Terminal-Sitzungen haben immer AAL1 und müssten sonst draussen bleiben. Das Passwort allein gibt also weiter Lesezugriff auf die eigenen Daten, nur eben nicht in der App und nicht auf die drei Aktionen. Das sagt auch der Hilfe-Artikel. Neu zu entscheiden, wenn der zweite Faktor das ganze Konto schützen soll: dann brauchen Terminals einen eigenen Weg.
+
+**Terminals.** Eine Terminal-Sitzung bleibt AAL1, auch wenn der Browser beim Freigeben AAL2 hatte. Das ist gewollt: mit AAL1 lehnt Supabase Auth ein neues Passwort ab, ein gestohlenes Terminal-Token kann das Konto also nicht übernehmen. Die Kehrseite: jede TOTP-Prüfung löscht alle Sitzungen des Kontos unter AAL2 (`InvalidateSessionsWithAALLessThan` in Supabase Auth), also auch die Terminals. Der Hilfe-Artikel und die Einstellungen sagen es.
+
+**Rückweg bei Verlust des Geräts:**
+
+1. **Wiederherstellungscode.** Beim Einrichten entstehen zehn, einmal sichtbar, nur als Hash gespeichert (`mfa_recovery_codes`, `server/security/recovery-codes.ts`). Anmelden, "Gerät verloren?", Code eingeben: der Server entfernt den Faktor und die übrigen Codes und hält es im Protokoll fest (`mfa.recovery_used`). Der Code ersetzt das Gerät, nicht die Anmeldung, das Passwort oder der OAuth-Anbieter bleiben nötig. Geprüft in `e2e/mfa.spec.ts`. Supabase Auth bringt eigene Codes erst als abgeschaltete Testfunktion mit, deshalb die eigene Tabelle.
+2. **Betreiber.** Sind auch die Codes weg, bleibt das Kontaktformular. Vorher prüfen, ob das Konto dem Anfragenden gehört: Antwort von der Kontoadresse, dazu ein Reset-Link an diese Adresse, den er einlöst. Dann im SQL-Editor:
+
+   ```sql
+   delete from auth.mfa_factors where user_id = '<konto>';
+   delete from public.mfa_recovery_codes where user_id = '<konto>';
+   insert into public.security_events (event, user_id, details)
+     values ('mfa.disabled', '<konto>', '{"via": "operator"}');
+   ```
+
+**Grenzen.** Versuche begrenzt `/api/auth/mfa` auf zehn in zehn Minuten je Konto. Wer das Passwort kennt und den Code direkt bei Supabase Auth probiert, trifft nur dessen Grenze je Adresse. Einen Faktor auf dem Produktionsprojekt hat noch niemand eingerichtet: ob der Schalter dort wirklich an ist, zeigt erst der erste Versuch, das Dashboard (Authentication → Multi-Factor) nennt es.
+
 ## Kontaktformular
 
 `/kontakt` hat neben der Mailadresse ein Formular (`ContactForm`, Name freiwillig, E-Mail, Thema, Nachricht
@@ -668,6 +700,10 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
 | `billing-webhook.spec.ts` | der Zahlungsweg mit **selbst signierten** Lemon-Squeezy-Ereignissen gegen die lokale Datenbank: Abo wird Pro, dieselbe Zustellung zweimal wirkt nur einmal, Kündigung und Ablauf, falsche Signatur wird abgewiesen, Konto-Übernahme gelingt nicht, Teilerstattung lässt Pro stehen |
 | `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
+| `byok-rotation.spec.ts` | `scripts/rotate-byok-secret.mjs` als eigener Prozess gegen echte Zeilen: Formatwechsel, Rotation, getauschte Chiffretexte, keine Ausgabe von Secrets |
+| `security-events.spec.ts` | Sicherheitsprotokoll: Routen schreiben hinein, Browser kommt nicht heran, der Server kann nichts umschreiben, die 180 Tage greifen |
+| `cli-login.spec.ts` | Anmeldung des Terminals: Code, Freigabe, einmal abholen, Chat per Bearer, Details auf `/cli`, Einzelwiderruf in den Einstellungen, Höchstalter, Job in der Datenbank |
+| `mfa.spec.ts` | Zweiter Faktor mit echten Codes: einrichten, Anmelden mit und ohne, die heiklen Aktionen auf AAL1, Rückweg mit Wiederherstellungscode, Passwort-Reset, Zusammenspiel mit Terminals |
 
 ### Was bewusst NICHT geprüft wird
 

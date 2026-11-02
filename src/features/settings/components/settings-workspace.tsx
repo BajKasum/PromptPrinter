@@ -29,6 +29,7 @@ import { ZaiConsent } from "@/features/settings/components/zai-consent";
 import { ThemePreference } from "@/features/settings/components/theme-preference";
 import { ApiKeys } from "@/features/settings/components/api-keys";
 import { TerminalSessions } from "@/features/settings/components/terminal-sessions";
+import { TwoFactor } from "@/features/settings/components/two-factor";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
@@ -266,7 +267,13 @@ export function SettingsWorkspace({
           title={t.settings.security}
           description={t.settings.securityHint}
         >
-          <ChangePassword />
+          <div className="space-y-5">
+            <ChangePassword />
+            <div className="border-t border-border pt-5">
+              <h3 className="mb-2 text-[14px] font-medium text-foreground">{t.settings.twoFactor.title}</h3>
+              <TwoFactor />
+            </div>
+          </div>
         </SettingsCard>
 
         <SettingsCard

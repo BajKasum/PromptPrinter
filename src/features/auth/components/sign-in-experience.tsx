@@ -103,6 +103,10 @@ export function SignInExperience() {
         refreshCaptcha();
         return;
       }
+      if (result.mfaRequired) {
+        router.push(`/login/zweiter-faktor?next=${encodeURIComponent(next)}`);
+        return;
+      }
       setCelebrateMsg("Erfolgreich eingeloggt");
     } finally {
       setLoading(false);

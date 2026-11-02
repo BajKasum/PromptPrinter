@@ -43,6 +43,31 @@ export default function Page() {
         acht Zeichen.
       </p>
 
+      <h2>Wie schütze ich mein Konto mit einem zweiten Faktor?</h2>
+      <p>
+        Unter <strong>Einstellungen</strong>, Abschnitt Sicherheit, richtest du eine Authenticator-App ein, zum
+        Beispiel 1Password, Aegis oder Google Authenticator: QR-Code scannen, Code eingeben, fertig. Danach fragt die
+        Anmeldung nach dem Passwort auch nach dem Code aus der App. Ohne ihn lassen sich weder das Konto löschen noch
+        eigene API-Keys ändern noch Terminals anmelden. Das ist freiwillig und gilt auch für Konten mit Google oder GitHub.
+      </p>
+      <p>
+        Der zweite Faktor schützt die Anmeldung und diese drei Aktionen. Wer dein Passwort hat, kommt ohne den Code
+        nicht in die App, kann mit dem Passwort allein aber noch direkt beim Datenbankdienst lesen, was zu deinem Konto
+        gehört. Ein gutes Passwort, das du sonst nirgends benutzt, bleibt also wichtig.
+      </p>
+
+      <h2>Was, wenn ich mein Gerät verliere?</h2>
+      <p>
+        Beim Einrichten bekommst du zehn Wiederherstellungscodes, jeden nur für einmal. Bewahre sie getrennt vom
+        Passwort auf. Hast du das Gerät nicht mehr: anmelden, auf <strong>Gerät verloren?</strong> klicken, einen Code
+        eingeben. Der zweite Faktor ist dann aus, und du richtest ihn in den Einstellungen neu ein. Auch das Zurücksetzen
+        des Passworts fragt nach dem Code oder einem Wiederherstellungscode: eine Mail allein schaltet den Schutz nicht ab.
+      </p>
+      <p>
+        Sind auch die Codes weg, schreib mir über das <Link href="/kontakt">Kontaktformular</Link>, von der Adresse
+        deines Kontos aus. Dann prüfe ich von Hand, ob das Konto dir gehört, und das kann dauern.
+      </p>
+
       <h2>Was kann ich im Profil einstellen?</h2>
       <p>
         In den Einstellungen kannst du deinen Anzeigenamen setzen. Er ist auch
@@ -78,6 +103,13 @@ export default function Page() {
         <li>
           falls hinterlegt, dein{" "}
           <Link href="/docs/eigene-api-keys">API-Key</Link>, verschlüsselt
+        </li>
+        <li>
+          falls eingerichtet, dein zweiter Faktor und Prüfwerte deiner Wiederherstellungscodes, nie die Codes selbst
+        </li>
+        <li>
+          ein Protokoll sicherheitsrelevanter Vorgänge (etwa: Key geändert, Terminal angemeldet), mit der Kennung deines
+          Kontos, ohne Inhalte
         </li>
       </ul>
       <p>

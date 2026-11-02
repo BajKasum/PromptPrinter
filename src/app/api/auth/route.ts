@@ -4,6 +4,7 @@ import { problem } from "@/server/http/api-problem";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { de } from "@/shared/i18n/messages/de";
 import { createClient } from "@/server/supabase/server";
+import { hasVerifiedFactor } from "@/server/supabase/assurance";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
 import { isSignInThrottled, recordFailedSignIn } from "@/server/security/sign-in-throttle";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
@@ -198,7 +199,8 @@ async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supaba
   logSecurityEvent("auth.sign_in_succeeded", { userId: data?.user?.id ?? null });
   // The session cookies were written by the server client on the way
   // through (server/supabase/server.ts), so they ride out on this response.
-  return NextResponse.json({ ok: true });
+  // Mit zweitem Faktor geht das Formular gleich zum nächsten Schritt; die Schranke selbst ist die Middleware.
+  return NextResponse.json(data?.user && hasVerifiedFactor(data.user) ? { ok: true, mfaRequired: true } : { ok: true });
 }
 
 async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supabase: AuthClient): Promise<Response> {

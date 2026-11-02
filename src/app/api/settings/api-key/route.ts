@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
+import { lacksSecondFactor } from "@/server/supabase/assurance";
 import { chatComplete, type LlmOverride } from "@/server/llm";
 import { byokRow, type ByokRow, type ByokTarget } from "@/server/byok";
 import { problem } from "@/server/http/api-problem";
@@ -68,6 +69,9 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return denied("api_key", problem(401, m.signInRequired));
+  if (await lacksSecondFactor(supabase, user)) {
+    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
+  }
 
   const request = await readSaveRequest(req, m);
   if (request instanceof Response) return request;
@@ -166,6 +170,9 @@ export async function PATCH(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return denied("api_key", problem(401, m.signInRequired));
+  if (await lacksSecondFactor(supabase, user)) {
+    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
+  }
 
   // Security-Audit finding L-7: PATCH and DELETE on this route were the only
   // authenticated mutations in the project with no ceiling at all — POST
@@ -245,6 +252,9 @@ export async function DELETE(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return denied("api_key", problem(401, m.signInRequired));
+  if (await lacksSecondFactor(supabase, user)) {
+    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
+  }
 
   // Security-Audit finding L-7: the one unlimited authenticated mutation in
   // this route (and, before this, in the project) — see the same block on

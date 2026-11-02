@@ -7,9 +7,10 @@ import { updateSession } from "@/server/supabase/middleware";
 // forgotten entry means an operations page reachable while signed out.
 
 const getUser = vi.fn();
+const getClaims = vi.fn();
 
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: () => ({ auth: { getUser } }),
+  createServerClient: () => ({ auth: { getUser, getClaims } }),
 }));
 
 function request(pathname: string) {
@@ -31,6 +32,44 @@ describe("updateSession", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
     getUser.mockResolvedValue({ data: { user: null } });
+  });
+
+  describe("zweiter Faktor", () => {
+    const enrolled = { id: "u1", factors: [{ status: "verified" }] };
+
+    it("schickt eine App-Seite zum Nachweis, solange die Sitzung ihn nicht erbracht hat, und behält das Ziel", async () => {
+      getUser.mockResolvedValue({ data: { user: enrolled } });
+      getClaims.mockResolvedValue({ data: { claims: { aal: "aal1" } } });
+      const res = await updateSession(
+        new NextRequest(new URL("https://promptprinter.app/settings?tab=x")),
+        new Headers()
+      );
+      const location = new URL(locationOf(res)!);
+      expect(location.pathname).toBe("/login/zweiter-faktor");
+      expect(location.searchParams.get("next")).toBe("/settings?tab=x");
+    });
+
+    it("lässt die Sitzung mit Nachweis durch", async () => {
+      getUser.mockResolvedValue({ data: { user: enrolled } });
+      getClaims.mockResolvedValue({ data: { claims: { aal: "aal2" } } });
+      const res = await updateSession(request("/settings"), new Headers());
+      expect(locationOf(res)).toBeNull();
+    });
+
+    it("fragt für ein Konto ohne Faktor gar nicht erst", async () => {
+      getUser.mockResolvedValue({ data: { user: { id: "u1", factors: [] } } });
+      const res = await updateSession(request("/settings"), new Headers());
+      expect(locationOf(res)).toBeNull();
+      expect(getClaims).not.toHaveBeenCalled();
+    });
+
+    it("hält öffentliche Seiten nicht auf: der Nachweis selbst und der Reset liegen dort", async () => {
+      getUser.mockResolvedValue({ data: { user: enrolled } });
+      getClaims.mockResolvedValue({ data: { claims: { aal: "aal1" } } });
+      for (const path of ["/reset-password/update", "/auth/callback", "/login/zweiter-faktor"]) {
+        expect(locationOf(await updateSession(request(path), new Headers())), path).toBeNull();
+      }
+    });
   });
 
   describe("signed out", () => {

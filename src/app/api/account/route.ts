@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
+import { lacksSecondFactor } from "@/server/supabase/assurance";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { captureError } from "@/shared/lib/observability";
 import { recordSecurityEvent } from "@/server/security/security-events";
@@ -105,6 +106,11 @@ export async function DELETE(req: Request) {
   // The id comes from the verified session, never from client input.
   if (!user) {
     return denied("account", problem(401, m.accountNotSignedIn));
+  }
+
+  // Wer einen zweiten Faktor eingerichtet hat, löscht das Konto nur mit Nachweis (docs/SETUP.md, "Zweiter Faktor").
+  if (await lacksSecondFactor(supabase, user)) {
+    return denied("account", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
   }
 
   // Die eine unumkehrbare Aktion der App verlangt eine frische Anmeldung (#132): ein ausgelesenes Cookie, ein

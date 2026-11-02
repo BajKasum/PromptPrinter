@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { UpdatePasswordExperience } from "@/features/auth/components/update-password-experience";
 import { isRecoverySession } from "@/features/auth/lib/recovery-session";
 import { Mascot } from "@/shared/brand/mascot";
+import { lacksSecondFactor } from "@/server/supabase/assurance";
 import { createClient } from "@/server/supabase/server";
 
 export const metadata = {
@@ -24,6 +26,12 @@ export default async function UpdatePasswordPage() {
   // ändern. Welche Sitzungen das sind, steht in recovery-session.ts.
   const fromResetLink =
     Boolean(user) && isRecoverySession((await supabase.auth.getClaims())?.data?.claims.amr);
+
+  // Mit eingerichtetem zweitem Faktor verlangt Supabase Auth für ein neues Passwort AAL2. Sonst sähe der Nutzer das Formular und
+  // scheiterte erst beim Speichern. Der Rückweg ohne Gerät liegt auf derselben Seite.
+  if (user && fromResetLink && (await lacksSecondFactor(supabase, user))) {
+    redirect(`/login/zweiter-faktor?next=${encodeURIComponent("/reset-password/update")}`);
+  }
 
   // Reached without a valid recovery session (link expired, opened directly,
   // already used, or — seit M-7 — eine Sitzung, die nicht aus einem

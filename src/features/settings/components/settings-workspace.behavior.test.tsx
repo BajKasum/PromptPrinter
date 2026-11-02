@@ -59,6 +59,9 @@ vi.mock("@/features/settings/components/data-export", () => ({ DataExport: () =>
 vi.mock("@/features/settings/components/zai-consent", () => ({
   ZaiConsent: ({ consentAt }: { consentAt: string | null }) => <div data-testid="zai-consent" data-at={consentAt ?? ""} />,
 }));
+vi.mock("@/features/settings/components/two-factor", () => ({
+  TwoFactor: () => <div data-testid="two-factor" />,
+}));
 vi.mock("@/features/settings/components/terminal-sessions", () => ({
   TerminalSessions: () => <div data-testid="terminal-sessions" />,
 }));

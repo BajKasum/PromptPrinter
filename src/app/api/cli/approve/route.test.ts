@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getUser = vi.fn();
+const getClaims = vi.fn();
 vi.mock("@/server/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser } }),
+  createClient: async () => ({ auth: { getUser, getClaims } }),
 }));
 const findPendingRequest = vi.fn();
 const decideRequest = vi.fn();
@@ -76,6 +77,24 @@ describe("POST /api/cli/approve", () => {
     findPendingRequest.mockResolvedValue({ clientName: "", createdAt: "2026-10-29T10:00:00Z", ip: null, location: null, userAgent: null });
     const unknown = await POST(post({ userCode: "bcdf-ghjk", action: "lookup" }));
     expect((await unknown.json()).sameAddress).toBeNull();
+  });
+
+  it("verlangt für die Freigabe den zweiten Faktor, wenn einer eingerichtet ist", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: currentUser, factors: [{ status: "verified" }] } } });
+    getClaims.mockResolvedValue({ data: { claims: { aal: "aal1" } } });
+
+    const res = await POST(post({ userCode: "BCDFGHJK", action: "approve" }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe("aal2_required");
+    expect(decideRequest).not.toHaveBeenCalled();
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
+
+    // Nachsehen und Ablehnen geben nichts her.
+    expect((await POST(post({ userCode: "BCDFGHJK", action: "lookup" }))).status).toBe(200);
+    expect((await POST(post({ userCode: "BCDFGHJK", action: "deny" }))).status).toBe(200);
+
+    getClaims.mockResolvedValue({ data: { claims: { aal: "aal2" } } });
+    expect((await POST(post({ userCode: "BCDFGHJK", action: "approve" }))).status).toBe(200);
   });
 
   it("hält Freigabe und Ablehnung im Protokoll fest, das Nachsehen nicht", async () => {

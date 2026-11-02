@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { lacksSecondFactor } from "@/server/supabase/assurance";
 import { secureCookieOptions } from "@/server/supabase/cookie-options";
 import { isAppPath, PUBLIC_EXACT, PUBLIC_PREFIXES } from "@/shared/lib/app-routes";
 
@@ -114,6 +115,16 @@ export async function updateSession(request: NextRequest, requestHeaders: Header
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";
     redirect.searchParams.set("next", pathname);
+    return NextResponse.redirect(redirect);
+  }
+
+  // Wer einen zweiten Faktor eingerichtet hat, sieht die App erst nach dem Nachweis. Eine Weiterleitung statt einer Absage: die
+  // Sitzung ist nicht falsch, ihr fehlt nur noch ein Schritt. Die Routen unter /api prüfen selbst, wo es zählt.
+  if (user && isAppPath(pathname) && (await lacksSecondFactor(supabase, user))) {
+    const redirect = request.nextUrl.clone();
+    redirect.pathname = "/login/zweiter-faktor";
+    redirect.search = "";
+    redirect.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(redirect);
   }
 
