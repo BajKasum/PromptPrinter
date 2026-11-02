@@ -508,9 +508,11 @@ Gegen die Doku gelesen und geprüft am 07.10.2026 (Quellen im Kopf von
   → Pro bleibt (die Doku sagt, `order_refunded` feuert bei beidem). Zuordnung: Konto-ID aus dem Checkout
   (`custom_data.user_id`, nur für eine Gutschrift, gegen `profiles` geprüft) oder Kundennummer (jeder
   Entzug).
-- **Testmodus:** `test_mode` steht an Order, Abo und Rechnung (nicht in `meta`). Der Code ändert dafür
-  nichts, ein Testkauf schaltet Pro frei, damit sich der Weg prüfen lässt. Im Log trägt
-  `billing.webhook_applied` (und `_unmatched`, `_ignored`) `testMode: true` oder `false`.
+- **Testmodus:** `test_mode` steht an Order, Abo und Rechnung (nicht in `meta`). Ein Ereignis mit
+  `test_mode: true` ändert kein Konto: Die Route quittiert es mit 200, die Zeile in `billing_events`
+  steht auf `ignored` mit `Testmodus` (Testkarten sind öffentlich). Wer den Weg ausserhalb der Produktion
+  prüft, setzt `LEMON_SQUEEZY_ACCEPT_TEST_MODE=1`; auf Vercel mit `VERCEL_ENV=production` wirkt der Schalter
+  nicht. Im Log trägt `billing.webhook_applied` (und `_unmatched`, `_ignored`) `testMode: true` oder `false`.
 - **Nicht belegt, nur mit einem echten Ereignis zu sehen:** welche Ereignisse bei einem echten Kauf
   zusammen eintreffen und in welcher Reihenfolge, ob `subscription_paused` und `subscription_updated`
   beide kommen, die Adresse des Testmodus-Webhooks, Preise brutto oder netto.
