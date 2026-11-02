@@ -130,7 +130,7 @@ test.describe("Zweiter Faktor", () => {
       // Ein falscher Code hilft nicht weiter.
       await second.getByLabel("Code aus der App").fill("000000");
       await second.getByRole("button", { name: "Bestätigen" }).click();
-      await expect(second.getByRole("alert")).toContainText("Dieser Code stimmt nicht");
+      await expect(second.getByRole("alert").filter({ hasText: "Dieser Code stimmt nicht" })).toBeVisible();
 
       // Der richtige führt ans Ziel, und jetzt gehen auch die heiklen Aktionen.
       await second.getByLabel("Code aus der App").fill(totpCode(secret));
@@ -177,7 +177,7 @@ test.describe("Zweiter Faktor", () => {
       // Ein erfundener Code ändert nichts.
       await second.getByLabel("Wiederherstellungscode").fill("BCDF-GHJK-LMNP-QRST");
       await second.getByRole("button", { name: "Code einlösen" }).click();
-      await expect(second.getByRole("alert")).toContainText("Wiederherstellungscode");
+      await expect(second.getByRole("alert").filter({ hasText: "Wiederherstellungscode" })).toBeVisible();
       expect(await verifiedFactors(account.id)).toHaveLength(1);
 
       // Ein echter führt ans Ziel: Faktor weg, alle Codes weg, Eintrag im Protokoll.
