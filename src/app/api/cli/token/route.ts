@@ -11,9 +11,11 @@ import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { DEVICE_CODE_PATTERN, MIN_POLL_GAP_MS, POLL_INTERVAL_SECONDS } from "@/server/cli-login/codes";
 import { claimApprovedRequest, findRequestByDeviceCode, markPolled } from "@/server/cli-login/store";
-import { issueCliSession } from "@/server/cli-login/session";
+import { issueCliSession, revokeCliSession } from "@/server/cli-login/session";
+import { registerCliSession } from "@/server/cli-login/sessions";
+import { recordSecurityEvent } from "@/server/security/security-events";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
-import { captureError, logEvent } from "@/shared/lib/observability";
+import { captureError } from "@/shared/lib/observability";
 
 export const runtime = "nodejs";
 
@@ -75,8 +77,9 @@ export async function POST(req: Request) {
     }
 
     // approved: genau ein Aufruf holt ab (ein Update, das nur approved trifft), jeder andere ist invalid.
-    const userId = await claimApprovedRequest(request.id);
-    if (!userId) return invalid();
+    const claimed = await claimApprovedRequest(request.id);
+    if (!claimed) return invalid();
+    const { userId, clientName } = claimed;
 
     const session = await issueCliSession(userId);
     if (!session) {
@@ -84,7 +87,13 @@ export async function POST(req: Request) {
       captureError("cli.session_issue_failed", new Error("issueCliSession returned null"), { userId });
       return problem(503, CLI_PROBLEMS.sessionFailed, { kind: "session_failed" });
     }
-    logEvent("cli.session_issued", { userId });
+    // Ohne Eintrag liesse sich die Sitzung weder anzeigen noch widerrufen, und der Chat wiese sie ab: dann lieber keine.
+    if (!(await registerCliSession(session.access_token, clientName))) {
+      await revokeCliSession(session.access_token).catch(() => null);
+      captureError("cli.session_register_failed", new Error("registerCliSession returned false"), { userId });
+      return problem(503, CLI_PROBLEMS.sessionFailed, { kind: "session_failed" });
+    }
+    await recordSecurityEvent("cli.session_issued", userId);
     return NextResponse.json({ status: "approved", session }, { headers: { "cache-control": "no-store" } });
   } catch (err) {
     captureError("cli.token_failed", err);

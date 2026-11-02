@@ -9,18 +9,20 @@ import {
 } from "@/server/http/request-body";
 import { isSameOrigin } from "@/server/http/same-origin";
 import { createClient } from "@/server/supabase/server";
-import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
+import { clientIp, rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { decideRequest, findPendingRequest } from "@/server/cli-login/store";
+import { CLI_SESSION_MAX_AGE_MS } from "@/server/cli-login/sessions";
+import { recordSecurityEvent } from "@/server/security/security-events";
 import { normalizeUserCode } from "@/shared/lib/cli-user-code";
-import { captureError, logEvent } from "@/shared/lib/observability";
+import { captureError } from "@/shared/lib/observability";
 import { denied } from "@/server/security/security-log";
 
 export const runtime = "nodejs";
 
 // Schritt 2 der Anmeldung per Geräte-Code: der Mensch bestätigt im Browser, eingeloggt, den Code seines
-// Terminals. Drei Aktionen auf einer Route: `lookup` zeigt, WAS bestätigt würde (Gerätename, Uhrzeit),
-// `approve` und `deny` entscheiden.
+// Terminals. Drei Aktionen auf einer Route: `lookup` zeigt, WAS bestätigt würde (Gerätename, Uhrzeit, Adresse, ungefährer
+// Ort, Programm), `approve` und `deny` entscheiden.
 //
 // Bewusst nur mit dem Cookie, nie mit Bearer (createClient, ohne den Bearer-Weg des Chats): ein Terminal,
 // das schon angemeldet ist, darf mit seinem Token kein weiteres Gerät freigeben. Weil ein Cookie-POST
@@ -74,12 +76,18 @@ export async function POST(req: Request) {
   try {
     if (parsed.data.action === "lookup") {
       const pending = await findPendingRequest(userCode);
-      return pending ? NextResponse.json(pending) : notFound();
+      if (!pending) return notFound();
+      return NextResponse.json({
+        ...pending,
+        // Gleich heisst nicht sicher, verschieden nicht fremd: die Seite sagt nur, dass es auffällt.
+        sameAddress: pending.ip === null ? null : pending.ip === clientIp(req),
+        maxAgeDays: CLI_SESSION_MAX_AGE_MS / (24 * 60 * 60 * 1000),
+      });
     }
 
     const decision = parsed.data.action === "approve" ? "approved" : "denied";
     if (!(await decideRequest(userCode, user.id, decision))) return notFound();
-    logEvent(`cli.login_${decision}`, { userId: user.id });
+    await recordSecurityEvent(decision === "approved" ? "cli.login_approved" : "cli.login_denied", user.id);
     return NextResponse.json({ ok: true, status: decision });
   } catch (err) {
     captureError("cli.approve_failed", err, { userId: user.id });

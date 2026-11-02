@@ -20,16 +20,29 @@ export type Database = {
                   ]
                 },"cli_device_requests": {
                   Row: {
-                    "client_name": string,"created_at": string,"device_code_hash": string,"expires_at": string,"id": string,"last_polled_at": string | null,"status": string,"user_code": string,"user_id": string | null
+                    "client_name": string,"created_at": string,"device_code_hash": string,"expires_at": string,"id": string,"last_polled_at": string | null,"request_ip": string | null,"request_location": string | null,"request_user_agent": string | null,"status": string,"user_code": string,"user_id": string | null
                   }
                   Insert: {
-                    "client_name"?: string,"created_at"?: string,"device_code_hash": string,"expires_at"?: string,"id"?: string,"last_polled_at"?: string | null,"status"?: string,"user_code": string,"user_id"?: string | null
+                    "client_name"?: string,"created_at"?: string,"device_code_hash": string,"expires_at"?: string,"id"?: string,"last_polled_at"?: string | null,"request_ip"?: string | null,"request_location"?: string | null,"request_user_agent"?: string | null,"status"?: string,"user_code": string,"user_id"?: string | null
                   }
                   Update: {
-                    "client_name"?: string,"created_at"?: string,"device_code_hash"?: string,"expires_at"?: string,"id"?: string,"last_polled_at"?: string | null,"status"?: string,"user_code"?: string,"user_id"?: string | null
+                    "client_name"?: string,"created_at"?: string,"device_code_hash"?: string,"expires_at"?: string,"id"?: string,"last_polled_at"?: string | null,"request_ip"?: string | null,"request_location"?: string | null,"request_user_agent"?: string | null,"status"?: string,"user_code"?: string,"user_id"?: string | null
                   }
                   Relationships: [
                     
+                  ]
+                },"cli_sessions": {
+                  Row: {
+                    "client_name": string,"created_at": string,"expires_at": string,"last_used_at": string,"session_id": string,"user_id": string
+                  }
+                  Insert: {
+                    "client_name"?: string,"created_at"?: string,"expires_at": string,"last_used_at"?: string,"session_id": string,"user_id": string
+                  }
+                  Update: {
+                    "client_name"?: string,"created_at"?: string,"expires_at"?: string,"last_used_at"?: string,"session_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+
                   ]
                 },"conversations": {
                   Row: {
@@ -260,10 +273,16 @@ isOneToOne: false
             "attachment_bytes_used":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"end_cli_session":
+{ Args: { "target_session": string,"target_user": string }; Returns: boolean
+                           },
 "project_summaries":
 { Args: Record<PropertyKey, never>; Returns: {
               "chat_count": number,"project_id": string,"saved_count": number
             }[]
+                           },
+"prune_cli_login":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "prune_security_events":
 { Args: Record<PropertyKey, never>; Returns: number

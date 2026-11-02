@@ -489,6 +489,7 @@ Zwei Stufen, beide nur mit der Kennung des Kontos: nie eine Adresse, ein Key ode
 | Eigener Key gespeichert, ersetzt, aktiviert, entfernt | `api_key.saved`, `api_key.activated`, `api_key.removed` | Log und Tabelle |
 | Einwilligung in Z.ai erteilt, widerrufen | `consent.zai_granted`, `consent.zai_withdrawn` | Log und Tabelle |
 | Konto gelöscht | `account.deleted` | Log und Tabelle |
+| Terminal freigegeben, abgelehnt, angemeldet, abgemeldet | `cli.login_approved`, `cli.login_denied`, `cli.session_issued`, `cli.session_revoked` | Log und Tabelle |
 | Planwechsel | stehen schon in `billing_events` (Webhook) | Tabelle `billing_events` |
 
 Aufbewahrung:
@@ -506,6 +507,28 @@ where user_id = '<konto>' order by created_at desc;
 Prüfen, ob der Job läuft: `select jobname, schedule, active from cron.job;` und `select status, start_time from cron.job_run_details order by start_time desc limit 5;`.
 
 Administrator-Aktionen gibt es in der App keine: `profiles.is_admin` hebt nur Grenzen auf, und Änderungen am Konto laufen im Supabase-Dashboard. Nicht geprüft ist der Betrieb an einem echten Tag: es gibt kein Staging, und die Menge der Logzeilen ist nicht gemessen.
+
+## Terminal-Anmeldung (Entscheid: absichern, kein eigener Token-Typ)
+
+Das Terminal bekommt eine echte Supabase-Sitzung, einen eigenen, eng begrenzten Token-Typ gibt es bewusst nicht (#228). Ein solches Token nähme den Routen die Row Level Security als zweite Linie, und selbst geprägte Tokens brächten ein neues Geheimnis. Der Preis: das Token kann, was der Browser kann. Es gilt auch direkt an der Data API, an Storage und am Auth-Server, nicht nur am Chat; `tests/guards/bearer-routes.test.ts` begrenzt nur, welche Routen der App einen Bearer-Kopf lesen.
+
+Stattdessen ist die Sitzung beherrschbar:
+
+| Massnahme | Wo | Was sie leistet |
+|---|---|---|
+| Anfrage-Details auf `/cli` | `cli_device_requests`, `server/cli-login/request-context.ts` | Adresse, ungefährer Ort (nur auf Vercel, aus dessen Köpfen), Programm, Hinweis bei anderer Adresse als der Browser. Bleiben höchstens einen Tag über den Ablauf der Anfrage hinaus |
+| Liste und Einzelwiderruf | `cli_sessions`, `/api/cli/sessions`, Einstellungen | Jede ausgestellte Sitzung steht in der Tabelle. Widerrufen löscht die Zeile in `auth.sessions`, damit auch die Refresh-Tokens. Das trifft nur eingetragene Sitzungen, nie einen Browser |
+| Höchstalter 30 Tage | `CLI_SESSION_MAX_AGE_MS`, `cli_sessions.expires_at` | Chat und `/api/cli/refresh` weisen eine ältere Sitzung ab und beenden sie. Der Job `prune-cli-login` (pg_cron, stündlich) beendet abgelaufene Sitzungen auch dann, wenn jemand das Refresh-Token direkt bei Supabase einlöst |
+| Bearer nur für eingetragene Terminals | `api/chat/gate.ts` | Das Access-Token einer Browser-Sitzung gilt am Chat nicht als Terminal |
+| Protokoll | `security_events` | `cli.login_approved`, `cli.login_denied`, `cli.session_issued`, `cli.session_revoked` (`via`: `terminal`, `settings`, `max_age`) |
+
+Was das nicht leistet:
+
+- **Ein schon ausgestelltes Access-Token gilt an der Data API bis zu seinem Ablauf weiter, höchstens eine Stunde** (Access token expiry der Produktion, siehe "Sitzungs-Cookie"). Am Chat ist es sofort tot, denn `getUser()` fragt den Auth-Server. Ein signiertes Token lässt sich nicht zurückholen.
+- **Zwischen zwei Läufen des Jobs** lässt sich eine abgelaufene Sitzung direkt bei Supabase noch bis zu einer Stunde erneuern.
+- **Der Umfang des Tokens bleibt der volle.** Wer es stiehlt, hat bis zum Widerruf den Zugriff des Browsers. Das nennt auch der Hilfe-Artikel. Neu zu entscheiden, sobald das Terminal mehr tun soll als chatten oder ein Token auf fremden Rechnern liegen soll.
+
+"Abmelden" im Kontomenü ruft `signOut()` mit dem Standard `global` auf und beendet alle Sitzungen des Kontos, auch die Terminals; die Einstellungen und der Hilfe-Artikel sagen das. Eine Sitzung, die vor dieser Tabelle ausgestellt wurde, hat keinen Eintrag und wird am Chat abgewiesen: neu anmelden.
 
 ## Kontaktformular
 

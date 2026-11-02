@@ -117,7 +117,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Anmeldung im Terminal",
         summary:
           "Wie sich ein Terminal ohne Passwort bei deinem Konto anmeldet: Code abtippen, Gerät prüfen, bestätigen, und wie du es wieder abmeldest.",
-        updated: "2026-10-29",
+        updated: "2026-11-02",
       },
       {
         slug: "tastenkuerzel",

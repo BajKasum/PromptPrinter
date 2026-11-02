@@ -9,7 +9,15 @@ function reply(status: number, body: unknown) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
-const PENDING = { clientName: "pp auf Laptop", createdAt: "2026-10-29T10:15:00Z" };
+const PENDING = {
+  clientName: "pp auf Laptop",
+  createdAt: "2026-10-29T10:15:00Z",
+  ip: "203.0.113.7",
+  location: "Basel, CH",
+  userAgent: "promptprinter-cli/1.0",
+  sameAddress: true,
+  maxAgeDays: 30,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -51,6 +59,41 @@ describe("CliApproval (Bestätigungsseite der Terminal-Anmeldung)", () => {
     await user.type(screen.getByLabelText("Code aus dem Terminal"), "k");
     expect(screen.getByLabelText("Code aus dem Terminal")).toHaveValue("BCDF-GHJK");
     expect(screen.getByRole("button", { name: "Weiter" })).toBeEnabled();
+  });
+
+  it("zeigt, woher die Anfrage kommt: den Namen wählt der Anfragende selbst", async () => {
+    render(<CliApproval />);
+    const user = await typeCode("BCDFGHJK");
+    await user.click(screen.getByRole("button", { name: "Weiter" }));
+
+    await screen.findByText("pp auf Laptop");
+    expect(screen.getByText("Adresse").nextSibling).toHaveTextContent("203.0.113.7");
+    expect(screen.getByText("Ort, ungefähr").nextSibling).toHaveTextContent("Basel, CH");
+    expect(screen.getByText("Programm").nextSibling).toHaveTextContent("promptprinter-cli/1.0");
+    expect(screen.getByText(/höchstens 30 Tage angemeldet/)).toBeInTheDocument();
+    expect(screen.queryByText(/anderen Adresse als dein Browser/)).not.toBeInTheDocument();
+  });
+
+  it("warnt, wenn die Anfrage von einer anderen Adresse kommt als der Browser", async () => {
+    fetchMock.mockResolvedValue(reply(200, { ...PENDING, sameAddress: false }));
+    render(<CliApproval />);
+    const user = await typeCode("BCDFGHJK");
+    await user.click(screen.getByRole("button", { name: "Weiter" }));
+
+    expect(await screen.findByText(/anderen Adresse als dein Browser/)).toBeInTheDocument();
+  });
+
+  it("lässt weg, was die Anfrage nicht trägt, und warnt ohne Adresse nicht", async () => {
+    fetchMock.mockResolvedValue(
+      reply(200, { clientName: "pp", createdAt: PENDING.createdAt, ip: null, location: null, userAgent: null, sameAddress: null })
+    );
+    render(<CliApproval />);
+    const user = await typeCode("BCDFGHJK");
+    await user.click(screen.getByRole("button", { name: "Weiter" }));
+
+    await screen.findByText("pp");
+    for (const label of ["Adresse", "Ort, ungefähr", "Programm"]) expect(screen.queryByText(label)).not.toBeInTheDocument();
+    expect(screen.queryByText(/anderen Adresse als dein Browser/)).not.toBeInTheDocument();
   });
 
   it("zeigt Gerätename, Uhrzeit und die Warnung, bevor etwas entschieden wird", async () => {

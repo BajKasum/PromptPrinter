@@ -10,8 +10,18 @@ vi.mock("@/server/cli-login/store", () => ({
   claimApprovedRequest: (...a: unknown[]) => claimApprovedRequest(...a),
 }));
 const issueCliSession = vi.fn();
+const revokeCliSession = vi.fn();
 vi.mock("@/server/cli-login/session", () => ({
   issueCliSession: (...a: unknown[]) => issueCliSession(...a),
+  revokeCliSession: (...a: unknown[]) => revokeCliSession(...a),
+}));
+const registerCliSession = vi.fn();
+vi.mock("@/server/cli-login/sessions", () => ({
+  registerCliSession: (...a: unknown[]) => registerCliSession(...a),
+}));
+const recordSecurityEvent = vi.fn();
+vi.mock("@/server/security/security-events", () => ({
+  recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
 }));
 
 import { POST } from "./route";
@@ -44,8 +54,48 @@ beforeEach(() => {
     expires_at: future(),
     last_polled_at: null,
   });
-  claimApprovedRequest.mockResolvedValue("user-1");
+  claimApprovedRequest.mockResolvedValue({ userId: "user-1", clientName: "pp auf Laptop" });
   issueCliSession.mockResolvedValue(SESSION);
+  registerCliSession.mockResolvedValue(true);
+  revokeCliSession.mockResolvedValue({ userId: "user-1" });
+});
+
+describe("Eintrag der Sitzung", () => {
+  const approved = () =>
+    findRequestByDeviceCode.mockResolvedValue({
+      id: "req-1",
+      status: "approved",
+      user_id: "user-1",
+      expires_at: future(),
+      last_polled_at: null,
+    });
+
+  it("trägt jede ausgestellte Sitzung mit dem Gerätenamen ein und hält es im Protokoll fest", async () => {
+    approved();
+    const res = await POST(post({ deviceCode }));
+    expect(res.status).toBe(200);
+    expect(registerCliSession).toHaveBeenCalledWith("access", "pp auf Laptop");
+    expect(recordSecurityEvent).toHaveBeenCalledWith("cli.session_issued", "user-1");
+  });
+
+  it("beendet die Sitzung wieder und gibt sie nicht aus, wenn das Eintragen scheitert", async () => {
+    approved();
+    registerCliSession.mockResolvedValue(false);
+    const res = await POST(post({ deviceCode }));
+    expect(res.status).toBe(503);
+    expect((await res.json()).session).toBeUndefined();
+    expect(revokeCliSession).toHaveBeenCalledWith("access");
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
+  });
+
+  it("bleibt bei 503, auch wenn das Beenden selbst scheitert", async () => {
+    approved();
+    registerCliSession.mockResolvedValue(false);
+    revokeCliSession.mockRejectedValue(new Error("auth down"));
+    const res = await POST(post({ deviceCode }));
+    expect(res.status).toBe(503);
+    expect((await res.json()).kind).toBe("session_failed");
+  });
 });
 
 async function kind(res: Response) {
