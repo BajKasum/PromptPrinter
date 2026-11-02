@@ -78,7 +78,7 @@ describe("sitemap", () => {
     it("nimmt für Rechtstexte das Datum aus legal.ts als ISO-Datum", () => {
       const entries = byPath();
       for (const path of ["/datenschutz", "/cookies", "/agb", "/nutzungsrichtlinie", "/rueckerstattung", "/impressum"]) {
-        expect(entries.get(path), path).toBe("2026-10-17");
+        expect(entries.get(path), path).toBe("2026-11-02");
       }
     });
 

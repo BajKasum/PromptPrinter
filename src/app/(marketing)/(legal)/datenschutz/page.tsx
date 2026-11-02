@@ -167,6 +167,28 @@ export default function DatenschutzPage() {
         automatisch unkenntlich gemacht werden. Diese Daten dienen ausschliesslich dem sicheren
         Betrieb und werden nicht zur Profilbildung verwendet.
       </p>
+      <h3>Sicherheitsprotokoll</h3>
+      <p>
+        Einzelne sicherheitsrelevante Vorgänge halten wir länger fest: das Speichern, Umschalten und
+        Entfernen eigener API-Schlüssel, das Erteilen und Widerrufen der Einwilligung für Z.ai, das
+        Freigeben und Abmelden von Terminals, das Ein- und Ausschalten des zweiten Faktors und das
+        Löschen des Kontos. Gespeichert werden Art und Zeitpunkt des Vorgangs, deine Konto-Kennung und
+        kurze technische Angaben wie der Name des Anbieters, nie deine E-Mail-Adresse, ein Schlüssel
+        oder Inhalte.
+      </p>
+      <h3>Terminal-Anmeldung (optional)</h3>
+      <p>
+        Meldest du ein Terminal an, zeigen wir dir zur Prüfung, von welcher IP-Adresse, von welchem
+        ungefähren Ort und mit welchem Programm die Anfrage kam. Diese Angaben löschen wir spätestens
+        einen Tag nach Ablauf der Anfrage. Angemeldete Terminals führen wir mit dem Gerätenamen, den das
+        Terminal angibt, und den Zeitpunkten der Anmeldung und der letzten Nutzung, bis du sie abmeldest,
+        höchstens 30 Tage.
+      </p>
+      <h3>Zweiter Faktor (optional)</h3>
+      <p>
+        Richtest du ihn ein, speichert unser Anmeldedienst (Supabase, Ziffer 4) den Schlüssel für deine
+        Authenticator-App. Deine Wiederherstellungscodes speichern wir nur als Hash.
+      </p>
       <h3>Messung der Ladegeschwindigkeit</h3>
       <p>
         Damit wir sehen, wie schnell PromptPrinter bei dir lädt und wo es hakt, messen wir mit{" "}
@@ -326,7 +348,8 @@ export default function DatenschutzPage() {
         insbesondere für Rechnungsunterlagen aus der Zahlungsabwicklung, bleiben vorbehalten.
         Sprachaufnahmen aus dem Sprachmodus durchlaufen unsere Server nicht und werden von uns
         nicht gespeichert (Ziffer 4); wie lange dein Browser-Anbieter sie bei sich verarbeitet,
-        richtet sich nach dessen eigenen Bestimmungen.
+        richtet sich nach dessen eigenen Bestimmungen. Das Sicherheitsprotokoll löschen wir nach 180 Tagen
+        automatisch, auch wenn du dein Konto vorher löschst.
       </p>
 
       <h2>7. Deine Rechte</h2>
@@ -355,7 +378,8 @@ export default function DatenschutzPage() {
         <strong>Einstellungen</strong>. Dabei werden dein Profil, deine Chats und Nachrichten, deine
         Projekte samt hochgeladenen Dateien und Projekt-Gedächtnis, alle Anhänge deiner Chats, deine
         gespeicherten Prompts sowie hinterlegte API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
-        einer Frist.
+        einer Frist. Ausgenommen ist das Sicherheitsprotokoll (Ziffer 2): Seine Einträge enthalten nur
+        deine frühere Konto-Kennung und werden nach spätestens 180 Tagen automatisch gelöscht.
       </p>
 
       <h2>9. Kontakt</h2>
