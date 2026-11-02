@@ -274,7 +274,8 @@ export type RateLimitScope =
   | "cli-approve"
   | "cli-token"
   | "cli-refresh"
-  | "cli-logout";
+  | "cli-logout"
+  | "cli-me";
 
 /**
  * The bucket a request counts against: the signed-in user, or the caller's IP

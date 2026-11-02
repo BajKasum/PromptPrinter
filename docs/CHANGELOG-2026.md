@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-02: Terminal-App, Phase 2: `GET /api/cli/me` (Kasums Entscheid D-T9)
+
+Das Terminal soll im Startbild sagen, wer angemeldet ist und ob der nächste Zug laufen kann. Dafür gab es keine Route: Bearer galt nur für Chat und Abmelden, und aus dem JWT liesse sich zwar die Adresse lesen, aber weder Plan noch Key. Ohne die Route erführe ein Free-Konto ohne Key erst nach der ersten Idee, dass nichts geht, genau das, was `getNeedsOwnKey` im Browser verhindert.
+
+- **Nur lesend, nur per Bearer**, ein Cookie gilt hier nicht. Antwort: `email`, `plan`, `hasOwnKey`, `needsOwnKey`, `needsConsent`. Kein Anbieter, kein Schlüssel.
+- **Keine Migration.** Liest mit dem Client des Nutzers unter RLS plus `.eq`, entscheidet über `getUser()` beim Auth-Server. Ein Lesefehler ergibt 503, nie "Free ohne Key".
+- **Geprüft:** Routentest, `e2e/cli-me.spec.ts` gegen den lokalen Stack (echte Sitzung, gelöschtes Konto), Eintrag im Guard `bearer-routes.test.ts`, eigener Ratenlimit-Name.
+- **Das Programm selbst** liegt im Repo `BajKasum/promptprinter-cli`, Plan und Stand im Vault ("PromptPrinter Terminal-App Stand und Restplan").
+
+---
+
 ## 2026-11-02: Grenzen je Konto in der Datenbank, Eigentümer der Elternzeile, Tag-Schutz, SHA-Pinning (PRs #281, #286, Issues #227, #232, #233, #240, #241)
 
 **#227 und #233, Migration 0051 (Kasums Ja, auf Produktion seit 2026-11-02, Version `20261102211918`).** Der Browser schreibt direkt in die Tabellen, die Grenzen galten nur in den Routen.

@@ -69,7 +69,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
   ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Terminal-Anmeldung (Server-Teil der Terminal-App):** Geräte-Code unter `src/app/api/cli/`, Bestätigungsseite `/cli`,
-  Bearer neben dem Cookie nur im Chat (`createClientForRequest`, Guard `bearer-routes.test.ts`). Migration 0050
+  Bearer neben dem Cookie nur im Chat und in `api/cli/me` (`createClientForRequest`, Guard `bearer-routes.test.ts`); das Programm liegt im Repo `promptprinter-cli`. Migration 0050
   und Code sind in Produktion. Verlauf und Messungen: Changelog 2026-10-29.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
   nur im Produktions-Build. Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
