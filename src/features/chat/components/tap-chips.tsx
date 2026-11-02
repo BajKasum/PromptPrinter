@@ -1,7 +1,7 @@
 "use client";
 
-// Die Tippfläche für Antwortvorschläge (#225) und das Verfeinern (#245): eine runde Fläche von mindestens
-// 44 px Höhe, per Tastatur erreichbar, mit sichtbarem Fokus. Eine gemeinsame Gestalt, damit beide gleich wirken.
+// Die Tippfläche für das Verfeinern (#245): eine runde Fläche von mindestens 44 px Höhe, per Tastatur
+// erreichbar, mit sichtbarem Fokus.
 export function TapChip({ children, onClick }: { children: string; onClick: () => void }) {
   return (
     <button

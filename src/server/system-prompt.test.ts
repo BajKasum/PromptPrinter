@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ANSWER_CHOICES_ENABLED,
-  buildChatSystemPrompt,
-  CHAT_SYSTEM_PROMPT,
-  CHOICES_RULE,
-} from "@/server/system-prompt";
+import { CHAT_SYSTEM_PROMPT } from "@/server/system-prompt";
 
 // Positionierung vom 11.10.2026: PromptPrinter gibt Prompts für jede KI und jede Aufgabe, nicht mehr für
 // Bau-Tools. Finns Systemprompt ist die Stelle, an der das im Produkt ankommt, deshalb hält dieser Test fest,
@@ -72,34 +67,6 @@ describe("Finns Systemprompt", () => {
     it("zeigt den Unterschied an einem Beispiel, das keine Bau-Tools nennt", () => {
       expect(CHAT_SYSTEM_PROMPT).toMatch(/An illustration of the difference, never to be copied/);
       expect(CHAT_SYSTEM_PROMPT).toMatch(/You are an experienced writer of formal tenant letters/);
-    });
-  });
-
-  // #225: der Absatz für Antwortvorschläge ist gebaut, aber aus, bis das Format an echten Antworten gemessen ist.
-  describe("Antwortvorschläge zu Finns Rückfrage (#225)", () => {
-    it("ist aus: der Systemprompt trägt den Absatz nicht", () => {
-      expect(ANSWER_CHOICES_ENABLED).toBe(false);
-      expect(CHAT_SYSTEM_PROMPT).toBe(buildChatSystemPrompt({ choices: false }));
-      expect(CHAT_SYSTEM_PROMPT).not.toMatch(/choices|Answer suggestions/);
-    });
-
-    it("hängt den Absatz nur an, ohne den übrigen Systemprompt anzutasten", () => {
-      const withRule = buildChatSystemPrompt({ choices: true });
-      expect(withRule.startsWith(buildChatSystemPrompt({ choices: false }))).toBe(true);
-      expect(withRule.endsWith(CHOICES_RULE)).toBe(true);
-    });
-
-    it("beschreibt genau die Form, die die Oberfläche liest, und hält das Ende des Prompts frei davon", () => {
-      expect(CHOICES_RULE).toMatch(/question \| option \| option \| option/);
-      expect(CHOICES_RULE).toMatch(/2 to 4 short options/);
-      expect(CHOICES_RULE).toMatch(/at most 4\s+lines/);
-      expect(CHOICES_RULE).toMatch(/never add it to a reply that delivers the finished\s+prompt/);
-      expect(CHOICES_RULE).toMatch(/must still read complete/);
-    });
-
-    it("behält die Regel, dass Finn nur den Prompt schreibt, auch mit dem Absatz", () => {
-      const withRule = buildChatSystemPrompt({ choices: true });
-      expect(withRule).toMatch(/Never write the finished letter/);
     });
   });
 

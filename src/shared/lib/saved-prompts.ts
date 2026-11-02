@@ -48,8 +48,7 @@ export function extractPrompt(markdown: string): string | null {
   while ((match = FENCE.exec(markdown)) !== null) {
     const body = match[2].replace(/\n$/, "").trim();
     const lang = match[1].trim().toLowerCase();
-    // Der Block mit Antwortvorschlägen zu Finns Rückfrage (#225) ist Bedienung, kein Prompt.
-    if (body.length > 0 && lang !== "choices") blocks.push({ lang, body });
+    if (body.length > 0) blocks.push({ lang, body });
   }
   if (blocks.length === 0) return null;
 
