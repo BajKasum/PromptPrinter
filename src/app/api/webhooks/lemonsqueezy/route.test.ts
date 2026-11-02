@@ -433,14 +433,57 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
     });
   });
 
-  // Folgesitzung 2026-10-07: `test_mode` steht laut Doku am Objekt (Order, Abo, Rechnung). Es ändert
-  // keine Entscheidung (ein Testkauf schaltet Pro frei, so lässt sich der Weg prüfen), steht aber im
-  // Protokoll, damit man am ersten echten Ereignis sieht, ob es ein Test war.
+  // Testkarten sind öffentlich: ein Ereignis aus dem Testmodus darf ohne Schalter kein Konto ändern.
+  describe("Testmodus wird ignoriert", () => {
+    const testEvent = (eventName = "subscription_created", status = "active") =>
+      body(eventName, { attributes: { status, customer_id: 42, test_mode: true } }, { user_id: USER_ID });
+
+    it("schaltet ohne Schalter nicht frei, quittiert mit 200 und vermerkt es", async () => {
+      const res = await POST(req(testEvent()));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ received: true, ignored: true });
+      expect(profileUpdate).not.toHaveBeenCalled();
+      expect(eventUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: "ignored", detail: "Testmodus" }), "evt_1");
+      expect(logEvent).toHaveBeenCalledWith("billing.webhook_ignored", expect.objectContaining({ reason: "Testmodus", testMode: true }));
+    });
+
+    it("stuft auch nicht zurück", async () => {
+      await POST(req(testEvent("subscription_expired", "expired")));
+      expect(profileUpdate).not.toHaveBeenCalled();
+    });
+
+    it("der Schalter wirkt in der Produktion auf Vercel nicht", async () => {
+      vi.stubEnv("LEMON_SQUEEZY_ACCEPT_TEST_MODE", "1");
+      vi.stubEnv("VERCEL_ENV", "production");
+      await POST(req(testEvent()));
+      expect(profileUpdate).not.toHaveBeenCalled();
+    });
+
+    it("nur der Wert 1 schaltet", async () => {
+      vi.stubEnv("LEMON_SQUEEZY_ACCEPT_TEST_MODE", "true");
+      await POST(req(testEvent()));
+      expect(profileUpdate).not.toHaveBeenCalled();
+    });
+
+    it("mit Schalter ausserhalb der Produktion lässt sich der Weg prüfen", async () => {
+      vi.stubEnv("LEMON_SQUEEZY_ACCEPT_TEST_MODE", "1");
+      vi.stubEnv("VERCEL_ENV", "preview");
+      await POST(req(testEvent()));
+      expect(profileUpdate).toHaveBeenCalledWith(expect.objectContaining({ plan: "pro" }), USER_ID);
+    });
+  });
+
+  // `test_mode` steht laut Doku am Objekt (Order, Abo, Rechnung) und im Protokoll, damit man am
+  // ersten echten Ereignis sieht, ob es ein Test war.
   describe("Testmodus im Protokoll", () => {
     const appliedContext = () =>
       logEvent.mock.calls.find((call) => call[0] === "billing.webhook_applied")?.[1] as Record<string, unknown>;
 
-    it("nennt testMode: true, schaltet aber trotzdem frei", async () => {
+    beforeEach(() => {
+      vi.stubEnv("LEMON_SQUEEZY_ACCEPT_TEST_MODE", "1");
+    });
+
+    it("nennt testMode: true, wenn der Schalter das Ereignis zulässt", async () => {
       await POST(
         req(body("subscription_created", { attributes: { status: "active", test_mode: true } }, { user_id: USER_ID }))
       );

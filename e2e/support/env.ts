@@ -169,6 +169,8 @@ function sharedServerEnv(origin: string): Record<string, string> {
     // Kein Checkout und kein Lemon-Squeezy-Konto, aber der Webhook lauscht: der Test
     // schickt selbst signierte Ereignisse (e2e/billing-webhook.spec.ts).
     LEMON_SQUEEZY_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
+    // Die Ereignisse des Tests tragen `test_mode: true` wie ein Testkauf.
+    LEMON_SQUEEZY_ACCEPT_TEST_MODE: "1",
     LEMON_SQUEEZY_API_KEY: "",
     ALERT_WEBHOOK_URL: "",
     GITHUB_TOKEN: "",

@@ -330,12 +330,23 @@ function decideSubscriptionEvent(
  * Stammt dieses Ereignis aus dem Testmodus des Shops? `null`, wenn die Nutzlast es nicht sagt.
  *
  * Lemon Squeezy trennt Test- und Live-Webhooks (gleiche Nutzlast, getrennte Webhooks im
- * Dashboard); `test_mode` am Objekt zeigt, welche Seite geliefert hat. Das Ergebnis ändert
- * keine Entscheidung (ein Testkauf schaltet Pro frei, so lässt sich der Weg prüfen), es
- * steht nur im Protokoll: am ersten echten Ereignis soll man sehen, ob es ein Test war.
+ * Dashboard); `test_mode` am Objekt zeigt, welche Seite geliefert hat. Die Route ignoriert
+ * solche Ereignisse (siehe `acceptsTestMode`) und nennt den Wert im Protokoll.
  */
 export function isTestMode(payload: LemonSqueezyWebhookPayload): boolean | null {
   return payload.data.attributes?.test_mode ?? null;
+}
+
+/**
+ * Darf ein Ereignis aus dem Testmodus das Konto ändern? Nur mit ausdrücklichem Schalter und nie
+ * in der Produktion auf Vercel.
+ *
+ * Testkarten sind öffentlich: zeigt ein Testmodus-Webhook mit demselben Secret auf diese
+ * Umgebung, käme sonst jeder per Testkauf an ein echtes Pro-Konto auf Kosten des Server-Keys.
+ * Ein versehentlich gesetzter Schalter darf das in Produktion nicht wieder öffnen.
+ */
+export function acceptsTestMode(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.LEMON_SQUEEZY_ACCEPT_TEST_MODE === "1" && env.VERCEL_ENV !== "production";
 }
 
 /** Die Konto-ID aus dem Checkout, falls sie mitgereist ist. */

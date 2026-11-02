@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  acceptsTestMode,
   customUserId,
   decideBillingUpdate,
   eventKey,
@@ -74,9 +75,8 @@ export async function POST(req: Request): Promise<Response> {
   // im Log: ausgerechnet die Angabe weg, nach der man greppt, und den
   // Unit-Tests nicht anzusehen, weil die nur den Kontext prüfen.
   const event = payload.meta.event_name;
-  // Folgesitzung 2026-10-07: stammt das Ereignis aus dem Testmodus des Shops? Nur fürs
-  // Protokoll (undefined, wenn die Nutzlast es nicht sagt, dann fehlt der Schlüssel): am
-  // ersten echten Ereignis soll man sehen können, ob es ein Test war.
+  // Stammt das Ereignis aus dem Testmodus des Shops? Undefined, wenn die Nutzlast es nicht
+  // sagt, dann fehlt der Schlüssel im Protokoll und das Ereignis gilt als echt.
   const testMode = isTestMode(payload) ?? undefined;
   const key = eventKey(raw);
   const admin = createAdminClient();
@@ -221,6 +221,14 @@ async function applyEvent(
   testMode: boolean | undefined,
   finish: FinishEvent
 ): Promise<Response> {
+  // Mit 200 quittiert: eine Wiederholung änderte nichts. Auch ein Entzug aus dem Testmodus zählt
+  // nicht, sonst stufte ein Test ein echtes Konto zurück.
+  if (testMode === true && !acceptsTestMode()) {
+    logEvent("billing.webhook_ignored", { eventName: event, reason: "Testmodus", testMode });
+    await finish("ignored", "Testmodus", null);
+    return NextResponse.json({ received: true, ignored: true });
+  }
+
   const decision = decideBillingUpdate(payload);
   if (decision.kind === "ignore") {
     logEvent("billing.webhook_ignored", { eventName: event, reason: decision.reason, testMode });
