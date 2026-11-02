@@ -42,7 +42,7 @@ export type Database = {
                     "client_name"?: string,"created_at"?: string,"expires_at"?: string,"last_used_at"?: string,"session_id"?: string,"user_id"?: string
                   }
                   Relationships: [
-
+                    
                   ]
                 },"conversations": {
                   Row: {
@@ -136,7 +136,7 @@ isOneToOne: false
                     "code_hash"?: string,"created_at"?: string,"id"?: string,"used_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
-
+                    
                   ]
                 },"profiles": {
                   Row: {
@@ -256,7 +256,7 @@ isOneToOne: false
                     "created_at"?: string,"details"?: NonNullable<Json>,"event"?: string,"id"?: string,"user_id"?: string | null
                   }
                   Relationships: [
-
+                    
                   ]
                 },"user_api_keys": {
                   Row: {
