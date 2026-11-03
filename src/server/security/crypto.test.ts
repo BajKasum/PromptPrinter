@@ -17,8 +17,8 @@ function use(current: string | undefined, previous?: string) {
 }
 
 /**
- * Das alte Format, hier eingefroren und nicht aus dem Code geholt: ein Wert, wie er bis zur Umstellung in die
- * Tabelle geschrieben wurde. Wer die Leseseite ändert, merkt es an diesem Test.
+ * Ein Wert ohne `pp2.`, hier von Hand gebaut: base64(iv + tag + chiffretext), scrypt mit festem Salz, ohne Bindung an
+ * die Zeile. decrypt() darf ihn unter keinem Secret öffnen; kommt eine Leseseite dafür zurück, schlägt dieser Test an.
  */
 function legacyBlob(secret: string, plaintext: string): string {
   const iv = randomBytes(12);
@@ -96,33 +96,25 @@ describe("Bindung an die Zeile", () => {
   });
 });
 
-describe("altes Format", () => {
-  it("wird weiter gelesen, ohne Bindung und unter demselben Secret", () => {
+describe("ein Wert ohne pp2-Präfix", () => {
+  it("wirft, auch unter dem Secret, mit dem er verschlüsselt wurde", () => {
     const secret = newSecret();
     use(secret);
-    expect(decrypt(legacyBlob(secret, PLAIN), ROW)).toBe(PLAIN);
+    expect(() => decrypt(legacyBlob(secret, PLAIN), ROW)).toThrow("unsupported key format");
   });
 
-  it("wird auch während einer Rotation unter dem alten Secret gelesen", () => {
+  it("wirft auch während einer Rotation unter dem alten Secret", () => {
     const old = newSecret();
     use(newSecret(), old);
-    expect(decrypt(legacyBlob(old, PLAIN), ROW)).toBe(PLAIN);
+    expect(() => decrypt(legacyBlob(old, PLAIN), ROW)).toThrow("unsupported key format");
   });
 
-  it("wirft, wenn kein Secret passt", () => {
+  it("wirft bei einem leeren Wert", () => {
     use(newSecret());
-    expect(() => decrypt(legacyBlob(newSecret(), PLAIN), ROW)).toThrow();
+    expect(() => decrypt("", ROW)).toThrow("unsupported key format");
   });
 
-  it("wirft bei einem veränderten Wert, auch mit PREVIOUS", () => {
-    const old = newSecret();
-    const raw = Buffer.from(legacyBlob(old, PLAIN), "base64");
-    raw[raw.length - 1] ^= 0xff;
-    use(newSecret(), old);
-    expect(() => decrypt(raw.toString("base64"), ROW)).toThrow();
-  });
-
-  it("ein neuer Wert schreibt nie mehr das alte Format", () => {
+  it("encrypt schreibt immer das Präfix", () => {
     use(newSecret());
     expect(encrypt(PLAIN, ROW).startsWith("pp2.")).toBe(true);
   });
@@ -183,11 +175,9 @@ describe("ohne Secret", () => {
     const old = newSecret();
     use(old);
     const blob = encrypt(PLAIN, ROW);
-    const legacy = legacyBlob(old, PLAIN);
 
     use(undefined, old);
     expect(() => decrypt(blob, ROW)).toThrow();
-    expect(() => decrypt(legacy, ROW)).toThrow();
   });
 });
 
@@ -197,5 +187,10 @@ describe("kein Schlüssel im Quelltext", () => {
   it("kennt keinen festen Rückfallwert mehr", () => {
     expect(source).not.toMatch(/fallback/i);
     expect(source).not.toMatch(/NODE_ENV/);
+  });
+
+  it("kennt weder scrypt noch das feste Salz des Formats ohne Präfix", () => {
+    expect(source).not.toMatch(/scrypt/i);
+    expect(source).not.toContain("promptprinter-byok");
   });
 });

@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-03: Die Leseseite des BYOK-Formats ohne `pp2.` ist ausgebaut (Branch `fix/byok-altformat-weg`, Kasums Ja)
+
+Am 2026-11-02 blieb sie bewusst stehen (#239): nur dort galt die Bindung an die Zeile nicht. Vor dem Ausbau lesend gezählt: `user_api_keys` in der Produktion hat 0 Zeilen, also auch 0 im alten Format. Neu verschlüsselt wurde nichts.
+
+- **App:** `decrypt()` in `server/security/crypto.ts` wirft bei jedem Wert ohne `pp2.`, scrypt und das feste Salz sind aus dem Quelltext, ein Test hält das fest. `getUserOverride()` meldet so einen Key als unlesbar, der Nutzer speichert ihn neu.
+- **Skript:** `rotate-byok-secret.mjs` dient nur noch der Rotation, ein Wert ohne `pp2.` zählt als "von keinem lesbar" (Exit 3, nichts geschrieben, nichts gelöscht). Ohne `API_KEY_ENCRYPTION_SECRET_PREVIOUS` ist der Probelauf eine reine Prüfung.
+- **Geprüft:** Unit-Tests und Guard, `e2e/byok-rotation.spec.ts` (Rotation mit drei Zeilen, ein Wert ohne `pp2.` bleibt liegen) in der CI, Mutationen 6 von 6 erkannt (Präfix-Prüfung weg, scrypt-Leseseite in App und Skript zurück, Bindung weg in App und Skript, `classify` falsch).
+- **Grenze:** Ein lokaler Stack mit Zeilen aus der Zeit davor zeigt diese Keys als unlesbar.
+
+---
+
 ## 2026-11-02: Terminal-App, Phase 2: `GET /api/cli/me` (Kasums Entscheid D-T9)
 
 Das Terminal soll im Startbild sagen, wer angemeldet ist und ob der nächste Zug laufen kann. Dafür gab es keine Route: Bearer galt nur für Chat und Abmelden, und aus dem JWT liesse sich zwar die Adresse lesen, aber weder Plan noch Key. Ohne die Route erführe ein Free-Konto ohne Key erst nach der ersten Idee, dass nichts geht, genau das, was `getNeedsOwnKey` im Browser verhindert.

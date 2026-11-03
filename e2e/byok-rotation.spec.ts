@@ -4,16 +4,15 @@ import { test, expect, adminClient, createAccount, removeAccount, type Account }
 import { localSupabase } from "./support/env";
 
 // Die Probe der Umschlüsselung gegen den lokalen Stack: echte Tabelle, echte Prüfregeln, echtes PostgREST und dasselbe
-// Skript wie gegen die Produktion, als eigener Prozess. Die Zeilen liegen im alten Format in der Tabelle, so wie die App
-// sie bis zur Umstellung geschrieben hat. Die Fake-Datenbank in tests/guards/rotate-byok-secret.test.ts deckt die
-// Einzelfälle ab; hier zählt, dass Filter, Spaltenrechte und Schreibweg wirklich tragen. Die Secrets gelten nur für diesen
-// Lauf. Das Format steht hier ein drittes Mal, von Hand: so prüft der Test, was wirklich in der Tabelle liegt.
+// Skript wie gegen die Produktion, als eigener Prozess. Die Fake-Datenbank in tests/guards/rotate-byok-secret.test.ts
+// deckt die Einzelfälle ab; hier zählt, dass Filter, Spaltenrechte und Schreibweg wirklich tragen. Die Secrets gelten nur
+// für diesen Lauf. Das Format steht hier ein drittes Mal, von Hand: so prüft der Test, was wirklich in der Tabelle liegt.
 
 const newSecret = () => randomBytes(32).toString("base64");
 
 type Bound = { user_id: string; provider: string };
 
-/** Das alte Format, eingefroren: base64(iv + tag + chiffretext), scrypt mit festem Salz, keine Bindung an die Zeile. */
+/** Ein Wert ohne `pp2.` (base64, scrypt mit festem Salz, ohne Bindung). Das Skript öffnet ihn nicht. */
 function legacyBlob(secret: string, plaintext: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", scryptSync(secret, "promptprinter-byok", 32), iv);
@@ -99,31 +98,33 @@ test.describe("Umschlüsseln der BYOK-Keys", () => {
     await removeAccount(second.id);
   });
 
-  test("Formatwechsel ohne neues Secret: nichts geht verloren, jede Zeile ist danach gebunden", async () => {
-    const secret = newSecret();
-    await insertKey(first, "anthropic", legacyBlob(secret, "sk-ant-erster"));
-    await insertKey(first, "openai", legacyBlob(secret, "sk-openai-erster"));
-    await insertKey(second, "anthropic", legacyBlob(secret, "sk-ant-zweiter"));
+  test("Rotation: nichts geht verloren, danach öffnet nur noch das neue Secret", async () => {
+    const [oldSecret, newOne] = [newSecret(), newSecret()];
+    const bind = (account: Account, provider: string) => ({ user_id: account.id, provider });
+    await insertKey(first, "anthropic", boundBlob(oldSecret, "sk-ant-erster", bind(first, "anthropic")));
+    await insertKey(first, "openai", boundBlob(oldSecret, "sk-openai-erster", bind(first, "openai")));
+    await insertKey(second, "anthropic", boundBlob(oldSecret, "sk-ant-zweiter", bind(second, "anthropic")));
 
     // Probelauf: zählt und schreibt nichts.
     const before = await rowsOf(first);
-    const dry = runScript(secret, "", false);
+    const dry = runScript(newOne, oldSecret, false);
     expect(dry.code, dry.out).toBe(1);
     expect(dry.out).toContain("offen:              3");
     expect(await rowsOf(first)).toEqual(before);
 
-    const apply = runScript(secret, "", true);
+    const apply = runScript(newOne, oldSecret, true);
     expect(apply.code, apply.out).toBe(0);
     expect(apply.out).toContain("umgeschlüsselt: 3");
 
     const [firstAnthropic, firstOpenai] = await rowsOf(first);
     const [secondAnthropic] = await rowsOf(second);
-    expect(openBound(secret, firstAnthropic.encrypted_key, firstAnthropic)).toBe("sk-ant-erster");
-    expect(openBound(secret, firstOpenai.encrypted_key, firstOpenai)).toBe("sk-openai-erster");
-    expect(openBound(secret, secondAnthropic.encrypted_key, secondAnthropic)).toBe("sk-ant-zweiter");
+    expect(openBound(newOne, firstAnthropic.encrypted_key, firstAnthropic)).toBe("sk-ant-erster");
+    expect(openBound(newOne, firstOpenai.encrypted_key, firstOpenai)).toBe("sk-openai-erster");
+    expect(openBound(newOne, secondAnthropic.encrypted_key, secondAnthropic)).toBe("sk-ant-zweiter");
+    expect(openBound(oldSecret, firstAnthropic.encrypted_key, firstAnthropic)).toBeNull();
 
-    // Ein zweiter Lauf hat nichts mehr zu tun.
-    const again = runScript(secret, "", false);
+    // Ohne PREVIOUS hat ein zweiter Lauf nichts mehr zu tun.
+    const again = runScript(newOne, "", false);
     expect(again.code, again.out).toBe(0);
     expect(again.out).toContain("offen:              0");
 
@@ -131,42 +132,34 @@ test.describe("Umschlüsseln der BYOK-Keys", () => {
     const admin = adminClient();
     await admin.from("user_api_keys").update({ encrypted_key: secondAnthropic.encrypted_key }).eq("id", firstAnthropic.id);
     await admin.from("user_api_keys").update({ encrypted_key: firstAnthropic.encrypted_key }).eq("id", secondAnthropic.id);
-    expect(openBound(secret, secondAnthropic.encrypted_key, firstAnthropic)).toBeNull();
-    const swapped = runScript(secret, "", true);
+    expect(openBound(newOne, secondAnthropic.encrypted_key, firstAnthropic)).toBeNull();
+    const swapped = runScript(newOne, "", true);
     expect(swapped.code, swapped.out).toBe(3);
     expect(swapped.out).toContain("von keinem lesbar:  2");
     const [stillSwapped] = await rowsOf(first);
     expect(stillSwapped.encrypted_key).toBe(secondAnthropic.encrypted_key);
   });
 
-  test("Rotation: altes Format und altes Secret, danach öffnet nur noch das neue", async () => {
-    const [oldSecret, newOne] = [newSecret(), newSecret()];
-    await insertKey(first, "anthropic", legacyBlob(oldSecret, "sk-ant-alt"));
-    await insertKey(second, "anthropic", boundBlob(oldSecret, "sk-ant-neu", { user_id: second.id, provider: "anthropic" }));
+  test("ein Wert ohne pp2-Präfix: Exit 3 mit Zeilen-ID, die Zeile bleibt, wie sie ist", async () => {
+    const secret = newSecret();
+    await insertKey(first, "anthropic", legacyBlob(secret, "sk-ant-alt"));
+    const [before] = await rowsOf(first);
 
-    const apply = runScript(newOne, oldSecret, true);
-    expect(apply.code, apply.out).toBe(0);
-
-    const [firstRow] = await rowsOf(first);
-    const [secondRow] = await rowsOf(second);
-    expect(openBound(newOne, firstRow.encrypted_key, firstRow)).toBe("sk-ant-alt");
-    expect(openBound(newOne, secondRow.encrypted_key, secondRow)).toBe("sk-ant-neu");
-    expect(openBound(oldSecret, firstRow.encrypted_key, firstRow)).toBeNull();
-    expect(openBound(oldSecret, secondRow.encrypted_key, secondRow)).toBeNull();
-
-    const check = runScript(newOne, "", false);
-    expect(check.code, check.out).toBe(0);
+    const apply = runScript(secret, "", true);
+    expect(apply.code, apply.out).toBe(3);
+    expect(apply.out).toContain(`Zeilen-IDs: ${before.id}`);
+    expect(await rowsOf(first)).toEqual([before]);
   });
 
   test("gibt weder Secrets noch Keys noch Chiffretexte aus", async () => {
-    const secret = newSecret();
-    await insertKey(first, "anthropic", legacyBlob(secret, "sk-ant-erster"));
+    const [oldSecret, newOne] = [newSecret(), newSecret()];
+    await insertKey(first, "anthropic", boundBlob(oldSecret, "sk-ant-erster", { user_id: first.id, provider: "anthropic" }));
     const before = (await rowsOf(first))[0].encrypted_key;
 
-    const { out, code } = runScript(secret, "", true);
+    const { out, code } = runScript(newOne, oldSecret, true);
     expect(code).toBe(0);
     const after = (await rowsOf(first))[0].encrypted_key;
-    for (const leak of [secret, "sk-ant-erster", before, after, localSupabase().serviceRoleKey]) {
+    for (const leak of [oldSecret, newOne, "sk-ant-erster", before, after, localSupabase().serviceRoleKey]) {
       expect(out).not.toContain(leak);
     }
   });

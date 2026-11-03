@@ -138,11 +138,13 @@ Secret, und `user_id|provider` gehen als zusätzliche authentifizierte Daten ein
 nur in seiner eigenen Zeile öffnen. Der Start verlangt deshalb langen Zufall (Länge und Platzhalter in
 `src/server/env.ts`), ein Passwort-KDF steht nicht mehr davor.
 
-**Altes Format** (base64 ohne Präfix, scrypt mit festem Salz, ohne Bindung an die Zeile): die App liest
-es weiter und schreibt es nie mehr. Das Skript hebt solche Zeilen auch ohne neues Secret auf das neue
-Format, dann bleibt `API_KEY_ENCRYPTION_SECRET_PREVIOUS` leer. Die Leseseite in `crypto.ts` kann weg,
-sobald der Probelauf gegen die Produktion "offen: 0" meldet und kein alter Wert mehr hinzukommen kann.
-Die Probe mit echten Zeilen gegen Postgres und PostgREST läuft in `e2e/byok-rotation.spec.ts`.
+**Einen Wert ohne `pp2.`** (base64, scrypt mit festem Salz, ohne Bindung an die Zeile, das Format vor
+dem 2. November 2026) öffnen weder die App noch das Skript: die App meldet den Key als unlesbar, das
+Skript nennt die Zeile mit Exit 3, der Nutzer gibt den Key neu ein. In der Produktion lag am 3. November
+2026 keine solche Zeile (`user_api_keys` war leer), und die App schreibt nur `pp2.`. Ein lokaler Stack
+mit älteren Zeilen verhält sich genauso: den Key in den Einstellungen neu speichern.
+Ohne `API_KEY_ENCRYPTION_SECRET_PREVIOUS` ist der Probelauf eine reine Prüfung. Die Probe mit echten
+Zeilen gegen Postgres und PostgREST läuft in `e2e/byok-rotation.spec.ts`.
 
 ## Docker
 
@@ -700,7 +702,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
 | `billing-webhook.spec.ts` | der Zahlungsweg mit **selbst signierten** Lemon-Squeezy-Ereignissen gegen die lokale Datenbank: Abo wird Pro, dieselbe Zustellung zweimal wirkt nur einmal, Kündigung und Ablauf, falsche Signatur wird abgewiesen, Konto-Übernahme gelingt nicht, Teilerstattung lässt Pro stehen |
 | `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
-| `byok-rotation.spec.ts` | `scripts/rotate-byok-secret.mjs` als eigener Prozess gegen echte Zeilen: Formatwechsel, Rotation, getauschte Chiffretexte, keine Ausgabe von Secrets |
+| `byok-rotation.spec.ts` | `scripts/rotate-byok-secret.mjs` als eigener Prozess gegen echte Zeilen: Rotation, Wert ohne `pp2.` bleibt liegen, getauschte Chiffretexte, keine Ausgabe von Secrets |
 | `account-deletion.spec.ts` | Konto mit aktivem eigenem Key lässt sich löschen, der nächste Key rückt beim Löschen des aktiven nach |
 | `security-events.spec.ts` | Sicherheitsprotokoll: Routen schreiben hinein, Browser kommt nicht heran, der Server kann nichts umschreiben, die 180 Tage greifen |
 | `cli-login.spec.ts` | Anmeldung des Terminals: Code, Freigabe, einmal abholen, Chat per Bearer, Details auf `/cli`, Einzelwiderruf in den Einstellungen, Höchstalter, Job in der Datenbank |
