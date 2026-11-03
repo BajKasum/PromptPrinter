@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, scryptSync } from "crypto";
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "crypto";
 
 // Verschlüsselt die API-Keys der Nutzer (BYOK, Einstellungen), bevor sie in die Datenbank gehen
 // (user_api_keys.encrypted_key). AES-256-GCM: ein veränderter Chiffretext scheitert beim Entschlüsseln laut,
@@ -18,8 +18,11 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, scryptSync } f
 //   - `user_id|provider` gehen als zusätzliche authentifizierte Daten ein. Ein Wert lässt sich nur in seiner
 //     eigenen Zeile öffnen, ein Tausch zweier Chiffretexte in der Tabelle scheitert am Tag.
 //
+// decrypt() öffnet nur dieses Format. Jeder andere Wert wirft, auch ein base64-Wert ohne Präfix und ohne Bindung an
+// die Zeile: getUserOverride() meldet ihn als unlesbar, der Nutzer gibt den Key neu ein.
+//
 // scripts/rotate-byok-secret.mjs trägt eine Kopie davon, tests/guards/rotate-byok-secret.test.ts hält beide
-// gegeneinander fest. Das Skript hebt auch alte Zeilen auf dieses Format.
+// gegeneinander fest.
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // die für GCM empfohlene Länge
@@ -70,57 +73,19 @@ export function encrypt(plaintext: string, binding: KeyBinding): string {
   return `${FORMAT_PREFIX}.${keyId(secret)}.${payload}`;
 }
 
-function openWith(key: Buffer, raw: Buffer, aad?: Buffer): string {
-  const decipher = createDecipheriv(ALGORITHM, key, raw.subarray(0, IV_LENGTH));
-  decipher.setAuthTag(raw.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH));
-  if (aad) decipher.setAAD(aad);
-  return Buffer.concat([decipher.update(raw.subarray(IV_LENGTH + TAG_LENGTH)), decipher.final()]).toString("utf8");
-}
-
-function decryptBound(blob: string, binding: KeyBinding): string {
+/**
+ * Macht `encrypt` rückgängig. Wirft bei fremdem Format, falschem Secret, veränderten Daten oder einer fremden Zeile
+ * (Tag von GCM). Jeder Wurf heisst: dieser Key ist nicht verwendbar, kein Versuch, einen Teil zu retten.
+ */
+export function decrypt(blob: string, binding: KeyBinding): string {
+  if (!blob.startsWith(`${FORMAT_PREFIX}.`)) throw new Error("unsupported key format");
   const [, kid, payload] = blob.split(".");
   const secret = [currentSecret(), previousSecret()].find((candidate) => candidate && keyId(candidate) === kid);
   if (!secret) throw new Error("no configured secret matches this key id");
-  return openWith(deriveKey(secret), Buffer.from(payload ?? "", "base64url"), additionalData(binding));
-}
 
-// ─── Das alte Format, nur noch zum Lesen ───────────────────────────────────
-// base64(iv + tag + chiffretext), Schlüssel per scrypt mit festem Salz, ohne Bindung an die Zeile. Bleibt, bis
-// scripts/rotate-byok-secret.mjs für die Produktion "altes Format: 0" meldet (docs/SETUP.md, "BYOK-Secret rotieren").
-// Ein alter Wert enthält nie einen Punkt, das Base64-Alphabet kennt keinen: die Formate lassen sich nicht verwechseln.
-const LEGACY_SCRYPT_SALT = "promptprinter-byok";
-
-// scrypt braucht je Aufruf Dutzende Millisekunden Rechenzeit. Bleibt im Speicher, wird nie geloggt.
-const legacyKeys = new Map<string, Buffer>();
-
-function legacyKey(secret: string): Buffer {
-  let key = legacyKeys.get(secret);
-  if (!key) {
-    key = scryptSync(secret, LEGACY_SCRYPT_SALT, 32);
-    legacyKeys.set(secret, key);
-  }
-  return key;
-}
-
-function decryptLegacy(blob: string): string {
-  const raw = Buffer.from(blob, "base64");
-  try {
-    return openWith(legacyKey(currentSecret()), raw);
-  } catch (error) {
-    const previous = previousSecret();
-    if (!previous) throw error;
-    try {
-      return openWith(legacyKey(previous), raw);
-    } catch {
-      throw error;
-    }
-  }
-}
-
-/**
- * Macht `encrypt` rückgängig. Wirft bei falschem Secret, veränderten Daten oder einer fremden Zeile (Tag von GCM).
- * Jeder Wurf heisst: dieser Key ist nicht verwendbar, kein Versuch, einen Teil zu retten.
- */
-export function decrypt(blob: string, binding: KeyBinding): string {
-  return blob.startsWith(`${FORMAT_PREFIX}.`) ? decryptBound(blob, binding) : decryptLegacy(blob);
+  const raw = Buffer.from(payload ?? "", "base64url");
+  const decipher = createDecipheriv(ALGORITHM, deriveKey(secret), raw.subarray(0, IV_LENGTH));
+  decipher.setAuthTag(raw.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH));
+  decipher.setAAD(additionalData(binding));
+  return Buffer.concat([decipher.update(raw.subarray(IV_LENGTH + TAG_LENGTH)), decipher.final()]).toString("utf8");
 }

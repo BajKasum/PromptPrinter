@@ -19,7 +19,7 @@ const USER_B = "22222222-2222-4222-8222-222222222222";
 const BINDING = { userId: USER_A, provider: "anthropic" };
 const ROW_A = { user_id: USER_A, provider: "anthropic" };
 
-/** Das alte Format, eingefroren: so stehen Werte aus der Zeit vor `pp2.` in der Tabelle. */
+/** Ein Wert ohne `pp2.`, von Hand gebaut (scrypt, festes Salz, ohne Bindung). Weder App noch Skript öffnen ihn. */
 function legacyBlob(secret: string, plaintext: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", scryptSync(secret, "promptprinter-byok", 32), iv);
@@ -52,11 +52,11 @@ describe("Verschlüsselung des Skripts ist die der App", () => {
     expect(encrypt("x", BINDING).split(".")[1]).toBe(keyId(NEW));
   });
 
-  it("beide lesen das alte Format", () => {
+  it("keins von beiden öffnet einen Wert ohne pp2-Präfix, auch nicht unter seinem eigenen Secret", () => {
     useSecrets(OLD);
     const blob = legacyBlob(OLD, "sk-alt");
-    expect(decrypt(blob, BINDING)).toBe("sk-alt");
-    expect(decryptWith(OLD, blob, ROW_A)).toBe("sk-alt");
+    expect(() => decrypt(blob, BINDING)).toThrow();
+    expect(decryptWith(OLD, blob, ROW_A)).toBeNull();
   });
 
   it("beide binden an dieselbe Zeile: was das Skript für A schreibt, öffnet die App nicht für B", () => {
@@ -94,23 +94,13 @@ describe("classify", () => {
     });
   });
 
-  it("open: altes Format unter dem aktuellen Secret, auch ohne PREVIOUS", () => {
-    expect(classify(row(legacyBlob(NEW, "k")), { current: NEW, previous: "" })).toEqual({
-      state: "open",
-      plaintext: "k",
-    });
-  });
-
-  it("open: altes Format unter dem alten Secret", () => {
-    expect(classify(row(legacyBlob(OLD, "k")), { current: NEW, previous: OLD })).toEqual({
-      state: "open",
-      plaintext: "k",
-    });
-  });
-
   it("unreadable: keins von beiden öffnet sie", () => {
     expect(classify(row(encryptWith(newSecret(), "k", ROW_A)), { current: NEW, previous: OLD }).state).toBe("unreadable");
-    expect(classify(row(legacyBlob(newSecret(), "k")), { current: NEW, previous: OLD }).state).toBe("unreadable");
+  });
+
+  it("unreadable: ein Wert ohne pp2-Präfix, unter dem aktuellen wie unter dem alten Secret", () => {
+    expect(classify(row(legacyBlob(NEW, "k")), { current: NEW, previous: "" }).state).toBe("unreadable");
+    expect(classify(row(legacyBlob(OLD, "k")), { current: NEW, previous: OLD }).state).toBe("unreadable");
   });
 
   it("unreadable: ein Chiffretext aus der Zeile eines anderen Kontos", () => {
@@ -173,10 +163,12 @@ const rowOf = (id: string, user_id: string, encrypted_key: string): Row => ({
   encrypted_key,
 });
 
+const USER_C = "33333333-3333-4333-8333-333333333333";
+
 const seed = (): Row[] => [
-  rowOf("a", USER_A, legacyBlob(OLD, "key-a")),
+  rowOf("a", USER_A, encryptWith(OLD, "key-a", ROW_A)),
   rowOf("b", USER_B, encryptWith(NEW, "key-b", { user_id: USER_B, provider: "anthropic" })),
-  rowOf("c", "33333333-3333-4333-8333-333333333333", legacyBlob(OLD, "key-c")),
+  rowOf("c", USER_C, encryptWith(OLD, "key-c", { user_id: USER_C, provider: "anthropic" })),
 ];
 
 describe("run", () => {
@@ -195,7 +187,7 @@ describe("run", () => {
     expect(db.calls[0].url).toContain("select=id,user_id,provider,encrypted_key");
   });
 
-  it("--apply: hebt die offenen Zeilen auf das neue Format, und die App öffnet sie danach für ihre Zeile", async () => {
+  it("--apply: schlüsselt die offenen Zeilen um, und die App öffnet sie danach für ihre Zeile", async () => {
     const db = fakeDatabase(seed());
     const before = db.rows.find((r) => r.id === "b")!.encrypted_key;
     expect(await run({ ...options(db).opts, apply: true })).toBe(0);
@@ -210,17 +202,21 @@ describe("run", () => {
     }
   });
 
-  it("reiner Formatwechsel: ohne PREVIOUS, unter demselben Secret, ohne Verlust", async () => {
-    const db = fakeDatabase([rowOf("a", USER_A, legacyBlob(NEW, "key-a"))]);
-    const dry = options(db, { previous: undefined });
-    expect(await run({ ...dry.opts, apply: false })).toBe(1);
-    expect(dry.out.join("\n")).toContain("offen:              1");
+  it("ohne PREVIOUS eine reine Prüfung: Exit 0, wenn das aktuelle Secret jede Zeile öffnet", async () => {
+    const db = fakeDatabase([rowOf("b", USER_B, encryptWith(NEW, "key-b", { user_id: USER_B, provider: "anthropic" }))]);
+    const { opts, out } = options(db, { previous: undefined });
+    expect(await run({ ...opts, apply: false })).toBe(0);
+    expect(out.join("\n")).toContain("Fertig");
+  });
 
-    expect(await run({ ...options(db, { previous: "" }).opts, apply: true })).toBe(0);
-    useSecrets(NEW);
-    const row = db.rows[0];
-    expect(decrypt(row.encrypted_key, { userId: row.user_id, provider: row.provider })).toBe("key-a");
-    expect(await run({ ...options(db, { previous: "" }).opts, apply: false })).toBe(0);
+  it("ein Wert ohne pp2-Präfix: Exit 3 mit Zeilen-ID, auch mit --apply wird nichts geschrieben", async () => {
+    const legacy = rowOf("a", USER_A, legacyBlob(NEW, "key-a"));
+    const db = fakeDatabase([legacy]);
+    const { opts, out } = options(db, { previous: "" });
+    expect(await run({ ...opts, apply: true })).toBe(3);
+    expect(out.join("\n")).toContain("Zeilen-IDs: a");
+    expect(db.rows[0]).toEqual(legacy);
+    expect(db.calls.every((c) => c.method === "GET")).toBe(true);
   });
 
   it("nach dem Umschlüsseln sind zwei getauschte Werte unlesbar: Exit 3, nichts wird überschrieben", async () => {
