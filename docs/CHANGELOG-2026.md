@@ -11,6 +11,18 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-03: Search Console eingerichtet, die Seite ist im Index (Branch `docs/search-console-246`, Issues #246, #249)
+
+Kasum hat sich im Browser-Pane angemeldet, den Rest hat Claude dort erledigt. Die Zahlen im Einzelnen stehen in #246.
+
+- **Property:** Domain-Property `promptprinter.app`. Sie deckt http, https und www ab und ist über einen TXT-Eintrag `google-site-verification=…` auf der Hauptdomain in Vercel DNS bestätigt. Der Eintrag wurde mit Kasums Ja angelegt und bei `ns1.vercel-dns.com`, `8.8.8.8` und `1.1.1.1` zurückgelesen. `GOOGLE_SITE_VERIFICATION` bleibt leer, ein Redeploy war nicht nötig. Den Eintrag nicht löschen (steht in `docs/SETUP.md`).
+- **Sitemap:** eingereicht, Status "Erfolgreich", 34 erkannte Seiten.
+- **Index:** `/`, `/pricing`, `/docs` und `/docs/chat-mit-finn` sind indexiert. Die Suchen vom 31.10., auf denen #246 beruhte, lagen also falsch, das Suchwerkzeug war nicht Google. `/vergleich` war Google unbekannt, `/aufgaben` und `/skill` nicht indexiert: für alle drei die Indexierung beantragt. Für `/docs/chat-mit-finn` ebenfalls, weil Google noch die Fassung vom 09.08. hält, deren Canonical auf die Startseite zeigte; live stimmt sie seit dem SEO-Durchgang vom 01.10.
+- **Bing:** Kasum hat sich mit Google angemeldet und Bing den Lesezugriff auf die Search Console erteilt (`webmasters.readonly`). Importiert wurde nur `promptprinter.app`, das ebenfalls gefundene `kazuvate.ch` nicht. Ohne Meta-Tag, `BING_SITE_VERIFICATION` bleibt leer. Sitemap eingereicht ("Processing"), die Startseite ist "Indexed successfully". Der einzige Hinweis von Bing, "Alt attribute for images is missing", betrifft die drei Finn-Bilder mit `alt=""`: Sie sind Schmuck neben Text und bleiben so (WCAG). Im fertigen DOM hat jedes der acht Bilder ein `alt`.
+- **Offen:** Die Berichte "Seiten" und "Leistung" verarbeitet Google noch (ein bis zwei Tage), damit ist das vierte Kriterium von #246 offen. Die Anmeldung im Browser-Pane bleibt bestehen, eine spätere Sitzung kann den Bericht dort lesen.
+
+**#249:** Der About-Text von `BajKasum/PromptPrinter` trägt jetzt den Standardsatz wörtlich ("what's" statt "whats"). Future Tools hat Kasum am 2026-11-03 selbst eingereicht, mit dem Text aus dem Issue; live ist der Eintrag erst nach der Prüfung durch die Seite. AlternativeTo braucht sein eigenes Konto und steht aus.
+
 ## 2026-11-03: Die Leseseite des BYOK-Formats ohne `pp2.` ist ausgebaut (Branch `fix/byok-altformat-weg`, Kasums Ja)
 
 Am 2026-11-02 blieb sie bewusst stehen (#239): nur dort galt die Bindung an die Zeile nicht. Vor dem Ausbau lesend gezählt: `user_api_keys` in der Produktion hat 0 Zeilen, also auch 0 im alten Format. Neu verschlüsselt wurde nichts.

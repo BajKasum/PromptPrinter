@@ -101,7 +101,10 @@ dann im Stub-Modus und liefert eine Demo-Antwort statt einer echten.
 
 Optional, aber für die Suche nützlich: `GOOGLE_SITE_VERIFICATION` und
 `BING_SITE_VERIFICATION` (Inhaber-Nachweis für Search Console und Bing, siehe
-`.env.example`).
+`.env.example`). In Produktion bleiben beide leer: `promptprinter.app` ist in der
+Search Console eine Domain-Property, bestätigt über einen TXT-Eintrag
+`google-site-verification=…` auf der Hauptdomain in Vercel DNS. Diesen Eintrag
+nicht löschen, sonst verliert die Property ihre Bestätigung.
 
 ### BYOK-Secret rotieren
 
