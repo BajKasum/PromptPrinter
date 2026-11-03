@@ -92,7 +92,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   K2 Alarm-Webhook (bewusst nicht eingerichtet), K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
   signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
   eingerichtet, ein echtes Ereignis steht aus.
-- **Wartet auf Kasum:** `RESEND_API_KEY` in Vercel für das Kontaktformular (docs/SETUP.md, "Kontaktformular"); Entscheid zum Fehler-Tracker; Search Console und Bing (#246); zwei Verzeichnis-Einträge (#249); **ab Februar 2027** die Search-Console-Zahlen der `/aufgaben`-Seiten ins Changelog;
+- **Wartet auf Kasum:** `RESEND_API_KEY` in Vercel für das Kontaktformular (docs/SETUP.md, "Kontaktformular"); Entscheid zum Fehler-Tracker; der Eintrag bei AlternativeTo (#249, braucht sein Konto; Future Tools am 2026-11-03 eingereicht); **ab Februar 2027** die Search-Console-Zahlen der `/aufgaben`-Seiten ins Changelog;
   **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
   Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
@@ -102,7 +102,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
   Empfänger (Fehler-Tracker); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
-- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche). **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste),
+- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche). **Suche:** Search Console (Domain-Property, TXT-Eintrag in Vercel DNS) und Bing seit 2026-11-03, beide mit Sitemap, die Startseite ist in beiden indexiert; offen der Bericht "Seiten" (#246). **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste),
   Obergrenzen in `tests/guards/file-size.test.ts`.
 
 ## Was ist PromptPrinter?
