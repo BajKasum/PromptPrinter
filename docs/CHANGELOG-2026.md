@@ -11,6 +11,18 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-06: 21 von 34 Seiten im Google-Index, #246 erledigt (Branch `docs/search-console-246-abschluss`)
+
+Kasum hat sich im Browser-Pane neu bei Google angemeldet (die Anmeldung vom 03.11. war abgelaufen), den Rest hat Claude dort gelesen. Die Liste je Seite steht in #246.
+
+- **Bericht "Seiten":** meldet drei Tage nach dem Einrichten weiter "Die Daten werden verarbeitet". Deshalb jede der 34 Adressen der Sitemap einzeln in der URL-Prüfung (Stand des Index, kein Live-Test).
+- **Ergebnis:** 21 indexiert, darunter `/vergleich`, `/skill` und `/docs/chat-mit-finn`, für die am 03.11. die Indexierung beantragt war. Nicht indexiert: `/aufgaben` "Gecrawlt – zurzeit nicht indexiert", `/docs/tastenkuerzel` und `/nutzungsrichtlinie` "Gefunden – zurzeit nicht indexiert", zehn weitere "URL ist Google nicht bekannt" (Google hat die Sitemap erst am 05.11. gelesen).
+- **Kein technischer Grund:** alle 13 antworten als Googlebot mit 200, ohne `noindex` und `X-Robots-Tag`, mit eigener Canonical, `robots.txt` erlaubt sie. Keine Indexierung neu beantragt.
+- **Leistung, 02. bis 04.11.:** 2 Impressionen, 0 Klicks, mittlere Position 4, Suchanfragen anonymisiert.
+- **Bing:** Sitemap "Success", 34 Adressen erkannt, 0 Fehler, 0 Warnungen.
+
+---
+
 ## 2026-11-03: Search Console eingerichtet, die Seite ist im Index (Branch `docs/search-console-246`, Issues #246, #249)
 
 Kasum hat sich im Browser-Pane angemeldet, den Rest hat Claude dort erledigt. Die Zahlen im Einzelnen stehen in #246.
