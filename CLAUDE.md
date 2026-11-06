@@ -102,7 +102,7 @@ Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
   Empfänger (Fehler-Tracker); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
-- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche). **Suche:** Search Console (Domain-Property, TXT-Eintrag in Vercel DNS) und Bing seit 2026-11-03, beide mit Sitemap, die Startseite ist in beiden indexiert; offen der Bericht "Seiten" (#246). **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste),
+- **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche). **Suche:** Search Console (Domain-Property, TXT-Eintrag in Vercel DNS) und Bing seit 2026-11-03, beide mit Sitemap ("Erfolgreich", 34 Seiten); am 2026-11-06 waren 21 der 34 bei Google indexiert, keine aus technischem Grund ausgeschlossen (#246). **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste),
   Obergrenzen in `tests/guards/file-size.test.ts`.
 
 ## Was ist PromptPrinter?
