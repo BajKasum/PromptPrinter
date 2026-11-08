@@ -8,6 +8,7 @@ import { Logo } from "@/shared/brand/logo";
 import { Button } from "@/shared/ui/button";
 import { MenuToggleIcon } from "@/shared/ui/menu-toggle-icon";
 import { NavWave } from "@/shared/ui/nav-wave";
+import { HeaderWater } from "@/features/marketing/components/header-water";
 import { cn } from "@/shared/lib/utils";
 
 // Alle Punkte stehen direkt im Kopf, ohne Untermenü und ohne Gruppe "Für
@@ -56,21 +57,13 @@ export function Navbar() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  // Der Kopf scrollt mit der Seite weg. Das Blatt darunter ist fest
-  // positioniert und beginnt bei 64 px: damit es direkt unter der Leiste
-  // ansetzt, geht die Seite beim Öffnen nach oben, wo der Knopf ohnehin steht.
-  function toggleMenu() {
-    if (!open && window.scrollY > 0) window.scrollTo({ top: 0 });
-    setOpen((v) => !v);
-  }
-
   return (
-    // `dark` setzt die Tokens nur für den Kopf auf die Dunkel-Werte: Schrift,
-    // Knöpfe und Akzent sind dort schon für dunklen Grund kalibriert, der Rest
-    // der öffentlichen Seite bleibt hell. Absolut statt fest: der Kopf liegt
-    // über dem oberen Rand der Seite und scrollt mit ihr weg, ohne dass Seiten
-    // ihren Abstand nach oben ändern müssen.
-    <header className="dark absolute inset-x-0 top-0 z-50">
+    // Fest oben, und oben wie beim Scrollen gleich: keine Pille, keine
+    // auftauchende Linie, kein Abdunkeln. Die Fläche ist eine Spur dunkler als
+    // der Hero und leicht durchscheinend mit Blur, weil der Inhalt darunter
+    // durchläuft (globals.css, .site-header-surface). Die Seiten tragen ihren
+    // Abstand nach oben für diese 64 px selbst.
+    <header className="fixed inset-x-0 top-0 z-50">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-200 focus:rounded-lg focus:border focus:border-ring focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
@@ -78,79 +71,85 @@ export function Navbar() {
         Zum Inhalt springen
       </a>
 
-      {/* Das Wasser: dunkleres Blau als der Hero, ein ruhiges Licht darin und
-          eine weiche Wellenkante zum Hero hin (globals.css, .site-header-*). */}
-      <div aria-hidden className="site-header-water pointer-events-none">
-        <div className="site-header-wave" />
-      </div>
+      <div
+        aria-hidden
+        className="site-header-surface pointer-events-none absolute inset-0"
+      />
+      <HeaderWater />
 
       <nav
         aria-label="Hauptnavigation"
-        className="relative mx-auto flex h-16 w-full max-w-container items-center justify-between gap-4 px-6 md:px-8"
+        className="relative mx-auto flex h-16 w-full max-w-container items-center justify-between gap-4 px-6 md:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]"
       >
-        <div className="flex items-center gap-8">
-          <Link
-            href="/"
-            onClick={() => setOpen(false)}
-            className="flex items-center transition-opacity hover:opacity-80"
-          >
-            <Logo accentWordmark />
-          </Link>
-          {/* Jeder Link trägt die Wasser-Pille und die Welle (globals.css,
+        {/* Drei Spalten ab lg: Logo links, die fünf Punkte wirklich mittig,
+            die Knöpfe rechts. Die äusseren Spalten sind gleich breit, damit
+            die Mitte die Mitte der Seite ist und nicht die des Restplatzes. */}
+        <Link
+          href="/"
+          onClick={() => setOpen(false)}
+          className="flex items-center justify-self-start transition-opacity hover:opacity-80"
+        >
+          <Logo accentWordmark />
+        </Link>
+        {/* Jeder Link trägt die Wasser-Pille und die Welle (globals.css,
               .nav-pill / .nav-wave), die aktuelle Seite behält beide. */}
-          <div className="hidden items-center gap-1 lg:flex">
-            {MARKETING_NAV.map((item) => {
-              const active = item.route !== null && pathname === item.route;
-              // Der Anker ist bewusst ein natives <a>, die Seiten sind <Link>.
-              const Tag = item.route === null ? "a" : Link;
-              return (
-                <Tag
-                  key={item.label}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "group focus-glow relative isolate rounded-full px-3.5 py-2 text-[13.5px] transition-colors duration-200",
-                    active
-                      ? "font-medium text-accent-text"
-                      : "text-foreground/85 hover:text-accent-text"
-                  )}
-                >
-                  <span
-                    aria-hidden
-                    data-active={active}
-                    className="nav-pill absolute inset-0 -z-10 rounded-full bg-accent/15"
-                  />
-                  {item.label}
-                  <NavWave active={active} />
-                </Tag>
-              );
-            })}
-          </div>
+        <div className="hidden items-center gap-2 lg:flex xl:gap-4">
+          {MARKETING_NAV.map((item) => {
+            const active = item.route !== null && pathname === item.route;
+            // Der Anker ist bewusst ein natives <a>, die Seiten sind <Link>.
+            const Tag = item.route === null ? "a" : Link;
+            return (
+              <Tag
+                key={item.label}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "group focus-glow relative isolate rounded-full px-4 py-2 text-[14px] transition-colors duration-200",
+                  active
+                    ? "font-medium text-accent-text"
+                    : "text-secondary hover:text-accent-text",
+                )}
+              >
+                <span
+                  aria-hidden
+                  data-active={active}
+                  className="nav-pill absolute inset-0 -z-10 rounded-full bg-accent-subtle"
+                />
+                {item.label}
+                <NavWave active={active} />
+              </Tag>
+            );
+          })}
         </div>
 
         {/* Kein Themen-Schalter: die öffentliche Seite bleibt hell, die Wahl
             liegt in den Einstellungen der App. */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-self-end">
           <Button
             asChild
             variant="ghost"
             size="sm"
-            className="hidden border-foreground/25 hover:border-foreground/40 lg:inline-flex"
+            className="hidden lg:inline-flex"
           >
             <Link href="/login">Einloggen</Link>
           </Button>
-          <Button asChild size="sm" variant="primary" className="hidden lg:inline-flex">
+          <Button
+            asChild
+            size="sm"
+            variant="primary"
+            className="hidden lg:inline-flex"
+          >
             <Link href="/signup">Jetzt starten</Link>
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            onClick={toggleMenu}
+            onClick={() => setOpen((v) => !v)}
             aria-label={open ? "Menü schließen" : "Menü öffnen"}
             aria-expanded={open}
             aria-controls="mobile-menu"
-            className="h-9 w-9 border-foreground/25 lg:hidden"
+            className="h-9 w-9 lg:hidden"
           >
             <MenuToggleIcon open={open} className="size-5" duration={300} />
           </Button>
@@ -162,8 +161,8 @@ export function Navbar() {
       <div
         id="mobile-menu"
         className={cn(
-          "fixed inset-x-0 bottom-0 top-16 z-40 bg-header-deep lg:hidden",
-          open ? "block" : "hidden"
+          "fixed inset-x-0 bottom-0 top-16 z-40 bg-background lg:hidden",
+          open ? "block" : "hidden",
         )}
       >
         <div className="flex h-full flex-col justify-between gap-y-2 p-6 motion-safe:animate-menu-in">
@@ -184,7 +183,7 @@ export function Navbar() {
                     "group flex items-center rounded-lg px-3 py-3 text-base transition-colors duration-200",
                     active
                       ? "bg-accent-subtle font-medium text-accent-text"
-                      : "text-foreground/85 hover:bg-accent-subtle hover:text-accent-text"
+                      : "text-foreground/85 hover:bg-accent-subtle hover:text-accent-text",
                   )}
                 >
                   {item.label}
@@ -193,7 +192,9 @@ export function Navbar() {
                     strokeWidth={1.8}
                     className={cn(
                       "ml-auto h-4 w-4 text-accent-text transition-opacity duration-200",
-                      active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      active
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100",
                     )}
                   />
                 </Tag>
@@ -201,7 +202,7 @@ export function Navbar() {
             })}
           </nav>
           <div className="flex flex-col gap-2">
-            <Button asChild variant="ghost" className="w-full border-foreground/25">
+            <Button asChild variant="ghost" className="w-full">
               <Link href="/login" onClick={() => setOpen(false)}>
                 Einloggen
               </Link>

@@ -1,9 +1,8 @@
 import { cn } from "@/shared/lib/utils";
 
 // Ein nachgebautes Terminal-Fenster für /terminal und /mcp: echter Text statt Bildschirmfoto, damit es
-// mit der Seite skaliert, lesbar bleibt und sich ändert, wenn sich ein Befehl ändert. Es trägt dasselbe
-// dunklere Wasser wie der Kopf der Seite (Token --header-deep), und `dark` setzt die Schrift-Tokens darin
-// auf die Werte für dunklen Grund.
+// mit der Seite skaliert, lesbar bleibt und sich ändert, wenn sich ein Befehl ändert. Sein Grund ist
+// tiefes Wasser (Token --header-deep), und `dark` setzt die Schrift-Tokens darin auf die Werte für dunklen Grund.
 
 export type TerminalLine =
   | { kind: "shell"; text: string }
