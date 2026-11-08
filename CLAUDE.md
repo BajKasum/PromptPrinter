@@ -411,7 +411,7 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau (Chats / Projekte) mit demselben Pillen-Umschalter (`NavSwitcher`) wie die echte Sidebar. Einziges „Schau es dir an"-Element. | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir." | `celebrating` |
 | `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
-| `navbar.tsx` | Scrollt mit weg (`absolute`), ein dunkleres Wasserband (`--header-deep`/`--header-shallow`, `.dark` nur im Kopf) mit Wellenkante. Fünf Links ohne Untermenü (`MARKETING_NAV`): Funktionen, Preise, Skill, CLI (`/terminal`), MCP. | kein Finn |
+| `navbar.tsx` | Fest oben und beim Scrollen unverändert (keine Pille, keine Linie): helle, leicht durchscheinende Fläche mit Blur (`--header-surface`), darunter eine Wasserkante aus drei Lagen (`header-water.tsx`, unter reduced-motion still). Raster `1fr auto 1fr`: Logo, fünf Links mittig ohne Untermenü (`MARKETING_NAV`: Funktionen, Preise, Skill, CLI `/terminal`, MCP), Knöpfe. | kein Finn |
 
 **`/pricing`:** `PageHeader` (nur Headline) → `PricingGrid` (Finns auf den Plan-Karten) →
 `FAQ` (zwei Fragen) → `Footer`.
