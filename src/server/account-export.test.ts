@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ZAI_CONSENT_VERSION } from "@/server/consent";
 
 const captureError = vi.fn();
 vi.mock("@/shared/lib/observability", () => ({
@@ -255,13 +256,13 @@ describe("buildAccountSection", () => {
         id: USER,
         app_metadata: {
           provider: "email",
-          zai_consent: { version: "2026-10-17", at: "2026-10-17T10:00:00.000Z" },
+          zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T10:00:00.000Z" },
         },
       },
       null
     );
 
-    expect(section.consents).toEqual({ zaiTransfer: { version: "2026-10-17", at: "2026-10-17T10:00:00.000Z" } });
+    expect(section.consents).toEqual({ zaiTransfer: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T10:00:00.000Z" } });
     expect(JSON.stringify(section)).not.toContain("provider");
   });
 

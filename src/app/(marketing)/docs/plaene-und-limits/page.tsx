@@ -24,13 +24,13 @@ export default function Page() {
     >
       <h2>Was enthält der Free-Plan?</h2>
       <p>
-        Free hat <strong>keinen eigenen Zugang zu meinem Modell</strong>. Du
-        brauchst zwingend einen{" "}
+        Auf Free gehen die <strong>ersten drei Prompts auf mich</strong>, ganz
+        ohne Key. Gezählt wird der fertige Prompt, nicht meine Rückfrage davor.
+        Danach brauchst du einen{" "}
         <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>{" "}
         (Anthropic, OpenAI, Gemini oder ein anderer OpenAI-kompatibler
-        Anbieter), um mit mir zu chatten, dafür läuft
-        dann alles über deinen eigenen Zugang und kostet mich nichts, also
-        dich auch nichts extra. Wie du einen kostenlosen Gemini-Key bekommst,
+        Anbieter), dafür läuft dann alles über deinen eigenen Zugang und kostet
+        mich nichts, also dich auch nichts extra. Wie du einen kostenlosen Gemini-Key bekommst,
         steht unter{" "}
         <Link href="/docs/eigene-api-keys">Eigene API-Keys</Link>.
       </p>
@@ -39,8 +39,8 @@ export default function Page() {
           <strong>{free.projects} Projekte</strong>
         </li>
         <li>
-          <strong>Eigener API-Key erforderlich</strong>, mit ihm kein
-          Nachrichtenlimit
+          <strong>3 Prompts gratis</strong>, danach{" "}
+          <strong>eigener API-Key</strong>, mit ihm kein Nachrichtenlimit
         </li>
         <li>Kopieren und Markdown-Export</li>
       </ul>
@@ -126,7 +126,7 @@ export default function Page() {
         <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>, entfällt das
         monatliche Nachrichtenlimit vollständig, in jedem Plan. Du zahlst die
         Modellnutzung dann direkt bei deinem Anbieter. Auf Free ist das kein
-        Bonus, sondern die Voraussetzung, ohne Key läuft dort kein Chat.
+        Bonus, sondern nach den drei Gratis-Prompts die Voraussetzung.
       </p>
 
       <h2>Gibt es ein Limit pro Stunde?</h2>

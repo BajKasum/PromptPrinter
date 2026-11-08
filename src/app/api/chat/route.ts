@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   const allowance = await reserveAllowance({ req, supabase, userId, appMetadata, m });
   if (allowance instanceof Response) return allowance;
-  const { override, releaseReservations } = allowance;
+  const { override, freeTrial, releaseReservations } = allowance;
 
   const system = await buildSystemInstruction({ supabase, userId, input, releaseReservations, m });
   if (system instanceof Response) return system;
@@ -70,6 +70,7 @@ export async function POST(req: Request) {
     uploads,
     opened,
     override,
+    freeTrial,
     releaseReservations,
     systemInstruction,
     verifiedProjectId,

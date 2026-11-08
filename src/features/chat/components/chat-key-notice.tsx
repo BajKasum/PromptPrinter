@@ -18,7 +18,7 @@ import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 // sondern erklärt den Weg zu einem kostenlosen Gemini-Key und nimmt den Key
 // gleich hier an: ein neuer Nutzer verliert den Chat nicht aus den Augen, und
 // die getippte Idee wartet im Eingabefeld, bis der Key steht.
-export function ChatKeyNotice({ onConnected }: { onConnected?: () => void }) {
+export function ChatKeyNotice({ onConnected, reason = null }: { onConnected?: () => void; reason?: string | null }) {
   const t = useT();
   return (
     <section
@@ -37,6 +37,7 @@ export function ChatKeyNotice({ onConnected }: { onConnected?: () => void }) {
           >
             {t.chat.keyNoticeTitle}
           </p>
+          {reason && <p className="mt-1 text-[13px] leading-relaxed text-foreground">{reason}</p>}
           <p className="mt-1 text-[13px] leading-relaxed text-secondary">{PRO_AVAILABLE ? t.chat.keyNoticeBody : t.chat.keyNoticeBodySoon}</p>
 
           <div className="mt-3">

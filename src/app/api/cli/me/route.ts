@@ -10,6 +10,7 @@ import { requestT } from "@/server/i18n";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
 import { checkCliSession } from "@/server/cli-login/sessions";
 import { requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
+import { freePromptsLeft as freePromptsLeftOf } from "@/server/free-trial";
 import { captureError } from "@/shared/lib/observability";
 
 export const runtime = "nodejs";
@@ -50,7 +51,10 @@ export async function GET(req: Request) {
     ]);
     const { plan, isAdmin } = resolvePlan(orThrow(profile, "profiles").data);
     const hasOwnKey = (orThrow(keys, "user_api_keys").data?.length ?? 0) > 0;
-    const needsOwnKey = requiresOwnKey(plan, isAdmin, hasOwnKey);
+    // Free ohne Key chattet im Gratis-Rahmen, solange er reicht (server/free-trial.ts).
+    const onFreeTrial = requiresOwnKey(plan, isAdmin, hasOwnKey);
+    const freePromptsLeft = onFreeTrial ? ((await freePromptsLeftOf(user.id)) ?? 0) : null;
+    const needsOwnKey = onFreeTrial && freePromptsLeft === 0;
 
     return NextResponse.json(
       {
@@ -58,6 +62,7 @@ export async function GET(req: Request) {
         plan,
         hasOwnKey,
         needsOwnKey,
+        ...(freePromptsLeft === null ? {} : { freePromptsLeft }),
         // Dieselbe Bedingung wie im Chat (model-call.ts): nur wer wirklich auf Z.ai läuft, muss zustimmen.
         needsConsent:
           !hasOwnKey && !needsOwnKey && llmConfig()?.provider === "zai" && !hasZaiConsent(user.app_metadata),

@@ -10,8 +10,8 @@ import type { SupabaseClient } from "./gate";
 // (releaseReservations). Die Reihenfolge ist Teil des Vertrags: Kontingent, dann Stundengrenze,
 // dann Budget (letzte Prüfung vor dem Modell), dann Produktionssperre. route.exits.test.ts hält sie fest.
 
-/** Der eigene Key des Nutzers (BYOK) oder null, dazu die Rückgabe aller Reservierungen dieses Zugs. */
-export type Allowance = Pick<ModelCallAllowance, "override" | "releaseReservations">;
+/** Der eigene Key des Nutzers (BYOK) oder null, der Platz im Gratis-Rahmen oder null, dazu die Rückgabe aller Reservierungen. */
+export type Allowance = Pick<ModelCallAllowance, "override" | "freeTrial" | "releaseReservations">;
 
 export async function reserveAllowance(args: {
   req: Request;
@@ -37,5 +37,7 @@ export async function reserveAllowance(args: {
       unavailable: m.chatUnavailable,
     },
     stubOutsideProduction: true,
+    // Free ohne eigenen Key bekommt hier, und nur hier, den Gratis-Rahmen (server/free-trial.ts).
+    freeTrial: { req, budget: m.freeTrialBudget },
   });
 }

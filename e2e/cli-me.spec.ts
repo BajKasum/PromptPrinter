@@ -21,7 +21,9 @@ test.describe("Konto aus Sicht des Terminals", () => {
       email: account.email,
       plan: "free",
       hasOwnKey: false,
-      needsOwnKey: true,
+      // Im Gratis-Rahmen (server/free-trial.ts) braucht ein frisches Konto noch keinen Key.
+      needsOwnKey: false,
+      freePromptsLeft: 3,
       needsConsent: false,
     });
 

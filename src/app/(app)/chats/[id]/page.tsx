@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { createClient } from "@/server/supabase/server";
-import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
+import { getFreePromptsLeft, getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
@@ -44,7 +44,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [initialMessages, profile, savedPromptRowsResult, needsKey] = await Promise.all([
+  const [initialMessages, profile, savedPromptRowsResult, needsKey, freePromptsLeft] = await Promise.all([
     // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
     // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
     loadConversationMessages(supabase, user.id, id),
@@ -58,6 +58,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
       .order("created_at", { ascending: false })
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
     getNeedsOwnKey(),
+    getFreePromptsLeft(),
   ]);
   const { data: savedPromptRows } = orThrow(savedPromptRowsResult, "saved_prompts");
 
@@ -89,6 +90,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
         savedPrompts={savedPrompts}
         name={name}
         needsKey={needsKey}
+        freePromptsLeft={freePromptsLeft}
       />
     </div>
   );

@@ -182,6 +182,10 @@ function presentFailure(
   // Wege, die gehen. consentRequired: Pro läuft auf Z.ai (Singapur) und braucht vorher die Zustimmung des Kontos
   // (server/consent.ts); der Hinweis nimmt sie entgegen und schickt die wartende Nachricht gleich ab.
   if (outcome.failure === "byokRequired") return { kind: "keyRequired" } as const;
+  // Gratis-Rahmen für heute leer: derselbe Key-Weg, dazu der Satz, dass es morgen weitergeht.
+  if (outcome.failure === "freeTrialBudget") {
+    return { kind: "keyRequired", reason: error instanceof Error ? error.message : undefined } as const;
+  }
   if (outcome.failure === "consentRequired") return { kind: "consentRequired" } as const;
   return {
     kind: "error",

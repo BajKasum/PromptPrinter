@@ -10,6 +10,7 @@ import type { createClient } from "@/server/supabase/server";
 import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
+import { freePromptsLeft, reserveFreeTrialTurn, type FreeTrialSlot } from "@/server/free-trial";
 import { problem } from "@/server/http/api-problem";
 import { DatabaseReadError, orThrow } from "@/server/supabase/query";
 import { captureError } from "@/shared/lib/observability";
@@ -37,6 +38,8 @@ export type ModelCallAllowance = {
   override: Exclude<Awaited<ReturnType<typeof getUserOverride>>, "unreadable">;
   plan: ReturnType<typeof resolvePlan>["plan"];
   isAdmin: boolean;
+  /** Der Zug läuft im Gratis-Rahmen (server/free-trial.ts), sonst null. */
+  freeTrial: FreeTrialSlot | null;
   /** Gibt jede Reservierung dieses Zugs zurück. Aufzurufen, sobald der Zug nichts gekostet hat. */
   releaseReservations: () => Promise<void>;
 };
@@ -61,6 +64,11 @@ export type ModelCallOptions = {
    * Absage. Die Analyse stellt das aus, weil eine erfundene Faktenliste schlimmer ist als keine.
    */
   stubOutsideProduction: boolean;
+  /**
+   * Nur der Chat: ein Free-Konto ohne eigenen Key darf im Gratis-Rahmen auf den Server-Key (server/free-trial.ts).
+   * `budget` ist die Absage, wenn der Rahmen heute aufgebraucht ist. Ohne die Option bleibt Free beim eigenen Key.
+   */
+  freeTrial?: { req: Request; budget: string };
 };
 
 export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCallAllowance | Response> {
@@ -92,9 +100,11 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     reservations.length = 0;
   };
 
+  let freeTrial: FreeTrialSlot | null = null;
   if (!override) {
-    const refused = await reserveMonthlySlot({ ...opts, plan, limit: limits.chatMessages, now, monthStart, reservations });
-    if (refused) return refused;
+    const slot = await reserveMonthlySlot({ ...opts, plan, limit: limits.chatMessages, now, monthStart, reservations });
+    if (slot instanceof Response) return slot;
+    freeTrial = slot;
   }
 
   // Stundenlimit, Admins ausgenommen. Anonyme Aufrufer kommen nie bis hierher.
@@ -132,7 +142,7 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     await releaseReservations();
     return problem(503, texts.notConfigured);
   }
-  return { override, plan, isAdmin, releaseReservations };
+  return { override, plan, isAdmin, freeTrial, releaseReservations };
 }
 
 // Eine Zeile je Zug: completeTurn schreibt zu jeder Nutzer-Nachricht genau eine Antwort, die
@@ -167,19 +177,22 @@ async function countAssistantMessagesThisMonth(
   }
 }
 
-/** Zugang zum Server-Key und Platz im Monatskontingent: die Absage als Antwort, sonst null. */
+/** Zugang zum Server-Key und Platz im Monatskontingent: die Absage als Antwort, ein Platz im Gratis-Rahmen, sonst null. */
 async function reserveMonthlySlot(args: ModelCallOptions & {
   plan: string;
   limit: number;
   now: Date;
   monthStart: string;
   reservations: (() => Promise<void>)[];
-}): Promise<Response | null> {
+}): Promise<Response | FreeTrialSlot | null> {
   const { supabase, userId, appMetadata, m, texts, plan, limit, now, monthStart, reservations } = args;
   // Free hat bewusst genau null Antworten (plans.ts): der Plan hat keinen Zugang zum Server-Key,
   // zum Chatten braucht Free einen eigenen Key. Das ist etwas anderes als "Limit erreicht" (da
   // gab es ein Kontingent und es ist aufgebraucht) und bekommt eine eigene Meldung. Es gibt
   // nichts zu reservieren, und kein Grund, bei jedem Versuch einen Redis-Aufruf dafür zu zahlen.
+  if (limit <= 0 && args.freeTrial && plan === "free") {
+    return reserveFreeTrialSlot(args, args.freeTrial, reservations);
+  }
   if (limit <= 0) {
     return problem(
       403,
@@ -225,6 +238,32 @@ async function reserveMonthlySlot(args: ModelCallOptions & {
   }
   if (reservation) reservations.push(reservation.release);
   return null;
+}
+
+/**
+ * Der Gratis-Rahmen statt des Monatskontingents. Erst ob überhaupt noch etwas übrig ist (sonst zählt der Key-Weg, nicht
+ * die Einwilligung), dann die Einwilligung wie beim Kontingent: bis dahin kostet eine Ablehnung nichts. Aufgebraucht heisst derselbe Weg wie ohne Rahmen (byokRequired), ein leeres Tagesbudget bekommt eine
+ * eigene Art, damit der Chat sagt, dass es morgen wieder geht.
+ */
+async function reserveFreeTrialSlot(
+  args: ModelCallOptions & { plan: string },
+  freeTrial: NonNullable<ModelCallOptions["freeTrial"]>,
+  reservations: (() => Promise<void>)[]
+): Promise<Response | FreeTrialSlot> {
+  const { userId, appMetadata, m, plan } = args;
+  const byokRequired = (freeTrial: string) =>
+    problem(403, PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon, { kind: "byokRequired", plan, freeTrial });
+  const left = await freePromptsLeft(userId);
+  if (left === null) return byokRequired("unavailable");
+  if (left <= 0) return byokRequired("exhausted");
+  if (llmConfig()?.provider === "zai" && !hasZaiConsent(appMetadata)) {
+    return problem(403, m.consentRequired, { kind: "consentRequired" });
+  }
+  const slot = await reserveFreeTrialTurn(freeTrial.req, userId);
+  if (slot === "budget") return problem(403, freeTrial.budget, { kind: "freeTrialBudget", plan });
+  if (typeof slot === "string") return byokRequired(slot);
+  reservations.push(slot.release);
+  return slot;
 }
 
 async function reserveDailyBudget(

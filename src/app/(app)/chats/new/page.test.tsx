@@ -20,6 +20,7 @@ vi.mock("@/server/session", () => ({
   getSessionUser: async () => ({ id: "user-1", email: "anna@example.test" }),
   getSessionProfile: async () => ({ display_name: "Anna" }),
   getNeedsOwnKey: async () => false,
+  getFreePromptsLeft: async () => null,
 }));
 vi.mock("@/shared/motion/fade-in", () => ({
   FadeIn: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

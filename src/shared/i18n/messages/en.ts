@@ -114,16 +114,18 @@ export const en: Messages = {
     resultLabel: "Finn's latest reply",
     resultTitlePrompt: "Your prompt",
     resultTitleReply: "Finn's reply",
-    keyNoticeTitle: "Before we start, I need your own AI key.",
+    keyNoticeTitle: "From here on, I need your own AI key.",
     keyNoticeBody:
-      "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
+      "Your free prompts are used up, from now on I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
     keyNoticeBodySoon:
-      "On Free, I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way.",
+      "Your free prompts are used up, from now on I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way.",
     keyNoticeSettings: "Another provider? Go to settings",
     keyNoticeSeePro: "See Pro",
+    // Gratis-Rahmen (server/free-trial.ts)
+    freePromptsLeft: { one: "{count} free prompt left", other: "{count} free prompts left" },
     consentTitle: "Your messages go to Z.ai in Singapore",
     consentBody:
-      "On Pro, Z.ai answers your messages, an AI provider based in Singapore. There is no adequacy decision from the EU or Switzerland for Singapore and China, and we can't rule out processing in China. That's why I ask you once, explicitly. If you don't agree, you can use your own API key instead. You can withdraw your consent at any time in settings.",
+      "Without your own key, Z.ai answers your messages, an AI provider based in Singapore. There is no adequacy decision from the EU or Switzerland for Singapore and China, and we can't rule out processing in China. That's why I ask you once, explicitly. If you don't agree, you can use your own API key instead. You can withdraw your consent at any time in settings.",
     consentAccept: "I agree, send",
     consentOwnKey: "Use my own key",
     consentPrivacy: "Privacy",
@@ -821,6 +823,8 @@ export const en: Messages = {
     tooManyRequests: "Too many requests, please wait a moment and try again.",
     chatBudget:
       "The chat is temporarily unavailable. Try again later, or add your own API key in the settings and it keeps going right away.",
+    freeTrialBudget:
+      "My free allowance for today is used up. It continues tomorrow, or add your own AI key and it runs right away.",
     chatNotConfigured:
       "The chat isn't set up properly right now. It's not your fault, please try again later.",
     chatPersistFailed: "Your chat couldn't be saved. Please try again.",
@@ -886,10 +890,11 @@ export const en: Messages = {
 
   planCopy: {
     free: {
-      description: "Bring your own AI key and the app is completely free for you.",
+      description: "Three prompts are on me. After that you bring your own AI key, and the app stays completely free.",
       cadence: "forever",
       features: [
-        "Your own AI key required (Anthropic, OpenAI, Gemini or another provider)",
+        "3 free prompts, no key needed",
+        "After that, your own AI key (Anthropic, OpenAI, Gemini or another provider)",
         "With your key: no monthly limit, the app itself stays free",
         "Up to {projects} projects",
         "Prompts for any AI and any task",

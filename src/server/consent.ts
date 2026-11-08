@@ -26,7 +26,7 @@ import { createAdminClient } from "@/server/supabase/admin";
  * fest (server/security/security-events.ts). Wer den Hinweistext wesentlich ändert,
  * setzt ZAI_CONSENT_VERSION hoch, dann fragt der Chat neu.
  */
-export const ZAI_CONSENT_VERSION = "2026-10-17";
+export const ZAI_CONSENT_VERSION = "2026-11-08";
 
 export type ZaiConsent = { version: string; at: string };
 

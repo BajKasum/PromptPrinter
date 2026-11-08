@@ -36,11 +36,15 @@ export type TurnState = {
   keyRequired: boolean;
   /** Pro ohne Zustimmung zur Übermittlung an Z.ai: kommt nur aus dem 403 consentRequired. */
   consentRequired: boolean;
+  /** Warum der Key-Hinweis steht, wenn es mehr zu sagen gibt (Gratis-Rahmen heute aufgebraucht); sonst null. */
+  keyNoticeReason: string | null;
+  /** Gratis-Prompts, die das Konto noch hat (server/free-trial.ts); null ausserhalb des Gratis-Rahmens. */
+  freePromptsLeft: number | null;
 };
 
 /** Was nach einem gescheiterten Zug auf dem Bildschirm steht. */
 export type FailurePresentation =
-  | { kind: "keyRequired" }
+  | { kind: "keyRequired"; reason?: string }
   | { kind: "consentRequired" }
   | { kind: "error"; message: string; retryAfter: number | null };
 
@@ -54,6 +58,8 @@ export type TurnAction =
   /** Die optimistisch angehängte Frage bekommt ihre echte Zeilen-ID (K-2). */
   | { type: "userMessageIdReplaced"; from: string; to: string }
   | { type: "retrying" }
+  /** `done` nennt den neuen Stand des Gratis-Rahmens. Bei 0 steht der Key-Hinweis gleich da. */
+  | { type: "freePromptsUpdated"; left: number }
   /** Neuer Text ist da; `text` ist der gesamte bisherige Text. */
   | { type: "delta"; text: string }
   /** Der Strom ist zu, es kommt kein Text mehr: das Schreiben holt auf und committet selbst. */
@@ -72,6 +78,7 @@ export function initialTurnState(args: {
   messages?: Msg[];
   conversationId?: string;
   needsKey: boolean;
+  freePromptsLeft?: number | null;
 }): TurnState {
   return {
     messages: args.messages ?? [],
@@ -87,6 +94,8 @@ export function initialTurnState(args: {
     justFinished: false,
     keyRequired: args.needsKey,
     consentRequired: false,
+    keyNoticeReason: null,
+    freePromptsLeft: args.freePromptsLeft ?? null,
   };
 }
 
@@ -94,7 +103,7 @@ type Reducers = { [A in TurnAction as A["type"]]: (state: TurnState, action: A) 
 
 const reducers: Reducers = {
   inputChanged: (s, a) => ({ ...s, input: a.value }),
-  keyNoticeDismissed: (s) => ({ ...s, keyRequired: false }),
+  keyNoticeDismissed: (s) => ({ ...s, keyRequired: false, keyNoticeReason: null, freePromptsLeft: null }),
   consentNoticeDismissed: (s) => ({ ...s, consentRequired: false }),
   started: (s, a) => ({
     ...s,
@@ -113,6 +122,7 @@ const reducers: Reducers = {
     messages: s.messages.map((m) => (m.id === a.from ? { ...m, id: a.to } : m)),
   }),
   retrying: (s) => ({ ...s, retrying: true }),
+  freePromptsUpdated: (s, a) => ({ ...s, freePromptsLeft: a.left, keyRequired: a.left <= 0 ? true : s.keyRequired }),
   delta: (s, a) => ({ ...s, retrying: false, pending: { text: a.text, complete: false } }),
   completed: (s, a) => ({ ...s, pending: { text: a.text, complete: true } }),
   persistWarned: (s, a) => ({ ...s, persistWarning: a.message }),
@@ -134,7 +144,7 @@ const reducers: Reducers = {
 };
 
 function failureFlags(p: FailurePresentation): Partial<TurnState> {
-  if (p.kind === "keyRequired") return { keyRequired: true };
+  if (p.kind === "keyRequired") return { keyRequired: true, keyNoticeReason: p.reason ?? null, freePromptsLeft: null };
   if (p.kind === "consentRequired") return { consentRequired: true };
   return { error: p.message, retryAfter: p.retryAfter };
 }

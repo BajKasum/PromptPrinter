@@ -87,11 +87,21 @@ test.describe("Chat", () => {
     expect(await blob!.text()).toBe(fileText);
   });
 
-  test("ein frisches Free-Konto sieht den Key-Hinweis, bevor es tippt, und nach dem Senden keinen Fehler zum Wiederholen", async ({
+  test("ein frisches Free-Konto hat drei Gratis-Prompts, danach den Key-Hinweis und keinen Fehler zum Wiederholen", async ({
     signedIn: { page },
   }) => {
     await page.goto("/chats/new");
-    await expect(page.getByText("Bevor wir loslegen, brauche ich deinen eigenen KI-Key.")).toBeVisible();
+    await expect(page.getByTestId("free-prompts-left")).toHaveText("Noch 3 Gratis-Prompts");
+    // Die Demo-Antwort trägt einen fertigen Prompt: jeder Zug ist ein Gratis-Prompt (server/free-trial.ts).
+    for (const left of ["Noch 2 Gratis-Prompts", "Noch 1 Gratis-Prompt"]) {
+      await page.getByLabel("Nachricht an Finn").fill("Ein Prompt für einen Brief");
+      await page.getByRole("button", { name: "Senden" }).click();
+      await expect(page.getByTestId("free-prompts-left")).toHaveText(left, { timeout: 30_000 });
+    }
+    await page.getByLabel("Nachricht an Finn").fill("Noch einer");
+    await page.getByRole("button", { name: "Senden" }).click();
+    await expect(page.getByText("Ab hier brauche ich deinen eigenen KI-Key.")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("free-prompts-left")).toHaveCount(0);
     // Der Hinweis nimmt den Key seit dem Key-Assistenten gleich selbst an. Der Link
     // zu den Einstellungen ist der Weg für einen anderen Anbieter.
     await expect(
@@ -107,7 +117,7 @@ test.describe("Chat", () => {
       page.getByRole("button", { name: "Senden" }).click(),
     ]);
     expect(response.status()).toBe(403);
-    await expect(page.getByText("Bevor wir loslegen, brauche ich deinen eigenen KI-Key.")).toBeVisible();
+    await expect(page.getByText("Ab hier brauche ich deinen eigenen KI-Key.")).toBeVisible();
     await expect(page.getByRole("button", { name: /Erneut/ })).toHaveCount(0);
   });
 });

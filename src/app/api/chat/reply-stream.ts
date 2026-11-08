@@ -19,6 +19,7 @@ import { adoptAttachments, type ValidatedAttachment } from "@/features/chat/lib/
 import { describeLlmFailure } from "@/features/chat/lib/turn-failures";
 import { createSseWriter } from "@/server/http/sse-writer";
 import type { ChatMessage, ChatRequest } from "@/shared/lib/schemas";
+import { extractPrompt } from "@/shared/lib/saved-prompts";
 import type { Messages } from "@/shared/i18n/messages/de";
 import type { Allowance } from "./allowance";
 import type { SupabaseClient } from "./gate";
@@ -85,6 +86,8 @@ type ReplyStreamArgs = {
   uploads: ValidatedAttachment[];
   opened: OpenedTurn;
   override: Allowance["override"];
+  /** Der Platz im Gratis-Rahmen, oder null (eigener Key, Pro, Admin). */
+  freeTrial?: Allowance["freeTrial"];
   releaseReservations: Allowance["releaseReservations"];
   systemInstruction: string;
   verifiedProjectId: string | null;
@@ -264,10 +267,21 @@ async function finishCompleted(
     captureError("chat.persist_failed", err, { userId, projectId: verifiedProjectId });
   }
 
+  // Im Gratis-Rahmen zählt nur ein Zug mit fertigem Prompt; eine Rückfrage ist ein Zug, aber kein Prompt.
+  let freePromptsLeft: number | undefined;
+  if (args.freeTrial) {
+    try {
+      freePromptsLeft = extractPrompt(reply) ? await args.freeTrial.promptDelivered() : await args.freeTrial.promptsLeft();
+    } catch (err) {
+      captureError("chat.free_trial_count_failed", err, { userId });
+    }
+  }
+
   logEvent("chat.turn", {
     userId,
     mode,
     byok: Boolean(override),
+    freeTrial: Boolean(args.freeTrial),
     provider: usedProvider,
     inProject: Boolean(verifiedProjectId),
     turns: input.messages.length,
@@ -285,6 +299,7 @@ async function finishCompleted(
     conversationId,
     ...(assistantMessageId ? { assistantMessageId } : {}),
     ...(persistError ? { persistError } : {}),
+    ...(freePromptsLeft === undefined ? {} : { freePromptsLeft }),
   });
 }
 

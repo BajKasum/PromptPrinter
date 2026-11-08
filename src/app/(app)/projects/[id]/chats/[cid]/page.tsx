@@ -5,7 +5,7 @@ import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
-import { getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
+import { getFreePromptsLeft, getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { getT } from "@/server/i18n";
@@ -49,7 +49,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [initialMessages, savedPromptRowsResult, profile, needsKey] =
+  const [initialMessages, savedPromptRowsResult, profile, needsKey, freePromptsLeft] =
     await Promise.all([
       // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
       // zuerst, mit Limit, dann umgedreht, QA-Befund P-1) steht in
@@ -69,6 +69,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       // safe here; the "" fallback just matches no row instead of throwing.
       getSessionProfile(),
       getNeedsOwnKey(),
+    getFreePromptsLeft(),
     ]);
   const { data: savedPromptRows, count: resultCount } = orThrow(savedPromptRowsResult, "saved_prompts");
 
@@ -102,6 +103,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         savedPrompts={savedPrompts}
         name={name}
         needsKey={needsKey}
+        freePromptsLeft={freePromptsLeft}
       />
     </div>
   );
