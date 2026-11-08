@@ -827,6 +827,30 @@ describe("POST /api/chat", () => {
       const sent = chatCompleteStream.mock.calls[0][0] as { system: string };
       expect(sent.system).not.toContain("--- PROJECT CONTEXT (the user is working inside");
     });
+
+    // "Über mich" (Migration 0056): ein eigener, gekennzeichneter Block vor dem Projektkontext.
+    it("gibt die Angaben aus 'Über mich' als gekennzeichneten Block mit", async () => {
+      tableResults.profiles = { data: { plan: "pro", is_admin: false, about_me: "Lehrerin, mag einen lockeren Ton" } };
+      tableResults.projects = {
+        data: { name: "Mein Projekt", idea: null, instructions: null, context: {}, tools: null },
+        error: null,
+      };
+
+      await readSse(await POST(req({ projectId: FOREIGN_PROJECT_ID, messages: [{ role: "user", content: "Hi" }] })));
+
+      const sent = chatCompleteStream.mock.calls[0][0] as { system: string };
+      expect(sent.system).toContain("<angaben_der_person>\nLehrerin, mag einen lockeren Ton\n</angaben_der_person>");
+      expect(sent.system.indexOf("<angaben_der_person>")).toBeLessThan(sent.system.indexOf("--- PROJECT CONTEXT"));
+    });
+
+    it("lässt den Block weg, wenn nichts angegeben ist", async () => {
+      tableResults.profiles = { data: { plan: "pro", is_admin: false, about_me: "" } };
+
+      await readSse(await POST(req({ messages: [{ role: "user", content: "Hi" }] })));
+
+      const sent = chatCompleteStream.mock.calls[0][0] as { system: string };
+      expect(sent.system).not.toContain("<angaben_der_person>");
+    });
   });
 
   describe("input validation", () => {

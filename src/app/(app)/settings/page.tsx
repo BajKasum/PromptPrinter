@@ -26,7 +26,7 @@ export default async function SettingsPage() {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, plan, is_admin")
+        .select("display_name, plan, is_admin, about_me")
         .eq("id", user.id)
         .maybeSingle(),
       getConfiguredProviders(supabase, user.id),
@@ -64,6 +64,7 @@ export default async function SettingsPage() {
         activeProvider={activeProvider}
         customProvider={customProvider}
         zaiConsentAt={zaiConsentOf(user.app_metadata)?.at ?? null}
+        aboutMe={profile?.about_me ?? ""}
       />
     </div>
   );

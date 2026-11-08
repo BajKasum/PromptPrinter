@@ -56,6 +56,7 @@ vi.mock("@/features/settings/components/language-preference", () => ({
 }));
 vi.mock("@/features/settings/components/change-password", () => ({ ChangePassword: () => <div data-testid="change-password" /> }));
 vi.mock("@/features/settings/components/data-export", () => ({ DataExport: () => <div data-testid="data-export" /> }));
+vi.mock("@/features/settings/components/about-me", () => ({ AboutMe: () => <div data-testid="about-me" /> }));
 vi.mock("@/features/settings/components/zai-consent", () => ({
   ZaiConsent: ({ consentAt }: { consentAt: string | null }) => <div data-testid="zai-consent" data-at={consentAt ?? ""} />,
 }));
@@ -127,6 +128,8 @@ describe("Karten", () => {
       "Deine Daten",
       "Gefahrenzone",
     ]);
+    // "Über mich" steht als eigene Karte zwischen Workspace und Sprache (about-me.test.tsx prüft sie selbst).
+    expect(screen.getByTestId("about-me")).toBeInTheDocument();
     for (const hint of [
       "Wie du in deinem Workspace erscheinst.",
       "Konto- und Plan-Übersicht.",

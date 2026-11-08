@@ -140,13 +140,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_url": string | null,"created_at": string,"display_name": string | null,"id": string,"is_admin": boolean,"plan": string,"settings": NonNullable<Json>,"subscription_customer_id": string | null,"subscription_ends_at": string | null,"subscription_id": string | null,"subscription_portal_url": string | null,"subscription_renews_at": string | null,"subscription_status": string | null,"updated_at": string
+                    "about_me": string,"avatar_url": string | null,"created_at": string,"display_name": string | null,"id": string,"is_admin": boolean,"plan": string,"settings": NonNullable<Json>,"subscription_customer_id": string | null,"subscription_ends_at": string | null,"subscription_id": string | null,"subscription_portal_url": string | null,"subscription_renews_at": string | null,"subscription_status": string | null,"updated_at": string
                   }
                   Insert: {
-                    "avatar_url"?: string | null,"created_at"?: string,"display_name"?: string | null,"id": string,"is_admin"?: boolean,"plan"?: string,"settings"?: NonNullable<Json>,"subscription_customer_id"?: string | null,"subscription_ends_at"?: string | null,"subscription_id"?: string | null,"subscription_portal_url"?: string | null,"subscription_renews_at"?: string | null,"subscription_status"?: string | null,"updated_at"?: string
+                    "about_me"?: string,"avatar_url"?: string | null,"created_at"?: string,"display_name"?: string | null,"id": string,"is_admin"?: boolean,"plan"?: string,"settings"?: NonNullable<Json>,"subscription_customer_id"?: string | null,"subscription_ends_at"?: string | null,"subscription_id"?: string | null,"subscription_portal_url"?: string | null,"subscription_renews_at"?: string | null,"subscription_status"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "avatar_url"?: string | null,"created_at"?: string,"display_name"?: string | null,"id"?: string,"is_admin"?: boolean,"plan"?: string,"settings"?: NonNullable<Json>,"subscription_customer_id"?: string | null,"subscription_ends_at"?: string | null,"subscription_id"?: string | null,"subscription_portal_url"?: string | null,"subscription_renews_at"?: string | null,"subscription_status"?: string | null,"updated_at"?: string
+                    "about_me"?: string,"avatar_url"?: string | null,"created_at"?: string,"display_name"?: string | null,"id"?: string,"is_admin"?: boolean,"plan"?: string,"settings"?: NonNullable<Json>,"subscription_customer_id"?: string | null,"subscription_ends_at"?: string | null,"subscription_id"?: string | null,"subscription_portal_url"?: string | null,"subscription_renews_at"?: string | null,"subscription_status"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     

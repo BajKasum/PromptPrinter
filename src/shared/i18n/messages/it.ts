@@ -500,6 +500,19 @@ export const it: Messages = {
     },
   },
 
+  // Su di me (impostazioni): cosa Finn deve sapere della persona (shared/lib/about-me.ts).
+  aboutMe: {
+    title: "Su di me",
+    hint: "Cosa devo sapere di te. Lo leggo in ogni chat, nel browser come nel terminale.",
+    label: "Su di me",
+    placeholder: "Per esempio: sono un'insegnante, scrivo soprattutto in italiano, uso per lo più ChatGPT e preferisco un tono informale.",
+    privacy: "Facoltativo. Per favore niente dati di contatto come indirizzo, telefono o e-mail.",
+    counter: "{count} di {max} caratteri",
+    save: "Salva",
+    saving: "Salvataggio…",
+    saved: "Salvato. Ne terrò conto dalla tua prossima chat.",
+    saveFailed: "Impossibile salvare. Riprova tra un attimo.",
+  },
   usage: {
     unlimited: "Illimitato",
     thousand: "k",
