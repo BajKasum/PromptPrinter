@@ -1,6 +1,6 @@
 import "server-only";
 
-import { ZAI_ENDPOINT, zaiApiKey } from "@/server/llm/config";
+import { ZAI_ENDPOINT, zaiApiKey, zaiThinkingParams } from "@/server/llm/config";
 import { readOpenAiCompatibleSse, streamDeadlines, throwProviderError } from "@/server/llm/http";
 import { toOpenAiMessages } from "@/server/llm/messages";
 import type { LlmMessage } from "@/server/llm/types";
@@ -43,8 +43,8 @@ export async function* zaiCompleteStream(
         max_tokens: maxOutputTokens,
         stream: true,
         // GLM entscheidet sonst selbst, ob es "denkt": für einen Zug, auf den der Nutzer wartet,
-        // kostet das nur Zeit und Ausgabebudget. Ausdrücklich aus.
-        thinking: { type: "disabled" },
+        // kostet das nur Zeit und Ausgabebudget. Aus, oder so knapp wie möglich bei Modellen, die immer denken.
+        ...zaiThinkingParams(model),
       }),
     });
 
@@ -53,7 +53,7 @@ export async function* zaiCompleteStream(
     if (!res.ok) await throwProviderError("Z.ai", res, { rawFallbackChars: 300 });
     if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
 
-    for await (const chunk of readOpenAiCompatibleSse(res.body)) {
+    for await (const chunk of readOpenAiCompatibleSse(res.body, undefined, { reasoning: "drop" })) {
       guard.received();
       yield chunk;
       guard.awaiting();

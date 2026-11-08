@@ -131,6 +131,17 @@ export function zaiModelFor(textModel: string, messages: readonly LlmMessage[]):
   return messages.some((m) => m.images?.length) ? zaiVisionModel() : textModel;
 }
 
+/**
+ * Wie ein Z.ai-Aufruf das Denken steuert. Die GLM-Modelle bis glm-5.2 schalten es mit `thinking: disabled` ab;
+ * glm-5.3 und neuer denken immer und lehnen das mit 400 ab (Code 1210, am echten Konto geprüft, siehe Changelog), dort
+ * heisst es `reasoning_effort: "low"`. Der Denktext selbst erreicht den Nutzer nie (http.ts, `reasoning: "drop"`).
+ */
+export function zaiThinkingParams(model: string): Record<string, unknown> {
+  return /^glm-(5\.([3-9]|\d{2,})|[6-9])/.test(model)
+    ? { reasoning_effort: "low" }
+    : { thinking: { type: "disabled" } };
+}
+
 /** Das sehende Z.ai-Modell: `ZAI_VISION_MODEL`, sonst der Standard (auch bei leerem Wert). */
 export function zaiVisionModel(): string {
   return optionalEnv("ZAI_VISION_MODEL") ?? ZAI_VISION_DEFAULT_MODEL;
