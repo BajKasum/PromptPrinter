@@ -11,6 +11,20 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Drei Prompts gratis ohne eigenen Key (Branch `feat/gratis-prompts-v3`, Auftrag vom 08.11.2026)
+
+Kasum: "Ohne Key, drei Prompts sind gratis." Bisher musste ein neues Free-Konto erst einen Key holen, bevor es einen einzigen Prompt sah.
+
+- **Regel:** Free ohne eigenen Key bekommt `FREE_TRIAL.prompts` = 3 fertige Prompts über den Server-Key, höchstens `FREE_TRIAL.turns` = 10 Züge (`shared/lib/plans.ts`). Gezählt wird ein Zug, dessen Antwort einen Prompt-Block trägt (`extractPrompt`); eine Rückfrage ist ein Zug, aber kein Prompt. `free.chatMessages` bleibt 0, der Rahmen ist kein Monatskontingent, er gilt einmal je Konto. BYOK unverändert.
+- **Missbrauch und Kosten** (`server/free-trial.ts`): Konten entstehen ohne Mailbestätigung, deshalb drei Grenzen, die nicht am Konto hängen: 20 Züge je IP und Tag, ein eigenes Tagesbudget von 200 Zügen (`FREE_TRIAL_DAILY_CALLS`, im ungünstigsten Fall rund 2,40 $ am Tag auf glm-4.5-air), dahinter das allgemeine Tagesbudget des Server-Keys. Zähler in Redis ohne Migration, Konto-Zähler 400 Tage. **Ohne Redis gibt es den Rahmen in Produktion nicht** (fail closed, anders als Kontingent und Tagesbudget); in Entwicklung zählt eine Map.
+- **Reihenfolge** in `server/model-call.ts` (nur der Chat setzt die Option `freeTrial`, die Gedächtnis-Analyse nicht): erst ob noch etwas übrig ist (sonst Key-Weg), dann die Z.ai-Einwilligung, dann der Platz; Stundenlimit, Tagesbudget und Konfiguration danach wie bisher, jeder Ausstieg gibt den Platz zurück.
+- **Einwilligung:** der Hinweis im Chat sagt jetzt "ohne eigenen Key" statt "im Pro-Plan", `ZAI_CONSENT_VERSION` 2026-11-08 (bestehende Zustimmungen werden neu erfragt). Der gleichlautende Text in den Einstellungen (`settings.consentBody`) ist unverändert, er gehört zu den Einstellungen.
+- **Oberfläche:** "Noch 2 Gratis-Prompts" unter dem Eingabefeld (`done` trägt `freePromptsLeft`, `api/cli/me` ebenso), bei 0 steht der Key-Hinweis ("Ab hier brauche ich deinen eigenen KI-Key."), ein leeres Tagesbudget ist `403 freeTrialBudget` und nennt im Key-Hinweis, dass es morgen weitergeht.
+- **Texte:** Abschluss der Startseite, Karte unter den drei Schritten ("Gut zu wissen"), Preisseite (Kopf, Free-Karte, Beschreibung), Registrierung, Vergleich, Hilfe (Eigene API-Keys, Pläne und Limits), Plan-Texte der App in fünf Sprachen; der Guard `landing-key-hint.test.ts` verlangt "drei Prompts" und hält die Zahl an `FREE_TRIAL`.
+- **Offen:** Datenschutz nennt Z.ai nur für Pro; Vorschlag für Kasum im PR. Nicht im Browser gegen ein echtes Konto geprüft, die Browser-Tests (`e2e/chat.spec.ts`, `cli-login`, `cli-me`) laufen in der CI.
+
+---
+
 ## 2026-11-08: Gespeicherte Prompts per Link teilen (Branch `feat/teilen`, Migration 0057, Auftrag vom 08.11.2026 ohne Einzelfreigabe)
 
 - **Wo:** in der Liste der gespeicherten Prompts (`/prompts` und Projekt-Ergebnisse), im aufgeklappten Prompt unter den Knöpfen, nicht im Chat. "Per Link teilen" fragt vorher nach: der Text wird öffentlich, Name und E-Mail-Adresse stehen nicht dabei, widerrufbar. Findet die Prompt-Prüfung einen Schlüssel oder persönliche Angaben, steht das im selben Dialog. Danach Link kopieren oder widerrufen.
