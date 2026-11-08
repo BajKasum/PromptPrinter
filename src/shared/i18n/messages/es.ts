@@ -123,6 +123,21 @@ export const es: Messages = {
     keyNoticeSeePro: "Ver Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Te queda {count} prompt gratis", other: "Te quedan {count} prompts gratis" },
+    // Prompt terminado: abrir en otro sitio y prueba (prompt-actions.tsx)
+    openIn: {
+      chatgpt: "Abrir en ChatGPT",
+      claude: "Abrir en Claude",
+      copied: "Copiado, solo pégalo allí.",
+      opened: "La página está abierta. No se pudo copiar, usa el botón del prompt.",
+    },
+    testRun: {
+      button: "Prueba",
+      running: "Prueba en curso…",
+      hint: "Envía el prompt una vez a una IA y muestra la respuesta debajo. No se guarda.",
+      title: "Así responde una IA a tu prompt",
+      disclaimer: "Una prueba sin mí de por medio, no guardada. Otra IA responderá de otra forma.",
+      failed: "La prueba no funcionó.",
+    },
     consentTitle: "Tus mensajes van a Z.ai en Singapur",
     consentBody:
       "Sin tu propia clave, Z.ai responde a tus mensajes, un proveedor de IA con sede en Singapur. No existe una decisión de adecuación de la UE ni de Suiza para Singapur y China, y no podemos descartar un tratamiento en China. Por eso te lo pregunto una vez, de forma explícita. Si no estás de acuerdo, puedes usar tu propia clave API. Puedes retirar el consentimiento en cualquier momento en los ajustes.",
@@ -828,6 +843,10 @@ export const es: Messages = {
       "El chat no está disponible temporalmente. Inténtalo más tarde, o añade tu propia clave API en la configuración y sigue al momento.",
     freeTrialBudget:
       "Mi cupo gratuito de hoy se ha agotado. Mañana sigue, o añade tu propia clave de IA y funciona al momento.",
+    testRunTooLong:
+      "Este prompt es demasiado largo para una prueba.",
+    testRunUsed:
+      "Ya probaste este prompt. El cupo gratuito incluye una prueba por prompt.",
     chatNotConfigured:
       "El chat no está bien configurado ahora mismo. No es culpa tuya, inténtalo de nuevo más tarde.",
     chatPersistFailed: "No se ha podido guardar tu chat. Inténtalo de nuevo.",

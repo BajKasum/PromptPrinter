@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Check, Copy, PenLine } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -12,7 +12,14 @@ import { useT } from "@/shared/i18n/provider";
 // Platzhalter im fertigen Prompt direkt ausfüllen (#224). Alles bleibt im Browser: kein Aufruf, kein
 // Speichern, kein <form>, das ein Browser zum Merken anbieten könnte. Gespeichert wird weiter der
 // Prompt mit seinen Platzhaltern.
-export function PlaceholderForm({ prompt }: { prompt: string }) {
+export function PlaceholderForm({
+  prompt,
+  onFilledChange,
+}: {
+  prompt: string;
+  /** Die ausgefüllte Fassung, sobald etwas eingetragen ist, sonst null (für "In ChatGPT öffnen" und den Probelauf). */
+  onFilledChange?: (filled: string | null) => void;
+}) {
   const t = useT();
   const baseId = useId();
   const placeholders = useMemo(() => findPlaceholders(prompt), [prompt]);
@@ -21,10 +28,13 @@ export function PlaceholderForm({ prompt }: { prompt: string }) {
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(new Set());
   const { copied, copy } = useCopyToClipboard();
   const filled = useMemo(() => fillPlaceholders(prompt, values, skipped), [prompt, values, skipped]);
+  const anythingTyped = placeholders.some((p) => !skipped.has(p.key) && (values[p.key] ?? "").trim() !== "");
+  useEffect(() => {
+    onFilledChange?.(anythingTyped ? filled : null);
+  }, [anythingTyped, filled, onFilledChange]);
 
   if (placeholders.length === 0) return null;
 
-  const anythingTyped = placeholders.some((p) => !skipped.has(p.key) && (values[p.key] ?? "").trim() !== "");
   const toggleSkip = (key: string) =>
     setSkipped((prev) => {
       const next = new Set(prev);

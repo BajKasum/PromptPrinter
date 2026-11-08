@@ -123,6 +123,21 @@ export const it: Messages = {
     keyNoticeSeePro: "Scopri Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Ancora {count} prompt gratuito", other: "Ancora {count} prompt gratuiti" },
+    // Prompt finito: aprire altrove e prova (prompt-actions.tsx)
+    openIn: {
+      chatgpt: "Apri in ChatGPT",
+      claude: "Apri in Claude",
+      copied: "Copiato, incollalo lì.",
+      opened: "La pagina è aperta. La copia non è riuscita, usa il pulsante sul prompt.",
+    },
+    testRun: {
+      button: "Prova",
+      running: "Prova in corso…",
+      hint: "Invia il prompt una volta a un'IA e mostra la risposta qui sotto. Non viene salvato.",
+      title: "Ecco come risponde un'IA al tuo prompt",
+      disclaimer: "Una prova senza di me in mezzo, non salvata. Un'altra IA risponderà diversamente.",
+      failed: "La prova non è riuscita.",
+    },
     consentTitle: "I tuoi messaggi vanno a Z.ai a Singapore",
     consentBody:
       "Senza una tua chiave, Z.ai risponde ai tuoi messaggi, un fornitore di IA con sede a Singapore. Per Singapore e la Cina non esiste una decisione di adeguatezza dell'UE né della Svizzera e non possiamo escludere un trattamento in Cina. Per questo te lo chiedo una volta, in modo esplicito. Se non sei d'accordo, puoi usare la tua chiave API. Puoi revocare il consenso in qualsiasi momento nelle impostazioni.",
@@ -827,6 +842,10 @@ export const it: Messages = {
       "La chat è temporaneamente non disponibile. Riprova più tardi, oppure aggiungi la tua chiave API nelle impostazioni e riparte subito.",
     freeTrialBudget:
       "La mia quota gratuita di oggi è esaurita. Si riprende domani, oppure aggiungi la tua chiave IA e funziona subito.",
+    testRunTooLong:
+      "Questo prompt è troppo lungo per una prova.",
+    testRunUsed:
+      "Hai già provato questo prompt. La quota gratuita comprende una prova per prompt.",
     chatNotConfigured:
       "La chat al momento non è configurata correttamente. Non dipende da te, riprova più tardi.",
     chatPersistFailed: "Non è stato possibile salvare la tua chat. Riprova.",

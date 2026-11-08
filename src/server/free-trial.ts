@@ -113,6 +113,48 @@ export type FreeTrialSlot = {
 
 export type FreeTrialRefusal = "exhausted" | "budget" | "unavailable";
 
+type Step<R extends string> = { key: string; limit: number; ttl: number; refusal: R };
+
+/**
+ * Reserviert die Schritte der Reihe nach. Scheitert einer, gehen alle bis dahin zurück, und die Antwort ist seine
+ * Ablehnung (ohne Redis "unavailable"); sonst die Rückgabe aller Plätze.
+ */
+async function reserveAll<R extends string>(
+  steps: Step<R>[]
+): Promise<{ release: () => Promise<void> } | R | "unavailable"> {
+  const held: CounterReservation[] = [];
+  const release = async () => {
+    for (const r of held.splice(0)) await r.release();
+  };
+  for (const step of steps) {
+    const r = await reserve(step.key, step.limit, step.ttl);
+    if (!r) {
+      await release();
+      return "unavailable";
+    }
+    if (!r.allowed) {
+      await r.release();
+      await release();
+      return step.refusal;
+    }
+    held.push(r);
+  }
+  return { release };
+}
+
+/** Grenze je IP und Tag und das Tagesbudget: gelten für alles, was im Gratis-Rahmen auf dem Server-Key läuft. */
+function sharedSteps(req: Request): Step<"budget">[] {
+  const day = utcDay();
+  return [
+    { key: ipKey(clientIp(req), day), limit: FREE_TRIAL_TURNS_PER_IP_DAY, ttl: DAY_TTL_SECONDS, refusal: "budget" },
+    { key: dayKey(day), limit: dailyCalls(), ttl: DAY_TTL_SECONDS, refusal: "budget" },
+  ];
+}
+
+function logBudgetRefusal(refusal: string): void {
+  if (refusal === "budget") logWarning("free_trial.refused", { reason: refusal, day: utcDay() });
+}
+
 /**
  * Reserviert einen Zug im Gratis-Rahmen. Reihenfolge: Prompts (nur gelesen), Züge des Kontos, Züge der IP, Budget
  * des Tages. Jede Ablehnung gibt zurück, was bis dahin reserviert war.
@@ -122,37 +164,17 @@ export async function reserveFreeTrialTurn(req: Request, userId: string): Promis
   if (prompts === null) return "unavailable";
   if (prompts >= FREE_TRIAL.prompts) return "exhausted";
 
-  const held: CounterReservation[] = [];
-  const release = async () => {
-    for (const r of held.splice(0)) await r.release();
-  };
-  const take = async (key: string, limit: number, ttl: number, refusal: FreeTrialRefusal) => {
-    const r = await reserve(key, limit, ttl);
-    if (!r) {
-      await release();
-      return "unavailable" as const;
-    }
-    if (!r.allowed) {
-      await r.release();
-      await release();
-      return refusal;
-    }
-    held.push(r);
-    return null;
-  };
-
-  const day = utcDay();
-  const refused =
-    (await take(turnsKey(userId), FREE_TRIAL.turns, ACCOUNT_TTL_SECONDS, "exhausted")) ??
-    (await take(ipKey(clientIp(req), day), FREE_TRIAL_TURNS_PER_IP_DAY, DAY_TTL_SECONDS, "budget")) ??
-    (await take(dayKey(day), dailyCalls(), DAY_TTL_SECONDS, "budget"));
-  if (refused) {
-    if (refused === "budget") logWarning("free_trial.refused", { reason: refused, day });
-    return refused;
+  const held = await reserveAll<FreeTrialRefusal>([
+    { key: turnsKey(userId), limit: FREE_TRIAL.turns, ttl: ACCOUNT_TTL_SECONDS, refusal: "exhausted" },
+    ...sharedSteps(req),
+  ]);
+  if (typeof held === "string") {
+    logBudgetRefusal(held);
+    return held;
   }
 
   return {
-    release,
+    release: held.release,
     promptsLeft: async () => (await freePromptsLeft(userId)) ?? 0,
     promptDelivered: async () => {
       // Kein Limit beim Hochzählen: die Prüfung steht vor dem Zug. Laufen zwei Züge gleichzeitig, kann ein vierter
@@ -161,4 +183,35 @@ export async function reserveFreeTrialTurn(req: Request, userId: string): Promis
       return used === null ? 0 : Math.max(0, FREE_TRIAL.prompts - used);
     },
   };
+}
+
+// ─── Probelauf (api/test-run) ─────────────────────────────────────────────────
+
+const testRunKey = (userId: string, promptHash: string) => `free-trial:test-run:${userId}:${promptHash}`;
+const testRunsKey = (userId: string) => `free-trial:test-runs:${userId}`;
+
+/** `used`: dieser Prompt hatte schon seinen Probelauf, oder das Konto hat so viele wie Gratis-Prompts. */
+export type FreeTrialTestRunRefusal = "used" | "budget" | "unavailable";
+
+/**
+ * Ein Probelauf im Gratis-Rahmen: höchstens einer je Prompt (Schlüssel aus dem Hash des Prompts) und höchstens so
+ * viele wie Gratis-Prompts. Er zählt weder als Gratis-Prompt noch als Zug, aber gegen die Grenze je IP und das
+ * Tagesbudget des Rahmens, denn auch er läuft auf dem Server-Key.
+ */
+export async function reserveFreeTrialTestRun(
+  req: Request,
+  userId: string,
+  promptHash: string
+): Promise<FreeTrialSlot | FreeTrialTestRunRefusal> {
+  const held = await reserveAll<FreeTrialTestRunRefusal>([
+    { key: testRunKey(userId, promptHash), limit: 1, ttl: ACCOUNT_TTL_SECONDS, refusal: "used" },
+    { key: testRunsKey(userId), limit: FREE_TRIAL.prompts, ttl: ACCOUNT_TTL_SECONDS, refusal: "used" },
+    ...sharedSteps(req),
+  ]);
+  if (typeof held === "string") {
+    logBudgetRefusal(held);
+    return held;
+  }
+  const left = async () => (await freePromptsLeft(userId)) ?? 0;
+  return { release: held.release, promptsLeft: left, promptDelivered: left };
 }
