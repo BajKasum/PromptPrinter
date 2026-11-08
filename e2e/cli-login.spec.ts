@@ -257,11 +257,17 @@ test.describe("Anmeldung der Kommandozeile", () => {
     expect(profile?.plan).toBe("pro");
   });
 
-  test("ein Free-Konto ohne eigenen Key bekommt auch per Bearer den Hinweis statt einer Antwort", async ({
+  test("ein Free-Konto ohne eigenen Key chattet auch per Bearer im Gratis-Rahmen, danach kommt der Hinweis", async ({
     signedIn: { page },
     request: cli,
   }) => {
     const session = await loginAs(cli, page);
+    // Die Demo-Antwort trägt einen fertigen Prompt, jeder Zug zählt also als Gratis-Prompt (server/free-trial.ts).
+    for (const left of [2, 1, 0]) {
+      const ok = await chat(cli, session.access_token);
+      expect(ok.status()).toBe(200);
+      expect(await ok.text()).toContain(`"freePromptsLeft":${left}`);
+    }
     const res = await chat(cli, session.access_token);
     expect(res.status()).toBe(403);
     expect((await res.json()).kind).toBe("byokRequired");

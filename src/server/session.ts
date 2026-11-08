@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
 import { requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
+import { freePromptsLeft } from "@/server/free-trial";
 
 // Die eine Stelle, die pro Request nach dem angemeldeten Nutzer und seinem
 // Profil fragt (Planpunkt B-3).
@@ -99,14 +100,15 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
  * (0020/0030) — der Schluessel selbst bleibt unangetastet. Jede Zeile zaehlt,
  * genau wie in getUserOverride (byok.ts), das ebenfalls jede Zeile nimmt.
  */
-export const getNeedsOwnKey = cache(async (): Promise<boolean> => {
+const getKeyState = cache(async (): Promise<{ needsKey: boolean; freePromptsLeft: number | null }> => {
+  const outside = { needsKey: false, freePromptsLeft: null };
   const user = await getSessionUser();
-  if (!user) return false;
+  if (!user) return outside;
 
   const profile = await getSessionProfile();
   const { plan, isAdmin } = resolvePlan(profile);
   // Pro, Team und Admins laufen ohnehin auf dem Server-Key, keine Abfrage noetig.
-  if (!requiresOwnKey(plan, isAdmin, false)) return false;
+  if (!requiresOwnKey(plan, isAdmin, false)) return outside;
 
   const supabase = await createClient();
   const { data } = orThrow(
@@ -114,5 +116,14 @@ export const getNeedsOwnKey = cache(async (): Promise<boolean> => {
     "user_api_keys"
   );
 
-  return requiresOwnKey(plan, isAdmin, (data?.length ?? 0) > 0);
+  if (!requiresOwnKey(plan, isAdmin, (data?.length ?? 0) > 0)) return outside;
+
+  // Free ohne Key: solange der Gratis-Rahmen reicht, läuft der Chat ohne Key (server/free-trial.ts).
+  const left = await freePromptsLeft(user.id);
+  return left !== null && left > 0 ? { needsKey: false, freePromptsLeft: left } : { needsKey: true, freePromptsLeft: null };
 });
+
+export const getNeedsOwnKey = cache(async (): Promise<boolean> => (await getKeyState()).needsKey);
+
+/** Gratis-Prompts, die das Konto noch hat; null, wenn es nicht im Gratis-Rahmen chattet. */
+export const getFreePromptsLeft = cache(async (): Promise<number | null> => (await getKeyState()).freePromptsLeft);

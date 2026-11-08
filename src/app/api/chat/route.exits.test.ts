@@ -92,6 +92,15 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   };
 });
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
+// Der Gratis-Rahmen (server/free-trial.ts): Standard ist "aufgebraucht", dann gilt für Free ohne Key der Key-Weg wie
+// vor dem Rahmen. Die Tests des Rahmens setzen beides selbst.
+const freePromptsLeft = vi.fn();
+const reserveFreeTrialTurn = vi.fn();
+vi.mock("@/server/free-trial", () => ({
+  freePromptsLeft: (...a: unknown[]) => freePromptsLeft(...a),
+  reserveFreeTrialTurn: (...a: unknown[]) => reserveFreeTrialTurn(...a),
+}));
+
 vi.mock("@/server/llm", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/llm")>();
   return {
@@ -129,6 +138,8 @@ beforeEach(() => {
     log.push("getUserOverride");
     return null;
   });
+  freePromptsLeft.mockResolvedValue(0);
+  reserveFreeTrialTurn.mockResolvedValue("exhausted");
   rateLimit.mockImplementation(async () => {
     log.push("rateLimit");
     return { allowed: true, remaining: 119, resetAt: Date.now() + 1000 };
@@ -261,7 +272,7 @@ describe("Ausstiege vor jeder Reservierung reservieren nichts", () => {
     untouched();
   });
 
-  it("Free ohne eigenen Key (403 byokRequired): kein Aufruf des Kontingents", async () => {
+  it("Free ohne eigenen Key und ohne Gratis-Prompts (403 byokRequired): kein Aufruf des Kontingents", async () => {
     tableResults.profiles = { data: { plan: "free", is_admin: false } };
     const res = await POST(req());
     expect(res.status).toBe(403);

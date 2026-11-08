@@ -121,16 +121,18 @@ export const de = {
     resultLabel: "Aktuelle Antwort von Finn",
     resultTitlePrompt: "Dein Prompt",
     resultTitleReply: "Finns Antwort",
-    keyNoticeTitle: "Bevor wir loslegen, brauche ich deinen eigenen KI-Key.",
+    keyNoticeTitle: "Ab hier brauche ich deinen eigenen KI-Key.",
     keyNoticeBody:
-      "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
+      "Deine Gratis-Prompts sind aufgebraucht, ab jetzt laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
     keyNoticeBodySoon:
-      "Auf Free laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso.",
+      "Deine Gratis-Prompts sind aufgebraucht, ab jetzt laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso.",
     keyNoticeSettings: "Anderer Anbieter? Zu den Einstellungen",
     keyNoticeSeePro: "Pro ansehen",
+    // Gratis-Rahmen (server/free-trial.ts)
+    freePromptsLeft: { one: "Noch {count} Gratis-Prompt", other: "Noch {count} Gratis-Prompts" },
     consentTitle: "Deine Nachrichten gehen an Z.ai in Singapur",
     consentBody:
-      "Im Pro-Plan beantwortet Z.ai deine Nachrichten, ein KI-Anbieter mit Sitz in Singapur. Für Singapur und China gibt es keinen Angemessenheitsbeschluss der EU und der Schweiz, und eine Bearbeitung in China können wir nicht ausschliessen. Deshalb frage ich dich einmal ausdrücklich. Stimmst du nicht zu, kannst du stattdessen deinen eigenen API-Schlüssel nutzen. Du kannst die Zustimmung jederzeit in den Einstellungen widerrufen.",
+      "Ohne eigenen Key beantwortet Z.ai deine Nachrichten, ein KI-Anbieter mit Sitz in Singapur. Für Singapur und China gibt es keinen Angemessenheitsbeschluss der EU und der Schweiz, und eine Bearbeitung in China können wir nicht ausschliessen. Deshalb frage ich dich einmal ausdrücklich. Stimmst du nicht zu, kannst du stattdessen deinen eigenen API-Schlüssel nutzen. Du kannst die Zustimmung jederzeit in den Einstellungen widerrufen.",
     consentAccept: "Einverstanden und senden",
     consentOwnKey: "Eigenen Schlüssel nutzen",
     consentPrivacy: "Datenschutz",
@@ -761,7 +763,7 @@ export const de = {
       title: "Tarife",
       subtitle: "Free mit deinem eigenen KI-Key, oder Pro, wenn ich den Key für dich übernehme.",
       subtitleSoon: "Free mit deinem eigenen KI-Key. Pro, bei dem ich den Key für dich übernehme, gibt es noch nicht.",
-      needKey: "Zum Chatten brauchst du auf Free deinen eigenen Key.",
+      needKey: "Nach den drei Gratis-Prompts brauchst du auf Free deinen eigenen Key.",
       addKey: "Key hinterlegen",
       backToFree:
         "Zurück zu Free geht jederzeit: Abo unter {billing} kündigen, Pro bleibt bis zum Ende des bezahlten Monats.",
@@ -839,6 +841,8 @@ export const de = {
     tooManyRequests: "Zu viele Anfragen, bitte warte kurz und versuch es erneut.",
     chatBudget:
       "Der Chat ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen, dann läuft er sofort weiter.",
+    freeTrialBudget:
+      "Mein Gratis-Kontingent für heute ist aufgebraucht. Morgen geht es weiter, oder du hinterlegst einen eigenen KI-Key, dann läuft es sofort.",
     chatNotConfigured:
       "Der Chat ist gerade nicht richtig eingerichtet. Das liegt nicht an dir, bitte versuch es später erneut.",
     chatPersistFailed: "Dein Chat konnte nicht gespeichert werden. Versuch es nochmal.",
@@ -912,10 +916,11 @@ export const de = {
    */
   planCopy: {
     free: {
-      description: "Bring deinen eigenen KI-Key mit, dann ist die App komplett gratis für dich.",
+      description: "Drei Prompts gehen auf mich. Danach bringst du deinen eigenen KI-Key mit, und die App bleibt komplett gratis.",
       cadence: "für immer",
       features: [
-        "Eigener KI-Key nötig (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
+        "3 Prompts gratis, ganz ohne Key",
+        "Danach eigener KI-Key (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
         "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
         "Bis zu {projects} Projekte",
         "Prompts für jede KI und jede Aufgabe",

@@ -54,6 +54,14 @@ export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
   pro: { projects: Infinity, chatMessages: 400 },
 };
 
+/**
+ * Der Gratis-Rahmen eines Free-Kontos ohne eigenen Key: so viele fertige Prompts über den Server-Key, und höchstens
+ * so viele Züge (eine Rückfrage ist ein Zug, aber kein Prompt). `free.chatMessages` bleibt 0: der Rahmen ist kein
+ * Monatskontingent, er gilt einmal je Konto. Durchgesetzt in server/free-trial.ts, mit Grenze je IP und eigenem
+ * Tagesbudget, weil Konten ohne Mailbestätigung entstehen.
+ */
+export const FREE_TRIAL = { prompts: 3, turns: 10 } as const;
+
 const MIB = 1024 * 1024;
 
 /**

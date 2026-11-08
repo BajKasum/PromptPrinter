@@ -146,15 +146,16 @@ export function HowItWorks() {
       </div>
 
       {/* Bewusst kein vierter Schritt: die drei Schritte sind das Versprechen, der
-          Key ist die einmalige Einrichtung davor (#126). Ehrlich gesagt, bevor die
-          Registrierung daran scheitert. */}
+          Key ist die einmalige Einrichtung nach den drei Gratis-Prompts (#126). Ehrlich
+          gesagt, bevor jemand im Chat davon überrascht wird. */}
       <FadeIn>
         <div className="relative z-10 mx-auto mt-10 flex max-w-3xl items-start gap-3 rounded-2xl border border-dashed border-border px-5 py-4 md:gap-4 md:px-6">
           <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-accent-text" strokeWidth={1.8} aria-hidden />
           <p className="text-[14.5px] leading-[1.6] text-secondary">
-            <span className="font-medium text-foreground">Einmal vorab:</span> Du brauchst einen
-            KI-Key, eine Art Zugangscode zu einer KI. Am einfachsten ist der kostenlose von
-            Google, im Chat führ ich dich Schritt für Schritt hin.{" "}
+            <span className="font-medium text-foreground">Gut zu wissen:</span> Die ersten drei
+            Prompts gehen auf mich, ganz ohne Key. Danach brauchst du einen KI-Key, eine Art
+            Zugangscode zu einer KI. Am einfachsten ist der kostenlose von Google, im Chat führ
+            ich dich Schritt für Schritt hin.{" "}
             <Link href="/docs/eigene-api-keys" className="text-accent-text underline underline-offset-2">
               Mehr zu Keys
             </Link>

@@ -46,6 +46,8 @@ export const chatStreamSchemas = {
     conversationId: z.string(),
     assistantMessageId: z.string().optional(),
     persistError: z.string().optional(),
+    /** Nur im Gratis-Rahmen (server/free-trial.ts): wie viele Gratis-Prompts nach diesem Zug noch bleiben. */
+    freePromptsLeft: z.number().int().min(0).optional(),
   }),
   error: z.object({ detail: z.string() }),
 };
