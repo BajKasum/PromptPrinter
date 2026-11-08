@@ -11,6 +11,18 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: "Über mich" für Finn (Branch `feat/ueber-mich`, Migration 0056, Auftrag vom 08.11.2026 ohne Einzelfreigabe)
+
+- **Feld:** in den Einstellungen eine eigene Karte, freiwillig, bis 1000 Zeichen (Beruf, Sprache, meistgenutzte KI, Ton), mit dem Hinweis "keine Kontaktdaten". Eigener Speichern-Knopf, damit ein halb getippter Name in der Profilkarte nicht mitgespeichert wird.
+- **Datenbank:** Spalte `profiles.about_me` (`not null default ''`), Prüfung `char_length <= 1000`, Spaltenrecht `update (about_me)` für `authenticated`. Die Grenze steht in der Datenbank, weil der Browser direkt schreibt; der E2E-Test belegt sie gegen den lokalen Stack.
+- **Chat:** `buildSystemInstruction` (`api/chat/turn.ts`) hängt den Text als Block `<angaben_der_person>` an, vor dem Projektkontext. Der Block sagt selbst, dass Gespräch und Projekt-Anweisungen vorgehen und Befehle darin nicht gelten; seine Marken werden aus dem Text entfernt. Ein Lesefehler lässt den Block weg, der Zug läuft weiter. Der Systemprompt (`server/system-prompt.ts`) bleibt unberührt. Browser, Projekt und Terminal laufen über dieselbe Route.
+- **Export und Löschen:** der Export trägt `account.aboutMe`, das Löschen des Kontos nimmt die Profilzeile mit.
+- **Produktion:** 0056 am 2026-11-08 angewendet (Version `20261108143129`), lesend geprüft: Spalte, Prüfung, Spaltenrecht nur für `authenticated`, `is_admin` weiter gesperrt.
+- **Wörterbuch-Grenze** im Guard von 1000 auf 1100 Zeilen: "Über mich", Teilen und die Gratis-Prompts bringen Texte in fünf Sprachen. fr/it/es nicht von Muttersprachlern geprüft.
+- **Offen (Rechtstext, nur Vorschlag):** ein Satz in der Datenschutzerklärung zu "Über mich" (siehe PR).
+
+---
+
 ## 2026-11-08: Header als Wasserband, Seiten `/terminal` und `/mcp` (Branch `feat/header-cli-mcp-v2`, Auftrag vom 08.11.2026)
 
 Kasum: der Kopf soll mitscrollen, sich sichtbar vom Hero absetzen ("nicht eine Farbe einfach so langweilig, soll auch irgendwas Spezielles haben") und CLI und MCP direkt nennen, ohne Gruppe "Für Entwickler".
