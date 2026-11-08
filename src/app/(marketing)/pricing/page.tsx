@@ -11,8 +11,8 @@ import { pageMetadata } from "@/shared/lib/page-metadata";
 export const metadata: Metadata = pageMetadata({
   title: "Preise",
   description: PRO_AVAILABLE
-    ? `Free läuft mit deinem eigenen KI-Key komplett gratis. Ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`
-    : "Free läuft mit deinem eigenen KI-Key komplett gratis. Pro, bei dem ich den Key für dich übernehme, gibt es noch nicht.",
+    ? `Drei Prompts sind gratis, ohne Key. Danach läuft Free mit deinem eigenen KI-Key komplett gratis, ohne eigenen Key gibt's Pro ab ${PRO_PRICE_LABEL} im Monat.`
+    : "Drei Prompts sind gratis, ohne Key. Danach läuft Free mit deinem eigenen KI-Key komplett gratis. Pro, bei dem ich den Key für dich übernehme, gibt es noch nicht.",
   path: "/pricing",
 });
 
@@ -49,9 +49,9 @@ export default function PricingPage() {
       <PageHeader
         headline={
           <>
-            Bring deinen eigenen Key mit.{" "}
+            Drei Prompts gehen auf mich.{" "}
             <span className="text-accent-text">
-              {PRO_AVAILABLE ? "Oder ich übernehme das für dich." : "Dann kostet dich die App nichts."}
+              {PRO_AVAILABLE ? "Danach dein eigener Key, oder ich übernehme das." : "Danach kostet dich die App mit deinem Key nichts."}
             </span>
           </>
         }

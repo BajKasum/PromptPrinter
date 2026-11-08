@@ -91,14 +91,14 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Eigene API-Keys",
         summary:
           "Häng deinen eigenen Anthropic-, OpenAI-, Gemini- oder OpenAI-kompatiblen Key an und rechne direkt über dein Konto ab.",
-        updated: "2026-10-01",
+        updated: "2026-11-08",
       },
       {
         slug: "plaene-und-limits",
         title: "Pläne und Limits",
         summary:
           "Was Free und Pro genau enthalten, welche Grenzen wirklich zählen und wann ein eigener Key sie aufhebt.",
-        updated: "2026-10-22",
+        updated: "2026-11-08",
       },
     ],
   },

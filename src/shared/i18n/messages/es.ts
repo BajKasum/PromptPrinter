@@ -114,16 +114,18 @@ export const es: Messages = {
     resultLabel: "Última respuesta de Finn",
     resultTitlePrompt: "Tu prompt",
     resultTitleReply: "Respuesta de Finn",
-    keyNoticeTitle: "Antes de empezar, necesito tu propia clave de IA.",
+    keyNoticeTitle: "A partir de aquí necesito tu propia clave de IA.",
     keyNoticeBody:
-      "Con Free funciono con tu propia clave. Una clave de Gemini de Google es gratuita, y así PromptPrinter en sí no te cuesta nada. Si ya tienes una clave de Anthropic o de OpenAI, funciona igual. ¿No te apetece ocuparte de una clave? Con Pro me encargo yo.",
+      "Tus prompts gratis se han agotado, a partir de ahora funciono con tu propia clave. Una clave de Gemini de Google es gratuita, y así PromptPrinter en sí no te cuesta nada. Si ya tienes una clave de Anthropic o de OpenAI, funciona igual. ¿No te apetece ocuparte de una clave? Con Pro me encargo yo.",
     keyNoticeBodySoon:
-      "Con Free funciono con tu propia clave. Una clave de Gemini de Google es gratuita, y así PromptPrinter en sí no te cuesta nada. Si ya tienes una clave de Anthropic o de OpenAI, funciona igual.",
+      "Tus prompts gratis se han agotado, a partir de ahora funciono con tu propia clave. Una clave de Gemini de Google es gratuita, y así PromptPrinter en sí no te cuesta nada. Si ya tienes una clave de Anthropic o de OpenAI, funciona igual.",
     keyNoticeSettings: "¿Otro proveedor? Ve a los ajustes",
     keyNoticeSeePro: "Ver Pro",
+    // Gratis-Rahmen (server/free-trial.ts)
+    freePromptsLeft: { one: "Te queda {count} prompt gratis", other: "Te quedan {count} prompts gratis" },
     consentTitle: "Tus mensajes van a Z.ai en Singapur",
     consentBody:
-      "Con Pro, Z.ai responde a tus mensajes, un proveedor de IA con sede en Singapur. No existe una decisión de adecuación de la UE ni de Suiza para Singapur y China, y no podemos descartar un tratamiento en China. Por eso te lo pregunto una vez, de forma explícita. Si no estás de acuerdo, puedes usar tu propia clave API. Puedes retirar el consentimiento en cualquier momento en los ajustes.",
+      "Sin tu propia clave, Z.ai responde a tus mensajes, un proveedor de IA con sede en Singapur. No existe una decisión de adecuación de la UE ni de Suiza para Singapur y China, y no podemos descartar un tratamiento en China. Por eso te lo pregunto una vez, de forma explícita. Si no estás de acuerdo, puedes usar tu propia clave API. Puedes retirar el consentimiento en cualquier momento en los ajustes.",
     consentAccept: "De acuerdo, enviar",
     consentOwnKey: "Usar mi propia clave",
     consentPrivacy: "Privacidad",
@@ -795,6 +797,8 @@ export const es: Messages = {
     tooManyRequests: "Demasiadas solicitudes, espera un momento e inténtalo de nuevo.",
     chatBudget:
       "El chat no está disponible temporalmente. Inténtalo más tarde, o añade tu propia clave API en la configuración y sigue al momento.",
+    freeTrialBudget:
+      "Mi cupo gratuito de hoy se ha agotado. Mañana sigue, o añade tu propia clave de IA y funciona al momento.",
     chatNotConfigured:
       "El chat no está bien configurado ahora mismo. No es culpa tuya, inténtalo de nuevo más tarde.",
     chatPersistFailed: "No se ha podido guardar tu chat. Inténtalo de nuevo.",
@@ -860,10 +864,11 @@ export const es: Messages = {
 
   planCopy: {
     free: {
-      description: "Trae tu propia clave de IA y la app es totalmente gratis para ti.",
+      description: "Tres prompts corren de mi cuenta. Después traes tu propia clave de IA, y la app sigue siendo totalmente gratis.",
       cadence: "para siempre",
       features: [
-        "Se necesita tu propia clave de IA (Anthropic, OpenAI, Gemini u otro proveedor)",
+        "3 prompts gratis, sin clave",
+        "Después, tu propia clave de IA (Anthropic, OpenAI, Gemini u otro proveedor)",
         "Con tu clave: sin límite mensual, la app sigue siendo gratis",
         "Hasta {projects} proyectos",
         "Prompts para cualquier IA y cualquier tarea",

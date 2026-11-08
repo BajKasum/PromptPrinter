@@ -161,3 +161,26 @@ describe("Hinweise", () => {
     expect(run(start(), { type: "inputChanged", value: "Hi" }).input).toBe("Hi");
   });
 });
+
+describe("Gratis-Rahmen", () => {
+  const trial = (left: number) => initialTurnState({ needsKey: false, freePromptsLeft: left });
+
+  it("übernimmt den neuen Stand aus done und zeigt bei 0 den Key-Hinweis", () => {
+    expect(run(trial(3), { type: "freePromptsUpdated", left: 2 })).toMatchObject({ freePromptsLeft: 2, keyRequired: false });
+    expect(run(trial(1), { type: "freePromptsUpdated", left: 0 })).toMatchObject({ freePromptsLeft: 0, keyRequired: true });
+  });
+
+  it("ein abgelehnter Zug wegen leerem Tagesbudget zeigt den Key-Hinweis mit Grund", () => {
+    const next = run(trial(2), {
+      type: "failed",
+      before: [],
+      input: "Idee",
+      presentation: { kind: "keyRequired", reason: "heute aufgebraucht" },
+    });
+    expect(next).toMatchObject({ keyRequired: true, keyNoticeReason: "heute aufgebraucht", freePromptsLeft: null, input: "Idee" });
+  });
+
+  it("ein verbundener Key beendet den Rahmen in der Anzeige", () => {
+    expect(run(trial(2), { type: "keyNoticeDismissed" })).toMatchObject({ freePromptsLeft: null, keyNoticeReason: null });
+  });
+});

@@ -96,6 +96,15 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   };
 });
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
+// Der Gratis-Rahmen (server/free-trial.ts): Standard ist "aufgebraucht", dann gilt für Free ohne Key der Key-Weg wie
+// vor dem Rahmen. Die Tests des Rahmens setzen beides selbst.
+const freePromptsLeft = vi.fn();
+const reserveFreeTrialTurn = vi.fn();
+vi.mock("@/server/free-trial", () => ({
+  freePromptsLeft: (...a: unknown[]) => freePromptsLeft(...a),
+  reserveFreeTrialTurn: (...a: unknown[]) => reserveFreeTrialTurn(...a),
+}));
+
 // Mocked so the test never pulls in the three provider SDKs, and so "did the
 // model get called" is directly assertable. classifyLlmFailure/LlmEmptyReplyError
 // stay real (importOriginal) — route.ts's U-4 mapping (raw provider errors →
@@ -138,6 +147,8 @@ describe("POST /api/chat", () => {
     reserveMonthlyQuota.mockResolvedValue(null);
     reserveServerKeyCall.mockResolvedValue(null);
     getUserOverride.mockResolvedValue(null);
+    freePromptsLeft.mockResolvedValue(0);
+    reserveFreeTrialTurn.mockResolvedValue("exhausted");
     llmConfig.mockReturnValue({ provider: "zai", model: "glm-4.5-air" });
     chatCompleteStream.mockImplementation(async function* () {
       yield "Hallo";
@@ -218,7 +229,7 @@ describe("POST /api/chat", () => {
       expect(res.status).toBe(200);
     });
 
-    it("lässt Free ohne Key bei byokRequired, nicht bei der Zustimmung", async () => {
+    it("lässt Free ohne Key und ohne Gratis-Prompts bei byokRequired, nicht bei der Zustimmung", async () => {
       withoutConsent({});
       tableResults.profiles = { data: { plan: "free", is_admin: false } };
 
@@ -372,7 +383,7 @@ describe("POST /api/chat", () => {
     // key must be turned away immediately, before ever touching the
     // reservation machinery, with a message that says "bring your own key" —
     // not "limit reached", which would wrongly imply it once had one.
-    it("blocks Free without a BYOK key immediately, without touching the monthly-quota machinery", async () => {
+    it("blocks Free without a BYOK key and without free prompts left, without touching the monthly-quota machinery", async () => {
       tableResults.profiles = { data: { plan: "free", is_admin: false } };
 
       const res = await POST(req());
@@ -395,6 +406,92 @@ describe("POST /api/chat", () => {
       expect(res.status).toBe(200);
       expect(chatCompleteStream).toHaveBeenCalled();
       expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+    });
+
+    describe("Gratis-Rahmen (Free ohne Key, server/free-trial.ts)", () => {
+      const slot = (promptsLeft = 2) => ({
+        release: vi.fn().mockResolvedValue(undefined),
+        promptDelivered: vi.fn().mockResolvedValue(promptsLeft - 1),
+        promptsLeft: vi.fn().mockResolvedValue(promptsLeft),
+      });
+      beforeEach(() => {
+        tableResults.profiles = { data: { plan: "free", is_admin: false } };
+        freePromptsLeft.mockResolvedValue(2);
+      });
+
+      it("läuft auf dem Server-Key, ohne Monatskontingent, und zählt einen fertigen Prompt", async () => {
+        const s = slot();
+        reserveFreeTrialTurn.mockResolvedValue(s);
+        chatCompleteStream.mockImplementation(async function* () {
+          yield "Hier ist dein Prompt:\n\n```text\nRolle: Du bist ...\n```";
+        });
+
+        const res = await POST(req());
+        const body = await readSse(res);
+
+        expect(res.status).toBe(200);
+        expect(chatCompleteStream).toHaveBeenCalledTimes(1);
+        expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+        expect(reserveServerKeyCall).toHaveBeenCalledTimes(1);
+        expect(s.promptDelivered).toHaveBeenCalledTimes(1);
+        expect(body).toContain("\"freePromptsLeft\":1");
+      });
+
+      it("zählt eine Rückfrage nicht als Prompt", async () => {
+        const s = slot();
+        reserveFreeTrialTurn.mockResolvedValue(s);
+
+        const body = await readSse(await POST(req()));
+
+        expect(s.promptDelivered).not.toHaveBeenCalled();
+        expect(body).toContain("\"freePromptsLeft\":2");
+      });
+
+      it("braucht vorher die Zustimmung zur Übermittlung an Z.ai, ohne etwas zu reservieren", async () => {
+        getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: {} } } });
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(403);
+        expect((await res.json()).kind).toBe("consentRequired");
+        expect(reserveFreeTrialTurn).not.toHaveBeenCalled();
+      });
+
+      it("sagt freeTrialBudget, wenn der Rahmen heute aufgebraucht ist", async () => {
+        reserveFreeTrialTurn.mockResolvedValue("budget");
+
+        const res = await POST(req());
+        const json = (await res.json()) as { kind: string; detail: string };
+
+        expect(res.status).toBe(403);
+        expect(json.kind).toBe("freeTrialBudget");
+        expect(json.detail).toContain("heute");
+        expect(chatCompleteStream).not.toHaveBeenCalled();
+      });
+
+      it("gibt den Platz zurück, wenn der Anbieter scheitert", async () => {
+        const s = slot();
+        reserveFreeTrialTurn.mockResolvedValue(s);
+        chatCompleteStream.mockImplementation(async function* () {
+          throw new Error("boom");
+        });
+
+        await readSse(await POST(req()));
+
+        expect(s.release).toHaveBeenCalled();
+        expect(s.promptDelivered).not.toHaveBeenCalled();
+      });
+
+      it("gibt den Platz zurück, wenn das Stundenlimit danach ablehnt", async () => {
+        const s = slot();
+        reserveFreeTrialTurn.mockResolvedValue(s);
+        rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 1000 });
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(429);
+        expect(s.release).toHaveBeenCalled();
+      });
     });
 
     it("rejects with 403 once Pro's monthly chat allowance is used up", async () => {
@@ -431,7 +528,7 @@ describe("POST /api/chat", () => {
         expect(monthlyCountQueries()).toHaveLength(0);
       });
 
-      it("laeuft NICHT fuer Free ohne Key, der vorher abgewiesen wird", async () => {
+      it("laeuft NICHT fuer Free ohne Key und ohne Gratis-Rahmen, der vorher abgewiesen wird", async () => {
         tableResults.profiles = { data: { plan: "free", is_admin: false } };
 
         const res = await POST(req());

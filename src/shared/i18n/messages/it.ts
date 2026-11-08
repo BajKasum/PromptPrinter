@@ -114,16 +114,18 @@ export const it: Messages = {
     resultLabel: "Ultima risposta di Finn",
     resultTitlePrompt: "Il tuo prompt",
     resultTitleReply: "Risposta di Finn",
-    keyNoticeTitle: "Prima di iniziare, mi serve la tua chiave IA.",
+    keyNoticeTitle: "Da qui in poi mi serve la tua chiave IA.",
     keyNoticeBody:
-      "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
+      "I tuoi prompt gratuiti sono esauriti, ora funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
     keyNoticeBodySoon:
-      "Con Free funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo.",
+      "I tuoi prompt gratuiti sono esauriti, ora funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo.",
     keyNoticeSettings: "Un altro fornitore? Vai alle impostazioni",
     keyNoticeSeePro: "Scopri Pro",
+    // Gratis-Rahmen (server/free-trial.ts)
+    freePromptsLeft: { one: "Ancora {count} prompt gratuito", other: "Ancora {count} prompt gratuiti" },
     consentTitle: "I tuoi messaggi vanno a Z.ai a Singapore",
     consentBody:
-      "Con Pro, Z.ai risponde ai tuoi messaggi, un fornitore di IA con sede a Singapore. Per Singapore e la Cina non esiste una decisione di adeguatezza dell'UE né della Svizzera e non possiamo escludere un trattamento in Cina. Per questo te lo chiedo una volta, in modo esplicito. Se non sei d'accordo, puoi usare la tua chiave API. Puoi revocare il consenso in qualsiasi momento nelle impostazioni.",
+      "Senza una tua chiave, Z.ai risponde ai tuoi messaggi, un fornitore di IA con sede a Singapore. Per Singapore e la Cina non esiste una decisione di adeguatezza dell'UE né della Svizzera e non possiamo escludere un trattamento in Cina. Per questo te lo chiedo una volta, in modo esplicito. Se non sei d'accordo, puoi usare la tua chiave API. Puoi revocare il consenso in qualsiasi momento nelle impostazioni.",
     consentAccept: "Sono d'accordo, invia",
     consentOwnKey: "Usa la mia chiave",
     consentPrivacy: "Privacy",
@@ -794,6 +796,8 @@ export const it: Messages = {
     tooManyRequests: "Troppe richieste, aspetta un attimo e riprova.",
     chatBudget:
       "La chat è temporaneamente non disponibile. Riprova più tardi, oppure aggiungi la tua chiave API nelle impostazioni e riparte subito.",
+    freeTrialBudget:
+      "La mia quota gratuita di oggi è esaurita. Si riprende domani, oppure aggiungi la tua chiave IA e funziona subito.",
     chatNotConfigured:
       "La chat al momento non è configurata correttamente. Non dipende da te, riprova più tardi.",
     chatPersistFailed: "Non è stato possibile salvare la tua chat. Riprova.",
@@ -859,10 +863,11 @@ export const it: Messages = {
 
   planCopy: {
     free: {
-      description: "Porta la tua chiave IA e l'app è completamente gratuita per te.",
+      description: "Tre prompt li offro io. Poi porti la tua chiave IA, e l'app resta completamente gratuita.",
       cadence: "per sempre",
       features: [
-        "Serve la tua chiave IA (Anthropic, OpenAI, Gemini o un altro fornitore)",
+        "3 prompt gratuiti, senza chiave",
+        "Poi la tua chiave IA (Anthropic, OpenAI, Gemini o un altro fornitore)",
         "Con la tua chiave: senza limite mensile, l'app resta gratuita",
         "Fino a {projects} progetti",
         "Prompt per qualsiasi IA e qualsiasi compito",

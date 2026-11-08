@@ -11,6 +11,7 @@ import { fmt } from "@/shared/i18n/format";
 // Speichern. Reine Darstellung. Aus chat.tsx herausgeloest (M7).
 export function ChatNotices({
   keyRequired,
+  keyNoticeReason = null,
   onKeyConnected,
   consentRequired,
   onConsentGranted,
@@ -23,6 +24,8 @@ export function ChatNotices({
   persistWarning,
 }: {
   keyRequired: boolean;
+  /** Ein Satz über dem Key-Hinweis, etwa "Gratis-Rahmen heute aufgebraucht". */
+  keyNoticeReason?: string | null;
   onKeyConnected: () => void;
   consentRequired: boolean;
   /** Die Zustimmung ist gespeichert: Hinweis weg, die wartende Nachricht senden. */
@@ -39,7 +42,7 @@ export function ChatNotices({
   const locale = useLocale();
   return (
     <>
-          {keyRequired && <ChatKeyNotice onConnected={onKeyConnected} />}
+          {keyRequired && <ChatKeyNotice onConnected={onKeyConnected} reason={keyNoticeReason} />}
 
           {consentRequired && <ChatConsentNotice onGranted={onConsentGranted} />}
 

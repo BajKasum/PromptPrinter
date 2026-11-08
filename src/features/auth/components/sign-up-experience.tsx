@@ -250,8 +250,8 @@ export function SignUpExperience() {
         </h1>
         <p className="text-[15px] font-light text-secondary">
           {PRO_AVAILABLE
-            ? "Kostenlos und ohne Kreditkarte. Zum Chatten brauchst du einen eigenen KI-Key oder Pro."
-            : "Kostenlos und ohne Kreditkarte. Zum Chatten brauchst du einen eigenen KI-Key, am einfachsten einen kostenlosen von Google. Den holst du dir nach der Anmeldung im Chat."}
+            ? "Kostenlos und ohne Kreditkarte. Drei Prompts gehen auf mich, danach chattest du mit einem eigenen KI-Key oder Pro."
+            : "Kostenlos und ohne Kreditkarte. Drei Prompts gehen auf mich, danach chattest du mit einem eigenen KI-Key, am einfachsten einem kostenlosen von Google. Den holst du dir im Chat."}
         </p>
       </div>
 

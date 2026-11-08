@@ -84,16 +84,15 @@ const FREE_PLAN: MarketingPlan = {
   name: "Free",
   price: "0 €",
   cadence: "für immer",
-  description: "Bring deinen eigenen KI-Key mit, dann ist die App komplett gratis für dich.",
+  description: "Drei Prompts gehen auf mich. Danach bringst du deinen eigenen KI-Key mit, und die App bleibt komplett gratis.",
   cta: "Kostenlos starten",
   href: "/signup",
   highlight: false,
   mascot: "curious",
   features: [
-    // Led with the requirement, not framed as an optional perk: this is
-    // what makes Free free. Without a key, Free can't chat at all — see
-    // this file's own top comment for why.
-    "Eigener KI-Key nötig (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
+    // Erst der Gratis-Rahmen (FREE_TRIAL in plans.ts), dann die Bedingung, die Free dauerhaft gratis macht.
+    "3 Prompts gratis, ganz ohne Key",
+    "Danach eigener KI-Key (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
     // "ohne Monatslimit" statt "unbegrenzt": auch mit eigenem Key greift
     // der stuendliche Missbrauchsschutz (AGB Ziffer 8). "Unbegrenzt" war
     // damit eine Zusage, die der Code nicht haelt (Rechts-Audit 28.09.2026).

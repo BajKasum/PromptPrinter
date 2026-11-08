@@ -115,16 +115,18 @@ export const fr: Messages = {
     resultLabel: "Dernière réponse de Finn",
     resultTitlePrompt: "Ton prompt",
     resultTitleReply: "Réponse de Finn",
-    keyNoticeTitle: "Avant de commencer, j'ai besoin de ta propre clé d'IA.",
+    keyNoticeTitle: "À partir d'ici, j'ai besoin de ta propre clé d'IA.",
     keyNoticeBody:
-      "Avec Free, je fonctionne avec ta propre clé. Tu peux obtenir gratuitement une clé Gemini chez Google, et PromptPrinter lui-même ne te coûte alors rien. Si tu as déjà une clé Anthropic ou OpenAI, elle marche de la même façon. Pas envie de t'occuper d'une clé ? Avec Pro, je m'en charge pour toi.",
+      "Tes prompts gratuits sont épuisés, désormais je fonctionne avec ta propre clé. Tu peux obtenir gratuitement une clé Gemini chez Google, et PromptPrinter lui-même ne te coûte alors rien. Si tu as déjà une clé Anthropic ou OpenAI, elle marche de la même façon. Pas envie de t'occuper d'une clé ? Avec Pro, je m'en charge pour toi.",
     keyNoticeBodySoon:
-      "Avec Free, je fonctionne avec ta propre clé. Tu peux obtenir gratuitement une clé Gemini chez Google, et PromptPrinter lui-même ne te coûte alors rien. Si tu as déjà une clé Anthropic ou OpenAI, elle marche de la même façon.",
+      "Tes prompts gratuits sont épuisés, désormais je fonctionne avec ta propre clé. Tu peux obtenir gratuitement une clé Gemini chez Google, et PromptPrinter lui-même ne te coûte alors rien. Si tu as déjà une clé Anthropic ou OpenAI, elle marche de la même façon.",
     keyNoticeSettings: "Un autre fournisseur ? Va dans les réglages",
     keyNoticeSeePro: "Voir Pro",
+    // Gratis-Rahmen (server/free-trial.ts)
+    freePromptsLeft: { one: "Encore {count} prompt gratuit", other: "Encore {count} prompts gratuits" },
     consentTitle: "Tes messages partent chez Z.ai à Singapour",
     consentBody:
-      "Avec Pro, Z.ai répond à tes messages, un fournisseur d'IA basé à Singapour. Il n'existe pas de décision d'adéquation de l'UE ni de la Suisse pour Singapour et la Chine, et nous ne pouvons pas exclure un traitement en Chine. C'est pourquoi je te le demande une fois, explicitement. Si tu n'es pas d'accord, tu peux utiliser ta propre clé API à la place. Tu peux retirer ton accord à tout moment dans les paramètres.",
+      "Sans ta propre clé, Z.ai répond à tes messages, un fournisseur d'IA basé à Singapour. Il n'existe pas de décision d'adéquation de l'UE ni de la Suisse pour Singapour et la Chine, et nous ne pouvons pas exclure un traitement en Chine. C'est pourquoi je te le demande une fois, explicitement. Si tu n'es pas d'accord, tu peux utiliser ta propre clé API à la place. Tu peux retirer ton accord à tout moment dans les paramètres.",
     consentAccept: "D'accord, envoyer",
     consentOwnKey: "Utiliser ma propre clé",
     consentPrivacy: "Confidentialité",
@@ -799,6 +801,8 @@ export const fr: Messages = {
     tooManyRequests: "Trop de requêtes, attends un instant et réessaie.",
     chatBudget:
       "La conversation est temporairement indisponible. Réessaie plus tard, ou ajoute ta propre clé API dans les paramètres et ça repart tout de suite.",
+    freeTrialBudget:
+      "Mon quota gratuit du jour est épuisé. Ça reprend demain, ou ajoute ta propre clé d'IA et ça marche tout de suite.",
     chatNotConfigured:
       "La conversation n'est pas correctement configurée pour l'instant. Ce n'est pas de ta faute, réessaie plus tard.",
     chatPersistFailed: "Ta conversation n'a pas pu être enregistrée. Réessaie.",
@@ -864,10 +868,11 @@ export const fr: Messages = {
 
   planCopy: {
     free: {
-      description: "Apporte ta propre clé d'IA et l'appli est entièrement gratuite pour toi.",
+      description: "Trois prompts sont pour moi. Ensuite tu apportes ta propre clé d'IA, et l'appli reste entièrement gratuite.",
       cadence: "pour toujours",
       features: [
-        "Ta propre clé d'IA requise (Anthropic, OpenAI, Gemini ou un autre fournisseur)",
+        "3 prompts gratuits, sans clé",
+        "Ensuite ta propre clé d'IA (Anthropic, OpenAI, Gemini ou un autre fournisseur)",
         "Avec ta clé : sans limite mensuelle, l'appli elle-même reste gratuite",
         "Jusqu'à {projects} projets",
         "Des prompts pour toute IA et toute tâche",

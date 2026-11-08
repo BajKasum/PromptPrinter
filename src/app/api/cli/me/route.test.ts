@@ -20,6 +20,9 @@ vi.mock("@/server/security/rate-limit", () => ({
   rateLimitKey: () => "key",
 }));
 
+const freePromptsLeft = vi.fn();
+vi.mock("@/server/free-trial", () => ({ freePromptsLeft: (...a: unknown[]) => freePromptsLeft(...a) }));
+
 import { ZAI_CONSENT_VERSION } from "@/server/consent";
 import { GET } from "./route";
 
@@ -62,11 +65,21 @@ beforeEach(() => {
   llmConfig.mockReturnValue({ provider: "zai" });
   tables.profiles = { data: { plan: "free", is_admin: false }, error: null };
   tables.user_api_keys = { data: [], error: null };
+  freePromptsLeft.mockResolvedValue(0);
   signedIn();
 });
 
 describe("GET /api/cli/me", () => {
-  it("Free ohne Key: der Key fehlt, die Zustimmung spielt noch keine Rolle", async () => {
+  it("Free ohne Key im Gratis-Rahmen: kein Key nötig, aber die Zustimmung, und die Zahl der Gratis-Prompts", async () => {
+    freePromptsLeft.mockResolvedValue(2);
+    expect(await (await GET(get("Bearer tok"))).json()).toMatchObject({
+      needsOwnKey: false,
+      freePromptsLeft: 2,
+      needsConsent: true,
+    });
+  });
+
+  it("Free ohne Key und ohne Gratis-Prompts: der Key fehlt, die Zustimmung spielt noch keine Rolle", async () => {
     const res = await GET(get("Bearer tok"));
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
@@ -75,6 +88,7 @@ describe("GET /api/cli/me", () => {
       plan: "free",
       hasOwnKey: false,
       needsOwnKey: true,
+      freePromptsLeft: 0,
       needsConsent: false,
     });
   });

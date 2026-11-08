@@ -64,7 +64,8 @@ export function createTurnEventHandler(deps: TurnEventDeps) {
   }
 
   function onDone(data: Extract<ChatStreamEvent, { event: "done" }>["data"]) {
-    const { conversationId: newId, assistantMessageId, persistError } = data;
+    const { conversationId: newId, assistantMessageId, persistError, freePromptsLeft } = data;
+    if (freePromptsLeft !== undefined) dispatch({ type: "freePromptsUpdated", left: freePromptsLeft });
     // K-2: commitReply liest diese ID ab statt eine eigene zu erfinden. Nur gesetzt, wenn die Antwort auch in der
     // Datenbank steht, sonst gäbe es eine ID, die dropReplacedReply nie fände.
     if (assistantMessageId && !persistError) deps.pendingAssistantId.current = assistantMessageId;
