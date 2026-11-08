@@ -19,6 +19,7 @@ export function useChatTurn({
   initialMessages,
   initialConversationId,
   needsKey,
+  freePromptsLeft,
   attachments,
   clearAttachNotice,
 }: {
@@ -26,6 +27,8 @@ export function useChatTurn({
   initialMessages?: Msg[];
   initialConversationId?: string;
   needsKey: boolean;
+  /** Gratis-Prompts beim Laden der Seite; null oder fehlend ausserhalb des Gratis-Rahmens. */
+  freePromptsLeft?: number | null;
   attachments: ReturnType<typeof useAttachments>;
   clearAttachNotice: () => void;
 }) {
@@ -33,7 +36,7 @@ export function useChatTurn({
   const router = useRouter();
   // Der Zustand des Zugs steht in turn-state.ts (Felder und ihre Bedeutung), runChatTurn meldet ihm Ereignisse.
   const [state, dispatch] = useReducer(turnReducer, undefined, () =>
-    initialTurnState({ messages: initialMessages, conversationId: initialConversationId, needsKey })
+    initialTurnState({ messages: initialMessages, conversationId: initialConversationId, needsKey, freePromptsLeft })
   );
   const { messages, conversationId, input, loading, pending } = state;
   const setInput = useCallback((value: string) => dispatch({ type: "inputChanged", value }), []);
@@ -253,6 +256,8 @@ export function useChatTurn({
     error: state.error,
     retryAfter: state.retryAfter,
     keyRequired: state.keyRequired,
+    keyNoticeReason: state.keyNoticeReason,
+    freePromptsLeft: state.freePromptsLeft,
     consentRequired: state.consentRequired,
     dismissConsentNotice: () => dispatch({ type: "consentNoticeDismissed" }),
     // Nach dem Verbinden verschwindet der Key-Hinweis sofort. Der Zustand

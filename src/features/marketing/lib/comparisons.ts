@@ -56,8 +56,8 @@ export const COMPARISONS_UPDATED = "2026-11-01";
 
 // Solange Pro nicht buchbar ist (pro-availability.ts), steht hier kein Preis für einen Plan, den man nicht holen kann.
 const PRICE_ROW = PRO_AVAILABLE
-  ? `Free mit eigenem API-Key, sonst Pro für ${PRO_PRICE_LABEL} im Monat`
-  : "Free mit eigenem API-Key, ein Pro-Plan ohne eigenen Key folgt später";
+  ? `Free: drei Prompts gratis, danach mit eigenem API-Key, sonst Pro für ${PRO_PRICE_LABEL} im Monat`
+  : "Free: drei Prompts gratis, danach mit eigenem API-Key, ein Pro-Plan ohne eigenen Key folgt später";
 
 export const COMPARISONS: Comparison[] = [
   {

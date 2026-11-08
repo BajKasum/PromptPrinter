@@ -12,7 +12,8 @@ import { useChatScroll } from "@/features/chat/hooks/use-chat-scroll";
 import { useChatTurn } from "@/features/chat/hooks/use-chat-turn";
 import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-variants";
 import type { Msg } from "@/features/chat/lib/chat-wire";
-import { useT } from "@/shared/i18n/provider";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { plural } from "@/shared/i18n/format";
 
 // Orchestrator only, every UI role that used to live inline here now has its
 // own file (chat-empty-state, chat-result-panel, chat-transcript,
@@ -29,6 +30,7 @@ export function Chat({
   savedPrompts,
   name,
   needsKey = false,
+  freePromptsLeft = null,
 }: {
   projectId?: string;
   initialMessages?: Msg[];
@@ -41,10 +43,13 @@ export function Chat({
   name?: string | null;
   /** Free without an own key: /api/chat will refuse, so say so up front (F-1). */
   needsKey?: boolean;
+  /** Free ohne Key im Gratis-Rahmen: wie viele Prompts noch gehen (server/free-trial.ts). */
+  freePromptsLeft?: number | null;
 }) {
   // A project chat is its own context; every standalone chat is the one
   // unified chat. See lib/chat-variants.ts for what each variant means.
   const t = useT();
+  const locale = useLocale();
   const variant = resolveVariant(projectId);
   const { heading, placeholder } = resolveEmptyState(variant, hasResults, name, t.chat);
 
@@ -55,6 +60,7 @@ export function Chat({
     initialMessages,
     initialConversationId,
     needsKey,
+    freePromptsLeft,
     attachments,
     clearAttachNotice,
   });
@@ -139,6 +145,7 @@ export function Chat({
 
       <ChatNotices
         keyRequired={turn.keyRequired}
+        keyNoticeReason={turn.keyNoticeReason}
         onKeyConnected={turn.dismissKeyNotice}
         consentRequired={turn.consentRequired}
         onConsentGranted={async () => {
@@ -184,6 +191,12 @@ export function Chat({
           onAddFiles={addFiles}
           onRemoveAttachment={attachments.remove}
         />
+      )}
+
+      {turn.freePromptsLeft !== null && turn.freePromptsLeft > 0 && !turn.keyRequired && (
+        <p className="-mt-3 px-1 text-[12px] text-tertiary" data-testid="free-prompts-left">
+          {plural(t.chat.freePromptsLeft, turn.freePromptsLeft, locale)}
+        </p>
       )}
 
       <VoiceConsentDialog
