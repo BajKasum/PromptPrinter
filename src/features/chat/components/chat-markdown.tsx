@@ -8,6 +8,7 @@ import { CopyMoment } from "@/features/chat/components/copy-moment";
 import { PromptCheckChip, PromptCheckList } from "@/features/chat/components/prompt-check-note";
 import { checkPrompt } from "@/features/chat/lib/prompt-check";
 import { normalizeFences } from "@/features/chat/lib/normalize-fences";
+import { usePromptCopied } from "@/features/chat/lib/prompt-copied";
 import { useT } from "@/shared/i18n/provider";
 
 // Render an assistant reply as real Markdown, headings, lists, bold, tables,
@@ -118,6 +119,7 @@ export function MarkdownMessage({ content, typed }: { content: string; typed?: s
 function CodeBlock({ text, typed }: { text: string; typed?: string }) {
   const t = useT();
   const { copied, copy, copyCount } = useCopyToClipboard();
+  const promptCopied = usePromptCopied();
   const risks = useMemo(() => (typed === undefined ? [] : checkPrompt(text, typed)), [text, typed]);
   const [noteOpen, setNoteOpen] = useState(true);
   const noteId = useId();
@@ -147,7 +149,9 @@ function CodeBlock({ text, typed }: { text: string; typed?: string }) {
           )}
           <button
             type="button"
-            onClick={() => copy(text)}
+            onClick={() => {
+              void copy(text).then(promptCopied, () => {});
+            }}
             className="touch-hit-y relative inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
           >
             <CopyMoment copied={copied} copyCount={copyCount} idleLabel={t.chat.copyPrompt} />

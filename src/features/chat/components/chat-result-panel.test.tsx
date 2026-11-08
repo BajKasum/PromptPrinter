@@ -199,4 +199,24 @@ describe("ChatResultPanel: Platzhalter ausfüllen", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     for (const field of screen.getAllByRole("textbox")) expect(field).toHaveAccessibleName();
   });
+
+  describe("Finn am Ergebnis", () => {
+    const finn = () => screen.getByTestId("result-finn");
+
+    it("liefert beim fertigen Prompt, erklärt bei einer Rückfrage, denkt, solange ein Zug läuft", () => {
+      const { rerender } = render(<ChatResultPanel content={PROMPT_REPLY} />);
+      expect(finn()).toHaveAttribute("data-state", "delivering");
+      rerender(<ChatResultPanel content={PROMPT_REPLY} busy />);
+      expect(finn()).toHaveAttribute("data-state", "thinking");
+      rerender(<ChatResultPanel content={QUESTION_REPLY} />);
+      expect(finn()).toHaveAttribute("data-state", "explaining");
+    });
+
+    it("freut sich kurz, nachdem der Prompt kopiert wurde", async () => {
+      const user = userEvent.setup();
+      render(<ChatResultPanel content={PROMPT_REPLY} />);
+      await user.click(screen.getByRole("button", { name: "Prompt kopieren" }));
+      expect(await screen.findByTestId("result-finn")).toHaveAttribute("data-state", "celebrating");
+    });
+  });
 });
