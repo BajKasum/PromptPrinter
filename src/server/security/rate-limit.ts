@@ -291,7 +291,8 @@ export type RateLimitScope =
   | "cli-prompts"
   | "cli-prompt"
   | "prompt-share"
-  | "share-view";
+  | "share-view"
+  | "test-run";
 
 /**
  * The bucket a request counts against: the signed-in user, or the caller's IP
