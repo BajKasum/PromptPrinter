@@ -27,7 +27,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Projekte sind Workspaces:** Anweisungen, Struktur (je nach `projects.type`
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
   (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
-  `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne Auto-Generieren).
+  `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne Auto-Generieren), per Link teilbar (`/geteilt/<token>`, noindex, `server/prompt-share.ts`).
 - **Pläne:** Free chattet nur mit eigenem Key (der Key-Assistent führt im Chat-Hinweis und in
   den Einstellungen zu einem Gratis-Gemini-Key), Pro mit Server-Key und Kontingent.
   **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder
@@ -62,8 +62,8 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
-  Migrationen 0001 bis 0056 in `supabase/migrations/`, alle in Produktion angewendet (0056 am 2026-11-08,
-  Version `20261108143129`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Migrationen 0001 bis 0057 in `supabase/migrations/`, alle in Produktion angewendet (0057 am 2026-11-08,
+  Version `20261108145053`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
