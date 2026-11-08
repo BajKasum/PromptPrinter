@@ -61,13 +61,25 @@ export async function throwProviderError(
 }
 
 /**
+ * Was mit `reasoning_content` (dem Denktext eines Modells) geschieht: `fallback` nimmt ihn, wenn `content` leer
+ * ist (ein fremder Endpunkt, der seine Antwort dort ablegt), `drop` nie. Z.ai liest mit `drop`: Modelle, die immer
+ * denken (zaiThinkingParams), schicken dort ihre Zwischenschritte, und die gehören nicht in den Chat.
+ */
+export type ReasoningUse = "fallback" | "drop";
+
+/**
  * Text und Verbrauch aus einer erfolgreichen, nicht gestreamten Antwort. `content` ist die
  * eigentliche Antwort, `reasoning_content` springt nur ein, wenn sonst nichts da ist. Verbrauch
  * gibt es nur, wenn der Anbieter beide Zahlen liefert.
  */
-export function readCompletion(json: OpenAiCompatibleResponse, label: string): LlmResult {
+export function readCompletion(
+  json: OpenAiCompatibleResponse,
+  label: string,
+  opts: { reasoning?: ReasoningUse } = {}
+): LlmResult {
   const message = json.choices?.[0]?.message;
-  const text = (message?.content?.trim() || message?.reasoning_content?.trim()) ?? "";
+  const reasoning = opts.reasoning === "drop" ? "" : message?.reasoning_content?.trim();
+  const text = (message?.content?.trim() || reasoning) ?? "";
   if (!text) throw new LlmEmptyReplyError(label);
 
   const usage =
@@ -100,7 +112,8 @@ type OpenAiStreamChunk = {
  */
 export async function* readOpenAiCompatibleSse(
   body: ReadableStream<Uint8Array>,
-  maxBytes: number = MAX_RESPONSE_BYTES
+  maxBytes: number = MAX_RESPONSE_BYTES,
+  opts: { reasoning?: ReasoningUse } = {}
 ): AsyncGenerator<string> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -137,7 +150,7 @@ export async function* readOpenAiCompatibleSse(
           // carries nothing else (thinking is off for Z.ai, so this should
           // rarely fire there; a BYOK custom endpoint controls its own
           // thinking flag, so it's kept here too for parity).
-          const text = delta?.content || delta?.reasoning_content || "";
+          const text = delta?.content || (opts.reasoning === "drop" ? "" : delta?.reasoning_content) || "";
           if (text) yield text;
         }
       }

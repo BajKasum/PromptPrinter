@@ -137,3 +137,33 @@ describe("readCompletion", () => {
     expect(() => readCompletion({}, "Custom-Provider")).toThrow("Custom-Provider returned an empty reply");
   });
 });
+
+describe("Denktext (reasoning_content)", () => {
+  const frames = (...deltas: object[]) =>
+    new ReadableStream<Uint8Array>({
+      start(c) {
+        for (const d of deltas) c.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ choices: [{ delta: d }] })}\n\n`));
+        c.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+        c.close();
+      },
+    });
+  const read = async (body: ReadableStream<Uint8Array>, reasoning?: "drop" | "fallback") => {
+    const out: string[] = [];
+    for await (const t of readOpenAiCompatibleSse(body, undefined, { reasoning })) out.push(t);
+    return out.join("");
+  };
+
+  it("lässt den Denktext mit drop aus dem Strom, die Antwort bleibt", async () => {
+    expect(await read(frames({ reasoning_content: "Ich überlege" }, { content: "Hallo" }), "drop")).toBe("Hallo");
+  });
+
+  it("nimmt ihn ohne Angabe weiter als Ersatz (fremde Endpunkte)", async () => {
+    expect(await read(frames({ reasoning_content: "Ich überlege" }, { content: "Hallo" }))).toBe("Ich überlegeHallo");
+  });
+
+  it("readCompletion mit drop: leerer content ist leer, auch wenn Denktext da ist", () => {
+    expect(() =>
+      readCompletion({ choices: [{ message: { content: "", reasoning_content: "Denken" } }] }, "Z.ai", { reasoning: "drop" })
+    ).toThrow();
+  });
+});
