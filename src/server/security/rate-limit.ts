@@ -287,7 +287,9 @@ export type RateLimitScope =
   | "mfa-status"
   | "mfa-enroll"
   | "mfa-code"
-  | "cli-me";
+  | "cli-me"
+  | "cli-prompts"
+  | "cli-prompt";
 
 /**
  * The bucket a request counts against: the signed-in user, or the caller's IP

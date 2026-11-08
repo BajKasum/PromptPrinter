@@ -12,4 +12,7 @@ export const CLI_PROBLEMS = {
   invalidToken: "The refresh token is not valid any more. Log in again.",
   unauthorized: "The access token is missing or not valid.",
   unavailable: "The service is not available right now. Try again later.",
+  invalidQuery: "The search is longer than 200 characters or the limit is not a number.",
+  invalidPromptId: "The prompt id is not valid.",
+  promptNotFound: "There is no saved prompt with this id.",
 } as const;
