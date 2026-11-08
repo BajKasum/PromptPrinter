@@ -6,6 +6,8 @@ import { ChatReplyActions } from "@/features/chat/components/chat-transcript";
 import { RefineChips } from "@/features/chat/components/refine-chips";
 import { PlaceholderForm } from "@/features/chat/components/placeholder-form";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
+import { PromptActions } from "@/features/chat/components/prompt-actions";
+import { useState } from "react";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
 import { useT } from "@/shared/i18n/provider";
 
@@ -50,6 +52,8 @@ export function ChatResultPanel({
   const t = useT();
   const savablePrompt = extractPrompt(content);
   const alreadySaved = savablePrompt ? (savedPrompts?.includes(savablePrompt) ?? false) : false;
+  // Sind Platzhalter ausgefüllt, nehmen Öffnen und Probelauf diese Fassung (gespeichert wird weiter die mit Platzhaltern).
+  const [filled, setFilled] = useState<string | null>(null);
 
   return (
     <section
@@ -77,7 +81,9 @@ export function ChatResultPanel({
         <MarkdownMessage content={content} typed={typed} />
       </div>
 
-      {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} />}
+      {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} onFilledChange={setFilled} />}
+
+      {savablePrompt && <PromptActions key={savablePrompt} prompt={filled ?? savablePrompt} />}
 
       {/* Same actions as under an older reply (#150): the prompt that just got
           finished is the moment you most want to export it. */}

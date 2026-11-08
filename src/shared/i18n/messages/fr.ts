@@ -124,6 +124,21 @@ export const fr: Messages = {
     keyNoticeSeePro: "Voir Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Encore {count} prompt gratuit", other: "Encore {count} prompts gratuits" },
+    // Prompt terminé : ouvrir ailleurs et essai (prompt-actions.tsx)
+    openIn: {
+      chatgpt: "Ouvrir dans ChatGPT",
+      claude: "Ouvrir dans Claude",
+      copied: "Copié, il suffit de le coller là-bas.",
+      opened: "La page est ouverte. La copie a échoué, utilise le bouton sur le prompt.",
+    },
+    testRun: {
+      button: "Essai",
+      running: "Essai en cours…",
+      hint: "Envoie le prompt une fois à une IA et affiche la réponse en dessous. Pas enregistré.",
+      title: "Voici comment une IA répond à ton prompt",
+      disclaimer: "Un essai sans moi entre les deux, pas enregistré. Une autre IA répondra autrement.",
+      failed: "L'essai n'a pas marché.",
+    },
     consentTitle: "Tes messages partent chez Z.ai à Singapour",
     consentBody:
       "Sans ta propre clé, Z.ai répond à tes messages, un fournisseur d'IA basé à Singapour. Il n'existe pas de décision d'adéquation de l'UE ni de la Suisse pour Singapour et la Chine, et nous ne pouvons pas exclure un traitement en Chine. C'est pourquoi je te le demande une fois, explicitement. Si tu n'es pas d'accord, tu peux utiliser ta propre clé API à la place. Tu peux retirer ton accord à tout moment dans les paramètres.",
@@ -832,6 +847,10 @@ export const fr: Messages = {
       "La conversation est temporairement indisponible. Réessaie plus tard, ou ajoute ta propre clé API dans les paramètres et ça repart tout de suite.",
     freeTrialBudget:
       "Mon quota gratuit du jour est épuisé. Ça reprend demain, ou ajoute ta propre clé d'IA et ça marche tout de suite.",
+    testRunTooLong:
+      "Ce prompt est trop long pour un essai.",
+    testRunUsed:
+      "Tu as déjà essayé ce prompt. Le quota gratuit comprend un essai par prompt.",
     chatNotConfigured:
       "La conversation n'est pas correctement configurée pour l'instant. Ce n'est pas de ta faute, réessaie plus tard.",
     chatPersistFailed: "Ta conversation n'a pas pu être enregistrée. Réessaie.",

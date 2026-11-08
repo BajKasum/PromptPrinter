@@ -76,3 +76,33 @@ describe("Gratis-Rahmen", () => {
     vi.unstubAllEnvs();
   });
 });
+
+describe("Probelauf im Gratis-Rahmen", () => {
+  it("einer je Prompt, zählt weder als Prompt noch als Zug", async () => {
+    const { reserveFreeTrialTestRun } = await import("@/server/free-trial");
+    const first = await reserveFreeTrialTestRun(req(), "t1", "hash-a");
+    expect(typeof first).toBe("object");
+    expect(await reserveFreeTrialTestRun(req(), "t1", "hash-a")).toBe("used");
+    expect(await freePromptsLeft("t1")).toBe(FREE_TRIAL.prompts);
+    // Ein Zug geht danach unverändert.
+    expect(typeof (await turn("t1"))).toBe("object");
+  });
+
+  it("höchstens so viele wie Gratis-Prompts, und ein gescheiterter gibt seinen Platz zurück", async () => {
+    const { reserveFreeTrialTestRun } = await import("@/server/free-trial");
+    const failed = await reserveFreeTrialTestRun(req(), "t2", "h0");
+    if (typeof failed === "string") throw new Error(failed);
+    await failed.release();
+    for (let i = 0; i < FREE_TRIAL.prompts; i++) {
+      expect(typeof (await reserveFreeTrialTestRun(req(), "t2", `h${i}`)), `h${i}`).toBe("object");
+    }
+    expect(await reserveFreeTrialTestRun(req(), "t2", "h-neu")).toBe("used");
+  });
+
+  it("zählt gegen das Tagesbudget des Rahmens", async () => {
+    vi.stubEnv("FREE_TRIAL_DAILY_CALLS", "1");
+    const { reserveFreeTrialTestRun } = await import("@/server/free-trial");
+    expect(typeof (await reserveFreeTrialTestRun(req("192.0.2.7"), "t3", "h"))).toBe("object");
+    expect(await turn("t4", "192.0.2.8")).toBe("budget");
+  });
+});

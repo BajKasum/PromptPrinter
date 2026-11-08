@@ -130,6 +130,21 @@ export const de = {
     keyNoticeSeePro: "Pro ansehen",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Noch {count} Gratis-Prompt", other: "Noch {count} Gratis-Prompts" },
+    // Fertiger Prompt: woanders öffnen und Probelauf (prompt-actions.tsx)
+    openIn: {
+      chatgpt: "In ChatGPT öffnen",
+      claude: "In Claude öffnen",
+      copied: "Kopiert, einfach dort einfügen.",
+      opened: "Die Seite ist offen. Kopieren ging nicht, nimm den Knopf am Prompt.",
+    },
+    testRun: {
+      button: "Probelauf",
+      running: "Probelauf läuft…",
+      hint: "Schickt den Prompt einmal an eine KI und zeigt die Antwort darunter. Wird nicht gespeichert.",
+      title: "So antwortet eine KI auf deinen Prompt",
+      disclaimer: "Ein Lauf ohne mich dazwischen, nicht gespeichert. Eine andere KI antwortet anders.",
+      failed: "Der Probelauf hat nicht geklappt.",
+    },
     consentTitle: "Deine Nachrichten gehen an Z.ai in Singapur",
     consentBody:
       "Ohne eigenen Key beantwortet Z.ai deine Nachrichten, ein KI-Anbieter mit Sitz in Singapur. Für Singapur und China gibt es keinen Angemessenheitsbeschluss der EU und der Schweiz, und eine Bearbeitung in China können wir nicht ausschliessen. Deshalb frage ich dich einmal ausdrücklich. Stimmst du nicht zu, kannst du stattdessen deinen eigenen API-Schlüssel nutzen. Du kannst die Zustimmung jederzeit in den Einstellungen widerrufen.",
@@ -843,6 +858,10 @@ export const de = {
       "Der Chat ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen, dann läuft er sofort weiter.",
     freeTrialBudget:
       "Mein Gratis-Kontingent für heute ist aufgebraucht. Morgen geht es weiter, oder du hinterlegst einen eigenen KI-Key, dann läuft es sofort.",
+    testRunTooLong:
+      "Dieser Prompt ist für einen Probelauf zu lang.",
+    testRunUsed:
+      "Diesen Prompt hast du schon einmal ausprobiert. Im Gratis-Rahmen gibt es einen Probelauf je Prompt.",
     chatNotConfigured:
       "Der Chat ist gerade nicht richtig eingerichtet. Das liegt nicht an dir, bitte versuch es später erneut.",
     chatPersistFailed: "Dein Chat konnte nicht gespeichert werden. Versuch es nochmal.",

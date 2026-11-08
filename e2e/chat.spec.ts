@@ -87,6 +87,38 @@ test.describe("Chat", () => {
     expect(await blob!.text()).toBe(fileText);
   });
 
+  test("am fertigen Prompt: In Claude öffnen kopiert und öffnet einen leeren Chat, der Probelauf antwortet sichtbar", async ({
+    signedIn: { page, account },
+  }) => {
+    await makePro(account);
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    // Nichts verlässt den Test: claude.ai bekommt eine leere Seite.
+    await page.context().route("https://claude.ai/**", (route) => route.fulfill({ status: 200, body: "ok" }));
+
+    await page.goto("/chats/new");
+    await page.getByLabel("Nachricht an Finn").fill(QUESTION);
+    await page.getByRole("button", { name: "Senden" }).click();
+    await expect(page.getByText("Demo-Antwort")).toBeVisible({ timeout: 30_000 });
+
+    const [popup] = await Promise.all([
+      page.waitForEvent("popup"),
+      page.getByRole("button", { name: "In Claude öffnen" }).click(),
+    ]);
+    await popup.waitForLoadState();
+    expect(popup.url()).toBe("https://claude.ai/new");
+    await expect(page.getByText("Kopiert, einfach dort einfügen.")).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(QUESTION);
+    await popup.close();
+
+    // Ohne Server-Anbieter (Testumgebung) antwortet der Probelauf mit einer klaren Absage statt einer erfundenen Antwort.
+    const [response] = await Promise.all([
+      page.waitForResponse((r) => r.url().endsWith("/api/test-run")),
+      page.getByRole("button", { name: /Probelauf/ }).click(),
+    ]);
+    expect(response.status()).toBe(503);
+    await expect(page.getByRole("alert").filter({ hasText: "nicht richtig eingerichtet" })).toBeVisible();
+  });
+
   test("ein frisches Free-Konto hat drei Gratis-Prompts, danach den Key-Hinweis und keinen Fehler zum Wiederholen", async ({
     signedIn: { page },
   }) => {

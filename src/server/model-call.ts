@@ -10,7 +10,7 @@ import type { createClient } from "@/server/supabase/server";
 import { llmConfig } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
-import { freePromptsLeft, reserveFreeTrialTurn, type FreeTrialSlot } from "@/server/free-trial";
+import { freePromptsLeft, reserveFreeTrialTestRun, reserveFreeTrialTurn, type FreeTrialSlot } from "@/server/free-trial";
 import { problem } from "@/server/http/api-problem";
 import { DatabaseReadError, orThrow } from "@/server/supabase/query";
 import { captureError } from "@/shared/lib/observability";
@@ -68,7 +68,12 @@ export type ModelCallOptions = {
    * Nur der Chat: ein Free-Konto ohne eigenen Key darf im Gratis-Rahmen auf den Server-Key (server/free-trial.ts).
    * `budget` ist die Absage, wenn der Rahmen heute aufgebraucht ist. Ohne die Option bleibt Free beim eigenen Key.
    */
-  freeTrial?: { req: Request; budget: string };
+  freeTrial?: {
+    req: Request;
+    budget: string;
+    /** Probelauf (api/test-run): der Hash des Prompts. Dann zählt ein Probelauf je Prompt statt ein Zug. */
+    testRunOf?: { promptHash: string; used: string };
+  };
 };
 
 export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCallAllowance | Response> {
@@ -253,13 +258,19 @@ async function reserveFreeTrialSlot(
   const { userId, appMetadata, m, plan } = args;
   const byokRequired = (freeTrial: string) =>
     problem(403, PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon, { kind: "byokRequired", plan, freeTrial });
-  const left = await freePromptsLeft(userId);
-  if (left === null) return byokRequired("unavailable");
-  if (left <= 0) return byokRequired("exhausted");
+  // Ein Probelauf gilt einem Prompt, den das Konto schon hat: auch der letzte Gratis-Prompt darf ihn noch haben.
+  if (!freeTrial.testRunOf) {
+    const left = await freePromptsLeft(userId);
+    if (left === null) return byokRequired("unavailable");
+    if (left <= 0) return byokRequired("exhausted");
+  }
   if (llmConfig()?.provider === "zai" && !hasZaiConsent(appMetadata)) {
     return problem(403, m.consentRequired, { kind: "consentRequired" });
   }
-  const slot = await reserveFreeTrialTurn(freeTrial.req, userId);
+  const slot = freeTrial.testRunOf
+    ? await reserveFreeTrialTestRun(freeTrial.req, userId, freeTrial.testRunOf.promptHash)
+    : await reserveFreeTrialTurn(freeTrial.req, userId);
+  if (slot === "used") return problem(403, freeTrial.testRunOf?.used ?? freeTrial.budget, { kind: "testRunUsed", plan });
   if (slot === "budget") return problem(403, freeTrial.budget, { kind: "freeTrialBudget", plan });
   if (typeof slot === "string") return byokRequired(slot);
   reservations.push(slot.release);

@@ -29,7 +29,7 @@ const GENERATED = new Set(["src/shared/supabase/database.types.ts"]);
 const DICTIONARY_DIR = "src/shared/i18n/messages/";
 // 800 -> 900 am 2026-10-17: die Texte der Einwilligungen (Sprachmodus, Z.ai) kamen in fuenf Sprachen dazu.
 // 900 -> 1000 am 2026-11-01: Prompt-Prüfung, Platzhalter, Qualitätszeile, Verfeinern und Vorschläge kamen in fünf Sprachen dazu.
-// Dazu kommen "Über mich", das Teilen gespeicherter Prompts und die Gratis-Prompts, je in fünf Sprachen.
+// Dazu kommen "Über mich", das Teilen gespeicherter Prompts und die Gratis-Prompts, je in fünf Sprachen. Dazu "In ChatGPT/Claude öffnen" und der Probelauf.
 const MAX_DICTIONARY_LINES = 1100;
 
 function sourceFiles(dir: string): string[] {

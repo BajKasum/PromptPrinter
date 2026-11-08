@@ -123,6 +123,21 @@ export const en: Messages = {
     keyNoticeSeePro: "See Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "{count} free prompt left", other: "{count} free prompts left" },
+    // Finished prompt: open elsewhere and test run (prompt-actions.tsx)
+    openIn: {
+      chatgpt: "Open in ChatGPT",
+      claude: "Open in Claude",
+      copied: "Copied, just paste it there.",
+      opened: "The page is open. Copying failed, use the button on the prompt.",
+    },
+    testRun: {
+      button: "Test run",
+      running: "Test run in progress…",
+      hint: "Sends the prompt to an AI once and shows the answer below. Not saved.",
+      title: "How an AI answers your prompt",
+      disclaimer: "One run without me in between, not saved. Another AI will answer differently.",
+      failed: "The test run didn't work.",
+    },
     consentTitle: "Your messages go to Z.ai in Singapore",
     consentBody:
       "Without your own key, Z.ai answers your messages, an AI provider based in Singapore. There is no adequacy decision from the EU or Switzerland for Singapore and China, and we can't rule out processing in China. That's why I ask you once, explicitly. If you don't agree, you can use your own API key instead. You can withdraw your consent at any time in settings.",
@@ -825,6 +840,10 @@ export const en: Messages = {
       "The chat is temporarily unavailable. Try again later, or add your own API key in the settings and it keeps going right away.",
     freeTrialBudget:
       "My free allowance for today is used up. It continues tomorrow, or add your own AI key and it runs right away.",
+    testRunTooLong:
+      "This prompt is too long for a test run.",
+    testRunUsed:
+      "You've already tried this prompt once. The free allowance includes one test run per prompt.",
     chatNotConfigured:
       "The chat isn't set up properly right now. It's not your fault, please try again later.",
     chatPersistFailed: "Your chat couldn't be saved. Please try again.",
