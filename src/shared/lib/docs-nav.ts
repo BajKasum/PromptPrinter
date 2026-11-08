@@ -114,10 +114,10 @@ export const DOCS_GROUPS: DocGroup[] = [
       },
       {
         slug: "terminal-anmeldung",
-        title: "Anmeldung im Terminal",
+        title: "Terminal und MCP",
         summary:
-          "Wie sich ein Terminal ohne Passwort bei deinem Konto anmeldet: Code abtippen, Gerät prüfen, bestätigen, und wie du es wieder abmeldest.",
-        updated: "2026-11-02",
+          "Das Terminal-Programm: ohne Passwort per Code anmelden, Prompts mit /pp schreiben, über MCP an Claude Code oder Claude Desktop geben und wieder abmelden.",
+        updated: "2026-11-08",
       },
       {
         slug: "tastenkuerzel",
