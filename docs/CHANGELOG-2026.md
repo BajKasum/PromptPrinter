@@ -11,6 +11,18 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Header v2 nach Kasums Kritik (Branch `feat/header-v2`)
+
+Kasum zum Wasserband von #303: "mitscrollen" hiess sichtbar bleiben, nicht wegscrollen; das dunkle Band "sieht aus wie eine Fassade", die Bogenkante wie eine Markise; die Punkte klebten am Logo.
+
+- **Fest oben, ohne Verwandlung:** `fixed`, oben wie nach dem Scrollen gleich (keine Pille, keine auftauchende Linie, kein Abdunkeln). Das Mobilmenü öffnet an jeder Stelle ohne Sprung nach oben (headless gemessen: bei 900 px Scroll bleibt `scrollY` 900).
+- **Hell statt Band:** `--header-surface` (205 58% 91%) zu 82 % deckend mit Blur, eine Spur dunkler als der Hero; kein `.dark` mehr im Kopf. `--header-shallow` ist weg, `--header-deep` trägt nur noch das Terminal-Fenster. Kontraste gerechnet auf der Fläche über dem Hero: Links (`text-secondary`) 5,8:1, Logo-Akzent 5,0:1.
+- **Raster `1fr auto 1fr`** ab `lg`: Logo links, die fünf Punkte in der Mitte der Seite (gemessen 720 von 1440 px), grösserer Abstand (`gap-2`, ab `xl` `gap-4`), Knöpfe rechts.
+- **Wasserkante:** drei durchscheinende Lagen in der Farbe der Fläche, jede eine Summe aus drei Sinuswellen mit ganzzahligen Perioden je Kachel (unregelmässig und doch nahtlos, `header-water.test.ts`), eigene Phase und Geschwindigkeit (43 bis 79 s, eine gegenläufig), 18 px flach. Nur `transform`, unter reduced-motion still.
+- **Fehler am selben Tag:** #306 (Teilen) wurde gemergt, obwohl der E2E-Schritt "Datenbank-Typen sind aktuell" rot war: der Merge lief nach einem gescheiterten `gh pr checks --watch` weiter. Die von Hand geschriebenen Typen für `prompt_shares` wichen vom generierten Stand ab (Formatierung, `isOneToOne`); #307 ersetzt sie durch die Ausgabe von `supabase@2.119.0 gen types`, `main` war rund 20 Minuten rot. Seitdem mergt das Skript nur bei Exit 0 und ohne `fail`.
+
+---
+
 ## 2026-11-08: Gespeicherte Prompts per Link teilen (Branch `feat/teilen`, Migration 0057, Auftrag vom 08.11.2026 ohne Einzelfreigabe)
 
 - **Wo:** in der Liste der gespeicherten Prompts (`/prompts` und Projekt-Ergebnisse), im aufgeklappten Prompt unter den Knöpfen, nicht im Chat. "Per Link teilen" fragt vorher nach: der Text wird öffentlich, Name und E-Mail-Adresse stehen nicht dabei, widerrufbar. Findet die Prompt-Prüfung einen Schlüssel oder persönliche Angaben, steht das im selben Dialog. Danach Link kopieren oder widerrufen.
