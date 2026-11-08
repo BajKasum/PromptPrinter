@@ -12,6 +12,7 @@ import type { SavedPrompt } from "@/shared/lib/saved-prompts";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { SharePrompt } from "@/features/prompts/components/share-prompt";
 
 // The Ergebnisse/Gespeicherte-Prompts list, newest first.
 //
@@ -336,6 +337,8 @@ function SavedPromptCard({
               </button>
             </div>
           </div>
+          {/* Teilen per Link (Migration 0057): erst nach einer Rückfrage, widerrufbar. */}
+          <SharePrompt promptId={prompt.id} content={prompt.content} />
         </div>
       )}
 

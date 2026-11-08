@@ -522,6 +522,22 @@ export const de = {
     saved: "Gespeichert. Ich nehme es ab dem nächsten Chat mit.",
     saveFailed: "Konnte nicht speichern. Versuch es gleich noch einmal.",
   },
+  // Teilen per Link: ein gespeicherter Prompt als öffentliche Seite (server/prompt-share.ts).
+  share: {
+    action: "Per Link teilen",
+    privateHint: "Nur für dich sichtbar.",
+    confirmTitle: "Prompt öffentlich teilen?",
+    confirmBody: "Jeder mit dem Link kann diesen Prompt lesen. Dein Name und deine E-Mail-Adresse stehen nicht dabei. Du kannst den Link jederzeit widerrufen.",
+    riskIntro: "Bitte prüf vorher:",
+    confirm: "Link erstellen",
+    sharing: "Erstellt …",
+    shared: "Link erstellt und kopiert.",
+    copyLink: "Link kopieren",
+    revoke: "Widerrufen",
+    revoked: "Link widerrufen. Er führt jetzt ins Leere.",
+    failed: "Das hat nicht geklappt. Versuch es gleich noch einmal.",
+    notFound: "Diesen Prompt finde ich nicht.",
+  },
   usage: {
     unlimited: "Unbegrenzt",
     thousand: "Tsd.",

@@ -517,6 +517,22 @@ export const fr: Messages = {
     saved: "Enregistré. J'en tiens compte dès ton prochain chat.",
     saveFailed: "Impossible d'enregistrer. Réessaie dans un instant.",
   },
+  // Partager par lien : un prompt enregistré comme page publique (server/prompt-share.ts).
+  share: {
+    action: "Partager par lien",
+    privateHint: "Visible par toi seul.",
+    confirmTitle: "Partager ce prompt publiquement ?",
+    confirmBody: "Toute personne ayant le lien peut lire ce prompt. Ton nom et ton adresse n'y figurent pas. Tu peux révoquer le lien à tout moment.",
+    riskIntro: "Vérifie d'abord :",
+    confirm: "Créer le lien",
+    sharing: "Création…",
+    shared: "Lien créé et copié.",
+    copyLink: "Copier le lien",
+    revoke: "Révoquer",
+    revoked: "Lien révoqué. Il ne mène plus nulle part.",
+    failed: "Ça n'a pas marché. Réessaie dans un instant.",
+    notFound: "Je ne trouve pas ce prompt.",
+  },
   usage: {
     unlimited: "Illimité",
     thousand: "k",
