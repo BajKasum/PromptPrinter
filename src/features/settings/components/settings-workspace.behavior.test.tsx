@@ -136,7 +136,7 @@ describe("Karten", () => {
       "Die Sprache der App. Die Landing Page und die Rechtstexte bleiben Deutsch.",
       "Nutze dein eigenes Kontingent statt unserer Limits.",
       "Ändere dein Passwort.",
-      "Deine Zustimmung für Chats im Pro-Plan.",
+      "Deine Zustimmung für Chats ohne eigenen Key (Gratis-Prompts und Pro).",
       "Eine Kopie von allem, was zu deinem Konto gehört.",
       "Unwiderrufliche Aktionen.",
     ]) {

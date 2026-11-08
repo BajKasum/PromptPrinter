@@ -292,7 +292,7 @@ export function SettingsWorkspace({
           <TerminalSessions />
         </SettingsCard>
 
-        {/* Zustimmung zur Übermittlung an Z.ai (Pro, Server-Key), Rechts-Audit R-1.
+        {/* Zustimmung zur Übermittlung an Z.ai (Server-Key: Pro und Gratis-Prompts), Rechts-Audit R-1.
             Nur dort, wo der Server-Key überhaupt läuft (Kontingent über null: Pro, Team, Admin),
             oder wo schon einmal zugestimmt wurde, damit ein Widerruf immer möglich bleibt (#153).
             Ein Free-Konto mit eigenem Key schickt nichts an Z.ai und soll dafür nichts erteilen. */}

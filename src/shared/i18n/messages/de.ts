@@ -497,7 +497,7 @@ export const de = {
     },
     zaiConsent: {
       title: "Übermittlung an Z.ai",
-      hint: "Deine Zustimmung für Chats im Pro-Plan.",
+      hint: "Deine Zustimmung für Chats ohne eigenen Key (Gratis-Prompts und Pro).",
       granted: "Du hast am {date} zugestimmt, dass deine Nachrichten an Z.ai in Singapur gehen.",
       withdraw: "Zustimmung widerrufen",
       withdrawn: "Widerrufen. Ohne Zustimmung antwortet Finn nur noch mit deinem eigenen Schlüssel.",

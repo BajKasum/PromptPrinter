@@ -11,6 +11,12 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Z.ai-Einwilligung in den Einstellungen nennt die Gratis-Prompts (Branch `fix/zai-einwilligung-einstellungen`)
+
+Die Karte in den Einstellungen sagte noch "Deine Zustimmung für Chats im Pro-Plan", seit dem Gratis-Rahmen gilt sie für jeden Chat ohne eigenen Key. Text in fünf Sprachen angeglichen (fr/it/es ungeprüft). `ZAI_CONSENT_VERSION` bleibt 2026-11-08: Empfänger, Land und Risiko sind unverändert, und der Einwilligungstext im Chat dieser Fassung sagt schon "ohne eigenen Key".
+
+---
+
 ## 2026-11-08: Feste Bauteile gemessen und verworfen, In ChatGPT/Claude öffnen, Probelauf, Z.ai-Modelle, die immer denken (Branch `feat/prompt-knoepfe-probelauf-v3`, Auftrag vom 08.11.2026)
 
 Auftrag: der fertige Prompt soll feste, beschriftete Bauteile haben (Rolle, Aufgabe, Kontext, Vorgaben, Vermeiden, Ausgabeformat), gemessen alt gegen neu, Hürde vorher festgelegt.

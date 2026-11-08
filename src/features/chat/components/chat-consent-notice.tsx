@@ -6,7 +6,7 @@ import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { useT } from "@/shared/i18n/provider";
 
-// Im Pro-Plan geht jede Nachricht an Z.ai (Singapur). Dafür braucht das Konto vorher eine ausdrückliche
+// Ohne eigenen Key (Gratis-Prompts und Pro) geht jede Nachricht an Z.ai (Singapur). Dafür braucht das Konto vorher eine ausdrückliche
 // Zustimmung (server/consent.ts, Rechts-Audit R-1). Der Server prüft sie bei jedem Zug; antwortet er mit
 // 403 consentRequired, steht dieser Hinweis an der Stelle des Fehlerbanners, die getippte Nachricht wartet
 // im Eingabefeld. "Einverstanden und senden" speichert die Zustimmung und schickt sie gleich ab.
