@@ -500,6 +500,19 @@ export const en: Messages = {
     },
   },
 
+  // About me (settings): what Finn should know about the person (shared/lib/about-me.ts).
+  aboutMe: {
+    title: "About me",
+    hint: "What I should know about you. I read it in every chat, in the browser and in the terminal.",
+    label: "About me",
+    placeholder: "For example: I'm a teacher, I mostly write in English, I mainly use ChatGPT and I like a relaxed tone.",
+    privacy: "Optional. Please no contact details like address, phone or email.",
+    counter: "{count} of {max} characters",
+    save: "Save",
+    saving: "Saving…",
+    saved: "Saved. I'll take it into account from your next chat.",
+    saveFailed: "Couldn't save. Please try again in a moment.",
+  },
   usage: {
     unlimited: "Unlimited",
     thousand: "k",

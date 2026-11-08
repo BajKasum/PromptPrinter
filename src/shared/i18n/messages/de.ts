@@ -509,6 +509,19 @@ export const de = {
     },
   },
 
+  // Über mich (Einstellungen): was Finn über die Person wissen soll (shared/lib/about-me.ts).
+  aboutMe: {
+    title: "Über mich",
+    hint: "Was ich über dich wissen soll. Ich lese es in jedem Chat mit, im Browser wie im Terminal.",
+    label: "Über mich",
+    placeholder: "Zum Beispiel: Ich bin Lehrerin, schreibe meist auf Deutsch, nutze vor allem ChatGPT und mag einen lockeren Ton.",
+    privacy: "Freiwillig. Bitte keine Kontaktdaten wie Adresse, Telefon oder E-Mail.",
+    counter: "{count} von {max} Zeichen",
+    save: "Speichern",
+    saving: "Speichert …",
+    saved: "Gespeichert. Ich nehme es ab dem nächsten Chat mit.",
+    saveFailed: "Konnte nicht speichern. Versuch es gleich noch einmal.",
+  },
   usage: {
     unlimited: "Unbegrenzt",
     thousand: "Tsd.",

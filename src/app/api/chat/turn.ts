@@ -4,6 +4,7 @@ import { captureError } from "@/shared/lib/observability";
 import { DatabaseReadError } from "@/server/supabase/query";
 import { CHAT_SYSTEM_PROMPT } from "@/server/system-prompt";
 import { buildProjectContext } from "@/features/projects/lib/project-context";
+import { aboutMeBlock } from "@/shared/lib/about-me";
 import { openTurn, type OpenedTurn } from "@/features/chat/lib/chat-persistence";
 import type { ValidatedAttachment } from "@/features/chat/lib/attachment-store";
 import { buildModelHistory } from "@/features/chat/lib/model-history";
@@ -37,6 +38,13 @@ export async function buildSystemInstruction(args: {
   //    migration 0024). When the chat refines a project, append a compact
   //    context block so the assistant knows what the project already carries.
   let systemInstruction = CHAT_SYSTEM_PROMPT;
+  // 5a. "Über mich" (Einstellungen, profiles.about_me) als eigener, gekennzeichneter Block. Er steht vor dem
+  //     Projektkontext und erklärt selbst, dass Gespräch und Projekt-Anweisungen vorgehen (shared/lib/about-me.ts).
+  //     Ein Lesefehler hier hält den Zug nicht auf: Finn antwortet dann ohne die Angaben.
+  const about = await readAboutMe(supabase, userId);
+  if (about) systemInstruction += `
+
+${about}`;
   // Ownership-verified project id, never the raw input.projectId (QA finding
   // F-8). The request only checked the value was a UUID, not that this caller
   // owns it, and openTurn writes it straight into conversations.project_id
@@ -159,4 +167,16 @@ export async function buildModelMessages(args: {
     }
   }
   return { inheritFrom, modelWindow, modelMessages, attachmentStats };
+}
+
+/** Der Block "Über mich" der Person, oder null (keine Angaben, oder das Profil war nicht lesbar). */
+async function readAboutMe(supabase: SupabaseClient, userId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.from("profiles").select("about_me").eq("id", userId).maybeSingle();
+    if (error) throw error;
+    return aboutMeBlock(data?.about_me);
+  } catch (err) {
+    captureError("chat.about_me_read_failed", err, { userId });
+    return null;
+  }
 }

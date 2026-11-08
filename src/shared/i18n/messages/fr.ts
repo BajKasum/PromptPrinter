@@ -504,6 +504,19 @@ export const fr: Messages = {
     },
   },
 
+  // À propos de moi (paramètres) : ce que Finn doit savoir sur la personne (shared/lib/about-me.ts).
+  aboutMe: {
+    title: "À propos de moi",
+    hint: "Ce que je dois savoir sur toi. Je le lis dans chaque chat, dans le navigateur comme dans le terminal.",
+    label: "À propos de moi",
+    placeholder: "Par exemple : je suis enseignante, j'écris surtout en français, j'utilise surtout ChatGPT et j'aime un ton détendu.",
+    privacy: "Facultatif. Pas de coordonnées, s'il te plaît : ni adresse, ni téléphone, ni e-mail.",
+    counter: "{count} sur {max} caractères",
+    save: "Enregistrer",
+    saving: "Enregistrement…",
+    saved: "Enregistré. J'en tiens compte dès ton prochain chat.",
+    saveFailed: "Impossible d'enregistrer. Réessaie dans un instant.",
+  },
   usage: {
     unlimited: "Illimité",
     thousand: "k",

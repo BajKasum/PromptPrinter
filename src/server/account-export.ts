@@ -189,7 +189,7 @@ type AuthUser = { id: string; email?: string | null; created_at?: string | null;
 
 /** Die Spalten des Profils, die der Export liest. Eine Stelle für Route und Test. */
 export const PROFILE_COLUMNS =
-  "display_name, plan, settings, is_admin, created_at, subscription_status, subscription_renews_at, subscription_ends_at";
+  "display_name, about_me, plan, settings, is_admin, created_at, subscription_status, subscription_renews_at, subscription_ends_at";
 
 /**
  * Der Konto-Abschnitt. Auch hier eine Positivliste, kein Durchreichen: nicht
@@ -202,6 +202,8 @@ export function buildAccountSection(user: AuthUser, profile: Row | null): Row {
     email: user.email ?? null,
     createdAt: user.created_at ?? null,
     displayName: profile?.display_name ?? null,
+    // Was Finn über die Person wissen soll (Einstellungen, "Über mich"), leer ohne Angaben.
+    aboutMe: profile?.about_me ?? "",
     plan: profile?.plan ?? "free",
     subscription: {
       status: profile?.subscription_status ?? null,

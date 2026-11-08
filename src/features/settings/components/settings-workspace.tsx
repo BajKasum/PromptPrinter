@@ -30,6 +30,7 @@ import { ThemePreference } from "@/features/settings/components/theme-preference
 import { ApiKeys } from "@/features/settings/components/api-keys";
 import { TerminalSessions } from "@/features/settings/components/terminal-sessions";
 import { TwoFactor } from "@/features/settings/components/two-factor";
+import { AboutMe } from "@/features/settings/components/about-me";
 import { PlanBadge } from "@/shared/ui/plan-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
@@ -53,6 +54,7 @@ export function SettingsWorkspace({
   activeProvider,
   customProvider,
   zaiConsentAt = null,
+  aboutMe = "",
 }: {
   userId: string;
   email: string;
@@ -70,6 +72,8 @@ export function SettingsWorkspace({
   customProvider: CustomProviderMeta | null;
   /** Wann das Konto der Übermittlung an Z.ai zugestimmt hat (server/consent.ts), sonst null. */
   zaiConsentAt?: string | null;
+  /** Was Finn über die Person wissen soll (profiles.about_me), leer ohne Angaben. */
+  aboutMe?: string;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -221,6 +225,8 @@ export function SettingsWorkspace({
         >
           <ThemePreference />
         </SettingsCard>
+
+        <AboutMe userId={userId} initialAboutMe={aboutMe} />
 
         {/* Sprache (29.09.2026): dieselbe Wahl wie im Kontomenü, hier für
             alle, die sie in den Einstellungen suchen. */}
