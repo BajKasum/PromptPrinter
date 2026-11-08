@@ -23,7 +23,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (Text: Leser, Ton, Länge; Software: Screens, Daten, Login), dann ein fertiger Prompt im Codeblock,
   der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit Test; die Regeln nutzt auch der
   Skill `/pp` im Schwester-Repo `promptprinter-pp`, Änderungen dort mitprüfen). Streaming per SSE, Antwort neu erzeugen,
-  eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert). "Über mich" (Einstellungen, `profiles.about_me`, `shared/lib/about-me.ts`) geht als gekennzeichneter Block in jeden Zug (`api/chat/turn.ts`).
+  eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert). "Über mich" (Einstellungen, `profiles.about_me`, `shared/lib/about-me.ts`) geht als gekennzeichneter Block in jeden Zug (`api/chat/turn.ts`). Am fertigen Prompt: In ChatGPT/Claude öffnen (kopieren, Seite leer öffnen) und Probelauf (`api/test-run`, ohne Finns Systemprompt, nicht gespeichert).
 - **Projekte sind Workspaces:** Anweisungen, Struktur (je nach `projects.type`
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
   (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
@@ -47,7 +47,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 
 **Technik**
 
-- **Modellzugang** nur in `src/server/llm/` (Einstieg `index.ts`). Z.ai (Standard `glm-4.5-air`) und
+- **Modellzugang** nur in `src/server/llm/` (Einstieg `index.ts`). Z.ai (Standard `glm-4.5-air`; Modelle, die immer denken, über `zaiThinkingParams`) und
   Gemini auf dem Server, Anthropic und OpenAI nur per BYOK. Ohne Key antwortet der
   Chat im Stub-Modus, nur in Entwicklung (`next start` verweigert ihn). Der Server-Key-Pfad (Z.ai) verlangt vorher die Zustimmung des Kontos (`server/consent.ts`, `app_metadata.zai_consent`, Chat und Projekt-Gedächtnis; Hinweistext geändert: `ZAI_CONSENT_VERSION` hochsetzen).
   `llm-retry.ts` wiederholt vorübergehende Fehler (3 Versuche), `llm-failover.ts`
