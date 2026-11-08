@@ -25,6 +25,18 @@ Kasum: "Ohne Key, drei Prompts sind gratis." Bisher musste ein neues Free-Konto 
 
 ---
 
+## 2026-11-08: Header als Wasserband, Seiten `/terminal` und `/mcp` (Branch `feat/header-cli-mcp-v2`, Auftrag vom 08.11.2026)
+
+Kasum: der Kopf soll mitscrollen, sich sichtbar vom Hero absetzen ("nicht eine Farbe einfach so langweilig, soll auch irgendwas Spezielles haben") und CLI und MCP direkt nennen, ohne Gruppe "Für Entwickler".
+
+- **Header:** nicht mehr `fixed`, sondern `absolute`; die Logik "ab 8 px zur Pille mit Rand und Blur" und das einklappende Logo sind weg. Ein Band in dunklerem Blau (`--header-deep` 214 58% 15% nach `--header-shallow` 207 55% 24%) mit einem ruhigen Licht und einer weichen Wellenkante, die 14 px in den Hero hängt und langsam seitwärts zieht (nur `transform`, unter reduced-motion still). `.dark` auf dem `<header>` setzt Schrift, Knöpfe und Akzent auf die schon kalibrierten Dunkel-Werte. Gemessen im Browser auf dem helleren Ton: Links 6,9:1, Akzent und Logo 6,0:1, "Einloggen" 7,5:1, "Jetzt starten" 17,5:1.
+- **`@theme inline` für die Farben:** sonst erben Utilities die an `:root` aufgelöste `--color-*`-Variable, und `.dark` auf einem einzelnen Element wirkt nicht (im Browser gesehen: der Kopf blieb dunkel beschriftet). Am `<html>` ändert sich nichts.
+- **Links:** Funktionen, Preise, Skill, CLI (`/terminal`), MCP (`/mcp`), alle direkt in der Leiste, im Mobilmenü und im Footer. Fünf Links passen erst ab `lg`, darunter öffnet der Menüknopf das Blatt; beim Öffnen geht die Seite nach oben, weil der Knopf mit dem Kopf wegscrollt.
+- **`/terminal` und `/mcp`:** Aufbau wie `/skill`, ein nachgebautes Terminal-Fenster in HTML. Befehle nach dem Vertrag mit `promptprinter-cli` in `terminal-data.ts`. `NPM_PUBLISHED = false`: beide Seiten zeigen den Weg aus dem Quellcode (`git clone`, `node bin/promptprinter.mjs`, für MCP der Pfad statt `npx`) und sagen, dass ein Paket gleichen Namens auf npm nicht von uns ist. Nach Kasums Veröffentlichung die Konstante und die eine Zeile im Test umstellen.
+- **Geprüft:** Desktop 1440 und Handy 375 im Browser, hell; keine Überbreite auf 375 (die Rasterspalten brauchten `min-w-0`).
+
+---
+
 ## 2026-11-08: Terminal-App, gespeicherte Prompts für den MCP-Server (Branch `feat/cli-gespeicherte-prompts`)
 
 Der MCP-Server des Terminal-Programms (`promptprinter mcp`, Werkzeuge `list_saved_prompts` und `get_saved_prompt`) soll einer anderen KI die gespeicherten Prompts des Kontos geben. Dafür gab es keine Route: Bearer galt nur für Chat, Abmelden und `api/cli/me`.
