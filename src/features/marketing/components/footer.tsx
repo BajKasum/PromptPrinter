@@ -18,6 +18,8 @@ const FOOTER_LINKS = [
   { href: "/#funktionen", label: "Funktionen" },
   { href: "/pricing", label: "Preise" },
   { href: "/skill", label: "Skill" },
+  { href: "/terminal", label: "CLI" },
+  { href: "/mcp", label: "MCP" },
   { href: "/docs", label: "Hilfe" },
   { href: "/vergleich", label: "Vergleich" },
   { href: "/ueber", label: "Über" },
