@@ -488,7 +488,7 @@ export const it: Messages = {
     },
     zaiConsent: {
       title: "Trasferimento a Z.ai",
-      hint: "Il tuo consenso per le chat con il piano Pro.",
+      hint: "Il tuo consenso per le chat senza una tua chiave (prompt gratuiti e Pro).",
       granted: "Il {date} hai acconsentito all'invio dei tuoi messaggi a Z.ai a Singapore.",
       withdraw: "Revoca il consenso",
       withdrawn: "Revocato. Senza consenso Finn risponde solo con la tua chiave.",

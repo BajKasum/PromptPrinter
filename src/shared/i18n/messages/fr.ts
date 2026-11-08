@@ -492,7 +492,7 @@ export const fr: Messages = {
     },
     zaiConsent: {
       title: "Transfert vers Z.ai",
-      hint: "Ton accord pour les chats avec le plan Pro.",
+      hint: "Ton accord pour les chats sans ta propre clé (prompts gratuits et Pro).",
       granted: "Le {date}, tu as accepté que tes messages soient envoyés à Z.ai à Singapour.",
       withdraw: "Retirer mon accord",
       withdrawn: "Retiré. Sans accord, Finn ne répond plus qu'avec ta propre clé.",
