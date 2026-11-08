@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Gespeicherte Prompts per Link teilen (Branch `feat/teilen`, Migration 0057, Auftrag vom 08.11.2026 ohne Einzelfreigabe)
+
+- **Wo:** in der Liste der gespeicherten Prompts (`/prompts` und Projekt-Ergebnisse), im aufgeklappten Prompt unter den Knöpfen, nicht im Chat. "Per Link teilen" fragt vorher nach: der Text wird öffentlich, Name und E-Mail-Adresse stehen nicht dabei, widerrufbar. Findet die Prompt-Prüfung einen Schlüssel oder persönliche Angaben, steht das im selben Dialog. Danach Link kopieren oder widerrufen.
+- **Seite `/geteilt/<token>`:** Titel, Prompt, Kopieren-Knopf, Finn und "Mach deinen eigenen Prompt mit Finn". `noindex, nofollow`, `no-referrer`, nicht in der Sitemap. Ratenlimit je Adresse (`share-view`, 60 in 10 Minuten) vor jeder Datenbankabfrage. Unbekannt, widerrufen oder gelöscht ist 404.
+- **Migration 0057:** Tabelle `prompt_shares` (`token` 32 Zeichen base64url aus 24 Zufallsbytes, höchstens eine Freigabe je Prompt). Ein zusammengesetzter Fremdschlüssel `(prompt_id, user_id)` auf `saved_prompts (id, user_id)` (neue Eindeutigkeit `saved_prompts_id_user_key`) lässt nur den Eigentümer teilen und räumt die Freigabe mit dem Prompt oder Konto weg. Schreiben nur der Server über `/api/prompts/[id]/share` (Ratenlimit `prompt-share`), `authenticated` liest nur eigene Zeilen, `anon` nichts. Sicherheitsprotokoll `prompt.shared` und `prompt.unshared`.
+- **Prompt-Prüfung** liegt jetzt in `shared/lib/prompt-check.ts` (Inhalt unverändert), `features/chat/lib/prompt-check.ts` leitet weiter, damit der Chat nichts ändern musste.
+- **SEO-Guard:** dynamische Seiten mit `noindex` sind namentlich ausgenommen (nur `/geteilt/[token]`).
+- **Geprüft:** Einheit, Route, Komponente, Seite; E2E gegen den lokalen Stack (fremdes Konto scheitert am Fremdschlüssel, öffentliche Seite ohne E-Mail, `anon` liest nichts, nach dem Widerruf 404); Migration zweimal angewendet (wiederholbar).
+- **Produktion:** 0057 am 2026-11-08 angewendet (Version `20261108145053`), lesend geprüft: RLS an, eine Policy, `anon` ohne Rechte, `authenticated` nur `select`, alle fünf Constraints und `saved_prompts_id_user_key` da.
+- **Offen (Rechtstext, nur Vorschlag):** ein Satz in der Datenschutzerklärung zum Teilen (siehe PR).
+
+---
+
 ## 2026-11-08: "Über mich" für Finn (Branch `feat/ueber-mich`, Migration 0056, Auftrag vom 08.11.2026 ohne Einzelfreigabe)
 
 - **Feld:** in den Einstellungen eine eigene Karte, freiwillig, bis 1000 Zeichen (Beruf, Sprache, meistgenutzte KI, Ton), mit dem Hinweis "keine Kontaktdaten". Eigener Speichern-Knopf, damit ein halb getippter Name in der Profilkarte nicht mitgespeichert wird.

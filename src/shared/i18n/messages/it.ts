@@ -513,6 +513,22 @@ export const it: Messages = {
     saved: "Salvato. Ne terrò conto dalla tua prossima chat.",
     saveFailed: "Impossibile salvare. Riprova tra un attimo.",
   },
+  // Condividere tramite link: un prompt salvato come pagina pubblica (server/prompt-share.ts).
+  share: {
+    action: "Condividi tramite link",
+    privateHint: "Visibile solo a te.",
+    confirmTitle: "Condividere questo prompt pubblicamente?",
+    confirmBody: "Chiunque abbia il link può leggere questo prompt. Il tuo nome e il tuo indirizzo non compaiono. Puoi revocare il link in qualsiasi momento.",
+    riskIntro: "Controlla prima:",
+    confirm: "Crea link",
+    sharing: "Creazione…",
+    shared: "Link creato e copiato.",
+    copyLink: "Copia link",
+    revoke: "Revoca",
+    revoked: "Link revocato. Non porta più da nessuna parte.",
+    failed: "Non ha funzionato. Riprova tra un attimo.",
+    notFound: "Non trovo questo prompt.",
+  },
   usage: {
     unlimited: "Illimitato",
     thousand: "k",

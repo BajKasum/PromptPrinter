@@ -55,12 +55,21 @@ type PageModule = {
 };
 
 const pages: PublicPage[] = [];
+// Dynamische Seiten mit noindex (ein per Link geteilter Prompt) stehen bewusst nicht in der Suche und brauchen weder Canonical
+// noch Vorschau. Sie sind hier namentlich festgehalten, damit nicht still eine echte Seite herausfällt.
+const noindexRoutes: string[] = [];
 
 beforeAll(async () => {
   vi.stubEnv("NEXT_PUBLIC_APP_URL", ORIGIN);
   for (const file of pagesIn(MARKETING_DIR)) {
     const mod = (await import(/* @vite-ignore */ file)) as PageModule;
     const route = routeOf(file);
+
+    const robots = mod.metadata?.robots;
+    if (route.includes("[") && robots && typeof robots === "object" && robots.index === false) {
+      noindexRoutes.push(route);
+      continue;
+    }
 
     // Eine dynamische Route (/vergleich/[slug]) steht für so viele Seiten,
     // wie generateStaticParams nennt. Jede davon wird einzeln geprüft.
@@ -100,6 +109,10 @@ function duplicates(values: string[]): string[] {
 }
 
 describe("SEO-Metadaten der öffentlichen Seiten", () => {
+  it("nimmt nur die geteilten Prompts aus der Suche", () => {
+    expect(noindexRoutes).toEqual(["/geteilt/[token]"]);
+  });
+
   it("findet die öffentlichen Seiten überhaupt", () => {
     const routes = pages.map((page) => page.route);
     expect(pages.length).toBeGreaterThan(15);

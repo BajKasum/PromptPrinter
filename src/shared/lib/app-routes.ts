@@ -54,6 +54,7 @@ export const PUBLIC_PREFIXES = [
   "/skill", // der Skill /pp zum Herunterladen (Seite im Header neben Preise)
   "/terminal", // die Terminal-App, im Header "CLI" (/cli ist die Bestätigung der Geräte-Anmeldung)
   "/mcp", // der MCP-Server der Terminal-App
+  "/geteilt", // ein per Link geteilter Prompt (server/prompt-share.ts), noindex
   "/docs",
   "/agb",
   "/cookies",
