@@ -24,6 +24,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // ein Crawl-Fehler.
     { url: `${BASE}/pricing`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/skill`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/terminal`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/mcp`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/docs`, lastModified: docsUpdated, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/vergleich`, lastModified: COMPARISONS_UPDATED, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/aufgaben`, lastModified: TASK_GUIDES_UPDATED, changeFrequency: "monthly", priority: 0.7 },

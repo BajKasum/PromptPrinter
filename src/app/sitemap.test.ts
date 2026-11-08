@@ -35,7 +35,7 @@ describe("sitemap", () => {
     const paths = sitemap().map((e) => e.url.replace("https://staging.example.com", ""));
 
     expect(paths).toEqual(
-      expect.arrayContaining(["/", "/pricing", "/skill", "/docs", "/datenschutz", "/impressum"])
+      expect.arrayContaining(["/", "/pricing", "/skill", "/terminal", "/mcp", "/docs", "/datenschutz", "/impressum"])
     );
   });
 

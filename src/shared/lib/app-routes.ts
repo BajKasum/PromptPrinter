@@ -52,6 +52,8 @@ export const PUBLIC_PREFIXES = [
   // reaches this check.
   "/pricing",
   "/skill", // der Skill /pp zum Herunterladen (Seite im Header neben Preise)
+  "/terminal", // die Terminal-App, im Header "CLI" (/cli ist die Bestätigung der Geräte-Anmeldung)
+  "/mcp", // der MCP-Server der Terminal-App
   "/docs",
   "/agb",
   "/cookies",

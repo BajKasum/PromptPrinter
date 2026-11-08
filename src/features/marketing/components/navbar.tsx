@@ -10,41 +10,34 @@ import { MenuToggleIcon } from "@/shared/ui/menu-toggle-icon";
 import { NavWave } from "@/shared/ui/nav-wave";
 import { cn } from "@/shared/lib/utils";
 
-// "Preise" is a real route: its own page, worth linking to directly from
-// anywhere on the site. "Funktionen" is back to an in-page anchor (#funktionen
-// on HowItWorks) now that the landing page carries the explanation inline
-// again (page.tsx's own comment has the full history) — next.config.ts keeps
-// a redirect from the old /features URL for anyone who bookmarked it, but the
-// navbar itself should link straight to the anchor, not round-trip through
-// that redirect on every click.
+// Alle Punkte stehen direkt im Kopf, ohne Untermenü und ohne Gruppe "Für
+// Entwickler" (Kasums Vorgabe): wer CLI oder MCP sucht, soll es mit einem Blick
+// finden. "Funktionen" ist ein Anker auf der Landing Page (HowItWorks trägt
+// id="funktionen"), die übrigen sind echte Seiten.
 //
-// `route` is the pathname this item counts as "the page you're on", and only
-// the real route has one. Funktionen is deliberately never marked active:
-// highlighting it while you sit at the top of the landing page would claim
-// you're in a section you haven't scrolled to yet.
-const nav = [
+// `route` ist der Pfad, auf dem ein Punkt als aktuelle Seite gilt. Funktionen
+// hat keinen: oben auf der Landing Page wäre er sonst markiert, obwohl man den
+// Abschnitt noch nicht erreicht hat.
+//
+// CLI zeigt auf /terminal, weil /cli die Bestätigungsseite der Geräte-Anmeldung
+// ist (app/(app)/cli/).
+export const MARKETING_NAV = [
   { label: "Funktionen", href: "/#funktionen", route: null },
   { label: "Preise", href: "/pricing", route: "/pricing" },
-  // Der Skill /pp aus dem Schwester-Repo zum Herunterladen (skill-data.ts).
   { label: "Skill", href: "/skill", route: "/skill" },
+  { label: "CLI", href: "/terminal", route: "/terminal" },
+  { label: "MCP", href: "/mcp", route: "/mcp" },
 ] as const;
 
+// Ab dieser Breite stehen Links und Knöpfe in der Leiste, darunter öffnet der
+// Menüknopf das Blatt. Fünf Punkte plus Logo und zwei Knöpfe passen erst ab lg.
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
 export function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Shrink/blur the bar into a floating pill once the user leaves the top.
-  // The logo collapse rides the same `scrolled` flag, so both land in the
-  // same frame instead of firing at two different scroll depths.
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // Lock body scroll while the mobile menu is open.
+  // Kein Scroll mehr, solange das Menü offen ist.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -52,10 +45,10 @@ export function Navbar() {
     };
   }, [open]);
 
-  // The mobile panel is md:hidden, if the viewport grows past the breakpoint
-  // while it's open, close it so we never leave the body scroll-locked.
+  // Wächst das Fenster über den Umbruch, während das Menü offen ist, schliesst
+  // es sich, sonst bliebe der Seiteninhalt gesperrt.
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
+    const mq = window.matchMedia(DESKTOP_QUERY);
     const onChange = (e: MediaQueryListEvent) => {
       if (e.matches) setOpen(false);
     };
@@ -63,8 +56,21 @@ export function Navbar() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
+  // Der Kopf scrollt mit der Seite weg. Das Blatt darunter ist fest
+  // positioniert und beginnt bei 64 px: damit es direkt unter der Leiste
+  // ansetzt, geht die Seite beim Öffnen nach oben, wo der Knopf ohnehin steht.
+  function toggleMenu() {
+    if (!open && window.scrollY > 0) window.scrollTo({ top: 0 });
+    setOpen((v) => !v);
+  }
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
+    // `dark` setzt die Tokens nur für den Kopf auf die Dunkel-Werte: Schrift,
+    // Knöpfe und Akzent sind dort schon für dunklen Grund kalibriert, der Rest
+    // der öffentlichen Seite bleibt hell. Absolut statt fest: der Kopf liegt
+    // über dem oberen Rand der Seite und scrollt mit ihr weg, ohne dass Seiten
+    // ihren Abstand nach oben ändern müssen.
+    <header className="dark absolute inset-x-0 top-0 z-50">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-200 focus:rounded-lg focus:border focus:border-ring focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-[13px] focus:text-foreground"
@@ -72,42 +78,30 @@ export function Navbar() {
         Zum Inhalt springen
       </a>
 
-      {/* The bar: full-width and transparent at the top; on scroll it contracts
-          into a floating, hairline-bordered, blurred pill (desktop) / a solid
-          blurred bar (mobile). Floating styles only apply when not in the open
-          menu state, so the mobile panel always aligns under a top-anchored bar. */}
+      {/* Das Wasser: dunkleres Blau als der Hero, ein ruhiges Licht darin und
+          eine weiche Wellenkante zum Hero hin (globals.css, .site-header-*). */}
+      <div aria-hidden className="site-header-water pointer-events-none">
+        <div className="site-header-wave" />
+      </div>
+
       <nav
         aria-label="Hauptnavigation"
-        className={cn(
-          "mx-auto flex w-full items-center justify-between gap-4 border-b border-transparent px-6 transition-all duration-300 ease-out md:border md:px-8",
-          "h-16",
-          scrolled && !open
-            ? "max-w-container border-border bg-background/70 backdrop-blur-xl backdrop-saturate-150 md:mt-3 md:max-w-4xl md:rounded-2xl md:px-4 md:shadow-elevated"
-            : "max-w-container",
-          open && "border-border bg-background/90 backdrop-blur-xl"
-        )}
+        className="relative mx-auto flex h-16 w-full max-w-container items-center justify-between gap-4 px-6 md:px-8"
       >
-        {/* Left: brand + section links */}
         <div className="flex items-center gap-8">
           <Link
             href="/"
             onClick={() => setOpen(false)}
             className="flex items-center transition-opacity hover:opacity-80"
           >
-            <Logo accentWordmark collapsed={scrolled} />
+            <Logo accentWordmark />
           </Link>
-          {/* Section links. Hovering used to only darken the label to
-              `foreground`: no feedback on the hit area, nothing to distinguish
-              hover from the page you're actually on, and the one colour it
-              reached for was the plain text colour rather than anything from
-              the brand. Now each link carries a water pill that settles in
-              behind it and a wave that swims in underneath (both in
-              globals.css), and the current page keeps them on. */}
-          <div className="hidden items-center gap-1 md:flex">
-            {nav.map((item) => {
+          {/* Jeder Link trägt die Wasser-Pille und die Welle (globals.css,
+              .nav-pill / .nav-wave), die aktuelle Seite behält beide. */}
+          <div className="hidden items-center gap-1 lg:flex">
+            {MARKETING_NAV.map((item) => {
               const active = item.route !== null && pathname === item.route;
-              // The anchor item is a native <a> on purpose (see `nav` above),
-              // so the two link kinds can't share one element type.
+              // Der Anker ist bewusst ein natives <a>, die Seiten sind <Link>.
               const Tag = item.route === null ? "a" : Link;
               return (
                 <Tag
@@ -118,13 +112,13 @@ export function Navbar() {
                     "group focus-glow relative isolate rounded-full px-3.5 py-2 text-[13.5px] transition-colors duration-200",
                     active
                       ? "font-medium text-accent-text"
-                      : "text-secondary hover:text-accent-text"
+                      : "text-foreground/85 hover:text-accent-text"
                   )}
                 >
                   <span
                     aria-hidden
                     data-active={active}
-                    className="nav-pill absolute inset-0 -z-10 rounded-full bg-accent-subtle"
+                    className="nav-pill absolute inset-0 -z-10 rounded-full bg-accent/15"
                   />
                   {item.label}
                   <NavWave active={active} />
@@ -134,57 +128,50 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Right: auth (desktop) / menu toggle (mobile). No theme switch here, the public site keeps one deliberate, always-light mood; theme
-            choice lives in the logged-in app's settings instead. */}
+        {/* Kein Themen-Schalter: die öffentliche Seite bleibt hell, die Wahl
+            liegt in den Einstellungen der App. */}
         <div className="flex items-center gap-2">
           <Button
             asChild
             variant="ghost"
             size="sm"
-            className="hidden md:inline-flex"
+            className="hidden border-foreground/25 hover:border-foreground/40 lg:inline-flex"
           >
             <Link href="/login">Einloggen</Link>
           </Button>
-          <Button
-            asChild
-            size="sm"
-            variant="primary"
-            className="hidden md:inline-flex"
-          >
+          <Button asChild size="sm" variant="primary" className="hidden lg:inline-flex">
             <Link href="/signup">Jetzt starten</Link>
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            onClick={() => setOpen((v) => !v)}
+            onClick={toggleMenu}
             aria-label={open ? "Menü schließen" : "Menü öffnen"}
             aria-expanded={open}
             aria-controls="mobile-menu"
-            className="h-9 w-9 md:hidden"
+            className="h-9 w-9 border-foreground/25 lg:hidden"
           >
             <MenuToggleIcon open={open} className="size-5" duration={300} />
           </Button>
         </div>
       </nav>
 
-      {/* Mobile menu, full-height sheet below the bar. Hidden from the a11y
-          tree (display:none) when closed. */}
+      {/* Das Blatt unter der Leiste, ganze Höhe. Geschlossen per display:none
+          auch für Screenreader weg. */}
       <div
         id="mobile-menu"
         className={cn(
-          "fixed inset-x-0 bottom-0 top-16 z-40 border-t border-border bg-background/95 backdrop-blur-xl md:hidden",
+          "fixed inset-x-0 bottom-0 top-16 z-40 bg-header-deep lg:hidden",
           open ? "block" : "hidden"
         )}
       >
         <div className="flex h-full flex-col justify-between gap-y-2 p-6 motion-safe:animate-menu-in">
-          {/* Same idea as the desktop links, adapted to a full-width row: the
-              tint is the whole row instead of a pill, and a chevron fades in
-              where the desktop wave would be (a centred wave under a
-              left-aligned label reads as a stray mark). Opacity only, so
-              nothing here needs a reduced-motion carve-out. */}
+          {/* Wie die Desktop-Links, auf eine volle Zeile übertragen: die Tönung
+              liegt auf der ganzen Zeile, ein Pfeil erscheint statt der Welle.
+              Nur Deckkraft, also nichts, was reduced-motion abfangen muss. */}
           <nav aria-label="Mobile Navigation" className="grid gap-y-1">
-            {nav.map((item) => {
+            {MARKETING_NAV.map((item) => {
               const active = item.route !== null && pathname === item.route;
               const Tag = item.route === null ? "a" : Link;
               return (
@@ -197,7 +184,7 @@ export function Navbar() {
                     "group flex items-center rounded-lg px-3 py-3 text-base transition-colors duration-200",
                     active
                       ? "bg-accent-subtle font-medium text-accent-text"
-                      : "text-foreground/80 hover:bg-accent-subtle hover:text-accent-text"
+                      : "text-foreground/85 hover:bg-accent-subtle hover:text-accent-text"
                   )}
                 >
                   {item.label}
@@ -214,7 +201,7 @@ export function Navbar() {
             })}
           </nav>
           <div className="flex flex-col gap-2">
-            <Button asChild variant="ghost" className="w-full">
+            <Button asChild variant="ghost" className="w-full border-foreground/25">
               <Link href="/login" onClick={() => setOpen(false)}>
                 Einloggen
               </Link>
