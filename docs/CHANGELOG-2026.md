@@ -11,6 +11,15 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Das Modell bleibt glm-4.5-air (Kasums Entscheid, Branch `docs/modell-bleibt-air`)
+
+Kasum hat die Empfehlung aus dem Eintrag "Feste Bauteile gemessen und verworfen" abgelehnt: `ZAI_MODEL` bleibt in Vercel ungesetzt, Produktion antwortet weiter mit `glm-4.5-air`. glm-5.3-flash war blind klar besser und billiger, braucht für eine ganze Antwort aber rund 9,6 s statt 2,6 s.
+
+- **Folge für die festen Bauteile und die Prompt-Anatomie:** Auf glm-4.5-air verfehlten die Bauteile die Hürde deutlich (2 : 6 : 4). Solange das Modell bleibt, sind beide vom Tisch.
+- **Der Code für glm-5.3 bleibt** (`zaiThinkingParams`, `reasoning: "drop"`). Er wirkt nur, wenn `ZAI_MODEL` ein Modell nennt, das immer denkt, und kostet sonst nichts.
+
+---
+
 ## 2026-11-08: Z.ai-Einwilligung in den Einstellungen nennt die Gratis-Prompts (Branch `fix/zai-einwilligung-einstellungen`)
 
 Die Karte in den Einstellungen sagte noch "Deine Zustimmung für Chats im Pro-Plan", seit dem Gratis-Rahmen gilt sie für jeden Chat ohne eigenen Key. Text in fünf Sprachen angeglichen (fr/it/es ungeprüft). `ZAI_CONSENT_VERSION` bleibt 2026-11-08: Empfänger, Land und Risiko sind unverändert, und der Einwilligungstext im Chat dieser Fassung sagt schon "ohne eigenen Key".
