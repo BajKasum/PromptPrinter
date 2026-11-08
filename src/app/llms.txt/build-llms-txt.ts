@@ -56,6 +56,8 @@ ${plans}
 - [Startseite](${base}/): Wie PromptPrinter funktioniert, in drei Schritten
 - [Preise](${base}/pricing): Free und Pro im Detail, plus häufige Fragen
 - [Skill](${base}/skill): Der Skill /pp für Coding-Agenten zum Herunterladen
+- [CLI](${base}/terminal): Finn im Terminal, mit demselben Konto wie im Browser
+- [MCP](${base}/mcp): Der MCP-Server, über den ein Agent bei Finn einen Prompt holt
 - [Über](${base}/ueber): Wer dahintersteckt und was versprochen wird
 - [Kontakt](${base}/kontakt): Fehler melden, Fragen stellen
 

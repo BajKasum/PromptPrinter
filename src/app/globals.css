@@ -2,7 +2,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme {
+/*
+ * Die Farben stehen inline: jede Utility schreibt hsl(var(--token)) selbst aus,
+ * statt eine an :root aufgelöste --color-*-Variable zu erben. Nur so wirkt eine
+ * .dark-Klasse auch auf einem einzelnen Element (der Kopf der öffentlichen
+ * Seite, das Terminal-Fenster auf /terminal und /mcp); am <html> verhält sich
+ * beides gleich.
+ */
+@theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
 
@@ -41,6 +48,11 @@
 
   --color-kazuvate: hsl(var(--kazuvate));
 
+  --color-header-deep: hsl(var(--header-deep));
+  --color-header-shallow: hsl(var(--header-shallow));
+}
+
+@theme {
   --font-sans: var(--font-geist-sans), Geist, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), Geist Mono, ui-monospace, monospace;
 
@@ -262,6 +274,17 @@
      * 7,9:1 auf background.
      */
     --kazuvate: 79 52% 21%;
+
+    /*
+     * Das Wasser im Kopf der öffentlichen Seite (navbar.tsx): spürbar
+     * dunkler als der helle Hero, damit Kopf und Seite sofort getrennt
+     * wirken. Nur in :root, der Kopf setzt seine übrigen Tokens per .dark;
+     * die beiden Töne gelten in beiden Themen. Kontraste im Browser gemessen:
+     * auf dem helleren Ton (shallow, ungünstigste Stelle) Links 6,9:1,
+     * Akzent-Schrift und Logo "Prompt" 6,0:1, "Einloggen" 7,5:1.
+     */
+    --header-deep: 214 58% 15%;
+    --header-shallow: 207 55% 24%;
   }
 
   .dark {
@@ -565,6 +588,47 @@
 
      Driven by the parent link's `.group:hover` / `:focus-visible`, or by
      `data-active` for the page you're currently on. */
+  /*
+   * Der Kopf der öffentlichen Seite: ein Band aus dunklerem Wasser mit einem
+   * ruhigen Licht von links oben und einer weichen Wellenkante, die 14 px in
+   * den Hero hängt. Die Welle zieht langsam seitwärts (transform, also nur
+   * Compositing); unter reduced-motion steht sie still.
+   */
+  .site-header-water {
+    position: absolute;
+    inset: 0 0 -14px 0;
+    overflow: hidden;
+    background:
+      radial-gradient(55% 160% at 16% -20%, hsl(var(--accent) / 0.22), transparent 70%),
+      radial-gradient(35% 140% at 88% 120%, hsl(var(--accent) / 0.12), transparent 70%),
+      linear-gradient(180deg, hsl(var(--header-deep)), hsl(var(--header-shallow)));
+    background-size: 100% calc(100% - 14px);
+    background-repeat: no-repeat;
+  }
+  .site-header-wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: calc(100% + 240px);
+    height: 14px;
+    background: hsl(var(--header-shallow));
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 14'%3E%3Cpath d='M0 0H240V8C180 14 180 2 120 8C60 14 60 2 0 8Z'/%3E%3C/svg%3E")
+      0 0 / 240px 14px repeat-x;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 14'%3E%3Cpath d='M0 0H240V8C180 14 180 2 120 8C60 14 60 2 0 8Z'/%3E%3C/svg%3E")
+      0 0 / 240px 14px repeat-x;
+    animation: site-header-drift 28s linear infinite;
+  }
+  @keyframes site-header-drift {
+    to {
+      transform: translateX(-240px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .site-header-wave {
+      animation: none;
+    }
+  }
+
   .nav-pill {
     opacity: 0;
     transform: scale(0.9);
