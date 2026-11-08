@@ -11,6 +11,23 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Feste Bauteile gemessen und verworfen, In ChatGPT/Claude öffnen, Probelauf, Z.ai-Modelle, die immer denken (Branch `feat/prompt-knoepfe-probelauf-v2`, Auftrag vom 08.11.2026)
+
+Auftrag: der fertige Prompt soll feste, beschriftete Bauteile haben (Rolle, Aufgabe, Kontext, Vorgaben, Vermeiden, Ausgabeformat), gemessen alt gegen neu, Hürde vorher festgelegt.
+
+- **Hürde** (vor dem ersten Ergebnis): neu gewinnt blind ≥ 8 von 12 fertigen Prompts; Rückfrage neu ≥ 10 von 12 gleich gut oder besser und maschinell nicht öfter verletzt; 12 von 12 genau ein Block, ≥ 11 von 12 mit Bauteilen; "Kürzer" ≥ 10/12, "Auf Englisch" ≥ 10/11 behalten sie.
+- **Messung:** 12 erfundene Ideen (Text, Webseite, Datenbank, Sicherheitsprüfung, Lernplan, Bild, Präsentation, Formel, Businessplan, Analyse, en, fr), Idee, Rückfrage, vorbereitete Antwort, Prompt; echtes Z.ai; sechs Fassungen getunt, je ein Lauf; blind bewertet von drei frischen Subagenten.
+- **Ergebnis glm-4.5-air (Produktion):** fertiger Prompt neu 2, alt 6, gleich 4; Rückfrage neu 5, alt 5, gleich 2. Maschinell 11/12 ein Block (einmal schrieb es das SQL selbst), 1-2 Entwürfe statt Rückfrage, zweimal keine Rückfrage (alt: 12/12, keine Entwürfe). **Verfehlt, nicht gemergt.** `system-prompt.ts` bleibt, damit auch der Skill `/pp` unberührt.
+- **glm-5.3-flash:** neu gegen alt 6 : 4 : 2 (verfehlt, Bild-Prompts leiden unter der Gliederung). Neu auf glm-5.3-flash gegen alt auf glm-4.5-air: 12 : 0, Rückfrage 10 : 0 : 2. Der Hebel ist das Modell.
+- **Kosten** (Preisliste docs.z.ai, 08.11.2026; alter Prompt, je Zug gemessen): glm-4.5-air 0,20/1,10 $ je Mio. Token, 0,00058 $ je Zug, ganze Antwort 2,6 s; glm-5.3-flash 0,15/0,50 $, 0,00042 $ je Zug, 9,6 s (denkt immer, `reasoning_effort: low`). **Empfehlung für Kasum:** `ZAI_MODEL=glm-5.3-flash` in Vercel, billiger und blind klar besser, spürbar langsamer bis zum ersten Wort.
+- **Code dafür (dieser Branch):** glm-5.3 und neuer lehnen `thinking: disabled` mit 400 ab (Code 1210); `zaiThinkingParams` (`server/llm/config.ts`) sendet dort `reasoning_effort: "low"`, Strom und Analyse lesen bei Z.ai ohne Denktext (`reasoning: "drop"`, `server/llm/http.ts`). glm-4.5-air unverändert.
+- **Punkt Prompt-Anatomie** entfällt damit: ohne beschriftete Bauteile im Prompt hat die Ansicht nichts zu zeigen.
+- **In ChatGPT öffnen, In Claude öffnen** (`features/chat/components/prompt-actions.tsx`, `lib/open-in.ts`): kopieren und die Seite leer in neuem Tab öffnen, Meldung "Kopiert, einfach dort einfügen." Eine Adresse mit vorbelegtem Text (`?q=`) ist bei keinem Anbieter offiziell dokumentiert (Websuche 08.11.2026: nur Forenbeiträge und Erweiterungen; Tenable meldet das sofortige Absenden bei ChatGPT als Prompt-Injection-Weg), deshalb gilt Kasums Rückfall für beide. Ausgefüllte Platzhalter (`placeholder-form.tsx`) gehen mit.
+- **Probelauf** (`POST /api/test-run`): der Prompt geht einmal unverändert an das Modell der Person, ohne Finns Systemprompt (nur "You are a helpful assistant.", weil Anthropic einen leeren Systemtext ablehnt), höchstens 1500 Token, nicht gespeichert, die Antwort in einem einklappbaren Bereich "So antwortet eine KI auf deinen Prompt". Dieselbe Kostenkette wie der Chat (`model-call.ts`, Ratenlimit `test-run` 30 je Stunde), kein Platzhalter-Stub (ohne Server-Anbieter 503). Im Gratis-Rahmen ein Probelauf je Prompt (Hash), höchstens drei je Konto, er zählt nicht als Gratis-Prompt, aber gegen Grenze je IP und Tagesbudget (`reserveFreeTrialTestRun`); ein zweiter ist `403 testRunUsed`.
+- **Nicht gebaut:** Prompt-Anatomie (siehe oben) und "Finn lebt im Chat" (Zeit). fr/it/es der neuen Texte nicht von Muttersprachlern geprüft.
+
+---
+
 ## 2026-11-08: Drei Prompts gratis ohne eigenen Key (Branch `feat/gratis-prompts-v3`, Auftrag vom 08.11.2026)
 
 Kasum: "Ohne Key, drei Prompts sind gratis." Bisher musste ein neues Free-Konto erst einen Key holen, bevor es einen einzigen Prompt sah.
