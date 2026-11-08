@@ -23,7 +23,9 @@ export type DurableSecurityEvent =
   | "mfa.enabled"
   | "mfa.disabled"
   | "mfa.recovery_used"
-  | "mfa.recovery_codes_renewed";
+  | "mfa.recovery_codes_renewed"
+  | "prompt.shared"
+  | "prompt.unshared";
 
 type Details = Record<string, string | number | boolean | null>;
 
