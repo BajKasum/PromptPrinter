@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-08: Terminal-App, gespeicherte Prompts für den MCP-Server (Branch `feat/cli-gespeicherte-prompts`)
+
+Der MCP-Server des Terminal-Programms (`promptprinter mcp`, Werkzeuge `list_saved_prompts` und `get_saved_prompt`) soll einer anderen KI die gespeicherten Prompts des Kontos geben. Dafür gab es keine Route: Bearer galt nur für Chat, Abmelden und `api/cli/me`.
+
+- **`GET /api/cli/prompts`:** `{ prompts: [{ id, title, createdAt, preview }] }`, neueste zuerst. `limit` Standard 20, eine Zahl ausserhalb von 1 bis 50 wird geklemmt, keine Zahl ist 400 `invalid`. `q` höchstens 200 Zeichen (länger 400 `invalid`), ohne Gross/Klein in Titel und Prompttext. `preview` sind die ersten 200 Zeichen, Zeilen ohne lesbaren Prompt fallen weg (die Liste kann dann kürzer sein als `limit`).
+- **`GET /api/cli/prompts/[id]`:** `{ id, title, content, createdAt }`. Keine UUID 400 `invalid`, fremd und nicht vorhanden gleich 404 `notFound`.
+- **Suche ohne `.or()`:** je Spalte eine Abfrage mit `ilike` auf `outputs->>title` und `outputs->>prompt`, der Suchtext steht nie in einem Logikausdruck von PostgREST. `\`, `%` und `_` sind maskiert; ein `*` (PostgREST macht daraus `%`) wird ein Einzelplatzhalter, die Treffer werden danach genau nachgesiebt.
+- **Wie `api/cli/me`:** nur per Bearer, eigenes Ratenlimit je Route (`cli-prompts`, `cli-prompt`) vor dem Auth-Server, `getUser()` und `checkCliSession`, RLS plus `.eq("user_id")`, Lesefehler 503. Keine Migration.
+- **Hilfe:** `/docs/terminal-anmeldung` heisst jetzt "Terminal und MCP" und beschreibt Programm, Befehle und MCP-Einrichtung. Das Paket liegt noch nicht auf npm, der Artikel zeigt deshalb den Weg aus dem Quellcode und keinen `npm install` (nach der Veröffentlichung nachziehen).
+- **Geprüft:** Routentests, `e2e/cli-prompts.spec.ts` gegen den lokalen Stack (echtes PostgREST, Sonderzeichen, fremdes Konto), Guard `bearer-routes.test.ts`, Mutationen von Hand 8 von 8 erkannt (je Route Bearer-Prüfung, `checkCliSession` und `user_id`-Filter weg, dazu UUID-Prüfung und Maskierung weg).
+
+---
+
 ## 2026-11-06: 21 von 34 Seiten im Google-Index, #246 erledigt (Branch `docs/search-console-246-abschluss`)
 
 Kasum hat sich im Browser-Pane neu bei Google angemeldet (die Anmeldung vom 03.11. war abgelaufen), den Rest hat Claude dort gelesen. Die Liste je Seite steht in #246.

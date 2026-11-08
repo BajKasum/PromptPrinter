@@ -18,6 +18,8 @@ const ALLOWED: Record<string, string> = {
   "src/app/api/chat/gate.ts": "der Chat ist das Ziel der Kommandozeile (createClientForRequest)",
   "src/app/api/cli/logout/route.ts": "beendet genau die Sitzung, deren Token mitkommt (bearerToken)",
   "src/app/api/cli/me/route.ts": "nennt dem Terminal Konto, Plan und ob der nächste Zug laufen kann, nur lesend",
+  "src/app/api/cli/prompts/route.ts": "listet dem MCP-Server des Terminals die gespeicherten Prompts des Kontos, nur lesend",
+  "src/app/api/cli/prompts/[id]/route.ts": "gibt dem MCP-Server des Terminals einen gespeicherten Prompt des Kontos, nur lesend",
   "src/server/security/request-origin.ts": "nimmt Bearer von der Herkunftsprüfung aus, liest das Token nicht",
 };
 
