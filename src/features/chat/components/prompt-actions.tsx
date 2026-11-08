@@ -5,6 +5,7 @@ import { ChevronDown, ExternalLink, FlaskConical, Loader2 } from "lucide-react";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { openTargetFor, type OpenTarget } from "@/features/chat/lib/open-in";
 import { readHttpFailure } from "@/features/chat/lib/turn-outcome";
+import { usePromptCopied } from "@/features/chat/lib/prompt-copied";
 import { useT } from "@/shared/i18n/provider";
 import { cn } from "@/shared/lib/utils";
 
@@ -12,6 +13,7 @@ import { cn } from "@/shared/lib/utils";
 // (Probelauf, api/test-run). Beides nimmt die Fassung mit ausgefüllten Platzhaltern, wenn es eine gibt.
 export function PromptActions({ prompt }: { prompt: string }) {
   const t = useT();
+  const promptCopied = usePromptCopied();
   const [note, setNote] = useState<string | null>(null);
   const [run, setRun] = useState<
     { state: "idle" } | { state: "running" } | { state: "done"; reply: string } | { state: "failed"; message: string }
@@ -29,6 +31,7 @@ export function PromptActions({ prompt }: { prompt: string }) {
     ) ?? Promise.resolve(false);
     window.open(plan.url, "_blank", "noopener,noreferrer");
     const ok = await copied;
+    if (ok) promptCopied();
     setNote(ok ? t.chat.openIn.copied : t.chat.openIn.opened);
   }
 

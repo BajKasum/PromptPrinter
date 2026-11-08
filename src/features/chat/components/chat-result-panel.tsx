@@ -1,13 +1,14 @@
 "use client";
 
-import { Mascot } from "@/shared/brand/mascot";
+import { AnimatedMascot } from "@/shared/brand/animated-mascot";
+import { PromptCopiedContext } from "@/features/chat/lib/prompt-copied";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { ChatReplyActions } from "@/features/chat/components/chat-transcript";
 import { RefineChips } from "@/features/chat/components/refine-chips";
 import { PlaceholderForm } from "@/features/chat/components/placeholder-form";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { PromptActions } from "@/features/chat/components/prompt-actions";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
 import { useT } from "@/shared/i18n/provider";
 
@@ -54,17 +55,32 @@ export function ChatResultPanel({
   const alreadySaved = savablePrompt ? (savedPrompts?.includes(savablePrompt) ?? false) : false;
   // Sind Platzhalter ausgefüllt, nehmen Öffnen und Probelauf diese Fassung (gespeichert wird weiter die mit Platzhaltern).
   const [filled, setFilled] = useState<string | null>(null);
+  // Finn am Ergebnis: denkt, solange ein Zug läuft, liefert beim fertigen Prompt und freut sich kurz nach dem Kopieren.
+  const [celebrating, setCelebrating] = useState(false);
+  const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onPromptCopied = useCallback(() => {
+    setCelebrating(true);
+    if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+    celebrateTimer.current = setTimeout(() => setCelebrating(false), 2400);
+  }, []);
+  useEffect(() => () => {
+    if (celebrateTimer.current) clearTimeout(celebrateTimer.current);
+  }, []);
+  const finnState = busy ? "thinking" : celebrating ? "celebrating" : savablePrompt ? "delivering" : "explaining";
 
   return (
+    <PromptCopiedContext.Provider value={onPromptCopied}>
     <section
       aria-label={t.chat.resultLabel}
       className="overflow-hidden rounded-2xl border border-border-strong bg-surface-raised"
     >
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 md:px-7">
         <div className="flex items-center gap-2">
-          {/* Finn's delivering pose, static, a quiet badge, not a performing
-              character: this sits on screen for as long as you're reading. */}
-          <Mascot state="delivering" size={22} className="shrink-0" />
+          {/* Klein und ruhig: der Zustand wechselt, die Bewegung ist das sanfte Preset des Zustands und fällt bei
+              reduzierter Bewegung weg (AnimatedMascot). */}
+          <span data-testid="result-finn" data-state={finnState} className="shrink-0">
+            <AnimatedMascot state={finnState} size={22} alt="" />
+          </span>
           <span className="text-[13px] font-medium text-foreground/75">{savablePrompt ? t.chat.resultTitlePrompt : t.chat.resultTitleReply}</span>
         </div>
         {savablePrompt && (
@@ -95,5 +111,6 @@ export function ChatResultPanel({
         <RefineChips onRefine={onRefine} onOther={onRefineOther} />
       )}
     </section>
+    </PromptCopiedContext.Provider>
   );
 }
