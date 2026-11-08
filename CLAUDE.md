@@ -23,7 +23,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (Text: Leser, Ton, Länge; Software: Screens, Daten, Login), dann ein fertiger Prompt im Codeblock,
   der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit Test; die Regeln nutzt auch der
   Skill `/pp` im Schwester-Repo `promptprinter-pp`, Änderungen dort mitprüfen). Streaming per SSE, Antwort neu erzeugen,
-  eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert).
+  eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert). "Über mich" (Einstellungen, `profiles.about_me`, `shared/lib/about-me.ts`) geht als gekennzeichneter Block in jeden Zug (`api/chat/turn.ts`).
 - **Projekte sind Workspaces:** Anweisungen, Struktur (je nach `projects.type`
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
   (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
@@ -62,8 +62,8 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
-  Migrationen 0001 bis 0055 in `supabase/migrations/`, alle in Produktion angewendet (0055 am 2026-11-03,
-  Version `20261102235100`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Migrationen 0001 bis 0056 in `supabase/migrations/`, alle in Produktion angewendet (0056 am 2026-11-08,
+  Version `20261108143129`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
