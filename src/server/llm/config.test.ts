@@ -10,6 +10,7 @@ import {
   openaiModel,
   serverConfigFor,
   zaiModelFor,
+  zaiThinkingParams,
 } from "@/server/llm/config";
 
 // Optionale Umgebungswerte (Betriebs-Audit, Folgesitzung 2026-10-07): ein LEER
@@ -117,5 +118,19 @@ describe("Modelle der Nutzer-Keys (BYOK) sind per Umgebung überschreibbar", () 
     vi.stubEnv("GEMINI_API_KEY", "gk");
     vi.stubEnv("GEMINI_MODEL", "gemini-x");
     expect(geminiByokModel()).toBe(llmConfig()?.model);
+  });
+});
+
+describe("Denken bei Z.ai", () => {
+  it("schaltet es bei den Modellen bis glm-5.2 ab", () => {
+    for (const model of ["glm-4.5-air", "glm-4.6v", "glm-4.7", "glm-5", "glm-5-turbo", "glm-5.2"]) {
+      expect(zaiThinkingParams(model), model).toEqual({ thinking: { type: "disabled" } });
+    }
+  });
+
+  it("setzt es bei Modellen, die immer denken (glm-5.3 und neuer), auf low statt es abzuschalten (sonst 400)", () => {
+    for (const model of ["glm-5.3", "glm-5.3-flash", "glm-5.3-flashx", "glm-5.10", "glm-6"]) {
+      expect(zaiThinkingParams(model), model).toEqual({ reasoning_effort: "low" });
+    }
   });
 });

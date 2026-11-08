@@ -14,6 +14,7 @@ import {
   providerLabel,
   serverConfigFor,
   zaiApiKey,
+  zaiThinkingParams,
   zaiVisionModel,
 } from "@/server/llm/config";
 import { geminiAnalyze } from "@/server/llm/gemini";
@@ -201,13 +202,14 @@ async function openAiCompatibleAnalyze(args: {
       stream: false,
       // Wie im Chat: GLM entscheidet sonst selbst, ob es "denkt", verbraucht
       // das Ausgabebudget für unsichtbare Zwischenschritte und liefert am
-      // Ende ein leeres content-Feld.
-      thinking: { type: "disabled" },
+      // Ende ein leeres content-Feld. Aus, oder knapp bei Modellen, die immer denken.
+      ...zaiThinkingParams(args.model),
     }),
   });
 
   if (!res.ok) await throwProviderError(args.label, res);
 
   const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
-  return { ...readCompletion(json, args.label), model: args.model };
+  // Der Denktext ist keine Faktenliste: bei Z.ai nie als Ersatz für eine leere Antwort nehmen.
+  return { ...readCompletion(json, args.label, { reasoning: args.label === "Z.ai" ? "drop" : "fallback" }), model: args.model };
 }
