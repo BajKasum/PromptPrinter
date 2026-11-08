@@ -92,14 +92,22 @@ test.describe("Chat", () => {
   }) => {
     await page.goto("/chats/new");
     await expect(page.getByTestId("free-prompts-left")).toHaveText("Noch 3 Gratis-Prompts");
+    // Nach dem ersten Zug lädt die Seite als /chats/[id] neu; ein Feld, das vor dem Hydratisieren gefüllt wird,
+    // lässt "Senden" aus. Deshalb füllen, bis der Knopf aktiv ist, erst dann senden.
+    const send = async (text: string) => {
+      await expect(async () => {
+        await page.getByLabel("Nachricht an Finn").fill(text);
+        await expect(page.getByRole("button", { name: "Senden" })).toBeEnabled({ timeout: 1_000 });
+      }).toPass({ timeout: 30_000 });
+      await page.getByRole("button", { name: "Senden" }).click();
+    };
     // Die Demo-Antwort trägt einen fertigen Prompt: jeder Zug ist ein Gratis-Prompt (server/free-trial.ts).
     for (const left of ["Noch 2 Gratis-Prompts", "Noch 1 Gratis-Prompt"]) {
-      await page.getByLabel("Nachricht an Finn").fill("Ein Prompt für einen Brief");
-      await page.getByRole("button", { name: "Senden" }).click();
+      await send("Ein Prompt für einen Brief");
       await expect(page.getByTestId("free-prompts-left")).toHaveText(left, { timeout: 30_000 });
+      await expect(page).toHaveURL(/\/chats\/[0-9a-f-]{36}/);
     }
-    await page.getByLabel("Nachricht an Finn").fill("Noch einer");
-    await page.getByRole("button", { name: "Senden" }).click();
+    await send("Noch einer");
     await expect(page.getByText("Ab hier brauche ich deinen eigenen KI-Key.")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("free-prompts-left")).toHaveCount(0);
     // Der Hinweis nimmt den Key seit dem Key-Assistenten gleich selbst an. Der Link
@@ -111,7 +119,10 @@ test.describe("Chat", () => {
     // Sendet es trotzdem, lehnt der Server mit 403 ab (byokRequired). Die Seite
     // zeigt dann denselben Hinweis, keinen "Erneut versuchen"-Knopf, der denselben
     // 403 nur wiederholte (Audit 23.09.2026, F-1).
-    await page.getByLabel("Nachricht an Finn").fill("Hallo");
+    await expect(async () => {
+      await page.getByLabel("Nachricht an Finn").fill("Hallo");
+      await expect(page.getByRole("button", { name: "Senden" })).toBeEnabled({ timeout: 1_000 });
+    }).toPass({ timeout: 30_000 });
     const [response] = await Promise.all([
       page.waitForResponse((r) => r.url().endsWith("/api/chat") && r.request().method() === "POST"),
       page.getByRole("button", { name: "Senden" }).click(),
