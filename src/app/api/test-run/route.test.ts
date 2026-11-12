@@ -21,6 +21,14 @@ const req = (body: unknown) =>
     body: JSON.stringify(body),
   });
 
+const abortable = (body: unknown, controller: AbortController) =>
+  new Request("https://promptprinter.app/api/test-run", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal: controller.signal,
+  });
+
 const release = vi.fn();
 
 beforeEach(() => {
@@ -85,6 +93,29 @@ describe("POST /api/test-run", () => {
     expect(res.status).toBe(502);
     expect(release).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(await res.json())).not.toContain("secret");
+  });
+
+  it("bricht der Browser ab, nachdem schon Text kam, bleiben die Reservierungen stehen", async () => {
+    const controller = new AbortController();
+    chatCompleteStream.mockImplementation(async function* () {
+      yield "Sehr geehrte ";
+      controller.abort();
+      throw new DOMException("aborted", "AbortError");
+    });
+    const res = await POST(abortable({ prompt: "x" }, controller));
+    expect(res.status).toBe(499);
+    expect(release).not.toHaveBeenCalled();
+  });
+
+  it("bricht der Browser vor dem ersten Text ab, gehen die Reservierungen zurück", async () => {
+    const controller = new AbortController();
+    chatCompleteStream.mockImplementation(async function* () {
+      controller.abort();
+      throw new DOMException("aborted", "AbortError");
+    });
+    const res = await POST(abortable({ prompt: "x" }, controller));
+    expect(res.status).toBe(499);
+    expect(release).toHaveBeenCalledTimes(1);
   });
 
   it("eine leere Antwort zählt als gescheitert", async () => {
