@@ -535,6 +535,20 @@ Was das nicht leistet:
 
 "Abmelden" im Kontomenü ruft `signOut()` mit dem Standard `global` auf und beendet alle Sitzungen des Kontos, auch die Terminals; die Einstellungen und der Hilfe-Artikel sagen das. Eine Sitzung, die vor dieser Tabelle ausgestellt wurde, hat keinen Eintrag und wird am Chat abgewiesen: neu anmelden.
 
+## Anmelden: Sperre je Konto
+
+`/api/auth` sperrt eine E-Mail-Adresse, sobald in einem Fenster von 15 Minuten (ab dem ersten Fehlversuch) zehn Fehlversuche gezählt sind, bis das Fenster abläuft (`src/server/security/sign-in-throttle.ts`). Dazu kommen Turnstile und das Limit je IP.
+
+**Was das nicht leistet.** Die Sperre gilt nur für diese Route. Den Passwort-Grant von Supabase Auth (`/auth/v1/token?grant_type=password`) erreicht jeder mit dem öffentlichen Anon-Key auch direkt. Dort greifen weder Turnstile noch die Sperre, nur die Grenze von Supabase Auth für `/auth/v1/token`: 1800 Anfragen in der Stunde je IP, Spitzen bis 30 ([Supabase, "Production Checklist", Auth rate limits](https://supabase.com/docs/guides/deployment/going-into-prod)). Schon eine einzige Adresse kommt dort also auf weit mehr Versuche als die zehn je Viertelstunde über `/api/auth`. Im Code lässt sich das nicht schliessen:
+
+| Weg | Was er braucht | Stand |
+|---|---|---|
+| CAPTCHA in Supabase Auth einschalten und das Turnstile-Token an Supabase weiterreichen (`options.captchaToken`), statt es in `/api/auth` selbst zu prüfen | Einstellung im Dashboard, Umbau von `/api/auth`, und ein neuer Entscheid: "Supabases eigenes CAPTCHA bleibt aus" (ein Token ist nur einmal einlösbar, zwei Prüfer brächen jeden Login) | offen, Kasum entscheidet |
+| Password Verification Hook, der die Sperre je Konto auch dort durchsetzt | Tarif Teams oder Enterprise ([Supabase, "Auth Hooks"](https://supabase.com/docs/guides/auth/auth-hooks)) | nicht auf Free |
+| Grenze für `/auth/v1/token` im Dashboard enger stellen | Einstellung im Dashboard | schadet eher: dieselbe Grenze gilt für das Erneuern der Sitzung, und `/api/auth` wie die Middleware sprechen von Vercels Servern aus mit Supabase, teilen sich also deren Adressen |
+
+Bis dahin schützen die Passwortregeln (mindestens zehn Zeichen, keine häufigen Passwörter; serverseitig nur bei der Registrierung über `/api/auth`, beim Ändern prüft sie nur der Browser, ältere Konten sind nicht erfasst) und der optionale zweite Faktor.
+
 ## Zweiter Faktor
 
 Optional, TOTP über Supabase Auth (#237). TOTP ist auf gehosteten Projekten kostenlos und von sich aus an ([Supabase, "Multi-Factor Authentication (TOTP)"](https://supabase.com/docs/guides/auth/auth-mfa/totp)). Die Einstellungen führen durchs Einrichten, die Anmeldung fragt danach (`/login/zweiter-faktor`), alles läuft über `/api/auth/mfa`.
@@ -565,7 +579,9 @@ Optional, TOTP über Supabase Auth (#237). TOTP ist auf gehosteten Projekten kos
      values ('mfa.disabled', '<konto>', '{"via": "operator"}');
    ```
 
-**Grenzen.** Versuche begrenzt `/api/auth/mfa` auf zehn in zehn Minuten je Konto. Wer das Passwort kennt und den Code direkt bei Supabase Auth probiert, trifft nur dessen Grenze je Adresse. Einen Faktor auf dem Produktionsprojekt hat noch niemand eingerichtet: ob der Schalter dort wirklich an ist, zeigt erst der erste Versuch, das Dashboard (Authentication → Multi-Factor) nennt es.
+**Grenzen.** `/api/auth/mfa` lässt zehn Versuche in zehn Minuten je Konto und Anschluss zu (IPv6 je /64), für die sechsstelligen Codes und getrennt davon für die Wiederherstellungscodes. Bewusst keine Grenze je Konto über alle Anschlüsse: wer das Passwort kennt, leerte sie von ein paar Adressen aus und sperrte den Besitzer aus der App, bis ihm nur der Rückweg bliebe, der den Faktor abschaltet. Gegen Durchprobieren brächte sie wenig, denn Supabase Auth nimmt Codes auch direkt an und begrenzt `/auth/v1/factors/:id/verify` nur je IP, auf 15 Anfragen in der Minute ([Supabase, "Production Checklist", Auth rate limits](https://supabase.com/docs/guides/deployment/going-into-prod)); die Grenze der Route ist enger. Einen Faktor auf dem Produktionsprojekt hat noch niemand eingerichtet: ob der Schalter dort wirklich an ist, zeigt erst der erste Versuch, das Dashboard (Authentication → Multi-Factor) nennt es.
+
+**Eigene API-Keys.** Die Data API kann `user_api_keys` seit Migration 0060 nur noch lesen (ohne `encrypted_key`). Schreiben, umschalten und entfernen geht nur über `api/settings/api-key`, die über `src/server/byok.ts` mit dem Service-Role-Schlüssel und der `user_id` der geprüften Sitzung schreibt. Die AAL2-Pflicht in der Tabelle oben gilt damit auf jedem Weg.
 
 ## Kontaktformular
 
@@ -593,7 +609,7 @@ Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nac
 
 ## Grenzen je Konto
 
-Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
+Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`, für das Ändern gespeicherter Prompts `*_saved_prompts_ceiling_on_update.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
 
 | Was | Grenze je Konto | Gilt für |
 |---|---|---|
@@ -610,11 +626,11 @@ Dazu kommen die älteren Grenzen je Projekt (20 Dateien, 25 MiB) und je Konto f�
 
 **Was sie nicht leisten.** Ein Konto belegt höchstens rund 85 MiB Datenbank und 100 MiB Speicher. Bei den Kontingenten des Supabase-Free-Tarifs (500 MB, 1 GB) reichen also ein paar Konten, um sie zu füllen, die Grenzen machen das nur teurer. Davor stehen die Anmeldung mit Turnstile und das Ratenlimit. Die Belegung steht im Supabase-Dashboard unter Organization → Usage, einen Alarm dafür gibt es nicht.
 
-**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen nur beim Einfügen, auch ein Konto über einer Grenze kann alles lesen, ändern und löschen und legt wieder an, sobald es darunter liegt (etwa nach einem Wechsel von Pro zu Free). Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
+**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen beim Einfügen, bei gespeicherten Prompts zusätzlich, wenn ein Ändern `outputs` eines Kontos ändert (sonst brächten viele kleine Zeilen, die danach wachsen, ein Konto auf rund 1 GB). Auch ein Konto über einer Grenze kann alles lesen und löschen und legt wieder an, sobald es darunter liegt (etwa nach einem Wechsel von Pro zu Free); gespeicherte Prompts ändern kann es erst wieder unter der Byte-Grenze, weil sich alte und neue Grösse in der Datenbank nicht gleich messen lassen (Kommentar in `*_saved_prompts_ceiling_on_update.sql`). Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
 
 **Grenzfälle.** Parallele Einfügungen eines Kontos reiht eine Sperre (`pg_advisory_xact_lock`) hintereinander, die Grenze hält dabei genau. Im Bucket geht das nicht, weil die Grösse erst nach dem Hochladen feststeht: ein Upload kann die Bytes um höchstens ein Objekt (2 MiB) überschreiten, parallele Uploads um je eines. Die Zählung kostet an der Grenze von 50 000 Nachrichten rund 8 ms je Einfügung (lokal gemessen).
 
-**Wer eine Zahl ändert:** neue Migration mit `create or replace` beziehungsweise neuem Trigger, `ACCOUNT_CEILINGS` in `plans.ts`, dieser Abschnitt, und den Guard auf die neue Datei richten.
+**Wer eine Zahl ändert:** neue Migration mit `create or replace` beziehungsweise neuem Trigger, `ACCOUNT_CEILINGS` in `plans.ts`, dieser Abschnitt, und den Guard auf die neue Datei richten. Die Byte-Grenze der gespeicherten Prompts steht in zwei Triggern (Einfügen und Ändern), beide nachziehen.
 
 ## Zahlungen: Webhook (Lemon Squeezy)
 

@@ -6,7 +6,9 @@ import { redis } from "@/server/security/redis-client";
 import { reserveCounter } from "@/server/security/reserve-counter";
 
 // Das Limit je Adresse hält einen Angreifer mit vielen Adressen nicht auf, der ein Konto rät: das Konto ist der
-// Schlüssel, den er nicht wechseln kann. Es zählt nur Fehlversuche, damit fremde Anmeldungen mit richtigem Passwort
+// Schlüssel, den er nicht wechseln kann. Das gilt nur für /api/auth: den Passwort-Grant von Supabase Auth erreicht man mit
+// dem Anon-Key auch direkt, dort greift nur dessen Grenze je IP (docs/SETUP.md, "Anmelden: Sperre je Konto").
+// Es zählt nur Fehlversuche, damit fremde Anmeldungen mit richtigem Passwort
 // niemanden sperren, und ein Erfolg setzt nichts zurück: sonst räumte jede Anmeldung des Opfers den Zähler eines
 // laufenden Angriffs ab.
 //

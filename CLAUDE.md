@@ -62,9 +62,9 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `src/features/auth/lib/recovery-session.ts`), die Mail-Vorlagen liegen in
   `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
-  Rechte. Billing, Gedächtnis und Anhänge schreibt nur der Server (Service-Role). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
-  Migrationen 0001 bis 0057 in `supabase/migrations/`, alle in Produktion angewendet (0057 am 2026-11-08,
-  Version `20261108145053`; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
+  Rechte. Billing, Gedächtnis, Anhänge und die eigenen API-Keys schreibt nur der Server (Service-Role, Keys seit 0060). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
+  Migrationen 0001 bis 0060 in `supabase/migrations/`, alle in Produktion angewendet (0058 bis 0060 am 2026-11-12,
+  0060 erst nach dem Code, der Keys mit dem Service-Role-Schlüssel schreibt; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
