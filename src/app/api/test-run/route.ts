@@ -85,8 +85,14 @@ export async function POST(req: Request): Promise<Response> {
     }
     if (!reply.trim()) throw new LlmEmptyReplyError(override?.provider ?? llmConfig()?.provider ?? "provider");
   } catch (err) {
+    // Bricht der Browser ab, nachdem schon Text kam, sind die Token bezahlt: die Reservierungen bleiben stehen, wie bei
+    // finishAborted im Chat (api/chat/reply-stream.ts). Sonst liesse sich jeder Probelauf kurz vor dem Ende abbrechen
+    // und kostete keinen Platz in den Grenzen je Konto, Adresse und Tag.
+    if (req.signal.aborted) {
+      if (!reply.trim()) await releaseReservations();
+      return new Response(null, { status: 499 });
+    }
     await releaseReservations();
-    if (req.signal.aborted) return new Response(null, { status: 499 });
     captureError("test_run.failed", err, { userId: user.id, byok: Boolean(override) });
     return problem(502, describeLlmFailure(classifyLlmFailure(err), m));
   }
