@@ -116,6 +116,20 @@ function ipv6Groups(ip: string): number[] | null {
   return groups.some((g) => Number.isNaN(g) || g < 0 || g > 0xffff) ? null : groups;
 }
 
+/**
+ * Die Adresse als Kennung eines Zählers (server/security/rate-limit.ts): IPv6 als ihr /64-Netz, denn ein Anschluss bekommt
+ * meist ein ganzes /64 und jede Adresse darin wäre sonst ein frischer Zähler. ::ffff:a.b.c.d zählt wie die IPv4-Adresse,
+ * alles andere (IPv4, "unknown") bleibt, wie es ist.
+ */
+export function addressBucket(ip: string): string {
+  const groups = ip.includes(":") ? ipv6Groups(ip) : null;
+  if (!groups) return ip;
+  if (groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff) {
+    return [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join(".");
+  }
+  return `${groups.slice(0, 4).map((g) => g.toString(16)).join(":")}::/64`;
+}
+
 function isPrivateIPv6(ip: string): boolean {
   const g = ipv6Groups(ip);
   if (!g) return true; // Unrecognized shape, fail closed.

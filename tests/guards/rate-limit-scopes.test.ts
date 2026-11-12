@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 // nicht dazu. Zwei Routen mit demselben Schlüssel zählen in denselben Zähler und vergleichen ihn nur
 // mit ihrer eigenen Grenze: fünf Chat-Antworten sperrten so Datenexport und Konto löschen (Grenze 5).
 // Dieser Guard hält fest, dass jede Aktion ihren eigenen Bereich hat und keiner zweimal vorkommt.
+// rateLimitKeyPerAddress zählt wie rateLimitKey, nur zusätzlich je Anschluss, und gilt hier genauso.
 
 const ROOT = process.cwd();
 
@@ -22,7 +23,7 @@ const files = sourceFiles("src").map((file) => ({
   text: readFileSync(file, "utf8"),
 }));
 
-const SCOPE_CALL = /rateLimitKey\(\s*[A-Za-z_.]+\s*,\s*"([a-z-]+)"/g;
+const SCOPE_CALL = /rateLimitKey(?:PerAddress)?\(\s*[A-Za-z_.]+\s*,\s*"([a-z-]+)"/g;
 
 describe("Ratenlimit-Bereiche", () => {
   it("jede Route ruft rateLimitKey mit einem Bereich auf, und kein Bereich kommt zweimal vor", () => {
@@ -54,7 +55,8 @@ describe("Ratenlimit-Bereiche", () => {
       if (file.path === "src/server/security/rate-limit.ts") continue;
       for (const match of file.text.matchAll(/\brateLimit\(\s*([^,]+),/g)) {
         const key = match[1].trim();
-        if (!key.startsWith("rateLimitKey(") && key !== '"contact:all"') bad.push(`${file.path}: ${key}`);
+        const keyed = key.startsWith("rateLimitKey(") || key.startsWith("rateLimitKeyPerAddress(");
+        if (!keyed && key !== '"contact:all"') bad.push(`${file.path}: ${key}`);
       }
     }
     expect(bad).toEqual([]);
