@@ -4,7 +4,14 @@ import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { lacksSecondFactor } from "@/server/supabase/assurance";
 import { chatComplete, type LlmOverride } from "@/server/llm";
-import { byokRow, type ByokRow, type ByokTarget } from "@/server/byok";
+import {
+  activateByokProvider,
+  byokRow,
+  removeByokRow,
+  saveByokRow,
+  type ByokRow,
+  type ByokTarget,
+} from "@/server/byok";
 import { problem } from "@/server/http/api-problem";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import { captureError } from "@/shared/lib/observability";
@@ -54,6 +61,7 @@ const customSaveSchema = z.object({
 });
 const saveSchema = z.union([primarySaveSchema, customSaveSchema]);
 
+// Gelesen wird mit der Sitzung, geschrieben nur über server/byok.ts mit dem Service-Role-Schlüssel (Migration 0060).
 const activateSchema = z.object({ provider: z.enum(PROVIDERS) });
 
 export async function POST(req: Request) {
@@ -106,9 +114,7 @@ export async function POST(req: Request) {
     .eq("provider", provider)
     .maybeSingle();
 
-  const { error } = await supabase
-    .from("user_api_keys")
-    .upsert(row, { onConflict: "user_id,provider" });
+  const { error } = await saveByokRow(row);
   if (error) {
     // Generic to the client, detailed to the logs (Security-Audit finding
     // M-1). Note the contrast with the test-call above: that one deliberately
@@ -139,9 +145,7 @@ export async function POST(req: Request) {
     return problem(503, m.keySaveFailed);
   }
   if (!active) {
-    const { error: activateError } = await supabase.rpc("set_active_byok_provider", {
-      target_provider: provider,
-    });
+    const { error: activateError } = await activateByokProvider(user.id, provider);
     if (activateError) {
       captureError("api_key.activate_failed", activateError, { userId: user.id, provider });
     } else {
@@ -156,7 +160,7 @@ export async function POST(req: Request) {
  * Switch which stored key actually runs this user's chats (Security-Audit
  * finding M-6).
  *
- * Goes through the set_active_byok_provider RPC rather than two client updates:
+ * Goes through the set_active_byok_provider_for RPC rather than two client updates:
  * clearing the old flag and setting the new one has to be one statement, or a
  * partial failure leaves the user with either no active key (silently back on
  * the server's provider and its plan limits) or two, which the partial unique
@@ -227,9 +231,7 @@ export async function PATCH(req: Request) {
   }
   if (!existing) return denied("api_key", problem(404, m.keyNotFound), { userId: user.id, provider });
 
-  const { error } = await supabase.rpc("set_active_byok_provider", {
-    target_provider: provider,
-  });
+  const { error } = await activateByokProvider(user.id, provider);
   if (error) {
     captureError("api_key.activate_failed", error, { userId: user.id, provider });
     return problem(500, m.keyActivateFailed);
@@ -277,11 +279,7 @@ export async function DELETE(req: Request) {
     }
   }
 
-  const { error } = await supabase
-    .from("user_api_keys")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("provider", provider);
+  const { error } = await removeByokRow(user.id, provider);
   if (error) {
     captureError("api_key.delete_failed", error, { userId: user.id, provider });
     return problem(500, m.keyRemoveFailed);

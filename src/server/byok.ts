@@ -39,6 +39,43 @@ export function byokRow(userId: string, apiKey: string, target: ByokTarget): Byo
 }
 
 /**
+ * Geschrieben wird user_api_keys nur hier, mit dem Service-Role-Schlüssel (Migration 0060 entzieht authenticated die
+ * Schreibrechte): sonst liessen sich der zweite Faktor und der Probeaufruf von api/settings/api-key über die Data API
+ * umgehen, etwa base_url eines custom-Keys auf einen fremden Host setzen. Der Schlüssel umgeht RLS, deshalb steht die
+ * user_id der geprüften Sitzung in jeder Zeile und in jedem Filter. Fehlt er, kommt ein Fehler zurück wie von der
+ * Datenbank, und die Route antwortet 500 statt mit der Sitzung zu schreiben.
+ */
+async function writeAsServer(
+  write: (admin: ReturnType<typeof createAdminClient>) => PromiseLike<{ error: unknown }>
+): Promise<{ error: unknown }> {
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (err) {
+    return { error: err };
+  }
+  const { error } = await write(admin);
+  return { error };
+}
+
+/** Legt den Key an oder ersetzt ihn: je Konto und Anbieter eine Zeile. */
+export function saveByokRow(row: ByokRow): Promise<{ error: unknown }> {
+  return writeAsServer((admin) => admin.from("user_api_keys").upsert(row, { onConflict: "user_id,provider" }));
+}
+
+/** Macht den Key dieses Anbieters aktiv und alle anderen des Kontos inaktiv, in einer Anweisung (Migration 0059). */
+export function activateByokProvider(userId: string, provider: string): Promise<{ error: unknown }> {
+  return writeAsServer((admin) =>
+    admin.rpc("set_active_byok_provider_for", { target_user: userId, target_provider: provider })
+  );
+}
+
+/** Entfernt den Key dieses Anbieters; ist er der aktive, macht der Trigger aus 0030 den nächsten aktiv. */
+export function removeByokRow(userId: string, provider: string): Promise<{ error: unknown }> {
+  return writeAsServer((admin) => admin.from("user_api_keys").delete().eq("user_id", userId).eq("provider", provider));
+}
+
+/**
  * A signed-in user's stored BYOK key, ready to pass as chatComplete's
  * `override`, or null if they haven't configured one.
  *

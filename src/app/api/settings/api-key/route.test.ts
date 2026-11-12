@@ -28,12 +28,30 @@ function builder(table: string) {
   return chain;
 }
 
+/** Die Sitzung liest nur. Schriebe die Route doch mit ihr, scheiterte der Aufruf hier laut, wie in Produktion seit 0060. */
+function readOnly(table: string) {
+  const chain = builder(table);
+  delete chain.upsert;
+  delete chain.delete;
+  chain.then = (resolve: (v: unknown) => unknown) => resolve(tableResults[table] ?? { data: null, error: null });
+  return chain;
+}
+
 vi.mock("@/server/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser, getClaims },
-    from: (t: string) => builder(t),
-    rpc: (fn: string, args: unknown) => rpc(fn, args),
+    from: (t: string) => readOnly(t),
+    rpc: () => {
+      throw new Error("Die Sitzung schaltet keine Keys um (Migration 0060)");
+    },
   }),
+}));
+let adminMissing = false;
+vi.mock("@/server/supabase/admin", () => ({
+  createAdminClient: () => {
+    if (adminMissing) throw new Error("Missing Supabase admin credentials.");
+    return { from: (t: string) => builder(t), rpc: (fn: string, args: unknown) => rpc(fn, args) };
+  },
 }));
 vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: (...a: unknown[]) => rateLimit(...a),
@@ -436,9 +454,27 @@ describe("BYOK active-provider selection (M-6)", () => {
 
     await POST(post({ apiKey: "sk-ant-k" }));
 
-    expect(rpc).toHaveBeenCalledWith("set_active_byok_provider", {
+    expect(rpc).toHaveBeenCalledWith("set_active_byok_provider_for", {
+      target_user: "user-1",
       target_provider: "anthropic",
     });
+  });
+
+  it("schreibt nur mit dem Server-Schlüssel und ohne ihn gar nicht", async () => {
+    adminMissing = true;
+    try {
+      const saved = await POST(post({ apiKey: "sk-ant-k" }));
+      const removed = await DELETE(del("anthropic"));
+      tableResults.user_api_keys = { data: { provider: "openai" } };
+      const switched = await PATCH(patch({ provider: "openai" }));
+
+      expect([saved.status, removed.status, switched.status]).toEqual([500, 500, 500]);
+      expect(upsert).not.toHaveBeenCalled();
+      expect(deleteRow).not.toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalled();
+    } finally {
+      adminMissing = false;
+    }
   });
 
   // Connecting a second provider must not silently move which account gets
@@ -457,7 +493,7 @@ describe("BYOK active-provider selection (M-6)", () => {
     const res = await PATCH(patch({ provider: "openai" }));
 
     expect(res.status).toBe(200);
-    expect(rpc).toHaveBeenCalledWith("set_active_byok_provider", { target_provider: "openai" });
+    expect(rpc).toHaveBeenCalledWith("set_active_byok_provider_for", { target_user: "user-1", target_provider: "openai" });
   });
 
   // Without this guard the RPC would set every row to is_active = false

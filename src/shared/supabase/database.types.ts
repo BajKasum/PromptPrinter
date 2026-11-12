@@ -325,8 +325,8 @@ isOneToOne: false
 "prune_security_events":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
-"set_active_byok_provider":
-{ Args: { "target_provider": string }; Returns: undefined
+"set_active_byok_provider_for":
+{ Args: { "target_provider": string,"target_user": string }; Returns: undefined
                            }
           }
           Enums: {

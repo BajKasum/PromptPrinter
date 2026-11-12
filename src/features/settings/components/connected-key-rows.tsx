@@ -31,7 +31,7 @@ export function ConnectedProviderRow({
   const meta = NAMED_PROVIDER_META[provider];
 
   // Switching which stored key is billed (Security-Audit finding M-6). The
-  // server does the swap in one statement (set_active_byok_provider), so
+  // server does the swap in one statement (set_active_byok_provider_for), so
   // there is never a moment with two active keys or none.
   async function activate() {
     if (busy) return;
