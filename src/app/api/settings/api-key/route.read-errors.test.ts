@@ -30,6 +30,10 @@ vi.mock("@/server/supabase/server", () => ({
     rpc: (...a: unknown[]) => rpc(...a),
   }),
 }));
+// Geschrieben wird mit dem Service-Role-Schlüssel (server/byok.ts), hier auf dieselben Attrappen gelenkt.
+vi.mock("@/server/supabase/admin", () => ({
+  createAdminClient: () => ({ from: (t: string) => builder(t), rpc: (...a: unknown[]) => rpc(...a) }),
+}));
 vi.mock("@/server/security/rate-limit", () => ({
   rateLimit: async () => ({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 }),
   rateLimitKey: () => "u:user-1",
