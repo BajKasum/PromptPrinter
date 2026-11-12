@@ -264,6 +264,32 @@ test.describe("Obergrenzen je Konto", () => {
     expect(refusedByUser).toContain("Obergrenze");
   });
 
+  test("gespeicherte Prompts: auch ein Update zählt gegen die Bytes, unter der Grenze geht Ändern weiter", async ({ account }) => {
+    const client = await asUser(account);
+    // Kleine Zeilen liegen weit unter dem Budget; erst das Vergrössern Zeile für Zeile füllt es.
+    await seed("saved_prompts", 200, () => ({ user_id: account.id, outputs: {} }));
+    const { data: rows, error } = await client.from("saved_prompts").select("id").eq("user_id", account.id);
+    expect(error).toBeNull();
+
+    const text = randomBytes(140_000).toString("base64");
+    let grown = 0;
+    let refusal: string | undefined;
+    for (const row of rows ?? []) {
+      const res = await client.from("saved_prompts").update({ outputs: { text } }).eq("id", row.id);
+      if (res.error) {
+        refusal = res.error.message;
+        break;
+      }
+      grown += 1;
+    }
+    expect(refusal).toContain("Obergrenze");
+    expect(grown * text.length).toBeGreaterThan(0.9 * ACCOUNT_CEILINGS.savedPrompts.bytes);
+
+    // Das abgelehnte Update ist zurückgerollt, das Konto liegt knapp unter der Grenze: Verkleinern geht.
+    const shrunk = await client.from("saved_prompts").update({ outputs: {} }).eq("id", rows![0].id);
+    expect(shrunk.error).toBeNull();
+  });
+
   test("Dateizeilen", async ({ account }) => {
     const client = await asUser(account);
     await makePro(account);

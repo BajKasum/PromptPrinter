@@ -11,9 +11,9 @@ import { ACCOUNT_CEILINGS, PLAN_LIMITS } from "@/shared/lib/plans";
 
 const DIR = join(process.cwd(), "supabase", "migrations");
 
-function migrationSql(): string {
-  const file = readdirSync(DIR).find((f) => f.endsWith("_account_ceilings.sql"));
-  expect(file, "Migration *_account_ceilings.sql fehlt").toBeDefined();
+function migrationSql(suffix = "_account_ceilings.sql"): string {
+  const file = readdirSync(DIR).find((f) => f.endsWith(suffix));
+  expect(file, `Migration *${suffix} fehlt`).toBeDefined();
   return readFileSync(join(DIR, file!), "utf8")
     .split("\n")
     .filter((line) => !line.trimStart().startsWith("--"))
@@ -21,6 +21,9 @@ function migrationSql(): string {
 }
 
 const sql = migrationSql();
+// Dieselbe Byte-Grenze nach einem UPDATE: outputs darf authenticated ändern (0026).
+const onUpdate = migrationSql("_saved_prompts_ceiling_on_update.sql");
+const ACCOUNT_LOCK = "pg_advisory_xact_lock(hashtextextended(tg_table_name || ':' || account::text, 0))";
 
 /** Die Argumente, mit denen der Trigger der Tabelle enforce_account_ceiling aufruft. */
 function triggerArgs(table: string): string[] {
@@ -71,6 +74,23 @@ describe("Grenzen je Konto", () => {
       expect(lock, fn).toBeGreaterThan(-1);
       expect(lock, fn).toBeLessThan(count);
     }
+  });
+
+  it("prüft die Bytes der gespeicherten Prompts auch nach einem UPDATE, mit derselben Zahl", () => {
+    expect(onUpdate).toMatch(
+      new RegExp(
+        "create trigger saved_prompts_account_ceiling_update after update on public\\.saved_prompts\\s+" +
+          "referencing old table as old_rows new table as new_rows\\s+" +
+          `for each statement execute function public\\.enforce_saved_prompts_bytes_on_update\\('${ACCOUNT_CEILINGS.savedPrompts.bytes}'\\)`
+      )
+    );
+  });
+
+  it("nimmt beim Ändern dieselbe Sperre wie beim Einfügen, vor dem Zählen", () => {
+    expect(sql).toContain(ACCOUNT_LOCK);
+    const lock = onUpdate.indexOf(ACCOUNT_LOCK);
+    expect(lock).toBeGreaterThan(-1);
+    expect(lock).toBeLessThan(onUpdate.indexOf("sum(pg_column_size(outputs))"));
   });
 
   it("prüft bei allen drei Tabellen den Eigentümer der Elternzeile", () => {
