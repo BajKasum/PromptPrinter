@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getUser = vi.fn();
 const getClaims = vi.fn();
@@ -56,6 +56,13 @@ const post = (body: unknown) =>
     body: JSON.stringify(body),
   });
 const get = () => new Request("https://promptprinter.app/api/auth/mfa");
+/** Eine Anfrage von einem bestimmten Anschluss; die Adresse liest clientIp auf Vercel aus diesem Kopf. */
+const postFrom = (ip: string, body: unknown) =>
+  new Request("https://promptprinter.app/api/auth/mfa", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-vercel-forwarded-for": ip },
+    body: JSON.stringify(body),
+  });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -223,6 +230,39 @@ describe("verify", () => {
     expect(statuses[10]).toBe(429);
     expect(challengeAndVerify).toHaveBeenCalledTimes(10);
   });
+
+  describe("je Anschluss gezählt", () => {
+    beforeEach(() => vi.stubEnv("VERCEL", "1"));
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("wer nur das Passwort kennt, verbraucht von seinem Anschluss aus nicht die Versuche des Besitzers", async () => {
+      challengeAndVerify.mockResolvedValue({ data: null, error: { status: 422 } });
+      for (let i = 0; i < 10; i += 1) await POST(postFrom("203.0.113.7", { action: "verify", code: "000000" }));
+      expect((await POST(postFrom("203.0.113.7", { action: "verify", code: "000000" }))).status).toBe(429);
+
+      challengeAndVerify.mockResolvedValue({ data: {}, error: null });
+      expect((await POST(postFrom("198.51.100.4", { action: "verify", code: "123456" }))).status).toBe(200);
+    });
+
+    it("auch von vielen Anschlüssen aus sperrt ein Fremder den Besitzer nicht aus", async () => {
+      challengeAndVerify.mockResolvedValue({ data: null, error: { status: 422 } });
+      for (let host = 1; host <= 6; host += 1) {
+        for (let i = 0; i < 11; i += 1) await POST(postFrom(`203.0.113.${host}`, { action: "verify", code: "000000" }));
+      }
+
+      challengeAndVerify.mockResolvedValue({ data: {}, error: null });
+      expect((await POST(postFrom("198.51.100.4", { action: "verify", code: "123456" }))).status).toBe(200);
+      const back = await POST(postFrom("198.51.100.4", { action: "recover", recoveryCode: "BCDF-GHJK-LMNP-QRST" }));
+      expect(back.status).toBe(200);
+    });
+
+    it("zählt IPv6 je /64: neue Adressen im selben Netz bringen keine neuen Versuche", async () => {
+      challengeAndVerify.mockResolvedValue({ data: null, error: { status: 422 } });
+      for (let i = 1; i <= 10; i += 1) await POST(postFrom(`2001:db8:1:1::${i}`, { action: "verify", code: "000000" }));
+      expect((await POST(postFrom("2001:db8:1:1::ffff", { action: "verify", code: "000000" }))).status).toBe(429);
+      expect((await POST(postFrom("2001:db8:1:2::1", { action: "verify", code: "000000" }))).status).toBe(400);
+    });
+  });
 });
 
 describe("recover: der Rückweg bei Verlust des Geräts", () => {
@@ -246,10 +286,15 @@ describe("recover: der Rückweg bei Verlust des Geräts", () => {
     expect(logEvent).toHaveBeenCalledWith("mfa.recovery_failed", { userId });
   });
 
-  it("zählt zum selben Limit wie die Codes aus der App", async () => {
+  it("hat einen eigenen Zähler: zehn Versuche in zehn Minuten, aufgebrauchte Code-Versuche sperren ihn nicht", async () => {
+    challengeAndVerify.mockResolvedValue({ data: null, error: { status: 422 } });
+    for (let i = 0; i < 10; i += 1) await POST(post({ action: "verify", code: "000000" }));
+    expect((await POST(post({ action: "verify", code: "000000" }))).status).toBe(429);
+
     redeemRecoveryCode.mockResolvedValue(false);
     const statuses: number[] = [];
     for (let i = 0; i < 11; i += 1) statuses.push((await POST(post({ action: "recover", recoveryCode: "X" }))).status);
+    expect(statuses.slice(0, 10).every((s) => s === 400)).toBe(true);
     expect(statuses[10]).toBe(429);
     expect(redeemRecoveryCode).toHaveBeenCalledTimes(10);
   });

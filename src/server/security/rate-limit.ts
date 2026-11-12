@@ -16,6 +16,7 @@ import { logWarning } from "@/shared/lib/observability";
 import { logRateLimited } from "@/server/security/security-log";
 import { redis } from "@/server/security/redis-client";
 import { reserveCounter } from "@/server/security/reserve-counter";
+import { addressBucket } from "@/server/security/url-safety";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -287,6 +288,7 @@ export type RateLimitScope =
   | "mfa-status"
   | "mfa-enroll"
   | "mfa-code"
+  | "mfa-recover"
   | "cli-me"
   | "cli-prompts"
   | "cli-prompt"
@@ -331,6 +333,15 @@ export function rateLimitKey(
 ): string {
   if (userId) return `${scope}:u:${userId}`;
   return `${scope}:ip:${clientIp(req)}`;
+}
+
+/**
+ * Der Zähler eines Kontos von einem Anschluss aus (IPv6 je /64, addressBucket). Für Grenzen, die jemand mit demselben
+ * Konto, etwa mit dem Passwort, nicht für den Besitzer aufbrauchen soll. Das Protokoll (logRateLimited) liest davon nur
+ * Bereich und Konto, nie die Adresse.
+ */
+export function rateLimitKeyPerAddress(req: Request, scope: RateLimitScope, userId: string): string {
+  return `${scope}:u:${userId}:ip:${addressBucket(clientIp(req))}`;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { chatQuotaKey, clientIp, rateLimitKey } from "@/server/security/rate-limit";
+import { chatQuotaKey, clientIp, rateLimitKey, rateLimitKeyPerAddress } from "@/server/security/rate-limit";
 import { counterRedisDouble } from "./redis-double";
 
 // Die Kopfzeilen-Tests prüfen, wen der Schlüssel meint; der Bereich ist dafür gleichgültig.
@@ -48,6 +48,28 @@ describe("clientIp ausserhalb von Vercel", () => {
   it("wertet auch mit TRUSTED_PROXY_HOPS nur x-forwarded-for aus", () => {
     vi.stubEnv("TRUSTED_PROXY_HOPS", "1");
     expect(clientIp(req({ "x-vercel-forwarded-for": "5.5.5.5", "x-real-ip": "6.6.6.6" }))).toBe("unknown");
+  });
+});
+
+describe("rateLimitKeyPerAddress", () => {
+  beforeEach(() => vi.stubEnv("VERCEL", "1"));
+  afterEach(() => vi.unstubAllEnvs());
+  const from = (ip: string) =>
+    rateLimitKeyPerAddress(new Request("https://promptprinter.app/", { headers: { "x-vercel-forwarded-for": ip } }), "mfa-code", "u1");
+
+  it("zählt je Konto und IPv4-Adresse", () => {
+    expect(from("203.0.113.7")).toBe("mfa-code:u:u1:ip:203.0.113.7");
+    expect(from("203.0.113.8")).not.toBe(from("203.0.113.7"));
+  });
+
+  it("zählt IPv6 je /64, damit ein Anschluss nicht beliebig viele Zähler bekommt", () => {
+    expect(from("2001:db8:1:1::1")).toBe("mfa-code:u:u1:ip:2001:db8:1:1::/64");
+    expect(from("2001:db8:1:1:ffff:ffff:ffff:ffff")).toBe(from("2001:db8:1:1::1"));
+    expect(from("2001:db8:1:2::1")).not.toBe(from("2001:db8:1:1::1"));
+  });
+
+  it("zählt eine IPv4-Adresse in IPv6-Schreibweise wie die IPv4-Adresse", () => {
+    expect(from("::ffff:203.0.113.7")).toBe(from("203.0.113.7"));
   });
 });
 

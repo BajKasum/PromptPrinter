@@ -8,7 +8,7 @@ import {
   RequestBodyTooLargeError,
   readJsonBody,
 } from "@/server/http/request-body";
-import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
+import { rateLimit, rateLimitKey, rateLimitKeyPerAddress } from "@/server/security/rate-limit";
 import { createAdminClient } from "@/server/supabase/admin";
 import { hasVerifiedFactor, lacksSecondFactor } from "@/server/supabase/assurance";
 import { signedInRecently } from "@/features/auth/lib/fresh-sign-in";
@@ -32,10 +32,13 @@ export const runtime = "nodejs";
 // entstehen. Die Sitzung schreibt der Server-Client in die Cookies, sie reisen mit dieser Antwort. Nur mit dem Cookie, nie mit Bearer:
 // ein Terminal verwaltet keinen zweiten Faktor. Hinter der Herkunftsprüfung der Middleware.
 //
-// Supabase Auth begrenzt die Versuche nicht je Konto, sechs Ziffern sind schnell durchprobiert. Deshalb die enge Grenze: zehn Versuche
-// in zehn Minuten, gezählt je Konto, auch für die Wiederherstellungscodes. Wer das Passwort kennt und den Code direkt bei Supabase
-// probiert, trifft nur dessen Grenze je Adresse (docs/SETUP.md, "Zweiter Faktor").
+// Zehn Versuche in zehn Minuten je Konto und Anschluss, für die sechsstelligen Codes und getrennt davon für die
+// Wiederherstellungscodes. Bewusst keine Grenze je Konto über alle Anschlüsse: Wer das Passwort kennt, leerte sie von ein paar
+// Adressen aus und sperrte den Besitzer aus der App, bis ihm nur der Rückweg bliebe, der den Faktor abschaltet. Gegen
+// Durchprobieren brächte sie wenig, denn Supabase Auth nimmt Codes auch direkt an und begrenzt dort nur je IP (15 je Minute,
+// docs/SETUP.md, "Zweiter Faktor"); die Grenze hier ist enger.
 const CODE_LIMIT = { limit: 10, windowMs: 10 * 60 * 1000 };
+const RECOVER_LIMIT = { limit: 10, windowMs: 10 * 60 * 1000 };
 const ENROLL_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000 };
 const STATUS_LIMIT = { limit: 120, windowMs: 60 * 60 * 1000 };
 
@@ -59,6 +62,13 @@ const NO_STORE = { headers: { "cache-control": "no-store" } };
 /** Der bestätigte TOTP-Faktor dieses Kontos. Mehr als einen legt die App nicht an. */
 const totpFactorId = (user: User) =>
   user.factors?.find((factor) => factor.status === "verified" && factor.factor_type === "totp")?.id ?? null;
+
+/** Die Grenze der Aktion: Einrichten je Konto, alles mit einem Code je Konto und Anschluss. */
+function limitFor(req: Request, action: MfaRequest["action"], userId: string) {
+  if (action === "enroll") return rateLimit(rateLimitKey(req, "mfa-enroll", userId), ENROLL_LIMIT);
+  if (action === "recover") return rateLimit(rateLimitKeyPerAddress(req, "mfa-recover", userId), RECOVER_LIMIT);
+  return rateLimit(rateLimitKeyPerAddress(req, "mfa-code", userId), CODE_LIMIT);
+}
 
 /** Prüft den Code: `"ok"` hebt die Sitzung auf AAL2, `"rejected"` ist ein falscher Code, `"failed"` ein Ausfall. */
 async function checkCode(supabase: Client, factorId: string, code: string): Promise<"ok" | "rejected" | "failed"> {
@@ -125,10 +135,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return validationProblem(m, parsed.error.issues);
   const request = parsed.data;
 
-  const limited =
-    request.action === "enroll"
-      ? await rateLimit(rateLimitKey(req, "mfa-enroll", user.id), ENROLL_LIMIT)
-      : await rateLimit(rateLimitKey(req, "mfa-code", user.id), CODE_LIMIT);
+  const limited = await limitFor(req, request.action, user.id);
   if (!limited.allowed) {
     return problem(429, m.tooManyRequests, { retryAfter: Math.ceil((limited.resetAt - Date.now()) / 1000) });
   }
