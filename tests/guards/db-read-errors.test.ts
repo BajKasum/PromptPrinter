@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 // #202: supabase-js wirft bei einem Fehler nicht, es liefert `{ data: null, error }`. Wer nur `data` (oder `count`)
 // aus einer Abfrage nimmt, liest einen Datenbankaussetzer als "es gibt nichts": falscher Plan, kein eigener Key, eine
 // neue Konversation, ein Projekt ohne Kontext, ein Abo, das nach dem Löschen des Kontos weiter läuft. Dieser Guard
-// meldet jede Abfrage der Form `const { data } = await supabase…`, die `error` nicht mitliest.
+// meldet jede Abfrage der Form `const { data } = await supabase…`, die `error` nicht mitliest, und jede, deren
+// Ergebnis einem Namen zugewiesen wird (`const x = await supabase…`, auch `const [x, y] = await Promise.all(…)`),
+// wenn danach `x.data` oder `x.count` gelesen oder `x` zerlegt wird, ohne `x.error` oder `orThrow(x`.
 //
 // Wer eine neue Abfrage schreibt, liest den Fehler mit (`const { data, error }`) oder nimmt `orThrow` aus
 // server/supabase/query.ts. Eine Ausnahme braucht einen Eintrag unten, mit Grund. Die Liste "NOCH OFFEN" ist der
@@ -74,9 +76,24 @@ function topLevelKeys(objectPattern: string): { key: string; local: string }[] {
     });
 }
 
+/** Wird das Ergebnis unter `name` danach gelesen, ohne dass irgendwo sein Fehler geprüft wird? */
+function readsWithoutError(rest: string, name: string): boolean {
+  const n = name.replace(/\$/g, "\\$");
+  const reads = new RegExp(`\\b${n}(\\??\\.)(data|count)\\b|=\\s*${n}\\s*;`).test(rest);
+  const checks = new RegExp(`\\b${n}(\\??\\.)error\\b|orThrow\\(\\s*${n}\\b`).test(rest);
+  return reads && !checks;
+}
+
 /** Jede Abfrage `const … = await <Supabase>` in der Datei, deren Ergebnis `data` oder `count` nimmt, aber `error` nicht. */
 function unreadErrors(text: string): string[] {
   const found: string[] = [];
+  for (const match of text.matchAll(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*await\b/g)) {
+    const after = text.slice(match.index! + match[0].length);
+    const end = after.indexOf(";");
+    const expression = after.slice(0, end === -1 ? 600 : end);
+    if (!/\.from\(|\.rpc\(|\.storage/.test(expression)) continue;
+    if (readsWithoutError(after.slice(expression.length), match[1])) found.push(match[1]);
+  }
   for (const match of text.matchAll(/\bconst\s+(?=[{[])/g)) {
     const start = match.index! + match[0].length;
     const pattern = balanced(text, start);
@@ -85,6 +102,12 @@ function unreadErrors(text: string): string[] {
     const expression = after.slice(0, after.indexOf(";") === -1 ? 600 : after.indexOf(";"));
     // auth.getUser() und getClaims() sind absichtlich nicht dabei: ein Fehler heißt dort "nicht angemeldet", die sichere Seite.
     if (!/\.from\(|\.rpc\(|\.storage/.test(expression)) continue;
+    if (pattern.startsWith("[")) {
+      const rest = after.slice(expression.length);
+      for (const name of pattern.slice(1, -1).split(",").map((p) => p.trim())) {
+        if (/^[A-Za-z_$][\w$]*$/.test(name) && readsWithoutError(rest, name)) found.push(name);
+      }
+    }
     const objects = pattern.startsWith("[")
       ? pattern.slice(1, -1).split(/,\s*(?=\{)/).map((p) => p.trim()).filter((p) => p.startsWith("{"))
       : [pattern];
@@ -130,5 +153,14 @@ describe("Datenbankfehler werden nicht als 'kein Treffer' gelesen", () => {
     expect(unreadErrors("const { data: { user } } = await supabase.auth.getUser();")).toEqual([]);
     expect(unreadErrors("const { data: { x } } = await supabase.from('a').select();")).toEqual(["data"]);
     expect(unreadErrors("const { data } = await somethingElse();")).toEqual([]);
+    // Ergebnis unter einem Namen (Ö5 im Review vom 12.11.2026).
+    expect(unreadErrors("const res = await supabase.from('x').select();\nreturn res.data;")).toEqual(["res"]);
+    expect(unreadErrors("const res = await supabase.from('x').select();\nconst { data } = res;")).toEqual(["res"]);
+    expect(unreadErrors("const res = await supabase.from('x').select();\nif (res.error) throw 1;\nreturn res.data;")).toEqual([]);
+    expect(unreadErrors("const res = await supabase.from('x').select();\nreturn orThrow(res, 'x').data;")).toEqual([]);
+    expect(
+      unreadErrors("const [a, b] = await Promise.all([supabase.from('x'), supabase.from('y')]);\nf(a.data, b.count, b.error);")
+    ).toEqual(["a"]);
+    expect(unreadErrors("const res = await fetch('/x');\nreturn res.data;")).toEqual([]);
   });
 });
