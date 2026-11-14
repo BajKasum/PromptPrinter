@@ -194,6 +194,7 @@ describe("POST /api/auth", () => {
       expect(signInWithPassword).toHaveBeenCalledWith({
         email: "du@example.com",
         password: "hunter2hunter2",
+        options: { captchaToken: undefined },
       });
     });
 
@@ -206,6 +207,7 @@ describe("POST /api/auth", () => {
       expect(signInWithPassword).toHaveBeenCalledWith({
         email: "du@example.com",
         password: "Password123456",
+        options: { captchaToken: undefined },
       });
     });
 
@@ -404,6 +406,65 @@ describe("POST /api/auth", () => {
       signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
       await POST(req(signIn));
       expect(logWarning).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("CAPTCHA bei Supabase (AUTH_CAPTCHA_VIA_SUPABASE, server/security/auth-captcha.ts)", () => {
+    const captchaFailed = { message: "captcha protection: request disallowed (timeout-or-duplicate)", code: "captcha_failed" };
+
+    beforeEach(() => {
+      vi.stubEnv("AUTH_CAPTCHA_VIA_SUPABASE", "true");
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.useRealTimers();
+    });
+
+    async function send(body: unknown) {
+      const pending = POST(req(body));
+      await vi.advanceTimersByTimeAsync(1500);
+      return pending;
+    }
+
+    it("prüft das Token nicht selbst und gibt es jeder Aktion mit, die Supabase prüft", async () => {
+      await send(signIn);
+      await send({ action: "sign-up", email: "du@example.com", password: "Kiefer-Wolke-Ozean-84!", turnstileToken: "token-abc" });
+      await send({ action: "resend", email: "du@example.com", turnstileToken: "token-abc" });
+      await send({ action: "reset-password", email: "du@example.com", turnstileToken: "token-abc" });
+
+      expect(verifyTurnstileToken).not.toHaveBeenCalled();
+      expect(signInWithPassword.mock.calls[0][0].options).toEqual({ captchaToken: "token-abc" });
+      expect(signUp.mock.calls[0][0].options.captchaToken).toBe("token-abc");
+      expect(resend.mock.calls[0][0].options.captchaToken).toBe("token-abc");
+      expect(resetPasswordForEmail.mock.calls[0][1].captchaToken).toBe("token-abc");
+    });
+
+    it("antwortet auf ein abgelehntes Token wie die eigene Prüfung, auch beim Reset, und zählt keinen Fehlversuch", async () => {
+      signInWithPassword.mockResolvedValue({ error: captchaFailed });
+      resetPasswordForEmail.mockResolvedValue({ error: captchaFailed });
+      signUp.mockResolvedValue({ data: {}, error: captchaFailed });
+      resend.mockResolvedValue({ error: captchaFailed });
+
+      for (const body of [
+        signIn,
+        { action: "reset-password", email: "du@example.com", turnstileToken: "x" },
+        { action: "sign-up", email: "du@example.com", password: "Kiefer-Wolke-Ozean-84!", turnstileToken: "x" },
+        { action: "resend", email: "du@example.com", turnstileToken: "x" },
+      ]) {
+        const res = await send(body);
+        expect(res.status, (body as { action: string }).action).toBe(403);
+        expect((await res.json()).kind).toBe("captcha");
+      }
+      expect(settleSignIn).toHaveBeenCalledWith(false);
+    });
+
+    it("ist ohne den Schalter aus: das Token geht nicht an Supabase", async () => {
+      vi.stubEnv("AUTH_CAPTCHA_VIA_SUPABASE", "");
+      await send({ action: "reset-password", email: "du@example.com", turnstileToken: "token-abc" });
+      expect(verifyTurnstileToken).toHaveBeenCalled();
+      expect(resetPasswordForEmail.mock.calls[0][1].captchaToken).toBeUndefined();
     });
   });
 

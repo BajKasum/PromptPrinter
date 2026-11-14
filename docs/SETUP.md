@@ -543,9 +543,27 @@ Was das nicht leistet:
 
 | Weg | Was er braucht | Stand |
 |---|---|---|
-| CAPTCHA in Supabase Auth einschalten und das Turnstile-Token an Supabase weiterreichen (`options.captchaToken`), statt es in `/api/auth` selbst zu prüfen | Einstellung im Dashboard, Umbau von `/api/auth`, und ein neuer Entscheid: "Supabases eigenes CAPTCHA bleibt aus" (ein Token ist nur einmal einlösbar, zwei Prüfer brächen jeden Login) | offen, Kasum entscheidet |
+| CAPTCHA in Supabase Auth einschalten und das Turnstile-Token an Supabase weiterreichen (`options.captchaToken`), statt es in `/api/auth` selbst zu prüfen | Einstellung im Dashboard und der Schalter `AUTH_CAPTCHA_VIA_SUPABASE` (ein Token ist nur einmal einlösbar, es darf also nur einer prüfen) | **gebaut, aus**: Schritte unten, Kasum schaltet um |
 | Password Verification Hook, der die Sperre je Konto auch dort durchsetzt | Tarif Teams oder Enterprise ([Supabase, "Auth Hooks"](https://supabase.com/docs/guides/auth/auth-hooks)) | nicht auf Free |
 | Grenze für `/auth/v1/token` im Dashboard enger stellen | Einstellung im Dashboard | schadet eher: dieselbe Grenze gilt für das Erneuern der Sitzung, und `/api/auth` wie die Middleware sprechen von Vercels Servern aus mit Supabase, teilen sich also deren Adressen |
+
+### Umschalten: Supabase prüft das CAPTCHA
+
+`/api/auth` kann das Turnstile-Token an Supabase Auth weiterreichen, statt es selbst zu prüfen (`src/server/security/auth-captcha.ts`). Dann verlangt Supabase das CAPTCHA auch auf dem direkten Weg mit dem Anon-Key, für Anmelden mit Passwort, Registrieren, Reset und erneutes Senden der Bestätigung. Alle vier laufen in diesem Projekt nur über `/api/auth` und geben das Token mit; OAuth, der zweite Faktor, `/auth/callback` und die Terminal-Anmeldung (Admin-Client) prüft Supabase nicht auf ein CAPTCHA. Der Schalter ist aus, bis Kasum umschaltet:
+
+1. **Vercel:** Umgebungswert `AUTH_CAPTCHA_VIA_SUPABASE` = `true` für Production setzen, noch **nicht** neu ausliefern. Ein neuer Wert wirkt erst mit der nächsten Auslieferung. `TURNSTILE_SECRET` bleibt gesetzt (`server/env.ts` verlangt es neben dem Site Key).
+2. **Supabase-Dashboard,** Projekt `ykcdbtmiuvntvysynhkx`: Authentication → Attack Protection → "Enable Captcha protection", Anbieter Turnstile, als Secret derselbe Wert wie `TURNSTILE_SECRET` (Cloudflare → Turnstile → das Widget dieser Seite). Speichern. Ab jetzt scheitern Anmeldungen über die laufende Fassung, weil beide das Token einlösen wollen.
+3. **Sofort neu ausliefern** (Vercel → Deployments → letztes Production-Deployment → Redeploy). Die Lücke aus Schritt 2 dauert so lange wie der Build, rund eine Minute. Diese Reihenfolge, weil die umgekehrte eine Minute ganz ohne Prüfung liesse.
+4. **Prüfen:** im Browser abmelden, anmelden, ein Reset anfordern: beides geht. Dann der direkte Weg ohne Token, er muss abgelehnt werden (400, Meldung mit "captcha"):
+
+   ```bash
+   curl -s -X POST "https://ykcdbtmiuvntvysynhkx.supabase.co/auth/v1/token?grant_type=password" -H "apikey: <anon-key>" -H "content-type: application/json" -d '{"email":"test@example.com","password":"falsch-falsch"}'
+   ```
+
+   Im Log von Vercel taucht bei abgelehnten Tokens `turnstile.rejected` mit `reason: "supabase"` auf.
+5. **Zurück,** falls etwas klemmt: in Supabase das CAPTCHA aus, in Vercel den Wert löschen, neu ausliefern. Wieder in dieser Reihenfolge.
+
+Danach CLAUDE.md ("Auth") und diese Tabelle auf "an" setzen. Der Satz "Supabases eigenes CAPTCHA bleibt aus" gilt dann nicht mehr, es prüft dann nur noch Supabase.
 
 Bis dahin schützen die Passwortregeln (mindestens zehn Zeichen, keine häufigen Passwörter; serverseitig nur bei der Registrierung über `/api/auth`, beim Ändern prüft sie nur der Browser, ältere Konten sind nicht erfasst) und der optionale zweite Faktor.
 
