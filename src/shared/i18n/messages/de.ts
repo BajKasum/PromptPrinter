@@ -543,6 +543,8 @@ export const de = {
   share: {
     action: "Per Link teilen",
     privateHint: "Nur für dich sichtbar.",
+    statusFailed: "Ob dieser Prompt geteilt ist, konnte ich gerade nicht prüfen.",
+    retry: "Neu laden",
     confirmTitle: "Prompt öffentlich teilen?",
     confirmBody: "Jeder mit dem Link kann diesen Prompt lesen. Dein Name und deine E-Mail-Adresse stehen nicht dabei. Du kannst den Link jederzeit widerrufen.",
     riskIntro: "Bitte prüf vorher:",

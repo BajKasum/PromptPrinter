@@ -293,6 +293,8 @@ export type RateLimitScope =
   | "cli-prompts"
   | "cli-prompt"
   | "prompt-share"
+  | "prompt-share-read"
+  | "prompt-share-revoke"
   | "share-view"
   | "test-run";
 

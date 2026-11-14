@@ -19,15 +19,26 @@ export const runtime = "nodejs";
 //   POST    teilen, liefert { token } (dasselbe, wenn er schon geteilt ist)
 //   DELETE  widerrufen
 // Die Sitzung kommt aus dem Cookie, die Kennung des Prompts aus der Adresse; ob der Prompt dem Konto gehört, prüft die
-// Route mit dem Client der Person (RLS) und zusätzlich mit user_id, bevor die Service-Role schreibt.
+// Route mit dem Client der Person (RLS) und zusätzlich mit user_id, bevor die Service-Role schreibt. Im Protokoll heisst
+// die Kennung `savedId`: ein Schlüssel mit dem Wort "prompt" würde geschwärzt (shared/lib/observability.ts).
 
 const idSchema = z.string().uuid();
+
+// Je Methode ein eigener Topf: das Nachsehen beim Aufklappen jedes Prompts darf weder das Teilen noch das Widerrufen
+// aufbrauchen. Widerrufen bekommt einen eigenen, damit ein Link immer zurückzunehmen ist.
+const LIMITS = {
+  GET: { scope: "prompt-share-read", limit: 300 },
+  POST: { scope: "prompt-share", limit: 60 },
+  DELETE: { scope: "prompt-share-revoke", limit: 60 },
+} as const;
+const WINDOW_MS = 60 * 60 * 1000;
 
 type Context = { params: Promise<{ id: string }> };
 
 async function authorize(
   req: Request,
   ctx: Context,
+  method: keyof typeof LIMITS,
   m: ShareMessages & { signInRequired: string; tooManyRequests: string }
 ): Promise<{ userId: string; promptId: string } | Response> {
   const supabase = await createClient();
@@ -40,7 +51,8 @@ async function authorize(
   if (!parsed.success) return denied("prompt-share", problem(404, m.notFound), { userId: user.id });
   const promptId = parsed.data;
 
-  const rl = await rateLimit(rateLimitKey(req, "prompt-share", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
+  const { scope, limit } = LIMITS[method];
+  const rl = await rateLimit(rateLimitKey(req, scope, user.id), { limit, windowMs: WINDOW_MS });
   if (!rl.allowed) {
     return problem(429, m.tooManyRequests, { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
   }
@@ -62,7 +74,7 @@ async function authorize(
 export async function GET(req: Request, ctx: Context) {
   const { t } = requestT(req);
   const m = { ...t.share, signInRequired: t.api.signInRequired, tooManyRequests: t.api.tooManyRequests };
-  const auth = await authorize(req, ctx, m);
+  const auth = await authorize(req, ctx, "GET", m);
   if (auth instanceof Response) return auth;
   try {
     return NextResponse.json({ token: await shareTokenFor(auth.userId, auth.promptId) });
@@ -75,7 +87,7 @@ export async function GET(req: Request, ctx: Context) {
 export async function POST(req: Request, ctx: Context) {
   const { t } = requestT(req);
   const m = { ...t.share, signInRequired: t.api.signInRequired, tooManyRequests: t.api.tooManyRequests };
-  const auth = await authorize(req, ctx, m);
+  const auth = await authorize(req, ctx, "POST", m);
   if (auth instanceof Response) return auth;
   let share: { token: string; created: boolean };
   try {
@@ -84,14 +96,14 @@ export async function POST(req: Request, ctx: Context) {
     captureError("prompt_share.create_failed", err, { userId: auth.userId });
     return problem(503, m.failed);
   }
-  if (share.created) await recordSecurityEvent("prompt.shared", auth.userId, { promptId: auth.promptId });
+  if (share.created) await recordSecurityEvent("prompt.shared", auth.userId, { savedId: auth.promptId });
   return NextResponse.json({ token: share.token });
 }
 
 export async function DELETE(req: Request, ctx: Context) {
   const { t } = requestT(req);
   const m = { ...t.share, signInRequired: t.api.signInRequired, tooManyRequests: t.api.tooManyRequests };
-  const auth = await authorize(req, ctx, m);
+  const auth = await authorize(req, ctx, "DELETE", m);
   if (auth instanceof Response) return auth;
   let revoked: boolean;
   try {
@@ -100,6 +112,6 @@ export async function DELETE(req: Request, ctx: Context) {
     captureError("prompt_share.revoke_failed", err, { userId: auth.userId });
     return problem(503, m.failed);
   }
-  if (revoked) await recordSecurityEvent("prompt.unshared", auth.userId, { promptId: auth.promptId });
+  if (revoked) await recordSecurityEvent("prompt.unshared", auth.userId, { savedId: auth.promptId });
   return NextResponse.json({ token: null });
 }

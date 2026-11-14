@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { redactContext } from "@/shared/lib/observability";
 
 const getUser = vi.fn();
 let ownerRow: { data: unknown; error: unknown } = { data: null, error: null };
@@ -70,7 +71,7 @@ describe("/api/prompts/[id]/share", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ token: "t".repeat(32) });
     expect(createShare).toHaveBeenCalledWith("u1", PROMPT);
-    expect(recordSecurityEvent).toHaveBeenCalledWith("prompt.shared", "u1", { promptId: PROMPT });
+    expect(recordSecurityEvent).toHaveBeenCalledWith("prompt.shared", "u1", { savedId: PROMPT });
 
     recordSecurityEvent.mockClear();
     createShare.mockResolvedValue({ token: "t".repeat(32), created: false });
@@ -86,7 +87,7 @@ describe("/api/prompts/[id]/share", () => {
     const res = await DELETE(req("DELETE"), ctx());
     expect(await res.json()).toEqual({ token: null });
     expect(revokeShare).toHaveBeenCalledWith("u1", PROMPT);
-    expect(recordSecurityEvent).toHaveBeenCalledWith("prompt.unshared", "u1", { promptId: PROMPT });
+    expect(recordSecurityEvent).toHaveBeenCalledWith("prompt.unshared", "u1", { savedId: PROMPT });
   });
 
   it("bremst mit dem Ratenlimit und antwortet 503, wenn die Datenbank nicht mitspielt", async () => {
@@ -96,5 +97,20 @@ describe("/api/prompts/[id]/share", () => {
     rateLimit.mockResolvedValue({ allowed: true, resetAt: Date.now() });
     createShare.mockRejectedValue(new Error("down"));
     expect((await POST(req("POST"), ctx())).status).toBe(503);
+  });
+
+  it("nennt die Kennung im Protokoll unter einem Schlüssel, der nicht geschwärzt wird", () => {
+    expect(redactContext({ savedId: PROMPT })).toEqual({ savedId: PROMPT });
+  });
+
+  it("zählt Nachsehen, Teilen und Widerrufen in getrennten Töpfen", async () => {
+    await GET(req("GET"), ctx());
+    await POST(req("POST"), ctx());
+    await DELETE(req("DELETE"), ctx());
+    expect(rateLimit.mock.calls.map(([key]) => String(key).split(":")[0])).toEqual([
+      "prompt-share-read",
+      "prompt-share",
+      "prompt-share-revoke",
+    ]);
   });
 });

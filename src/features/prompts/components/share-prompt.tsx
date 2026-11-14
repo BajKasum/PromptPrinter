@@ -14,7 +14,14 @@ import { useT } from "@/shared/i18n/provider";
 // Kopieren und den Knopf zum Widerrufen. Die Leiste steht nur im aufgeklappten Prompt und fragt erst dann ab, ob er
 // geteilt ist.
 
-type State = { status: "idle" } | { status: "loading" } | { status: "shared"; token: string } | { status: "private" };
+// "error": der Stand liess sich nicht lesen. Dann zeigt die Leiste das und einen Knopf zum Neuladen, nie "privat":
+// ein geteilter Prompt sähe sonst privat aus, und der Link bliebe offen, ohne dass die Person es sieht.
+type State =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "shared"; token: string }
+  | { status: "private" }
+  | { status: "error" };
 
 const PUBLIC_RISKS = new Set(["secret", "personal"]);
 
@@ -25,6 +32,7 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
   const [state, setState] = useState<State>({ status: "idle" });
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const endpoint = `/api/prompts/${promptId}/share`;
 
@@ -39,15 +47,17 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
     let live = true;
     setState({ status: "loading" });
     fetch(endpoint)
-      .then((res) => (res.ok ? (res.json() as Promise<{ token: string | null }>) : { token: null }))
-      .catch(() => ({ token: null }))
-      .then(({ token }) => {
-        if (live) setState(token ? { status: "shared", token } : { status: "private" });
+      .then((res) => (res.ok ? (res.json() as Promise<{ token: string | null }>) : null))
+      .catch(() => null)
+      .then((body) => {
+        if (!live) return;
+        if (!body) setState({ status: "error" });
+        else setState(body.token ? { status: "shared", token: body.token } : { status: "private" });
       });
     return () => {
       live = false;
     };
-  }, [endpoint]);
+  }, [endpoint, attempt]);
 
   async function share() {
     setBusy(true);
@@ -99,6 +109,19 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
             {t.share.revoke}
+          </button>
+        </div>
+      ) : state.status === "error" ? (
+        <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+          <span role="status" className="px-1 text-[12px] text-secondary">
+            {t.share.statusFailed}
+          </span>
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent-subtle"
+          >
+            {t.share.retry}
           </button>
         </div>
       ) : (

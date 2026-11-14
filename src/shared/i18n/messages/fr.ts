@@ -538,6 +538,8 @@ export const fr: Messages = {
   share: {
     action: "Partager par lien",
     privateHint: "Visible par toi seul.",
+    statusFailed: "Je n'ai pas pu vérifier si ce prompt est partagé.",
+    retry: "Recharger",
     confirmTitle: "Partager ce prompt publiquement ?",
     confirmBody: "Toute personne ayant le lien peut lire ce prompt. Ton nom et ton adresse n'y figurent pas. Tu peux révoquer le lien à tout moment.",
     riskIntro: "Vérifie d'abord :",

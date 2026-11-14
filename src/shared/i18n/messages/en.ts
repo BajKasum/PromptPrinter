@@ -534,6 +534,8 @@ export const en: Messages = {
   share: {
     action: "Share by link",
     privateHint: "Only visible to you.",
+    statusFailed: "I couldn't check whether this prompt is shared.",
+    retry: "Reload",
     confirmTitle: "Share this prompt publicly?",
     confirmBody: "Anyone with the link can read this prompt. Your name and email aren't shown. You can revoke the link at any time.",
     riskIntro: "Please check first:",

@@ -534,6 +534,8 @@ export const it: Messages = {
   share: {
     action: "Condividi tramite link",
     privateHint: "Visibile solo a te.",
+    statusFailed: "Non sono riuscito a verificare se questo prompt è condiviso.",
+    retry: "Ricarica",
     confirmTitle: "Condividere questo prompt pubblicamente?",
     confirmBody: "Chiunque abbia il link può leggere questo prompt. Il tuo nome e il tuo indirizzo non compaiono. Puoi revocare il link in qualsiasi momento.",
     riskIntro: "Controlla prima:",
