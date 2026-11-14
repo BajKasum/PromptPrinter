@@ -56,9 +56,8 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `GEMINI_API_KEY`, Entscheid 2026-10-15). Jeder Anbieter-Aufruf geht
   durch diese Hüllen.
 - **Auth:** Supabase. Die anonymen Aktionen (Anmelden, Registrieren, Reset) laufen
-  über `/api/auth` mit serverseitiger Turnstile-Prüfung. **Supabases eigenes
-  CAPTCHA bleibt aus** (ein Token ist einmal einlösbar, zwei Prüfer brächen jeden
-  Login). Reset und Bestätigung laufen über `/auth/callback` (`token_hash` + `type`,
+  über `/api/auth` mit serverseitiger Turnstile-Prüfung. **Supabases eigenes CAPTCHA bleibt aus** (ein Token ist
+  einmal einlösbar), bis Kasum umschaltet: Schalter `AUTH_CAPTCHA_VIA_SUPABASE`, gebaut und aus (`docs/SETUP.md`, "Umschalten"). Reset und Bestätigung laufen über `/auth/callback` (`token_hash` + `type`,
   `src/features/auth/lib/recovery-session.ts`), die Mail-Vorlagen liegen in
   `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne

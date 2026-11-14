@@ -8,6 +8,7 @@ import { hasVerifiedFactor } from "@/server/supabase/assurance";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
 import { reserveSignInAttempt } from "@/server/security/sign-in-throttle";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
+import { captchaViaSupabase, isSupabaseCaptchaError } from "@/server/security/auth-captcha";
 import {
   MAX_SMALL_BODY_BYTES,
   RequestBodyTooLargeError,
@@ -103,27 +104,39 @@ const MAIL_ACTION_MIN_MS = 1500;
 
 type AuthRequest = z.infer<typeof requestSchema>;
 
+const captchaRejected = () =>
+  problem(403, "Die Mensch-Prüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuch es erneut.", {
+    kind: "captcha",
+  });
+
 export async function POST(req: Request) {
   const input = await readAuthRequest(req);
   if (input instanceof Response) return input;
 
-  // ── The gate. Everything below this line is reached only by a redeemed token.
-  const verdict = await verifyTurnstileToken(input.turnstileToken, clientIp(req));
-  if (!verdict.ok) {
-    // No email in the log line: this fires on ordinary human retries too (an
-    // expired token, a resubmitted form), so it must not become a record of who
-    // tried to sign in and when.
-    logWarning("turnstile.rejected", { action: input.action, reason: verdict.reason });
-    return problem(
-      403,
-      "Die Mensch-Prüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuch es erneut.",
-      { kind: "captcha" }
-    );
+  // ── The gate. Everything below this line is reached only by a redeemed token. Mit AUTH_CAPTCHA_VIA_SUPABASE löst
+  // Supabase Auth das Token ein (server/security/auth-captcha.ts), jede Aktion unten gibt es dann mit.
+  const viaSupabase = captchaViaSupabase();
+  if (!viaSupabase) {
+    const verdict = await verifyTurnstileToken(input.turnstileToken, clientIp(req));
+    if (!verdict.ok) {
+      // No email in the log line: this fires on ordinary human retries too (an
+      // expired token, a resubmitted form), so it must not become a record of who
+      // tried to sign in and when.
+      logWarning("turnstile.rejected", { action: input.action, reason: verdict.reason });
+      return captchaRejected();
+    }
   }
 
   const supabase = await createClient();
 
-  return runAuthAction(input, supabase);
+  return runAuthAction(input, supabase, viaSupabase ? input.turnstileToken : undefined);
+}
+
+/** Supabase hat das weitergereichte Token abgelehnt: dieselbe Antwort wie bei der eigenen Prüfung. */
+function rejectedBySupabase(error: { message?: string; code?: string } | null, action: AuthRequest["action"]): boolean {
+  if (!captchaViaSupabase() || !isSupabaseCaptchaError(error)) return false;
+  logWarning("turnstile.rejected", { action, reason: "supabase" });
+  return true;
 }
 
 async function readAuthRequest(req: Request): Promise<AuthRequest | Response> {
@@ -165,20 +178,25 @@ const authFailure = (message: string, action: AuthRequest["action"]) => {
   return problem(400, detail, { kind: "auth" });
 };
 
-function runAuthAction(input: AuthRequest, supabase: AuthClient): Promise<Response> {
+/** `captchaToken` nur, wenn Supabase Auth das CAPTCHA prüft; sonst ist das Token hier schon eingelöst. */
+function runAuthAction(input: AuthRequest, supabase: AuthClient, captchaToken: string | undefined): Promise<Response> {
   switch (input.action) {
     case "sign-in":
-      return signIn(input, supabase);
+      return signIn(input, supabase, captchaToken);
     case "sign-up":
-      return signUp(input, supabase);
+      return signUp(input, supabase, captchaToken);
     case "resend":
-      return resendConfirmation(input, supabase);
+      return resendConfirmation(input, supabase, captchaToken);
     case "reset-password":
-      return resetPassword(input, supabase);
+      return resetPassword(input, supabase, captchaToken);
   }
 }
 
-async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supabase: AuthClient): Promise<Response> {
+async function signIn(
+  input: Extract<AuthRequest, { action: "sign-in" }>,
+  supabase: AuthClient,
+  captchaToken: string | undefined
+): Promise<Response> {
   // Auch das richtige Passwort prallt ab, sonst wäre die Sperre ein Orakel. Der Text sagt nichts über das
   // Konto: unbekannte Adressen zählen genauso (server/security/sign-in-throttle.ts).
   const attempt = await reserveSignInAttempt(input.email);
@@ -188,7 +206,11 @@ async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supaba
   }
   let result: Awaited<ReturnType<AuthClient["auth"]["signInWithPassword"]>>;
   try {
-    result = await supabase.auth.signInWithPassword({ email: input.email, password: input.password });
+    result = await supabase.auth.signInWithPassword({
+      email: input.email,
+      password: input.password,
+      options: { captchaToken },
+    });
   } catch (err) {
     await attempt.settle(false);
     throw err;
@@ -196,6 +218,7 @@ async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supaba
   const { data, error } = result;
   const invalid = error ? isInvalidCredentialsError(error.message) : false;
   await attempt.settle(invalid);
+  if (rejectedBySupabase(error, input.action)) return captchaRejected();
   if (error) {
     // Ohne Adresse: ein Fehlversuch nennt kein Konto, auch nicht im Log.
     logSecurityEvent("auth.sign_in_failed", { reason: invalid ? "invalid_credentials" : "other" });
@@ -208,7 +231,11 @@ async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supaba
   return NextResponse.json(data?.user && hasVerifiedFactor(data.user) ? { ok: true, mfaRequired: true } : { ok: true });
 }
 
-async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supabase: AuthClient): Promise<Response> {
+async function signUp(
+  input: Extract<AuthRequest, { action: "sign-up" }>,
+  supabase: AuthClient,
+  captchaToken: string | undefined
+): Promise<Response> {
   // Bewusst offen: mit "Confirm email" aus (Entscheid, docs/SETUP.md, "Auth-Mails") antwortet GoTrue für eine
   // vergebene Adresse mit "User already registered", und die Seite sagt es. Das zeigt, ob eine Adresse ein Konto
   // hat. Verbergen ginge hier nicht: eine neue Adresse bekommt sofort eine Sitzung, eine vergebene nie.
@@ -228,8 +255,9 @@ async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supaba
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
-    options: { emailRedirectTo: callbackUrl(input.next) },
+    options: { emailRedirectTo: callbackUrl(input.next), captchaToken },
   });
+  if (rejectedBySupabase(error, input.action)) return captchaRejected();
   if (error) {
     logSecurityEvent("auth.sign_up_failed", { reason: "rejected" });
     return authFailure(error.message, input.action);
@@ -240,33 +268,46 @@ async function signUp(input: Extract<AuthRequest, { action: "sign-up" }>, supaba
   return NextResponse.json({ ok: true, session: Boolean(data.session) });
 }
 
-async function resendConfirmation(input: Extract<AuthRequest, { action: "resend" }>, supabase: AuthClient): Promise<Response> {
+async function resendConfirmation(
+  input: Extract<AuthRequest, { action: "resend" }>,
+  supabase: AuthClient,
+  captchaToken: string | undefined
+): Promise<Response> {
   const { error } = await atLeast(
     MAIL_ACTION_MIN_MS,
     supabase.auth.resend({
       type: "signup",
       email: input.email,
-      options: { emailRedirectTo: callbackUrl(input.next) },
+      options: { emailRedirectTo: callbackUrl(input.next), captchaToken },
     })
   );
+  // Das CAPTCHA prüft Supabase vor jedem Blick auf das Konto, die Absage verrät also keins.
+  if (rejectedBySupabase(error, input.action)) return captchaRejected();
   // Der Mail-Cooldown gilt nur für bestehende Konten, seine Meldung verriete also das Konto (siehe unten).
   if (error && !isMailCooldownError(error.message)) return authFailure(error.message, input.action);
   logSecurityEvent("auth.confirmation_resent");
   return NextResponse.json({ ok: true });
 }
 
-async function resetPassword(input: Extract<AuthRequest, { action: "reset-password" }>, supabase: AuthClient): Promise<Response> {
+async function resetPassword(
+  input: Extract<AuthRequest, { action: "reset-password" }>,
+  supabase: AuthClient,
+  captchaToken: string | undefined
+): Promise<Response> {
   // Immer dieselbe Antwort, jeder Fehler eingeschlossen: sie darf nie verraten, ob die Adresse ein Konto hat.
   // Auch der Mail-Cooldown nicht, denn GoTrue drosselt nur bestehende Konten, zwei Anfragen in Folge zeigten
   // den Unterschied sonst. Der Preis: eine zweite Anforderung innerhalb einer Minute sieht aus wie Erfolg,
   // die Mail der ersten ist aber unterwegs, und die Seite nennt die Wartezeit. Die Mindestdauer deckt den
   // Unterschied in der Laufzeit, denn nur für ein bestehendes Konto wartet GoTrue auf den Mailversand.
-  await atLeast(
+  // Einzige Ausnahme: ein abgelehntes CAPTCHA. Supabase prüft es vor dem Konto, die Absage verrät also keins.
+  const { error } = await atLeast(
     MAIL_ACTION_MIN_MS,
     supabase.auth.resetPasswordForEmail(input.email, {
       redirectTo: siteUrl("/auth/callback?next=/reset-password/update"),
+      captchaToken,
     })
   );
+  if (rejectedBySupabase(error, input.action)) return captchaRejected();
   logSecurityEvent("auth.password_reset_requested");
   return NextResponse.json({ ok: true });
 }
