@@ -5,9 +5,8 @@
 /*
  * Die Farben stehen inline: jede Utility schreibt hsl(var(--token)) selbst aus,
  * statt eine an :root aufgelöste --color-*-Variable zu erben. Nur so wirkt eine
- * .dark-Klasse auch auf einem einzelnen Element (der Kopf der öffentlichen
- * Seite, das Terminal-Fenster auf /terminal und /mcp); am <html> verhält sich
- * beides gleich.
+ * .dark-Klasse auch auf einem einzelnen Element (das Terminal-Fenster auf
+ * /terminal und /mcp); am <html> verhält sich beides gleich.
  */
 @theme inline {
   --color-background: hsl(var(--background));
@@ -570,22 +569,6 @@
     @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-label-caps font-mono uppercase tracking-wider text-muted-foreground;
   }
 
-  /* ── Marketing nav links ─────────────────────────────────────────────────
-     The two decorations behind a nav link: a water pill that settles in behind
-     the label, and a small wave that swims in underneath it. Together they
-     replace the previous treatment, which only darkened the text to
-     `foreground` — no hit-area feedback at all, and no way to tell which page
-     you were on.
-
-     Both live here in CSS rather than as Tailwind variant chains for one
-     concrete reason: each has to switch off wholesale under
-     prefers-reduced-motion (the wave's reveal is a stroke-dashoffset
-     transition, the pill's is a transform), and expressing "final state under
-     reduced motion, animated otherwise" needs stacked variants whose emitted
-     order isn't guaranteed. In plain CSS a media query just wins.
-
-     Driven by the parent link's `.group:hover` / `:focus-visible`, or by
-     `data-active` for the page you're currently on. */
   /*
    * Der Kopf der öffentlichen Seite: eine helle, leicht durchscheinende Fläche
    * mit Blur, immer gleich (keine Verwandlung beim Scrollen). Darunter hängt die
@@ -626,6 +609,22 @@
     }
   }
 
+  /* ── Marketing nav links ─────────────────────────────────────────────────
+     The two decorations behind a nav link: a water pill that settles in behind
+     the label, and a small wave that swims in underneath it. Together they
+     replace the previous treatment, which only darkened the text to
+     `foreground` — no hit-area feedback at all, and no way to tell which page
+     you were on.
+
+     Both live here in CSS rather than as Tailwind variant chains for one
+     concrete reason: each has to switch off wholesale under
+     prefers-reduced-motion (the wave's reveal is a stroke-dashoffset
+     transition, the pill's is a transform), and expressing "final state under
+     reduced motion, animated otherwise" needs stacked variants whose emitted
+     order isn't guaranteed. In plain CSS a media query just wins.
+
+     Driven by the parent link's `.group:hover` / `:focus-visible`, or by
+     `data-active` for the page you're currently on. */
   .nav-pill {
     opacity: 0;
     transform: scale(0.9);
