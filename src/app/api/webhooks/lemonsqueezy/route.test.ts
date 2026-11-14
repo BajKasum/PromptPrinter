@@ -37,6 +37,12 @@ vi.mock("@/server/supabase/admin", () => ({
           select: () => ({
             eq: (column: string, value: string) => ({
               maybeSingle: () => profileSelect(column, value),
+              // Die Suche nach der Kundennummer liest bis zu zwei Zeilen: dieselbe Antwort als Liste.
+              limit: async () => {
+                const r = (await profileSelect(column, value)) as { data: unknown; error?: unknown };
+                if (r.error) return { data: null, error: r.error };
+                return { data: Array.isArray(r.data) ? r.data : r.data ? [r.data] : [], error: null };
+              },
             }),
           }),
           update: (patch: unknown) => ({
@@ -387,6 +393,16 @@ describe("POST /api/webhooks/lemonsqueezy", () => {
         expect.objectContaining({ plan: "free", subscription_status: "paused" }),
         USER_ID
       );
+    });
+
+    it("hängt dieselbe Kundennummer an zwei Konten, ändert es keines und antwortet nicht mit einem Ausfall", async () => {
+      profileSelect.mockResolvedValue({ data: [{ id: USER_ID }, { id: "anderes-konto" }] });
+      const res = await POST(
+        req(body("subscription_paused", { id: "sub_1", attributes: { status: "paused", customer_id: 42 } }))
+      );
+
+      expect(res.status).toBeLessThan(500);
+      expect(profileUpdate).not.toHaveBeenCalled();
     });
 
     it("gibt Pro zurück, wenn das Abo fortgesetzt wird", async () => {
