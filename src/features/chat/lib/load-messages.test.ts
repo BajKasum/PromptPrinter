@@ -174,6 +174,15 @@ describe("loadConversationMessages", () => {
     expect(selects[1]).toBe("id, role, content");
   });
 
+  it("throws instead of showing an existing chat empty when the fallback read fails too", async () => {
+    const { client } = stub({
+      embedded: { data: null, error: { message: "canceling statement due to statement timeout" } },
+      plain: { data: null, error: { message: "canceling statement due to statement timeout" } },
+    });
+
+    await expect(loadConversationMessages(client, "u1", "c1")).rejects.toThrow();
+  });
+
   it("returns an empty chat when there is nothing to read", async () => {
     const { client } = stub({ embedded: { data: [], error: null } });
     expect(await loadConversationMessages(client, "u1", "c1")).toEqual([]);
