@@ -268,14 +268,14 @@ export async function signImageUrls(
   const images = records.filter((r) => r.kind === "image");
   if (images.length === 0) return urls;
   try {
-    const { data } = await supabase.storage
+    const { data: signed } = await supabase.storage
       .from(ATTACHMENT_BUCKET)
       .createSignedUrls(
         images.map((r) => r.storagePath),
         SIGNED_URL_TTL_SECONDS
       );
     const byPath = new Map<string, string>();
-    for (const entry of data ?? []) {
+    for (const entry of signed ?? []) {
       if (entry.path && entry.signedUrl) byPath.set(entry.path, entry.signedUrl);
     }
     for (const record of images) {
