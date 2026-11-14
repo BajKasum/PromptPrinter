@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Restliche Sicherheitsbefunde aus dem Code-Review (Branch `fix/gratis-rahmen-sicherheit`)
+
+Die übrigen nicht öffentlichen Befunde vom 12.11., auf Kasums Ja vom 14.11.:
+
+- **Gestoppter Zug mit fertigem Prompt:** zählte nicht als Gratis-Prompt, ein Stopp kurz nach dem Codeblock brachte so bis zu zehn statt drei Prompts je Konto. `finishAborted` (`api/chat/reply-stream.ts`) zählt ihn jetzt wie `finishCompleted`. Ein Stopp mitten im Codeblock zählt weiter nicht.
+- **Gratis-Probelauf mit beliebigem Text:** `api/test-run` nahm jeden Text, im Gratis-Rahmen also drei rohe Modellaufrufe je Konto ohne Finns Systemprompt. Jetzt legt `promptDelivered` den Hash jedes gelieferten Prompts je Konto in Redis ab (`free-trial:delivered:<konto>`, 400 Tage), der Browser schickt neben dem ausgefüllten Text den gelieferten Prompt (`original`), und der Server lässt den Text nur zu, wenn er nur in den Platzhaltern abweicht (`isFilledFrom` in `features/chat/lib/placeholders.ts`). Ein Platzhalter steht dabei für beliebigen Text: was dort steht, hat die Person selbst eingesetzt, und der Rest des Prompts muss stehen bleiben. Der Schlüssel "ein Probelauf je Prompt" nimmt jetzt den gelieferten Prompt, anders gefüllte Platzhalter bringen keinen zweiten. BYOK und Pro unberührt. Folge: Prompts, die vor dieser Auslieferung geliefert wurden, bekommen im Gratis-Rahmen keinen Probelauf mehr (neuer Text `testRunNotDelivered`, fr/it/es ungeprüft).
+- **Anmelde-Sperre je Konto:** prüfte und zählte danach, gleichzeitige Versuche kamen so alle an der Sperre vorbei. Jetzt reserviert jeder Versuch vor `signInWithPassword` (`reserveSignInAttempt`, `server/security/sign-in-throttle.ts`) und gibt den Platz zurück, wenn er nicht an falschen Zugangsdaten scheitert.
+- **Zweiter Faktor:** Frische Anmeldung beim Einrichten und Code beim Ausschalten gelten nur in `api/auth/mfa`, Supabase Auth nimmt beides auch direkt mit der Sitzung an. Im Code nicht zu schliessen (MFA Verification Hook erst ab Tarif Teams), in `docs/SETUP.md` ("Zweiter Faktor") festgehalten.
+
+Mutationstest je Schranke, danach aus der Sicherung zurück: Zählung im Abbruch entfernt, Prüfung "geliefert" entfernt, Abgleich der Platzhalter abgeschaltet, Rückgabe nach jedem Versuch statt nur nach Erfolg. Jeder Test schlug an.
+
+---
+
 ## 2026-11-14: Tooltip ignoriert den Fokus eines Klicks (Branch `fix/tooltip-pointer-focus`)
 
 Dependabot #319 (jsdom 31) war rot: jsdom 31 behandelt `:focus-visible` wie `:focus`, der Klick auf den Plus-Knopf öffnete die Pille deshalb wieder. `shared/ui/tooltip.tsx` merkt sich jetzt zwischen `pointerdown` und `pointerup` (zurückgesetzt auch bei `pointercancel`, `pointerleave` und `blur`), dass ein Zeiger drückt, und ignoriert den Fokus aus diesem Druck. `:focus-visible` bleibt als zweite Bedingung. Unter jsdom 31 lokal geprüft: alle zehn Tooltip-Tests grün, ohne die neue Bedingung schlägt "goes away on click" an.
