@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { redis } from "@/server/security/redis-client";
 import { reserveCounter, type CounterReservation } from "@/server/security/reserve-counter";
 import { clientIp } from "@/server/security/rate-limit";
@@ -42,11 +43,13 @@ const utcDay = () => new Date().toISOString().slice(0, 10);
 // ─── Zähler: Redis, in der Entwicklung ohne Redis eine Map ─────────────────────
 
 const memory = new Map<string, number>();
+const memorySets = new Map<string, Set<string>>();
 const memoryAllowed = () => !redis && process.env.NODE_ENV !== "production";
 
 /** Nur für Tests. */
 export function __resetFreeTrialMemoryForTests(): void {
   memory.clear();
+  memorySets.clear();
 }
 
 async function readCount(key: string): Promise<number | null> {
@@ -90,6 +93,53 @@ async function increment(key: string): Promise<number | null> {
   }
 }
 
+// ─── Gelieferte Prompts ─────────────────────────────────────────────────────────
+//
+// Ein Probelauf im Gratis-Rahmen gilt nur einem Prompt, den Finn diesem Konto geliefert hat (Hash in Redis), sonst
+// wären die Probeläufe rohe Modellaufrufe mit beliebigem Text. Der Hash nimmt den Prompt, wie ihn extractPrompt
+// liefert; ausgefüllte Platzhalter prüft api/test-run gegen diese Fassung.
+
+const deliveredKey = (userId: string) => `free-trial:delivered:${userId}`;
+
+/** Nur für Tests: trägt einen Hash als geliefert ein, ohne einen Zug zu verbrauchen. */
+export function __markDeliveredForTests(userId: string, promptHash: string): void {
+  const set = memorySets.get(deliveredKey(userId)) ?? new Set<string>();
+  set.add(promptHash);
+  memorySets.set(deliveredKey(userId), set);
+}
+
+/** Hash eines Prompts für die Liste der gelieferten Prompts und den Schlüssel "ein Probelauf je Prompt". */
+export function deliveredPromptHash(prompt: string): string {
+  return createHash("sha256").update(prompt.replace(/\r\n/g, "\n").trim()).digest("hex").slice(0, 32);
+}
+
+async function rememberDelivered(userId: string, prompt: string): Promise<void> {
+  const hash = deliveredPromptHash(prompt);
+  if (memoryAllowed()) {
+    const set = memorySets.get(deliveredKey(userId)) ?? new Set<string>();
+    set.add(hash);
+    memorySets.set(deliveredKey(userId), set);
+    return;
+  }
+  if (!redis) return;
+  try {
+    await redis.multi().sadd(deliveredKey(userId), hash).expire(deliveredKey(userId), ACCOUNT_TTL_SECONDS).exec();
+  } catch {
+    // Ohne Eintrag bekommt dieser Prompt keinen Gratis-Probelauf; der Prompt selbst ist geliefert.
+  }
+}
+
+/** null bei einem Redis-Fehler. */
+async function wasDelivered(userId: string, promptHash: string): Promise<boolean | null> {
+  if (memoryAllowed()) return memorySets.get(deliveredKey(userId))?.has(promptHash) ?? false;
+  if (!redis) return null;
+  try {
+    return (await redis.sismember(deliveredKey(userId), promptHash)) === 1;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Lesen ────────────────────────────────────────────────────────────────────
 
 /** Wie viele Gratis-Prompts das Konto noch hat; null, wenn der Rahmen gerade nicht zählbar ist (kein Redis). */
@@ -105,8 +155,11 @@ export async function freePromptsLeft(userId: string): Promise<number | null> {
 export type FreeTrialSlot = {
   /** Gibt Zug, IP-Platz und Tagesplatz zurück, wenn der Zug nichts gekostet hat. */
   release: () => Promise<void>;
-  /** Der Zug hat einen fertigen Prompt geliefert: zählt ihn und gibt zurück, wie viele noch bleiben. */
-  promptDelivered: () => Promise<number>;
+  /**
+   * Der Zug hat einen fertigen Prompt geliefert: zählt ihn, merkt ihn für den Probelauf und gibt zurück, wie viele
+   * noch bleiben.
+   */
+  promptDelivered: (prompt: string) => Promise<number>;
   /** Der Zug war eine Rückfrage: wie viele Prompts bleiben (unverändert, aber die Zuggrenze kann erreicht sein). */
   promptsLeft: () => Promise<number>;
 };
@@ -176,9 +229,10 @@ export async function reserveFreeTrialTurn(req: Request, userId: string): Promis
   return {
     release: held.release,
     promptsLeft: async () => (await freePromptsLeft(userId)) ?? 0,
-    promptDelivered: async () => {
+    promptDelivered: async (prompt: string) => {
       // Kein Limit beim Hochzählen: die Prüfung steht vor dem Zug. Laufen zwei Züge gleichzeitig, kann ein vierter
       // Prompt durchgehen; die Grenze an Zügen hält auch das klein.
+      await rememberDelivered(userId, prompt);
       const used = await increment(promptsKey(userId));
       return used === null ? 0 : Math.max(0, FREE_TRIAL.prompts - used);
     },
@@ -190,8 +244,11 @@ export async function reserveFreeTrialTurn(req: Request, userId: string): Promis
 const testRunKey = (userId: string, promptHash: string) => `free-trial:test-run:${userId}:${promptHash}`;
 const testRunsKey = (userId: string) => `free-trial:test-runs:${userId}`;
 
-/** `used`: dieser Prompt hatte schon seinen Probelauf, oder das Konto hat so viele wie Gratis-Prompts. */
-export type FreeTrialTestRunRefusal = "used" | "budget" | "unavailable";
+/**
+ * `used`: dieser Prompt hatte schon seinen Probelauf, oder das Konto hat so viele wie Gratis-Prompts.
+ * `notDelivered`: Finn hat diesem Konto den Prompt nicht geliefert.
+ */
+export type FreeTrialTestRunRefusal = "used" | "notDelivered" | "budget" | "unavailable";
 
 /**
  * Ein Probelauf im Gratis-Rahmen: höchstens einer je Prompt (Schlüssel aus dem Hash des Prompts) und höchstens so
@@ -203,6 +260,9 @@ export async function reserveFreeTrialTestRun(
   userId: string,
   promptHash: string
 ): Promise<FreeTrialSlot | FreeTrialTestRunRefusal> {
+  const delivered = await wasDelivered(userId, promptHash);
+  if (delivered === null) return "unavailable";
+  if (!delivered) return "notDelivered";
   const held = await reserveAll<FreeTrialTestRunRefusal>([
     { key: testRunKey(userId, promptHash), limit: 1, ttl: ACCOUNT_TTL_SECONDS, refusal: "used" },
     { key: testRunsKey(userId), limit: FREE_TRIAL.prompts, ttl: ACCOUNT_TTL_SECONDS, refusal: "used" },

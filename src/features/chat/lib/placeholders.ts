@@ -67,3 +67,33 @@ export function fillPlaceholders(
   }
   return out + prompt.slice(cursor);
 }
+
+/**
+ * Ist `filled` aus `original` entstanden, indem nur Platzhalter ersetzt wurden? Jeder Platzhalter steht für einen
+ * beliebigen Text (auch sich selbst), alles dazwischen muss gleich bleiben. Das ist ein Muster mit Sternen zwischen
+ * festen Stücken, und dafür ist das jeweils erste Vorkommen jedes mittleren Stücks immer eine richtige Wahl: kein
+ * Zurückgehen, höchstens Länge mal Länge. Gleiche Platzhalter dürfen verschieden gefüllt sein, das schadet nicht.
+ */
+export function isFilledFrom(original: string, filled: string): boolean {
+  const hits = scan(original);
+  if (hits.length === 0) return filled === original;
+  const pieces: string[] = [];
+  let cursor = 0;
+  for (const hit of hits) {
+    pieces.push(original.slice(cursor, hit.index));
+    cursor = hit.index + hit.length;
+  }
+  pieces.push(original.slice(cursor));
+
+  const first = pieces[0];
+  const last = pieces[pieces.length - 1];
+  if (!filled.startsWith(first) || filled.length < first.length + last.length || !filled.endsWith(last)) return false;
+  const end = filled.length - last.length;
+  let at = first.length;
+  for (const piece of pieces.slice(1, -1)) {
+    const found = filled.indexOf(piece, at);
+    if (found < 0 || found + piece.length > end) return false;
+    at = found + piece.length;
+  }
+  return true;
+}

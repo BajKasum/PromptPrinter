@@ -846,6 +846,8 @@ export const it: Messages = {
       "Questo prompt è troppo lungo per una prova.",
     testRunUsed:
       "Hai già provato questo prompt. La quota gratuita comprende una prova per prompt.",
+    testRunNotDelivered:
+      "Nella quota gratuita puoi provare solo un prompt che ti ho fornito io. Con la tua chiave IA va bene qualsiasi testo.",
     chatNotConfigured:
       "La chat al momento non è configurata correttamente. Non dipende da te, riprova più tardi.",
     chatPersistFailed: "Non è stato possibile salvare la tua chat. Riprova.",

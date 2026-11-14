@@ -167,6 +167,10 @@ async function finishAborted(args: ReplyStreamArgs, reply: string): Promise<void
   try {
     if (hasReply) {
       await completeTurn(supabase, userId, opened.conversationId, reply);
+      // Stand der Prompt schon ganz da, ist er geliefert und zählt im Gratis-Rahmen wie in finishCompleted.
+      // Sonst brächte ein Stopp kurz nach dem Codeblock jeden Prompt ohne Zählung.
+      const prompt = args.freeTrial ? extractPrompt(reply) : null;
+      if (prompt) await args.freeTrial?.promptDelivered(prompt);
     } else {
       await releaseReservations();
     }
@@ -271,7 +275,8 @@ async function finishCompleted(
   let freePromptsLeft: number | undefined;
   if (args.freeTrial) {
     try {
-      freePromptsLeft = extractPrompt(reply) ? await args.freeTrial.promptDelivered() : await args.freeTrial.promptsLeft();
+      const prompt = extractPrompt(reply);
+      freePromptsLeft = prompt ? await args.freeTrial.promptDelivered(prompt) : await args.freeTrial.promptsLeft();
     } catch (err) {
       captureError("chat.free_trial_count_failed", err, { userId });
     }

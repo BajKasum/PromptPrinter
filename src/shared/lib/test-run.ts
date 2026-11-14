@@ -17,6 +17,11 @@ export const TEST_RUN_MAX_OUTPUT_TOKENS = 1500;
  */
 export const TEST_RUN_SYSTEM = "You are a helpful assistant.";
 
+/**
+ * `prompt` ist der Text, der läuft (mit ausgefüllten Platzhaltern), `original` der Prompt, wie Finn ihn geliefert
+ * hat. Im Gratis-Rahmen ist `original` Pflicht: der Server lässt dort nur gelieferte Prompts laufen.
+ */
 export const testRunRequestSchema = z.object({
   prompt: z.string().trim().min(1).max(TEST_RUN_MAX_PROMPT_CHARS),
+  original: z.string().trim().min(1).max(TEST_RUN_MAX_PROMPT_CHARS).optional(),
 });

@@ -99,7 +99,7 @@ export function ChatResultPanel({
 
       {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} onFilledChange={setFilled} />}
 
-      {savablePrompt && <PromptActions key={savablePrompt} prompt={filled ?? savablePrompt} />}
+      {savablePrompt && <PromptActions key={savablePrompt} prompt={filled ?? savablePrompt} original={savablePrompt} />}
 
       {/* Same actions as under an older reply (#150): the prompt that just got
           finished is the moment you most want to export it. */}

@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
 import { readJsonBody, RequestBodyTooLargeError } from "@/server/http/request-body";
@@ -9,6 +8,8 @@ import { reserveModelCall } from "@/server/model-call";
 import { chatCompleteStream, classifyLlmFailure, llmConfig, LlmEmptyReplyError } from "@/server/llm";
 import { requestT } from "@/server/i18n";
 import { describeLlmFailure } from "@/features/chat/lib/turn-failures";
+import { isFilledFrom } from "@/features/chat/lib/placeholders";
+import { deliveredPromptHash } from "@/server/free-trial";
 import { captureError, logEvent } from "@/shared/lib/observability";
 import { TEST_RUN_MAX_BODY_BYTES, TEST_RUN_MAX_OUTPUT_TOKENS, TEST_RUN_SYSTEM, testRunRequestSchema } from "@/shared/lib/test-run";
 
@@ -45,7 +46,11 @@ export async function POST(req: Request): Promise<Response> {
   }
   const parsed = testRunRequestSchema.safeParse(body);
   if (!parsed.success) return problem(400, m.testRunTooLong);
-  const { prompt } = parsed.data;
+  const { prompt, original } = parsed.data;
+  // Der Text darf vom gelieferten Prompt nur in den Platzhaltern abweichen; der Hash gilt dem gelieferten Prompt,
+  // damit ein Prompt mit anders gefüllten Platzhaltern keinen zweiten Gratis-Probelauf bekommt.
+  if (original !== undefined && !isFilledFrom(original, prompt)) return problem(400, m.unreadableReload);
+  const promptHash = deliveredPromptHash(original ?? prompt);
 
   const allowance = await reserveModelCall({
     supabase,
@@ -65,7 +70,7 @@ export async function POST(req: Request): Promise<Response> {
     freeTrial: {
       req,
       budget: m.freeTrialBudget,
-      testRunOf: { promptHash: createHash("sha256").update(prompt).digest("hex").slice(0, 32), used: m.testRunUsed },
+      testRunOf: { promptHash, used: m.testRunUsed, notDelivered: m.testRunNotDelivered },
     },
   });
   if (allowance instanceof Response) return allowance;

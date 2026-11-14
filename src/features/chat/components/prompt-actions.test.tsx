@@ -46,7 +46,7 @@ describe("PromptActions", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/test-run",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ prompt: "Ein Prompt" }) })
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ prompt: "Ein Prompt", original: "Ein Prompt" }) })
     );
     const toggle = await screen.findByRole("button", { name: "So antwortet eine KI auf deinen Prompt" });
     expect(screen.getByText("Sehr geehrte Frau Muster")).toBeInTheDocument();

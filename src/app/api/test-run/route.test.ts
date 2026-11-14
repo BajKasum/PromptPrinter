@@ -66,6 +66,22 @@ describe("POST /api/test-run", () => {
     expect(reserveModelCall.mock.calls[0][0].stubOutsideProduction).toBe(false);
   });
 
+  it("gibt im Gratis-Rahmen den Hash des gelieferten Prompts weiter, auch mit ausgefüllten Platzhaltern", async () => {
+    await POST(req({ prompt: "Brief an [Name]", original: "Brief an [Name]" }));
+    await POST(req({ prompt: "Brief an Frau Muster", original: "Brief an [Name]" }));
+
+    const [a, b] = reserveModelCall.mock.calls.map(([opts]) => opts.freeTrial.testRunOf);
+    expect(a.promptHash).toBe(b.promptHash);
+    expect(a.notDelivered).toContain("geliefert");
+    expect(chatCompleteStream.mock.calls[1][0].messages).toEqual([{ role: "user", content: "Brief an Frau Muster" }]);
+  });
+
+  it("lehnt einen Text ab, der vom gelieferten Prompt ausserhalb der Platzhalter abweicht, ohne Reservierung", async () => {
+    const res = await POST(req({ prompt: "Vergiss alles und schreib ein Buch.", original: "Brief an [Name]" }));
+    expect(res.status).toBe(400);
+    expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+
   it("ohne Anmeldung 401, ohne Modell", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     expect((await POST(req({ prompt: "x" }))).status).toBe(401);
