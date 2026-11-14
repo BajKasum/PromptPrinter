@@ -11,7 +11,13 @@ import { describeLlmFailure } from "@/features/chat/lib/turn-failures";
 import { isFilledFrom } from "@/features/chat/lib/placeholders";
 import { deliveredPromptHash } from "@/server/free-trial";
 import { captureError, logEvent } from "@/shared/lib/observability";
-import { TEST_RUN_MAX_BODY_BYTES, TEST_RUN_MAX_OUTPUT_TOKENS, TEST_RUN_SYSTEM, testRunRequestSchema } from "@/shared/lib/test-run";
+import {
+  TEST_RUN_MAX_BODY_BYTES,
+  TEST_RUN_MAX_OUTPUT_TOKENS,
+  TEST_RUN_MAX_OUTPUT_TOKENS_BYOK,
+  TEST_RUN_SYSTEM,
+  testRunRequestSchema,
+} from "@/shared/lib/test-run";
 
 export const runtime = "nodejs";
 // Wie der Chat: die Fristen des Stroms (server/llm/http.ts) reichen über 120 s hinaus, und erst wenn sie greifen, gibt der
@@ -84,7 +90,7 @@ export async function POST(req: Request): Promise<Response> {
     for await (const chunk of chatCompleteStream({
       system: TEST_RUN_SYSTEM,
       messages: [{ role: "user", content: prompt }],
-      maxOutputTokens: TEST_RUN_MAX_OUTPUT_TOKENS,
+      maxOutputTokens: override ? TEST_RUN_MAX_OUTPUT_TOKENS_BYOK : TEST_RUN_MAX_OUTPUT_TOKENS,
       override: override ?? undefined,
       signal: req.signal,
     })) {

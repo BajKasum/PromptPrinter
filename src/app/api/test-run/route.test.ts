@@ -82,6 +82,18 @@ describe("POST /api/test-run", () => {
     expect(reserveModelCall).not.toHaveBeenCalled();
   });
 
+  it("gibt mit eigenem Key mehr Ausgabe, damit denkende Modelle sichtbaren Text übrig haben", async () => {
+    reserveModelCall.mockResolvedValue({
+      override: { provider: "gemini", apiKey: "k" },
+      plan: "free",
+      isAdmin: false,
+      freeTrial: null,
+      releaseReservations: release,
+    });
+    await POST(req({ prompt: "Ein Prompt" }));
+    expect(chatCompleteStream.mock.calls[0][0].maxOutputTokens).toBeGreaterThan(TEST_RUN_MAX_OUTPUT_TOKENS);
+  });
+
   it("ohne Anmeldung 401, ohne Modell", async () => {
     getUser.mockResolvedValue({ data: { user: null } });
     expect((await POST(req({ prompt: "x" }))).status).toBe(401);
