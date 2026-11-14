@@ -122,13 +122,20 @@ export async function* readOpenAiCompatibleSse(
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
-        throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
+      if (done) {
+        // Am Ende zählt auch, was noch im Puffer steht: ein zurückgehaltenes CR ist jetzt ein Zeilenende, und ein
+        // letzter Rahmen ohne Leerzeile danach (Strom ohne [DONE]) wird noch ausgewertet.
+        buffer = (buffer + decoder.decode()).replace(/\r\n|\r/g, "\n");
+        if (!buffer.trim()) break;
+        buffer += "\n\n";
+      } else {
+        total += value.byteLength;
+        if (total > maxBytes) {
+          throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
+        }
+        buffer += decoder.decode(value, { stream: true });
+        buffer = buffer.replace(/\r\n|\r(?!$)/g, "\n");
       }
-      buffer += decoder.decode(value, { stream: true });
-      buffer = buffer.replace(/\r\n|\r(?!$)/g, "\n");
       let sep: number;
       while ((sep = buffer.indexOf("\n\n")) !== -1) {
         const frame = buffer.slice(0, sep);
@@ -154,6 +161,7 @@ export async function* readOpenAiCompatibleSse(
           if (text) yield text;
         }
       }
+      if (done) break;
     }
   } finally {
     await reader.cancel().catch(() => {});
