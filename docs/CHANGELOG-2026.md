@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Review-Befunde auf öffentlichen Seiten und im Chat (Branch `fix/review-oberflaeche`)
+
+- **Ö11, geteilter Prompt:** `/geteilt/<token>` zeigt jetzt über dem Kopieren einen Hinweis, wenn die Prompt-Prüfung Befehle, Dateizugriffe oder Versuche findet, frühere Regeln aufzuheben (wie im Chat). Schlüssel und persönliche Angaben prüft schon der Dialog vor dem Teilen.
+- **Ö25, Kontrast im Kopf:** Die Deckkraft der Kopf-Fläche steigt von 0.82 auf 0.9, damit die Links auch über dunklem Inhalt darunter bei 4,5:1 bleiben.
+- **Ö34, verdeckter Fokus:** `scroll-padding-top: 6rem` auf Seiten mit dem festen Kopf: Fokus, Seitensuche und Anker landen unter Leiste und Wasserkante.
+- **Ö32, Platzhalter:** Routensegmente (`/[id]/`, `[...slug]`) und Tupel (`Array<[string, number]>`) galten als Platzhalter.
+- **Ö36, Skill-Download:** `/skill` bot neben dem ZIP des festen Commits das Klonen an, das Commit und Prüfsumme umgeht. Jetzt nur das ZIP, mit Hinweis auf die Prüfsumme.
+- **Ö37, Beispiel-Prompts:** Zwei Beispiele auf `/aufgaben` setzten Angaben ein, die in der Antwort der Person fehlten (Technik der Imkerei-Seite, Zahl der Mitglieder). `TASK_GUIDES_UPDATED` auf 2026-11-14.
+- **Ö31, teilweise:** `mode` im `done`-Ereignis ist ein String, ein neuer Wert bricht ältere Browser nicht. Eine kaputte Nutzlast nach Text bleibt bewusst ein Protokollfehler (#210, `chat.test.tsx`).
+- **Ö28 verworfen:** Projekt-Anweisungen und "Über mich" müssten über Seite, Chat und Thread bis in den Browser, nur damit ein wegklickbarer Link-Hinweis seltener erscheint.
+
+---
+
 ## 2026-11-14: Letzte Review-Befunde der Runde (Branch `fix/review-rest`)
 
 - **Ö9, Sidebar-Listen:** Scheiterte das Lesen der letzten Chats oder Projekte, fiel die ganze eingeloggte App in `global-error`. Jetzt bleibt die Liste leer und der Fehler geht an `captureError`; die Seiten selbst lesen weiter mit `orThrow`.
