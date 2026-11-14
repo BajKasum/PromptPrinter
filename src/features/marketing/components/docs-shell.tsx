@@ -7,7 +7,7 @@ import { articleJsonLd } from "@/features/marketing/lib/article-schema";
 import {
   DOCS_GROUPS,
   DOCS_ORDER,
-  DOCS_PUBLISHED,
+  docPublished,
   docBySlug,
   docHref,
   docNeighbours,
@@ -106,7 +106,7 @@ export function DocsShell({
         headline: article.title,
         description: article.summary,
         path: docHref(article.slug),
-        published: DOCS_PUBLISHED,
+        published: docPublished(article),
         updated: article.updated,
       })
     : null;
