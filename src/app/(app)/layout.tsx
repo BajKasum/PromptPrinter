@@ -9,7 +9,7 @@ import { getSessionProfile, getSessionUser } from "@/server/session";
 import { I18nProvider } from "@/shared/i18n/provider";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, toLocale } from "@/shared/i18n/locales";
 import { localeFromSettings, messagesFor } from "@/server/i18n";
-import { orThrow } from "@/server/supabase/query";
+import { captureError } from "@/shared/lib/observability";
 
 type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
@@ -62,8 +62,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .order("updated_at", { ascending: false })
       .limit(5),
   ]);
-  const { data: rawChats } = orThrow(rawChatsResult, "conversations");
-  const { data: rawProjects } = orThrow(rawProjectsResult, "projects");
+  // Die beiden Listen sind Abkürzungen: scheitert ihr Lesen, bleibt die Sidebar leer und die Seite darunter geht auf,
+  // statt dass die ganze App in global-error fällt. Die Seiten selbst lesen ihre Daten mit orThrow.
+  if (rawChatsResult.error) captureError("sidebar.chats_read_failed", rawChatsResult.error);
+  if (rawProjectsResult.error) captureError("sidebar.projects_read_failed", rawProjectsResult.error);
+  const rawChats = rawChatsResult.error ? null : rawChatsResult.data;
+  const rawProjects = rawProjectsResult.error ? null : rawProjectsResult.data;
 
   // Sprache (29.09.2026): Cookie zuerst, sonst die im Profil gespeicherte
   // Wahl (neues Gerät), sonst Deutsch. Das Profil kam oben ohnehin, die
