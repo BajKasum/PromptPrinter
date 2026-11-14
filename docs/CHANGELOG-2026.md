@@ -11,6 +11,20 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Review-Befunde in Server und Betrieb (Branch `fix/review-server`)
+
+- **Ö52, Wiederherstellungscodes:** `replaceRecoveryCodes` löschte die alten Codes vor dem Einfügen der neuen; scheiterte das Einfügen, stand das Konto ohne Rückweg da. Jetzt erst einfügen, dann nur die älteren Zeilen dieses Kontos löschen (`not id in (…)`).
+- **Ö55, Marken in "Über mich":** `aboutMeBlock` entfernte nur die genaue Schreibweise `<angaben_der_person>`. Verschachtelt (`<angaben<angaben_der_person>_der_person>`), grossgeschrieben oder mit Leerraum kam eine Marke durch. Jetzt jede Form, so lange, bis keine mehr da ist.
+- **Ö14, eine Abfrage je Zug weniger in Folge:** "Über mich" wird neben dem Projektkontext gelesen statt davor, die Reihenfolge der Blöcke im Systemprompt bleibt.
+- **Ö10, Nutzungsseite:** Ein Lesefehler der Nachrichtenzählung brach die Seite auch dann, wenn sie den Wert aus Redis zeigt. Jetzt nur, wenn die Zählung der Rückfallwert ist.
+- **Ö6, Port des Prod-Containers:** `docker-compose.prod.yml` bindet ihn nur an `127.0.0.1` (`HOST_BIND`), die App vertraut `X-Forwarded-For` (docs/DOCKER.md).
+- **Ö7, Rotationsskript:** blättert nach `id` statt nach dem nicht eindeutigen `created_at`.
+- **Ö38, /terminal:** beschrieb `/save` als Speichern bei den gespeicherten Prompts; das Programm schreibt eine Markdown-Datei in den aktuellen Ordner.
+
+Mutationstest für Ö52 und Ö55 (alte Fassung: die neuen Tests schlagen an).
+
+---
+
 ## 2026-11-14: Weitere öffentliche Review-Befunde (Branch `fix/review-gratis`)
 
 Niedrige Befunde aus dem Code-Review vom 12.11., nach Wirkung ausgewählt (Begründung jeweils am PR des Befunds):
