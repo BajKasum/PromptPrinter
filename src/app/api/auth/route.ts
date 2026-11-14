@@ -6,7 +6,7 @@ import { de } from "@/shared/i18n/messages/de";
 import { createClient } from "@/server/supabase/server";
 import { hasVerifiedFactor } from "@/server/supabase/assurance";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
-import { isSignInThrottled, recordFailedSignIn } from "@/server/security/sign-in-throttle";
+import { reserveSignInAttempt } from "@/server/security/sign-in-throttle";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
 import {
   MAX_SMALL_BODY_BYTES,
@@ -181,17 +181,22 @@ function runAuthAction(input: AuthRequest, supabase: AuthClient): Promise<Respon
 async function signIn(input: Extract<AuthRequest, { action: "sign-in" }>, supabase: AuthClient): Promise<Response> {
   // Auch das richtige Passwort prallt ab, sonst wäre die Sperre ein Orakel. Der Text sagt nichts über das
   // Konto: unbekannte Adressen zählen genauso (server/security/sign-in-throttle.ts).
-  if (await isSignInThrottled(input.email)) {
+  const attempt = await reserveSignInAttempt(input.email);
+  if (attempt.throttled) {
     logSecurityEvent("auth.sign_in_failed", { reason: "throttled" });
     return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.");
   }
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: input.email,
-    password: input.password,
-  });
+  let result: Awaited<ReturnType<AuthClient["auth"]["signInWithPassword"]>>;
+  try {
+    result = await supabase.auth.signInWithPassword({ email: input.email, password: input.password });
+  } catch (err) {
+    await attempt.settle(false);
+    throw err;
+  }
+  const { data, error } = result;
+  const invalid = error ? isInvalidCredentialsError(error.message) : false;
+  await attempt.settle(invalid);
   if (error) {
-    const invalid = isInvalidCredentialsError(error.message);
-    if (invalid) await recordFailedSignIn(input.email);
     // Ohne Adresse: ein Fehlversuch nennt kein Konto, auch nicht im Log.
     logSecurityEvent("auth.sign_in_failed", { reason: invalid ? "invalid_credentials" : "other" });
     return authFailure(error.message, input.action);

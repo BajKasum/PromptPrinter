@@ -12,8 +12,8 @@ const resetPasswordForEmail = vi.fn();
 const rateLimit = vi.fn();
 const verifyTurnstileToken = vi.fn();
 const logWarning = vi.fn();
-const isSignInThrottled = vi.fn();
-const recordFailedSignIn = vi.fn();
+const reserveSignInAttempt = vi.fn();
+const settleSignIn = vi.fn();
 const logEvent = vi.fn();
 
 vi.mock("@/server/supabase/server", () => ({
@@ -34,8 +34,7 @@ vi.mock("@/server/security/rate-limit", () => ({
 }));
 
 vi.mock("@/server/security/sign-in-throttle", () => ({
-  isSignInThrottled: (...a: unknown[]) => isSignInThrottled(...a),
-  recordFailedSignIn: (...a: unknown[]) => recordFailedSignIn(...a),
+  reserveSignInAttempt: (...a: unknown[]) => reserveSignInAttempt(...a),
 }));
 
 vi.mock("@/server/security/turnstile", () => ({
@@ -74,7 +73,7 @@ describe("POST /api/auth", () => {
     signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
     resend.mockResolvedValue({ error: null });
     resetPasswordForEmail.mockResolvedValue({ error: null });
-    isSignInThrottled.mockResolvedValue(false);
+    reserveSignInAttempt.mockResolvedValue({ throttled: false, settle: settleSignIn });
   });
 
   describe("Sicherheitsprotokoll", () => {
@@ -112,7 +111,7 @@ describe("POST /api/auth", () => {
     });
 
     it("gesperrt wegen zu vieler Versuche: eigener Grund", async () => {
-      isSignInThrottled.mockResolvedValue(true);
+      reserveSignInAttempt.mockResolvedValue({ throttled: true, settle: settleSignIn });
       expect((await POST(req(signIn))).status).toBe(429);
       expect(events()).toEqual([{ event: "auth.sign_in_failed", reason: "throttled" }]);
     });
@@ -286,7 +285,7 @@ describe("POST /api/auth", () => {
 
   describe("sign-in: Sperre je Konto", () => {
     it("fragt Supabase bei einer Sperre nicht und nennt das Konto nicht", async () => {
-      isSignInThrottled.mockResolvedValue(true);
+      reserveSignInAttempt.mockResolvedValue({ throttled: true, settle: settleSignIn });
       const res = await POST(req(signIn));
       expect(res.status).toBe(429);
       expect(signInWithPassword).not.toHaveBeenCalled();
@@ -296,30 +295,31 @@ describe("POST /api/auth", () => {
     it("prüft die Sperre erst hinter dem Captcha", async () => {
       verifyTurnstileToken.mockResolvedValue({ ok: false, reason: "invalid-input-response" });
       await POST(req(signIn));
-      expect(isSignInThrottled).not.toHaveBeenCalled();
+      expect(reserveSignInAttempt).not.toHaveBeenCalled();
     });
 
     it("zählt falsche Zugangsdaten gegen die Adresse, auch eine unbekannte", async () => {
       signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
       const res = await POST(req(signIn));
       expect(res.status).toBe(400);
-      expect(recordFailedSignIn).toHaveBeenCalledWith("du@example.com");
+      expect(reserveSignInAttempt).toHaveBeenCalledWith("du@example.com");
+      expect(settleSignIn).toHaveBeenCalledWith(true);
     });
 
     it("zählt einen Ausfall des Anbieters nicht als Fehlversuch", async () => {
       signInWithPassword.mockResolvedValue({ error: { message: "Database error" } });
       await POST(req(signIn));
-      expect(recordFailedSignIn).not.toHaveBeenCalled();
+      expect(settleSignIn).toHaveBeenCalledWith(false);
     });
 
     it("eine erfolgreiche Anmeldung setzt einen laufenden Zähler nicht zurück", async () => {
       signInWithPassword.mockResolvedValue({ error: null });
       const res = await POST(req(signIn));
       expect(res.status).toBe(200);
-      expect(recordFailedSignIn).not.toHaveBeenCalled();
-      // Die Sperre kennt gar keinen Weg zurück: das Modul exportiert nur Prüfen und Zählen.
+      expect(settleSignIn).toHaveBeenCalledWith(false);
+      // Der Erfolg gibt nur seinen eigenen Platz zurück: das Modul hat keinen Weg, den Zähler zu leeren.
       const throttle = await vi.importActual<Record<string, unknown>>("@/server/security/sign-in-throttle");
-      expect(Object.keys(throttle).sort()).toEqual(["isSignInThrottled", "recordFailedSignIn"]);
+      expect(Object.keys(throttle).sort()).toEqual(["reserveSignInAttempt"]);
     });
   });
 
