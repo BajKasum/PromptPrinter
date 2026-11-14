@@ -113,8 +113,8 @@ async function accountsWithRows(
       batch.map(async (id) => {
         let query = untyped.from(table).select("user_id").eq("user_id", id);
         if (extra) query = query.eq(extra.column, extra.value);
-        const { data } = await query.limit(1);
-        if (data && data.length > 0) found.add(id);
+        const { data: hit } = await query.limit(1);
+        if (hit && hit.length > 0) found.add(id);
       })
     );
   }
@@ -132,14 +132,14 @@ export async function loadActivationFunnel(
   admin: Admin,
   now: Date = new Date()
 ): Promise<ActivationFunnel> {
-  const { data } = await admin
+  const { data: recentProfiles } = await admin
     .from("profiles")
     .select("id, created_at")
     .gte("created_at", funnelSince(now).toISOString())
     .order("created_at", { ascending: false })
     .limit(FUNNEL_MAX_ACCOUNTS + 1);
 
-  const rows: FunnelAccount[] = data ?? [];
+  const rows: FunnelAccount[] = recentProfiles ?? [];
   const truncated = rows.length > FUNNEL_MAX_ACCOUNTS;
   const accounts = rows.slice(0, FUNNEL_MAX_ACCOUNTS);
   const ids = accounts.map((a) => a.id);

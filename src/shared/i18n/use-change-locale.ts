@@ -37,14 +37,14 @@ export function useChangeLocale() {
         if (user) {
           // settings ist eine JSONB-Spalte mit weiteren Schlüsseln (z. B.
           // interested_in), also lesen, zusammenführen, zurückschreiben.
-          const { data } = await supabase
+          const { data: profile } = await supabase
             .from("profiles")
             .select("settings")
             .eq("id", user.id)
             .maybeSingle();
           const current =
-            data?.settings && typeof data.settings === "object" && !Array.isArray(data.settings)
-              ? (data.settings as Record<string, unknown>)
+            profile?.settings && typeof profile.settings === "object" && !Array.isArray(profile.settings)
+              ? (profile.settings as Record<string, unknown>)
               : {};
           await supabase
             .from("profiles")
