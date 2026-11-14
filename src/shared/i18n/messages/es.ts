@@ -191,7 +191,7 @@ export const es: Messages = {
     fill: {
       open: "Rellenar los marcadores ({count})",
       title: "Rellenar los marcadores",
-      hint: "Lo que escribas se queda en este navegador. No se envía ni se guarda; el prompt guardado conserva sus marcadores.",
+      hint: "Lo que escribas se queda en este navegador hasta que pulses Prueba, que envía la versión rellenada a la IA. El prompt guardado conserva sus marcadores.",
       skip: "No es un marcador",
       skipLabel: "No tratar «{name}» como marcador",
       preview: "Vista previa",
