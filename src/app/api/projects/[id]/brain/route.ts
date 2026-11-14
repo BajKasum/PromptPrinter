@@ -20,6 +20,14 @@ import { projectKind } from "@/shared/lib/project-kind";
 import { requestT } from "@/server/i18n";
 import type { Messages } from "@/shared/i18n/messages/de";
 import { LOCALE_ENGLISH_NAMES } from "@/shared/i18n/locales";
+import { rememberRepoHead } from "@/server/brain/repo-status";
+
+/** Das Modell hat geliefert, nur das Speichern scheiterte: die Kosten sind entstanden. */
+class BrainSaveError extends Error {
+  constructor(override readonly cause: unknown) {
+    super("project_brains update failed");
+  }
+}
 
 export const runtime = "nodejs";
 // Wie /api/chat: eine Analyse liest bis zu 14 Repo-Dateien plus die
@@ -137,9 +145,9 @@ export async function POST(req: Request, { params }: Params) {
   try {
     return await analyzeAndSave({ req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt });
   } catch (err) {
-    // Der Aufruf hat nichts Verwertbares geliefert, also auch nichts gekostet,
-    // was jemandem angerechnet werden sollte — dieselbe Logik wie im Chat.
-    await releaseReservations();
+    // Der Aufruf hat nichts Verwertbares geliefert, also auch nichts gekostet, was jemandem angerechnet werden sollte,
+    // dieselbe Logik wie im Chat. Ausnahme: das Modell hat geliefert und nur das Speichern scheiterte.
+    if (!(err instanceof BrainSaveError)) await releaseReservations();
     return reportAnalysisFailure(err, { admin, projectId, userId, byok: Boolean(override), startedAt, m });
   }
 }
@@ -320,8 +328,10 @@ async function analyzeAndSave(ctx: {
     })
     .eq("project_id", projectId)
     .eq("user_id", userId);
-  // Nicht gespeichert heißt nicht fertig: der catch unten gibt die Reservierungen zurück und meldet den Fehler.
-  if (saveError) throw saveError;
+  // Nicht gespeichert heißt nicht fertig, aber das Modell hat gearbeitet: die Reservierungen bleiben (wie der Chat bei
+  // persist_failed), der catch unten meldet den Fehler und setzt den Status.
+  if (saveError) throw new BrainSaveError(saveError);
+  await rememberRepoHead(collected.repoUrl, collected.repoRef);
 
   logEvent("brain.analyzed", {
     userId,

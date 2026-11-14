@@ -358,7 +358,8 @@ describe("POST /api/projects/[id]/brain", () => {
       const res = await POST(req(), params);
       expect(res.status).toBeGreaterThanOrEqual(500);
       expect((await res.json()).status).not.toBe("ready");
-      expect(release).toHaveBeenCalledTimes(1);
+      // Das Modell hat gearbeitet: die Reservierung bleibt, wie im Chat bei persist_failed.
+      expect(release).not.toHaveBeenCalled();
       expect(adminWrites.some((w) => w.op === "update" && w.values.status === "failed")).toBe(true);
     });
 

@@ -42,12 +42,25 @@ export async function isRepoStale(
     try {
       head = await fetchRepoHeadSha(ref, signal);
     } catch {
+      // Ein Abbruch des Browsers ist kein Fehler bei GitHub: er darf die Prüfung nicht für alle sperren.
+      if (signal?.aborted) return null;
       await remember(key, FAILURE_MARK, FAILURE_TTL_SECONDS);
       return null;
     }
     await remember(key, head, HEAD_TTL_SECONDS);
   }
   return head !== storedRef;
+}
+
+/**
+ * Nach einer Analyse: die SHA, die sie gelesen hat, ist der Stand des Repos. Sonst hielte der Zwischenspeicher bis zu
+ * HEAD_TTL_SECONDS lang die ältere SHA, und gleich nach "Neu analysieren" hiesse es "veraltet".
+ */
+export async function rememberRepoHead(repoUrl: string | null, sha: string | null): Promise<void> {
+  if (!repoUrl || !sha || !GIT_SHA.test(sha)) return;
+  const ref = parseGithubRepoUrl(repoUrl);
+  if (!ref) return;
+  await remember(`${CACHE_PREFIX}:${ref.owner.toLowerCase()}/${ref.repo.toLowerCase()}`, sha, HEAD_TTL_SECONDS);
 }
 
 async function remember(key: string, value: string, ttlSeconds: number): Promise<void> {
