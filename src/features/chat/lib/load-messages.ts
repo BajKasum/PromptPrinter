@@ -9,6 +9,8 @@ import {
   toAttachmentView,
 } from "@/features/chat/lib/attachment-store";
 import type { AttachmentRecord } from "@/features/chat/lib/attachment-model";
+import { orThrow } from "@/server/supabase/query";
+import { captureError } from "@/shared/lib/observability";
 
 // Der gespeicherte Verlauf eines Chats, so wie die Chat-Seiten ihn brauchen:
 // Nachrichten, an den Nutzer-Nachrichten ihre Anhänge, an den Bildern eine
@@ -68,6 +70,8 @@ export async function loadConversationMessages(
     // Ohne die Tabelle (Migration 0045 noch nicht angewendet) schlägt schon der
     // Embed fehl, und mit ihm die ganze Abfrage. Der Chat muss trotzdem
     // aufgehen: Nachrichten ohne Anhänge sind besser als eine leere Seite.
+    // Scheitert auch die einfache Abfrage, wirft sie: ein bestehender Chat darf nicht leer erscheinen.
+    if (embedded.error) captureError("chat.messages_embed_failed", embedded.error, { conversationId });
     const plain = await supabase
       .from("messages")
       .select("id, role, content")
@@ -75,7 +79,7 @@ export async function loadConversationMessages(
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_LOAD_LIMIT);
-    rows = plain.data;
+    rows = orThrow(plain, "messages").data;
   }
 
   const chronological = (rows ?? []).slice().reverse();
