@@ -352,13 +352,19 @@ async function resolveUserId(
 
   const customerId = patch.subscription_customer_id;
   if (customerId) {
+    // Zwei Konten mit derselben Kundennummer sind kein Datenbankausfall: keines bekommt das Ereignis, und das Log
+    // nennt den Fall, statt dass Lemon Squeezy das Ereignis immer wieder schickt.
     const { data, error } = await admin
       .from("profiles")
       .select("id")
       .eq("subscription_customer_id", customerId)
-      .maybeSingle();
+      .limit(2);
     if (error) throw error;
-    if (data) return data.id;
+    if (data && data.length > 1) {
+      logWarning("billing.webhook_customer_id_ambiguous", { accounts: data.length });
+      return null;
+    }
+    if (data?.[0]) return data[0].id;
   }
 
   return null;
