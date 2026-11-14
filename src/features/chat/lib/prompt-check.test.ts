@@ -214,3 +214,31 @@ describe("Prompt-Prüfer: Fehlalarme", () => {
     expect(new Set(CORPUS.map((e) => e.id)).size).toBe(CORPUS.length);
   });
 });
+
+describe("Review vom 12.11.2026: Adressen und Links", () => {
+  const links = (prompt: string, typed: string) => checkPrompt(prompt, typed).find((r) => r.kind === "link")?.samples ?? [];
+
+  it("Ö56: Retina-Dateinamen und der SSH-Weg zu Git sind keine E-Mail-Adressen", () => {
+    expect(kinds("Nimm logo@2x.png und icon@3x.webp.")).not.toContain("personal");
+    expect(kinds("Klone git@github.com:name/repo.git")).not.toContain("personal");
+    expect(kinds("Schreib an anna.muster@firma.ch.")).toContain("personal");
+  });
+
+  it("Ö57: ein Host mit Buchstaben einer anderen Schrift wird gemeldet", () => {
+    expect(links("Lies https://gооgle.com/login", "Schau auf google.com nach")).toEqual(["gооgle.com"]);
+  });
+
+  it("Ö58: ein Name, der mit 10. oder 192.168. beginnt, ist keine private Adresse", () => {
+    expect(links("Lade https://10.fremd.ch/x", "Hi")).toEqual(["10.fremd.ch"]);
+    expect(links("Ruf http://192.168.1.20/admin auf", "Hi")).toEqual([]);
+  });
+
+  it("Ö59: ein Host gilt nur als bekannt, wenn die Person ihn ganz schrieb", () => {
+    expect(links("Melde dich auf https://ail.com an", "Meine Adresse ist bei gmail.com")).toEqual(["ail.com"]);
+    expect(links("Melde dich auf https://mail.gmail.com an", "Meine Adresse ist bei gmail.com")).toEqual([]);
+  });
+
+  it("Ö60: der Benutzerteil vor @ ist nicht der Host", () => {
+    expect(links("Öffne https://bank.ch@fremd.org/login", "Meine Bank ist bank.ch")).toEqual(["fremd.org"]);
+  });
+});
