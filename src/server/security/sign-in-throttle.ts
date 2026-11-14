@@ -20,7 +20,11 @@ import { reserveCounter } from "@/server/security/reserve-counter";
 const MAX_FAILED_SIGN_INS = 10;
 const WINDOW_SECONDS = 15 * 60;
 
-/** Gehasht, damit Redis keine Adressen führt. Unbekannte Adressen zählen genauso, die Sperre verrät kein Konto. */
+/**
+ * Gehasht, damit die Adressen nicht im Klartext in Redis stehen. Ungesalzen: wer Redis lesen kann und eine Adresse
+ * vermutet, kann sie bestätigen; die Schlüssel leben nur 15 Minuten. Unbekannte Adressen zählen genauso, die Sperre
+ * verrät kein Konto.
+ */
 function throttleKey(email: string): string {
   const digest = createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
   return `auth-failed-sign-ins:${digest}`;
