@@ -117,3 +117,24 @@ describe("das Workspace-Layout", () => {
     expect(layout).not.toMatch(/brain\/github|repo-status|brain\/status|api\.github\.com|fetchRepoHeadSha/);
   });
 });
+
+describe("Review vom 12.11.2026", () => {
+  it("Ö44: ein Abbruch des Browsers sperrt die Prüfung nicht für alle", async () => {
+    const controller = new AbortController();
+    fetchMock.mockImplementation(async () => {
+      controller.abort();
+      throw new DOMException("aborted", "AbortError");
+    });
+    const { isRepoStale } = await load();
+    expect(await isRepoStale("https://github.com/o/r", OLD, controller.signal)).toBeNull();
+    expect(redisMock.set).not.toHaveBeenCalled();
+  });
+
+  it("Ö43: nach einer Analyse gilt ihre SHA, nicht die ältere aus dem Zwischenspeicher", async () => {
+    store.set("promptprinter/brain-head:o/r", OLD);
+    const { isRepoStale, rememberRepoHead } = await load();
+    await rememberRepoHead("https://github.com/O/R", NEW);
+    expect(await isRepoStale("https://github.com/o/r", NEW)).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
