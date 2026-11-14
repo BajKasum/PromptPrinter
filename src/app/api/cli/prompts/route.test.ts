@@ -130,6 +130,14 @@ describe("GET /api/cli/prompts", () => {
     }
   });
 
+  it("liest bei einem Stern mehr Zeilen vor dem Sieb, sonst genau limit", async () => {
+    await GET(get("?limit=5&q=a*b"));
+    expect(calls("limit")).toEqual([
+      ["limit", 200],
+      ["limit", 200],
+    ]);
+  });
+
   it("schneidet die zusammengeführten Treffer auf limit", async () => {
     const res = await GET(get("?limit=1&q=a"));
     expect((await res.json()).prompts.map((p: { id: string }) => p.id)).toEqual(["b"]);
