@@ -2,7 +2,6 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { logWarning } from "@/shared/lib/observability";
-import { redis } from "@/server/security/redis-client";
 import { reserveCounter } from "@/server/security/reserve-counter";
 
 // Das Limit je Adresse hält einen Angreifer mit vielen Adressen nicht auf, der ein Konto rät: das Konto ist der
@@ -14,6 +13,10 @@ import { reserveCounter } from "@/server/security/reserve-counter";
 //
 // Eine feste Sperre mit Ablauf, kein wachsender Abstand: gesperrte Versuche zählen nicht, nach dem Fenster ist das
 // Konto von selbst wieder frei. Wer die Sperre durch stetes Raten aufrechthält, sperrt nur das Passwort: Reset und OAuth bleiben offen.
+//
+// Jeder Versuch reserviert seinen Platz VOR dem Aufruf bei Supabase (ein INCR), statt erst zu lesen und danach zu
+// zählen: sonst kämen gleichzeitige Versuche alle an einer Prüfung vorbei, die noch keinen von ihnen sah. Ein
+// Versuch, der nicht an falschen Zugangsdaten scheitert, gibt seinen Platz zurück.
 const MAX_FAILED_SIGN_INS = 10;
 const WINDOW_SECONDS = 15 * 60;
 
@@ -23,19 +26,29 @@ function throttleKey(email: string): string {
   return `auth-failed-sign-ins:${digest}`;
 }
 
-/** Ohne Redis oder bei einem Redis-Fehler: nicht gesperrt, das Limit je Adresse gilt weiter (fail open). */
-export async function isSignInThrottled(email: string): Promise<boolean> {
-  if (!redis) return false;
-  try {
-    const failed = Number((await redis.get<number>(throttleKey(email))) ?? 0);
-    if (failed < MAX_FAILED_SIGN_INS) return false;
-    logWarning("auth.sign_in_throttled", { failed });
-    return true;
-  } catch {
-    return false;
-  }
-}
+export type SignInAttempt = {
+  throttled: boolean;
+  /** Nach dem Aufruf: `failed` heisst falsche Zugangsdaten, dann bleibt der Platz belegt, sonst geht er zurück. */
+  settle: (failed: boolean) => Promise<void>;
+};
 
-export async function recordFailedSignIn(email: string): Promise<void> {
-  await reserveCounter({ key: throttleKey(email), limit: MAX_FAILED_SIGN_INS, ttlSeconds: WINDOW_SECONDS });
+/** Ohne Redis oder bei einem Redis-Fehler: nicht gesperrt, das Limit je Adresse gilt weiter (fail open). */
+export async function reserveSignInAttempt(email: string): Promise<SignInAttempt> {
+  const reservation = await reserveCounter({
+    key: throttleKey(email),
+    limit: MAX_FAILED_SIGN_INS,
+    ttlSeconds: WINDOW_SECONDS,
+  });
+  if (!reservation) return { throttled: false, settle: async () => {} };
+  if (!reservation.allowed) {
+    await reservation.release();
+    logWarning("auth.sign_in_throttled", { limit: MAX_FAILED_SIGN_INS });
+    return { throttled: true, settle: async () => {} };
+  }
+  return {
+    throttled: false,
+    settle: async (failed) => {
+      if (!failed) await reservation.release();
+    },
+  };
 }

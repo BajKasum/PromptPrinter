@@ -537,7 +537,7 @@ Was das nicht leistet:
 
 ## Anmelden: Sperre je Konto
 
-`/api/auth` sperrt eine E-Mail-Adresse, sobald in einem Fenster von 15 Minuten (ab dem ersten Fehlversuch) zehn Fehlversuche gezählt sind, bis das Fenster abläuft (`src/server/security/sign-in-throttle.ts`). Dazu kommen Turnstile und das Limit je IP.
+`/api/auth` sperrt eine E-Mail-Adresse, sobald in einem Fenster von 15 Minuten (ab dem ersten Fehlversuch) zehn Fehlversuche gezählt sind, bis das Fenster abläuft (`src/server/security/sign-in-throttle.ts`). Jeder Versuch reserviert seinen Platz vor dem Aufruf bei Supabase, gleichzeitige Versuche kommen deshalb nicht gemeinsam an der Sperre vorbei; ein Versuch, der nicht an falschen Zugangsdaten scheitert, gibt ihn zurück. Dazu kommen Turnstile und das Limit je IP.
 
 **Was das nicht leistet.** Die Sperre gilt nur für diese Route. Den Passwort-Grant von Supabase Auth (`/auth/v1/token?grant_type=password`) erreicht jeder mit dem öffentlichen Anon-Key auch direkt. Dort greifen weder Turnstile noch die Sperre, nur die Grenze von Supabase Auth für `/auth/v1/token`: 1800 Anfragen in der Stunde je IP, Spitzen bis 30 ([Supabase, "Production Checklist", Auth rate limits](https://supabase.com/docs/guides/deployment/going-into-prod)). Schon eine einzige Adresse kommt dort also auf weit mehr Versuche als die zehn je Viertelstunde über `/api/auth`. Im Code lässt sich das nicht schliessen:
 
@@ -560,10 +560,12 @@ Optional, TOTP über Supabase Auth (#237). TOTP ist auf gehosteten Projekten kos
 | Terminal freigeben | verlangt AAL2. Nachsehen und Ablehnen nicht, sie geben nichts her | `api/cli/approve` |
 | App-Seiten | Weiterleitung zum Nachweis, das Ziel bleibt erhalten | `server/supabase/middleware.ts` |
 | Passwort ändern | Supabase Auth verlangt AAL2, `/reset-password/update` schickt vorher zum Nachweis | `app/(auth)/reset-password/update` |
-| Faktor einrichten | verlangt eine frische Anmeldung (zehn Minuten): ein gestohlenes Cookie soll den Besitzer nicht mit einem fremden Faktor aussperren | `api/auth/mfa` |
-| Faktor ausschalten, neue Wiederherstellungscodes | verlangt einen Code aus der App, nicht nur eine AAL2-Sitzung: das Cookie ist für Skripte lesbar | `api/auth/mfa` |
+| Faktor einrichten | verlangt **in der App** eine frische Anmeldung (zehn Minuten): ein gestohlenes Cookie soll den Besitzer nicht mit einem fremden Faktor aussperren. Gilt nur für diese Route, siehe unten | `api/auth/mfa` |
+| Faktor ausschalten, neue Wiederherstellungscodes | verlangt **in der App** einen Code aus der App, nicht nur eine AAL2-Sitzung: das Cookie ist für Skripte lesbar. Ausschalten gilt nur für diese Route, siehe unten | `api/auth/mfa` |
 
 **Was das nicht leistet.** Ohne zweiten Nachweis hat eine Sitzung weiter AAL1, und alles ausser den Zeilen oben gilt dafür: Chat und Datenexport über ihre Routen, und vor allem die Data API direkt mit dem Anon-Key. RLS verlangt kein AAL2, denn Terminal-Sitzungen haben immer AAL1 und müssten sonst draussen bleiben. Das Passwort allein gibt also weiter Lesezugriff auf die eigenen Daten, nur eben nicht in der App und nicht auf die drei Aktionen. Das sagt auch der Hilfe-Artikel. Neu zu entscheiden, wenn der zweite Faktor das ganze Konto schützen soll: dann brauchen Terminals einen eigenen Weg.
+
+**Frische Anmeldung und Code gelten nur in der App.** Supabase Auth selbst nimmt Einrichten, Bestätigen und Entfernen eines Faktors mit der Sitzung allein an (das Entfernen eines bestätigten Faktors mit AAL2), und das Sitzungs-Cookie ist bewusst nicht httpOnly. Die beiden letzten Zeilen der Tabelle schützen also den Weg über die App, nicht vor jemandem, der die Sitzung schon hat. Schliessen liesse sich das erst mit dem MFA Verification Hook von Supabase, den es nur ab Tarif Teams gibt; auf Free bleibt es dokumentiert. Die Wiederherstellungscodes liegen in einer eigenen Tabelle, die nur der Server schreibt, neue Codes gibt es nur über die Route.
 
 **Terminals.** Eine Terminal-Sitzung bleibt AAL1, auch wenn der Browser beim Freigeben AAL2 hatte. Das ist gewollt: mit AAL1 lehnt Supabase Auth ein neues Passwort ab, ein gestohlenes Terminal-Token kann das Konto also nicht übernehmen. Die Kehrseite: jede TOTP-Prüfung löscht alle Sitzungen des Kontos unter AAL2 (`InvalidateSessionsWithAALLessThan` in Supabase Auth), also auch die Terminals. Der Hilfe-Artikel und die Einstellungen sagen es.
 
