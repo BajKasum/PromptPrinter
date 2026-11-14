@@ -18,6 +18,7 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 - **Ö35, Erscheinungsdatum der Hilfe:** Jeder Artikel nannte in Metadaten und JSON-LD den Start der Hilfe (2026-07-25), auch "Terminal und MCP" vom 29.10. `DocArticle` hat ein optionales `published`, `docPublished` nimmt es, der Test verlangt `published` zwischen Start und letzter Änderung.
 - **Ö65, Ausnahmen des Lesefehler-Guards:** Der Schlüssel `Datei:data` deckte jede `data`-Abfrage der Datei. Die drei Stellen haben eigene lokale Namen (`signed`, `recentProfiles`, `profile`).
 - **Ö24, globals.css:** Der Kommentar zu `@theme inline` nannte den Kopf der Seite als Element mit eigener `.dark`-Klasse (trägt er nicht mehr), und der Block des Kopfs stand zwischen dem Kommentar zu den Nav-Links und deren Regeln. Beides gerade gerückt, keine Regel geändert.
+- **Ö64, Pfad-Guard der Kommentare:** prüfte `playwright.prod.config.ts`, `postcss.config.mjs` und `e2e/` nicht. Jetzt jede `*.config.ts`/`.mjs` im Wurzelverzeichnis und `e2e/`; heute ohne neue Funde.
 
 ---
 
