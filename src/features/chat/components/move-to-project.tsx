@@ -33,10 +33,11 @@ export function MoveToProjectButton({
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [movingId, setMovingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || loaded) return;
+    if (!open || loaded || failed) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
@@ -47,15 +48,22 @@ export function MoveToProjectButton({
         .limit(50);
       if (!cancelled) {
         setProjects((data as ProjectOption[] | null) ?? []);
-        // Nach einem Lesefehler fragt das nächste Öffnen neu, statt "keine Projekte" stehen zu lassen.
-        if (error) captureError("move_to_project.load_failed", error);
-        else setLoaded(true);
+        // Nach einem Lesefehler steht ein Hinweis mit "Erneut versuchen" da, nicht "keine Projekte" und kein
+        // Spinner, der nie aufhört. Das nächste Öffnen fragt ebenfalls neu.
+        if (error) {
+          captureError("move_to_project.load_failed", error);
+          setFailed(true);
+        } else setLoaded(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, loaded]);
+  }, [open, loaded, failed]);
+
+  useEffect(() => {
+    if (!open) setFailed(false);
+  }, [open]);
 
   async function moveTo(project: ProjectOption) {
     if (movingId) return;
@@ -108,7 +116,18 @@ export function MoveToProjectButton({
             <div className="border-b border-border px-3.5 py-2.5 text-[12.5px] font-medium text-foreground">
               {t.chat.moveTitle}
             </div>
-            {!loaded ? (
+            {failed ? (
+              <div className="flex items-center justify-between gap-2 px-3.5 py-3 text-[12.5px] text-muted-foreground">
+                <span role="status">{t.chat.moveLoadFailed}</span>
+                <button
+                  type="button"
+                  onClick={() => setFailed(false)}
+                  className="shrink-0 rounded-md px-2 py-1 font-medium text-accent-text hover:bg-accent-subtle"
+                >
+                  {t.common.retry}
+                </button>
+              </div>
+            ) : !loaded ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>

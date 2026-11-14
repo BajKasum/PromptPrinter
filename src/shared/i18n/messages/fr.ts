@@ -220,6 +220,7 @@ export const fr: Messages = {
     promptSaved: "Prompt enregistré",
     saving: "Enregistrement…",
     moveFailed: "Échec du déplacement",
+    moveLoadFailed: "Je ne peux pas charger tes projets pour le moment.",
     tryAgain: "Réessaie, s'il te plaît.",
     moved: "Déplacé dans le projet",
     movedBody: "« {chat} » se trouve maintenant dans « {project} ».",
@@ -453,6 +454,7 @@ export const fr: Messages = {
     },
     twoFactor: {
       title: "Second facteur",
+      loadFailed: "Je ne peux pas charger l'état de ton second facteur pour le moment.",
       off: "Désactivé. Avec une application d'authentification, un code protège ton compte même si quelqu'un connaît ton mot de passe.",
       on: "Activé. Il te faut le code de ton application pour te connecter, supprimer ton compte, modifier tes clés API et connecter des terminaux.",
       enable: "Configurer",

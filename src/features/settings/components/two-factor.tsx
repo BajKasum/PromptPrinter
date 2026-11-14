@@ -39,19 +39,24 @@ export function TwoFactor() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Scheitert das Laden, steht ein Hinweis mit "Erneut versuchen" da statt eines Spinners, der nie aufhört.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       const res = await fetch("/api/auth/mfa").catch(() => null);
       const body = res?.ok ? ((await res.json().catch(() => null)) as Status | null) : null;
-      if (!cancelled && body) setStatus({ enabled: body.enabled, recoveryCodesLeft: body.recoveryCodesLeft });
+      if (cancelled) return;
+      if (body) setStatus({ enabled: body.enabled, recoveryCodesLeft: body.recoveryCodesLeft });
+      else setLoadFailed(true);
     }
     void load();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   function reset(next: Step = { kind: "idle" }) {
     setStep(next);
@@ -103,6 +108,23 @@ export function TwoFactor() {
     }
   }
 
+  if (!status && loadFailed) {
+    return (
+      <p role="status" className="text-[13px] text-secondary">
+        {c.loadFailed}{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setLoadFailed(false);
+            setAttempt((n) => n + 1);
+          }}
+          className="font-medium text-accent-text underline-offset-2 hover:underline"
+        >
+          {t.common.retry}
+        </button>
+      </p>
+    );
+  }
   if (!status) return <Loader2 className="h-4 w-4 animate-spin text-tertiary" aria-hidden />;
 
   const codeForm = (

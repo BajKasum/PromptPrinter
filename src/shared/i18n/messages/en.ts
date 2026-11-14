@@ -219,6 +219,7 @@ export const en: Messages = {
     promptSaved: "Prompt saved",
     saving: "Saving…",
     moveFailed: "Moving failed",
+    moveLoadFailed: "I can't load your projects right now.",
     tryAgain: "Please try again.",
     moved: "Moved to project",
     movedBody: "“{chat}” now lives in “{project}”.",
@@ -449,6 +450,7 @@ export const en: Messages = {
     },
     twoFactor: {
       title: "Second factor",
+      loadFailed: "I can't load the status of your second factor right now.",
       off: "Off. With an authenticator app, a code protects your account even if someone knows your password.",
       on: "On. You need the code from your app to sign in, delete your account, change your own API keys and sign in terminals.",
       enable: "Set up",
