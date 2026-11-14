@@ -78,7 +78,7 @@ function topLevelKeys(objectPattern: string): { key: string; local: string }[] {
 
 /** Wird das Ergebnis unter `name` danach gelesen, ohne dass irgendwo sein Fehler geprüft wird? */
 function readsWithoutError(rest: string, name: string): boolean {
-  const n = name.replace(/\$/g, "\\$");
+  const n = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const reads = new RegExp(`\\b${n}(\\??\\.)(data|count)\\b|=\\s*${n}\\s*;`).test(rest);
   const checks = new RegExp(`\\b${n}(\\??\\.)error\\b|orThrow\\(\\s*${n}\\b`).test(rest);
   return reads && !checks;
