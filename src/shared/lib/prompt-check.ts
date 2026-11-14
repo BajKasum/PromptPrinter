@@ -175,7 +175,7 @@ function findFiles(text: string, typed: string | undefined): string[] {
   for (const sentence of text.split(/(?<=[.!?])\s+|\n+/)) {
     if (sentence.length > 300 || !SENT_AWAY.test(sentence) || !SECRET_OBJECT.test(sentence)) continue;
     for (const dest of matches(sentence, DESTINATION)) {
-      if (!isKnown(hostOf(dest[0]), known, typed)) {
+      if (!isKnown(hostOf(dest[0]), known)) {
         out.push(clip(sentence));
         break;
       }
