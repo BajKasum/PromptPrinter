@@ -49,7 +49,7 @@ export const SKILL_CARDS = [
 export const SKILL_INSTALL_STEPS = [
   {
     title: "Herunterladen",
-    body: "Das ZIP von GitHub laden und entpacken, oder das Repository klonen.",
+    body: "Das ZIP von GitHub laden, mit der Prüfsumme oben vergleichen und entpacken. Es ist ein fester Commit: ein geklontes Repository hätte den aktuellen Stand, den die Prüfsumme nicht deckt.",
   },
   {
     title: "Installieren",
