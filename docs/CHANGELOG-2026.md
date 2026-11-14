@@ -11,6 +11,26 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Review-Befunde in Server, Gedächtnis und Anbietern (Branch `fix/review-server-2`)
+
+- **Ö17, Gedächtnis:** Scheiterte nach dem Modellaufruf nur das Speichern, gingen alle Reservierungen zurück, obwohl das Modell gearbeitet hatte. Jetzt bleiben sie (`BrainSaveError`), wie im Chat bei `persist_failed`.
+- **Ö43, "veraltet" nach Neu analysieren:** Der Zwischenspeicher hielt bis zu fünf Minuten die ältere SHA. Nach dem Speichern schreibt `rememberRepoHead` die gelesene SHA.
+- **Ö44, Abbruch:** Ein abgebrochener Aufruf des Browsers setzte das Fehlerzeichen für 60 s für alle. Jetzt nur noch echte Fehler bei GitHub.
+- **Ö20, eigener Key:** Nach dem Speichern hiess ein Lesefehler beim aktiven Key "nicht gespeichert". Jetzt "nicht aktiviert".
+- **Ö16, Suche im Terminal:** Mit einem Stern griff das Limit vor dem Sieb. Jetzt liest die Suche dann bis zu 200 Zeilen je Spalte.
+- **Ö23, Webhook:** Zwei Konten mit derselben Kundennummer warfen wie ein Datenbankausfall (5xx, Lemon Squeezy schickt wieder). Jetzt keines, eigene Warnung `billing.webhook_customer_id_ambiguous`.
+- **Ö66, Sicherheitsprotokoll:** Die Bearer-Routen unter `api/cli` (me, prompts, prompts/[id], refresh, logout) gaben 401 und 404 ohne `denied()`. Jetzt mit, und der Guard kennt sie.
+- **Ö48, Strom:** Ein zurückgehaltenes CR und ein letzter Rahmen ohne Leerzeile gingen am Ende verloren.
+- **Ö47, BYOK-Ströme:** Anthropic, OpenAI und Gemini per eigenem Key hatten keine Fristen. Jetzt dieselben wie Z.ai und Custom, mit 90 s bis zum ersten Stück.
+- **Ö61, Probelauf mit eigenem Key:** 6000 statt 1500 Token, denkende Modelle zählen das Denken zur Ausgabe.
+- **Ö53, Anmelde-Sperre:** Der Kommentar verspricht nur noch "nicht im Klartext"; ungesalzen, die Schlüssel leben 15 Minuten.
+- **Ö49 verworfen:** Wiederholt wird nur vor dem ersten Wort, drei Versuche bis zur Erstfrist bleiben unter `maxDuration` 300, und der Probelauf hat seit dem Branch `fix/review-gratis` ebenfalls 300.
+- **Ö50 verworfen:** betrifft nur Modelle, die immer denken; der Standard bleibt glm-4.5-air (Kasums Entscheid 2026-11-08).
+
+Mutationstest für Ö48 (alte Fassung: beide neuen Tests rot).
+
+---
+
 ## 2026-11-14: Review-Befunde auf öffentlichen Seiten und im Chat (Branch `fix/review-oberflaeche`)
 
 - **Ö11, geteilter Prompt:** `/geteilt/<token>` zeigt jetzt über dem Kopieren einen Hinweis, wenn die Prompt-Prüfung Befehle, Dateizugriffe oder Versuche findet, frühere Regeln aufzuheben (wie im Chat). Schlüssel und persönliche Angaben prüft schon der Dialog vor dem Teilen.
