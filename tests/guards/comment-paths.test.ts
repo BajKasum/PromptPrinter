@@ -18,8 +18,8 @@ const ROOT = process.cwd();
 const SCANNED = ["src", "tests", "e2e", "scripts", "docs", "supabase", ".github"];
 
 // Dateien im Wurzelverzeichnis und Verzeichnisse außerhalb von `src/`, deren Kommentare mitgeprüft werden.
-const CHECKED_ROOT = /^(next|vitest|playwright)\.config\.ts$|^eslint\.config\.mjs$|^Dockerfile$|^docker-compose[\w.-]*\.yml$/;
-const CHECKED_DIRS = ["scripts/", ".github/"];
+const CHECKED_ROOT = /^[\w-]+(?:\.[\w-]+)*\.config\.(?:ts|mjs)$|^Dockerfile$|^docker-compose[\w.-]*\.yml$/;
+const CHECKED_DIRS = ["scripts/", ".github/", "e2e/"];
 
 // Beispiele, die bewusst keine Dateien des Repos sind (ein Monorepo-Pfad als Beispiel, Testdaten).
 const ILLUSTRATIVE = new Set(["apps/web/package.json", "src/a.ts"]);
@@ -98,7 +98,16 @@ describe("Pfade in Kommentaren", () => {
 
   it("liest die Konfigurations- und Betriebsdateien mit", () => {
     const checked = checkedFiles();
-    for (const name of ["next.config.ts", "Dockerfile", "docker-compose.yml", "scripts/check-env.mjs", ".github/workflows/ci.yml"]) {
+    for (const name of [
+      "next.config.ts",
+      "playwright.prod.config.ts",
+      "postcss.config.mjs",
+      "Dockerfile",
+      "docker-compose.yml",
+      "scripts/check-env.mjs",
+      ".github/workflows/ci.yml",
+      "e2e/chat.spec.ts",
+    ]) {
       expect(checked, name).toContain(name);
     }
   });
