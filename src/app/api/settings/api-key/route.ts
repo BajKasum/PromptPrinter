@@ -139,10 +139,11 @@ export async function POST(req: Request) {
     .eq("is_active", true)
     .maybeSingle();
   // Ein Lesefehler ist nicht "noch kein aktiver Key": sonst nähme dieser Key einem anderen den Platz weg. Das Speichern
-  // oben ist ein upsert, ein zweiter Versuch ist also unschädlich.
+  // oben ist ein upsert, ein zweiter Versuch ist also unschädlich. Gespeichert ist der Key aber schon: die Meldung sagt
+  // deshalb, dass das Aktivieren offen ist, nicht dass das Speichern scheiterte.
   if (activeError) {
     captureError("api_key.active_read_failed", activeError, { userId: user.id, provider });
-    return problem(503, m.keySaveFailed);
+    return problem(503, m.keyActivateFailed);
   }
   if (!active) {
     const { error: activateError } = await activateByokProvider(user.id, provider);

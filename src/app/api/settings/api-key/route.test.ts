@@ -158,6 +158,14 @@ describe("Sicherheitsprotokoll der Keys", () => {
     ]);
   });
 
+  it("sagt nach dem Speichern 'nicht aktiviert', nicht 'nicht gespeichert', wenn der aktive Key unlesbar ist", async () => {
+    tableResults.user_api_keys = { data: null, error: { message: "timeout" } };
+    const res = await POST(post({ apiKey: "sk-ant-secret" }));
+    expect(res.status).toBe(503);
+    expect(upsert).toHaveBeenCalled();
+    expect((await res.json()).detail).toBe("Key konnte nicht aktiviert werden. Bitte versuch es erneut.");
+  });
+
   it("hält ein Umschalten des aktiven Keys fest", async () => {
     tableResults.user_api_keys = { data: { provider: "openai" } };
     expect((await PATCH(patch({ provider: "openai" }))).status).toBe(200);
