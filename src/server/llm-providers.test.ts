@@ -197,14 +197,18 @@ describe("Anthropic (BYOK)", () => {
     const [body, options] = sdk.anthropicCreate.mock.calls[0];
     expect(body).toMatchObject({ model: "claude-sonnet-5", max_tokens: 6144, stream: true });
     expect(body.system).toEqual([{ type: "text", text: "SYS", cache_control: { type: "ephemeral" } }]);
-    expect(options.signal).toBe(controller.signal);
+    // Mit den Fristen verbunden (server/llm/chat.ts, withDeadlines): der Abbruch des Aufrufers schlägt durch.
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    controller.abort();
+    expect(options.signal.aborted).toBe(true);
     expect(sdk.anthropicCtor).toHaveBeenCalledWith({ apiKey: "ak-test", maxRetries: 0 });
   });
 
   it("chatCompleteStream ohne Signal reicht trotzdem ein Optionsobjekt durch", async () => {
     sdk.anthropicCreate.mockResolvedValue(events([]));
     await collect(chatCompleteStream({ system: "S", messages: history, override }));
-    expect(sdk.anthropicCreate.mock.calls[0][1]).toEqual({ signal: undefined });
+    // Ohne eigenes Signal trägt der Aufruf das der Fristen.
+    expect(sdk.anthropicCreate.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
 
   it("analyzeComplete: Text vor den Bildern, 1500 Token, Signal, Modell im Ergebnis", async () => {
@@ -314,7 +318,10 @@ describe("OpenAI (BYOK)", () => {
     const [body, options] = sdk.openaiCreate.mock.calls[0];
     expect(body).toMatchObject({ model: "gpt-5.1", max_completion_tokens: 6144, stream: true });
     expect(body.messages[0]).toEqual({ role: "system", content: "SYS" });
-    expect(options.signal).toBe(controller.signal);
+    // Mit den Fristen verbunden (server/llm/chat.ts, withDeadlines): der Abbruch des Aufrufers schlägt durch.
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    controller.abort();
+    expect(options.signal.aborted).toBe(true);
   });
 
   it("analyzeComplete: ohne Bilder bleibt der Text ein String, mit Bildern wird er zu Teilen", async () => {
@@ -405,7 +412,12 @@ describe("Gemini", () => {
     expect(chunks).toEqual(["A", "B"]);
     const [body] = sdk.generateContentStream.mock.calls[0];
     expect(body.model).toBe("gemini-3.5-flash");
-    expect(body.config).toEqual({ systemInstruction: "SYS", maxOutputTokens: 6144, abortSignal: controller.signal });
+    const { abortSignal, ...config } = body.config;
+    expect(config).toEqual({ systemInstruction: "SYS", maxOutputTokens: 6144 });
+    // Mit den Fristen verbunden (server/llm/chat.ts, withDeadlines): der Abbruch des Aufrufers schlägt durch.
+    expect(abortSignal).toBeInstanceOf(AbortSignal);
+    controller.abort();
+    expect(abortSignal.aborted).toBe(true);
   });
 
   it("als Server-Anbieter (nur GEMINI_API_KEY): Modell aus GEMINI_MODEL, Schlüssel aus der Umgebung", async () => {
