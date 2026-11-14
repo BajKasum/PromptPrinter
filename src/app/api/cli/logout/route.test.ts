@@ -4,6 +4,10 @@ const revokeCliSession = vi.fn();
 vi.mock("@/server/cli-login/session", () => ({
   revokeCliSession: (...a: unknown[]) => revokeCliSession(...a),
 }));
+const checkCliSession = vi.fn();
+vi.mock("@/server/cli-login/sessions", () => ({
+  checkCliSession: (...a: unknown[]) => checkCliSession(...a),
+}));
 const recordSecurityEvent = vi.fn();
 vi.mock("@/server/security/security-events", () => ({
   recordSecurityEvent: (...a: unknown[]) => recordSecurityEvent(...a),
@@ -21,6 +25,7 @@ function post(authorization?: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   revokeCliSession.mockResolvedValue({ userId: "user-1" });
+  checkCliSession.mockResolvedValue("ok");
 });
 
 describe("POST /api/cli/logout", () => {
@@ -30,6 +35,20 @@ describe("POST /api/cli/logout", () => {
     expect(await res.json()).toEqual({ ok: true });
     expect(revokeCliSession).toHaveBeenCalledWith("access-token");
     expect(recordSecurityEvent).toHaveBeenCalledWith("cli.session_revoked", "user-1", { via: "terminal" });
+  });
+
+  it("beendet keine Browser-Sitzung und protokolliert kein Terminal", async () => {
+    checkCliSession.mockResolvedValue("unknown");
+    const res = await POST(post("Bearer browser-token"));
+    expect(res.status).toBe(401);
+    expect(revokeCliSession).not.toHaveBeenCalled();
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
+  });
+
+  it("meldet auch eine abgelaufene Terminal-Sitzung ab", async () => {
+    checkCliSession.mockResolvedValue("expired");
+    expect((await POST(post("Bearer access-token"))).status).toBe(200);
+    expect(revokeCliSession).toHaveBeenCalledWith("access-token");
   });
 
   it("ohne Bearer-Kopf, mit leerem oder fremdem Schema ergibt 401, ohne den Auth-Server zu fragen", async () => {
