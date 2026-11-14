@@ -11,6 +11,16 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Letzte Review-Befunde der Runde (Branch `fix/review-rest`)
+
+- **Ö9, Sidebar-Listen:** Scheiterte das Lesen der letzten Chats oder Projekte, fiel die ganze eingeloggte App in `global-error`. Jetzt bleibt die Liste leer und der Fehler geht an `captureError`; die Seiten selbst lesen weiter mit `orThrow`.
+- **Ö26, llms.txt:** "Vier Wege" und "Fünf Aufgaben" standen fest im Text. Das Zahlwort kommt jetzt aus der Länge der Listen (`numberWord`), ein Test hält es fest.
+- **Ö35, Erscheinungsdatum der Hilfe:** Jeder Artikel nannte in Metadaten und JSON-LD den Start der Hilfe (2026-07-25), auch "Terminal und MCP" vom 29.10. `DocArticle` hat ein optionales `published`, `docPublished` nimmt es, der Test verlangt `published` zwischen Start und letzter Änderung.
+- **Ö65, Ausnahmen des Lesefehler-Guards:** Der Schlüssel `Datei:data` deckte jede `data`-Abfrage der Datei. Die drei Stellen haben eigene lokale Namen (`signed`, `recentProfiles`, `profile`).
+- **Ö24, globals.css:** Der Kommentar zu `@theme inline` nannte den Kopf der Seite als Element mit eigener `.dark`-Klasse (trägt er nicht mehr), und der Block des Kopfs stand zwischen dem Kommentar zu den Nav-Links und deren Regeln. Beides gerade gerückt, keine Regel geändert.
+
+---
+
 ## 2026-11-14: Review-Befunde in Server und Betrieb (Branch `fix/review-server`)
 
 - **Ö52, Wiederherstellungscodes:** `replaceRecoveryCodes` löschte die alten Codes vor dem Einfügen der neuen; scheiterte das Einfügen, stand das Konto ohne Rückweg da. Jetzt erst einfügen, dann nur die älteren Zeilen dieses Kontos löschen (`not id in (…)`).
