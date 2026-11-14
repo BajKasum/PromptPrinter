@@ -113,3 +113,12 @@ describe("Platzhalter mit Namen aus Object.prototype", () => {
     expect(fillPlaceholders("A [constructor] B", { constructor: "X" })).toBe("A X B");
   });
 });
+
+describe("Code ist kein Platzhalter (Review Ö32)", () => {
+  it("lässt Routensegmente, Spread-Segmente und Tupel stehen, nimmt aber echte Platzhalter", () => {
+    expect(findPlaceholders("Leg app/x/[id]/page.tsx und app/[...slug]/page.tsx an.")).toEqual([]);
+    expect(findPlaceholders("Typ: Array<[string, number]>")).toEqual([]);
+    expect(findPlaceholders("Route [...slug] fängt alles.")).toEqual([]);
+    expect(findPlaceholders("Schreib an [Name des Vermieters].").map((p) => p.label)).toEqual(["Name des Vermieters"]);
+  });
+});
