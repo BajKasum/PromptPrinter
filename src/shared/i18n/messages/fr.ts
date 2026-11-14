@@ -192,7 +192,7 @@ export const fr: Messages = {
     fill: {
       open: "Remplir les emplacements ({count})",
       title: "Remplir les emplacements",
-      hint: "Ce que tu saisis reste dans ce navigateur. Rien n'est envoyé ni enregistré ; le prompt enregistré garde ses emplacements.",
+      hint: "Ce que tu saisis reste dans ce navigateur jusqu'à ce que tu cliques sur Essai, qui envoie la version remplie à l'IA. Le prompt enregistré garde ses emplacements.",
       skip: "Pas un emplacement",
       skipLabel: "Ne pas traiter « {name} » comme un emplacement",
       preview: "Aperçu",

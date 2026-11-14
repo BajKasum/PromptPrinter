@@ -60,7 +60,8 @@ export function fillPlaceholders(
   let cursor = 0;
   for (const hit of scan(prompt)) {
     const key = keyOf(hit.label);
-    const value = values[key]?.trim();
+    // Nur eigene Schlüssel: ein Platzhalter "[constructor]" fände sonst Object.prototype.constructor.
+    const value = Object.hasOwn(values, key) ? values[key]?.trim() : undefined;
     if (!value || skip.has(key)) continue;
     out += prompt.slice(cursor, hit.index) + value;
     cursor = hit.index + hit.length;

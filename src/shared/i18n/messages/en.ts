@@ -191,7 +191,7 @@ export const en: Messages = {
     fill: {
       open: "Fill in placeholders ({count})",
       title: "Fill in placeholders",
-      hint: "What you type stays in this browser. It is neither sent nor saved; the saved prompt keeps its placeholders.",
+      hint: "What you type stays in this browser until you click Test run, which sends the filled-in version to the AI. The saved prompt keeps its placeholders.",
       skip: "Not a placeholder",
       skipLabel: "Don't treat “{name}” as a placeholder",
       preview: "Preview",

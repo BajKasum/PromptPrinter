@@ -9,9 +9,10 @@ import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { fmt } from "@/shared/i18n/format";
 import { useT } from "@/shared/i18n/provider";
 
-// Platzhalter im fertigen Prompt direkt ausfüllen (#224). Alles bleibt im Browser: kein Aufruf, kein
-// Speichern, kein <form>, das ein Browser zum Merken anbieten könnte. Gespeichert wird weiter der
-// Prompt mit seinen Platzhaltern.
+// Platzhalter im fertigen Prompt direkt ausfüllen (#224). Die Eingaben bleiben im Browser: kein Aufruf,
+// kein Speichern, kein <form>, das ein Browser zum Merken anbieten könnte. Erst der Probelauf
+// (prompt-actions.tsx) schickt die ausgefüllte Fassung ab, und der Hinweis sagt das. Gespeichert wird
+// weiter der Prompt mit seinen Platzhaltern.
 export function PlaceholderForm({
   prompt,
   onFilledChange,
@@ -28,7 +29,7 @@ export function PlaceholderForm({
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(new Set());
   const { copied, copy } = useCopyToClipboard();
   const filled = useMemo(() => fillPlaceholders(prompt, values, skipped), [prompt, values, skipped]);
-  const anythingTyped = placeholders.some((p) => !skipped.has(p.key) && (values[p.key] ?? "").trim() !== "");
+  const anythingTyped = placeholders.some((p) => !skipped.has(p.key) && (Object.hasOwn(values, p.key) ? values[p.key] : "").trim() !== "");
   useEffect(() => {
     onFilledChange?.(anythingTyped ? filled : null);
   }, [anythingTyped, filled, onFilledChange]);
@@ -80,7 +81,7 @@ export function PlaceholderForm({
                   </div>
                   <Input
                     id={inputId}
-                    value={values[p.key] ?? ""}
+                    value={Object.hasOwn(values, p.key) ? values[p.key] : ""}
                     disabled={off}
                     autoComplete="off"
                     onChange={(e) => setValues((prev) => ({ ...prev, [p.key]: e.target.value }))}

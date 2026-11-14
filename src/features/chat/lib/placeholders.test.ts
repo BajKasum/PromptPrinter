@@ -106,3 +106,10 @@ describe("isFilledFrom", () => {
     expect(isFilledFrom("ab [xy] ba", "ab Z ba")).toBe(true);
   });
 });
+
+describe("Platzhalter mit Namen aus Object.prototype", () => {
+  it("füllt [constructor] und [toString] wie jeden anderen und stürzt nicht ab", () => {
+    expect(fillPlaceholders("A [constructor] B [toString]", {})).toBe("A [constructor] B [toString]");
+    expect(fillPlaceholders("A [constructor] B", { constructor: "X" })).toBe("A X B");
+  });
+});
