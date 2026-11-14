@@ -574,11 +574,16 @@
    * mit Blur, immer gleich (keine Verwandlung beim Scrollen). Darunter hängt die
    * Wasserkante aus drei Lagen (header-water.tsx): dieselbe Farbe, je durch-
    * scheinender, je tiefer, jede mit eigenem Tempo. Nur transform, unter
-   * reduced-motion steht sie still.
+   * reduced-motion steht sie still. Die Deckkraft 0.9 hält die Links auch über
+   * dunklem Inhalt darunter bei 4,5:1 (AA); bei 0.82 fielen sie darunter.
    */
   .site-header-surface {
-    background: hsl(var(--header-surface) / 0.82);
+    background: hsl(var(--header-surface) / 0.9);
     backdrop-filter: blur(14px) saturate(1.4);
+  }
+  /* Der feste Kopf samt Wasserkante darf Fokus, Seitensuche und Ankersprünge nicht verdecken. */
+  html:has(.site-header-surface) {
+    scroll-padding-top: 6rem;
   }
   .header-water-layer {
     fill: hsl(var(--header-surface));
