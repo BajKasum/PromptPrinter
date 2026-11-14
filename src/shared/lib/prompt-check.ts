@@ -76,6 +76,9 @@ function findSecrets(text: string): string[] {
 
 const EMAIL = /\b[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})\b/g;
 const EXAMPLE_DOMAIN = /(?:^|\.)(?:example\.(?:com|org|net)|example|invalid|test|localhost)$/i;
+// Keine Adressen: Bilddateien in Retina-Grösse ("logo@2x.png") und der SSH-Weg zu einem Git-Server ("git@github.com").
+const FILE_DOMAIN = /\.(?:png|jpe?g|gif|svg|webp|avif|ico)$/i;
+const NOT_A_PERSON = (local: string, domain: string) => FILE_DOMAIN.test(domain) || local.toLowerCase() === "git";
 const IBAN = /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,3})?\b/g;
 const CARD = /\b\d{4}(?:[ -]?\d{4}){2}[ -]?\d{1,7}\b/g;
 // Telefonnummern nur mit "+" und Landesvorwahl oder in der Schweizer Mobilform: reine Ziffernfolgen
@@ -111,7 +114,8 @@ function ibanValid(raw: string): boolean {
 function findPersonal(text: string): string[] {
   const out: string[] = [];
   for (const m of matches(text, EMAIL)) {
-    if (!EXAMPLE_DOMAIN.test(m[1])) out.push(`${m[0].slice(0, 2)}…@${m[1]}`);
+    const local = m[0].slice(0, m[0].length - m[1].length - 1);
+    if (!EXAMPLE_DOMAIN.test(m[1]) && !NOT_A_PERSON(local, m[1])) out.push(`${m[0].slice(0, 2)}…@${m[1]}`);
   }
   for (const m of matches(text, IBAN)) if (ibanValid(m[0])) out.push(`${m[0].slice(0, 4)}…`);
   for (const m of matches(text, CARD)) {
@@ -200,9 +204,17 @@ function findOverrides(text: string): string[] {
 
 // ---- Links, die die Person nie geschrieben hat ------------------------------------------------------
 
-const URL_IN_TEXT = /\bhttps?:\/\/((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:[/?#][^\s<>"'`)\]]*)?/gi;
-const BARE_DOMAIN = /\b((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,})\b/gi;
-const HARMLESS_HOST = /(?:^|\.)(?:example\.(?:com|org|net)|example|invalid|test|localhost)$|^(?:127\.|10\.|192\.168\.)/i;
+// Der Host nach einem optionalen Benutzerteil ("https://bank.ch@fremd.example/": der echte Host steht hinter dem "@"),
+// mit Buchstaben jeder Schrift, damit ein Host mit kyrillischem "о" nicht unbemerkt durchgeht.
+const LABEL = "[\\p{L}\\p{N}](?:[\\p{L}\\p{N}-]*[\\p{L}\\p{N}])?";
+const URL_IN_TEXT = new RegExp(
+  `\\bhttps?:\\/\\/(?:[^\\s/?#@]+@)?((?:${LABEL}\\.)+\\p{L}{2,}|\\d{1,3}(?:\\.\\d{1,3}){3})(?::\\d+)?(?:[/?#][^\\s<>"'\`)\\]]*)?`,
+  "giu"
+);
+const BARE_DOMAIN = new RegExp(`(?<![\\p{L}\\p{N}-])((?:${LABEL}\\.)+\\p{L}{2,})(?![\\p{L}\\p{N}])`, "giu");
+// Harmlos: Beispiel- und Testnamen, und nur echte private IPv4-Adressen, kein Name, der mit "10." beginnt.
+const HARMLESS_HOST =
+  /(?:^|\.)(?:example\.(?:com|org|net)|example|invalid|test|localhost)$|^(?:127|10)(?:\.\d{1,3}){3}$|^192\.168(?:\.\d{1,3}){2}$/i;
 
 const normalizeHost = (h: string) => h.toLowerCase().replace(/^www\./, "");
 
@@ -218,8 +230,8 @@ function knownHosts(typed: string): Set<string> {
   return hosts;
 }
 
-function isKnown(host: string, known: Set<string>, typed: string): boolean {
-  if (HARMLESS_HOST.test(host) || typed.toLowerCase().includes(host)) return true;
+function isKnown(host: string, known: Set<string>): boolean {
+  if (HARMLESS_HOST.test(host)) return true;
   for (const k of known) if (host === k || host.endsWith(`.${k}`)) return true;
   return false;
 }
@@ -231,7 +243,7 @@ function findLinks(text: string, typed: string | undefined): string[] {
   const seen = new Set<string>();
   for (const m of matches(text, URL_IN_TEXT)) {
     const host = normalizeHost(m[1]);
-    if (seen.has(host) || isKnown(host, known, typed)) continue;
+    if (seen.has(host) || isKnown(host, known)) continue;
     seen.add(host);
     out.push(host);
   }
