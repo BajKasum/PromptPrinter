@@ -534,6 +534,8 @@ export const es: Messages = {
   share: {
     action: "Compartir por enlace",
     privateHint: "Solo lo ves tú.",
+    statusFailed: "No he podido comprobar si este prompt está compartido.",
+    retry: "Recargar",
     confirmTitle: "¿Compartir este prompt públicamente?",
     confirmBody: "Cualquiera con el enlace puede leer este prompt. Tu nombre y tu correo no aparecen. Puedes revocar el enlace en cualquier momento.",
     riskIntro: "Revisa antes:",

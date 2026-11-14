@@ -48,6 +48,17 @@ describe("SharePrompt", () => {
     expect(screen.getByText(new RegExp(de.share.riskIntro))).toBeInTheDocument();
   });
 
+  it("zeigt einen Fehler beim Nachsehen nicht als privat und lädt auf Knopfdruck neu", async () => {
+    fetchMock.mockReturnValueOnce(answer(null, false));
+    render(<SharePrompt promptId="p1" content="x" />);
+    expect(await screen.findByText(de.share.statusFailed)).toBeInTheDocument();
+    expect(screen.queryByText(de.share.privateHint)).not.toBeInTheDocument();
+
+    fetchMock.mockReturnValueOnce(answer(TOKEN));
+    fireEvent.click(screen.getByRole("button", { name: de.share.retry }));
+    expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
+  });
+
   it("zeigt einen geteilten Prompt mit Link und widerruft ihn", async () => {
     fetchMock.mockReturnValueOnce(answer(TOKEN));
     render(<SharePrompt promptId="p1" content="x" />);
