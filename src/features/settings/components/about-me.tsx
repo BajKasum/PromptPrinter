@@ -27,6 +27,7 @@ export function AboutMe({ userId, initialAboutMe }: { userId: string; initialAbo
   async function save() {
     if (!dirty || saving) return;
     setSaving(true);
+    const snapshot = value;
     const next = value.trim().slice(0, ABOUT_ME_MAX_LENGTH);
     const { error } = await createClient().from("profiles").update({ about_me: next }).eq("id", userId);
     setSaving(false);
@@ -34,7 +35,8 @@ export function AboutMe({ userId, initialAboutMe }: { userId: string; initialAbo
       toast({ title: t.aboutMe.saveFailed, variant: "error" });
       return;
     }
-    setValue(next);
+    // Nur ersetzen, was nicht schon weitergetippt wurde: sonst ginge Text verloren, der während des Speicherns kam.
+    setValue((current) => (current === snapshot ? next : current));
     setSaved(next);
     toast({ title: t.aboutMe.saved, variant: "success" });
   }
