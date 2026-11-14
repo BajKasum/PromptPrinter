@@ -19,6 +19,31 @@ import { geminiComplete, geminiCompleteStream } from "@/server/llm/gemini";
 import { openaiComplete, openaiCompleteStream } from "@/server/llm/openai";
 import type { LlmMessage, LlmOverride, LlmResult } from "@/server/llm/types";
 import { zaiCompleteStream } from "@/server/llm/zai";
+import { streamDeadlines } from "@/server/llm/http";
+
+/**
+ * Die Ströme der SDKs (Anthropic, OpenAI, Gemini per BYOK) bekommen dieselben Fristen wie Z.ai und Custom: erstes Stück,
+ * Leerlauf und Gesamtdauer (streamDeadlines). Sonst hinge ein Anbieter, der nichts mehr schickt, bis Vercel abbricht,
+ * und kein catch gäbe die Reservierungen zurück. Die Frist bis zum ersten Stück ist grosszügig, denkende Modelle
+ * schweigen anfangs länger.
+ */
+const SDK_FIRST_CHUNK_TIMEOUT_MS = 90_000;
+
+async function* withDeadlines(
+  signal: AbortSignal | undefined,
+  run: (signal: AbortSignal) => AsyncGenerator<string>
+): AsyncGenerator<string> {
+  const guard = streamDeadlines(signal, SDK_FIRST_CHUNK_TIMEOUT_MS);
+  try {
+    for await (const chunk of run(guard.signal)) {
+      guard.received();
+      yield chunk;
+      guard.awaiting();
+    }
+  } finally {
+    guard.stop();
+  }
+}
 
 // Chat-Aufrufe: die Auswahl des Anbieters für eine Antwort, mit Wiederholung und Failover.
 // (Teil von src/server/llm/, siehe index.ts)
@@ -142,24 +167,14 @@ async function* chatCompleteStreamOnce(opts: {
   if (opts.override) {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
-      yield* anthropicCompleteStream(
-        anthropicModel(),
-        opts.system,
-        opts.messages,
-        maxOutputTokens,
-        apiKey,
-        opts.signal
+      yield* withDeadlines(opts.signal, (signal) =>
+        anthropicCompleteStream(anthropicModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
       );
       return;
     }
     if (provider === "openai") {
-      yield* openaiCompleteStream(
-        openaiModel(),
-        opts.system,
-        opts.messages,
-        maxOutputTokens,
-        apiKey,
-        opts.signal
+      yield* withDeadlines(opts.signal, (signal) =>
+        openaiCompleteStream(openaiModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
       );
       return;
     }
@@ -175,13 +190,8 @@ async function* chatCompleteStreamOnce(opts: {
       );
       return;
     }
-    yield* geminiCompleteStream(
-      geminiByokModel(),
-      opts.system,
-      opts.messages,
-      maxOutputTokens,
-      apiKey,
-      opts.signal
+    yield* withDeadlines(opts.signal, (signal) =>
+      geminiCompleteStream(geminiByokModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
     );
     return;
   }
