@@ -106,8 +106,8 @@ export async function runChatTurn(
       const parsed = parseChatStreamEvent(raw.event, raw.data);
       // Ein Ereignis, das dieser Client nicht kennt (neuere Version des Servers): ignorieren.
       if (parsed.kind === "unknown") continue;
-      // Eine kaputte Nutzlast ist ein Fehler im Protokoll, kein Verbindungsabbruch: sie behandelt settleFailedTurn
-      // wie einen Fehler der Route und zeigt keine Warnung "Verbindung unterbrochen".
+      // Eine kaputte Nutzlast ist ein Fehler im Protokoll, kein Verbindungsabbruch: classifyTurnError ordnet den
+      // StreamProtocolError als "failed" ein, settleTurn zeigt keine Warnung "Verbindung unterbrochen".
       if (parsed.kind === "invalid") throw new StreamProtocolError(t.chat.streamInvalid);
       events.handle(parsed.value);
     }
