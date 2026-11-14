@@ -81,7 +81,7 @@ export async function removeByokRow(userId: string, provider: string): Promise<{
       .eq("user_id", userId)
       .eq("provider", provider)
       .select("provider");
-    removed = (result.data?.length ?? 0) > 0;
+    removed = !result.error && (result.data?.length ?? 0) > 0;
     return result;
   });
   return { error, removed };

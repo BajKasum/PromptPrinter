@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Supabase kann das CAPTCHA prüfen (Schalter, aus), dazu Review-Befunde im Konto (Branch `feat/auth-captcha-schalter`)
+
+- **Anmelde-Sperre je Konto, direkter Weg:** Die Sperre und Turnstile gelten nur in `/api/auth`, den Passwort-Grant von Supabase Auth erreicht man mit dem Anon-Key auch direkt (Befund vom 12.11., `docs/SETUP.md`, "Anmelden: Sperre je Konto"). Neu ist der Schalter `AUTH_CAPTCHA_VIA_SUPABASE` (`server/security/auth-captcha.ts`, Standard aus): Steht er auf `true`, prüft `/api/auth` das Token nicht selbst, sondern gibt es Anmelden, Registrieren, Reset und erneutem Senden als `captchaToken` mit, denn ein Token ist nur einmal einlösbar. Lehnt Supabase es ab (`captcha_failed`), antwortet die Route wie bei der eigenen Prüfung (403, `kind: "captcha"`), auch beim Reset, der sonst immer gleich antwortet: Supabase prüft das CAPTCHA vor dem Konto. Alle Aufrufe, die Supabase dann prüft, laufen nur über diese Route; OAuth, der zweite Faktor, `/auth/callback` und die Terminal-Anmeldung (Admin-Client) sind nicht betroffen. Umschalten ist Kasums Schritt (Dashboard, Vercel, neu ausliefern, in dieser Reihenfolge), die Anleitung steht in `docs/SETUP.md`, "Umschalten: Supabase prüft das CAPTCHA". Dashboard und Vercel sind unverändert.
+- **Ö12:** `activate` tauschte mit einem Code des schon aktiven Faktors still alle Wiederherstellungscodes aus und protokollierte falsche Codes nicht. Jetzt 400 `already_enabled`, wenn ein Faktor bestätigt ist, und `mfa.verify_failed` bei falschem Code.
+- **Ö13:** Nach entferntem Faktor meldeten `recover` und `disable` 503, wenn nur das Löschen der übrigen Codes scheiterte. Jetzt meldet `captureError` das, die Aktion gilt.
+- **Ö21:** `api_key.removed` stand im Protokoll, auch wenn es keinen Key zu entfernen gab. `removeByokRow` sagt jetzt, ob eine Zeile weg ist.
+
+Mutationstest: ohne `captchaToken` beim Reset schlägt der Test an.
+
+---
+
 ## 2026-11-14: Öffentliche Review-Befunde beim Teilen (Branch `fix/review-teilen`)
 
 Befunde Ö3, Ö18, Ö19 und Ö40 aus dem Code-Review vom 12.11. (Begründung an #306):
