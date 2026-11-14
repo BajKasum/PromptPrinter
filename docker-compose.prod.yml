@@ -42,9 +42,10 @@ services:
     container_name: promptprinter-prod
     restart: unless-stopped
     # Reines http: in Betrieb gehört ein Reverse Proxy mit TLS davor (docs/DOCKER.md,
-    # "Hinter einem Reverse Proxy betreiben"), und nur er darf diesen Port erreichen.
+    # "Hinter einem Reverse Proxy betreiben"), und nur er darf diesen Port erreichen: deshalb standardmässig nur an
+    # 127.0.0.1 (HOST_BIND), die App vertraut X-Forwarded-For.
     ports:
-      - "${HOST_PORT:-3001}:3000"
+      - "${HOST_BIND:-127.0.0.1}:${HOST_PORT:-3001}:3000"
     env_file:
       - .env
     healthcheck:

@@ -94,7 +94,9 @@ Nach Code-Änderungen neu bauen: denselben `up --build`-Befehl nochmal.
 ## Hinter einem Reverse Proxy betreiben
 
 Der Port 3001 spricht reines http und gehört nicht direkt ins Internet: davor steht ein Reverse Proxy, der
-TLS beendet. Drei Dinge hängen daran:
+TLS beendet. `docker-compose.prod.yml` bindet ihn deshalb nur an `127.0.0.1`; läuft der Proxy auf einem anderen
+Rechner oder in einem anderen Netz, `HOST_BIND` in `.env.local` auf dessen Schnittstelle setzen, nie auf `0.0.0.0`
+ohne Firewall davor. Drei Dinge hängen daran:
 
 - **`NEXT_PUBLIC_APP_URL` ist die öffentliche https-Adresse.** Sonst bekommen die Sitzungs-Cookies kein
   `Secure`, und die Links in den Mails zeigen auf die falsche Adresse. Das Image startet deshalb in Produktion

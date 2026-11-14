@@ -2,9 +2,11 @@ import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Ein Double der Tabelle: Zeilen im Speicher, Filter wie PostgREST. So zählt, was wirklich gespeichert und getroffen wird.
-type Row = { user_id: string; code_hash: string; used_at: string | null };
+type Row = { id?: string; user_id: string; code_hash: string; used_at: string | null };
 let rows: Row[] = [];
 let failWith: string | null = null;
+let failInsert = false;
+let nextId = 0;
 
 function table() {
   const filters: ((row: Row) => boolean)[] = [];
@@ -17,11 +19,14 @@ function table() {
     return { data: hits.map(() => ({ id: "x" })), count: hits.length, error: null };
   };
   const chain: Record<string, unknown> = {
-    insert: async (values: Row[]) => {
-      if (failWith) return { error: { message: failWith } };
-      rows.push(...values.map((v) => ({ ...v, used_at: null })));
-      return { error: null };
-    },
+    insert: (values: Row[]) => ({
+      select: async () => {
+        if (failWith || failInsert) return { data: null, error: { message: failWith ?? "insert failed" } };
+        const added = values.map((v) => ({ ...v, id: `id-${++nextId}`, used_at: null }));
+        rows.push(...added);
+        return { data: added.map((r) => ({ id: r.id })), error: null };
+      },
+    }),
     update: (values: Partial<Row>) => {
       op = { kind: "update", values };
       return chain;
@@ -33,6 +38,11 @@ function table() {
     select: () => chain,
     eq: (column: keyof Row, value: unknown) => {
       filters.push((row) => row[column] === value);
+      return chain;
+    },
+    not: (column: keyof Row, _op: "in", list: string) => {
+      const ids = list.replace(/^\(|\)$/g, "").split(",");
+      filters.push((row) => !ids.includes(String(row[column])));
       return chain;
     },
     is: (column: keyof Row, value: unknown) => {
@@ -89,6 +99,15 @@ describe("replaceRecoveryCodes", () => {
     expect(stored).toContain(sha(`${USER}:${plain}`));
     expect(stored).not.toContain(sha(plain));
     expect(stored).not.toContain(sha(`${OTHER}:${plain}`));
+  });
+
+  it("behält die alten Codes, wenn das Einfügen der neuen scheitert", async () => {
+    await replaceRecoveryCodes(USER);
+    const before = rows.filter((r) => r.user_id === USER).map((r) => r.code_hash);
+    failInsert = true;
+    await expect(replaceRecoveryCodes(USER)).rejects.toThrow();
+    failInsert = false;
+    expect(rows.filter((r) => r.user_id === USER).map((r) => r.code_hash)).toEqual(before);
   });
 
   it("macht die alten Codes wertlos", async () => {
