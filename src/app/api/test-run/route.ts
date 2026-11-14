@@ -14,7 +14,9 @@ import { captureError, logEvent } from "@/shared/lib/observability";
 import { TEST_RUN_MAX_BODY_BYTES, TEST_RUN_MAX_OUTPUT_TOKENS, TEST_RUN_SYSTEM, testRunRequestSchema } from "@/shared/lib/test-run";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// Wie der Chat: die Fristen des Stroms (server/llm/http.ts) reichen über 120 s hinaus, und erst wenn sie greifen, gibt der
+// catch-Zweig unten die Reservierungen zurück. Bräche Vercel vorher ab, liefe er nie.
+export const maxDuration = 300;
 
 /**
  * Probelauf: schickt einen fertigen Prompt einmal unverändert an das Modell der Person und gibt die Antwort zurück,

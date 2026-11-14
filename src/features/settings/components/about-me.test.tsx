@@ -44,6 +44,17 @@ describe("AboutMe", () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "success" })));
   });
 
+  it("behält, was während des Speicherns getippt wurde", async () => {
+    render(<AboutMe userId="u1" initialAboutMe="" />);
+    const field = screen.getByLabelText(de.aboutMe.label) as HTMLTextAreaElement;
+    fireEvent.change(field, { target: { value: "Lehrerin" } });
+    fireEvent.click(screen.getByRole("button", { name: de.aboutMe.save }));
+    fireEvent.change(field, { target: { value: "Lehrerin, lockerer Ton" } });
+
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "success" })));
+    expect(field.value).toBe("Lehrerin, lockerer Ton");
+  });
+
   it("begrenzt das Feld auf die Grenze der Datenbank und sagt, was nicht hineingehört", () => {
     render(<AboutMe userId="u1" initialAboutMe="Hallo" />);
     expect(screen.getByLabelText(de.aboutMe.label)).toHaveAttribute("maxLength", String(ABOUT_ME_MAX_LENGTH));
