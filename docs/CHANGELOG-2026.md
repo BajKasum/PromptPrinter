@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Öffentliche Review-Befunde im Chat (Branch `fix/review-chat`)
+
+Die mittleren Befunde Ö1, Ö2, Ö4 und Ö5 aus dem Code-Review vom 12.11. (Begründung an #265 und #268):
+
+- **Ö1, leerer Chat bei Lesefehler:** Scheiterte nach dem Embed der Anhänge auch die einfache Abfrage, zeigte `loadConversationMessages` einen bestehenden Chat leer. Jetzt wirft sie (`orThrow`), der Fehler des Embeds geht an `captureError`.
+- **Ö2, Platzhalter `[constructor]`:** `fillPlaceholders` und das Formular lasen `values[key]` auch aus `Object.prototype`, das Ergebnis stürzte ab. Jetzt nur eigene Schlüssel (`Object.hasOwn`).
+- **Ö4, Hinweis der Platzhalter:** versprach "weder gesendet noch gespeichert", der Probelauf schickt aber die ausgefüllte Fassung. Text in fünf Sprachen angepasst (fr/it/es ungeprüft).
+- **Ö5, Lesefehler-Guard:** `db-read-errors.test.ts` übersah Ergebnisse unter einem Namen (`const x = await supabase…`, `const [x] = await Promise.all(…)`). Jetzt gilt ein späteres `x.data`, `x.count` oder Zerlegen ohne `x.error` oder `orThrow(x` als Fund. Heute ohne neue Funde; gegen die alte Fassung von `load-messages.ts` schlägt er an.
+
+---
+
 ## 2026-11-14: Restliche Sicherheitsbefunde aus dem Code-Review (Branch `fix/gratis-rahmen-sicherheit`)
 
 Die übrigen nicht öffentlichen Befunde vom 12.11., auf Kasums Ja vom 14.11.:
