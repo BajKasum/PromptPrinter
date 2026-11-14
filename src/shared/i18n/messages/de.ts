@@ -226,6 +226,7 @@ export const de = {
     promptSaved: "Prompt gespeichert",
     saving: "Speichert…",
     moveFailed: "Verschieben fehlgeschlagen",
+    moveLoadFailed: "Deine Projekte lassen sich gerade nicht laden.",
     tryAgain: "Bitte versuch es erneut.",
     moved: "In Projekt verschoben",
     movedBody: "„{chat}“ lebt jetzt in „{project}“.",
@@ -458,6 +459,7 @@ export const de = {
     },
     twoFactor: {
       title: "Zweiter Faktor",
+      loadFailed: "Der Stand des zweiten Faktors lässt sich gerade nicht laden.",
       off: "Aus. Mit einer Authenticator-App schützt ein Code dein Konto auch dann, wenn jemand dein Passwort kennt.",
       on: "An. Beim Anmelden, beim Löschen des Kontos, für eigene API-Keys und für Terminals brauchst du den Code aus deiner App.",
       enable: "Einrichten",

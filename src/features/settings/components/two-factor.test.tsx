@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { de } from "@/shared/i18n/messages/de";
 import userEvent from "@testing-library/user-event";
 import { TwoFactor } from "./two-factor";
 
@@ -119,7 +120,12 @@ describe("TwoFactor", () => {
   it("zeigt ohne lesbaren Status keine Schalter", async () => {
     fetchMock.mockResolvedValue(reply(503, {}));
     render(<TwoFactor />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(await screen.findByText(de.settings.twoFactor.loadFailed)).toBeInTheDocument();
+    // Nur der Knopf zum Neuladen, keine Schalter.
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([de.common.retry]);
+
+    fetchMock.mockResolvedValue(reply(200, { enabled: false, recoveryCodesLeft: 0 }));
+    fireEvent.click(screen.getByRole("button", { name: de.common.retry }));
+    await waitFor(() => expect(screen.queryByText(de.settings.twoFactor.loadFailed)).not.toBeInTheDocument());
   });
 });

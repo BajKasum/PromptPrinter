@@ -69,6 +69,24 @@ describe("MoveToProjectButton", () => {
     expect(await screen.findByText(/Noch kein Projekt angelegt/)).toBeInTheDocument();
   });
 
+  it("zeigt nach einem Lesefehler einen Hinweis mit Erneut versuchen statt eines endlosen Spinners", async () => {
+    select.mockReturnValue({
+      order: () => ({ limit: vi.fn().mockResolvedValue({ data: null, error: { message: "timeout" } }) }),
+    });
+    const user = userEvent.setup();
+    render(<MoveToProjectButton userId="u1" chatId="chat-1" chatTitle="Mein Chat" />);
+    await user.click(
+      screen.getByRole("button", { name: "Chat „Mein Chat“ in ein Projekt verschieben" })
+    );
+    expect(await screen.findByText("Deine Projekte lassen sich gerade nicht laden.")).toBeInTheDocument();
+
+    select.mockReturnValue({
+      order: () => ({ limit: vi.fn().mockResolvedValue({ data: [] }) }),
+    });
+    await user.click(screen.getByRole("button", { name: "Erneut versuchen" }));
+    expect(await screen.findByText(/Noch kein Projekt angelegt/)).toBeInTheDocument();
+  });
+
   it("moves the chat into the picked project and shows a success toast", async () => {
     const chain = okWrite();
     update.mockReturnValue(chain);
