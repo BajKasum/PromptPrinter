@@ -94,7 +94,6 @@
   "src/features/marketing/lib/comparisons.ts": 1,
   "src/features/marketing/lib/cookie-inventory.ts": 1,
   "src/features/marketing/lib/site-schema.ts": 2,
-  "src/features/projects/components/delete-project.tsx": 4,
   "src/features/projects/components/project-brain.tsx": 11,
   "src/features/projects/components/project-files.tsx": 12,
   "src/features/projects/components/project-rail.tsx": 5,

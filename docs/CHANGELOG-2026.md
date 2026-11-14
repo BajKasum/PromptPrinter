@@ -11,6 +11,22 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Weitere öffentliche Review-Befunde (Branch `fix/review-gratis`)
+
+Niedrige Befunde aus dem Code-Review vom 12.11., nach Wirkung ausgewählt (Begründung jeweils am PR des Befunds):
+
+- **Gratis-Rahmen und Probelauf:** Ein Redis-Fehler beim Zählen meldete "0 Gratis-Prompts übrig", jetzt fehlt das Feld (Ö45). Waren die Probeläufe des Kontos verbraucht, hiess es "diesen Prompt schon ausprobiert", jetzt ein eigener Text `testRunsUsed` (Ö46). Das Ergebnis eines Probelaufs blieb nach dem Ausfüllen der Platzhalter stehen (Ö27). `api/test-run` hat wie der Chat `maxDuration = 300`, damit der catch-Zweig vor dem Abbruch durch Vercel läuft (Ö22).
+- **Linkprüfung (`shared/lib/prompt-check.ts`):** Der Benutzerteil vor "@" galt als Host (Ö60), Hosts mit Buchstaben anderer Schriften fielen durch (Ö57), Namen wie `10.fremd.ch` galten als private Adresse (Ö58), und ein Teilstring dessen, was die Person schrieb, machte einen Host bekannt, auch in der Prüfung auf Geheimnisse, die an einen Host gehen sollen (Ö59). `logo@2x.png` und `git@github.com` galten als E-Mail-Adresse (Ö56).
+- **Ladezustände:** Verschieben in ein Projekt und der Stand des zweiten Faktors drehten nach einem Lesefehler für immer, jetzt ein Hinweis mit "Erneut versuchen" (Ö29, Ö42). "Über mich" überschrieb, was während des Speicherns getippt wurde (Ö41).
+- **404 statt Fehlerseite:** Eine Chat- oder Projekt-Kennung, die keine UUID ist, gibt `notFound()` (`shared/lib/uuid.ts`), statt dass der Lesefehler von Postgres die Fehlerseite zeigt (Ö8, Ö51).
+- **Terminal abmelden:** `api/cli/logout` beendet nur noch Terminal-Sitzungen, das Token einer Browser-Sitzung bekommt 401 (Ö15).
+- **Kommentar-Ratsche:** prüft jetzt auch `scripts/` und verlangt, dass ein Basiswert nach einer Bereinigung gesenkt wird (Ö62, Ö63); dazu zwei Kommentare mit Verlauf oder falschem Funktionsnamen (Ö30, Ö33). Toter Prop `collapsed` im Logo entfernt (Ö54).
+- **Projekt löschen:** Die Projektdateien gingen vor dem Löschen des Projekts aus dem Speicher; scheiterte es, blieben Zeilen ohne Dateien. Jetzt erst nach dem Löschen, wie die Anhänge (Ö39).
+
+Neue UI-Texte in fünf Sprachen, fr/it/es ungeprüft. Mutationstest für Ö41 und Ö59.
+
+---
+
 ## 2026-11-14: Supabase kann das CAPTCHA prüfen (Schalter, aus), dazu Review-Befunde im Konto (Branch `feat/auth-captcha-schalter`)
 
 - **Anmelde-Sperre je Konto, direkter Weg:** Die Sperre und Turnstile gelten nur in `/api/auth`, den Passwort-Grant von Supabase Auth erreicht man mit dem Anon-Key auch direkt (Befund vom 12.11., `docs/SETUP.md`, "Anmelden: Sperre je Konto"). Neu ist der Schalter `AUTH_CAPTCHA_VIA_SUPABASE` (`server/security/auth-captcha.ts`, Standard aus): Steht er auf `true`, prüft `/api/auth` das Token nicht selbst, sondern gibt es Anmelden, Registrieren, Reset und erneutem Senden als `captchaToken` mit, denn ein Token ist nur einmal einlösbar. Lehnt Supabase es ab (`captcha_failed`), antwortet die Route wie bei der eigenen Prüfung (403, `kind: "captcha"`), auch beim Reset, der sonst immer gleich antwortet: Supabase prüft das CAPTCHA vor dem Konto. Alle Aufrufe, die Supabase dann prüft, laufen nur über diese Route; OAuth, der zweite Faktor, `/auth/callback` und die Terminal-Anmeldung (Admin-Client) sind nicht betroffen. Umschalten ist Kasums Schritt (Dashboard, Vercel, neu ausliefern, in dieser Reihenfolge), die Anleitung steht in `docs/SETUP.md`, "Umschalten: Supabase prüft das CAPTCHA". Dashboard und Vercel sind unverändert.
