@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
 import { problem } from "@/server/http/api-problem";
+import { denied } from "@/server/security/security-log";
 import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
 import {
   MAX_SMALL_BODY_BYTES,
@@ -48,11 +49,11 @@ export async function POST(req: Request) {
 
   try {
     const session = await refreshCliSession(parsed.data.refreshToken);
-    if (session === "invalid") return problem(401, CLI_PROBLEMS.invalidToken, { kind: "invalid_token" });
+    if (session === "invalid") return denied("cli-refresh", problem(401, CLI_PROBLEMS.invalidToken, { kind: "invalid_token" }));
     if (!session) return problem(503, CLI_PROBLEMS.unavailable, { kind: "unavailable" });
     // Nur eingetragene Terminals, nur bis zum Höchstalter: das Refresh-Token einer Browser-Sitzung bekommt hier nichts.
     if ((await checkCliSession(session.access_token)) !== "ok") {
-      return problem(401, CLI_PROBLEMS.invalidToken, { kind: "invalid_token" });
+      return denied("cli-refresh", problem(401, CLI_PROBLEMS.invalidToken, { kind: "invalid_token" }));
     }
     return NextResponse.json({ session }, { headers: { "cache-control": "no-store" } });
   } catch (err) {

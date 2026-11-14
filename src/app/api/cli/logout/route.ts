@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
+import { denied } from "@/server/security/security-log";
 import { bearerToken } from "@/server/supabase/bearer";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
@@ -30,14 +31,14 @@ export async function POST(req: Request) {
   }
 
   const token = bearerToken(req);
-  if (!token) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+  if (!token) return denied("cli-logout", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
   try {
     if ((await checkCliSession(token)) === "unknown") {
-      return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+      return denied("cli-logout", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
     }
     const result = await revokeCliSession(token);
-    if (result === "unauthorized") return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+    if (result === "unauthorized") return denied("cli-logout", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
     if (result === null) return problem(503, CLI_PROBLEMS.unavailable, { kind: "unavailable" });
     await recordSecurityEvent("cli.session_revoked", result.userId, { via: "terminal" });
     return NextResponse.json({ ok: true });

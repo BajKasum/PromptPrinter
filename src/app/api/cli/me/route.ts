@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
+import { denied } from "@/server/security/security-log";
 import { bearerToken } from "@/server/supabase/bearer";
 import { createClientForRequest } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
@@ -35,15 +36,15 @@ export async function GET(req: Request) {
   }
 
   const token = bearerToken(req);
-  if (!token) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+  if (!token) return denied("cli-me", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
   try {
     const supabase = await createClientForRequest(req);
     const { data } = await supabase.auth.getUser();
     const user = data.user;
-    if (!user) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+    if (!user) return denied("cli-me", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
     // Wie im Chat: Bearer gilt nur für ein eingetragenes Terminal bis zu seinem Höchstalter, das weiss der Auth-Server nicht.
-    if ((await checkCliSession(token)) !== "ok") return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+    if ((await checkCliSession(token)) !== "ok") return denied("cli-me", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
     const [profile, keys] = await Promise.all([
       supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),

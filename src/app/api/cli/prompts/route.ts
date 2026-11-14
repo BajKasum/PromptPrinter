@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
+import { denied } from "@/server/security/security-log";
 import { bearerToken } from "@/server/supabase/bearer";
 import { createClientForRequest } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
   }
 
   const token = bearerToken(req);
-  if (!token) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+  if (!token) return denied("cli-prompts", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
   const params = new URL(req.url).searchParams;
   const limit = parseListLimit(params.get("limit"));
@@ -50,8 +51,8 @@ export async function GET(req: Request) {
     const supabase = await createClientForRequest(req);
     const { data } = await supabase.auth.getUser();
     const user = data.user;
-    if (!user) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
-    if ((await checkCliSession(token)) !== "ok") return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+    if (!user) return denied("cli-prompts", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
+    if ((await checkCliSession(token)) !== "ok") return denied("cli-prompts", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
     const query = () =>
       supabase
