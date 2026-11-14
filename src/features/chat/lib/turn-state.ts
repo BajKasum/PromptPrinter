@@ -1,8 +1,7 @@
 import type { Msg } from "@/features/chat/lib/chat-wire";
 
-// Der Zustand eines Chat-Zugs als Reducer. Vorher setzte runChatTurn vierzehn State-Setter an 27 Stellen
-// direkt; jetzt meldet es Ereignisse ("started", "delta", "failed", ...), und was daraus für die Oberfläche
-// folgt, steht hier an einer Stelle und läuft ohne React (turn-state.test.ts).
+// Der Zustand eines Chat-Zugs als Reducer. runChatTurn meldet Ereignisse ("started", "delta", "failed", ...), und
+// was daraus für die Oberfläche folgt, steht hier an einer Stelle und läuft ohne React (turn-state.test.ts).
 
 export type Pending = { text: string; complete: boolean } | null;
 
@@ -55,7 +54,7 @@ export type TurnAction =
   /** Ein Zug beginnt: `next` ist der Verlauf, wie er nach dem Zug aussehen soll. */
   | { type: "started"; next: Msg[] }
   | { type: "conversationAdopted"; id: string }
-  /** Die optimistisch angehängte Frage bekommt ihre echte Zeilen-ID (K-2). */
+  /** Die optimistisch angehängte Frage bekommt ihre echte Zeilen-ID. */
   | { type: "userMessageIdReplaced"; from: string; to: string }
   | { type: "retrying" }
   /** `done` nennt den neuen Stand des Gratis-Rahmens. Bei 0 steht der Key-Hinweis gleich da. */

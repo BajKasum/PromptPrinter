@@ -31,10 +31,11 @@ function walk(dir: string): string[] {
 function checkedFiles(): string[] {
   const source = walk(join(ROOT, "src")).filter((f) => /\.(tsx?|mjs)$/.test(f) && !/\.test\.tsx?$/.test(f));
   const github = walk(join(ROOT, ".github")).filter((f) => /\.ya?ml$/.test(f));
+  const scripts = walk(join(ROOT, "scripts")).filter((f) => /\.(mjs|ts)$/.test(f) && !/\.test\.(mjs|ts)$/.test(f));
   const root = readdirSync(ROOT)
     .filter((name) => ROOT_FILES.test(name))
     .map((name) => join(ROOT, name));
-  return [...source, ...github, ...root].map((f) => relative(ROOT, f).replace(/\\/g, "/"));
+  return [...source, ...github, ...scripts, ...root].map((f) => relative(ROOT, f).replace(/\\/g, "/"));
 }
 
 function countFindings(file: string, text: string): number {
@@ -87,6 +88,18 @@ describe("Verlauf und umschriebene Umlaute in Kommentaren", () => {
     expect(
       over,
       `Neue Verlaufskommentare oder umschriebene Umlaute. Kommentare sagen, was gilt und warum; der Verlauf gehört in den Changelog:\n${over.join("\n")}`
+    ).toEqual([]);
+  });
+
+  it("liegt nirgends über dem Stand: wer bereinigt, senkt den Basiswert mit", () => {
+    const current = measure();
+    const baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Record<string, number>;
+    const stale = Object.entries(baseline)
+      .filter(([file, count]) => count > (current[file] ?? 0))
+      .map(([file, count]) => `${file}: Basiswert ${count}, gemessen ${current[file] ?? 0}`);
+    expect(
+      stale,
+      `Basiswert neu schreiben: COMMENT_BASELINE_WRITE=1 npx vitest run tests/guards/comment-history.test.ts\n${stale.join("\n")}`
     ).toEqual([]);
   });
 });
