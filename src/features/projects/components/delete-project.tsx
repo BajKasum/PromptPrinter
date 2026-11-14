@@ -44,11 +44,9 @@ export function DeleteProjectButton({
       return;
     }
 
-    // Storage objects don't cascade with the DB row, clean them up first
-    // while the project_files rows (and their storage_path) still exist,
-    // otherwise every deleted project leaks its files in the bucket forever.
-    // Explicit user_id alongside project_id: RLS-only before (Security-Audit
-    // finding L-3).
+    // Die Objekte im Speicher kaskadieren nicht mit den Zeilen: die Pfade jetzt einsammeln, solange es die Zeilen
+    // gibt, und die Objekte erst nach dem gelungenen Löschen des Projekts entfernen. Scheitert das Löschen, bleibt das
+    // Projekt samt Dateien, statt Zeilen zu behalten, deren Dateien schon weg sind. user_id neben project_id wie überall.
     const { data: files, error: filesError } = await supabase
       .from("project_files")
       .select("storage_path")
@@ -64,12 +62,8 @@ export function DeleteProjectButton({
       });
       return;
     }
-    if (files && files.length > 0) {
-      await supabase.storage.from("project-files").remove(files.map((f) => f.storage_path));
-    }
-    // Dasselbe fuer die Anhaenge der Chats dieses Projekts: ihre Zeilen
-    // kaskadieren mit dem Projekt weg, die Objekte nicht. Pfade jetzt, solange
-    // es die Zeilen noch gibt; entfernt wird erst nach dem Loeschen.
+    const filePaths = (files ?? []).map((f) => f.storage_path);
+    // Dasselbe für die Anhänge der Chats dieses Projekts.
     const attachmentPaths = await attachmentPathsOfProject(supabase, user.id, projectId);
 
     // Explizites user_id neben RLS, wie ueberall sonst (CLAUDE.mds
@@ -89,6 +83,7 @@ export function DeleteProjectButton({
       });
       return;
     }
+    if (filePaths.length > 0) await supabase.storage.from("project-files").remove(filePaths);
     await removeAttachmentObjects(supabase, attachmentPaths);
     toast({
       title: t.projects.deleted,

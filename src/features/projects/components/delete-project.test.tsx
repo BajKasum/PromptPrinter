@@ -120,12 +120,15 @@ describe("DeleteProjectButton", () => {
 
   it("leaves the attachment objects alone when deleting the project failed", async () => {
     attachmentRange.mockResolvedValue({ data: [{ storage_path: "u1/chat-1/a.png" }], error: null });
+    projectFilesRows.mockReturnValue({ data: [{ storage_path: "u1/p1/brief.pdf" }], error: null });
     del.mockReturnValue(failedWrite());
 
     await confirmDelete();
 
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" })));
     expect(storageRemove).not.toHaveBeenCalledWith("chat-attachments", expect.anything());
+    // Auch die Projektdateien bleiben: das Projekt steht ja noch.
+    expect(storageRemove).not.toHaveBeenCalledWith("project-files", expect.anything());
     expect(push).not.toHaveBeenCalled();
   });
 
