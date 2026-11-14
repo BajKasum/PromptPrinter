@@ -167,8 +167,15 @@ describe("Sicherheitsprotokoll der Keys", () => {
   });
 
   it("hält das Entfernen fest", async () => {
+    deleteRow.mockReturnValue({ data: [{ provider: "openai" }], error: null });
     expect((await DELETE(del("openai"))).status).toBe(200);
     expect(recordSecurityEvent.mock.calls).toEqual([["api_key.removed", "user-1", { provider: "openai" }]]);
+  });
+
+  it("hält nichts fest, wenn es keinen Key zu entfernen gab", async () => {
+    deleteRow.mockReturnValue({ data: [], error: null });
+    expect((await DELETE(del("openai"))).status).toBe(200);
+    expect(recordSecurityEvent).not.toHaveBeenCalled();
   });
 
   it("schreibt nichts, wenn das Speichern scheitert, und nie den Key", async () => {

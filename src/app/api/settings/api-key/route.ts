@@ -279,12 +279,12 @@ export async function DELETE(req: Request) {
     }
   }
 
-  const { error } = await removeByokRow(user.id, provider);
+  const { error, removed } = await removeByokRow(user.id, provider);
   if (error) {
     captureError("api_key.delete_failed", error, { userId: user.id, provider });
     return problem(500, m.keyRemoveFailed);
   }
-  await recordSecurityEvent("api_key.removed", user.id, { provider });
+  if (removed) await recordSecurityEvent("api_key.removed", user.id, { provider });
 
   return NextResponse.json({ ok: true });
 }
