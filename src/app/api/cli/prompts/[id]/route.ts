@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
+import { denied } from "@/server/security/security-log";
 import { bearerToken } from "@/server/supabase/bearer";
 import { createClientForRequest } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
@@ -32,7 +33,7 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   const token = bearerToken(req);
-  if (!token) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+  if (!token) return denied("cli-prompt", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
   const { id } = await params;
   if (!isPromptId(id)) return problem(400, CLI_PROBLEMS.invalidPromptId, { kind: "invalid" });
@@ -41,8 +42,8 @@ export async function GET(req: Request, { params }: Params) {
     const supabase = await createClientForRequest(req);
     const { data } = await supabase.auth.getUser();
     const user = data.user;
-    if (!user) return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
-    if ((await checkCliSession(token)) !== "ok") return problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" });
+    if (!user) return denied("cli-prompt", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
+    if ((await checkCliSession(token)) !== "ok") return denied("cli-prompt", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
     const result = await supabase
       .from("saved_prompts")
@@ -52,7 +53,7 @@ export async function GET(req: Request, { params }: Params) {
       .maybeSingle();
     const row = orThrow(result, "saved_prompts").data;
     const prompt = row ? toDetail(row) : null;
-    if (!prompt) return problem(404, CLI_PROBLEMS.promptNotFound, { kind: "notFound" });
+    if (!prompt) return denied("cli-prompt", problem(404, CLI_PROBLEMS.promptNotFound, { kind: "notFound" }));
 
     return NextResponse.json(
       { id: prompt.id, title: prompt.title, content: prompt.content, createdAt: prompt.createdAt },

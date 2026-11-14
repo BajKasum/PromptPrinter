@@ -21,6 +21,11 @@ const ROUTES = [
   "src/app/api/cli/approve/route.ts",
   "src/app/api/cli/sessions/route.ts",
   "src/app/api/auth/mfa/route.ts",
+  "src/app/api/cli/me/route.ts",
+  "src/app/api/cli/prompts/route.ts",
+  "src/app/api/cli/prompts/[id]/route.ts",
+  "src/app/api/cli/refresh/route.ts",
+  "src/app/api/cli/logout/route.ts",
 ];
 
 function sourceFiles(dir: string): string[] {
