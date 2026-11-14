@@ -55,7 +55,7 @@ export type TaskGuide = {
 };
 
 /** Wann die Aufgabenseiten zuletzt inhaltlich geprüft wurden. */
-export const TASK_GUIDES_UPDATED = "2026-11-01";
+export const TASK_GUIDES_UPDATED = "2026-11-14";
 
 export const TASK_GUIDES: TaskGuide[] = [
   {
@@ -154,7 +154,7 @@ Form: Brief mit Betreffzeile, Anrede und Grussformel. Gib nur den Brieftext aus.
 Seiten: Start, Honigsorten, Über uns, Kontakt.
 Inhalt: Texte und Preise stehen fest in der Seite. Es gibt keine Datenbank und keine Anmeldung. Die Seite Kontakt enthält ein Formular mit Name, E-Mail-Adresse und Nachricht; es muss nur gebaut sein, es muss noch nichts verschicken.
 Aussehen: warm und natürlich, erdige Farben, viel Weissraum. Entwirf zuerst für das Handy, dann für den Desktop.
-Technik: reines HTML und CSS, möglichst wenig JavaScript.
+Technik: Wähle die einfachste Lösung, die das trägt, und nenne sie zu Beginn in einem Satz.
 Platzhalter: Verwende [Name der Imkerei], [Honigsorte 1], [Honigsorte 2] und [Preis] statt erfundener Angaben.
 Ausgabe: Beschreibe zuerst in je einem Satz den Aufbau der vier Seiten, liefere dann alle Dateien vollständig mit ihrem Dateinamen.`,
     },
@@ -207,7 +207,7 @@ Ausgabe: Beschreibe zuerst in je einem Satz den Aufbau der vier Seiten, liefere 
       prompt: `Du bist eine erfahrene Datenbankentwicklerin. Entwirf eine relationale Datenbank für die Bibliothek eines kleinen Vereins.
 
 System: PostgreSQL.
-Gespeichert werden Bücher, Mitglieder und Ausleihen. Ein Buch ist zu einem Zeitpunkt an höchstens ein Mitglied ausgeliehen. Es gibt einige hundert Bücher und einige Dutzend Mitglieder.
+Gespeichert werden Bücher, Mitglieder und Ausleihen. Ein Buch ist zu einem Zeitpunkt an höchstens ein Mitglied ausgeliehen. Es gibt einige hundert Bücher.
 Ergebnis: 1. Eine kurze Beschreibung der Tabellen und ihrer Beziehungen. 2. Die vollständigen CREATE-TABLE-Befehle mit Primärschlüsseln, Fremdschlüsseln und den Regeln, die die Datenbank selbst erzwingt. 3. Zwei Beispielabfragen: alle derzeit ausgeliehenen Bücher und alle überfälligen Ausleihen.
 Regeln: Verwende sprechende Spaltennamen in Kleinbuchstaben. Schreibe in Beispieldaten keine echten Personendaten, sondern [Name] und [E-Mail]. Erfinde keine Anforderungen, die ich nicht genannt habe.`,
     },

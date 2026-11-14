@@ -11,7 +11,7 @@ export type Placeholder = {
 };
 
 // Davor kein Wortzeichen, keine schliessende Klammer und kein "/", "<" oder ".": `liste[index]`, `[Text][ref]`,
-// Routensegmente wie `app/x/[id]/page.tsx` und Typen wie `Array<[string, number]>` sind keine Platzhalter.
+// Routensegmente wie `/[id]/` in einem Pfad und Typen wie `Array<[string, number]>` sind keine Platzhalter.
 // Dahinter kein "(" oder "[" (Markdown-Link, Bild) und kein ": http" (Verweis).
 const BRACKET = /(?<![\w)\]\\/<.])\[([^[\]\n]{2,80})\](?!\(|\[|:\s*https?:)/gu;
 
