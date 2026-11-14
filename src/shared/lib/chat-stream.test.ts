@@ -63,7 +63,8 @@ describe("chatStreamSchemas (was der Server sendet)", () => {
     expect(done.safeParse({ mode: "generated", conversationId: "c" }).success).toBe(true);
     expect(done.safeParse({ mode: "stub", conversationId: "c", persistError: "persist_failed" }).success).toBe(true);
     expect(done.safeParse({ conversationId: "c" }).success).toBe(false);
-    expect(done.safeParse({ mode: "andere", conversationId: "c" }).success).toBe(false);
+    // Ein neuer Modus des Servers bricht einen älteren Browser nicht.
+    expect(done.safeParse({ mode: "andere", conversationId: "c" }).success).toBe(true);
   });
 
   it("status verlangt Versuch und Obergrenze, meta die Konversation", () => {

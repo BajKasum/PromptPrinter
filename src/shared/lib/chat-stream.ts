@@ -42,7 +42,8 @@ export const chatStreamSchemas = {
   }),
   delta: z.object({ text: z.string() }),
   done: z.object({
-    mode: z.enum(["stub", "generated"]),
+    // Ein String, keine feste Liste: ein neuer Wert des Servers soll einen älteren Browser nicht brechen.
+    mode: z.string(),
     conversationId: z.string(),
     assistantMessageId: z.string().optional(),
     persistError: z.string().optional(),
