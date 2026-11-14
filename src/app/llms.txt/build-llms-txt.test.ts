@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPARISONS } from "@/features/marketing/lib/comparisons";
 import { TASK_GUIDES } from "@/features/marketing/lib/task-guides";
 import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
-import { buildLlmsTxt } from "./build-llms-txt";
+import { buildLlmsTxt, numberWord } from "./build-llms-txt";
 
 // Same drift guard as robots.test.ts / sitemap.test.ts: every URL in here
 // must come from the configured app origin, never a hardcoded domain this
@@ -85,5 +85,15 @@ describe("llms.txt", () => {
         `[${comparison.question}](https://staging.example.com/vergleich/${comparison.slug})`
       );
     }
+  });
+});
+
+describe("Zahlwörter in llms.txt", () => {
+  it("folgen der Länge der Listen", () => {
+    const text = buildLlmsTxt();
+    expect(text).toContain(`${numberWord(COMPARISONS.length)} Wege zum Prompt im Vergleich`);
+    expect(text).toContain(`: ${numberWord(TASK_GUIDES.length)} Aufgaben, jeweils mit`);
+    expect(numberWord(4)).toBe("Vier");
+    expect(numberWord(99)).toBe("99");
   });
 });

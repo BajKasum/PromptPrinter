@@ -5,6 +5,10 @@ import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
 import { LEGAL } from "@/shared/lib/legal";
 import { siteUrl } from "@/shared/lib/site-url";
 
+const NUMBER_WORDS = ["Kein", "Ein", "Zwei", "Drei", "Vier", "Fünf", "Sechs", "Sieben", "Acht", "Neun", "Zehn", "Elf", "Zwölf"];
+/** Das Zahlwort am Satzanfang, damit die Zahl nicht von der Liste abweicht, wenn ein Eintrag dazukommt. */
+export const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n);
+
 // llms.txt (llmstxt.org): a plain-Markdown briefing for AI agents and
 // generative engines (ChatGPT, Perplexity, Claude, Google AI Overviews, …)
 // that land here trying to answer a question about the product — the same
@@ -65,11 +69,11 @@ ${plans}
 ${docs}
 
 ## Vergleiche
-- [Vergleich und Alternativen](${base}/vergleich): Vier Wege zum Prompt im Vergleich, samt der Fälle, in denen PromptPrinter nicht der beste ist
+- [Vergleich und Alternativen](${base}/vergleich): ${numberWord(COMPARISONS.length)} Wege zum Prompt im Vergleich, samt der Fälle, in denen PromptPrinter nicht der beste ist
 ${comparisons}
 
 ## Aufgaben
-- [Was eine KI für deine Aufgabe wissen muss](${base}/aufgaben): Fünf Aufgaben, jeweils mit den Angaben, die das Ergebnis ändern, und einem Beispiel-Prompt, von Hand nach Finns Regeln geschrieben
+- [Was eine KI für deine Aufgabe wissen muss](${base}/aufgaben): ${numberWord(TASK_GUIDES.length)} Aufgaben, jeweils mit den Angaben, die das Ergebnis ändern, und einem Beispiel-Prompt, von Hand nach Finns Regeln geschrieben
 ${taskGuides}
 
 ## Recht
