@@ -10,9 +10,10 @@ export type Placeholder = {
   label: string;
 };
 
-// Davor kein Wortzeichen und keine schliessende Klammer: `liste[index]` und `[Text][ref]` sind keine
-// Platzhalter. Dahinter kein "(" oder "[" (Markdown-Link, Bild) und kein ": http" (Verweis).
-const BRACKET = /(?<![\w)\]\\])\[([^[\]\n]{2,80})\](?!\(|\[|:\s*https?:)/gu;
+// Davor kein Wortzeichen, keine schliessende Klammer und kein "/", "<" oder ".": `liste[index]`, `[Text][ref]`,
+// Routensegmente wie `app/x/[id]/page.tsx` und Typen wie `Array<[string, number]>` sind keine Platzhalter.
+// Dahinter kein "(" oder "[" (Markdown-Link, Bild) und kein ": http" (Verweis).
+const BRACKET = /(?<![\w)\]\\/<.])\[([^[\]\n]{2,80})\](?!\(|\[|:\s*https?:)/gu;
 
 function isPlaceholderText(inner: string): boolean {
   const text = inner.trim();
@@ -20,6 +21,7 @@ function isPlaceholderText(inner: string): boolean {
   if (!/\p{L}/u.test(text)) return false; // [1], [2, 3], [...]
   if (/^["'{[<#^]/.test(text)) return false; // ["a", "b"], [{...}], [<tag>]
   if (/[=;(){}]/.test(text)) return false; // Code: [i = 0], [f(x)]
+  if (text.startsWith("..")) return false; // [...slug]
   return true;
 }
 
