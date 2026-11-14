@@ -11,6 +11,12 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Tooltip ignoriert den Fokus eines Klicks (Branch `fix/tooltip-pointer-focus`)
+
+Dependabot #319 (jsdom 31) war rot: jsdom 31 behandelt `:focus-visible` wie `:focus`, der Klick auf den Plus-Knopf öffnete die Pille deshalb wieder. `shared/ui/tooltip.tsx` merkt sich jetzt zwischen `pointerdown` und `pointerup` (zurückgesetzt auch bei `pointercancel`, `pointerleave` und `blur`), dass ein Zeiger drückt, und ignoriert den Fokus aus diesem Druck. `:focus-visible` bleibt als zweite Bedingung. Unter jsdom 31 lokal geprüft: alle zehn Tooltip-Tests grün, ohne die neue Bedingung schlägt "goes away on click" an.
+
+---
+
 ## 2026-11-12: Sicherheits-Runde aus dem Code-Review (Branch `fix/code-review-sicherheit`)
 
 Das erste Code-Review auf GitHub (Reviews an den seit den Audits vom 01.11. gemergten PRs #257 bis #314 und an den offenen Dependabot-PRs #316 bis #319) fand neben den öffentlichen Kommentaren Befunde zur Sicherheit, die erst nach der Behebung hier stehen. Auf Kasums Ja vom selben Tag:

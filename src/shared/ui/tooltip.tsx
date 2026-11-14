@@ -15,9 +15,12 @@ import { cn } from "@/shared/lib/utils";
 // Zwei Auslöser, mit Absicht verschieden schnell:
 //   * Maus-Hover erst nach einer kurzen Verzögerung (HOVER_DELAY_MS), damit
 //     ein Mauszeiger, der nur vorbeifährt, nichts aufblitzen lässt.
-//   * Tastaturfokus sofort, aber NUR bei :focus-visible. Ein Klick setzt
-//     ebenfalls den Fokus, und die Pille würde dann stehenbleiben, während der
-//     Dateidialog offen ist und danach weiter — genau das soll sie nicht.
+//   * Tastaturfokus sofort. Ein Klick setzt ebenfalls den Fokus, und die Pille
+//     bliebe dann stehen, während der Dateidialog offen ist und danach weiter:
+//     genau das soll sie nicht. Deshalb zählt ein Fokus nicht, der zwischen
+//     pointerdown und pointerup kommt (Ref `pressing`). `:focus-visible` allein
+//     reicht dafür nicht, weil nicht jede Umgebung es nach einem Klick ablehnt
+//     (jsdom 31 behandelt es wie `:focus`).
 
 const HOVER_DELAY_MS = 400;
 
@@ -39,6 +42,7 @@ export function Tooltip({
 }) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressing = useRef(false);
 
   function cancel() {
     if (timer.current) clearTimeout(timer.current);
@@ -64,21 +68,31 @@ export function Tooltip({
         timer.current = setTimeout(() => setOpen(true), HOVER_DELAY_MS);
       }}
       onPointerLeave={() => {
+        pressing.current = false;
         cancel();
         setOpen(false);
       }}
       onPointerDown={() => {
         // Wer klickt, hat die Antwort auf "was macht das?" schon gegeben.
+        pressing.current = true;
         cancel();
         setOpen(false);
       }}
+      onPointerUp={() => {
+        pressing.current = false;
+      }}
+      onPointerCancel={() => {
+        pressing.current = false;
+      }}
       onFocus={(e) => {
+        if (pressing.current) return;
         if (e.target instanceof HTMLElement && e.target.matches(":focus-visible")) {
           cancel();
           setOpen(true);
         }
       }}
       onBlur={() => {
+        pressing.current = false;
         cancel();
         setOpen(false);
       }}
