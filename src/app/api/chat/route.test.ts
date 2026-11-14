@@ -468,6 +468,17 @@ describe("POST /api/chat", () => {
         expect(s.promptDelivered).not.toHaveBeenCalled();
       });
 
+      it("sagt nichts über die übrigen Prompts, wenn der Stand nicht lesbar ist, statt 0", async () => {
+        const s = slot();
+        s.promptsLeft.mockResolvedValue(undefined);
+        reserveFreeTrialTurn.mockResolvedValue(s);
+
+        const body = await readSse(await POST(req()));
+
+        expect(body).toContain("event: done");
+        expect(body).not.toContain("freePromptsLeft");
+      });
+
       it("zählt eine Rückfrage nicht als Prompt", async () => {
         const s = slot();
         reserveFreeTrialTurn.mockResolvedValue(s);

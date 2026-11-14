@@ -157,11 +157,11 @@ export type FreeTrialSlot = {
   release: () => Promise<void>;
   /**
    * Der Zug hat einen fertigen Prompt geliefert: zählt ihn, merkt ihn für den Probelauf und gibt zurück, wie viele
-   * noch bleiben.
+   * noch bleiben. `undefined`, wenn der Stand gerade nicht lesbar ist (Redis): dann sagt der Chat nichts, statt "0".
    */
-  promptDelivered: (prompt: string) => Promise<number>;
+  promptDelivered: (prompt: string) => Promise<number | undefined>;
   /** Der Zug war eine Rückfrage: wie viele Prompts bleiben (unverändert, aber die Zuggrenze kann erreicht sein). */
-  promptsLeft: () => Promise<number>;
+  promptsLeft: () => Promise<number | undefined>;
 };
 
 export type FreeTrialRefusal = "exhausted" | "budget" | "unavailable";
@@ -228,13 +228,13 @@ export async function reserveFreeTrialTurn(req: Request, userId: string): Promis
 
   return {
     release: held.release,
-    promptsLeft: async () => (await freePromptsLeft(userId)) ?? 0,
+    promptsLeft: async () => (await freePromptsLeft(userId)) ?? undefined,
     promptDelivered: async (prompt: string) => {
       // Kein Limit beim Hochzählen: die Prüfung steht vor dem Zug. Laufen zwei Züge gleichzeitig, kann ein vierter
       // Prompt durchgehen; die Grenze an Zügen hält auch das klein.
       await rememberDelivered(userId, prompt);
       const used = await increment(promptsKey(userId));
-      return used === null ? 0 : Math.max(0, FREE_TRIAL.prompts - used);
+      return used === null ? undefined : Math.max(0, FREE_TRIAL.prompts - used);
     },
   };
 }
@@ -246,9 +246,10 @@ const testRunsKey = (userId: string) => `free-trial:test-runs:${userId}`;
 
 /**
  * `used`: dieser Prompt hatte schon seinen Probelauf, oder das Konto hat so viele wie Gratis-Prompts.
- * `notDelivered`: Finn hat diesem Konto den Prompt nicht geliefert.
+ * `notDelivered`: Finn hat diesem Konto den Prompt nicht geliefert. `accountUsed`: das Konto hat so viele Probeläufe
+ * wie Gratis-Prompts gehabt.
  */
-export type FreeTrialTestRunRefusal = "used" | "notDelivered" | "budget" | "unavailable";
+export type FreeTrialTestRunRefusal = "used" | "accountUsed" | "notDelivered" | "budget" | "unavailable";
 
 /**
  * Ein Probelauf im Gratis-Rahmen: höchstens einer je Prompt (Schlüssel aus dem Hash des Prompts) und höchstens so
@@ -265,13 +266,13 @@ export async function reserveFreeTrialTestRun(
   if (!delivered) return "notDelivered";
   const held = await reserveAll<FreeTrialTestRunRefusal>([
     { key: testRunKey(userId, promptHash), limit: 1, ttl: ACCOUNT_TTL_SECONDS, refusal: "used" },
-    { key: testRunsKey(userId), limit: FREE_TRIAL.prompts, ttl: ACCOUNT_TTL_SECONDS, refusal: "used" },
+    { key: testRunsKey(userId), limit: FREE_TRIAL.prompts, ttl: ACCOUNT_TTL_SECONDS, refusal: "accountUsed" },
     ...sharedSteps(req),
   ]);
   if (typeof held === "string") {
     logBudgetRefusal(held);
     return held;
   }
-  const left = async () => (await freePromptsLeft(userId)) ?? 0;
+  const left = async () => (await freePromptsLeft(userId)) ?? undefined;
   return { release: held.release, promptsLeft: left, promptDelivered: left };
 }

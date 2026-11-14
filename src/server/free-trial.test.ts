@@ -115,7 +115,7 @@ describe("Probelauf im Gratis-Rahmen", () => {
     for (let i = 0; i < FREE_TRIAL.prompts; i++) {
       expect(typeof (await reserveFreeTrialTestRun(req(), "t2", `h${i}`)), `h${i}`).toBe("object");
     }
-    expect(await reserveFreeTrialTestRun(req(), "t2", "h-neu")).toBe("used");
+    expect(await reserveFreeTrialTestRun(req(), "t2", "h-neu")).toBe("accountUsed");
   });
 
   it("zählt gegen das Tagesbudget des Rahmens", async () => {

@@ -865,6 +865,8 @@ export const de = {
       "Dieser Prompt ist für einen Probelauf zu lang.",
     testRunUsed:
       "Diesen Prompt hast du schon einmal ausprobiert. Im Gratis-Rahmen gibt es einen Probelauf je Prompt.",
+    testRunsUsed:
+      "Im Gratis-Rahmen sind deine Probeläufe aufgebraucht. Mit eigenem KI-Key geht es weiter.",
     testRunNotDelivered:
       "Im Gratis-Rahmen lässt sich nur ein Prompt ausprobieren, den ich dir geliefert habe. Mit eigenem KI-Key geht jeder Text.",
     chatNotConfigured:

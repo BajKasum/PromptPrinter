@@ -850,6 +850,8 @@ export const es: Messages = {
       "Este prompt es demasiado largo para una prueba.",
     testRunUsed:
       "Ya probaste este prompt. El cupo gratuito incluye una prueba por prompt.",
+    testRunsUsed:
+      "Ya usaste todas las pruebas del cupo gratuito. Con tu propia clave de IA puedes seguir.",
     testRunNotDelivered:
       "En el cupo gratuito solo puedes probar un prompt que yo te haya dado. Con tu propia clave de IA sirve cualquier texto.",
     chatNotConfigured:
