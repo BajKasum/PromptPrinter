@@ -70,7 +70,7 @@ export const CLI_COMMANDS = [
     body: "Ich lese dazu dein Projekt im aktuellen Ordner. Du siehst vorher, was mitgeht, und erst mit j wird gesendet.",
   },
   { command: "/copy", body: "Der letzte Prompt in die Zwischenablage." },
-  { command: "/save", body: "Der letzte Prompt landet bei deinen gespeicherten Prompts, auch im Browser." },
+  { command: "/save", body: "Der letzte Prompt als Markdown-Datei im aktuellen Ordner." },
   { command: "/an claude", body: "Gibt den fertigen Prompt an Claude Code weiter." },
   { command: "/an codex", body: "Gibt den fertigen Prompt an Codex weiter." },
 ] as const;
