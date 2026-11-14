@@ -40,11 +40,10 @@ export async function buildSystemInstruction(args: {
   let systemInstruction = CHAT_SYSTEM_PROMPT;
   // 5a. "Über mich" (Einstellungen, profiles.about_me) als eigener, gekennzeichneter Block. Er steht vor dem
   //     Projektkontext und erklärt selbst, dass Gespräch und Projekt-Anweisungen vorgehen (shared/lib/about-me.ts).
-  //     Ein Lesefehler hier hält den Zug nicht auf: Finn antwortet dann ohne die Angaben.
-  const about = await readAboutMe(supabase, userId);
-  if (about) systemInstruction += `
-
-${about}`;
+  //     Ein Lesefehler hier hält den Zug nicht auf: Finn antwortet dann ohne die Angaben. Die Abfrage läuft neben der
+  //     des Projekts (readAboutMe wirft nie), angehängt wird in dieser Reihenfolge.
+  const aboutRead = readAboutMe(supabase, userId);
+  let projectBlock: string | null = null;
   // Ownership-verified project id, never the raw input.projectId (QA finding
   // F-8). The request only checked the value was a UUID, not that this caller
   // owns it, and openTurn writes it straight into conversations.project_id
@@ -72,10 +71,13 @@ ${about}`;
       return problem(503, m.chatUnavailable);
     }
     if (ctx) {
-      systemInstruction += `\n\n${ctx}`;
+      projectBlock = ctx;
       verifiedProjectId = input.projectId;
     }
   }
+  const about = await aboutRead;
+  if (about) systemInstruction += `\n\n${about}`;
+  if (projectBlock) systemInstruction += `\n\n${projectBlock}`;
   return { systemInstruction, verifiedProjectId };
 }
 

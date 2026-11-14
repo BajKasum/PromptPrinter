@@ -116,7 +116,7 @@ async function api(deps, path, init = {}) {
 async function loadRows(deps) {
   const rows = [];
   for (let from = 0; ; from += PAGE) {
-    const response = await api(deps, "user_api_keys?select=id,user_id,provider,encrypted_key&order=created_at.asc", {
+    const response = await api(deps, "user_api_keys?select=id,user_id,provider,encrypted_key&order=id.asc", {
       headers: { range: `${from}-${from + PAGE - 1}` },
     });
     const page = await response.json();

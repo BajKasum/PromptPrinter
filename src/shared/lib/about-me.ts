@@ -15,12 +15,21 @@ export function normalizeAboutMe(raw: string | null | undefined): string {
   return (raw ?? "").trim().slice(0, ABOUT_ME_MAX_LENGTH);
 }
 
+// Jede Schreibweise der Marke (gross, mit Leerraum) und so lange, bis keine mehr da ist: "<angaben<angaben_der_person>_der_person>"
+// ergäbe nach einem Durchgang sonst wieder eine Marke.
+const MARKER = /<\s*\/?\s*angaben_der_person\s*>/gi;
+function stripMarkers(text: string): string {
+  let current = text;
+  for (let next = current.replace(MARKER, ""); next !== current; next = current.replace(MARKER, "")) current = next;
+  return current;
+}
+
 /**
  * Der Block für den Systemprompt, oder null ohne Angaben. Die Marken des Blocks werden aus dem Text entfernt, damit
  * niemand den Block von innen schliessen und danach etwas schreiben kann, das wie eine Regel aussieht.
  */
 export function aboutMeBlock(raw: string | null | undefined): string | null {
-  const text = normalizeAboutMe(raw).replaceAll(OPEN, "").replaceAll(CLOSE, "").trim();
+  const text = stripMarkers(normalizeAboutMe(raw)).trim();
   if (!text) return null;
   return [
     "## Was die Person dir über sich mitgegeben hat",

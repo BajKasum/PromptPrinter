@@ -38,13 +38,23 @@ export function normalizeRecoveryCode(raw: string): string | null {
 }
 
 /** Ersetzt alle Codes dieses Kontos und gibt die neuen zurück, zum einzigen Mal, formatiert zum Abschreiben. */
+// Erst einfügen, dann die älteren Zeilen löschen: scheitert das Einfügen, gelten die alten Codes weiter, statt dass das
+// Konto ohne Rückweg dasteht. Scheitert nur das Löschen, wirft es: die neuen Codes sind noch nicht ausgegeben.
 export async function replaceRecoveryCodes(userId: string): Promise<string[]> {
-  await deleteRecoveryCodes(userId);
+  const admin = createAdminClient();
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, newCode);
-  const { error } = await createAdminClient()
+  const { data, error } = await admin
     .from(TABLE)
-    .insert(codes.map((code) => ({ user_id: userId, code_hash: hashCode(userId, code) })));
+    .insert(codes.map((code) => ({ user_id: userId, code_hash: hashCode(userId, code) })))
+    .select("id");
   if (error) throw new Error(`mfa_recovery_codes insert: ${error.message}`);
+  const fresh = (data ?? []).map((row) => row.id);
+  const { error: deleteError } = await admin
+    .from(TABLE)
+    .delete()
+    .eq("user_id", userId)
+    .not("id", "in", `(${fresh.join(",")})`);
+  if (deleteError) throw new Error(`mfa_recovery_codes delete: ${deleteError.message}`);
   return codes.map(formatCode);
 }
 
