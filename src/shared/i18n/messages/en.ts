@@ -542,6 +542,7 @@ export const en: Messages = {
     confirm: "Create link",
     sharing: "Creating…",
     shared: "Link created and copied.",
+    sharedNotCopied: "Link created. Copying didn't work, use the button next to it.",
     copyLink: "Copy link",
     revoke: "Revoke",
     revoked: "Link revoked. It no longer leads anywhere.",

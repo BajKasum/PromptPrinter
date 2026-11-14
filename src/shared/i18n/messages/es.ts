@@ -542,6 +542,7 @@ export const es: Messages = {
     confirm: "Crear enlace",
     sharing: "Creando…",
     shared: "Enlace creado y copiado.",
+    sharedNotCopied: "Enlace creado. No se pudo copiar, usa el botón de al lado.",
     copyLink: "Copiar enlace",
     revoke: "Revocar",
     revoked: "Enlace revocado. Ya no lleva a ninguna parte.",

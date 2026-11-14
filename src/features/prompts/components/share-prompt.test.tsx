@@ -59,6 +59,18 @@ describe("SharePrompt", () => {
     expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
   });
 
+  it("sagt nicht 'kopiert', wenn die Zwischenablage ablehnt", async () => {
+    Object.assign(navigator, { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) } });
+    fetchMock.mockReturnValueOnce(answer(null));
+    render(<SharePrompt promptId="p1" content="x" />);
+    const button = await screen.findByRole("button", { name: de.share.action });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+    fetchMock.mockReturnValueOnce(answer(TOKEN));
+    fireEvent.click(screen.getByRole("button", { name: de.share.confirm }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith({ title: de.share.sharedNotCopied, variant: "success" }));
+  });
+
   it("zeigt einen geteilten Prompt mit Link und widerruft ihn", async () => {
     fetchMock.mockReturnValueOnce(answer(TOKEN));
     render(<SharePrompt promptId="p1" content="x" />);

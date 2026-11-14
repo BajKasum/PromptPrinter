@@ -551,6 +551,7 @@ export const de = {
     confirm: "Link erstellen",
     sharing: "Erstellt …",
     shared: "Link erstellt und kopiert.",
+    sharedNotCopied: "Link erstellt. Kopieren ging nicht, nimm den Knopf daneben.",
     copyLink: "Link kopieren",
     revoke: "Widerrufen",
     revoked: "Link widerrufen. Er führt jetzt ins Leere.",
