@@ -11,11 +11,14 @@ import { checkCliSession } from "@/server/cli-login/sessions";
 import {
   SAVED_PROMPT_COLUMNS,
   likePattern,
+  needsSieve,
   parseListLimit,
   parseQuery,
   toListItems,
 } from "@/server/cli-login/saved-prompts";
 import { captureError } from "@/shared/lib/observability";
+
+const SIEVE_ROWS = 200;
 
 export const runtime = "nodejs";
 
@@ -61,10 +64,14 @@ export async function GET(req: Request) {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
+    // Ein Stern trifft in der Datenbank jedes Zeichen, das Sieb in toListItems verwirft danach Zeilen. Damit nach dem
+    // Sieb noch genug übrig bleiben, liest die Suche dann bis zu SIEVE_ROWS Zeilen je Spalte; Treffer jenseits davon
+    // fehlen, dafür bleibt jede Anfrage begrenzt.
+    const rowsToRead = q && needsSieve(q) ? Math.max(limit, SIEVE_ROWS) : limit;
     const results = q
       ? await Promise.all([
-          query().ilike("outputs->>title", likePattern(q)).limit(limit),
-          query().ilike("outputs->>prompt", likePattern(q)).limit(limit),
+          query().ilike("outputs->>title", likePattern(q)).limit(rowsToRead),
+          query().ilike("outputs->>prompt", likePattern(q)).limit(rowsToRead),
         ])
       : [await query().limit(limit)];
     const rows = results.flatMap((result) => orThrow(result, "saved_prompts").data ?? []);
