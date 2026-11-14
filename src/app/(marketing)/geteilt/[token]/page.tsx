@@ -6,6 +6,13 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { SharedPromptCopy } from "@/features/prompts/components/shared-prompt-copy";
 import { loadSharedPrompt } from "@/server/prompt-share";
+import { checkPrompt } from "@/shared/lib/prompt-check";
+import { de } from "@/shared/i18n/messages/de";
+
+// Ein geteilter Prompt kommt von jemand anderem: was ein Agent ausführen oder befolgen würde (Befehle, Dateizugriffe,
+// Versuche, frühere Regeln aufzuheben), steht als Hinweis über dem Kopieren, wie im Chat. Schlüssel und persönliche
+// Angaben prüft schon der Dialog vor dem Teilen.
+const SHARED_RISKS = new Set(["command", "override", "file"]);
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 
 // Ein geteilter Prompt (Migration 0057, server/prompt-share.ts). Öffentlich, aber nie im Index: jede geteilte
@@ -39,6 +46,7 @@ export default async function SharedPromptPage({ params }: { params: Promise<{ t
 
   const prompt = await loadSharedPrompt(token);
   if (!prompt) notFound();
+  const risks = checkPrompt(prompt.content).filter((r) => SHARED_RISKS.has(r.kind));
 
   return (
     <>
@@ -52,6 +60,12 @@ export default async function SharedPromptPage({ params }: { params: Promise<{ t
             <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap px-5 py-4 font-mono text-[13.5px] leading-[1.7] text-foreground">
               {prompt.content}
             </pre>
+            {risks.length > 0 && (
+              <div role="note" className="border-t border-border bg-warning/10 px-5 py-3 text-[13px] text-foreground">
+                {de.chat.promptCheck.intro}{" "}
+                {risks.map((r) => `${de.chat.promptCheck[r.kind]} (${r.samples.join(", ")})`).join("; ")}
+              </div>
+            )}
             <div className="flex items-center justify-end border-t border-border px-3 py-2">
               <SharedPromptCopy content={prompt.content} />
             </div>
