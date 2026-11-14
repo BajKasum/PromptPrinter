@@ -26,12 +26,13 @@ const idSchema = z.string().uuid();
 
 // Je Methode ein eigener Topf: das Nachsehen beim Aufklappen jedes Prompts darf weder das Teilen noch das Widerrufen
 // aufbrauchen. Widerrufen bekommt einen eigenen, damit ein Link immer zurückzunehmen ist.
-const LIMITS = {
-  GET: { scope: "prompt-share-read", limit: 300 },
-  POST: { scope: "prompt-share", limit: 60 },
-  DELETE: { scope: "prompt-share-revoke", limit: 60 },
-} as const;
 const WINDOW_MS = 60 * 60 * 1000;
+type Limit = (req: Request, userId: string) => ReturnType<typeof rateLimit>;
+const LIMITS: Record<"GET" | "POST" | "DELETE", Limit> = {
+  GET: (req, userId) => rateLimit(rateLimitKey(req, "prompt-share-read", userId), { limit: 300, windowMs: WINDOW_MS }),
+  POST: (req, userId) => rateLimit(rateLimitKey(req, "prompt-share", userId), { limit: 60, windowMs: WINDOW_MS }),
+  DELETE: (req, userId) => rateLimit(rateLimitKey(req, "prompt-share-revoke", userId), { limit: 60, windowMs: WINDOW_MS }),
+};
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -51,8 +52,7 @@ async function authorize(
   if (!parsed.success) return denied("prompt-share", problem(404, m.notFound), { userId: user.id });
   const promptId = parsed.data;
 
-  const { scope, limit } = LIMITS[method];
-  const rl = await rateLimit(rateLimitKey(req, scope, user.id), { limit, windowMs: WINDOW_MS });
+  const rl = await LIMITS[method](req, user.id);
   if (!rl.allowed) {
     return problem(429, m.tooManyRequests, { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
   }
