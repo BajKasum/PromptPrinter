@@ -23,11 +23,7 @@ import { LOCALE_ENGLISH_NAMES } from "@/shared/i18n/locales";
 import { rememberRepoHead } from "@/server/brain/repo-status";
 
 /** Das Modell hat geliefert, nur das Speichern scheiterte: die Kosten sind entstanden. */
-class BrainSaveError extends Error {
-  constructor(override readonly cause: unknown) {
-    super("project_brains update failed");
-  }
-}
+class BrainSaveError extends Error {}
 
 export const runtime = "nodejs";
 // Wie /api/chat: eine Analyse liest bis zu 14 Repo-Dateien plus die
@@ -330,7 +326,7 @@ async function analyzeAndSave(ctx: {
     .eq("user_id", userId);
   // Nicht gespeichert heißt nicht fertig, aber das Modell hat gearbeitet: die Reservierungen bleiben (wie der Chat bei
   // persist_failed), der catch unten meldet den Fehler und setzt den Status.
-  if (saveError) throw new BrainSaveError(saveError);
+  if (saveError) throw new BrainSaveError("project_brains update failed", { cause: saveError });
   await rememberRepoHead(collected.repoUrl, collected.repoRef);
 
   logEvent("brain.analyzed", {
