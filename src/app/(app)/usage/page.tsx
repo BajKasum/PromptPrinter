@@ -81,9 +81,10 @@ export default async function UsagePage() {
   ]);
   const { data: profile } = orThrow(profileResult, "profiles");
   const { count: projectsCount } = orThrow(projectsCountResult, "projects");
-  const { count: monthlyChatMessagesFromDb } = orThrow(monthlyChatMessagesFromDbResult, "messages");
   const t = await getT();
-  const monthlyChatMessages = redisChatUsage ?? monthlyChatMessagesFromDb;
+  // Die Zählung der Datenbank ist nur der Rückfallwert ohne Redis: nur dann darf ihr Lesefehler die Seite brechen.
+  const monthlyChatMessages =
+    redisChatUsage ?? orThrow(monthlyChatMessagesFromDbResult, "messages").count;
 
   const { plan: planKey, isAdmin, limits } = resolvePlan(profile);
   const isFree = planKey === "free";
