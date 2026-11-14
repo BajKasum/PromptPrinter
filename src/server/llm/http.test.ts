@@ -167,3 +167,20 @@ describe("Denktext (reasoning_content)", () => {
     ).toThrow();
   });
 });
+
+describe("readOpenAiCompatibleSse am Stromende (Review Ö48)", () => {
+  async function collect(chunks: string[]) {
+    const out: string[] = [];
+    for await (const text of readOpenAiCompatibleSse(streamOf(chunks))) out.push(text);
+    return out.join("");
+  }
+  const frame = (text: string) => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}`;
+
+  it("wertet einen CR-Strom ohne [DONE] bis zum letzten Rahmen aus", async () => {
+    expect(await collect([`${frame("Hallo ")}\r\r${frame("Welt")}\r`])).toBe("Hallo Welt");
+  });
+
+  it("wertet einen letzten Rahmen ohne Leerzeile aus", async () => {
+    expect(await collect([`${frame("Hallo ")}\n\n${frame("Welt")}`])).toBe("Hallo Welt");
+  });
+});
