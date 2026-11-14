@@ -546,6 +546,7 @@ export const fr: Messages = {
     confirm: "Créer le lien",
     sharing: "Création…",
     shared: "Lien créé et copié.",
+    sharedNotCopied: "Lien créé. La copie n'a pas marché, utilise le bouton à côté.",
     copyLink: "Copier le lien",
     revoke: "Révoquer",
     revoked: "Lien révoqué. Il ne mène plus nulle part.",
