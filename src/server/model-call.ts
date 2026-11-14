@@ -75,7 +75,7 @@ export type ModelCallOptions = {
      * Probelauf (api/test-run): der Hash des gelieferten Prompts (deliveredPromptHash). Dann zählt ein Probelauf je
      * Prompt statt ein Zug, und nur für einen Prompt, den Finn dem Konto geliefert hat.
      */
-    testRunOf?: { promptHash: string; used: string; notDelivered: string };
+    testRunOf?: { promptHash: string; used: string; accountUsed: string; notDelivered: string };
   };
 };
 
@@ -274,6 +274,9 @@ async function reserveFreeTrialSlot(
     ? await reserveFreeTrialTestRun(freeTrial.req, userId, freeTrial.testRunOf.promptHash)
     : await reserveFreeTrialTurn(freeTrial.req, userId);
   if (slot === "used") return problem(403, freeTrial.testRunOf?.used ?? freeTrial.budget, { kind: "testRunUsed", plan });
+  if (slot === "accountUsed") {
+    return problem(403, freeTrial.testRunOf?.accountUsed ?? freeTrial.budget, { kind: "testRunsUsed", plan });
+  }
   if (slot === "notDelivered") {
     return problem(403, freeTrial.testRunOf?.notDelivered ?? freeTrial.budget, { kind: "testRunNotDelivered", plan });
   }

@@ -70,7 +70,7 @@ export async function POST(req: Request): Promise<Response> {
     freeTrial: {
       req,
       budget: m.freeTrialBudget,
-      testRunOf: { promptHash, used: m.testRunUsed, notDelivered: m.testRunNotDelivered },
+      testRunOf: { promptHash, used: m.testRunUsed, accountUsed: m.testRunsUsed, notDelivered: m.testRunNotDelivered },
     },
   });
   if (allowance instanceof Response) return allowance;
