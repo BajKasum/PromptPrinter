@@ -12,6 +12,12 @@ export const TEST_RUN_MAX_BODY_BYTES = TEST_RUN_MAX_PROMPT_CHARS * 4 + 1024;
 export const TEST_RUN_MAX_OUTPUT_TOKENS = 1500;
 
 /**
+ * Mit eigenem Key: denkende Modelle (Gemini, OpenAI) zählen das Denken zur Ausgabe, mit 1500 bliebe oft kein sichtbarer
+ * Text übrig. Die Kosten trägt der eigene Key, die Grenze hält nur ein ganzes Werk fern.
+ */
+export const TEST_RUN_MAX_OUTPUT_TOKENS_BYOK = 6000;
+
+/**
  * Der Systemtext eines Probelaufs. Kein Finn, keine Regeln: so nah wie möglich an "in ein leeres Chatfenster
  * einfügen". Leer geht nicht, Anthropic lehnt einen leeren Systemtext ab.
  */
