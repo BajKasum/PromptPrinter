@@ -105,8 +105,8 @@ export default function TerminalPage() {
             </h2>
             <p className="mt-4 text-[16px] leading-[1.7] text-secondary">
               Du schreibst, was du vorhast. Ich frage einmal kurz, was für die Aufgabe zählt, und dann steht dein
-              Prompt im Kasten. Es ist dasselbe Konto wie im Browser: was du speicherst, findest du dort wieder,
-              und dein KI-Key bleibt in den Einstellungen, das Terminal sieht ihn nie.
+              Prompt im Kasten. Es ist dasselbe Konto wie im Browser, und dein KI-Key bleibt in den
+              Einstellungen, das Terminal sieht ihn nie.
             </p>
             <p className="mt-4 text-[16px] leading-[1.7] text-secondary">
               Arbeitest du mit einem Coding-Agenten, gibt <code className="rounded border border-border bg-surface px-1.5 py-0.5 text-[14px] text-foreground">/an claude</code> oder{" "}
