@@ -174,6 +174,16 @@ describe("activate", () => {
     expect((await res.json()).kind).toBe("invalid_code");
     expect(replaceRecoveryCodes).not.toHaveBeenCalled();
     expect(recordSecurityEvent).not.toHaveBeenCalled();
+    expect(logEvent).toHaveBeenCalledWith("mfa.verify_failed", { userId });
+  });
+
+  it("aktiviert keinen Faktor, wenn schon einer bestätigt ist, und tauscht keine Codes", async () => {
+    signedIn(verified);
+    const res = await POST(post({ action: "activate", factorId: FACTOR, code: "123456" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).kind).toBe("already_enabled");
+    expect(challengeAndVerify).not.toHaveBeenCalled();
+    expect(replaceRecoveryCodes).not.toHaveBeenCalled();
   });
 
   it("scheitern nur die Codes, sagt die Antwort es: der Faktor ist trotzdem aktiv", async () => {
@@ -274,6 +284,13 @@ describe("recover: der Rückweg bei Verlust des Geräts", () => {
     expect(redeemRecoveryCode).toHaveBeenCalledWith(userId, "BCDF-GHJK-LMNP-QRST");
     expect(deleteFactor).toHaveBeenCalledWith({ id: FACTOR, userId });
     expect(deleteRecoveryCodes).toHaveBeenCalledWith(userId);
+    expect(recordSecurityEvent).toHaveBeenCalledWith("mfa.recovery_used", userId);
+  });
+
+  it("scheitert nur das Löschen der übrigen Codes, gilt der Rückweg trotzdem und steht im Protokoll", async () => {
+    deleteRecoveryCodes.mockRejectedValue(new Error("db down"));
+    const res = await POST(post({ action: "recover", recoveryCode: "BCDF-GHJK-LMNP-QRST" }));
+    expect(res.status).toBe(200);
     expect(recordSecurityEvent).toHaveBeenCalledWith("mfa.recovery_used", userId);
   });
 

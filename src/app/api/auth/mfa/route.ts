@@ -193,8 +193,14 @@ async function enroll({ supabase, user, m }: Context): Promise<Response> {
 }
 
 async function activate({ supabase, user, m }: Context, factorId: string, code: string): Promise<Response> {
+  // Nur ein noch unbestätigter Faktor wird aktiviert: sonst tauschte ein Code des aktiven Faktors still alle
+  // Wiederherstellungscodes aus, ohne den Weg über renew-codes und sein Protokoll.
+  if (hasVerifiedFactor(user)) return problem(400, m.mfaAlreadyEnabled, { kind: "already_enabled" });
   const result = await checkCode(supabase, factorId, code);
-  if (result === "rejected") return problem(400, m.mfaCodeInvalid, { kind: "invalid_code" });
+  if (result === "rejected") {
+    logSecurityEvent("mfa.verify_failed", { userId: user.id });
+    return problem(400, m.mfaCodeInvalid, { kind: "invalid_code" });
+  }
   if (result === "failed") {
     captureError("mfa.activate_unavailable", new Error("challengeAndVerify failed"), { userId: user.id });
     return problem(503, m.mfaUnavailable, { kind: "unavailable" });
@@ -234,9 +240,21 @@ async function recover({ user, m }: Context, recoveryCode: string): Promise<Resp
     const { error } = await admin.auth.admin.mfa.deleteFactor({ id: factor.id, userId: user.id });
     if (error) throw error;
   }
-  await deleteRecoveryCodes(user.id);
+  await dropRecoveryCodes(user.id);
   await recordSecurityEvent("mfa.recovery_used", user.id);
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Der Faktor ist da schon entfernt: scheitert nur das Löschen der übrigen Codes, gilt die Aktion trotzdem. Die Codes
+ * eines Kontos ohne Faktor schalten nichts mehr ab, und beim nächsten Einrichten ersetzt replaceRecoveryCodes sie.
+ */
+async function dropRecoveryCodes(userId: string): Promise<void> {
+  try {
+    await deleteRecoveryCodes(userId);
+  } catch (err) {
+    captureError("mfa.recovery_codes_delete_failed", err, { userId });
+  }
 }
 
 async function renewCodes(context: Context, code: string): Promise<Response> {
@@ -259,7 +277,7 @@ async function disable(context: Context, code: string): Promise<Response> {
     captureError("mfa.disable_failed", error, { userId: user.id });
     return problem(503, m.mfaUnavailable, { kind: "unavailable" });
   }
-  await deleteRecoveryCodes(user.id);
+  await dropRecoveryCodes(user.id);
   await recordSecurityEvent("mfa.disabled", user.id);
   return NextResponse.json({ ok: true });
 }
