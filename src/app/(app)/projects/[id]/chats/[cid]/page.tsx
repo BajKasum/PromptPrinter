@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { isUuid } from "@/shared/lib/uuid";
 import { ArrowLeft } from "lucide-react";
 import { Chat } from "@/features/chat/components/chat";
 import { FadeIn } from "@/shared/motion/fade-in";
@@ -26,6 +27,7 @@ type Params = Promise<{ id: string; cid: string }>;
 // aber dessen Kontext-Fläche nicht mit ins Chatfenster zieht.
 export default async function ProjectChatPage({ params }: { params: Params }) {
   const { id, cid } = await params;
+  if (!isUuid(cid)) notFound();
   const project = await getProject(id);
 
   const supabase = await createClient();

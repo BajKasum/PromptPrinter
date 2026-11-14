@@ -8,6 +8,7 @@ import { getFreePromptsLeft, getNeedsOwnKey, getSessionProfile, getSessionUser }
 import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { isUuid } from "@/shared/lib/uuid";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
 
@@ -25,6 +26,7 @@ type Params = Promise<{ id: string }>;
 // refine chat.
 export default async function ChatDetailPage({ params }: { params: Params }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const supabase = await createClient();
   const user = await getSessionUser();

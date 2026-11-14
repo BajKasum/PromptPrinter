@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/server/supabase/server";
+import { isUuid } from "@/shared/lib/uuid";
 import { getSessionUser } from "@/server/session";
 import { orThrow } from "@/server/supabase/query";
 
@@ -46,6 +47,9 @@ export const getProject = cache(async (id: string): Promise<WorkspaceProject> =>
   // auf der Seite. Jetzt teilen sich alle drei denselben.
   const user = await getSessionUser();
   if (!user) redirect("/login");
+
+  // Eine vertippte Kennung ist ein 404, keine Fehlerseite: Postgres lehnte sie mit einem Fehler ab, und der wirft.
+  if (!isUuid(id)) notFound();
 
   const supabase = await createClient();
 
