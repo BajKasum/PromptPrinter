@@ -37,6 +37,10 @@ describe("docs-nav", () => {
       expect(article.updated, article.slug).toMatch(ISO_DATE);
       expect(Number.isNaN(Date.parse(article.updated)), article.slug).toBe(false);
       expect(article.updated >= DOCS_PUBLISHED, article.slug).toBe(true);
+      // Ein eigenes Erscheinungsdatum liegt nach dem der Hilfe und nicht nach der letzten Änderung.
+      if (article.published) {
+        expect(article.published >= DOCS_PUBLISHED && article.published <= article.updated, article.slug).toBe(true);
+      }
       expect(article.updated <= today, article.slug).toBe(true);
     }
   });

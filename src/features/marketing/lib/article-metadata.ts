@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DOCS_PUBLISHED, docHref, type DocArticle } from "@/shared/lib/docs-nav";
+import { docHref, docPublished, type DocArticle } from "@/shared/lib/docs-nav";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 import { siteUrl } from "@/shared/lib/site-url";
 import { AUTHOR_PATH } from "./entity-ids";
@@ -18,7 +18,7 @@ export function docMetadata(doc: DocArticle): Metadata {
     path: docHref(doc.slug),
     image: { url: socialImageUrl("docs", doc.slug), alt: `${doc.title}, Hilfe von PromptPrinter` },
     article: {
-      publishedTime: DOCS_PUBLISHED,
+      publishedTime: docPublished(doc),
       modifiedTime: doc.updated,
       authors: [siteUrl(AUTHOR_PATH)],
     },

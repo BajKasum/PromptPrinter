@@ -20,10 +20,15 @@ export type DocArticle = {
    * search engines to ignore it.
    */
   updated: string;
+  /** Erscheinungsdatum, wenn der Artikel später als die Hilfe dazukam (erster Commit der Seite); sonst DOCS_PUBLISHED. */
+  published?: string;
 };
 
 /** When the docs section first went live (first commit of the articles). */
 export const DOCS_PUBLISHED = "2026-07-25";
+
+/** Wann dieser Artikel erschien: sein eigenes Datum oder das der Hilfe. */
+export const docPublished = (doc: DocArticle) => doc.published ?? DOCS_PUBLISHED;
 
 export type DocGroup = {
   title: string;
@@ -115,6 +120,7 @@ export const DOCS_GROUPS: DocGroup[] = [
       {
         slug: "terminal-anmeldung",
         title: "Terminal und MCP",
+        published: "2026-10-29",
         summary:
           "Das Terminal-Programm: ohne Passwort per Code anmelden, Prompts mit /pp schreiben, über MCP an Claude Code oder Claude Desktop geben und wieder abmelden.",
         updated: "2026-11-08",
