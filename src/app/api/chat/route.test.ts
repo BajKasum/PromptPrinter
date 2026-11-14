@@ -437,6 +437,37 @@ describe("POST /api/chat", () => {
         expect(body).toContain("\"freePromptsLeft\":1");
       });
 
+      it("zählt einen fertigen Prompt auch, wenn der Zug danach gestoppt wird", async () => {
+        const s = slot();
+        reserveFreeTrialTurn.mockResolvedValue(s);
+        const controller = new AbortController();
+        chatCompleteStream.mockImplementation(async function* () {
+          yield "Hier ist dein Prompt:\n\n```text\nRolle: Du bist ...\n```\n\nNoch ein";
+          controller.abort();
+          throw new DOMException("aborted", "AbortError");
+        });
+
+        await readSse(await POST(req(undefined, controller.signal)));
+
+        expect(s.release).not.toHaveBeenCalled();
+        expect(s.promptDelivered).toHaveBeenCalledWith("Rolle: Du bist ...");
+      });
+
+      it("zählt einen Stopp vor dem Ende des Codeblocks nicht als Prompt", async () => {
+        const s = slot();
+        reserveFreeTrialTurn.mockResolvedValue(s);
+        const controller = new AbortController();
+        chatCompleteStream.mockImplementation(async function* () {
+          yield "Hier ist dein Prompt:\n\n```text\nRolle: Du";
+          controller.abort();
+          throw new DOMException("aborted", "AbortError");
+        });
+
+        await readSse(await POST(req(undefined, controller.signal)));
+
+        expect(s.promptDelivered).not.toHaveBeenCalled();
+      });
+
       it("zählt eine Rückfrage nicht als Prompt", async () => {
         const s = slot();
         reserveFreeTrialTurn.mockResolvedValue(s);

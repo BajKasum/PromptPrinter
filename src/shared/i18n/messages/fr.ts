@@ -851,6 +851,8 @@ export const fr: Messages = {
       "Ce prompt est trop long pour un essai.",
     testRunUsed:
       "Tu as déjà essayé ce prompt. Le quota gratuit comprend un essai par prompt.",
+    testRunNotDelivered:
+      "Dans le quota gratuit, tu ne peux essayer qu'un prompt que je t'ai fourni. Avec ta propre clé d'IA, n'importe quel texte fonctionne.",
     chatNotConfigured:
       "La conversation n'est pas correctement configurée pour l'instant. Ce n'est pas de ta faute, réessaie plus tard.",
     chatPersistFailed: "Ta conversation n'a pas pu être enregistrée. Réessaie.",

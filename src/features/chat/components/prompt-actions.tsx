@@ -11,7 +11,8 @@ import { cn } from "@/shared/lib/utils";
 
 // Was man mit dem fertigen Prompt gleich tun kann: ihn in ChatGPT oder Claude öffnen, oder einmal ausprobieren
 // (Probelauf, api/test-run). Beides nimmt die Fassung mit ausgefüllten Platzhaltern, wenn es eine gibt.
-export function PromptActions({ prompt }: { prompt: string }) {
+// `original` ist der Prompt, wie Finn ihn geliefert hat: im Gratis-Rahmen prüft der Server den Probelauf daran.
+export function PromptActions({ prompt, original }: { prompt: string; original?: string }) {
   const t = useT();
   const promptCopied = usePromptCopied();
   const [note, setNote] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function PromptActions({ prompt }: { prompt: string }) {
       const res = await fetch("/api/test-run", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, original: original ?? prompt }),
       });
       if (!res.ok) throw await readHttpFailure(res, t.chat.testRun.failed);
       const json = (await res.json()) as { reply?: string };

@@ -844,6 +844,8 @@ export const en: Messages = {
       "This prompt is too long for a test run.",
     testRunUsed:
       "You've already tried this prompt once. The free allowance includes one test run per prompt.",
+    testRunNotDelivered:
+      "In the free allowance you can only test a prompt I delivered to you. With your own AI key, any text works.",
     chatNotConfigured:
       "The chat isn't set up properly right now. It's not your fault, please try again later.",
     chatPersistFailed: "Your chat couldn't be saved. Please try again.",

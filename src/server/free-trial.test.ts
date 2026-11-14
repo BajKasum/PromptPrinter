@@ -3,8 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/server/security/redis-client", () => ({ redis: null }));
 vi.mock("@/shared/lib/observability", () => ({ logWarning: vi.fn() }));
 
-const { __resetFreeTrialMemoryForTests, freePromptsLeft, reserveFreeTrialTurn, FREE_TRIAL_TURNS_PER_IP_DAY } =
-  await import("@/server/free-trial");
+const {
+  __markDeliveredForTests,
+  __resetFreeTrialMemoryForTests,
+  deliveredPromptHash,
+  freePromptsLeft,
+  reserveFreeTrialTestRun,
+  reserveFreeTrialTurn,
+  FREE_TRIAL_TURNS_PER_IP_DAY,
+} = await import("@/server/free-trial");
 const { FREE_TRIAL } = await import("@/shared/lib/plans");
 
 // Ohne Redis zählt in Tests und Entwicklung eine Map (free-trial.ts); dieselbe Logik läuft in Produktion über Redis.
@@ -28,7 +35,7 @@ describe("Gratis-Rahmen", () => {
     for (let i = FREE_TRIAL.prompts - 1; i >= 0; i--) {
       const slot = await turn("u1");
       if (typeof slot === "string") throw new Error(slot);
-      expect(await slot.promptDelivered()).toBe(i);
+      expect(await slot.promptDelivered(`Prompt ${i}`)).toBe(i);
     }
     expect(await turn("u1")).toBe("exhausted");
     expect(await freePromptsLeft("u1")).toBe(0);
@@ -78,8 +85,20 @@ describe("Gratis-Rahmen", () => {
 });
 
 describe("Probelauf im Gratis-Rahmen", () => {
+  it("gilt nur einem Prompt, den Finn dem Konto geliefert hat", async () => {
+    const hash = deliveredPromptHash("Rolle: Du bist ein Tutor.");
+    expect(await reserveFreeTrialTestRun(req(), "d1", hash)).toBe("notDelivered");
+
+    const slot = await turn("d1");
+    if (typeof slot === "string") throw new Error(slot);
+    await slot.promptDelivered("Rolle: Du bist ein Tutor.\r\n");
+    expect(typeof (await reserveFreeTrialTestRun(req(), "d1", hash))).toBe("object");
+    // Ein anderes Konto hat diesen Prompt nicht bekommen.
+    expect(await reserveFreeTrialTestRun(req(), "d2", hash)).toBe("notDelivered");
+  });
+
   it("einer je Prompt, zählt weder als Prompt noch als Zug", async () => {
-    const { reserveFreeTrialTestRun } = await import("@/server/free-trial");
+    __markDeliveredForTests("t1", "hash-a");
     const first = await reserveFreeTrialTestRun(req(), "t1", "hash-a");
     expect(typeof first).toBe("object");
     expect(await reserveFreeTrialTestRun(req(), "t1", "hash-a")).toBe("used");
@@ -89,7 +108,7 @@ describe("Probelauf im Gratis-Rahmen", () => {
   });
 
   it("höchstens so viele wie Gratis-Prompts, und ein gescheiterter gibt seinen Platz zurück", async () => {
-    const { reserveFreeTrialTestRun } = await import("@/server/free-trial");
+    for (const h of ["h0", "h1", "h2", "h3", "h-neu"]) __markDeliveredForTests("t2", h);
     const failed = await reserveFreeTrialTestRun(req(), "t2", "h0");
     if (typeof failed === "string") throw new Error(failed);
     await failed.release();
@@ -101,7 +120,7 @@ describe("Probelauf im Gratis-Rahmen", () => {
 
   it("zählt gegen das Tagesbudget des Rahmens", async () => {
     vi.stubEnv("FREE_TRIAL_DAILY_CALLS", "1");
-    const { reserveFreeTrialTestRun } = await import("@/server/free-trial");
+    __markDeliveredForTests("t3", "h");
     expect(typeof (await reserveFreeTrialTestRun(req("192.0.2.7"), "t3", "h"))).toBe("object");
     expect(await turn("t4", "192.0.2.8")).toBe("budget");
   });

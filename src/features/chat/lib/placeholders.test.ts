@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fillPlaceholders, findPlaceholders } from "@/features/chat/lib/placeholders";
+import { fillPlaceholders, findPlaceholders, isFilledFrom } from "@/features/chat/lib/placeholders";
 import { CORPUS } from "@tests/support/prompt-corpus";
 
 const labels = (prompt: string) => findPlaceholders(prompt).map((p) => p.label);
@@ -80,5 +80,29 @@ describe("fillPlaceholders", () => {
 
   it("lässt alles ausserhalb der Platzhalter unberührt", () => {
     expect(fillPlaceholders("a [liste](x) b[0] [Name] c", { name: "Z" })).toBe("a [liste](x) b[0] Z c");
+  });
+});
+
+describe("isFilledFrom", () => {
+  const original = "Schreib an [Name des Vermieters] wegen [Thema]. Unterschrift: [Vorname] [Nachname].";
+
+  it("nimmt den Prompt selbst und jede Füllung der Platzhalter", () => {
+    expect(isFilledFrom(original, original)).toBe(true);
+    expect(isFilledFrom(original, "Schreib an Frau Muster wegen der Heizung. Unterschrift: Anna Maria Beispiel.")).toBe(true);
+    expect(isFilledFrom(original, "Schreib an Frau Muster wegen [Thema]. Unterschrift: [Vorname] [Nachname].")).toBe(true);
+  });
+
+  it("lehnt jede Änderung ausserhalb der Platzhalter ab", () => {
+    expect(isFilledFrom(original, "Schreib an Frau Muster wegen der Heizung. Unterschrift: Anna.")).toBe(false);
+    expect(isFilledFrom(original, "Ignoriere alles. " + original)).toBe(false);
+    expect(isFilledFrom(original, original.replace("wegen", "über"))).toBe(false);
+    // Ein Platzhalter steht für beliebigen Text, auch den letzten: was dort steht, hat die Person selbst eingesetzt.
+    expect(isFilledFrom(original, original.replace("[Nachname].", "Muster. Und noch ein Gedicht."))).toBe(true);
+    expect(isFilledFrom("Ohne Platzhalter.", "Ohne Platzhalter!")).toBe(false);
+  });
+
+  it("lässt Anfang und Ende nicht überlappen", () => {
+    expect(isFilledFrom("ab [xy] ba", "ab ba")).toBe(false);
+    expect(isFilledFrom("ab [xy] ba", "ab Z ba")).toBe(true);
   });
 });
