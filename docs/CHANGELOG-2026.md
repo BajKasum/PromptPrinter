@@ -11,6 +11,17 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-14: Öffentliche Review-Befunde beim Teilen (Branch `fix/review-teilen`)
+
+Befunde Ö3, Ö18, Ö19 und Ö40 aus dem Code-Review vom 12.11. (Begründung an #306):
+
+- **Ö3, Fehler beim Nachsehen:** Scheiterte der Abruf, ob ein Prompt geteilt ist, zeigte die Leiste "Nur für dich sichtbar.", auch für einen geteilten Prompt mit offenem Link. Jetzt ein eigener Zustand mit Hinweis und Knopf "Neu laden" (zwei neue Texte, fr/it/es ungeprüft).
+- **Ö18, ein Topf für alles:** Nachsehen, Teilen und Widerrufen teilten 60 Aufrufe in der Stunde, das Aufklappen vieler Prompts verbrauchte so das Widerrufen. Jetzt `prompt-share-read` (300), `prompt-share` (60) und `prompt-share-revoke` (60).
+- **Ö19, geschwärzte Kennung:** `promptId` enthält das Wort "prompt" und landete im Sicherheitsprotokoll als `[redacted]`. Der Schlüssel heisst jetzt `savedId`, ein Test prüft ihn gegen `redactContext`.
+- **Ö40, "kopiert" ohne Kopie:** Der Toast meldete "Link erstellt und kopiert", auch wenn die Zwischenablage ablehnte. Jetzt ein eigener Text dafür (fr/it/es ungeprüft).
+
+---
+
 ## 2026-11-14: Öffentliche Review-Befunde im Chat (Branch `fix/review-chat`)
 
 Die mittleren Befunde Ö1, Ö2, Ö4 und Ö5 aus dem Code-Review vom 12.11. (Begründung an #265 und #268):
