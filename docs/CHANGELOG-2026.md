@@ -11,6 +11,15 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-17: Open Source unter MIT (Branch `chore/open-source-mit`)
+
+- **Kasums Entscheid:** PromptPrinter wird kein Produkt mehr, sondern ein offenes Projekt fürs Portfolio, das jeder mit freien Modellen nutzen kann. Erster Schritt: die Lizenz.
+- **`LICENSE`:** MIT statt "All Rights Reserved, nur zum Ansehen", wie schon `promptprinter-cli` und `promptprinter-pp`. `package.json` trägt `"license": "MIT"`, bleibt `private` (kein npm-Paket).
+- **Ausgenommen:** Name, Logo (`docs/brand/`) und die Bilder von Finn (`public/mascot/`). Die Bilder sind mit Higgsfield entstanden (`z_image`, `nano_banana_pro`); welche Rechte daran weitergegeben werden dürfen, ist nicht geprüft, deshalb gibt die Lizenz sie nicht weiter. Hinweis im README und in `docs/brand/logo/README.md`, nicht im Lizenztext, damit GitHub die Lizenz als MIT erkennt.
+- **Tag `v1-saas`** auf `0fda41d`: der letzte Stand als SaaS (Pro, Lemon Squeezy, alte Lizenz), bevor die Bezahlteile ausgebaut werden.
+
+---
+
 ## 2026-11-14: Review-Befunde in Server, Gedächtnis und Anbietern (Branch `fix/review-server-2`)
 
 - **Ö17, Gedächtnis:** Scheiterte nach dem Modellaufruf nur das Speichern, gingen alle Reservierungen zurück, obwohl das Modell gearbeitet hatte. Jetzt bleiben sie (`BrainSaveError`), wie im Chat bei `persist_failed`.
