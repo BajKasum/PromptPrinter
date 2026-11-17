@@ -4,6 +4,8 @@ Das Original-Finn (`public/mascot/dolphin.png`, nur der transparente Rand abgesc
 unverändert) links, daneben der Schriftzug `promptprinter` in Kleinbuchstaben: "prompt" in Blau,
 "printer" in Schwarz, auf weißem Grund.
 
+Logo, Name und die Bilder von Finn fallen nicht unter die MIT-Lizenz des Codes (README, "Lizenz").
+
 ## Dateien
 
 | Datei | Wofür |

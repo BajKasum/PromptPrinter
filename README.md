@@ -12,7 +12,7 @@ liefert dir den fertigen Prompt.
 
 [![Live](https://img.shields.io/badge/live-promptprinter.app-2f6a9e?style=flat-square)](https://promptprinter.app)
 [![CI](https://img.shields.io/github/actions/workflow/status/BajKasum/PromptPrinter/ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/BajKasum/PromptPrinter/actions/workflows/ci.yml)
-[![Lizenz](https://img.shields.io/badge/lizenz-all%20rights%20reserved-lightgrey?style=flat-square)](LICENSE)
+[![Lizenz](https://img.shields.io/badge/lizenz-MIT-2f6a9e?style=flat-square)](LICENSE)
 
 </div>
 
@@ -62,8 +62,13 @@ Design-Regeln in [docs/DESIGN.md](docs/DESIGN.md), das Logo in [docs/brand/logo]
 
 ## Lizenz
 
-Der Quellcode ist **nur zum Ansehen** veröffentlicht. Nutzen, Kopieren, Verändern
-und Weitergeben sind nicht erlaubt. Die Details stehen in [LICENSE](LICENSE).
+Der Quellcode steht unter der [MIT-Lizenz](LICENSE): nutzen, verändern, selbst
+betreiben und weitergeben ist erlaubt. Der Stand als SaaS (mit Pro und Lemon Squeezy)
+ist als Tag [`v1-saas`](https://github.com/BajKasum/PromptPrinter/tree/v1-saas) erhalten.
+
+Ausgenommen sind der Name PromptPrinter, das Logo (`docs/brand/`) und die Bilder von
+Finn (`public/mascot/`). Ein Fork darf sie zum Ausprobieren behalten, eine eigene
+Veröffentlichung bekommt einen eigenen Namen und eigene Bilder.
 
 <div align="center">
 

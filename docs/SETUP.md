@@ -1,7 +1,8 @@
 # Setup, Betrieb und Aufbau
 
-Für den Betreiber des Projekts. Die [Lizenz](../LICENSE) erlaubt anderen nur das
-Ansehen des Codes, nicht das Ausführen. Was PromptPrinter ist und kann, steht
+Für den Betrieb von promptprinter.app und für alle, die das Projekt selbst betreiben
+wollen: der Code steht unter der [MIT-Lizenz](../LICENSE), Name, Logo und die Bilder von
+Finn sind ausgenommen (README, "Lizenz"). Was PromptPrinter ist und kann, steht
 im [README](../README.md).
 
 ## Tech-Stack

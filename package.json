@@ -2,6 +2,7 @@
   "name": "promptprinter",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "//engines": [
     "One Node major for everything we test and ship (audit M8, 06.10.2026):",
     "this field, .nvmrc, the setup-node steps (they read .nvmrc), the Dockerfile and",
