@@ -66,6 +66,28 @@ export async function assertPublicHttpsUrl(rawUrl: string): Promise<void> {
   }
 }
 
+/**
+ * Der Modell-Endpunkt des Betreibers (`LLM_BASE_URL`, server/llm/config.ts). Er kommt aus der Umgebung, nicht aus einer
+ * Eingabe, und gilt trotzdem nur im Einzelbetrieb (`selfHosted`, server/self-hosted.ts) als vertrauenswürdig: dann darf
+ * er auf dem eigenen Rechner liegen (Ollama auf `http://localhost:11434/v1`), im eigenen Netz oder auf dem Docker-Host,
+ * und http sprechen. Ohne Einzelbetrieb gilt dieselbe Prüfung wie für einen Endpunkt, den ein Nutzer einträgt.
+ *
+ * Endpunkte der Nutzer (BYOK) laufen nie hierüber, immer über `assertPublicHttpsUrl`: sonst könnte jedes Konto einer
+ * eigenen Installation den Server Anfragen an das Netz des Betreibers schicken lassen.
+ */
+export async function assertServerEndpointUrl(rawUrl: string, selfHosted: boolean): Promise<void> {
+  if (!selfHosted) return assertPublicHttpsUrl(rawUrl);
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("Ungültige URL.");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("Nur http:// und https:// werden unterstützt.");
+  }
+}
+
 function isPrivateOrReservedIp(ip: string): boolean {
   const version = isIP(ip);
   if (version === 4) return isPrivateIPv4(ip);

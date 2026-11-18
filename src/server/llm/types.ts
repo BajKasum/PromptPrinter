@@ -5,7 +5,8 @@ import { extractStatusCode } from "@/server/llm-retry";
 // Typen und Fehlerklassen, die jeder Anbieter-Pfad und jeder Aufrufer teilt.
 // (Teil von src/server/llm/, siehe index.ts)
 
-export type LlmConfig = { provider: "zai" | "gemini"; model: string };
+/** `endpoint`: der eigene OpenAI-kompatible Endpunkt des Betreibers (LLM_BASE_URL, llm/config.ts). */
+export type LlmConfig = { provider: "zai" | "gemini" | "endpoint"; model: string };
 
 /** Providers a user can bring their own key for (settings → BYOK). */
 export type ByokProvider = "anthropic" | "openai" | "gemini" | "custom";

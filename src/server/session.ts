@@ -7,6 +7,7 @@ import { createClient } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
 import { requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
 import { freePromptsLeft } from "@/server/free-trial";
+import { selfHostedEndpointActive } from "@/server/llm";
 
 // Die eine Stelle, die pro Request nach dem angemeldeten Nutzer und seinem
 // Profil fragt (Planpunkt B-3).
@@ -104,6 +105,8 @@ const getKeyState = cache(async (): Promise<{ needsKey: boolean; freePromptsLeft
   const outside = { needsKey: false, freePromptsLeft: null };
   const user = await getSessionUser();
   if (!user) return outside;
+  // Im Einzelbetrieb chattet jedes Konto auf dem Endpunkt des Betreibers, ohne Plan-Grenze (server/model-call.ts).
+  if (selfHostedEndpointActive()) return outside;
 
   const profile = await getSessionProfile();
   const { plan, isAdmin } = resolvePlan(profile);

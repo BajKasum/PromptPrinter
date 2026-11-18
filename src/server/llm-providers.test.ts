@@ -111,6 +111,7 @@ describe('öffentliche Fläche von "@/server/llm"', () => {
       "chatCompleteStream",
       "classifyLlmFailure",
       "llmConfig",
+      "selfHostedEndpointActive",
       "toAnthropicMessages",
       "toGeminiContents",
       "toOpenAiSdkMessages",
