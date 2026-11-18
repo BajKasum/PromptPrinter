@@ -65,3 +65,30 @@ describe("GET /api/health", () => {
     expect(GET().headers.get("cache-control")).toBe("no-store");
   });
 });
+
+describe("GET /api/health im Einzelbetrieb (SELF_HOSTED=1)", () => {
+  function selfHostedWithoutUpstash() {
+    setAllRequired();
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.VERCEL;
+    process.env.SELF_HOSTED = "1";
+  }
+
+  it("ist ohne Upstash gesund: das Ratenlimit zählt dort im Speicher", () => {
+    selfHostedWithoutUpstash();
+    expect(GET().status).toBe(200);
+  });
+
+  it("verlangt Supabase weiter", () => {
+    selfHostedWithoutUpstash();
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    expect(GET().status).toBe(503);
+  });
+
+  it("gilt auf Vercel nicht: dort bleibt Upstash Pflicht", () => {
+    selfHostedWithoutUpstash();
+    process.env.VERCEL = "1";
+    expect(GET().status).toBe(503);
+  });
+});
