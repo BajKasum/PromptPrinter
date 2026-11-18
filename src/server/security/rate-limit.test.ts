@@ -221,6 +221,37 @@ describe("rateLimit, Upstash-missing behavior differs by environment", () => {
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(4);
   });
+
+  it("zählt im Einzelbetrieb (SELF_HOSTED=1) in Produktion im Speicher, mit der vollen Grenze", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SELF_HOSTED", "1");
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit } = await import("@/server/security/rate-limit");
+
+    const ceiling = { limit: 2, windowMs: 60_000 };
+    expect(await rateLimit("ip:self-hosted", ceiling)).toMatchObject({ allowed: true, remaining: 1 });
+    expect(await rateLimit("ip:self-hosted", ceiling)).toMatchObject({ allowed: true, remaining: 0 });
+    // Die Grenze gilt weiter: der dritte Aufruf im Fenster wird abgelehnt.
+    expect(await rateLimit("ip:self-hosted", ceiling)).toMatchObject({ allowed: false });
+  });
+
+  it.each([
+    ["SELF_HOSTED=1 auf Vercel", { SELF_HOSTED: "1", VERCEL: "1" }],
+    ["SELF_HOSTED=true", { SELF_HOSTED: "true", VERCEL: "" }],
+    ["SELF_HOSTED=0", { SELF_HOSTED: "0", VERCEL: "" }],
+  ])("bleibt in Produktion geschlossen: %s", async (_label, env) => {
+    vi.stubEnv("NODE_ENV", "production");
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+    vi.resetModules();
+    const { rateLimit } = await import("@/server/security/rate-limit");
+
+    expect(await rateLimit("ip:strict", { limit: 5, windowMs: 60_000 })).toMatchObject({ allowed: false, remaining: 0 });
+  });
 });
 
 // QA finding P-5: the fallback map only ever overwrote expired entries, never

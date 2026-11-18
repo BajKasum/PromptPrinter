@@ -1,6 +1,7 @@
 import "server-only";
 
 import { normalizeCheckoutUrl } from "@/shared/lib/lemon-squeezy";
+import { hasSelfHostedOnVercel, isSelfHosted } from "@/server/self-hosted";
 
 // Startup validation of the environment (QA finding S-2).
 //
@@ -123,12 +124,17 @@ function conditionalRequirements(env: EnvLike): EnvRequirement[] {
   ];
 }
 
+/** Im Einzelbetrieb (server/self-hosted.ts) zählt das Ratenlimit im Speicher des einen Prozesses: Upstash ist dort keine Pflicht. */
+const OPTIONAL_WHEN_SELF_HOSTED = new Set(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
+
 /** Missing required variables for the given environment, in declaration order. */
 export function missingProductionEnv(
   env: EnvLike = process.env
 ): EnvRequirement[] {
-  return [...REQUIRED_IN_PRODUCTION, ...conditionalRequirements(env)].filter((requirement) =>
-    isBlank(env[requirement.name])
+  const selfHosted = isSelfHosted(env);
+  return [...REQUIRED_IN_PRODUCTION, ...conditionalRequirements(env)].filter(
+    (requirement) =>
+      isBlank(env[requirement.name]) && !(selfHosted && OPTIONAL_WHEN_SELF_HOSTED.has(requirement.name))
   );
 }
 
@@ -141,9 +147,31 @@ export function hasNoTrustedClientIp(env: EnvLike = process.env): boolean {
   return env.NODE_ENV === "production" && isBlank(env.VERCEL) && isBlank(env.TRUSTED_PROXY_HOPS);
 }
 
-/** True when neither server-side model provider is configured (stub mode). */
+/** True when no server-side model provider is configured (stub mode). Der eigene Endpunkt braucht Adresse UND Modell. */
 export function hasNoModelProvider(env: EnvLike = process.env): boolean {
-  return isBlank(env.ZAI_API_KEY) && isBlank(env.GEMINI_API_KEY);
+  return isBlank(env.ZAI_API_KEY) && isBlank(env.GEMINI_API_KEY) && !hasModelEndpoint(env);
+}
+
+function hasModelEndpoint(env: EnvLike): boolean {
+  return !isBlank(env.LLM_BASE_URL) && !isBlank(env.LLM_MODEL);
+}
+
+/**
+ * Was am eigenen Modell-Endpunkt (LLM_BASE_URL, server/llm/config.ts) nicht stimmt, sonst null. Alles davon startet,
+ * der Chat antwortet dann aber nicht über diesen Endpunkt: deshalb eine Warnung mit dem Grund.
+ *
+ * - `no_model`: Adresse ohne LLM_MODEL. Ein Modellname ist Pflicht, einen Standard gibt es für fremde Server nicht.
+ * - `shadowed`: ZAI_API_KEY oder GEMINI_API_KEY ist auch gesetzt und kommt zuerst.
+ * - `needs_self_hosted`: eine http-Adresse ohne SELF_HOSTED=1. Der Aufruf scheitert dann an derselben Prüfung wie ein
+ *   Endpunkt, den ein Nutzer einträgt (server/security/url-safety.ts); die prüft auch https-Ziele im eigenen Netz,
+ *   aber erst beim Aufruf, weil sie den Namen auflösen muss.
+ */
+export function modelEndpointProblem(env: EnvLike = process.env): "no_model" | "shadowed" | "needs_self_hosted" | null {
+  if (isBlank(env.LLM_BASE_URL)) return null;
+  if (isBlank(env.LLM_MODEL)) return "no_model";
+  if (!isBlank(env.ZAI_API_KEY) || !isBlank(env.GEMINI_API_KEY)) return "shadowed";
+  if (isSelfHosted(env)) return null;
+  return env.LLM_BASE_URL!.trim().toLowerCase().startsWith("https://") ? null : "needs_self_hosted";
 }
 
 /**
@@ -234,13 +262,33 @@ export function assertEnv(env: EnvLike = process.env): void {
   const isProduction = env.NODE_ENV === "production";
   const missing = missingProductionEnv(env);
 
+  if (hasSelfHostedOnVercel(env)) {
+    throw new Error(
+      "[env] SELF_HOSTED=1 gilt nur für eine Installation in einem Prozess (npm start, Docker). Auf Vercel " +
+        "laufen viele Instanzen, ein Ratenlimit im Speicher begrenzt dort nichts. Die Variable entfernen."
+    );
+  }
+
   if (hasNoModelProvider(env)) {
     // Not fatal: stub mode is a deliberate feature so the whole flow stays
     // testable without a key. It is a real problem in production though, where
     // it silently serves a placeholder answer instead of a real one.
     console.warn(
-      "[env] Kein Modell-Provider konfiguriert (ZAI_API_KEY / GEMINI_API_KEY). " +
+      "[env] Kein Modell-Provider konfiguriert (ZAI_API_KEY / GEMINI_API_KEY / LLM_BASE_URL mit LLM_MODEL). " +
         "Der Chat antwortet im Stub-Modus mit einer Demo-Antwort."
+    );
+  }
+
+  const endpointProblem = modelEndpointProblem(env);
+  if (endpointProblem) {
+    console.warn(
+      "[env] LLM_BASE_URL ist gesetzt, wird aber nicht genutzt: " +
+        {
+          no_model: "LLM_MODEL fehlt (der Name des Modells auf diesem Server, etwa qwen3).",
+          shadowed: "ZAI_API_KEY oder GEMINI_API_KEY ist auch gesetzt und kommt zuerst. Für den eigenen Endpunkt beide leeren.",
+          needs_self_hosted:
+            "die Adresse ist http. Das ist nur mit SELF_HOSTED=1 erlaubt (docs/SETUP.md, \"Selbst betreiben\").",
+        }[endpointProblem]
     );
   }
 

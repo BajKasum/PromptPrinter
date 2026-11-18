@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isSelfHosted } from "@/server/self-hosted";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,9 +28,13 @@ const REQUIRED_FOR_SIGNED_IN_USE = [
   "UPSTASH_REDIS_REST_TOKEN",
 ] as const;
 
+// Im Einzelbetrieb zählt das Ratenlimit im Speicher (server/self-hosted.ts), Upstash fehlt dort mit Absicht.
+const OPTIONAL_WHEN_SELF_HOSTED: readonly string[] = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+
 export function GET() {
+  const selfHosted = isSelfHosted();
   const configured = REQUIRED_FOR_SIGNED_IN_USE.every(
-    (name) => (process.env[name] ?? "").trim() !== ""
+    (name) => (process.env[name] ?? "").trim() !== "" || (selfHosted && OPTIONAL_WHEN_SELF_HOSTED.includes(name))
   );
 
   // 503 rather than a 200 carrying {status:"degraded"}: an uptime monitor and a

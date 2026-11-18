@@ -9,7 +9,8 @@ import "server-only";
  * in serverless/multi-instance production (each instance gets its own N
  * requests, multiplying the real ceiling by however many instances are warm).
  * In production without Upstash configured, requests fail closed instead of
- * silently running under a limiter that no longer limits anything global.
+ * silently running under a limiter that no longer limits anything global, außer im Einzelbetrieb (server/self-hosted.ts):
+ * ein einzelner Prozess, für den die Map im Speicher die ganze Grenze ist.
  */
 import { Ratelimit } from "@upstash/ratelimit";
 import { logWarning } from "@/shared/lib/observability";
@@ -17,6 +18,7 @@ import { logRateLimited } from "@/server/security/security-log";
 import { redis } from "@/server/security/redis-client";
 import { reserveCounter } from "@/server/security/reserve-counter";
 import { addressBucket } from "@/server/security/url-safety";
+import { isSelfHosted } from "@/server/self-hosted";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -145,7 +147,7 @@ async function checkRateLimit(
     }
   }
 
-  if (isProduction) {
+  if (isProduction && !isSelfHosted()) {
     // Upstash was never configured at all, not a transient outage, a missing
     // setup step. Refuse instead of quietly enforcing a per-instance limit
     // that isn't a real ceiling anymore (see the module comment above).
