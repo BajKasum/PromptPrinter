@@ -12,7 +12,11 @@ const checkCliSession = vi.fn();
 vi.mock("@/server/cli-login/sessions", () => ({ checkCliSession: (...a: unknown[]) => checkCliSession(...a) }));
 
 const llmConfig = vi.fn();
-vi.mock("@/server/llm", () => ({ llmConfig: () => llmConfig() }));
+const selfHostedEndpointActive = vi.fn();
+vi.mock("@/server/llm", () => ({
+  llmConfig: () => llmConfig(),
+  selfHostedEndpointActive: () => selfHostedEndpointActive(),
+}));
 
 const rateLimit = vi.fn();
 vi.mock("@/server/security/rate-limit", () => ({
@@ -63,6 +67,7 @@ beforeEach(() => {
   createClientForRequest.mockResolvedValue(client());
   checkCliSession.mockResolvedValue("ok");
   llmConfig.mockReturnValue({ provider: "zai" });
+  selfHostedEndpointActive.mockReturnValue(false);
   tables.profiles = { data: { plan: "free", is_admin: false }, error: null };
   tables.user_api_keys = { data: [], error: null };
   freePromptsLeft.mockResolvedValue(0);
@@ -117,6 +122,19 @@ describe("GET /api/cli/me", () => {
     tables.profiles = { data: { plan: "pro", is_admin: false }, error: null };
     llmConfig.mockReturnValue({ provider: "gemini" });
     expect((await (await GET(get("Bearer tok"))).json()).needsConsent).toBe(false);
+  });
+
+  it("Einzelbetrieb auf dem Endpunkt des Betreibers: Free ohne Key braucht weder Key noch Gratis-Rahmen noch Zustimmung", async () => {
+    selfHostedEndpointActive.mockReturnValue(true);
+    llmConfig.mockReturnValue({ provider: "endpoint", model: "qwen3" });
+    expect(await (await GET(get("Bearer tok"))).json()).toEqual({
+      email: "du@beispiel.ch",
+      plan: "free",
+      hasOwnKey: false,
+      needsOwnKey: false,
+      needsConsent: false,
+    });
+    expect(freePromptsLeft).not.toHaveBeenCalled();
   });
 
   it("ein Admin auf Free braucht keinen eigenen Key", async () => {

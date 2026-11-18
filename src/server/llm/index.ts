@@ -10,7 +10,9 @@ import "server-only";
 // the caller has no BYOK override:
 //   1. Z.ai: ZAI_API_KEY (primary; OpenAI-compatible chat/completions)
 //   2. Gemini: GEMINI_API_KEY (kept as secondary: the code existed and works)
-//   3. none: the routes fall back to their stub responses, so the whole
+//   3. der eigene Endpunkt des Betreibers: LLM_BASE_URL + LLM_MODEL (OpenAI-kompatibel,
+//      etwa Ollama; über den Weg des Custom-Slots, custom.ts)
+//   4. none: the routes fall back to their stub responses, so the whole
 //      flow stays testable without any key (deliberate, see CLAUDE.md).
 // With BOTH server keys set, Gemini is also the fallback when Z.ai is DOWN, not
 // just the choice when Z.ai is missing: llm-failover.ts decides when (after the
@@ -49,7 +51,7 @@ import "server-only";
 
 export { analyzeComplete } from "@/server/llm/analyze";
 export { chatComplete, chatCompleteStream } from "@/server/llm/chat";
-export { llmConfig, zaiModelFor } from "@/server/llm/config";
+export { llmConfig, selfHostedEndpointActive, zaiModelFor } from "@/server/llm/config";
 export { toAnthropicMessages, toGeminiContents, toOpenAiSdkMessages } from "@/server/llm/messages";
 export { LlmEmptyReplyError, classifyLlmFailure } from "@/server/llm/types";
 export type {

@@ -1,11 +1,14 @@
 import "server-only";
 
-import { assertPublicHttpsUrl } from "@/server/security/url-safety";
+import { assertPublicHttpsUrl, assertServerEndpointUrl } from "@/server/security/url-safety";
+import { isSelfHosted } from "@/server/self-hosted";
 import { callWithFailover, failoverEnabled, type ServerProvider } from "@/server/llm-failover";
 import { withRetry } from "@/server/llm-retry";
 import { anthropicAnalyze } from "@/server/llm/anthropic";
 import {
   anthropicModel,
+  endpointApiKey,
+  endpointChatUrl,
   geminiByokModel,
   openaiModel,
   ZAI_ENDPOINT,
@@ -116,7 +119,7 @@ async function analyzeCompleteOnce(opts: {
         label: "Custom-Provider",
         // Der Endpunkt stammt aus Nutzereingabe, also vor JEDEM Request gegen
         // SSRF prüfen — dieselbe Regel wie in customComplete (Kritik-Pass S-1).
-        checkUrl: true,
+        endpointCheck: "byok",
         apiKey,
         system: opts.system,
         text: opts.text,
@@ -148,8 +151,23 @@ async function analyzeCompleteOnce(opts: {
       endpoint: ZAI_ENDPOINT,
       model,
       label: "Z.ai",
-      checkUrl: false,
+      endpointCheck: "fixed",
       apiKey: zaiApiKey() ?? "",
+      system: opts.system,
+      text: opts.text,
+      images,
+      maxOutputTokens,
+      signal: opts.signal,
+    });
+  }
+
+  if (config.provider === "endpoint") {
+    return openAiCompatibleAnalyze({
+      endpoint: endpointChatUrl(),
+      model: config.model,
+      label: "LLM-Endpunkt",
+      endpointCheck: "server",
+      apiKey: endpointApiKey(),
       system: opts.system,
       text: opts.text,
       images,
@@ -169,12 +187,16 @@ async function analyzeCompleteOnce(opts: {
   );
 }
 
-/** Z.ai und der Custom-Slot sprechen dieselbe API, also auch denselben Code. */
+/**
+ * Z.ai, der Custom-Slot und der eigene Endpunkt sprechen dieselbe API, also auch denselben Code. `endpointCheck`:
+ * `fixed` ist die feste Adresse von Z.ai, `byok` eine Nutzer-Adresse (volle SSRF-Prüfung), `server` LLM_BASE_URL des
+ * Betreibers (lokal nur im Einzelbetrieb, llm/custom.ts erklärt die Regel).
+ */
 async function openAiCompatibleAnalyze(args: {
   endpoint: string;
   model: string;
   label: string;
-  checkUrl: boolean;
+  endpointCheck: "fixed" | "byok" | "server";
   apiKey: string;
   system: string;
   text: string;
@@ -182,14 +204,15 @@ async function openAiCompatibleAnalyze(args: {
   maxOutputTokens: number;
   signal?: AbortSignal;
 }): Promise<AnalysisResult> {
-  if (args.checkUrl) await assertPublicHttpsUrl(args.endpoint);
+  if (args.endpointCheck === "byok") await assertPublicHttpsUrl(args.endpoint);
+  if (args.endpointCheck === "server") await assertServerEndpointUrl(args.endpoint, isSelfHosted());
 
   const res = await fetch(args.endpoint, {
     method: "POST",
     redirect: "error",
     signal: withProviderTimeout(args.signal),
     headers: {
-      authorization: `Bearer ${args.apiKey}`,
+      ...(args.apiKey ? { authorization: `Bearer ${args.apiKey}` } : {}),
       "content-type": "application/json",
     },
     body: JSON.stringify({
@@ -203,7 +226,8 @@ async function openAiCompatibleAnalyze(args: {
       // Wie im Chat: GLM entscheidet sonst selbst, ob es "denkt", verbraucht
       // das Ausgabebudget für unsichtbare Zwischenschritte und liefert am
       // Ende ein leeres content-Feld. Aus, oder knapp bei Modellen, die immer denken.
-      ...zaiThinkingParams(args.model),
+      // Nicht an den eigenen Endpunkt: das sind Felder von Z.ai, ein fremder Server kennt sie nicht.
+      ...(args.endpointCheck === "server" ? {} : zaiThinkingParams(args.model)),
     }),
   });
 

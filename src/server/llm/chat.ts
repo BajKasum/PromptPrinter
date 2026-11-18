@@ -6,6 +6,8 @@ import { anthropicComplete, anthropicCompleteStream } from "@/server/llm/anthrop
 import {
   anthropicModel,
   DEFAULT_MAX_OUTPUT_TOKENS,
+  endpointApiKey,
+  endpointChatUrl,
   geminiByokModel,
   openaiModel,
   geminiApiKey,
@@ -206,6 +208,19 @@ async function* chatCompleteStreamOnce(opts: {
       opts.messages,
       maxOutputTokens,
       opts.signal
+    );
+    return;
+  }
+  if (config.provider === "endpoint") {
+    yield* customCompleteStream(
+      endpointChatUrl(),
+      config.model,
+      opts.system,
+      opts.messages,
+      maxOutputTokens,
+      endpointApiKey(),
+      opts.signal,
+      "server"
     );
     return;
   }

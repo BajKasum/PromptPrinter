@@ -1,6 +1,7 @@
 import "server-only";
 
-import { assertPublicHttpsUrl } from "@/server/security/url-safety";
+import { assertPublicHttpsUrl, assertServerEndpointUrl } from "@/server/security/url-safety";
+import { isSelfHosted } from "@/server/self-hosted";
 import {
   CUSTOM_FIRST_CHUNK_TIMEOUT_MS,
   MAX_RESPONSE_BYTES,
@@ -15,41 +16,55 @@ import {
 import { toOpenAiMessages } from "@/server/llm/messages";
 import type { LlmMessage, LlmResult } from "@/server/llm/types";
 
-// Der Custom-Slot (BYOK): jeder OpenAI-kompatible Endpunkt. (Teil von src/server/llm/, siehe index.ts)
-
-const LABEL = "Custom-Provider";
+// Jeder OpenAI-kompatible Endpunkt: der Custom-Slot (BYOK) und der eigene Endpunkt des Betreibers (LLM_BASE_URL).
+// (Teil von src/server/llm/, siehe index.ts)
 
 /**
- * Die Anfrage an den Endpunkt des Nutzers, bis zu einer erfolgreichen Antwort. Beide Aufrufer
- * teilen sich diesen Kopf; sie unterscheiden sich nur im Rumpf (`stream`) und in der Auswertung.
+ * Woher die Adresse kommt. `byok`: ein Nutzer hat sie eingetragen, sie ist nie vertrauenswürdig. `server`: der
+ * Betreiber hat sie in der Umgebung gesetzt (llm/config.ts, endpointChatUrl).
+ */
+export type EndpointSource = "byok" | "server";
+
+const LABELS: Record<EndpointSource, string> = { byok: "Custom-Provider", server: "LLM-Endpunkt" };
+
+/**
+ * Die Prüfung vor JEDER Anfrage, nicht nur beim Speichern. Eine Nutzer-Adresse geht immer durch die volle SSRF-Prüfung
+ * (private, Loopback- und Link-Local-Ziele, Cloud-Metadaten; was url-safety.ts abdeckt und was nicht, steht dort), auch
+ * im Einzelbetrieb. Nur die Adresse des Betreibers darf im Einzelbetrieb lokal sein.
+ */
+function checkEndpoint(endpoint: string, source: EndpointSource): Promise<void> {
+  return source === "server" ? assertServerEndpointUrl(endpoint, isSelfHosted()) : assertPublicHttpsUrl(endpoint);
+}
+
+/**
+ * Die Anfrage an den Endpunkt, bis zu einer erfolgreichen Antwort. Beide Aufrufer teilen sich diesen Kopf; sie
+ * unterscheiden sich nur im Rumpf (`stream`) und in der Auswertung.
  *
- * `endpoint` ist die eigene BYOK-Adresse des Nutzers, nie eine feste, vertrauenswürdige wie bei
- * Z.ai. Deshalb wird sie vor JEDER Anfrage gegen SSRF geprüft (private, Loopback- und Link-Local-
- * Ziele, Cloud-Metadaten), nicht nur beim Speichern; was url-safety.ts abdeckt und was nicht
- * (kein DNS-Rebinding-fester Pin), steht dort. Ein Redirect würde wieder auf eine ungeprüfte Adresse
- * zeigen, nachdem die Prüfung schon bestanden hat, und wird von einem echten chat/completions-
- * Endpunkt nicht erwartet: `redirect: "error"`.
+ * Ein Redirect würde wieder auf eine ungeprüfte Adresse zeigen, nachdem die Prüfung schon bestanden hat, und wird von
+ * einem echten chat/completions-Endpunkt nicht erwartet: `redirect: "error"`. Ohne Key (Ollama, LM Studio) geht kein
+ * Authorization-Kopf mit, ein leeres `Bearer` lehnen manche Server ab.
  */
 async function postChatCompletion(args: {
   endpoint: string;
   apiKey: string;
   signal: AbortSignal;
   body: Record<string, unknown>;
+  source: EndpointSource;
 }): Promise<Response> {
-  await assertPublicHttpsUrl(args.endpoint);
+  await checkEndpoint(args.endpoint, args.source);
 
   const res = await fetch(args.endpoint, {
     method: "POST",
     redirect: "error",
     signal: args.signal,
     headers: {
-      authorization: `Bearer ${args.apiKey}`,
+      ...(args.apiKey ? { authorization: `Bearer ${args.apiKey}` } : {}),
       "content-type": "application/json",
     },
     body: JSON.stringify(args.body),
   });
 
-  if (!res.ok) await throwProviderError(LABEL, res, { reportUnparsable: true });
+  if (!res.ok) await throwProviderError(LABELS[args.source], res, { reportUnparsable: true });
   return res;
 }
 
@@ -59,17 +74,19 @@ export async function customComplete(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  apiKey: string
+  apiKey: string,
+  source: EndpointSource = "byok"
 ): Promise<LlmResult> {
   const res = await postChatCompletion({
     endpoint,
     apiKey,
     signal: withProviderTimeout(),
     body: { model, messages: toOpenAiMessages(system, messages), max_tokens: maxOutputTokens, stream: false },
+    source,
   });
 
   const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
-  return readCompletion(json, LABEL);
+  return readCompletion(json, LABELS[source]);
 }
 
 export async function* customCompleteStream(
@@ -79,7 +96,8 @@ export async function* customCompleteStream(
   messages: LlmMessage[],
   maxOutputTokens: number,
   apiKey: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  source: EndpointSource = "byok"
 ): AsyncGenerator<string> {
   const guard = streamDeadlines(signal, CUSTOM_FIRST_CHUNK_TIMEOUT_MS);
   try {
@@ -88,8 +106,9 @@ export async function* customCompleteStream(
       apiKey,
       signal: guard.signal,
       body: { model, messages: toOpenAiMessages(system, messages), max_tokens: maxOutputTokens, stream: true },
+      source,
     });
-    if (!res.body) throw new Error("Custom-Provider hat keinen Antwort-Stream geliefert.");
+    if (!res.body) throw new Error(`${LABELS[source]} hat keinen Antwort-Stream geliefert.`);
 
     for await (const chunk of readOpenAiCompatibleSse(res.body)) {
       guard.received();

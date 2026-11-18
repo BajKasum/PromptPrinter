@@ -5,7 +5,7 @@ import { bearerToken } from "@/server/supabase/bearer";
 import { createClientForRequest } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
 import { hasZaiConsent } from "@/server/consent";
-import { llmConfig } from "@/server/llm";
+import { llmConfig, selfHostedEndpointActive } from "@/server/llm";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
@@ -53,7 +53,8 @@ export async function GET(req: Request) {
     const { plan, isAdmin } = resolvePlan(orThrow(profile, "profiles").data);
     const hasOwnKey = (orThrow(keys, "user_api_keys").data?.length ?? 0) > 0;
     // Free ohne Key chattet im Gratis-Rahmen, solange er reicht (server/free-trial.ts).
-    const onFreeTrial = requiresOwnKey(plan, isAdmin, hasOwnKey);
+    // Im Einzelbetrieb gilt für den Endpunkt des Betreibers keine Plan-Grenze (server/model-call.ts).
+    const onFreeTrial = !selfHostedEndpointActive() && requiresOwnKey(plan, isAdmin, hasOwnKey);
     const freePromptsLeft = onFreeTrial ? ((await freePromptsLeftOf(user.id)) ?? 0) : null;
     const needsOwnKey = onFreeTrial && freePromptsLeft === 0;
 

@@ -7,7 +7,7 @@ import {
 } from "@/server/security/rate-limit";
 import type { rateLimit } from "@/server/security/rate-limit";
 import type { createClient } from "@/server/supabase/server";
-import { llmConfig } from "@/server/llm";
+import { llmConfig, selfHostedEndpointActive } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
 import { freePromptsLeft, reserveFreeTrialTestRun, reserveFreeTrialTurn, type FreeTrialSlot } from "@/server/free-trial";
@@ -108,8 +108,11 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     reservations.length = 0;
   };
 
+  // Im Einzelbetrieb läuft ein Zug ohne eigenen Key auf dem Endpunkt des Betreibers (llm/config.ts): er kostet
+  // ihn nichts je Aufruf, Plan und Gratis-Rahmen gelten dann nicht, wie bei einem eigenen Key. Stundenlimit und
+  // Tagesbudget unten bleiben. Ohne SELF_HOSTED (promptprinter.app) ist das nie wahr.
   let freeTrial: FreeTrialSlot | null = null;
-  if (!override) {
+  if (!override && !selfHostedEndpointActive()) {
     const slot = await reserveMonthlySlot({ ...opts, plan, limit: limits.chatMessages, now, monthStart, reservations });
     if (slot instanceof Response) return slot;
     freeTrial = slot;

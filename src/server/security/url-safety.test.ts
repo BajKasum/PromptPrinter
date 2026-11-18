@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { assertPublicHttpsUrl } from "@/server/security/url-safety";
+import { assertPublicHttpsUrl, assertServerEndpointUrl } from "@/server/security/url-safety";
 
 const lookupMock = vi.fn();
 vi.mock("node:dns", () => ({
@@ -132,5 +132,39 @@ describe("assertPublicHttpsUrl", () => {
     await expect(assertPublicHttpsUrl("https://empty.example/v1")).rejects.toThrow(
       "nicht aufgelöst"
     );
+  });
+});
+
+describe("assertServerEndpointUrl (LLM_BASE_URL des Betreibers)", () => {
+  it("lässt im Einzelbetrieb den eigenen Rechner, das eigene Netz und http zu, ohne DNS", async () => {
+    for (const url of [
+      "http://localhost:11434/v1/chat/completions",
+      "http://127.0.0.1:1234/v1/chat/completions",
+      "http://host.docker.internal:11434/v1/chat/completions",
+      "http://192.168.1.20:8080/v1/chat/completions",
+      "http://[::1]:11434/v1/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
+    ]) {
+      await expect(assertServerEndpointUrl(url, true), url).resolves.toBeUndefined();
+    }
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it("verlangt auch im Einzelbetrieb eine http(s)-Adresse", async () => {
+    await expect(assertServerEndpointUrl("kein url", true)).rejects.toThrow("Ungültige URL");
+    await expect(assertServerEndpointUrl("file:///etc/passwd", true)).rejects.toThrow("Nur http:// und https://");
+    await expect(assertServerEndpointUrl("ftp://localhost/v1", true)).rejects.toThrow("Nur http:// und https://");
+  });
+
+  it("ohne Einzelbetrieb gilt dieselbe Sperre wie für einen BYOK-Endpunkt", async () => {
+    await expect(assertServerEndpointUrl("http://localhost:11434/v1/chat/completions", false)).rejects.toThrow(
+      "Nur https://"
+    );
+    await expect(assertServerEndpointUrl("https://localhost/v1", false)).rejects.toThrow("nicht erlaubt");
+    await expect(assertServerEndpointUrl("https://127.0.0.1/v1", false)).rejects.toThrow("nicht erlaubt");
+    lookupMock.mockResolvedValue([{ address: "10.0.0.5", family: 4 }]);
+    await expect(assertServerEndpointUrl("https://intern.example/v1", false)).rejects.toThrow("nicht erlaubt");
+    lookupMock.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    await expect(assertServerEndpointUrl("https://api.example.com/v1", false)).resolves.toBeUndefined();
   });
 });

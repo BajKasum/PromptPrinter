@@ -3,6 +3,7 @@ import "server-only";
 import { optionalEnv } from "@/server/env-value";
 import type { ServerProvider } from "@/server/llm-failover";
 import type { LlmConfig, LlmMessage, LlmOverride } from "@/server/llm/types";
+import { isSelfHosted } from "@/server/self-hosted";
 
 // Auswahl des Server-Anbieters, Standardmodelle und die Einstellungen, die für jeden
 // Anbieter-Pfad gelten (Token-Grenze, abgeschaltete SDK-Wiederholungen).
@@ -86,7 +87,11 @@ export function serverConfigFor(provider: ServerProvider): LlmConfig | null {
   return null;
 }
 
-/** Which provider is configured, if any, also the display name for storage. */
+/**
+ * Which provider is configured, if any, also the display name for storage. Reihenfolge: Z.ai, Gemini, dann der eigene
+ * Endpunkt (`endpoint`). Der kommt zuletzt, damit ein gesetzter Z.ai-Key nie still von einer zweiten Variable
+ * verdrängt wird; server/env.ts warnt, wenn LLM_BASE_URL deshalb ungenutzt bleibt.
+ */
 export function llmConfig(): LlmConfig | null {
   if (zaiApiKey()) {
     return { provider: "zai", model: optionalEnv("ZAI_MODEL") ?? ZAI_DEFAULT_MODEL };
@@ -94,7 +99,35 @@ export function llmConfig(): LlmConfig | null {
   if (geminiApiKey()) {
     return { provider: "gemini", model: optionalEnv("GEMINI_MODEL") ?? GEMINI_DEFAULT_MODEL };
   }
+  const endpointModel = optionalEnv("LLM_MODEL");
+  if (optionalEnv("LLM_BASE_URL") && endpointModel) {
+    return { provider: "endpoint", model: endpointModel };
+  }
   return null;
+}
+
+/**
+ * Die Chat-Adresse des eigenen Endpunkts: `LLM_BASE_URL` ist die Basis, wie bei OpenAI-SDKs und Ollama
+ * (`http://localhost:11434/v1`), `/chat/completions` kommt dazu. Steht es schon da, bleibt die Adresse, wie sie ist.
+ * Die Prüfung der Adresse (Einzelbetrieb oder öffentlich und https) macht llm/custom.ts vor jedem Aufruf.
+ */
+export function endpointChatUrl(): string {
+  const base = (optionalEnv("LLM_BASE_URL") ?? "").replace(/\/+$/, "");
+  return /\/chat\/completions$/.test(base) ? base : `${base}/chat/completions`;
+}
+
+/** Der Key des eigenen Endpunkts, falls er einen verlangt. Ollama und LM Studio brauchen keinen. */
+export function endpointApiKey(): string {
+  return optionalEnv("LLM_API_KEY") ?? "";
+}
+
+/**
+ * Läuft ein Zug ohne eigenen Key im Einzelbetrieb auf dem Endpunkt des Betreibers? Dann kostet er den Betreiber nichts
+ * je Aufruf und zählt nicht gegen Plan und Gratis-Rahmen (server/model-call.ts, server/session.ts). Auf promptprinter.app
+ * ist das nie wahr: dort fehlt SELF_HOSTED, und auf Vercel gilt es nicht (server/self-hosted.ts).
+ */
+export function selfHostedEndpointActive(): boolean {
+  return isSelfHosted() && llmConfig()?.provider === "endpoint";
 }
 
 // Die Server-Schlüssel, so wie sie an den Anbieter gehen. Leer und nur Leerzeichen

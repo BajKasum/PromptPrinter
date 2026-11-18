@@ -79,7 +79,7 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   };
 });
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
-vi.mock("@/server/llm", () => ({ llmConfig: () => llmConfig() }));
+vi.mock("@/server/llm", () => ({ llmConfig: () => llmConfig(), selfHostedEndpointActive: () => false }));
 vi.mock("@/features/projects/lib/brain-sources", () => ({
   collectBrainSources: (...a: unknown[]) => collectBrainSources(...a),
 }));
