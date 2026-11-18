@@ -11,6 +11,19 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-18: Selbst betreiben mit eigenem Modell (Branch `feat/selbst-hosten`)
+
+- **Ziel (Open Source, Schritt 4):** `git clone`, eine `.env`, `npm run dev` oder das Docker-Image, dann läuft Finn mit einem Modell über eine OpenAI-kompatible Schnittstelle (Standard Ollama), ohne Upstash, Turnstile, Resend und Lemon Squeezy. promptprinter.app wird an keiner Stelle lockerer.
+- **Schalter `SELF_HOSTED=1`** (`src/server/self-hosted.ts`): nur der Wert `1`, nie auf Vercel (dort bricht der Start ab, statt den Wert still zu übergehen). Er macht Upstash in der Startprüfung und in `/api/health` optional und lässt das Ratenlimit in Produktion im Speicher zählen statt geschlossen zu scheitern.
+- **Eigener Endpunkt `LLM_BASE_URL` + `LLM_MODEL` (+ optional `LLM_API_KEY`):** dritter Server-Anbieter `endpoint` nach Z.ai und Gemini, über den Weg des Custom-Slots (`llm/custom.ts`), durch `llm-retry.ts`; das Failover bleibt Z.ai/Gemini. Ohne Key geht kein Authorization-Kopf mit, die Z.ai-Felder (`thinking`) gehen nicht an fremde Server. `env.ts` warnt, wenn der Endpunkt ungenutzt bleibt (kein Modell, von einem Z.ai- oder Gemini-Key verdrängt, http ohne Einzelbetrieb).
+- **SSRF:** `assertServerEndpointUrl` lässt den Endpunkt des Betreibers nur im Einzelbetrieb lokal und über http zu. Endpunkte der Nutzer (BYOK) gehen weiter immer durch `assertPublicHttpsUrl`, auch im Einzelbetrieb.
+- **Kostenkette:** Im Einzelbetrieb zählt ein Zug ohne eigenen Key auf dem eigenen Endpunkt nicht gegen Monatskontingent und Gratis-Rahmen (`model-call.ts`), der Chat zeigt keinen Key-Hinweis (`session.ts`, `api/cli/me`). Stundenlimit und Tagesbudget bleiben. Die Einwilligung zu Z.ai galt schon nur für den Z.ai-Pfad.
+- **Tests:** `tests/guards/self-hosted-strict.test.ts` prüft für fünf Umgebungen ohne gültigen Einzelbetrieb (darunter promptprinter.app und `SELF_HOSTED=1` auf Vercel) jede Stelle, die der Schalter lockert, mit Gegenprobe. Dazu Tests je Stelle (`self-hosted`, `env.self-hosted`, `llm-endpoint`, `chat/route.self-hosted`, `session`, Ratenlimit, URL, Health, `cli/me`). Mutationstest: 18 Mutationen (Schalter, Startprüfung, Ratenlimit, Health, URL-Prüfung, Chat, Analyse, Kostenkette, Key-Hinweis, Authorization-Kopf), alle rot.
+- **Im Browser geprüft:** lokaler Supabase-Stack, Stub mit der Schnittstelle von Ollama, `npm run build` + `npm start` und das Docker-Image (per `docker run`): Registrieren, Chat-Antwort über den Endpunkt, Verlauf nach Neuladen, Projekt anlegen. Nicht geprüft: ein echtes Ollama (auf dem Rechner nicht installiert), Linux als Docker-Host.
+- **Doku:** `docs/SETUP.md`, Abschnitt "Selbst betreiben"; `.env.example` nennt die neuen Variablen und trägt `ZAI_API_KEY` leer statt `...` (eine kopierte Vorlage wählte sonst Z.ai mit dem Schlüssel "..."); `scripts/check-env.mjs` verlangt Upstash im Einzelbetrieb nicht; `docker-compose.prod.yml` kennt `host.docker.internal` auch unter Linux.
+
+---
+
 ## 2026-11-17: Open Source unter MIT (Branch `chore/open-source-mit`)
 
 - **Kasums Entscheid:** PromptPrinter wird kein Produkt mehr, sondern ein offenes Projekt fürs Portfolio, das jeder mit freien Modellen nutzen kann. Erster Schritt: die Lizenz.

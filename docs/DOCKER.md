@@ -78,6 +78,8 @@ npm run docker:prod
   (Supabase, `API_KEY_ENCRYPTION_SECRET`, beide `UPSTASH_*`), bricht der Start
   ab statt in einem funktional toten Zustand hochzukommen. Dasselbe gilt für eine
   `NEXT_PUBLIC_APP_URL` ohne https (siehe unten).
+- Selbst betrieben mit eigenem Modell und ohne Upstash: `SELF_HOSTED=1` in `.env`, Ablauf in
+  [SETUP.md](SETUP.md), "Selbst betreiben". Dann reicht `.env` allein, auch für die Build-Args.
 
 Direkt ohne Prüfung: `docker compose -f docker-compose.prod.yml --env-file .env.local up --build -d`
 

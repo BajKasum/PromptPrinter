@@ -51,15 +51,18 @@ const DEV_RUNTIME_REQUIRED = [
   "NEXT_PUBLIC_APP_URL",
 ];
 
-// Full production set — UNCHANGED. Every one of these is a hard boot-time
-// requirement in env.ts's assertEnv() when NODE_ENV=production, and stays
-// exactly that strict here.
+// Full production set. Every one of these is a hard boot-time requirement in
+// env.ts's assertEnv() when NODE_ENV=production, and stays exactly that strict
+// here. Wie dort fallen nur die beiden UPSTASH_*-Werte im Einzelbetrieb weg
+// (SELF_HOSTED=1 in .env, src/server/self-hosted.ts): ein Prozess, das
+// Ratenlimit zählt im Speicher.
 const PROD_RUNTIME_REQUIRED = [
   ...DEV_RUNTIME_REQUIRED,
   "API_KEY_ENCRYPTION_SECRET",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
 ];
+const OPTIONAL_WHEN_SELF_HOSTED = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
 
 // docker-compose.prod.yml's build.args block — these get baked into the
 // client bundle at build time, a missing one here isn't a boot-time crash
@@ -120,7 +123,11 @@ if (mode === "dev") {
   if (!runtimeVars) {
     fail(".env fehlt. docker-compose.prod.yml liest die Container-Runtime-Variablen von dort (env_file).");
   } else {
-    const gaps = missing(runtimeVars, PROD_RUNTIME_REQUIRED);
+    const selfHosted = runtimeVars.SELF_HOSTED?.trim() === "1";
+    const required = selfHosted
+      ? PROD_RUNTIME_REQUIRED.filter((key) => !OPTIONAL_WHEN_SELF_HOSTED.includes(key))
+      : PROD_RUNTIME_REQUIRED;
+    const gaps = missing(runtimeVars, required);
     if (gaps.length > 0) {
       fail(`.env: ${gaps.length} Runtime-Variable(n) fehlen oder sind leer:\n  - ${gaps.join("\n  - ")}`);
     }
