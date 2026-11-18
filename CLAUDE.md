@@ -48,7 +48,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 **Technik**
 
 - **Modellzugang** nur in `src/server/llm/` (Einstieg `index.ts`). Z.ai (Standard `glm-4.5-air`, bleibt so: Kasums Entscheid 2026-11-08 nach dem Vergleich mit glm-5.3-flash, nicht wieder vorschlagen; Modelle, die immer denken, über `zaiThinkingParams`) und
-  Gemini auf dem Server, Anthropic und OpenAI nur per BYOK. Ohne Key antwortet der
+  Gemini auf dem Server, Anthropic und OpenAI nur per BYOK. **Selbst betrieben:** `SELF_HOSTED=1` (`server/self-hosted.ts`, nie auf Vercel) macht Upstash optional, erlaubt einen lokalen `LLM_BASE_URL` (OpenAI-kompatibel, etwa Ollama; BYOK-Endpunkte bleiben gesperrt) und hebt darauf Plan und Gratis-Rahmen auf; ohne den Schalter gilt alles wie auf promptprinter.app (`tests/guards/self-hosted-strict.test.ts`, docs/SETUP.md "Selbst betreiben"). Ohne Key antwortet der
   Chat im Stub-Modus, nur in Entwicklung (`next start` verweigert ihn). Der Server-Key-Pfad (Z.ai) verlangt vorher die Zustimmung des Kontos (`server/consent.ts`, `app_metadata.zai_consent`, Chat und Projekt-Gedächtnis; Hinweistext geändert: `ZAI_CONSENT_VERSION` hochsetzen).
   `llm-retry.ts` wiederholt vorübergehende Fehler (3 Versuche), `llm-failover.ts`
   weicht bei einem Ausfall von Z.ai auf Gemini aus (nur mit beiden Server-Keys,

@@ -12,6 +12,9 @@
 # spelling out `-f docker-compose.prod.yml`, which cannot happen by muscle
 # memory — production access is opt-in, not opt-out.
 #
+# Selbst betrieben reicht eine Datei: `docker compose -f docker-compose.prod.yml up --build -d` ohne --env-file
+# liest die Build-Args ebenfalls aus `.env` (docs/SETUP.md, "Selbst betreiben").
+#
 # Liest alle Env-Vars (Build + Runtime) aus `.env`.
 # - Build-Args werden via ${VAR}-Interpolation aus `.env.local` gezogen (siehe
 #   das --env-file oben, Compose-Default ohne den Flag waere `.env`)
@@ -48,6 +51,10 @@ services:
       - "${HOST_BIND:-127.0.0.1}:${HOST_PORT:-3001}:3000"
     env_file:
       - .env
+    # Der eigene Rechner unter seinem Docker-Namen, auch unter Linux, wo Docker ihn nicht von selbst kennt: ein
+    # Modell-Server dort (LLM_BASE_URL=http://host.docker.internal:11434/v1, docs/SETUP.md, "Selbst betreiben").
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       # No external curl in alpine — use node's http to ping /api/health.
       # Was "/" (the marketing page), which renders from static output even when

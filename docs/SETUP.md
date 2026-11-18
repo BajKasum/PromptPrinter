@@ -12,7 +12,8 @@ im [README](../README.md).
 - **Lemon Squeezy**, Billing (Checkout + Webhook live)
 - **Z.ai (GLM)** als Standard-Modell, Gemini als Zweit-Provider, dazu eigene
   Keys der Nutzer (Anthropic, OpenAI, Gemini, OpenAI-kompatible Endpunkte);
-  ohne Key läuft der Stub-Modus
+  selbst betrieben ein eigenes Modell über eine OpenAI-kompatible Schnittstelle
+  (Ollama, siehe "Selbst betreiben"); ohne Key läuft der Stub-Modus
 - **Upstash Redis**, Rate-Limiting · **Vercel**, Hosting
 - **Tailwind** mit HSL-Token-System · **Framer Motion** · **next-themes**
 - **Vitest** für Unit-Tests · **Docker** für Dev (Hot-Reload) und Prod (standalone)
@@ -36,7 +37,8 @@ cp .env.example .env.local
 npm run dev          # http://localhost:3000
 ```
 
-Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider) antwortet
+Ohne `ZAI_API_KEY` (bzw. `GEMINI_API_KEY` als Zweit-Provider, oder `LLM_BASE_URL` mit
+`LLM_MODEL` für ein eigenes Modell, siehe "Selbst betreiben") antwortet
 `/api/chat` im **Stub-Modus** (eine Demo-Antwort), der Flow bleibt testbar, ohne
 API-Quota zu verbrauchen. Der Modellzugriff ist in
 [`src/server/llm/`](../src/server/llm/index.ts) gekapselt (Z.ai primär, Gemini
@@ -45,6 +47,180 @@ sekundär).
 Die Gedächtnis-Analyse hat bewusst **keinen** Stub: eine erfundene Faktenliste
 wäre schlimmer als gar keine, weil sie danach in jeden Prompt dieses Projekts
 wandert. Ohne Provider-Key sagt sie ab, auch lokal.
+
+## Selbst betreiben
+
+PromptPrinter läuft auch ohne die Dienste von promptprinter.app: ohne Upstash, Turnstile, Resend und Lemon Squeezy,
+mit einem eigenen Modell über die Chat-Schnittstelle von OpenAI (`/v1/chat/completions`). Standard ist
+[Ollama](https://ollama.com); jeder andere Server mit dieser Schnittstelle geht auch (LM Studio, llama.cpp, vLLM,
+OpenRouter). Nötig sind Node 24, Docker (für den lokalen Supabase-Stack) und der Modell-Server.
+
+### Der Schalter: `SELF_HOSTED=1`
+
+Der Einzelbetrieb ([`src/server/self-hosted.ts`](../src/server/self-hosted.ts)) ist für eine Installation in
+**einem** Prozess gedacht (`npm run dev`, `npm start`, das Docker-Image). Nur der Wert `1` schaltet ihn ein, und er
+ändert genau drei Dinge:
+
+| | Ohne `SELF_HOSTED` (promptprinter.app) | Mit `SELF_HOSTED=1` |
+|---|---|---|
+| Upstash | in Produktion Pflicht, sonst bricht der Start ab | optional, das Ratenlimit zählt im Speicher des Prozesses |
+| `LLM_BASE_URL` | nur eine öffentliche https-Adresse | auch `localhost`, das eigene Netz, der Docker-Host, auch http |
+| Plan | Free chattet nur mit Gratis-Prompts oder eigenem Key | jedes Konto chattet auf `LLM_BASE_URL`, ohne Monatskontingent |
+
+Unverändert auch im Einzelbetrieb:
+
+- Endpunkte, die Nutzer unter "Eigene API-Keys" eintragen, dürfen nie lokal sein (SSRF-Sperre,
+  [`url-safety.ts`](../src/server/security/url-safety.ts)): sonst könnte jedes Konto den Server Anfragen in das Netz
+  des Betreibers schicken lassen.
+- Das Stundenlimit je Konto und das Tagesbudget (`LLM_DAILY_CALL_BUDGET`, wirkt nur mit Upstash) gelten weiter.
+- Die Startprüfung verlangt Supabase, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` und
+  `API_KEY_ENCRYPTION_SECRET`, und in Produktion eine https-Adresse (oder `ALLOW_INSECURE_APP_URL=1`).
+- Auf Vercel gilt der Schalter nie: dort laufen viele Instanzen, ein Limiter im Speicher begrenzt nichts. Mit
+  `SELF_HOSTED=1` bricht der Start dort ab, statt den Wert still zu übergehen.
+
+Ein Zug auf dem eigenen Endpunkt braucht keine Einwilligung zu Z.ai (die gilt nur für den Z.ai-Pfad,
+[`consent.ts`](../src/server/consent.ts)). Turnstile ist ohne `NEXT_PUBLIC_TURNSTILE_SITE_KEY` aus (die Formulare
+gehen ohne Mensch-Prüfung), das Kontaktformular sagt ohne `RESEND_API_KEY` "gerade nicht verfügbar", und ohne
+Lemon Squeezy gibt es keinen Kauf-Knopf. Nichts davon hält den Start auf.
+
+### 1. Modell
+
+```bash
+ollama pull qwen3
+```
+
+Ollama hört danach auf `http://localhost:11434`. Ein anderer Server: `LLM_BASE_URL` auf seine Basis-Adresse setzen
+(`http://localhost:1234/v1` bei LM Studio), `LLM_API_KEY` nur, wenn er einen Key verlangt.
+
+### 2. Code und Datenbank
+
+Die Datenbank ist derselbe lokale Supabase-Stack wie für die [Ende-zu-Ende-Tests](#ende-zu-ende-tests): Postgres,
+Anmeldung, Speicher und ein Postfach (Mailpit), gebaut aus `supabase/migrations/`. Die Bestätigungsmail ist dort
+aus, ein neues Konto kann sofort chatten.
+
+```bash
+git clone https://github.com/BajKasum/PromptPrinter.git
+cd PromptPrinter
+npm ci
+npx --yes supabase@2.119.0 start
+npx --yes supabase@2.119.0 status -o env
+```
+
+`status -o env` zeigt `API_URL` (`http://127.0.0.1:54321`), `ANON_KEY` und `SERVICE_ROLE_KEY`. Das
+Supabase-Studio liegt auf `http://127.0.0.1:54323`, die Mails auf `http://127.0.0.1:54324`.
+
+### 3. Umgebung
+
+```bash
+cp .env.example .env.local
+```
+
+In `.env.local` eintragen (die übrigen Zeilen der Vorlage leer lassen):
+
+```bash
+SELF_HOSTED=1
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY aus supabase status>
+SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY aus supabase status>
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+API_KEY_ENCRYPTION_SECRET=<Ausgabe von: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))">
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_MODEL=qwen3
+```
+
+`ZAI_API_KEY` und `GEMINI_API_KEY` bleiben leer: sie kämen vor dem eigenen Endpunkt, der Start warnt dann.
+
+### 4. Starten
+
+Entwicklung, mit Hot-Reload:
+
+```bash
+npm run dev
+```
+
+Gebaut, wie im Betrieb:
+
+```bash
+npm run build
+npm start
+```
+
+`http://localhost:3000` öffnen, ein Konto anlegen, chatten. Für `npm start` gehört in `.env.local` zusätzlich
+`ALLOW_INSECURE_APP_URL=1`, solange die Adresse http ist; mit einem Reverse Proxy, der TLS beendet, stattdessen die
+https-Adresse in `NEXT_PUBLIC_APP_URL` und `TRUSTED_PROXY_HOPS` ([DOCKER.md](DOCKER.md), "Hinter einem Reverse
+Proxy betreiben").
+
+### Mit Docker
+
+Das Produktions-Image liest Build- und Laufzeitwerte aus `.env`. Aus dem Container heraus ist der eigene Rechner
+`host.docker.internal`; `docker-compose.prod.yml` trägt den Namen über `extra_hosts` ein, damit er auch unter
+Linux gilt:
+
+```bash
+cp .env.local .env
+```
+
+In `.env` ändern:
+
+```bash
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+ALLOW_INSECURE_APP_URL=1
+LLM_BASE_URL=http://host.docker.internal:11434/v1
+NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321
+```
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Die App läuft dann auf `http://localhost:3001`.
+
+`NEXT_PUBLIC_SUPABASE_URL` wird beim Bauen eingebacken und gilt für den Browser UND den Server im Container: beide
+müssen Supabase unter derselben Adresse erreichen. `127.0.0.1` zeigt im Container auf den Container selbst, deshalb
+`host.docker.internal`. Der Browser auf dem eigenen Rechner muss diesen Namen ebenfalls auflösen, und zwar auf den
+eigenen Rechner. Docker Desktop schreibt dafür eine Zeile in die hosts-Datei, mit der IP-Adresse von damals: wechselt
+der Rechner das Netz, zeigt sie ins Leere. Dann die Zeile auf `127.0.0.1 host.docker.internal` ändern, oder ein
+gehostetes Supabase-Projekt nehmen (eine Adresse für beide).
+
+Unter Linux hört Ollama nur auf `127.0.0.1`, ein Container erreicht es über `host-gateway` dann nicht. Docker Desktop
+leitet dorthin weiter, unter Linux braucht Ollama `OLLAMA_HOST=0.0.0.0` (und eine Firewall davor).
+
+### Was im Einzelbetrieb anders bleibt
+
+- **Ein Prozess.** Mehrere Instanzen hinter einem Lastverteiler bräuchten Upstash, sonst zählt jede für sich.
+  Dann `SELF_HOSTED` weglassen und Upstash setzen.
+- **Wer sich registriert, chattet auf dem eigenen Modell.** Eine Installation, die im Internet steht, ist damit
+  offen für jeden, der ein Konto anlegt. Das Stundenlimit bremst, die Registrierung schliesst es nicht: dafür in
+  `supabase/config.toml` (`[auth]`, `enable_signup = false`, dann `supabase stop` und `start`) oder im
+  Supabase-Dashboard die Registrierung abschalten, sobald die eigenen Konten angelegt sind.
+- **http.** Die Policy der Seiten trägt `upgrade-insecure-requests`. Auf `http://localhost` stellt der Browser
+  deshalb Weiterleitungen auf https um, die dann ins Leere gehen (eine Fehlermeldung in der Konsole, die Seite
+  lädt trotzdem). Für den Betrieb gehört TLS davor.
+- **Speed Insights** sucht ausserhalb von Vercel ein Skript, das es nicht gibt: ein 404 und eine Meldung in der
+  Konsole je Seite, sonst ohne Folgen.
+- **Zeitgrenzen.** Bis zum ersten Textstück hat der Endpunkt 60 Sekunden, danach 45 Sekunden Leerlauf und 270
+  Sekunden je Antwort (`LLM_STREAM_IDLE_TIMEOUT_MS`, `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze höchstens 285).
+  Die Analyse des Projekt-Gedächtnisses hat 60 Sekunden. Ein grosses Modell auf einer CPU kann das überschreiten;
+  dann ein kleineres Modell nehmen.
+- **Bilder** gehen als `image_url` an den Endpunkt. Ein Modell ohne Bildverständnis lehnt sie ab oder übergeht
+  sie.
+- **Denkende Modelle** (etwa qwen3): schickt der Server den Denktext als `reasoning_content` oder als
+  `<think>…</think>` im Text, erscheint er im Chat. Wie Ollama das macht, ist nicht geprüft; im Zweifel ein Modell
+  ohne Denkmodus nehmen oder das Denken am Server abschalten.
+
+### Geprüft und nicht geprüft
+
+Geprüft am 2026-11-18, mit dem lokalen Supabase-Stack und einem Stub-Server, der die Schnittstelle von Ollama
+nachbildet (`POST /v1/chat/completions`, Strom als SSE), im Browser (Chromium, ohne Fenster): `npm run build` und
+`npm start` mit `SELF_HOSTED=1` und ohne Upstash, sowie das Image aus dem `Dockerfile` (Ziel `runner`), gestartet
+per `docker run` mit denselben Werten wie in `docker-compose.prod.yml` (die Compose-Datei selbst nur mit
+`docker compose config`). Jeweils: Start ohne Abbruch, `/api/health` 200, ein Free-Konto registriert sich, sieht
+keinen Key-Hinweis, bekommt die Antwort über `LLM_BASE_URL` (ohne Authorization-Kopf, mit Finns Systemprompt),
+der Verlauf ist nach dem Neuladen da, ein Projekt lässt sich anlegen. Für den Browser im Docker-Lauf zeigte
+`host.docker.internal` auf `127.0.0.1` (siehe "Mit Docker").
+
+Nicht geprüft: ein echtes Ollama und ein echtes Modell (die Qualität von Finns Prompts mit kleinen lokalen Modellen
+ist nicht gemessen), Linux als Docker-Host, LM Studio und die übrigen Server.
 
 ## Scripts
 
@@ -90,6 +266,10 @@ beim Boot über `src/instrumentation.ts`):
 | `API_KEY_ENCRYPTION_SECRET` | BYOK wirft beim Speichern eines eigenen Keys. Mindestens 32 Zeichen Zufall: ein kürzerer Wert oder ein Platzhalter bricht den Start ebenfalls ab |
 | `UPSTASH_REDIS_REST_URL` | **Ohne Upstash antworten ALLE API-Routen mit 429** |
 | `UPSTASH_REDIS_REST_TOKEN` | dito |
+
+Im Einzelbetrieb (`SELF_HOSTED=1`, Abschnitt "Selbst betreiben") fallen die beiden
+`UPSTASH_*` weg: ein Prozess, das Ratenlimit zählt im Speicher. Auf Vercel gilt der
+Schalter nie.
 
 Der Upstash-Punkt ist der unangenehmste: `src/server/security/rate-limit.ts` scheitert in
 Produktion bewusst geschlossen, statt auf einen Limiter zurückzufallen, der über
