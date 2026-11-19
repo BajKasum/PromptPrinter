@@ -290,8 +290,8 @@ function salvageFacts(object: Record<string, unknown>): ProjectBrainFacts | null
  * Der eine Modellaufruf, aus dem das Projekt-Gedächtnis entsteht.
  *
  * `override` ist der eigene Key des Nutzers (BYOK). Ist keiner gesetzt, läuft
- * der Aufruf über den Server-Key — die Route hat davor bereits Plan-Kontingent,
- * Tagesbudget und Ratelimit geprüft, genau wie bei einem Chat-Zug.
+ * der Aufruf über den Server-Key (nur für Admins) — die Route hat davor bereits
+ * den Zugang, Tagesbudget und Ratelimit geprüft, genau wie bei einem Chat-Zug.
  */
 /**
  * Die Systemanweisung mit der Sprachregel. Mit `language` (englischer Name

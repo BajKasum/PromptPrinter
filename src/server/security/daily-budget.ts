@@ -24,15 +24,10 @@ function utcDay(): string {
  * tokens on glm-4.5-air), so 1000 bounds a bad day at about $12 rather than at
  * "whatever the internet felt like".
  *
- * Re-modelled 2026-07-30: Free has zero allowance on the server's key (plans.ts,
- * pricing.ts) — a Free account without a BYOK key can't reach chatCompleteStream
- * at all, and one WITH a key never calls this either, since BYOK bypasses it
- * (the whole point of bringing your own key). So this budget's only possible
- * spenders, structurally, are Pro/Team accounts that haven't configured a key
- * of their own: 1000/day is roughly 2-3 fully-maxed Pro accounts (400/month
- * each) hammering it on the same day, comfortably generous for how few paying
- * accounts this project has today, and no longer exposed to Free at any volume
- * — the population this backstop has to survive shrank on its own.
+ * Wer dieses Budget ausgeben kann (shared/lib/plans.ts): Züge im Gratis-Rahmen, die vorher schon ihr eigenes,
+ * kleineres Tagesbudget passieren (server/free-trial.ts), und Admins. Ein Konto mit eigenem Key ruft das nie auf,
+ * BYOK läuft auf seinem eigenen Konto. Die Grenze liegt deshalb weit über dem Tagesbudget des Gratis-Rahmens: sie
+ * soll nie die Bremse im Alltag sein, nur die für ein Leck.
  *
  * Override with LLM_DAILY_CALL_BUDGET once real traffic says otherwise — that
  * is a business decision, not a code change.
@@ -73,7 +68,7 @@ let budgetWarnedOn: string | null = null;
  * on how much the server's own key can be spent in one day, regardless of who
  * is calling or through which route.
  *
- * The per-user quotas and the hourly limit both assume the attacker is a user.
+ * The free-trial limits and the hourly limit both assume the attacker is a user.
  * This one does not — it is the backstop for the *next* leak, the one nobody
  * has found yet, and it is the only control that would have bounded the damage
  * of the anonymous-chat hole while it was open.
@@ -84,8 +79,10 @@ let budgetWarnedOn: string | null = null;
  * run on the user's own key and cost the operator nothing, which is also what
  * makes tripping this survivable: a BYOK user keeps working.
  *
- * Fails OPEN when Redis is unavailable, matching reserveMonthlyQuota: a hiccup
- * must not take chat down for everyone, and the hourly limit still applies.
+ * Fails OPEN when Redis is unavailable: a hiccup must not take chat down for
+ * everyone, and the hourly limit still applies. The free trial itself fails
+ * closed without Redis (server/free-trial.ts), so this only stays open for
+ * admins and the next unknown leak.
  */
 export async function reserveServerKeyCall(): Promise<CounterReservation | null> {
   const day = utcDay();

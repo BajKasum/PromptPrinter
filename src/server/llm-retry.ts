@@ -32,7 +32,7 @@ import { logEvent } from "@/shared/lib/observability";
 // weiter, der Browser behält den Teiltext (Audit E-2).
 //
 // ─── Kosten ────────────────────────────────────────────────────────────────
-// Ein Zug zählt einmal gegen Monatskontingent und Tagesbudget, egal wie viele
+// Ein Zug zählt einmal gegen Gratis-Rahmen und Tagesbudget, egal wie viele
 // Versuche er braucht: die Reservierung steht in der Route vor dem Aufruf. Ein
 // Aufruf, der mit 429 oder 5xx scheitert, wird vom Anbieter nicht berechnet.
 

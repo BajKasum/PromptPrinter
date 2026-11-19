@@ -9,7 +9,7 @@ import { ZAI_CONSENT_VERSION } from "@/server/consent";
 const consented = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17T00:00:00.000Z" } };
 
 // Guards the fix for QA finding S-1: /api/chat used to serve anonymous callers,
-// which skipped the whole monthly-quota block (it hung off `userId`) and ran
+// which skipped the whole server-key access check (it hangs off `userId`) and ran
 // straight against the server's own provider key, bounded only by an hourly
 // limit keyed on a caller-controlled header. These tests exist so that path
 // cannot quietly come back — an anonymous request must never reach the model.
@@ -18,7 +18,6 @@ const getUser = vi.fn();
 const createClient = vi.fn();
 const rateLimit = vi.fn();
 const rateLimitKey = vi.fn();
-const reserveMonthlyQuota = vi.fn();
 const reserveServerKeyCall = vi.fn();
 const getUserOverride = vi.fn();
 const chatCompleteStream = vi.fn();
@@ -40,13 +39,6 @@ const insertCalls: Record<string, unknown[]> = {};
 // wieder zurueck, und ohne diesen Zaehler wuerde ein fehlendes delete im
 // Stub stillschweigend durch rollbackTurns try/catch fallen.
 const deleteCalls: Record<string, number> = {};
-// Und fuer die Argumente von select(): die monatliche Zaehlabfrage
-// (`select("id", { count: "exact", head: true })`) ist die einzige mit
-// head:true, und Betriebs-Audit 04.10.2026 hat sie auf "nur bei Bedarf"
-// umgestellt. Ohne diese Aufzeichnung liesse sich das nicht pruefen.
-const selectCalls: Record<string, unknown[][]> = {};
-const monthlyCountQueries = () =>
-  (selectCalls.messages ?? []).filter((args) => (args[1] as { head?: boolean } | undefined)?.head === true);
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null, count: 0 };
@@ -58,10 +50,6 @@ function builder(table: string) {
   for (const method of ["select", "eq", "gte", "is", "order", "limit", "update"]) {
     chain[method] = vi.fn(() => chain);
   }
-  chain.select = vi.fn((...args: unknown[]) => {
-    (selectCalls[table] ??= []).push(args);
-    return chain;
-  });
   chain.insert = vi.fn((row: unknown) => {
     (insertCalls[table] ??= []).push(row);
     return chain;
@@ -84,22 +72,25 @@ vi.mock("@/server/supabase/server", () => ({
   createClientForRequest: () => createClient(),
 }));
 vi.mock("@/server/security/rate-limit", async (importOriginal) => {
-  // chatQuotaKey is real below (pure string formatting, no Redis I/O) — no
-  // test needs to fake its actual month format.
   const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();
   return {
     ...actual,
     rateLimit: (...a: unknown[]) => rateLimit(...a),
     rateLimitKey: (...a: unknown[]) => rateLimitKey(...a),
-    reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
     reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
   };
 });
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
-// Der Gratis-Rahmen (server/free-trial.ts): Standard ist "aufgebraucht", dann gilt für Free ohne Key der Key-Weg wie
-// vor dem Rahmen. Die Tests des Rahmens setzen beides selbst.
+// Der Gratis-Rahmen (server/free-trial.ts): Standard ist ein Konto mit zwei übrigen Gratis-Prompts, dessen Zug den
+// Platz `trialSlot` bekommt. Die Tests eines aufgebrauchten Rahmens setzen beides selbst.
 const freePromptsLeft = vi.fn();
 const reserveFreeTrialTurn = vi.fn();
+const freeTrialSlot = (promptsLeft = 2) => ({
+  release: vi.fn().mockResolvedValue(undefined),
+  promptDelivered: vi.fn().mockResolvedValue(promptsLeft - 1),
+  promptsLeft: vi.fn().mockResolvedValue(promptsLeft),
+});
+let trialSlot = freeTrialSlot();
 vi.mock("@/server/free-trial", () => ({
   freePromptsLeft: (...a: unknown[]) => freePromptsLeft(...a),
   reserveFreeTrialTurn: (...a: unknown[]) => reserveFreeTrialTurn(...a),
@@ -139,29 +130,23 @@ describe("POST /api/chat", () => {
     vi.clearAllMocks();
     for (const table of Object.keys(insertCalls)) delete insertCalls[table];
     for (const table of Object.keys(deleteCalls)) delete deleteCalls[table];
-    for (const table of Object.keys(selectCalls)) delete selectCalls[table];
     createClient.mockResolvedValue(supabaseStub);
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 });
     rateLimitKey.mockReturnValue("u:user-1");
-    reserveMonthlyQuota.mockResolvedValue(null);
     reserveServerKeyCall.mockResolvedValue(null);
     getUserOverride.mockResolvedValue(null);
-    freePromptsLeft.mockResolvedValue(0);
-    reserveFreeTrialTurn.mockResolvedValue("exhausted");
+    trialSlot = freeTrialSlot();
+    freePromptsLeft.mockResolvedValue(2);
+    reserveFreeTrialTurn.mockResolvedValue(trialSlot);
     llmConfig.mockReturnValue({ provider: "zai", model: "glm-4.5-air" });
     chatCompleteStream.mockImplementation(async function* () {
       yield "Hallo";
     });
-    // "pro" (not "free"), deliberately: Free has zero server-key allowance by
-    // design (plans.ts, Security-Audit-adjacent re-model 2026-07-30) and no
-    // access to the model at all without a BYOK key, so a "free" ambient
-    // default would 403 every single test in this file before it reached
-    // chatCompleteStream. Almost none of these tests are actually about plan
-    // tiers — they need SOME plan with a real allowance to get past step 3.
-    // The plan-limit behavior itself (including Free's own dedicated path) is
-    // exercised explicitly in describe("limits") below.
-    tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+    // Ein Konto ohne eigenen Key im Gratis-Rahmen: der übliche Weg auf den Server-Key, mit Einwilligung,
+    // Stundengrenze und Tagesbudget. Fast keiner dieser Tests handelt vom Zugang selbst, sie brauchen nur ein Konto,
+    // das bis zum Modell kommt; der Zugang steht ausdrücklich in describe("limits") unten.
+    tableResults.profiles = { data: { plan: "free", is_admin: false } };
     tableResults.messages = { data: { id: "msg-1" }, error: null, count: 3 };
     tableResults.conversations = { data: { id: "conv-1" }, error: null };
     tableResults.projects = { data: null, error: null };
@@ -181,7 +166,7 @@ describe("POST /api/chat", () => {
       expect(res.status).toBe(403);
       expect((await res.json()).kind).toBe("consentRequired");
       expect(chatCompleteStream).not.toHaveBeenCalled();
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(reserveFreeTrialTurn).not.toHaveBeenCalled();
       expect(reserveServerKeyCall).not.toHaveBeenCalled();
       expect(rateLimit).not.toHaveBeenCalled();
     });
@@ -229,9 +214,9 @@ describe("POST /api/chat", () => {
       expect(res.status).toBe(200);
     });
 
-    it("lässt Free ohne Key und ohne Gratis-Prompts bei byokRequired, nicht bei der Zustimmung", async () => {
+    it("lässt ein Konto ohne Key und ohne Gratis-Prompts bei byokRequired, nicht bei der Zustimmung", async () => {
       withoutConsent({});
-      tableResults.profiles = { data: { plan: "free", is_admin: false } };
+      freePromptsLeft.mockResolvedValue(0);
 
       const res = await POST(req());
 
@@ -241,7 +226,7 @@ describe("POST /api/chat", () => {
 
     it("gilt auch für Admins: die Übermittlung ist dieselbe", async () => {
       withoutConsent({});
-      tableResults.profiles = { data: { plan: "pro", is_admin: true } };
+      tableResults.profiles = { data: { plan: "free", is_admin: true } };
 
       const res = await POST(req());
 
@@ -266,7 +251,7 @@ describe("POST /api/chat", () => {
       await POST(req());
 
       expect(rateLimit).not.toHaveBeenCalled();
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(reserveFreeTrialTurn).not.toHaveBeenCalled();
     });
 
     it("treats a failing auth lookup as signed-out rather than anonymous-allowed", async () => {
@@ -348,10 +333,11 @@ describe("POST /api/chat", () => {
       vi.stubEnv("NODE_ENV", "production");
       llmConfig.mockReturnValue(null);
       const release = vi.fn().mockResolvedValue(undefined);
-      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
+      reserveServerKeyCall.mockResolvedValue({ allowed: true, release });
 
       await POST(req());
 
+      expect(trialSlot.release).toHaveBeenCalled();
       expect(release).toHaveBeenCalled();
     });
 
@@ -378,34 +364,75 @@ describe("POST /api/chat", () => {
   });
 
   describe("limits", () => {
-    // Re-modelled 2026-07-30: Free has zero server-key allowance, by design,
-    // not as a very small limit — see plans.ts. A Free account without a BYOK
-    // key must be turned away immediately, before ever touching the
-    // reservation machinery, with a message that says "bring your own key" —
-    // not "limit reached", which would wrongly imply it once had one.
-    it("blocks Free without a BYOK key and without free prompts left, without touching the monthly-quota machinery", async () => {
-      tableResults.profiles = { data: { plan: "free", is_admin: false } };
+    // Free has zero server-key allowance of its own, by design (plans.ts): past the free trial an account without
+    // a BYOK key is turned away before anything is reserved, with a message that says "bring your own key".
+    it("blocks an account without a BYOK key and without free prompts left, before reserving anything", async () => {
+      freePromptsLeft.mockResolvedValue(0);
 
       const res = await POST(req());
-      const json = (await res.json()) as { detail: string };
+      const json = (await res.json()) as { detail: string; kind: string; freeTrial: string };
 
       expect(res.status).toBe(403);
+      expect(json).toMatchObject({ kind: "byokRequired", freeTrial: "exhausted" });
       expect(chatCompleteStream).not.toHaveBeenCalled();
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(reserveFreeTrialTurn).not.toHaveBeenCalled();
+      expect(rateLimit).not.toHaveBeenCalled();
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
       expect(json.detail).toContain("eigenen KI-Key");
     });
 
     // The core promise of the new model: Free plus a BYOK key is not merely
     // "also allowed", it is the ONLY way Free ever reaches the model at all.
-    it("lets Free through when a BYOK key is configured, same as any other plan", async () => {
-      tableResults.profiles = { data: { plan: "free", is_admin: false } };
+    it("lets Free through when a BYOK key is configured, without touching the free trial", async () => {
       getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
 
       const res = await POST(req());
 
       expect(res.status).toBe(200);
       expect(chatCompleteStream).toHaveBeenCalled();
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(freePromptsLeft).not.toHaveBeenCalled();
+      expect(reserveFreeTrialTurn).not.toHaveBeenCalled();
+    });
+
+    it("lets a BYOK account through even once its free trial is used up", async () => {
+      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
+      freePromptsLeft.mockResolvedValue(0);
+      reserveFreeTrialTurn.mockResolvedValue("exhausted");
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+      expect(chatCompleteStream).toHaveBeenCalled();
+    });
+
+    // Eine Zeile mit plan = 'pro' bleibt in der Datenbank stehen, der Code liest den Wert nicht mehr
+    // (shared/lib/plans.ts): sie ist Free, öffnet den Server-Key also nicht ohne Gratis-Rahmen und stürzt nicht ab.
+    describe("altes Konto mit plan = 'pro' ohne eigenen Key", () => {
+      beforeEach(() => {
+        tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+      });
+
+      it("chattet im Gratis-Rahmen wie Free, mit Stundengrenze", async () => {
+        const res = await POST(req());
+        const body = await readSse(res);
+
+        expect(res.status).toBe(200);
+        expect(body).toContain("event: done");
+        expect(body).toContain("\"freePromptsLeft\":2");
+        expect(reserveFreeTrialTurn).toHaveBeenCalledTimes(1);
+        expect(rateLimit).toHaveBeenCalledTimes(1);
+      });
+
+      it("bekommt nach dem Gratis-Rahmen byokRequired statt des Server-Keys", async () => {
+        freePromptsLeft.mockResolvedValue(0);
+
+        const res = await POST(req());
+
+        expect(res.status).toBe(403);
+        expect(await res.json()).toMatchObject({ kind: "byokRequired", plan: "free", freeTrial: "exhausted" });
+        expect(reserveServerKeyCall).not.toHaveBeenCalled();
+        expect(chatCompleteStream).not.toHaveBeenCalled();
+      });
     });
 
     describe("Gratis-Rahmen (Free ohne Key, server/free-trial.ts)", () => {
@@ -414,12 +441,7 @@ describe("POST /api/chat", () => {
         promptDelivered: vi.fn().mockResolvedValue(promptsLeft - 1),
         promptsLeft: vi.fn().mockResolvedValue(promptsLeft),
       });
-      beforeEach(() => {
-        tableResults.profiles = { data: { plan: "free", is_admin: false } };
-        freePromptsLeft.mockResolvedValue(2);
-      });
-
-      it("läuft auf dem Server-Key, ohne Monatskontingent, und zählt einen fertigen Prompt", async () => {
+      it("läuft auf dem Server-Key und zählt einen fertigen Prompt", async () => {
         const s = slot();
         reserveFreeTrialTurn.mockResolvedValue(s);
         chatCompleteStream.mockImplementation(async function* () {
@@ -431,7 +453,7 @@ describe("POST /api/chat", () => {
 
         expect(res.status).toBe(200);
         expect(chatCompleteStream).toHaveBeenCalledTimes(1);
-        expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+        expect(reserveFreeTrialTurn).toHaveBeenCalledTimes(1);
         expect(reserveServerKeyCall).toHaveBeenCalledTimes(1);
         expect(s.promptDelivered).toHaveBeenCalledTimes(1);
         expect(body).toContain("\"freePromptsLeft\":1");
@@ -534,96 +556,6 @@ describe("POST /api/chat", () => {
         expect(res.status).toBe(429);
         expect(s.release).toHaveBeenCalled();
       });
-    });
-
-    it("rejects with 403 once Pro's monthly chat allowance is used up", async () => {
-      // Pro/Team allow 400 (plans.ts); the DB-count fallback applies because
-      // reserveMonthlyQuota returns null (no Redis) in this test's setup.
-      tableResults.profiles = { data: { plan: "pro", is_admin: false } };
-      tableResults.messages = { data: { id: "msg-1" }, error: null, count: 400 };
-
-      const res = await POST(req());
-
-      expect(res.status).toBe(403);
-      expect(chatCompleteStream).not.toHaveBeenCalled();
-    });
-
-    // Betriebs-Audit 04.10.2026: die Zaehlabfrage lief bei JEDEM Zug, fuer jedes
-    // Konto, und ihr Ergebnis wurde an genau zwei Stellen gebraucht. Sie waechst
-    // mit der Nutzung (ein viel genutztes Konto zaehlt tausende Zeilen pro Zug).
-    describe("die monatliche Zaehlabfrage laeuft nur bei Bedarf", () => {
-      it("laeuft NICHT, wenn Redis die Reservierung entscheidet und das Konto im Limit liegt", async () => {
-        reserveMonthlyQuota.mockResolvedValue({ allowed: true, release: vi.fn() });
-
-        const res = await POST(req());
-
-        expect(res.status).toBe(200);
-        expect(monthlyCountQueries()).toHaveLength(0);
-      });
-
-      it("laeuft NICHT fuer einen BYOK-Nutzer, der die Grenze ohnehin nicht hat", async () => {
-        getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
-
-        const res = await POST(req());
-
-        expect(res.status).toBe(200);
-        expect(monthlyCountQueries()).toHaveLength(0);
-      });
-
-      it("laeuft NICHT fuer Free ohne Key und ohne Gratis-Rahmen, der vorher abgewiesen wird", async () => {
-        tableResults.profiles = { data: { plan: "free", is_admin: false } };
-
-        const res = await POST(req());
-
-        expect(res.status).toBe(403);
-        expect(monthlyCountQueries()).toHaveLength(0);
-      });
-
-      it("laeuft, wenn Redis nicht entscheiden kann: dann IST sie die Durchsetzung", async () => {
-        reserveMonthlyQuota.mockResolvedValue(null);
-        tableResults.messages = { data: { id: "msg-1" }, error: null, count: 3 };
-
-        const res = await POST(req());
-
-        expect(res.status).toBe(200);
-        expect(monthlyCountQueries()).toHaveLength(1);
-      });
-
-      it("laeuft genau einmal, wenn eine Ablehnung die Zahl nennen muss, und gibt die Reservierung zurueck", async () => {
-        const release = vi.fn().mockResolvedValue(undefined);
-        reserveMonthlyQuota.mockResolvedValue({ allowed: false, release });
-        tableResults.messages = { data: { id: "msg-1" }, error: null, count: 400 };
-
-        const res = await POST(req());
-        const json = (await res.json()) as { kind: string; current: number; limit: number };
-
-        expect(res.status).toBe(403);
-        expect(json).toMatchObject({ kind: "chatMessages", current: 400, limit: 400 });
-        expect(release).toHaveBeenCalled();
-        expect(monthlyCountQueries()).toHaveLength(1);
-        expect(chatCompleteStream).not.toHaveBeenCalled();
-      });
-
-      it("fragt im Redis-losen Fall nach einer Ablehnung nicht ein zweites Mal", async () => {
-        reserveMonthlyQuota.mockResolvedValue(null);
-        tableResults.messages = { data: { id: "msg-1" }, error: null, count: 400 };
-
-        const res = await POST(req());
-
-        expect(res.status).toBe(403);
-        expect((await res.json()).current).toBe(400);
-        expect(monthlyCountQueries()).toHaveLength(1);
-      });
-    });
-
-    it("skips the monthly allowance entirely for a BYOK user on a paid plan too", async () => {
-      tableResults.messages = { data: { id: "msg-1" }, error: null, count: 5000 };
-      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-test" });
-
-      const res = await POST(req());
-
-      expect(res.status).toBe(200);
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
     });
 
     it("rejects with 429 once the hourly rate limit is exceeded", async () => {
@@ -969,7 +901,7 @@ describe("POST /api/chat", () => {
 
     // "Über mich" (Migration 0056): ein eigener, gekennzeichneter Block vor dem Projektkontext.
     it("gibt die Angaben aus 'Über mich' als gekennzeichneten Block mit", async () => {
-      tableResults.profiles = { data: { plan: "pro", is_admin: false, about_me: "Lehrerin, mag einen lockeren Ton" } };
+      tableResults.profiles = { data: { plan: "free", is_admin: false, about_me: "Lehrerin, mag einen lockeren Ton" } };
       tableResults.projects = {
         data: { name: "Mein Projekt", idea: null, instructions: null, context: {}, tools: null },
         error: null,
@@ -983,7 +915,7 @@ describe("POST /api/chat", () => {
     });
 
     it("lässt den Block weg, wenn nichts angegeben ist", async () => {
-      tableResults.profiles = { data: { plan: "pro", is_admin: false, about_me: "" } };
+      tableResults.profiles = { data: { plan: "free", is_admin: false, about_me: "" } };
 
       await readSse(await POST(req({ messages: [{ role: "user", content: "Hi" }] })));
 
@@ -1332,8 +1264,6 @@ describe("POST /api/chat", () => {
     });
 
     it("gibt keine assistantMessageId zurueck, wenn das Speichern scheitert", async () => {
-      // Redis entscheidet, die Zählung in der Datenbank wird nicht gebraucht: der Fehler soll hier nur das Speichern treffen.
-      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release: vi.fn() });
       tableResults.messages = { data: null, error: new Error("insert failed") };
 
       const body = await readSse(await POST(regenerateReq()));

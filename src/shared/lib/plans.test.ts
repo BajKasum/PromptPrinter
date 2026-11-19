@@ -1,19 +1,32 @@
 import { describe, expect, it } from "vitest";
 import {
   effectiveLimits,
+  FREE_TRIAL,
   PLAN_LIMITS,
   requiresOwnKey,
   resolvePlan,
   toPlanKey,
 } from "@/shared/lib/plans";
 
+describe("PLAN_LIMITS", () => {
+  it("kennt genau einen Plan, Free", () => {
+    expect(Object.keys(PLAN_LIMITS)).toEqual(["free"]);
+  });
+
+  // Ohne eigenen Key bleibt Free nur der Gratis-Rahmen (server/free-trial.ts), kein Kontingent auf dem Server-Key:
+  // eine Zahl über 0 öffnete den Server-Key ohne die Grenzen des Rahmens (je IP, eigenes Tagesbudget).
+  it("gibt Free keinen eigenen Zugang zum Server-Key, nur den Gratis-Rahmen", () => {
+    expect(PLAN_LIMITS.free.chatMessages).toBe(0);
+    expect(FREE_TRIAL.prompts).toBeGreaterThan(0);
+  });
+});
+
 describe("effectiveLimits", () => {
   it("returns the plan's own limits for a non-admin account", () => {
     expect(effectiveLimits("free", false)).toEqual(PLAN_LIMITS.free);
-    expect(effectiveLimits("pro", false)).toEqual(PLAN_LIMITS.pro);
   });
 
-  it("returns unlimited for an admin account regardless of plan", () => {
+  it("returns unlimited for an admin account", () => {
     expect(effectiveLimits("free", true)).toEqual({
       projects: Infinity,
       chatMessages: Infinity,
@@ -22,99 +35,19 @@ describe("effectiveLimits", () => {
 
   // Snapshotted rather than compared against literals: this asserts that
   // effectiveLimits doesn't MUTATE the table, which is true whatever the
-  // numbers happen to be. Hardcoding them made a deliberate re-pricing
-  // (2026-07-29: free 200→50, pro 2000→400; 2026-07-30: free 50→25→0,
-  // pro 400→350→400) look like a regression in a test that was never about
-  // the values.
+  // numbers happen to be.
   it("never mutates PLAN_LIMITS itself, admin is a role, not a plan", () => {
     const before = structuredClone(PLAN_LIMITS);
     effectiveLimits("free", true);
-    effectiveLimits("pro", true);
     expect(PLAN_LIMITS).toEqual(before);
   });
 });
 
-// The marketed copy has to state the same numbers the server actually
-// enforces — they lived in two unconnected places until lib/pricing.ts derived
-// one from the other.
-describe("marketed plans match enforced limits", () => {
-  // Re-modelled 2026-07-30: Free's allowance is 0 by design (BYOK-only, see
-  // plans.ts and pricing.ts's own top comments), so advertising "0 prompts"
-  // would read as a broken free tier rather than the intended gate. The copy
-  // has to say "bring your own key" instead of quoting the number.
-  it("free's copy states the BYOK requirement instead of quoting its zero allowance", async () => {
-    const { PLANS } = await import("@/shared/lib/pricing");
-    const free = PLANS.find((p) => p.name === "Free");
-
-    expect(PLAN_LIMITS.free.chatMessages).toBe(0);
-    expect(free?.features.some((f) => f.includes(String(PLAN_LIMITS.free.chatMessages)))).toBe(
-      false
-    );
-    expect(free?.features.some((f) => /eigene\w*\s*KI-Key/i.test(f))).toBe(true);
-  });
-
-  it("pro's copy quotes the enforced monthly prompt allowance", async () => {
-    const { PLANS } = await import("@/shared/lib/pricing");
-    const pro = PLANS.find((p) => p.name === "Pro");
-
-    expect(pro?.features.some((f) => f.includes(String(PLAN_LIMITS.pro.chatMessages)))).toBe(true);
-  });
-
-  // chatMessages counts assistant replies, and one finished prompt takes at
-  // least two (the bundled question, then the prompt). Calling the allowance
-  // "Prompts" promised about twice what it covers (Rechts-Audit 28.09.2026).
-  it("names pro's allowance in the unit that is actually counted", async () => {
-    const { PLANS } = await import("@/shared/lib/pricing");
-    const pro = PLANS.find((p) => p.name === "Pro");
-    const allowance = pro?.features.find((f) => f.includes(String(PLAN_LIMITS.pro.chatMessages)));
-
-    expect(allowance).toMatch(/Chat-Antworten/);
-    expect(allowance).not.toMatch(/Prompts/);
-  });
-
-  // With an own key the monthly cap is gone, the hourly abuse limit is not.
-  // ("Unbegrenzt viele Projekte" on Pro stays: projects really are uncapped.)
-  it("does not call BYOK usage unlimited", async () => {
-    const { PLANS } = await import("@/shared/lib/pricing");
-    const byokLine = PLANS.find((p) => p.name === "Free")?.features.find((f) =>
-      /Mit deinem Key/.test(f)
-    );
-
-    expect(byokLine).toBeDefined();
-    expect(byokLine).not.toMatch(/unbegrenzt/i);
-    expect(byokLine).toMatch(/ohne Monatslimit/);
-  });
-
-  it("keeps Pro's price and the free tier's zero price in sync with the config", async () => {
-    // Der buchbare Plan; ohne Schalter zeigt PLANS "Später" (pricing.test.ts).
-    const { buildPlans, PRO_PRICE_LABEL } = await import("@/shared/lib/pricing");
-    const plans = buildPlans(true);
-    expect(plans.find((p) => p.name === "Free")?.price).toBe("0 €");
-    expect(plans.find((p) => p.name === "Pro")?.price).toBe(PRO_PRICE_LABEL);
-  });
-
-  // The old badge claimed a Pro/Free usage multiplier ("10× mehr Nutzung").
-  // That comparison no longer has a basis: Free has zero server-key usage to
-  // multiply from. Pro's badge now states the actual differentiator instead
-  // — asserted literally, so a future edit can't quietly reintroduce a
-  // numeric claim with nothing to back it.
-  it("pro's badge states the real differentiator, not a stale usage multiplier", async () => {
-    const { buildPlans } = await import("@/shared/lib/pricing");
-    const pro = buildPlans(true).find((p) => p.name === "Pro");
-
-    expect(pro?.badge).toBe("Kein eigener Key nötig");
-    expect(pro?.badge).not.toMatch(/\d+\s*×/);
-  });
-});
-
 describe("toPlanKey", () => {
-  it("keeps pro, maps everything else (including the retired team plan) to free", () => {
-    expect(toPlanKey("pro")).toBe("pro");
-    expect(toPlanKey("team")).toBe("free");
-    expect(toPlanKey("free")).toBe("free");
-    expect(toPlanKey("enterprise")).toBe("free");
-    expect(toPlanKey(null)).toBe("free");
-    expect(toPlanKey(undefined)).toBe("free");
+  it("macht aus jedem gespeicherten Wert Free, auch aus einem alten pro oder team", () => {
+    for (const raw of ["pro", "team", "free", "enterprise", "", null, undefined]) {
+      expect(toPlanKey(raw), String(raw)).toBe("free");
+    }
   });
 });
 
@@ -128,13 +61,15 @@ describe("resolvePlan", () => {
     }
   });
 
-  it("nimmt Plan und Limits aus der Zeile", () => {
+  // Eine Zeile mit plan = 'pro' aus der Zeit mit Bezahlung bleibt in der Datenbank stehen. Sie darf weder abstürzen
+  // (PLAN_LIMITS.pro gibt es nicht) noch den Server-Key öffnen.
+  it("behandelt eine alte Zeile mit plan = 'pro' wie Free", () => {
     expect(resolvePlan({ plan: "pro", is_admin: false })).toEqual({
-      plan: "pro",
+      plan: "free",
       isAdmin: false,
-      limits: PLAN_LIMITS.pro,
+      limits: PLAN_LIMITS.free,
     });
-    expect(resolvePlan({ plan: "pro", is_admin: null }).limits).toEqual(PLAN_LIMITS.pro);
+    expect(resolvePlan({ plan: "pro", is_admin: null }).limits).toEqual(PLAN_LIMITS.free);
   });
 
   it("behandelt einen unbekannten Planwert wie Free", () => {
@@ -143,27 +78,30 @@ describe("resolvePlan", () => {
   });
 
   it("hebt für einen Admin beide Grenzen auf, ohne den Plan zu ändern", () => {
-    const admin = resolvePlan({ plan: "free", is_admin: true });
-    expect(admin.plan).toBe("free");
-    expect(admin.isAdmin).toBe(true);
-    expect(admin.limits).toEqual({ projects: Infinity, chatMessages: Infinity });
+    for (const plan of ["free", "pro"]) {
+      const admin = resolvePlan({ plan, is_admin: true });
+      expect(admin.plan).toBe("free");
+      expect(admin.isAdmin).toBe(true);
+      expect(admin.limits).toEqual({ projects: Infinity, chatMessages: Infinity });
+    }
   });
 });
 
 describe("requiresOwnKey", () => {
-  it("is true for a Free account without a key", () => {
+  it("is true for an account without a key", () => {
     expect(requiresOwnKey("free", false, false)).toBe(true);
   });
 
-  it("is false once the Free account has its own key", () => {
+  it("is false once the account has its own key", () => {
     expect(requiresOwnKey("free", false, true)).toBe(false);
   });
 
-  it("is false for Pro, it runs on the server key", () => {
-    expect(requiresOwnKey("pro", false, false)).toBe(false);
+  it("is true for an old pro row without a key, it is Free now", () => {
+    const { plan, isAdmin } = resolvePlan({ plan: "pro", is_admin: false });
+    expect(requiresOwnKey(plan, isAdmin, false)).toBe(true);
   });
 
-  it("is false for an admin on Free, admins are never capped", () => {
+  it("is false for an admin, admins are never capped", () => {
     expect(requiresOwnKey("free", true, false)).toBe(false);
   });
 });

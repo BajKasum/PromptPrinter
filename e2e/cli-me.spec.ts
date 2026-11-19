@@ -1,4 +1,4 @@
-import { test, expect, adminClient, makePro } from "./support/fixtures";
+import { test, expect, adminClient, makeAdmin } from "./support/fixtures";
 import { E2E_ORIGIN } from "./support/env";
 
 // Was das Terminal beim Start über das Konto erfährt (api/cli/me), gegen den lokalen Stack: mit einer
@@ -27,9 +27,23 @@ test.describe("Konto aus Sicht des Terminals", () => {
       needsConsent: false,
     });
 
-    await makePro(account);
-    const pro = await (await cli.get("/api/cli/me", { headers })).json();
-    expect(pro).toMatchObject({ plan: "pro", needsOwnKey: false });
+    // Eine alte Zeile mit plan = 'pro' ist Free (shared/lib/plans.ts): derselbe Gratis-Rahmen, kein Server-Key ohne Grenze.
+    const { error: oldPro } = await adminClient().from("profiles").update({ plan: "pro" }).eq("id", account.id);
+    expect(oldPro).toBeNull();
+    expect(await (await cli.get("/api/cli/me", { headers })).json()).toEqual({
+      email: account.email,
+      plan: "free",
+      hasOwnKey: false,
+      needsOwnKey: false,
+      freePromptsLeft: 3,
+      needsConsent: false,
+    });
+
+    // Ein Admin läuft ohne Grenze auf dem Server-Key: kein Gratis-Rahmen, nie ein Key nötig.
+    await makeAdmin(account);
+    const admin = await (await cli.get("/api/cli/me", { headers })).json();
+    expect(admin).toMatchObject({ plan: "free", needsOwnKey: false });
+    expect(admin).not.toHaveProperty("freePromptsLeft");
 
     // Das Cookie der Seite gilt hier nicht: die Route ist nur für das Terminal.
     expect((await page.request.get("/api/cli/me")).status()).toBe(401);

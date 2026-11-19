@@ -86,7 +86,7 @@ type ReplyStreamArgs = {
   uploads: ValidatedAttachment[];
   opened: OpenedTurn;
   override: Allowance["override"];
-  /** Der Platz im Gratis-Rahmen, oder null (eigener Key, Pro, Admin). */
+  /** Der Platz im Gratis-Rahmen, oder null (eigener Key, Admin, Einzelbetrieb). */
   freeTrial?: Allowance["freeTrial"];
   releaseReservations: Allowance["releaseReservations"];
   systemInstruction: string;
@@ -311,7 +311,7 @@ async function finishCompleted(
 export function replyStream(args: ReplyStreamArgs): ReadableStream<Uint8Array> {
   const { req, override, opened, systemInstruction, modelWindow, modelMessages } = args;
   // 7. Die Antwort erzeugen und speichern, als Strom an den Client, statt als eine undurchsichtige
-  //    Runde: alles davor (Prüfung, Kontingent, Stundenlimit, Systemprompt) antwortet bei einem
+  //    Runde: alles davor (Prüfung, Gratis-Rahmen, Stundenlimit, Systemprompt) antwortet bei einem
   //    Fehler weiter mit einer JSON-Problem-Antwort, erst die Antwort selbst wird ein SSE-Strom.
   //    Welche Ereignisse es gibt (meta, status, delta, done, error), in welcher Reihenfolge und
   //    mit welcher Nutzlast, steht in shared/lib/chat-stream.ts; `send` nimmt nur diese Formen.

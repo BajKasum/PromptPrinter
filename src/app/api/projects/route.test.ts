@@ -77,11 +77,13 @@ describe("POST /api/projects", () => {
       expect((await res.json()).kind).toBe("projects");
     });
 
-    it("lets a pro account past the free cap", async () => {
+    // Eine Zeile mit plan = 'pro' bleibt in der Datenbank stehen und ist Free (shared/lib/plans.ts).
+    it("holds an old account with plan = 'pro' to the same cap", async () => {
       tableResults.profiles = { data: { plan: "pro", is_admin: false } };
-      tableResults.projects = { data: null, error: null, count: 50 };
+      tableResults.projects = { data: null, error: null, count: 3 };
       const res = await POST(req());
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
+      expect(await res.json()).toMatchObject({ kind: "projects", limit: 3, plan: "free" });
     });
 
     it("exempts an admin from the cap and the hourly limit alike", async () => {

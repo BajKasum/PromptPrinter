@@ -20,8 +20,8 @@ export const runtime = "nodejs";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): ein Projekt entsteht ab
 // jetzt am Anfang der Arbeit, Name reicht, alles andere wächst im Workspace.
-// Server-seitig, damit das Projekt-Limit des Plans hier durchgesetzt wird,
-// nicht nur im Client.
+// Server-seitig, damit die Projekt-Grenze (plans.ts, dazu der Trigger
+// enforce_project_cap der Datenbank) hier durchgesetzt wird, nicht nur im Client.
 
 const createProjectSchema = z.object({
   name: z.string().trim().min(2, "Name muss mindestens 2 Zeichen haben").max(80),
@@ -76,18 +76,17 @@ export async function POST(req: Request) {
   return NextResponse.json({ projectId: project.id as string });
 }
 
-/** Projekt-Limit des Plans und Stundenlimit: die Absage als Antwort, sonst null. */
+/** Projekt-Grenze und Stundenlimit: die Absage als Antwort, sonst null. */
 async function enforceProjectLimits(
   req: Request,
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   m: Messages["api"]
 ): Promise<Response | null> {
-  // Plan allowance, the project cap now gates workspace creation. Filter by
-  // owner explicitly even though RLS already scopes the count (defense in
-  // depth; this count enforces a limit). Runs before the rate limit so its
-  // is_admin result can exempt the account from that too, admin used to
-  // only bypass the project cap, not the hourly rate limit.
+  // Die Projekt-Grenze gilt für jedes Konto ausser Admins. Die Zählung filtert
+  // ausdrücklich auf den Eigentümer, obwohl RLS sie schon eingrenzt (zweite
+  // Linie, die Zählung setzt eine Grenze durch). Sie läuft vor dem Stundenlimit,
+  // damit is_admin das Konto auch davon ausnehmen kann.
   const [profileResult, countResult] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", userId).maybeSingle(),
     supabase
@@ -95,7 +94,7 @@ async function enforceProjectLimits(
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId),
   ]);
-  // Ein Lesefehler lockert das Limit nicht: Zählung 0 hieße "unter der Grenze", Profil null hieße Plan Free.
+  // Ein Lesefehler ist keine Antwort: Zählung 0 hieße "unter der Grenze", Profil null nähme einem Admin die Ausnahme.
   if (profileResult.error || countResult.error) {
     captureError("projects.limit_read_failed", profileResult.error ?? countResult.error, { userId });
     return problem(503, m.projectCreateFailed);

@@ -64,18 +64,16 @@ const brainRequestSchema = z.object({
 
 type Params = { params: Promise<{ id: string }> };
 
-// Eine Analyse ist ein Modellaufruf wie ein Chat-Zug und zählt deshalb gegen
-// dasselbe Monatskontingent — mit demselben Redis-Schlüssel (chatQuotaKey,
-// server/security/rate-limit.ts), nicht mit einem eigenen. Ein zweiter Zähler
-// wäre ein zweites Versprechen, das die Preisseite gar nicht macht
-// („400 Nachrichten pro Monat"), und der Nutzer müsste plötzlich zwei Budgets
-// im Kopf haben.
+// Eine Analyse ist ein Modellaufruf wie ein Chat-Zug und läuft durch dieselbe
+// Kette (server/model-call.ts): mit eigenem Key auf dem Konto des Nutzers, ohne
+// ihn nur für Admins auf dem Server-Key. Den Gratis-Rahmen bietet sie nicht an:
+// er zählt fertige Prompts, und eine Analyse ist keiner.
 //
 // Der Aufruf ist beim Input teurer als ein Chat-Zug (bis zu 60 000 Zeichen
 // Quellen), beim Output deutlich billiger (rund 250 Token statt bis zu 6144).
 // Live gemessen liegt eine Textanalyse bei rund 0,0005 $ — in derselben
-// Grössenordnung wie ein Chat-Zug, also ist eine Einheit die ehrliche
-// Verrechnung.
+// Grössenordnung wie ein Chat-Zug, also zählt sie wie einer gegen das
+// Tagesbudget des Server-Keys.
 
 export async function POST(req: Request, { params }: Params) {
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
@@ -90,7 +88,7 @@ export async function POST(req: Request, { params }: Params) {
   const repoUrl = await resolveRepoUrl(admin, projectId, userId, requestedRepoUrl, m);
   if (repoUrl instanceof Response) return repoUrl;
 
-  // 4. Plan, BYOK, Kontingente: dieselbe Kette wie /api/chat (server/model-call.ts), weil dahinter
+  // 4. BYOK, Zugang zum Server-Key, Grenzen: dieselbe Kette wie /api/chat (server/model-call.ts), weil dahinter
   //    derselbe Kostentreiber steht, ein Modellaufruf auf dem Server-Key. Eigenes, knappes
   //    Stundenlimit statt der 120 des Chats: eine Analyse liest ein ganzes Repo und ist damit die
   //    teuerste Einzelaktion der App. Fünf pro Stunde decken jedes echte Arbeitsmuster ab (man
@@ -105,7 +103,6 @@ export async function POST(req: Request, { params }: Params) {
     m,
     checkHourlyLimit: () => rateLimit(rateLimitKey(req, "brain", userId), { limit: 5, windowMs: 60 * 60 * 1000 }),
     texts: {
-      monthlyLimit: m.brainLimit,
       tooMany: m.brainTooMany,
       budget: m.brainBudget,
       notConfigured: m.brainNotConfigured,

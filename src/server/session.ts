@@ -61,8 +61,8 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
  * Das Profil des angemeldeten Nutzers, hoechstens einmal pro Request.
  *
  * Holt bewusst die Vereinigungsmenge aller Spalten, die irgendeine Seite
- * braucht (`plan`/`is_admin` fuer Limits, `display_name` fuer die Anzeige,
- * `settings` u.a. fuer den "interested_in"-Marker aus dem Pro-Signup). Es ist
+ * braucht (`plan`/`is_admin` für Limits, `display_name` für die Anzeige,
+ * `settings` u.a. für die Sprache). Es ist
  * genau eine Zeile;
  * zwei Abfragen mit je zwei Spalten kosten mehr als eine mit fuenf, sobald
  * sie auf verschiedenen Render-Ebenen liegen und deshalb nacheinander laufen.
@@ -76,7 +76,7 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
   if (!user) return null;
 
   const supabase = await createClient();
-  // Ein Lesefehler ist NICHT "kein Profil" (das hieße Plan Free): er wirft, die Seite zeigt ihre Fehlerseite.
+  // Ein Lesefehler ist NICHT "kein Profil" (das hieße "kein Admin"): er wirft, die Seite zeigt ihre Fehlerseite.
   const { data } = orThrow(
     await supabase
       .from("profiles")
@@ -92,10 +92,11 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
 /**
  * Braucht der angemeldete Nutzer einen eigenen Key, bevor er chatten kann?
  *
- * Free hat seit 30.07.2026 kein Kontingent auf dem Server-Key (plans.ts), ein
- * Free-Konto ohne hinterlegten Key bekommt von /api/chat also immer 403
- * `byokRequired`. Die Chat-Seiten fragen das hier vorab, damit der Hinweis
- * schon im leeren Chat steht (Audit 23.09.2026, F-1).
+ * Ein Konto, das kein Admin ist, hat auf dem Server-Key nur den Gratis-Rahmen
+ * (plans.ts, server/free-trial.ts); ohne hinterlegten Key und mit
+ * aufgebrauchtem Rahmen bekommt es von /api/chat also 403 `byokRequired`. Die
+ * Chat-Seiten fragen das hier vorab, damit der Hinweis schon im leeren Chat
+ * steht.
  *
  * Liest nur `provider`, das in der SELECT-Allowlist von `authenticated` liegt
  * (0020/0030) — der Schluessel selbst bleibt unangetastet. Jede Zeile zaehlt,
@@ -110,7 +111,7 @@ const getKeyState = cache(async (): Promise<{ needsKey: boolean; freePromptsLeft
 
   const profile = await getSessionProfile();
   const { plan, isAdmin } = resolvePlan(profile);
-  // Pro, Team und Admins laufen ohnehin auf dem Server-Key, keine Abfrage noetig.
+  // Admins laufen ohne Grenze auf dem Server-Key, keine Abfrage nötig.
   if (!requiresOwnKey(plan, isAdmin, false)) return outside;
 
   const supabase = await createClient();

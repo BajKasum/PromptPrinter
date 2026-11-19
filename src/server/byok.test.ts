@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // QA finding C-6: byok.ts decides whether a user's calls run on their own key
-// or the server's — and therefore whether the monthly quota applies at all
-// (/api/chat skips it entirely when an override exists). It had no test.
+// or the server's — and therefore whether the free trial and the daily budget
+// apply at all (/api/chat skips both when an override exists). It had no test.
 
 const decrypt = vi.fn();
 vi.mock("@/server/security/crypto", () => ({

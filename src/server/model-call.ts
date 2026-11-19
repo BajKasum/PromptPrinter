@@ -1,10 +1,6 @@
 import "server-only";
 
-import {
-  chatQuotaKey,
-  reserveMonthlyQuota,
-  reserveServerKeyCall,
-} from "@/server/security/rate-limit";
+import { reserveServerKeyCall } from "@/server/security/rate-limit";
 import type { rateLimit } from "@/server/security/rate-limit";
 import type { createClient } from "@/server/supabase/server";
 import { llmConfig, selfHostedEndpointActive } from "@/server/llm";
@@ -15,20 +11,22 @@ import { problem } from "@/server/http/api-problem";
 import { DatabaseReadError, orThrow } from "@/server/supabase/query";
 import { captureError } from "@/shared/lib/observability";
 import { resolvePlan } from "@/shared/lib/plans";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
-import { fmt } from "@/shared/i18n/format";
 import type { Messages } from "@/shared/i18n/messages/de";
 
-// Die Kette vor einem Modellaufruf, den ein Konto auslöst: Plan, eigener Key, Einwilligung,
-// Monatskontingent, Stundenlimit, Tagesbudget des Server-Keys, Konfiguration. Es ist die
-// Kostenbremse des Projekts, deshalb steht sie nur hier: /api/chat (chat/allowance.ts) und die
-// Gedächtnis-Analyse (api/projects/[id]/brain) rufen dieselbe Funktion und unterscheiden sich nur
-// in den Optionen. Eine Änderung der Regel (neuer Plan, weitere Einwilligung, weiterer Schutz)
-// gilt damit für beide.
+// Die Kette vor einem Modellaufruf, den ein Konto auslöst: eigener Key, Zugang zum Server-Key (Gratis-Rahmen oder
+// Admin), Einwilligung, Stundenlimit, Tagesbudget des Server-Keys, Konfiguration. Es ist die Kostenbremse des
+// Projekts, deshalb steht sie nur hier: /api/chat (chat/allowance.ts), der Probelauf (api/test-run) und die
+// Gedächtnis-Analyse (api/projects/[id]/brain) rufen dieselbe Funktion und unterscheiden sich nur in den Optionen.
+// Eine weitere Einwilligung oder ein weiterer Schutz gilt damit für alle drei.
+//
+// Wer auf den Server-Key darf (shared/lib/plans.ts): ein Konto ohne eigenen Key nur im Gratis-Rahmen
+// (server/free-trial.ts), und den bietet nur ein Aufrufer an, der `freeTrial` übergibt; ein Admin ohne Grenze. Ein
+// Monatskontingent gibt es nicht, also auch keinen Zähler je Konto und Monat. Im Einzelbetrieb gilt beides nicht
+// (server/self-hosted.ts).
 //
 // Die Reihenfolge ist Vertrag, und JEDER Ausstieg gibt zurück, was bis dahin reserviert war
-// (releaseReservations): Plan und Key lesen, Free ohne Key, Einwilligung, Monatskontingent,
-// Stundenlimit, Tagesbudget (letzte Prüfung vor dem Modell), Konfiguration. Vor der ersten
+// (releaseReservations): Plan und Key lesen, Zugang zum Server-Key mit Einwilligung (der Gratis-Rahmen reserviert
+// danach seinen Platz), Stundenlimit, Tagesbudget (letzte Prüfung vor dem Modell), Konfiguration. Vor der ersten
 // Reservierung kostet eine Ablehnung nichts. route.exits.test.ts hält sie für den Chat fest.
 
 type SupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
@@ -56,8 +54,8 @@ export type ModelCallOptions = {
    * als Literal im Aufruf verlangt tests/guards/rate-limit-scopes.test.ts.
    */
   checkHourlyLimit: () => ReturnType<typeof rateLimit>;
-  /** Die Ablehnungstexte des Aufruf-Typs. `monthlyLimit` trägt {plan} und {limit}. */
-  texts: { monthlyLimit: string; tooMany: string; budget: string; notConfigured: string; unavailable: string };
+  /** Die Ablehnungstexte des Aufruf-Typs. */
+  texts: { tooMany: string; budget: string; notConfigured: string; unavailable: string };
   /**
    * Ohne Server-Anbieter antwortet der Aufruf in der Entwicklung mit einer Platzhalterantwort
    * (Stub), nur in Produktion verweigert er den Dienst. Aus: auch in der Entwicklung eine klare
@@ -65,8 +63,9 @@ export type ModelCallOptions = {
    */
   stubOutsideProduction: boolean;
   /**
-   * Nur der Chat: ein Free-Konto ohne eigenen Key darf im Gratis-Rahmen auf den Server-Key (server/free-trial.ts).
-   * `budget` ist die Absage, wenn der Rahmen heute aufgebraucht ist. Ohne die Option bleibt Free beim eigenen Key.
+   * Chat und Probelauf: ein Konto ohne eigenen Key darf im Gratis-Rahmen auf den Server-Key (server/free-trial.ts).
+   * `budget` ist die Absage, wenn der Rahmen heute aufgebraucht ist. Ohne die Option braucht ein Konto ohne
+   * eigenen Key einen (byokRequired), die Analyse bietet den Rahmen deshalb nicht an.
    */
   freeTrial?: {
     req: Request;
@@ -81,9 +80,7 @@ export type ModelCallOptions = {
 
 export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCallAllowance | Response> {
   const { supabase, userId, m, texts } = opts;
-  const now = new Date();
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  // Ein Lesefehler ist weder "Plan Free" noch "kein eigener Key": das lehnte ein Pro-Konto mit dem Hinweis auf einen
+  // Ein Lesefehler ist weder "kein Admin" noch "kein eigener Key": das lehnte einen Admin mit dem Hinweis auf einen
   // eigenen Key ab oder schickte den Zug auf den Server-Key. Vor jeder Reservierung also 503, eine Ablehnung kostet nichts.
   let profile: Awaited<ReturnType<typeof readProfile>>;
   let override: Awaited<ReturnType<typeof getUserOverride>>;
@@ -99,9 +96,9 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
 
   const { plan, isAdmin, limits } = resolvePlan(profile);
 
-  // Die Plätze, die für diesen Aufruf reserviert sind (Monatskontingent, globales Tagesbudget).
-  // Scheitert der Modellaufruf selbst, gehen sie zurück, damit ein gescheiterter Zug niemandes
-  // Kontingent verbraucht. Beide müssen auf jedem Fehlerweg zurück.
+  // Die Plätze, die für diesen Aufruf reserviert sind (Gratis-Rahmen, globales Tagesbudget). Scheitert der
+  // Modellaufruf selbst, gehen sie zurück, damit ein gescheiterter Zug niemandem etwas verbraucht. Alle müssen auf
+  // jedem Fehlerweg zurück.
   const reservations: (() => Promise<void>)[] = [];
   const releaseReservations = async () => {
     for (const release of reservations) await release();
@@ -109,11 +106,11 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
   };
 
   // Im Einzelbetrieb läuft ein Zug ohne eigenen Key auf dem Endpunkt des Betreibers (llm/config.ts): er kostet
-  // ihn nichts je Aufruf, Plan und Gratis-Rahmen gelten dann nicht, wie bei einem eigenen Key. Stundenlimit und
-  // Tagesbudget unten bleiben. Ohne SELF_HOSTED (promptprinter.app) ist das nie wahr.
+  // ihn nichts je Aufruf, Gratis-Rahmen und Einwilligung gelten dann nicht, wie bei einem eigenen Key. Stundenlimit
+  // und Tagesbudget unten bleiben. Ohne SELF_HOSTED (promptprinter.app) ist das nie wahr.
   let freeTrial: FreeTrialSlot | null = null;
   if (!override && !selfHostedEndpointActive()) {
-    const slot = await reserveMonthlySlot({ ...opts, plan, limit: limits.chatMessages, now, monthStart, reservations });
+    const slot = await reserveServerKeyAccess({ ...opts, plan, limit: limits.chatMessages, reservations });
     if (slot instanceof Response) return slot;
     freeTrial = slot;
   }
@@ -129,10 +126,9 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     }
   }
 
-  // Globale Tagesgrenze für den Server-Key (QA-Befund S-1, Schritt 4). Jede Kontrolle davor geht
-  // davon aus, dass der Angreifer ein Nutzer ist, und begrenzt ihn einzeln; diese hier begrenzt
-  // die RECHNUNG, wer auch immer sie über welches Loch treibt. Sie ist die Rückversicherung für
-  // das nächste Leck, das noch niemand gefunden hat.
+  // Globale Tagesgrenze für den Server-Key. Jede Kontrolle davor geht davon aus, dass der Angreifer ein Nutzer ist,
+  // und begrenzt ihn einzeln; diese hier begrenzt die RECHNUNG, wer auch immer sie über welches Loch treibt. Sie ist
+  // die Rückversicherung für das nächste Leck, das noch niemand gefunden hat.
   //
   // Nur für Aufrufe, die den Server-Key wirklich ausgeben: ein BYOK-Nutzer läuft auf seinem
   // eigenen Konto, kostet den Betreiber nichts und arbeitet weiter, auch wenn das hier ausgelöst
@@ -142,11 +138,10 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     if (refused) return refused;
   }
 
-  // Ohne Server-Anbieter nicht still mit der Platzhalterantwort antworten (QA-Befund C-8). Der
-  // Stub ist ein Merkmal für Entwicklung und Tests, der ganze Ablauf bleibt ohne Key testbar. In
-  // Produktion (fehlender ZAI_API_KEY/GEMINI_API_KEY, beim Start nur gewarnt, siehe assertEnv() in
-  // server/env.ts) wäre er ein stiller Totalausfall der einen Sache, die das Produkt tut: alle
-  // bekämen eine glaubhafte Platzhalterantwort, und nichts würde anzeigen, dass etwas fehlt. Ein
+  // Ohne Server-Anbieter nicht still mit der Platzhalterantwort antworten. Der Stub ist ein Merkmal für Entwicklung
+  // und Tests, der ganze Ablauf bleibt ohne Key testbar. In Produktion (fehlender ZAI_API_KEY/GEMINI_API_KEY, beim
+  // Start nur gewarnt, siehe assertEnv() in server/env.ts) wäre er ein stiller Totalausfall der einen Sache, die das
+  // Produkt tut: alle bekämen eine glaubhafte Platzhalterantwort, und nichts würde anzeigen, dass etwas fehlt. Ein
   // BYOK-Key umgeht das immer, er berührt die Konfiguration des Servers nie.
   const stubAllowed = opts.stubOutsideProduction && process.env.NODE_ENV !== "production";
   if (!llmConfig() && !override && !stubAllowed) {
@@ -156,105 +151,40 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
   return { override, plan, isAdmin, freeTrial, releaseReservations };
 }
 
-// Eine Zeile je Zug: completeTurn schreibt zu jeder Nutzer-Nachricht genau eine Antwort, die
-// Zählung nur dieser Rolle zählt einen Zug nicht doppelt. Das ist auch die Zahl in
-// Einstellungen und Abrechnung.
-//
-// Faul gelesen (Betriebs-Audit 04.10.2026): die Zählung wächst mit der Nutzung und wird nur an
-// zwei Stellen gebraucht, (a) wenn Redis nicht entscheiden kann, dann IST sie die Durchsetzung,
-// und (b) wenn eine Ablehnung die Zahl nennen muss.
-// Gibt null zurück, wenn die Zählung scheitert: ein Fehler ist NICHT 0, sonst wäre ohne Redis das Monatskontingent
-// nicht durchgesetzt. Der Aufrufer entscheidet, was null heißt.
-async function countAssistantMessagesThisMonth(
-  supabase: SupabaseClient,
-  userId: string,
-  monthStart: string
-): Promise<number | null> {
-  try {
-    const { count } = orThrow(
-      await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("role", "assistant")
-        .gte("created_at", monthStart),
-      "messages count"
-    );
-    return count ?? 0;
-  } catch (err) {
-    if (!(err instanceof DatabaseReadError)) throw err;
-    captureError("model_call.read_failed", err, { userId });
-    return null;
-  }
-}
-
-/** Zugang zum Server-Key und Platz im Monatskontingent: die Absage als Antwort, ein Platz im Gratis-Rahmen, sonst null. */
-async function reserveMonthlySlot(args: ModelCallOptions & {
+/**
+ * Darf dieser Aufruf ohne eigenen Key auf den Server-Key? Die Absage als Antwort, ein Platz im Gratis-Rahmen, oder
+ * null (Admin: ohne Grenze, nichts zu reservieren).
+ *
+ * `limit` ist `chatMessages` aus plans.ts: 0 für jedes Konto, das kein Admin ist, auch für eine alte Zeile mit
+ * `plan = 'pro'` (toPlanKey), `Infinity` für Admins. Werte dazwischen gibt es nicht.
+ */
+async function reserveServerKeyAccess(args: ModelCallOptions & {
   plan: string;
   limit: number;
-  now: Date;
-  monthStart: string;
   reservations: (() => Promise<void>)[];
 }): Promise<Response | FreeTrialSlot | null> {
-  const { supabase, userId, appMetadata, m, texts, plan, limit, now, monthStart, reservations } = args;
-  // Free hat bewusst genau null Antworten (plans.ts): der Plan hat keinen Zugang zum Server-Key,
-  // zum Chatten braucht Free einen eigenen Key. Das ist etwas anderes als "Limit erreicht" (da
-  // gab es ein Kontingent und es ist aufgebraucht) und bekommt eine eigene Meldung. Es gibt
-  // nichts zu reservieren, und kein Grund, bei jedem Versuch einen Redis-Aufruf dafür zu zahlen.
-  if (limit <= 0 && args.freeTrial && plan === "free") {
-    return reserveFreeTrialSlot(args, args.freeTrial, reservations);
-  }
+  const { appMetadata, m, plan, limit, reservations } = args;
   if (limit <= 0) {
-    return problem(
-      403,
-      // Ohne buchbaren Pro-Plan darf die Meldung nicht zu Pro raten (pro-availability.ts).
-      PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon,
-      { kind: "byokRequired", plan }
-    );
+    if (args.freeTrial) return reserveFreeTrialSlot(args, args.freeTrial, reservations);
+    // Ohne Gratis-Rahmen (Analyse) bleibt nur der eigene Key. Es gibt nichts zu reservieren, und kein Grund, bei
+    // jedem Versuch einen Redis-Aufruf dafür zu zahlen.
+    return problem(403, m.byokRequired, { kind: "byokRequired", plan });
   }
 
-  // Läuft dieser Aufruf auf Z.ai, braucht das Konto vorher die ausdrückliche Zustimmung zur
-  // Übermittlung nach Singapur (Rechts-Audit R-1, server/consent.ts). Vor jeder Reservierung,
-  // damit eine Ablehnung nichts kostet und nichts zurückgeben muss. Der eigene Key (BYOK) geht
-  // nie an Z.ai und braucht sie nicht; ohne Server-Key (Stub) auch nicht.
+  // Ein Admin läuft ohne Grenze auf dem Server-Key. Läuft der auf Z.ai, braucht auch er vorher die ausdrückliche
+  // Zustimmung zur Übermittlung nach Singapur (server/consent.ts): die Übermittlung ist dieselbe. Vor jeder
+  // Reservierung, damit eine Ablehnung nichts kostet. Der eigene Key (BYOK) geht nie an Z.ai und braucht sie nicht;
+  // ohne Server-Key (Stub) auch nicht.
   if (llmConfig()?.provider === "zai" && !hasZaiConsent(appMetadata)) {
     return problem(403, m.consentRequired, { kind: "consentRequired" });
   }
-
-  // Beide Aufruf-Typen zählen gegen dasselbe Monatskontingent, mit demselben Schlüssel
-  // (chatQuotaKey): ein zweiter Zähler wäre ein zweites Versprechen, das die Preisseite nicht
-  // macht, und der Nutzer müsste zwei Budgets im Kopf haben.
-  const reservation = await reserveMonthlyQuota(chatQuotaKey(userId, now), limit);
-  // null = Redis kann nicht entscheiden (nicht konfiguriert oder nicht erreichbar): dann ist die
-  // Zählung in der Datenbank die Durchsetzung. Das gilt für beide Aufruf-Typen gleich: ohne
-  // Redis darf eine Analyse nicht mehr, als ein aufgebrauchtes Monatskontingent mit Redis erlaubte.
-  let used: number | null = null;
-  if (!reservation) {
-    used = await countAssistantMessagesThisMonth(supabase, userId, monthStart);
-    if (used === null) return problem(503, texts.unavailable);
-  }
-  const overLimit = reservation ? !reservation.allowed : (used ?? 0) >= limit;
-  if (overLimit) {
-    if (reservation) await reservation.release();
-    // Die Zahl steht in der Ablehnung: der eine Fall, in dem der Redis-Weg noch zählt, und ein
-    // seltener (das Konto steht an seiner Grenze).
-    used ??= await countAssistantMessagesThisMonth(supabase, userId, monthStart);
-    // Scheitert hier die Zählung, bleibt es bei der Ablehnung, nur ohne die Zahl: eine Ablehnung lockert nichts.
-    return problem(403, fmt(texts.monthlyLimit, { plan, limit: limit }), {
-      kind: "chatMessages",
-      limit: limit,
-      ...(used === null ? {} : { current: used }),
-      plan,
-    });
-  }
-  if (reservation) reservations.push(reservation.release);
   return null;
 }
 
 /**
- * Der Gratis-Rahmen statt des Monatskontingents. Erst ob überhaupt noch etwas übrig ist (sonst zählt der Key-Weg, nicht
- * die Einwilligung), dann die Einwilligung wie beim Kontingent: bis dahin kostet eine Ablehnung nichts. Aufgebraucht heisst derselbe Weg wie ohne Rahmen (byokRequired), ein leeres Tagesbudget bekommt eine
- * eigene Art, damit der Chat sagt, dass es morgen wieder geht.
+ * Der Gratis-Rahmen. Erst ob überhaupt noch etwas übrig ist (sonst zählt der Key-Weg, nicht die Einwilligung), dann
+ * die Einwilligung: bis dahin kostet eine Ablehnung nichts. Aufgebraucht heisst derselbe Weg wie ohne Rahmen
+ * (byokRequired), ein leeres Tagesbudget bekommt eine eigene Art, damit der Chat sagt, dass es morgen wieder geht.
  */
 async function reserveFreeTrialSlot(
   args: ModelCallOptions & { plan: string },
@@ -262,8 +192,7 @@ async function reserveFreeTrialSlot(
   reservations: (() => Promise<void>)[]
 ): Promise<Response | FreeTrialSlot> {
   const { userId, appMetadata, m, plan } = args;
-  const byokRequired = (freeTrial: string) =>
-    problem(403, PRO_AVAILABLE ? m.byokRequired : m.byokRequiredSoon, { kind: "byokRequired", plan, freeTrial });
+  const byokRequired = (freeTrial: string) => problem(403, m.byokRequired, { kind: "byokRequired", plan, freeTrial });
   // Ein Probelauf gilt einem Prompt, den das Konto schon hat: auch der letzte Gratis-Prompt darf ihn noch haben.
   if (!freeTrial.testRunOf) {
     const left = await freePromptsLeft(userId);

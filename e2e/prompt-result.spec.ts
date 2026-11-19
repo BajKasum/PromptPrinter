@@ -1,4 +1,4 @@
-import { test, expect, makePro, sendFirstMessage } from "./support/fixtures";
+import { test, expect, makeAdmin, sendFirstMessage } from "./support/fixtures";
 
 // Das fertige Ergebnis im Chat: Prompt-Prüfung (#236, #242), Platzhalter ausfüllen (#224) und Verfeinern per Tipp
 // (#245). Der Chat läuft im Stub-Modus; seine Demo-Antwort trägt die Frage der Person in den Prompt-Block
@@ -10,7 +10,7 @@ const SHOTS = process.env.PP_SHOT_DIR;
 
 test.describe("Ergebnis im Chat", () => {
   test("ein riskanter Befehl im Prompt wird benannt, Kopieren bleibt möglich", async ({ signedIn: { page, account } }) => {
-    await makePro(account);
+    await makeAdmin(account);
     await sendFirstMessage(page, HOSTILE);
 
     const result = page.getByRole("region", { name: "Aktuelle Antwort von Finn" });
@@ -26,7 +26,7 @@ test.describe("Ergebnis im Chat", () => {
   });
 
   test("Platzhalter ausfüllen und per Tipp verfeinern", async ({ signedIn: { page, account } }) => {
-    await makePro(account);
+    await makeAdmin(account);
     await sendFirstMessage(page, "Ein Brief an meinen Vermieter");
 
     const result = page.getByRole("region", { name: "Aktuelle Antwort von Finn" });

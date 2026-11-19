@@ -52,9 +52,9 @@ describe("Datenmodell der gespeicherten Prompts", () => {
     expect(project).not.toMatch(/\bstatus\b/);
   });
 
-  it("kennt nur die Pläne free und pro", () => {
+  it("kennt nur den Plan free", () => {
     const plans = files.find(({ path }) => path === "shared/lib/plans.ts")!.text;
-    expect(plans).toMatch(/export type PlanKey = "free" \| "pro";/);
+    expect(plans).toMatch(/export type PlanKey = "free";/);
     expect(plans).not.toMatch(/\bteam\b/);
   });
 });

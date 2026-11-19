@@ -47,7 +47,7 @@ import { logEvent, logWarning } from "@/shared/lib/observability";
 // Schalter als zu: es wird wie bisher zuerst Z.ai gefragt.
 //
 // ─── Kosten ────────────────────────────────────────────────────────────────
-// Ein Zug zaehlt weiter einmal gegen Monatskontingent und das normale
+// Ein Zug zählt weiter einmal gegen Gratis-Rahmen und das normale
 // Tagesbudget (die Reservierung steht in der Route, vor dem Aufruf). Zusaetzlich
 // belegt ein Failover-Zug einen Platz im eigenen Budget, weil Gemini je Zug etwa
 // das Achtfache kostet. Scheitert auch Gemini, wird der Platz zurueckgegeben.

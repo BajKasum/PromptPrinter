@@ -39,14 +39,14 @@ export async function createAccount(label: string): Promise<Account> {
 }
 
 /**
- * Free chattet nur mit eigenem Key (requiresOwnKey, shared/lib/plans.ts): ein
- * frisches Konto sieht im Chat einen Hinweis statt der Eingabe. Wer den Chat
- * selbst prüfen will, braucht ein Konto, das auf dem Server-Key läuft. Direkt in
- * der Datenbank gesetzt, nicht über den Zahlungsweg: der gehört nicht hierher.
+ * Ein Konto ohne eigenen Key chattet nur im Gratis-Rahmen (server/free-trial.ts), und der zählt Züge je Konto und
+ * je Adresse: die Suite chattet von einer Adresse aus und bräuchte ihn schnell auf. Wer den Chat selbst prüfen
+ * will, braucht ein Konto, das ohne Grenze auf dem Server-Key läuft, und das ist nur ein Admin
+ * (shared/lib/plans.ts). Direkt in der Datenbank gesetzt: `is_admin` darf das Konto selbst nicht ändern.
  */
-export async function makePro(account: Account): Promise<void> {
-  const { error } = await adminClient().from("profiles").update({ plan: "pro" }).eq("id", account.id);
-  if (error) throw new Error(`E2E: Plan konnte nicht gesetzt werden: ${error.message}`);
+export async function makeAdmin(account: Account): Promise<void> {
+  const { error } = await adminClient().from("profiles").update({ is_admin: true }).eq("id", account.id);
+  if (error) throw new Error(`E2E: Adminrolle konnte nicht gesetzt werden: ${error.message}`);
 }
 
 /** Räumt auf; ein schon gelöschtes Konto (der Löschtest) ist kein Fehler. */

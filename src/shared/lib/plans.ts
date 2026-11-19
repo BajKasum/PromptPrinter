@@ -1,74 +1,47 @@
-export type PlanKey = "free" | "pro";
+/**
+ * Es gibt einen Plan: Free. PromptPrinter ist kostenlos und Open Source, bezahlt wird nichts.
+ *
+ * Die Spalte `profiles.plan` bleibt in der Datenbank, der Code liest ihren Wert nicht mehr: auch eine alte Zeile
+ * mit `'pro'` ist ein Free-Konto (toPlanKey). `plan` steht weiter in Antworten wie `api/cli/me` und in den
+ * Ablehnungen des Chats, damit deren Form für die Terminal-App gleich bleibt.
+ */
+export type PlanKey = "free";
 
 export type PlanLimits = { projects: number; chatMessages: number };
 
-// Marketed allowances per plan, the single source of truth for both the usage
-// meters (settings, billing) and the server-side enforcement in /api/chat.
-// `Infinity` means "no cap" (paid plans have unlimited projects).
-//
-// chatMessages counts assistant replies (one per turn) in the current calendar
-// month, ONLY on the server's own provider key — a user's own BYOK key
-// (settings) bypasses this entirely, see /api/chat's override check. That
-// distinction is now the whole point of Free, see below.
-//
-// ─── Re-costed 2026-07-29, re-priced 2026-07-30, re-modelled 2026-07-30 ──
-// 2026-07-29: the original numbers (Free 200, Pro/Team 2000 at 7 €) were
-// picked as "generous, and far below the previous worst case" without ever
-// being checked against what a turn actually costs. They didn't survive that
-// check — see git history for the full math. First correction landed on
-// Free 50 / Pro 400 at 5 €, the smallest price that still broke even on a
-// worst-case month. A same-day follow-up moved to Free 25 / Pro 350 at 5,90 €
-// on product grounds (keep Free's per-signup cost minimal, make Pro a clear
-// step up) — still charging the operator's own key for every Free account.
-//
-// 2026-07-30 (second pass, same day): a solo, self-funded operator can't
-// carry ANY structural per-signup cost right now, however small. `free.
-// chatMessages = 0` is not a rounding-down of the free allowance, it is the
-// removal of Free's access to the server's own key entirely — Free now
-// requires a BYOK key to chat at all (see api/chat/route.ts's dedicated
-// early-return for this exact state, and lib/pricing.ts's marketed copy,
-// which leads with the BYOK requirement rather than a message count).
-// This isn't a workaround for `chatMessages: 0`, it's the intended state: a
-// signed-up account with no BYOK key and plan "free" is correctly, permanently
-// unable to spend the operator's model budget, by construction, not by a
-// limit that merely happens to be small.
-//
-// Pro moves 350 → 400: with Free now contributing zero server-key cost,
-// there's no structural cost pressure pushing Pro's allowance down, so it
-// goes to the roundest generous number the same 5,90 €/month price still
-// covers comfortably — see lib/pricing.ts for the per-plan margin math
-// (still solidly profitable even in the code's own worst-case scenario, not
-// just on average).
-//
-// Saving prompts to a project's Ergebnisse ("Prompt speichern") is deliberately
-// unmetered by plan: it makes no model call, it just keeps text the user already
-// has, so there's no cost to ration. Only the project cap and the chat-message cap
-// bind per plan; ACCOUNT_CEILINGS below is a technical ceiling, not a plan limit.
-// (The old per-month "Generierungen" allowance died with the automatic
-// generation pipeline, 2026-07.)
-//
-// `free.projects` steht zusätzlich im Trigger enforce_project_cap der Datenbank, denn die
-// Route ist nicht der einzige Schreibweg (tests/guards/account-ceilings.test.ts hält beide gleich).
+/**
+ * Was ein Konto darf.
+ *
+ * `chatMessages` ist der Zugang zum Server-Key: 0 heisst, das Konto chattet mit eigenem Key (BYOK) oder im
+ * Gratis-Rahmen (FREE_TRIAL, server/free-trial.ts), `Infinity` (nur Admins, effectiveLimits) heisst ohne Grenze.
+ * Ein Monatskontingent dazwischen gibt es nicht. Ein eigener Key hebt die Chat-Grenze immer auf, die Projekt-Grenze
+ * bleibt.
+ *
+ * Prompts speichern zählt nicht: es ruft kein Modell auf. ACCOUNT_CEILINGS unten ist eine technische Obergrenze,
+ * keine Grenze des Plans.
+ *
+ * `free.projects` steht zusätzlich im Trigger enforce_project_cap der Datenbank, denn die Route ist nicht der
+ * einzige Schreibweg (tests/guards/account-ceilings.test.ts hält beide gleich).
+ */
 export const PLAN_LIMITS: Record<PlanKey, PlanLimits> = {
   free: { projects: 3, chatMessages: 0 },
-  pro: { projects: Infinity, chatMessages: 400 },
 };
 
 /**
- * Der Gratis-Rahmen eines Free-Kontos ohne eigenen Key: so viele fertige Prompts über den Server-Key, und höchstens
- * so viele Züge (eine Rückfrage ist ein Zug, aber kein Prompt). `free.chatMessages` bleibt 0: der Rahmen ist kein
- * Monatskontingent, er gilt einmal je Konto. Durchgesetzt in server/free-trial.ts, mit Grenze je IP und eigenem
- * Tagesbudget, weil Konten ohne Mailbestätigung entstehen.
+ * Der Gratis-Rahmen eines Kontos ohne eigenen Key: so viele fertige Prompts über den Server-Key, und höchstens
+ * so viele Züge (eine Rückfrage ist ein Zug, aber kein Prompt). Er gilt einmal je Konto, nicht je Monat.
+ * Durchgesetzt in server/free-trial.ts, mit Grenze je IP und eigenem Tagesbudget, weil Konten ohne
+ * Mailbestätigung entstehen.
  */
 export const FREE_TRIAL = { prompts: 3, turns: 10 } as const;
 
 const MIB = 1024 * 1024;
 
 /**
- * Obergrenzen je Konto, für jeden Plan und auch für Admins. Sie schützen die gemeinsame Datenbank und den
- * Speicher vor einem einzelnen Konto, normale Nutzung stösst nie an. Durchgesetzt werden sie in der Datenbank
- * (Migration `*_account_ceilings.sql`), die Zahlen hier sind ihr Spiegel für Tests und Doku. Rechnung und
- * Verhalten an der Grenze: docs/SETUP.md, "Grenzen je Konto".
+ * Obergrenzen je Konto, auch für Admins. Sie schützen die gemeinsame Datenbank und den Speicher vor einem
+ * einzelnen Konto, normale Nutzung stösst nie an. Durchgesetzt werden sie in der Datenbank (Migration
+ * `*_account_ceilings.sql`), die Zahlen hier sind ihr Spiegel für Tests und Doku. Rechnung und Verhalten an der
+ * Grenze: docs/SETUP.md, "Grenzen je Konto".
  */
 export const ACCOUNT_CEILINGS = {
   conversations: { rows: 10_000 },
@@ -78,19 +51,18 @@ export const ACCOUNT_CEILINGS = {
   projectFileStorage: { objects: 500, bytes: 100 * MIB },
 } as const;
 
-// Admin is a role (profiles.is_admin), not a plan, it never changes what
-// `plan` a profile is on, only whether its limits actually bind. Centralized
-// here so every call site (settings, billing, /api/chat, /api/projects)
-// answers "is this account exempt" the same one way instead of re-deriving it.
+/**
+ * Admin ist eine Rolle (`profiles.is_admin`), kein Plan: ein Admin-Konto hat keine Projekt-Grenze und den
+ * Server-Key ohne Grenze (Stundenlimit und Tagesbudget gelten trotzdem, server/model-call.ts). Jede Stelle, die
+ * "ist dieses Konto ausgenommen" fragt, fragt hier.
+ */
 export function effectiveLimits(plan: PlanKey, isAdmin: boolean): PlanLimits {
-  return isAdmin
-    ? { projects: Infinity, chatMessages: Infinity }
-    : PLAN_LIMITS[plan];
+  return isAdmin ? { projects: Infinity, chatMessages: Infinity } : PLAN_LIMITS[plan];
 }
 
-/** Normalizes a stored `profiles.plan` value; anything unknown is Free. */
-export function toPlanKey(raw: string | null | undefined): PlanKey {
-  return raw === "pro" ? raw : "free";
+/** Jeder gespeicherte Wert von `profiles.plan` ist Free, auch ein alter `'pro'`. */
+export function toPlanKey(_raw: string | null | undefined): PlanKey {
+  return "free";
 }
 
 /** Die zwei Spalten von `profiles`, aus denen Plan und Limits folgen. */
@@ -99,12 +71,9 @@ export type PlanProfile = { plan?: string | null; is_admin?: boolean | null } | 
 export type ResolvedPlan = { plan: PlanKey; isAdmin: boolean; limits: PlanLimits };
 
 /**
- * Aus einer Zeile von `profiles` (`plan`, `is_admin`) werden Plan, Admin-Status und die
- * wirksamen Limits, in dieser einen Reihenfolge: Plan normalisieren, Admin lesen, dann
- * `effectiveLimits`. Eine fehlende Zeile ist ein Free-Konto ohne Adminrechte. Jede Stelle,
- * die "was darf dieses Konto" beantwortet (Chat, Projekte, Gedächtnis, Seiten), ruft dies
- * auf, statt die Folge nachzubauen: kommt ein Plan dazu oder ändert sich die Regel für
- * Admins, steht die Änderung hier und nirgends sonst (#141).
+ * Aus einer Zeile von `profiles` werden Plan, Admin-Status und die wirksamen Limits. Eine fehlende Zeile ist ein
+ * Konto ohne Adminrechte. Jede Stelle, die "was darf dieses Konto" beantwortet (Chat, Projekte, Gedächtnis,
+ * Seiten), ruft dies auf, statt die Folge nachzubauen (#141).
  */
 export function resolvePlan(profile: PlanProfile): ResolvedPlan {
   const plan = toPlanKey(profile?.plan);
@@ -115,10 +84,9 @@ export function resolvePlan(profile: PlanProfile): ResolvedPlan {
 /**
  * Kann dieses Konto nur mit eigenem Key chatten, und hat es keinen?
  *
- * Genau der Zustand, in dem /api/chat mit `kind: "byokRequired"` ablehnt
- * (Audit 23.09.2026, F-1). Die Chat-Seiten fragen das beim Rendern, damit ein
- * neues Free-Konto den Hinweis sieht, BEVOR es seine Idee tippt, und nicht
- * erst als Fehler nach dem Absenden.
+ * Genau der Zustand, in dem /api/chat nach dem Gratis-Rahmen mit `kind: "byokRequired"` ablehnt. Die Chat-Seiten
+ * fragen das beim Rendern, damit der Hinweis schon im leeren Chat steht und nicht erst als Fehler nach dem
+ * Absenden (Audit 23.09.2026, F-1).
  */
 export function requiresOwnKey(plan: PlanKey, isAdmin: boolean, hasOwnKey: boolean): boolean {
   if (hasOwnKey) return false;

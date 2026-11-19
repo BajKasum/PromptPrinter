@@ -194,7 +194,9 @@ export const PROFILE_COLUMNS =
 /**
  * Der Konto-Abschnitt. Auch hier eine Positivliste, kein Durchreichen: nicht
  * dabei sind `is_admin`, die Kundennummer, die Abo-ID und der Portal-Link des
- * Zahlungsanbieters.
+ * Zahlungsanbieters. `plan` und `subscription` zeigen, was in `profiles` steht:
+ * die Spalten bleiben in der Datenbank, auch wenn der Code den Plan nicht mehr
+ * liest (shared/lib/plans.ts), und ein Export zeigt das Gespeicherte.
  */
 export function buildAccountSection(user: AuthUser, profile: Row | null): Row {
   return {

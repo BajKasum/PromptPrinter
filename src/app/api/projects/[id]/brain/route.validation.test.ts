@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // stehen in route.validation.cases.json, aufgenommen gegen zod 3.25.76
 // (`RECORD_VALIDATION=1 npx vitest run <diese Datei>`). Eine gültige Eingabe kommt bis zur Eigentümerprüfung
 // und endet dort mit 404 (das Projekt gehört niemandem): so bleibt der Vertrag auf die Grenze der Prüfung
-// beschränkt, ohne Modellaufruf, Kontingent oder Speicher.
+// beschränkt, ohne Modellaufruf, Reservierung oder Speicher.
 
 const CASES_FILE = fileURLToPath(new URL("./route.validation.cases.json", import.meta.url));
 type Case = { name: string; body: unknown; raw?: string; status?: number; response?: unknown };
@@ -35,7 +35,7 @@ vi.mock("@/server/supabase/admin", () => ({
 }));
 vi.mock("@/server/security/rate-limit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();
-  return { ...actual, rateLimit: vi.fn(), rateLimitKey: () => "u:user-1", reserveMonthlyQuota: vi.fn(), reserveServerKeyCall: vi.fn() };
+  return { ...actual, rateLimit: vi.fn(), rateLimitKey: () => "u:user-1", reserveServerKeyCall: vi.fn() };
 });
 vi.mock("@/server/byok", () => ({ getUserOverride: vi.fn() }));
 vi.mock("@/server/llm", () => ({ llmConfig: () => null }));

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { test, expect, adminClient, createAccount, makePro, removeAccount, sendFirstMessage } from "./support/fixtures";
+import { test, expect, adminClient, createAccount, makeAdmin, removeAccount, sendFirstMessage } from "./support/fixtures";
 
 // Das Konto gehört dem Nutzer: er kann seine Daten mitnehmen, die Sprache
 // wählen und das Konto samt allem Gespeicherten wieder löschen.
@@ -8,7 +8,7 @@ test.describe("Konto", () => {
   test("der Datenexport enthält die eigenen Daten, aber nichts Fremdes und keine Geheimnisse", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     await sendFirstMessage(page, "Frage für den Export", { name: "briefing.txt", content: "Inhalt der Datei" });
 
     // Ein zweites Konto mit einem Chat: sein Inhalt darf im Export des ersten
@@ -77,7 +77,7 @@ test.describe("Konto", () => {
   test("Konto löschen entfernt Nutzer, Chats und die Dateien im Speicher", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const admin = adminClient();
     await sendFirstMessage(page, "Frage vor dem Löschen", { name: "weg.txt", content: "wird gelöscht" });
 

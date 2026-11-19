@@ -7,7 +7,7 @@ import type { Json } from "@/shared/supabase/database.types";
 
 // Vorgänge, die länger bleiben müssen als das Log: Änderungen an Keys und Einwilligung, das Löschen eines Kontos. Sie
 // stehen zusätzlich in public.security_events, einer Tabelle nur für den Server und nur zum Anhängen. Nach 180 Tagen
-// löscht sie ein Datenbank-Job (docs/SETUP.md, "Sicherheitsprotokoll"). Planwechsel stehen schon in billing_events.
+// löscht sie ein Datenbank-Job (docs/SETUP.md, "Sicherheitsprotokoll").
 
 export type DurableSecurityEvent =
   | "api_key.saved"
