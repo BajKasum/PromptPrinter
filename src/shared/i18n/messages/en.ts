@@ -23,7 +23,6 @@ export const en: Messages = {
     tooManyRequests: "Too many requests, please wait a moment and try again.",
     loading: "Loading…",
     closeNotification: "Close notification",
-    paymentReceived: "Thanks! Your payment has arrived.",
   },
 
   nav: {
@@ -35,8 +34,6 @@ export const en: Messages = {
     settings: "Settings",
     usage: "Usage",
     savedPrompts: "Saved prompts",
-    billing: "Billing",
-    allPlans: "View all plans",
     learnMore: "Learn more",
     language: "Language",
     signOut: "Sign out",
@@ -45,7 +42,6 @@ export const en: Messages = {
     usagePolicy: "Usage policy",
     privacy: "Privacy policy",
     cookies: "Cookie policy",
-    refund: "Refunds",
     imprint: "Legal notice",
   },
 
@@ -116,11 +112,8 @@ export const en: Messages = {
     resultTitleReply: "Finn's reply",
     keyNoticeTitle: "From here on, I need your own AI key.",
     keyNoticeBody:
-      "Your free prompts are used up, from now on I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way. Don't want to deal with a key? With Pro, I take care of it for you.",
-    keyNoticeBodySoon:
       "Your free prompts are used up, from now on I run on your own key. You can get a Gemini key from Google at no charge, and then PromptPrinter itself costs you nothing. If you already have a key from Anthropic or OpenAI, that works the same way.",
     keyNoticeSettings: "Another provider? Go to settings",
-    keyNoticeSeePro: "See Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "{count} free prompt left", other: "{count} free prompts left" },
     // Finished prompt: open elsewhere and test run (prompt-actions.tsx)
@@ -389,11 +382,11 @@ export const en: Messages = {
     emailChange: "Need a different address?",
     emailChangeLink: "Write to me through the contact form.",
     workspace: "Workspace",
-    workspaceHint: "Account and plan overview.",
+    workspaceHint: "Your account at a glance.",
     role: "Role",
     owner: "Owner",
     memberSince: "Member since",
-    managePlan: "Manage plan",
+    viewUsage: "View usage",
     appearance: "Appearance",
     appearanceHint: "Light, dark or automatic based on your system, only here in the workspace.",
     themeLight: "Light",
@@ -402,8 +395,8 @@ export const en: Messages = {
     language: "Language",
     languageHint: "The app's language. The landing page and the legal texts stay in German.",
     apiKeys: "Your own API keys",
-    apiKeysHint: "Use your own quota instead of our limits.",
-    apiKeysNote: "With your own key, the monthly chat limit goes away. Your project limit stays.",
+    apiKeysHint: "After the free prompts, you chat with your own key.",
+    apiKeysNote: "With your own key, free prompts no longer count and your provider's limits apply. Your project limit stays.",
     security: "Security",
     securityHint: "Change your password.",
     passwordNote:
@@ -490,7 +483,7 @@ export const en: Messages = {
     },
     zaiConsent: {
       title: "Transfer to Z.ai",
-      hint: "Your consent for chats without your own key (free prompts and Pro).",
+      hint: "Your consent for chats without your own key (free prompts).",
       granted: "On {date} you agreed that your messages go to Z.ai in Singapore.",
       withdraw: "Withdraw consent",
       withdrawn: "Withdrawn. Without consent, Finn only answers with your own key.",
@@ -607,9 +600,7 @@ export const en: Messages = {
     results: "Saved prompts",
     savedPrompts: "Saved prompts",
     settings: "Settings",
-    billing: "Billing",
     usage: "Usage",
-    plans: "Plans",
   },
 
   pages: {
@@ -681,54 +672,25 @@ export const en: Messages = {
       title: "Settings",
       subtitle: "Profile, workspace and security in one place.",
     },
-    billing: {
-      title: "Billing",
-      subtitle: "Your plan and your subscription. What you've used this month is under {usage}.",
-      usageLink: "Usage",
-      apiAccess: "API access: {label}",
-      apiIncluded: "Included",
-      apiOwnKey: "Own key",
-      apiNoKey: "No key added",
-      subscription: "Your subscription",
-      status: {
-        on_trial: "Trial",
-        active: "Active",
-        past_due: "Payment due",
-        paused: "Paused",
-        unpaid: "Unpaid",
-        cancelled: "Cancelled",
-        expired: "Expired",
-      },
-      cancelledUntil: "Cancelled. Pro stays active until {date}, then it goes back to Free.",
-      renewsOn: "Renews automatically on {date}.",
-      manageHint:
-        "You can cancel and change your payment method through the link in your Lemon Squeezy purchase confirmation.",
-      manage: "Manage subscription",
-      upsellTitle: "More room with Pro",
-      upsellTitleSoon: "Pro comes later",
-      compare: "Compare Free and Pro",
-      getPro: "Get Pro, {price} per {cadence}",
-      thanksAuto: "Thanks! Your payment has arrived. Reload the page once and Pro is active.",
-      thanksManual:
-        "Thanks! Your payment has arrived. I'll switch this account to Pro and let you know as soon as it's done.",
-      activatesAuto: "As soon as the payment goes through, Pro unlocks on its own. Reload the page once afterwards.",
-      activatesManual: "After the payment, I switch your account to Pro by hand, usually on the same day.",
-    },
     usage: {
       title: "Usage",
-      subtitle: "What you've used in the current month.",
-      planLink: "Plan and subscription",
-      thisMonth: "This month",
-      noteAdmin: "Admin account, the bars below are just for orientation, they don't apply to you.",
-      noteByok: "With your own key, the chat limit goes away. The project limit stays.",
-      noteFree:
-        "On Free, chatting needs your own key, that's not a monthly limit you wait out. If the project limit is full, deleting one or Pro helps.",
-      noteFreeSoon:
-        "On Free, chatting needs your own key, that's not a monthly limit you wait out. If the project limit is full, deleting a project helps.",
-      notePaid: "If a bar is full, it continues next month.",
+      subtitle: "What you're using right now and what you have left.",
+      accountTitle: "Your account",
+      note: "The first {prompts} prompts are on me, after that you chat with your own AI key. You can have up to {projects} projects, deleting one makes room.",
+      noteAdmin: "Admin account: none of these limits apply to you.",
+      noteSelfHosted: "This installation is self-hosted: chat uses its own model, without a free-prompt limit. You can have up to {projects} projects.",
       projects: "Projects",
-      chatMessages: "Chat messages",
-      freeWithoutKey: "Not available on Free without your own key",
+      freePrompts: "Free prompts",
+      freePromptsLeft: { one: "{count} free prompt left.", other: "{count} free prompts left." },
+      freePromptsUsedUp: "Used up. From now on, chat runs on your own key.",
+      freePromptsUnknown: "The count can't be read right now. Try again later.",
+      freePromptsOwnKey: "You chat with your own key, free prompts don't count.",
+      freePromptsAdmin: "As an admin, you chat without a free-prompt limit.",
+      freePromptsSelfHosted: "There's no free-prompt limit on this server.",
+      ownKey: "Own AI key",
+      ownKeySet: "Added",
+      ownKeyNone: "None added yet",
+      ownKeyLink: "Go to settings",
       ops: {
         title: "Operations",
         hint: "Only visible to admins. The numbers where a cost spike shows up first, across all users.",
@@ -763,46 +725,6 @@ export const en: Messages = {
         truncated: "More accounts than the view checks ({limit}), the oldest are missing.",
       },
     },
-    plans: {
-      title: "Plans",
-      subtitle: "Free with your own AI key, or Pro if I take care of the key for you.",
-      subtitleSoon: "Free with your own AI key. Pro, where I take care of the key for you, isn't available yet.",
-      needKey: "On Free, you need your own key to chat.",
-      addKey: "Add a key",
-      backToFree:
-        "You can go back to Free at any time: cancel the subscription under {billing}, Pro stays until the end of the paid month.",
-      billingLink: "Billing",
-      adminAll: "As an admin, everything is unlocked for you.",
-      current: "Your current plan",
-      manage: "Manage subscription",
-      cardLabel: "{name} plan",
-      cardLabelCurrent: "{name} plan, your current plan",
-      recommended: "Finn's pick",
-      compareTitle: "Side by side",
-      compareCaption: "Free and Pro compared",
-      feature: "Feature",
-      included: "Included",
-      notIncluded: "Not included",
-      rows: {
-        access: "AI access",
-        accessFree: "With your own key (Anthropic, OpenAI, Gemini)",
-        accessPro: "Included, no key of your own needed",
-        replies: "Chat replies",
-        repliesFree: "With your key, no monthly limit",
-        repliesPro: "{count} per month included, no monthly limit with your own key",
-        projects: "Projects",
-        projectsFree: "Up to {count}",
-        projectsPro: "Unlimited",
-        brain: "Project memory",
-        brainFree: "With your key",
-        savePrompts: "Save prompts",
-        markdown: "Markdown export",
-        pdf: "PDF export",
-        cancel: "Cancellation",
-        cancelFree: "Nothing to cancel",
-        cancelPro: "Monthly, 14-day money back",
-      },
-    },
   },
 
   api: {
@@ -832,14 +754,9 @@ export const en: Messages = {
     messageTooLong: "Your message is too long, {max} characters per message at most.",
     consentRequired:
       "Before I answer, I need your consent for your messages to go to Z.ai in Singapore. You can give it in the chat or in settings.",
-    byokRequired:
-      "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings, or switch to Pro.",
     byokUnreadable:
       "Your saved AI key can't be read. Please enter it again in the settings.",
-    byokRequiredSoon:
-      "Free only runs with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings.",
-    chatLimit:
-      "Monthly chat message limit reached, your plan ({plan}) allows {limit} per month. It continues next month, or add your own API key in the settings.",
+    byokRequired: "This only works with your own AI key. Add an Anthropic, OpenAI or Gemini key in the settings.",
     tooManyRequests: "Too many requests, please wait a moment and try again.",
     chatBudget:
       "The chat is temporarily unavailable. Try again later, or add your own API key in the settings and it keeps going right away.",
@@ -869,13 +786,11 @@ export const en: Messages = {
       empty: "The AI provider didn't return a reply. Try again, maybe with different wording.",
       other: "Something went wrong. Try again, or reload the page.",
     },
-    projectLimit: "Project limit reached, your plan ({plan}) allows {limit} projects. Upgrade for more.",
+    projectLimit: "Project limit reached, you can have up to {limit} projects. Delete one to make room for a new one.",
     projectCreateFailed: "The project couldn't be created. Please try again.",
     brainUnavailable: "The analysis can't be reached right now, please try again later.",
     projectNotFound: "Project not found.",
     repoInvalid: "That doesn't look like a public GitHub repository.",
-    brainLimit:
-      "Monthly limit reached, your plan ({plan}) allows {limit} model calls per month. It continues next month, or add your own API key in the settings.",
     brainTooMany: "Too many analyses, please wait a moment and try again.",
     brainBudget:
       "The analysis is temporarily unavailable. Try again later, or add your own API key in the settings.",
@@ -914,41 +829,6 @@ export const en: Messages = {
     accountReauthRequired: "For your security, please sign in again before you delete your account.",
     accountExportNote: "Export of your PromptPrinter data. Uploaded files and images are included by name, type and size only, not their content. API keys are never included.",
     accountExportFailed: "The export could not be created. Please try again.",
-  },
-
-  planCopy: {
-    free: {
-      description: "Three prompts are on me. After that you bring your own AI key, and the app stays completely free.",
-      cadence: "forever",
-      features: [
-        "3 free prompts, no key needed",
-        "After that, your own AI key (Anthropic, OpenAI, Gemini or another provider)",
-        "With your key: no monthly limit, the app itself stays free",
-        "Up to {projects} projects",
-        "Prompts for any AI and any task",
-        "Markdown export",
-      ],
-    },
-    proSoon: {
-      price: "Later",
-      description:
-        "If you don't want to set up your own key, I'll take care of it for you at some point. Pro can't be booked right now.",
-      badge: "Not available yet",
-      cta: "Why not yet?",
-    },
-    pro: {
-      description: "If you don't want to set up your own key, I take care of it for you.",
-      cadence: "month",
-      badge: "No key of your own needed",
-      note: "Cancel monthly. 14-day money back on the first payment, no questions asked.",
-      features: [
-        "Everything in Free",
-        "{chatMessages} chat replies per month with my AI",
-        "No key of your own needed",
-        "Unlimited projects",
-        "PDF & Markdown export",
-      ],
-    },
   },
 
   prompts: {

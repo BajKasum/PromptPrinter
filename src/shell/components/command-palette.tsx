@@ -14,7 +14,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { createClient } from "@/shared/supabase/client";
 import { captureError } from "@/shared/lib/observability";
-import { plansNav, primaryNav, secondaryNav } from "@/shell/lib/nav";
+import { primaryNav, secondaryNav } from "@/shell/lib/nav";
 import { formatShortcut, isMacPlatform, type Shortcut } from "@/shell/lib/shortcuts";
 import { LIST_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { useT } from "@/shared/i18n/provider";
@@ -134,7 +134,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // Derive the page commands from the same nav source the sidebar + mobile drawer
   // use, so the palette can never drift out of sync (labels, icons, presence).
   const navCommands = useMemo<Cmd[]>(() => {
-    const pages: Cmd[] = [...primaryNav, ...secondaryNav, plansNav].map((n) => ({
+    const pages: Cmd[] = [...primaryNav, ...secondaryNav].map((n) => ({
       id: n.href,
       label: t.nav[n.labelKey],
       group: t.palette.groupPages,

@@ -44,7 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // their workspace) and pinned-then-recent projects. RLS scopes both reads.
   // Das Profil kommt aus getSessionProfile() (B-3), damit die Seiten darunter
   // dieselbe Zeile bekommen statt sie erneut zu holen — bis zu drei Ebenen
-  // fragten vorher unabhaengig voneinander nach display_name bzw. plan.
+  // fragten vorher unabhaengig voneinander nach display_name bzw. is_admin.
   // Bleibt im selben Promise.all: die Abfrage laeuft dadurch weiterhin
   // parallel zu den beiden Listen, nur eben genau einmal pro Request.
   const [profile, rawChatsResult, rawProjectsResult] = await Promise.all([
@@ -112,7 +112,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               chats={sidebarChats}
               projects={sidebarProjects}
               email={user.email ?? ""}
-              plan={profile?.plan ?? "free"}
               isAdmin={profile?.is_admin ?? false}
               displayName={profile?.display_name ?? null}
             />

@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { LOCALES } from "@/shared/i18n/locales";
 import { messagesFor } from "@/server/i18n";
 import { de } from "@/shared/i18n/messages/de";
-import { PLANS, localizePlans } from "@/shared/lib/pricing";
 
 // Was TypeScript an den Wörterbüchern NICHT prüfen kann.
 //
@@ -52,19 +51,6 @@ describe("i18n-Wörterbücher", () => {
       .filter(([, text]) => text.trim().length === 0)
       .map(([path]) => path);
     expect(empty).toEqual([]);
-  });
-
-  it("die deutschen Plan-Texte der App decken sich mit der Preisseite", () => {
-    // /pricing liest PLANS, die App liest t.planCopy. Driftet eins davon,
-    // verspricht die App etwas anderes als die öffentliche Seite.
-    const app = localizePlans(de, "de");
-    for (const plan of PLANS) {
-      const localized = app.find((p) => p.name === plan.name)!;
-      expect(localized.features).toEqual(plan.features);
-      expect(localized.description).toBe(plan.description);
-      expect(localized.cadence).toBe(plan.cadence);
-      expect(localized.price.replace(/ /g, " ")).toBe(plan.price);
-    }
   });
 
   it("nur der Server lädt die Wörterbücher der anderen Sprachen", () => {

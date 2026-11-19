@@ -6,8 +6,6 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
-import { getSessionProfile } from "@/server/session";
-import { resolvePlan } from "@/shared/lib/plans";
 import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
@@ -49,7 +47,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
   // splitAtLimit below can tell "exactly at the cap" from "there are more" —
   // this used to silently drop anything past RESULTS_LOAD_LIMIT and show the
   // truncated count as if it were the project's true total.
-  const [rowsRawResult, chatCountResult, profile] = await Promise.all([
+  const [rowsRawResult, chatCountResult] = await Promise.all([
     supabase
       .from("saved_prompts")
       .select("id, created_at, outputs")
@@ -62,14 +60,9 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       .select("id", { count: "exact", head: true })
       .eq("project_id", id)
       .eq("user_id", userId),
-    // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
-    // Request-gecacht (B-3): dieselbe Zeile hat das (app)-Layout schon geholt.
-    getSessionProfile(),
   ]);
   const { data: rowsRaw } = orThrow(rowsRawResult, "saved_prompts");
   const { count: chatCount } = orThrow(chatCountResult, "conversations");
-  const { plan, isAdmin } = resolvePlan(profile);
-  const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
     rowsRaw ?? [],
@@ -133,7 +126,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
       </FadeIn>
 
       <FadeIn>
-        <SavedPromptList prompts={prompts} userId={userId} canExportPdf={canExportPdf} />
+        <SavedPromptList prompts={prompts} userId={userId} />
       </FadeIn>
     </div>
   );

@@ -338,7 +338,7 @@ describe("Bearbeiten", () => {
   });
 });
 
-describe("Zustimmung zur Übermittlung an Z.ai (Pro, Rechts-Audit R-1)", () => {
+describe("Zustimmung zur Übermittlung an Z.ai (Server-Key, Rechts-Audit R-1)", () => {
   /** Antwort des Servers: 403 mit dem maschinenlesbaren Grund, wie api-problem sie liefert. */
   const consentRefusal = () => ({
     ok: false,

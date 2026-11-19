@@ -8,7 +8,7 @@
 // - `{ one, other }` ist ein Text mit Ein- und Mehrzahl, gewählt mit plural();
 //   `{count}` wird dabei automatisch eingesetzt.
 // - Finn spricht in der Ich-Form und duzt, in jeder Sprache (Brand-Prinzip).
-// - Plan-Namen (Free, Pro, Team, Admin) und "PromptPrinter" bleiben unübersetzt.
+// - "PromptPrinter" und die Rolle "Admin" bleiben unübersetzt.
 
 export const de = {
   common: {
@@ -29,7 +29,6 @@ export const de = {
     tooManyRequests: "Zu viele Anfragen, bitte warte kurz und versuch es erneut.",
     loading: "Lädt…",
     closeNotification: "Benachrichtigung schliessen",
-    paymentReceived: "Danke! Deine Zahlung ist angekommen.",
   },
 
   nav: {
@@ -41,8 +40,6 @@ export const de = {
     settings: "Einstellungen",
     usage: "Nutzung",
     savedPrompts: "Gespeicherte Prompts",
-    billing: "Abrechnung",
-    allPlans: "Alle Tarife anzeigen",
     learnMore: "Mehr erfahren",
     language: "Sprache",
     signOut: "Abmelden",
@@ -51,7 +48,6 @@ export const de = {
     usagePolicy: "Nutzungsrichtlinie",
     privacy: "Datenschutzerklärung",
     cookies: "Cookie-Richtlinie",
-    refund: "Rückerstattung",
     imprint: "Impressum",
   },
 
@@ -123,11 +119,8 @@ export const de = {
     resultTitleReply: "Finns Antwort",
     keyNoticeTitle: "Ab hier brauche ich deinen eigenen KI-Key.",
     keyNoticeBody:
-      "Deine Gratis-Prompts sind aufgebraucht, ab jetzt laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso. Keine Lust auf einen Key? Mit Pro übernehme ich das für dich.",
-    keyNoticeBodySoon:
       "Deine Gratis-Prompts sind aufgebraucht, ab jetzt laufe ich über deinen eigenen Key. Einen Gemini-Key von Google bekommst du kostenlos, dann kostet dich PromptPrinter selbst nichts. Hast du schon einen Key von Anthropic oder OpenAI, funktioniert der genauso.",
     keyNoticeSettings: "Anderer Anbieter? Zu den Einstellungen",
-    keyNoticeSeePro: "Pro ansehen",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Noch {count} Gratis-Prompt", other: "Noch {count} Gratis-Prompts" },
     // Fertiger Prompt: woanders öffnen und Probelauf (prompt-actions.tsx)
@@ -398,11 +391,11 @@ export const de = {
     emailChange: "Andere Adresse nötig?",
     emailChangeLink: "Schreib mir über das Kontaktformular.",
     workspace: "Workspace",
-    workspaceHint: "Konto- und Plan-Übersicht.",
+    workspaceHint: "Dein Konto auf einen Blick.",
     role: "Rolle",
     owner: "Eigentümer",
     memberSince: "Mitglied seit",
-    managePlan: "Plan verwalten",
+    viewUsage: "Nutzung ansehen",
     appearance: "Erscheinungsbild",
     appearanceHint: "Hell, dunkel oder automatisch nach Systemeinstellung, nur hier im Workspace.",
     themeLight: "Hell",
@@ -411,8 +404,8 @@ export const de = {
     language: "Sprache",
     languageHint: "Die Sprache der App. Die Landing Page und die Rechtstexte bleiben Deutsch.",
     apiKeys: "Eigene API-Keys",
-    apiKeysHint: "Nutze dein eigenes Kontingent statt unserer Limits.",
-    apiKeysNote: "Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit bleibt bestehen.",
+    apiKeysHint: "Nach den Gratis-Prompts chattest du mit deinem eigenen Key.",
+    apiKeysNote: "Mit eigenem Key zählen keine Gratis-Prompts mehr, es gelten die Grenzen deines Anbieters. Dein Projekt-Limit bleibt bestehen.",
     security: "Sicherheit",
     securityHint: "Ändere dein Passwort.",
     passwordNote:
@@ -499,7 +492,7 @@ export const de = {
     },
     zaiConsent: {
       title: "Übermittlung an Z.ai",
-      hint: "Deine Zustimmung für Chats ohne eigenen Key (Gratis-Prompts und Pro).",
+      hint: "Deine Zustimmung für Chats ohne eigenen Key (Gratis-Prompts).",
       granted: "Du hast am {date} zugestimmt, dass deine Nachrichten an Z.ai in Singapur gehen.",
       withdraw: "Zustimmung widerrufen",
       withdrawn: "Widerrufen. Ohne Zustimmung antwortet Finn nur noch mit deinem eigenen Schlüssel.",
@@ -619,9 +612,7 @@ export const de = {
     results: "Gespeicherte Prompts",
     savedPrompts: "Gespeicherte Prompts",
     settings: "Einstellungen",
-    billing: "Abrechnung",
     usage: "Nutzung",
-    plans: "Tarife",
   },
 
   pages: {
@@ -695,56 +686,25 @@ export const de = {
       title: "Einstellungen",
       subtitle: "Profil, Workspace und Sicherheit an einem Ort.",
     },
-    billing: {
-      title: "Abrechnung",
-      subtitle: "Dein Plan und dein Abo. Was du diesen Monat verbraucht hast, steht unter {usage}.",
-      usageLink: "Nutzung",
-      apiAccess: "API-Zugang: {label}",
-      apiIncluded: "Inklusive",
-      apiOwnKey: "Eigener Key",
-      apiNoKey: "Kein Key hinterlegt",
-      subscription: "Dein Abo",
-      status: {
-        on_trial: "Testphase",
-        active: "Aktiv",
-        past_due: "Zahlung offen",
-        paused: "Pausiert",
-        unpaid: "Nicht bezahlt",
-        cancelled: "Gekündigt",
-        expired: "Abgelaufen",
-      },
-      cancelledUntil: "Gekündigt. Pro bleibt bis zum {date} aktiv, danach geht es auf Free zurück.",
-      renewsOn: "Verlängert sich automatisch am {date}.",
-      manageHint:
-        "Kündigen und Zahlungsmittel ändern kannst du über den Link in deiner Kaufbestätigung von Lemon Squeezy.",
-      manage: "Abo verwalten",
-      upsellTitle: "Mehr Spielraum mit Pro",
-      upsellTitleSoon: "Pro kommt später",
-      compare: "Free und Pro im Vergleich",
-      getPro: "Pro holen, {price} pro {cadence}",
-      thanksAuto: "Danke! Deine Zahlung ist angekommen. Lad die Seite einmal neu, dann ist Pro aktiv.",
-      thanksManual:
-        "Danke! Deine Zahlung ist angekommen. Ich schalte dieses Konto auf Pro und melde mich, sobald es so weit ist.",
-      activatesAuto:
-        "Sobald die Zahlung durch ist, schaltet sich Pro von selbst frei. Lad die Seite danach einmal neu.",
-      activatesManual:
-        "Nach der Zahlung schalte ich dein Konto von Hand auf Pro, in der Regel noch am selben Tag.",
-    },
     usage: {
       title: "Nutzung",
-      subtitle: "Was du im aktuellen Monat verbraucht hast.",
-      planLink: "Plan und Abo",
-      thisMonth: "Diesen Monat",
-      noteAdmin: "Admin-Konto, die Balken unten sind nur zur Orientierung, sie greifen für dich nicht.",
-      noteByok: "Mit deinem eigenen Key entfällt das Chat-Limit. Das Projekt-Limit bleibt bestehen.",
-      noteFree:
-        "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen oder Pro.",
-      noteFreeSoon:
-        "Chat braucht auf Free deinen eigenen Key, das ist kein Monatslimit zum Abwarten. Ist das Projekt-Limit voll, hilft Löschen.",
-      notePaid: "Ist ein Balken voll, geht's erst im nächsten Monat weiter.",
+      subtitle: "Was du gerade nutzt und was dir noch bleibt.",
+      accountTitle: "Dein Konto",
+      note: "Die ersten {prompts} Prompts gehen auf mich, danach chattest du mit deinem eigenen KI-Key. Projekte hast du bis zu {projects}, Platz schaffst du durch Löschen.",
+      noteAdmin: "Admin-Konto: für dich gilt keine dieser Grenzen.",
+      noteSelfHosted: "Diese Installation wird selbst betrieben: der Chat nutzt ihr eigenes Modell, ohne Gratis-Grenze. Projekte hast du bis zu {projects}.",
       projects: "Projekte",
-      chatMessages: "Chat-Nachrichten",
-      freeWithoutKey: "Ohne eigenen Key nicht verfügbar auf Free",
+      freePrompts: "Gratis-Prompts",
+      freePromptsLeft: { one: "Noch {count} Gratis-Prompt übrig.", other: "Noch {count} Gratis-Prompts übrig." },
+      freePromptsUsedUp: "Aufgebraucht. Ab jetzt läuft der Chat über deinen eigenen Key.",
+      freePromptsUnknown: "Der Stand lässt sich gerade nicht lesen. Versuch es später noch einmal.",
+      freePromptsOwnKey: "Du chattest mit deinem eigenen Key, Gratis-Prompts zählen nicht.",
+      freePromptsAdmin: "Als Admin chattest du ohne Gratis-Grenze.",
+      freePromptsSelfHosted: "Auf diesem Server gibt es keine Gratis-Grenze.",
+      ownKey: "Eigener KI-Key",
+      ownKeySet: "Hinterlegt",
+      ownKeyNone: "Noch keiner hinterlegt",
+      ownKeyLink: "Zu den Einstellungen",
       ops: {
         title: "Betrieb",
         hint: "Nur für Admins sichtbar. Die Zahlen, an denen ein Kostenausreisser zuerst sichtbar wird, über alle Nutzer.",
@@ -779,46 +739,6 @@ export const de = {
         truncated: "Mehr Konten als die Ansicht prüft ({limit}), die ältesten fehlen.",
       },
     },
-    plans: {
-      title: "Tarife",
-      subtitle: "Free mit deinem eigenen KI-Key, oder Pro, wenn ich den Key für dich übernehme.",
-      subtitleSoon: "Free mit deinem eigenen KI-Key. Pro, bei dem ich den Key für dich übernehme, gibt es noch nicht.",
-      needKey: "Nach den drei Gratis-Prompts brauchst du auf Free deinen eigenen Key.",
-      addKey: "Key hinterlegen",
-      backToFree:
-        "Zurück zu Free geht jederzeit: Abo unter {billing} kündigen, Pro bleibt bis zum Ende des bezahlten Monats.",
-      billingLink: "Abrechnung",
-      adminAll: "Als Admin ist bei dir alles freigeschaltet.",
-      current: "Dein aktueller Plan",
-      manage: "Abo verwalten",
-      cardLabel: "Plan {name}",
-      cardLabelCurrent: "Plan {name}, dein aktueller Plan",
-      recommended: "Finns Empfehlung",
-      compareTitle: "Im Vergleich",
-      compareCaption: "Free und Pro im Vergleich",
-      feature: "Funktion",
-      included: "Enthalten",
-      notIncluded: "Nicht enthalten",
-      rows: {
-        access: "KI-Zugang",
-        accessFree: "Mit deinem eigenen Key (Anthropic, OpenAI, Gemini)",
-        accessPro: "Inklusive, kein eigener Key nötig",
-        replies: "Chat-Antworten",
-        repliesFree: "Mit deinem Key ohne Monatslimit",
-        repliesPro: "{count} pro Monat inklusive, mit eigenem Key ohne Monatslimit",
-        projects: "Projekte",
-        projectsFree: "Bis zu {count}",
-        projectsPro: "Unbegrenzt",
-        brain: "Projekt-Gedächtnis",
-        brainFree: "Mit deinem Key",
-        savePrompts: "Prompts speichern",
-        markdown: "Markdown-Export",
-        pdf: "PDF-Export",
-        cancel: "Kündigung",
-        cancelFree: "Nichts zu kündigen",
-        cancelPro: "Monatlich, 14 Tage Geld zurück",
-      },
-    },
   },
 
   /** Fehlermeldungen der API-Routen, die im Browser angezeigt werden. */
@@ -850,14 +770,9 @@ export const de = {
     messageTooLong: "Deine Nachricht ist zu lang, höchstens {max} Zeichen pro Nachricht.",
     consentRequired:
       "Bevor ich antworte, brauche ich deine Zustimmung, dass deine Nachrichten an Z.ai in Singapur gehen. Du kannst sie im Chat oder in den Einstellungen erteilen.",
-    byokRequired:
-      "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen, oder wechsle zu Pro.",
     byokUnreadable:
       "Dein gespeicherter KI-Key lässt sich nicht lesen. Trag ihn in den Einstellungen bitte neu ein.",
-    byokRequiredSoon:
-      "Free läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen.",
-    chatLimit:
-      "Monatslimit für Chat-Nachrichten erreicht, dein Plan ({plan}) erlaubt {limit} pro Monat. Nächsten Monat geht's weiter, oder hinterlege einen eigenen API-Key in den Einstellungen.",
+    byokRequired: "Das läuft nur mit deinem eigenen KI-Key. Hinterleg einen Anthropic-, OpenAI- oder Gemini-Key in den Einstellungen.",
     tooManyRequests: "Zu viele Anfragen, bitte warte kurz und versuch es erneut.",
     chatBudget:
       "Der Chat ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen, dann läuft er sofort weiter.",
@@ -888,13 +803,11 @@ export const de = {
         "Der KI-Anbieter hat keine Antwort geliefert. Versuch es nochmal, ggf. mit einer anderen Formulierung.",
       other: "Etwas ist schiefgelaufen. Versuch es nochmal, oder lade die Seite neu.",
     },
-    projectLimit: "Projekt-Limit erreicht, dein Plan ({plan}) erlaubt {limit} Projekte. Upgrade für mehr.",
+    projectLimit: "Projekt-Limit erreicht, du kannst bis zu {limit} Projekte haben. Lösch eins, dann ist Platz für ein neues.",
     projectCreateFailed: "Projekt konnte nicht angelegt werden. Bitte versuch es erneut.",
     brainUnavailable: "Die Analyse ist gerade nicht erreichbar, bitte versuch es später erneut.",
     projectNotFound: "Projekt nicht gefunden.",
     repoInvalid: "Das sieht nicht nach einem öffentlichen GitHub-Repository aus.",
-    brainLimit:
-      "Monatslimit erreicht, dein Plan ({plan}) erlaubt {limit} Modell-Aufrufe pro Monat. Nächsten Monat geht's weiter, oder hinterlege einen eigenen API-Key in den Einstellungen.",
     brainTooMany: "Zu viele Analysen, bitte warte kurz und versuch es erneut.",
     brainBudget:
       "Die Analyse ist gerade vorübergehend nicht verfügbar. Versuch es später noch einmal, oder hinterlege einen eigenen API-Key in den Einstellungen.",
@@ -935,46 +848,6 @@ export const de = {
     accountReauthRequired: "Aus Sicherheitsgründen melde dich bitte erneut an, bevor du dein Konto löschst.",
     accountExportNote: "Export deiner PromptPrinter-Daten. Hochgeladene Dateien und Bilder sind nur mit Name, Typ und Größe enthalten, nicht ihr Inhalt. API-Keys sind nie enthalten.",
     accountExportFailed: "Der Export konnte nicht erstellt werden. Bitte versuch es erneut.",
-  },
-
-  /**
-   * Die Plan-Texte für die App (/plans, /billing). Die Preisseite /pricing
-   * bleibt Deutsch und liest weiterhin shared/lib/pricing.ts; die Zahlen
-   * setzt die App aus plans.ts ein ({projects}, {chatMessages}).
-   */
-  planCopy: {
-    free: {
-      description: "Drei Prompts gehen auf mich. Danach bringst du deinen eigenen KI-Key mit, und die App bleibt komplett gratis.",
-      cadence: "für immer",
-      features: [
-        "3 Prompts gratis, ganz ohne Key",
-        "Danach eigener KI-Key (Anthropic, OpenAI, Gemini oder ein anderer Anbieter)",
-        "Mit deinem Key: ohne Monatslimit, die App selbst bleibt gratis",
-        "Bis zu {projects} Projekte",
-        "Prompts für jede KI und jede Aufgabe",
-        "Markdown-Export",
-      ],
-    },
-    proSoon: {
-      price: "Später",
-      description:
-        "Wenn du keinen eigenen Key einrichten willst, übernehme ich das irgendwann für dich. Buchen kann man Pro im Moment nicht.",
-      badge: "Noch nicht verfügbar",
-      cta: "Warum noch nicht?",
-    },
-    pro: {
-      description: "Wenn du keinen eigenen Key einrichten willst, übernehme ich das für dich.",
-      cadence: "Monat",
-      badge: "Kein eigener Key nötig",
-      note: "Monatlich kündbar. Auf die erste Zahlung gibt es 14 Tage Geld zurück, ohne Begründung.",
-      features: [
-        "Alles aus Free",
-        "{chatMessages} Chat-Antworten pro Monat mit meiner KI",
-        "Kein eigener Key nötig",
-        "Unbegrenzt viele Projekte",
-        "PDF- & Markdown-Export",
-      ],
-    },
   },
 
   prompts: {

@@ -18,7 +18,7 @@ import { SharePrompt } from "@/features/prompts/components/share-prompt";
 //
 // Seit 23.09.2026 eine Liste von Titeln, auf Kasums Wunsch: zugeklappt steht
 // nur der Name des Prompts, ein Klick darauf klappt den Prompt auf, und erst
-// dort sitzen Kopieren, Umbenennen, PDF (Pro) und Loeschen. Vorher stand jeder
+// dort sitzen Kopieren, Umbenennen, PDF und Loeschen. Vorher stand jeder
 // Prompt in voller Laenge in der Liste, mit fuenf gespeicherten Prompts war
 // das schon eine lange Textwand, in der man seinen Prompt suchen musste.
 //
@@ -35,12 +35,10 @@ import { SharePrompt } from "@/features/prompts/components/share-prompt";
 export function SavedPromptList({
   prompts,
   userId,
-  canExportPdf,
 }: {
   prompts: SavedPrompt[];
   /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). */
   userId: string;
-  canExportPdf: boolean;
 }) {
   const [items, setItems] = useState(prompts);
 
@@ -91,7 +89,6 @@ export function SavedPromptList({
           <SavedPromptCard
             prompt={p}
             userId={userId}
-            canExportPdf={canExportPdf}
             onDelete={() => removeAt(p.id)}
             onRename={(title) => renameTo(p.id, title)}
           />
@@ -104,13 +101,11 @@ export function SavedPromptList({
 function SavedPromptCard({
   prompt,
   userId,
-  canExportPdf,
   onDelete,
   onRename,
 }: {
   prompt: SavedPrompt;
   userId: string;
-  canExportPdf: boolean;
   /** Applies the removal immediately and returns the undo for a failed write. */
   onDelete: () => () => void;
   /** Applies the new title immediately and returns the undo for a failed write. */
@@ -315,17 +310,15 @@ function SavedPromptCard({
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
-              {canExportPdf && (
-                <button
-                  type="button"
-                  onClick={() => void exportPdf()}
-                  aria-label={t.prompts.exportPdf}
-                  title={t.prompts.exportPdf}
-                  className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
-                >
-                  <FileDown className="h-3.5 w-3.5" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => void exportPdf()}
+                aria-label={t.prompts.exportPdf}
+                title={t.prompts.exportPdf}
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+              </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}

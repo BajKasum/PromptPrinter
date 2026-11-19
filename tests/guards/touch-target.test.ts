@@ -67,9 +67,9 @@ describe("Kleine Bedienelemente tragen touch-hit (#152)", () => {
     ["src/shared/ui/api-key-field.tsx", "Key anzeigen im Key-Feld", "text-tertiary transition-colors hover:text-foreground/70"],
     ["src/features/settings/components/api-keys.tsx", "Key anzeigen im Endpoint-Formular", "text-tertiary transition-colors hover:text-foreground/70"],
     ["src/features/settings/components/api-keys.tsx", "Anderer Anbieter? Eigenen Endpoint verbinden", "text-[12px] text-tertiary underline-offset-2"],
-    ["src/features/settings/components/settings-workspace.tsx", "Plan verwalten", "text-accent-text transition-colors hover:text-accent-text/80"],
+    ["src/features/settings/components/settings-workspace.tsx", "Nutzung ansehen", "text-accent-text transition-colors hover:text-accent-text/80"],
     ["src/features/projects/components/project-brain-facts.tsx", "Details im Gedächtnis", "rounded text-[12px] text-secondary transition-colors"],
-    ["src/app/(app)/usage/page.tsx", "Plan und Abo", "text-[12.5px] text-tertiary underline underline-offset-2"],
+    ["src/app/(app)/usage/page.tsx", "Zu den Einstellungen (eigener Key)", "text-[12.5px] text-tertiary underline underline-offset-2"],
   ];
 
   it.each(SMALL_TARGETS)("%s: %s", (file, _label, fragment) => {

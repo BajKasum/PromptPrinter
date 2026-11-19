@@ -206,19 +206,19 @@ describe("Sidebar account shortcuts", () => {
     expect(push).toHaveBeenCalledWith("/settings");
   });
 
-  it("opens usage, saved prompts and billing on Ctrl+Shift+U/S/B", async () => {
+  it("opens usage and saved prompts on Ctrl+Shift+U/S", async () => {
     const user = userEvent.setup();
     renderSidebar();
     await user.keyboard("{Control>}{Shift>}U{/Shift}{/Control}");
     await user.keyboard("{Control>}{Shift>}S{/Shift}{/Control}");
-    await user.keyboard("{Control>}{Shift>}B{/Shift}{/Control}");
-    expect(push.mock.calls.map((c) => c[0])).toEqual(["/usage", "/prompts", "/billing"]);
+    expect(push.mock.calls.map((c) => c[0])).toEqual(["/usage", "/prompts"]);
   });
 
-  it("does not collapse the sidebar on Ctrl+Shift+B (that one is billing)", async () => {
+  it("does nothing on Ctrl+Shift+B: no page behind it, and only Ctrl+B without Shift collapses", async () => {
     const user = userEvent.setup();
     renderSidebar();
     await user.keyboard("{Control>}{Shift>}B{/Shift}{/Control}");
+    expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Seitenleiste einklappen" })).toBeInTheDocument();
   });
 
@@ -232,14 +232,11 @@ describe("Sidebar account shortcuts", () => {
     expect(screen.getByRole("link", { name: /Nutzung/ })).toHaveTextContent("Strg+Shift+U");
   });
 
-  it("offers all plans in its own group below the account destinations", async () => {
+  it("offers neither billing nor plans in the account menu", async () => {
     const user = userEvent.setup();
     renderSidebar();
     await user.click(screen.getByRole("button", { name: "Kontomenü" }));
-    expect(screen.getByRole("link", { name: "Alle Tarife anzeigen" })).toHaveAttribute(
-      "href",
-      "/plans"
-    );
+    expect(screen.queryByRole("link", { name: /Abrechnung|Tarife/ })).not.toBeInTheDocument();
   });
 });
 

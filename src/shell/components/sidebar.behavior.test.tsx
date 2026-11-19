@@ -29,12 +29,11 @@ vi.mock("@/features/projects/components/new-project", () => ({
   NewProjectButton: ({ variant }: { variant?: string }) => <div data-testid="new-project-button" data-variant={variant} />,
 }));
 vi.mock("@/shell/components/account-menu", () => ({
-  AccountMenu: (p: { collapsed: boolean; email: string; plan: string; isAdmin: boolean; displayName?: string | null }) => (
+  AccountMenu: (p: { collapsed: boolean; email: string; isAdmin: boolean; displayName?: string | null }) => (
     <div
       data-testid="account-menu"
       data-collapsed={String(p.collapsed)}
       data-email={p.email}
-      data-plan={p.plan}
       data-admin={String(p.isAdmin)}
       data-name={p.displayName ?? ""}
     />
@@ -67,7 +66,6 @@ function renderSidebar(props: Partial<Parameters<typeof Sidebar>[0]> = {}) {
       chats={chats}
       projects={projects}
       email="anna@example.test"
-      plan="pro"
       isAdmin
       displayName="Anna"
       {...props}
@@ -320,12 +318,11 @@ describe("Ausgeklappt: Chats und Projekte", () => {
     }
   });
 
-  it("das Konto steht unten ausgeklappt und bekommt Adresse, Tarif, Rolle und Namen", () => {
+  it("das Konto steht unten ausgeklappt und bekommt Adresse, Rolle und Namen", () => {
     renderSidebar();
     const menu = screen.getByTestId("account-menu");
     expect(menu).toHaveAttribute("data-collapsed", "false");
     expect(menu).toHaveAttribute("data-email", "anna@example.test");
-    expect(menu).toHaveAttribute("data-plan", "pro");
     expect(menu).toHaveAttribute("data-admin", "true");
     expect(menu).toHaveAttribute("data-name", "Anna");
     expect(menu.parentElement?.className).toContain("border-t");
