@@ -196,8 +196,8 @@ leitet dorthin weiter, unter Linux braucht Ollama `OLLAMA_HOST=0.0.0.0` (und ein
 - **http.** Die Policy der Seiten trägt `upgrade-insecure-requests`. Auf `http://localhost` stellt der Browser
   deshalb Weiterleitungen auf https um, die dann ins Leere gehen (eine Fehlermeldung in der Konsole, die Seite
   lädt trotzdem). Für den Betrieb gehört TLS davor.
-- **Speed Insights** sucht ausserhalb von Vercel ein Skript, das es nicht gibt: ein 404 und eine Meldung in der
-  Konsole je Seite, sonst ohne Folgen.
+- **Speed Insights** misst nur auf Vercel (`VERCEL` gesetzt) und lädt auf einer eigenen Installation nichts
+  ([Geschwindigkeitsmessung](#geschwindigkeitsmessung-vercel-speed-insights)).
 - **Zeitgrenzen.** Bis zum ersten Textstück hat der Endpunkt 60 Sekunden, danach 45 Sekunden Leerlauf und 270
   Sekunden je Antwort (`LLM_STREAM_IDLE_TIMEOUT_MS`, `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze höchstens 285).
   Die Analyse des Projekt-Gedächtnisses hat 60 Sekunden. Ein grosses Modell auf einer CPU kann das überschreiten;
@@ -977,10 +977,12 @@ gestoppt. Port 3101 (`E2E_PROD_PORT`), neben dem Dev-Server der Smoketests auf 3
 | `/api/health` | `ok`: der Start in Produktion (`env.ts`) ist mit den dokumentierten Pflichtvariablen durchgelaufen |
 | `/chats/new` mit Anmeldung | Nonce-Policy ohne `'unsafe-inline'`; jedes Inline-Skript trägt genau diesen Nonce; die Eingabe reagiert; ein eingeschleustes Inline-Skript ohne Nonce läuft **nicht** und wird gemeldet (Gegenprobe, damit der Hörer nicht still bleibt, weil er nichts mehr sieht) |
 
-Zwei Ausnahmen in der Konsolenprüfung, beide mit Grund im Test: `/_vercel/…`
-(Speed Insights, den Pfad gibt es nur auf Vercel; die Antwort wird ersetzt) und
-der Prefetch einer App-Seite, dessen Weiterleitung auf `/login` der Browser wegen
-`upgrade-insecure-requests` auf https umstellt (nur auf der http-Adresse der Tests).
+Zwei Ausnahmen in der Konsolenprüfung, beide mit Grund im Test: der Prefetch einer
+App-Seite, dessen Weiterleitung auf `/login` der Browser wegen
+`upgrade-insecure-requests` auf https umstellt (nur auf der http-Adresse der Tests),
+und ein abgebrochener Prefetch desselben Servers (`_rsc=`, `ERR_ABORTED`). Für
+`/_vercel/…` gibt es keine: Speed Insights lädt nur auf Vercel, eine Anfrage dorthin
+wäre unter `next start` ein 404 und damit ein Fund.
 Die Anmeldung läuft über Cookies, die der Test mit `@supabase/ssr` selbst
 schreibt, nicht über `/api/auth`: in Produktion fehlt dem Test ein echtes Upstash,
 und das Ratenlimit antwortet dann mit 429.
@@ -1258,9 +1260,14 @@ genauso wie in der App. Es braucht keinen Env-Wert und keinen Schalter im Dashbo
 das Paket `@vercel/speed-insights` hängt das Skript an, Vercel stellt
 `/_vercel/speed-insights/*` selbst bereit. Ansehen: Vercel → Projekt → **Speed Insights**.
 
-- **Nur im Produktions-Build.** In `npm run dev` und `npm run test:e2e` lädt das Paket
-  ein Debug-Skript von `va.vercel-scripts.com`, das die CSP zu Recht blockiert.
-  Vorschau-Deployments auf Vercel sind Produktions-Builds, dort ist die Komponente drin.
+- **Nur im Produktions-Build auf Vercel** (`measuresSpeed`: `NODE_ENV=production` und
+  `VERCEL` gesetzt, das setzt Vercel beim Bauen und zur Laufzeit). In `npm run dev` und
+  `npm run test:e2e` lädt das Paket ein Debug-Skript von `va.vercel-scripts.com`, das die
+  CSP zu Recht blockiert. Ausserhalb von Vercel (`npm start`, das Docker-Image, der
+  Browser-Test gegen den Produktionsaufbau) gibt es `/_vercel/…` nicht, das Skript wäre
+  je Seite ein 404. Vorschau-Deployments auf Vercel sind Produktions-Builds, dort ist die
+  Messung drin. Ob promptprinter.app misst: im HTML der Startseite steht der Verweis auf
+  `SpeedInsightsClient`.
 - **Adressen werden vor dem Senden gekürzt** ([`speed-insights-event.ts`](../src/shared/lib/speed-insights-event.ts)):
   Das Skript schickt `location.href`. Query und Fragment fallen weg (Anmeldelinks
   hängen Einmalwerte an), jede UUID im Pfad wird zu `[id]` (`/chats/<uuid>` →

@@ -1,34 +1,33 @@
-"use client";
-
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { scrubSpeedInsightsEvent } from "@/shared/lib/speed-insights-event";
+import { SpeedInsightsClient } from "./speed-insights-client";
 
 /**
- * Vercel Speed Insights: misst die Ladezeiten (Web Vitals) echter Besucher.
+ * Vercel Speed Insights: misst die Ladezeiten (Web Vitals) echter Besucher, nur in einem Produktions-Build auf
+ * Vercel (`measuresSpeed`).
  *
- * Eigene Komponente statt `<SpeedInsights />` direkt im Root-Layout, aus zwei
- * Gründen:
+ * - **Nur auf Vercel.** Das Skript liegt unter `/_vercel/speed-insights/…`, und diesen Pfad stellt nur Vercel
+ *   bereit. Auf einer eigenen Installation (`npm start`, das Docker-Image, docs/SETUP.md "Selbst betreiben") wäre
+ *   er je Seite ein 404 mit einer Meldung in der Konsole, gemessen würde dort ohnehin nichts. Vercel setzt
+ *   `VERCEL=1` beim Bauen und zur Laufzeit; dieselbe Variable trennt in server/self-hosted.ts und
+ *   server/security/rate-limit.ts Vercel vom Einzelbetrieb.
+ * - **Nur im Produktions-Build.** In der Entwicklung lädt das Paket ein Debug-Skript von `va.vercel-scripts.com`,
+ *   und das blockiert unsere CSP zu Recht (`script-src` kennt keinen fremden Host). Vorschau-Deployments auf Vercel
+ *   sind Produktions-Builds, die Messung ist dort also eingebunden.
  *
- * - `beforeSend` ist eine Funktion, und eine Funktion kommt nicht als Prop von
- *   einer Server- in eine Client-Komponente. Das Root-Layout ist ein Server
- *   Component, das Kürzen der Adressen (`scrubSpeedInsightsEvent`) muss also
- *   hier im Client sitzen.
- * - Nur im Produktions-Build. In der Entwicklung lädt das Paket ein
- *   Debug-Skript von `va.vercel-scripts.com`, und das blockiert unsere CSP zu
- *   Recht (`script-src` kennt keinen fremden Host). Statt dafür die Policy zu
- *   lockern, misst die Entwicklung gar nicht. Vorschau-Deployments auf Vercel
- *   sind Produktions-Builds, die Komponente ist dort also eingebunden.
+ * Die Entscheidung fällt hier, in einer Server-Komponente: `process.env.VERCEL` kommt nicht in den Browser (nur
+ * `NEXT_PUBLIC_*` wird eingebacken). Öffentliche Seiten rendert der Build, also gilt dort die Umgebung beim Bauen,
+ * die App rendert zur Laufzeit; auf Vercel ist `VERCEL` in beiden gesetzt, auf einer eigenen Installation in
+ * keiner. Das Lesen einer Umgebungsvariable macht eine Seite nicht dynamisch (nur `headers()`/`cookies()` täten
+ * das), siehe tests/guards/static-public-pages.test.ts.
  *
- * Kein Eintrag in der CSP nötig: das Skript kommt von unserer eigenen Adresse
- * (`/_vercel/speed-insights/…`, `'self'`), die Messwerte gehen an denselben
- * Ursprung zurück (`connect-src 'self'`). Wer `scriptSrc` oder `endpoint` auf
- * einen fremden Host stellt, muss `csp.ts` mitziehen.
- *
- * Eine Client-Komponente im Root-Layout macht die öffentlichen Seiten nicht
- * dynamisch (nur `headers()`/`cookies()` täten das), siehe
- * tests/guards/static-public-pages.test.ts.
+ * Kein Eintrag in der CSP nötig: das Skript kommt von unserer eigenen Adresse (`'self'`), die Messwerte gehen an
+ * denselben Ursprung zurück (`connect-src 'self'`). Wer `scriptSrc` oder `endpoint` auf einen fremden Host stellt,
+ * muss `csp.ts` mitziehen.
  */
 export function SiteSpeedInsights() {
-  if (process.env.NODE_ENV !== "production") return null;
-  return <SpeedInsights beforeSend={scrubSpeedInsightsEvent} />;
+  return measuresSpeed() ? <SpeedInsightsClient /> : null;
+}
+
+/** Misst diese Umgebung? Nur ein Produktions-Build auf Vercel. */
+export function measuresSpeed(env: Record<string, string | undefined> = process.env): boolean {
+  return env.NODE_ENV === "production" && Boolean(env.VERCEL?.trim());
 }

@@ -18,7 +18,7 @@ type Watch = {
   violations: () => Promise<string[]>;
 };
 
-// Eine zweite Ausnahme, und sie gibt es nur auf http: Die Policy trägt `upgrade-insecure-requests`. Der Produktions-Build
+// Eine Ausnahme, und sie gibt es nur auf http: Die Policy trägt `upgrade-insecure-requests`. Der Produktions-Build
 // lädt Links vor (Prefetch), und der Prefetch einer App-Seite wird ohne Sitzung auf /login umgeleitet; der Browser stellt
 // das Ziel der Weiterleitung auf https um, und auf localhost antwortet kein TLS-Server. Auf der echten https-Adresse
 // gibt es diese Umstellung nicht. Nur genau diese Form ist ausgenommen: https auf dem Host der Tests, Fehler TLS.
@@ -26,7 +26,7 @@ const HTTPS_TWIN = E2E_PROD_ORIGIN.replace("http:", "https:");
 const isUpgradedPrefetch = (url: string, error: string | undefined) =>
   url.startsWith(HTTPS_TWIN) && error?.includes("ERR_SSL_PROTOCOL_ERROR") === true;
 
-// Eine dritte Ausnahme: Next lädt Links der eingeloggten App vor (Anfragen mit `_rsc=`) und bricht einen Prefetch
+// Eine zweite Ausnahme: Next lädt Links der eingeloggten App vor (Anfragen mit `_rsc=`) und bricht einen Prefetch
 // ab, sobald ein neuerer ihn ersetzt oder die Seite sich ändert. Das meldet der Browser als ERR_ABORTED, ohne dass
 // etwas kaputt ist. Ausgenommen sind nur abgebrochene Prefetches desselben Servers; jeder andere Abbruch bleibt ein Fund.
 const isAbortedPrefetch = (url: string, error: string | undefined) =>
@@ -53,12 +53,8 @@ async function watch(page: Page, expectedMissing?: string): Promise<Watch> {
     problems.push(`Anfrage fehlgeschlagen: ${request.url()} (${error})`);
   });
 
-  // Die erste Ausnahme: der Produktions-Build lädt das Skript von Vercel Speed Insights von /_vercel/…, und diesen
-  // Pfad gibt es nur auf Vercel. Auf `next start` ist er ein 404 mit Konsolenfehler, der nichts über unsere Seiten sagt.
-  // Eine leere Antwort ersetzt ihn; die Policy erlaubt den Pfad ('self'), geprüft wird weiter alles andere.
-  await page.route("**/_vercel/**", (route) =>
-    route.fulfill({ status: 200, contentType: "text/javascript", body: "" })
-  );
+  // Keine Ausnahme für /_vercel/…: Vercel Speed Insights lädt nur auf Vercel (shared/providers/site-speed-insights.tsx).
+  // Fragt eine Seite unter `next start` dort trotzdem an, ist das ein 404 mit Konsolenfehler und damit ein Fund.
 
   await page.addInitScript(() => {
     const seen: string[] = [];
