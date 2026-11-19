@@ -3,28 +3,28 @@ import { pageMetadata } from "./page-metadata";
 
 describe("pageMetadata", () => {
   const meta = pageMetadata({
-    title: "Preise",
-    description: "Free mit eigenem Key, Pro ohne.",
-    path: "/pricing",
+    title: "Kostenlos und Open Source",
+    description: "Drei Prompts gratis, danach mit eigenem Key.",
+    path: "/open-source",
   });
 
   it("setzt das Canonical auf den Pfad der Seite", () => {
-    expect(meta.alternates?.canonical).toBe("/pricing");
+    expect(meta.alternates?.canonical).toBe("/open-source");
   });
 
   // Der Seitentitel bleibt kurz, weil das Root-Layout " · PromptPrinter"
   // anhängt. Für openGraph und twitter gilt diese Vorlage nicht, dort muss
   // der Markenname selbst im Titel stehen.
   it("lässt den Seitentitel kurz und schreibt die Marke in die Vorschau", () => {
-    expect(meta.title).toBe("Preise");
-    expect(meta.openGraph?.title).toBe("Preise · PromptPrinter");
-    expect(meta.twitter?.title).toBe("Preise · PromptPrinter");
+    expect(meta.title).toBe("Kostenlos und Open Source");
+    expect(meta.openGraph?.title).toBe("Kostenlos und Open Source · PromptPrinter");
+    expect(meta.twitter?.title).toBe("Kostenlos und Open Source · PromptPrinter");
   });
 
   it("gibt der Vorschau dieselbe Beschreibung und Adresse wie der Seite", () => {
-    expect(meta.description).toBe("Free mit eigenem Key, Pro ohne.");
+    expect(meta.description).toBe("Drei Prompts gratis, danach mit eigenem Key.");
     expect(meta.openGraph?.description).toBe(meta.description);
-    expect(meta.openGraph?.url).toBe("/pricing");
+    expect(meta.openGraph?.url).toBe("/open-source");
     expect(meta.twitter?.description).toBe(meta.description);
   });
 

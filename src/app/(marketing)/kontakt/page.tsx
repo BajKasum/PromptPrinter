@@ -168,9 +168,7 @@ export default function KontaktPage() {
               Ein kurzer Blick in die <Link href="/docs">Hilfe</Link> spart euch
               beiden eine Runde, besonders bei Fragen zu{" "}
               <Link href="/docs/plaene-und-limits">Limits</Link> und{" "}
-              <Link href="/docs/eigene-api-keys">eigenen API-Keys</Link>. Zum
-              Thema Erstattung gibt es die{" "}
-              <Link href="/rueckerstattung">Rückerstattungsrichtlinie</Link>.
+              <Link href="/docs/eigene-api-keys">eigenen API-Keys</Link>.
             </p>
 
             <h2 className="mb-3 mt-10 text-[20px] font-semibold tracking-[-0.01em] text-foreground">

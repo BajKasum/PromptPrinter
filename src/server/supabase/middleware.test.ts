@@ -78,7 +78,6 @@ describe("updateSession", () => {
       "/chats/new",
       "/projects",
       "/settings",
-      "/billing",
       "/usage",
       "/admin",
       // Security-Audit finding M-7: /prompts existed for a full release without
@@ -121,7 +120,7 @@ describe("updateSession", () => {
 
     it.each([
       "/",
-      "/pricing",
+      "/open-source",
       "/docs",
       "/docs/erste-schritte",
       "/login",
@@ -133,7 +132,6 @@ describe("updateSession", () => {
       "/nutzungsrichtlinie",
       "/datenschutz",
       "/kontakt",
-      "/rueckerstattung",
       "/ueber",
       "/vergleich",
       "/vergleich/prompt-vorlagen",
@@ -181,7 +179,7 @@ describe("updateSession", () => {
       getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     });
 
-    it.each(["/chats", "/projects", "/settings", "/billing", "/usage", "/admin", "/prompts"])(
+    it.each(["/chats", "/projects", "/settings", "/usage", "/admin", "/prompts"])(
       "lets %s through",
       async (path) => {
         const res = await updateSession(request(path), new Headers());

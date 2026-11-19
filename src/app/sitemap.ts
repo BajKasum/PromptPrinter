@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/`, changeFrequency: "weekly", priority: 1 },
     // Kein /features: die Route leitet auf /#funktionen um (next.config.ts), und ein Redirect in der Sitemap ist
     // ein Crawl-Fehler.
-    { url: `${BASE}/pricing`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/open-source`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/skill`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/terminal`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/mcp`, changeFrequency: "monthly", priority: 0.6 },
@@ -60,7 +60,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/cookies",
     "/agb",
     "/nutzungsrichtlinie",
-    "/rueckerstattung",
     "/impressum",
   ].map((path) => ({
     url: `${BASE}${path}`,

@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPARISONS, COMPARISONS_UPDATED, comparisonHref } from "@/features/marketing/lib/comparisons";
 import { TASK_GUIDES, TASK_GUIDES_UPDATED, taskGuideHref } from "@/features/marketing/lib/task-guides";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
+import { isoFromGermanDate } from "@/shared/lib/german-date";
+import { LEGAL } from "@/shared/lib/legal";
 import sitemap from "./sitemap";
 
 // Security-Audit finding L-6: BASE used to be the literal string
@@ -35,7 +37,7 @@ describe("sitemap", () => {
     const paths = sitemap().map((e) => e.url.replace("https://staging.example.com", ""));
 
     expect(paths).toEqual(
-      expect.arrayContaining(["/", "/pricing", "/skill", "/terminal", "/mcp", "/docs", "/datenschutz", "/impressum"])
+      expect.arrayContaining(["/", "/open-source", "/skill", "/terminal", "/mcp", "/docs", "/datenschutz", "/impressum"])
     );
   });
 
@@ -45,6 +47,13 @@ describe("sitemap", () => {
   it("does not list the retired /features redirect", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
     expect(sitemap().some((e) => e.url.endsWith("/features"))).toBe(false);
+  });
+
+  // Preisseite, Pro-Seite und Rückerstattung leiten um (next.config.ts): ein Redirect in der Sitemap ist ein Crawl-Fehler.
+  it("führt keine der umgeleiteten Seiten ohne Bezahlung", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
+    const paths = sitemap().map((e) => new URL(e.url).pathname);
+    for (const path of ["/pricing", "/pro-bald", "/rueckerstattung"]) expect(paths, path).not.toContain(path);
   });
 
   // #251: lastmod zählt nur, wenn es stimmt. Die Buildzeit ist keine Änderung.
@@ -77,14 +86,16 @@ describe("sitemap", () => {
 
     it("nimmt für Rechtstexte das Datum aus legal.ts als ISO-Datum", () => {
       const entries = byPath();
-      for (const path of ["/datenschutz", "/cookies", "/agb", "/nutzungsrichtlinie", "/rueckerstattung", "/impressum"]) {
-        expect(entries.get(path), path).toBe("2026-11-02");
+      const legalUpdated = isoFromGermanDate(LEGAL.lastUpdated);
+      expect(legalUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      for (const path of ["/datenschutz", "/cookies", "/agb", "/nutzungsrichtlinie", "/impressum"]) {
+        expect(entries.get(path), path).toBe(legalUpdated);
       }
     });
 
     it("lässt lastModified weg, wo es kein gepflegtes Datum gibt", () => {
       const entries = byPath();
-      for (const path of ["/", "/pricing", "/skill", "/ueber", "/kontakt"]) {
+      for (const path of ["/", "/open-source", "/skill", "/ueber", "/kontakt"]) {
         expect(entries.get(path), path).toBeUndefined();
       }
     });

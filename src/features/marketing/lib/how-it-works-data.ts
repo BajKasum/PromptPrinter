@@ -1,6 +1,6 @@
 import { Pencil, MessageSquare, Copy } from "lucide-react";
 
-// Plain data module, no "use client": same reason as faq-data.ts — a Server
+// Plain data module, no "use client": a Server
 // Component importing a value out of a "use client" file (how-it-works.tsx
 // used to define these locally) gets a client-reference proxy for every
 // export, not the real array, and `.map` throws at request time. Both

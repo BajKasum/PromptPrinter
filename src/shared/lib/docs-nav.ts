@@ -51,7 +51,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Chat mit Finn",
         summary:
           "Warum Finn erst nachfragt statt sofort zu liefern, und wie du seine Rückfrage am schnellsten beantwortest.",
-        updated: "2026-10-11",
+        updated: "2026-11-19",
       },
       {
         slug: "der-fertige-prompt",
@@ -70,7 +70,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Projekte als Arbeitsplatz",
         summary:
           "Wenn du länger an einer Sache arbeitest: ein Projekt hält Anweisungen, Struktur und mehrere Chats zusammen.",
-        updated: "2026-10-22",
+        updated: "2026-11-19",
       },
       {
         slug: "dateien",
@@ -84,7 +84,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Prompts speichern",
         summary:
           "Gute Prompts landen per Klick unter Gespeicherte Prompts, damit du sie später wiederfindest.",
-        updated: "2026-10-22",
+        updated: "2026-11-19",
       },
     ],
   },
@@ -96,14 +96,14 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Eigene API-Keys",
         summary:
           "Häng deinen eigenen Anthropic-, OpenAI-, Gemini- oder OpenAI-kompatiblen Key an und rechne direkt über dein Konto ab.",
-        updated: "2026-11-08",
+        updated: "2026-11-19",
       },
       {
         slug: "plaene-und-limits",
         title: "Pläne und Limits",
         summary:
-          "Was Free und Pro genau enthalten, welche Grenzen wirklich zählen und wann ein eigener Key sie aufhebt.",
-        updated: "2026-11-08",
+          "Was PromptPrinter kostet (nichts), wie die drei Gratis-Prompts zählen und welche Grenzen auch mit eigenem Key bleiben.",
+        updated: "2026-11-19",
       },
     ],
   },

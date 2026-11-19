@@ -29,7 +29,6 @@ describe("robots", () => {
         "/chats",
         "/projects",
         "/settings",
-        "/billing",
         "/usage",
         "/prompts",
         "/admin",
