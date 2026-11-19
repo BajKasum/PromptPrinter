@@ -9,7 +9,6 @@ im [README](../README.md).
 
 - **Next.js 16** (App Router) · **React 19** · **TypeScript** (strict)
 - **Supabase**, Auth, Postgres, Row-Level-Security
-- **Lemon Squeezy**, Billing (Checkout + Webhook live)
 - **Z.ai (GLM)** als Standard-Modell, Gemini als Zweit-Provider, dazu eigene
   Keys der Nutzer (Anthropic, OpenAI, Gemini, OpenAI-kompatible Endpunkte);
   selbst betrieben ein eigenes Modell über eine OpenAI-kompatible Schnittstelle
@@ -50,7 +49,7 @@ wandert. Ohne Provider-Key sagt sie ab, auch lokal.
 
 ## Selbst betreiben
 
-PromptPrinter läuft auch ohne die Dienste von promptprinter.app: ohne Upstash, Turnstile, Resend und Lemon Squeezy,
+PromptPrinter läuft auch ohne die Dienste von promptprinter.app: ohne Upstash, Turnstile und Resend,
 mit einem eigenen Modell über die Chat-Schnittstelle von OpenAI (`/v1/chat/completions`). Standard ist
 [Ollama](https://ollama.com); jeder andere Server mit dieser Schnittstelle geht auch (LM Studio, llama.cpp, vLLM,
 OpenRouter). Nötig sind Node 24, Docker (für den lokalen Supabase-Stack) und der Modell-Server.
@@ -65,7 +64,7 @@ Der Einzelbetrieb ([`src/server/self-hosted.ts`](../src/server/self-hosted.ts)) 
 |---|---|---|
 | Upstash | in Produktion Pflicht, sonst bricht der Start ab | optional, das Ratenlimit zählt im Speicher des Prozesses |
 | `LLM_BASE_URL` | nur eine öffentliche https-Adresse | auch `localhost`, das eigene Netz, der Docker-Host, auch http |
-| Plan | Free chattet nur mit Gratis-Prompts oder eigenem Key | jedes Konto chattet auf `LLM_BASE_URL`, ohne Monatskontingent |
+| Plan | Free chattet nur mit Gratis-Prompts oder eigenem Key | jedes Konto chattet auf `LLM_BASE_URL`, ohne Gratis-Rahmen |
 
 Unverändert auch im Einzelbetrieb:
 
@@ -80,8 +79,8 @@ Unverändert auch im Einzelbetrieb:
 
 Ein Zug auf dem eigenen Endpunkt braucht keine Einwilligung zu Z.ai (die gilt nur für den Z.ai-Pfad,
 [`consent.ts`](../src/server/consent.ts)). Turnstile ist ohne `NEXT_PUBLIC_TURNSTILE_SITE_KEY` aus (die Formulare
-gehen ohne Mensch-Prüfung), das Kontaktformular sagt ohne `RESEND_API_KEY` "gerade nicht verfügbar", und ohne
-Lemon Squeezy gibt es keinen Kauf-Knopf. Nichts davon hält den Start auf.
+gehen ohne Mensch-Prüfung), und das Kontaktformular sagt ohne `RESEND_API_KEY` "gerade nicht verfügbar". Nichts
+davon hält den Start auf.
 
 ### 1. Modell
 
@@ -248,8 +247,8 @@ Vorlage: [`.env.example`](../.env.example). Welche Datei wo gelesen wird:
 | `.env.example` | nur Vorlage (committed) |
 
 **Regel:** Secrets niemals mit `NEXT_PUBLIC_*` prefixen, die landen sonst im
-Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`,
-`LEMON_SQUEEZY_WEBHOOK_SECRET`) bleiben ohne Prefix.
+Client-Bundle. Server-seitige Keys (`SUPABASE_SERVICE_ROLE_KEY`, `ZAI_API_KEY`)
+bleiben ohne Prefix.
 
 ### Deploy-Checkliste
 
@@ -676,7 +675,6 @@ Zwei Stufen, beide nur mit der Kennung des Kontos: nie eine Adresse, ein Key ode
 | Einwilligung in Z.ai erteilt, widerrufen | `consent.zai_granted`, `consent.zai_withdrawn` | Log und Tabelle |
 | Konto gelöscht | `account.deleted` | Log und Tabelle |
 | Terminal freigegeben, abgelehnt, angemeldet, abgemeldet | `cli.login_approved`, `cli.login_denied`, `cli.session_issued`, `cli.session_revoked` | Log und Tabelle |
-| Planwechsel | stehen schon in `billing_events` (Webhook) | Tabelle `billing_events` |
 
 Aufbewahrung:
 
@@ -814,7 +812,7 @@ Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API
 
 | Was | Grenze je Konto | Gilt für |
 |---|---|---|
-| Projekte | 3 | Plan Free. Pro und Admins ohne Grenze (`PLAN_LIMITS`) |
+| Projekte | 3 | alle ausser Admins (`effectiveLimits`). Der Trigger nimmt ausserdem eine alte Zeile mit `plan = 'pro'` aus, `/api/projects` nicht |
 | Chats (`conversations`) | 10 000 Zeilen | alle |
 | Nachrichten (`messages`) | 50 000 Zeilen, 50 MiB | alle |
 | Gespeicherte Prompts (`saved_prompts`) | 5 000 Zeilen, 20 MiB | alle |
@@ -827,57 +825,11 @@ Dazu kommen die älteren Grenzen je Projekt (20 Dateien, 25 MiB) und je Konto f�
 
 **Was sie nicht leisten.** Ein Konto belegt höchstens rund 85 MiB Datenbank und 100 MiB Speicher. Bei den Kontingenten des Supabase-Free-Tarifs (500 MB, 1 GB) reichen also ein paar Konten, um sie zu füllen, die Grenzen machen das nur teurer. Davor stehen die Anmeldung mit Turnstile und das Ratenlimit. Die Belegung steht im Supabase-Dashboard unter Organization → Usage, einen Alarm dafür gibt es nicht.
 
-**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen beim Einfügen, bei gespeicherten Prompts zusätzlich, wenn ein Ändern `outputs` eines Kontos ändert (sonst brächten viele kleine Zeilen, die danach wachsen, ein Konto auf rund 1 GB). Auch ein Konto über einer Grenze kann alles lesen und löschen und legt wieder an, sobald es darunter liegt (etwa nach einem Wechsel von Pro zu Free); gespeicherte Prompts ändern kann es erst wieder unter der Byte-Grenze, weil sich alte und neue Grösse in der Datenbank nicht gleich messen lassen (Kommentar in `*_saved_prompts_ceiling_on_update.sql`). Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
+**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen beim Einfügen, bei gespeicherten Prompts zusätzlich, wenn ein Ändern `outputs` eines Kontos ändert (sonst brächten viele kleine Zeilen, die danach wachsen, ein Konto auf rund 1 GB). Auch ein Konto über einer Grenze kann alles lesen und löschen und legt wieder an, sobald es darunter liegt; gespeicherte Prompts ändern kann es erst wieder unter der Byte-Grenze, weil sich alte und neue Grösse in der Datenbank nicht gleich messen lassen (Kommentar in `*_saved_prompts_ceiling_on_update.sql`). Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
 
 **Grenzfälle.** Parallele Einfügungen eines Kontos reiht eine Sperre (`pg_advisory_xact_lock`) hintereinander, die Grenze hält dabei genau. Im Bucket geht das nicht, weil die Grösse erst nach dem Hochladen feststeht: ein Upload kann die Bytes um höchstens ein Objekt (2 MiB) überschreiten, parallele Uploads um je eines. Die Zählung kostet an der Grenze von 50 000 Nachrichten rund 8 ms je Einfügung (lokal gemessen).
 
 **Wer eine Zahl ändert:** neue Migration mit `create or replace` beziehungsweise neuem Trigger, `ACCOUNT_CEILINGS` in `plans.ts`, dieser Abschnitt, und den Guard auf die neue Datei richten. Die Byte-Grenze der gespeicherten Prompts steht in zwei Triggern (Einfügen und Ändern), beide nachziehen.
-
-## Zahlungen: Webhook (Lemon Squeezy)
-
-`/api/webhooks/lemonsqueezy` schaltet Pro frei und nimmt es zurück. Im Lemon-Squeezy-
-Dashboard (*Settings → Webhooks*) muss ein Webhook auf
-`https://promptprinter.app/api/webhooks/lemonsqueezy` zeigen, sein Signing Secret steht als
-`LEMON_SQUEEZY_WEBHOOK_SECRET` in Vercel. **Test- und Live-Modus haben getrennte Webhooks**
-([Doku](https://docs.lemonsqueezy.com/guides/developer-guide/testing-going-live)): wer im
-Testmodus prüft, legt dort einen eigenen an (mit eigenem Secret).
-
-Gegen die Doku gelesen und geprüft am 07.10.2026 (Quellen im Kopf von
-`src/server/billing/lemonsqueezy.docs.test.ts`):
-
-- **Anzuhakende Ereignisse**, alle anderen quittiert der Code mit 200 und protokolliert sie als
-  ignoriert: `order_created`, `order_refunded`, `subscription_created`, `subscription_updated`,
-  `subscription_cancelled`, `subscription_resumed`, `subscription_expired`, `subscription_paused`,
-  `subscription_unpaused`, `subscription_payment_success`, `subscription_payment_recovered`,
-  `subscription_payment_refunded`. Unnötig: `subscription_payment_failed` (der Zustand `past_due`
-  kommt über das Abo), `customer_updated`, `license_key_*`, `affiliate_activated`.
-- **Signatur:** `X-Signature`, HMAC-SHA256 hexadezimal über den rohen Rumpf. Der Code prüft genau das,
-  zeitkonstant.
-- **Wiederholungen:** bei jeder anderen Antwort als 200 stellt Lemon Squeezy bis zu **dreimal** erneut
-  zu (5, 25 und 125 Sekunden später), also rund zweieinhalb Minuten lang. Danach kommt dieselbe
-  Zustellung nicht mehr von selbst: die Zeile in `billing_events` bleibt auf `failed`, und es hilft nur
-  ein erneutes Senden aus dem Dashboard (nicht belegt, ob es dort einen Knopf dafür gibt) oder die
-  Freischaltung von Hand.
-- **Entscheidungen:** Abo-Status `on_trial`, `active`, `past_due`, `cancelled` → Pro; `paused`,
-  `unpaid`, `expired` → Free. Erstattung: **voll** (`refunded`) → Free, **teilweise** (`partial_refund`)
-  → Pro bleibt (die Doku sagt, `order_refunded` feuert bei beidem). Zuordnung: Konto-ID aus dem Checkout
-  (`custom_data.user_id`, nur für eine Gutschrift, gegen `profiles` geprüft) oder Kundennummer (jeder
-  Entzug).
-- **Testmodus:** `test_mode` steht an Order, Abo und Rechnung (nicht in `meta`). Ein Ereignis mit
-  `test_mode: true` ändert kein Konto: Die Route quittiert es mit 200, die Zeile in `billing_events`
-  steht auf `ignored` mit `Testmodus` (Testkarten sind öffentlich). Wer den Weg ausserhalb der Produktion
-  prüft, setzt `LEMON_SQUEEZY_ACCEPT_TEST_MODE=1`; auf Vercel mit `VERCEL_ENV=production` wirkt der Schalter
-  nicht. Im Log trägt `billing.webhook_applied` (und `_unmatched`, `_ignored`) `testMode: true` oder `false`.
-- **Nicht belegt, nur mit einem echten Ereignis zu sehen:** welche Ereignisse bei einem echten Kauf
-  zusammen eintreffen und in welcher Reihenfolge, ob `subscription_paused` und `subscription_updated`
-  beide kommen, die Adresse des Testmodus-Webhooks, Preise brutto oder netto.
-- **Kundenportal-Adresse:** `urls.customer_portal` ist laut Beispiel der Doku eine signierte Adresse mit
-  `expires=…` und `signature=…`; wie lange sie gilt, nennt die Doku nicht. Die App speichert sie beim Abo-
-  Ereignis (`subscription_portal_url`), und die Abrechnungsseite (`/billing`) verlinkt genau diese gespeicherte
-  Adresse, sie holt nie eine frische (`LEMON_SQUEEZY_API_KEY` dient nur dem Beenden eines Abos beim Löschen
-  des Kontos und ist in Produktion nicht gesetzt). **Ist die Adresse abgelaufen, führt "Abo verwalten" ins
-  Leere:** das ist am ersten echten Abo zu prüfen. Die feste Adresse des Portals ist
-  `https://<shop>.lemonsqueezy.com/billing` (der Kunde meldet sich dort per Link an die Mail an).
 
 ## Ende-zu-Ende-Tests
 
@@ -920,7 +872,6 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `chat.spec.ts` | Frage senden und Antwort, nach dem Neuladen noch da; Textanhang landet in Tabelle UND Speicher, byte-gleich; ein Free-Konto sieht den Key-Hinweis vor dem Tippen |
 | `projects.spec.ts` | Projekt anlegen, Anweisungen speichern, Datei hochladen, Chat im Projekt, Löschen räumt Zeilen und Dateien im Speicher auf |
 | `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
-| `billing-webhook.spec.ts` | der Zahlungsweg mit **selbst signierten** Lemon-Squeezy-Ereignissen gegen die lokale Datenbank: Abo wird Pro, dieselbe Zustellung zweimal wirkt nur einmal, Kündigung und Ablauf, falsche Signatur wird abgewiesen, Konto-Übernahme gelingt nicht, Teilerstattung lässt Pro stehen |
 | `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
 | `byok-rotation.spec.ts` | `scripts/rotate-byok-secret.mjs` als eigener Prozess gegen echte Zeilen: Rotation, Wert ohne `pp2.` bleibt liegen, getauschte Chiffretexte, keine Ausgabe von Secrets |
 | `account-deletion.spec.ts` | Konto mit aktivem eigenem Key lässt sich löschen, der nächste Key rückt beim Löschen des aktiven nach |
@@ -935,9 +886,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
   läuft der Test-Server im Dev-Modus). Dass die Antwort gut ist, prüft kein Test.
 - **Der Sprachmodus.** Die Web Speech API gibt es in einem automatisierten
   Chromium nicht verlässlich, und ein Mikrofon gibt es nicht.
-- **Ein echtes Ereignis von Lemon Squeezy** (der Webhook selbst wird mit selbst
-  signierten Ereignissen geprüft, siehe oben), der Checkout, die Testmodus-Adresse
-  im Dashboard und die Preise inklusive Mehrwertsteuer. **Turnstile**, **Upstash/Redis**,
+- **Turnstile**, **Upstash/Redis**,
   die **Bestätigungsmail bei der Registrierung**, **OAuth** (Google/GitHub).
   Der lokale Stack hat die Bestätigungsmail ausgeschaltet (`supabase/config.toml`),
   und Produktion läuft laut Auth-Logs (06.10.2026) ebenfalls ohne. Die Mail des
@@ -1023,7 +972,7 @@ Dafür waren zwei Eingriffe im Repository nötig, und beide sind Absicht:
 - `e2e/support/env.ts` verweigert jede Datenbank-Adresse außer `127.0.0.1` und
   `localhost`. Die Tests legen Konten an und löschen sie wieder.
 - Der Test-Server bekommt seine Umgebung vollständig vom Test: alle Dienste, die
-  er nicht nutzen darf (Modell-Anbieter, Upstash, Turnstile, Zahlung,
+  er nicht nutzen darf (Modell-Anbieter, Upstash, Turnstile,
   Alarm-Webhook, GitHub-Token), stehen auf leer und schlagen damit die echte
   `.env.local`. `smoke.spec.ts` prüft das an Werten, die dort wirklich stehen.
 - Der Test-Server läuft auf Port 3100 und nie auf einem schon laufenden Server
@@ -1199,7 +1148,7 @@ wieder offen. Fällt Redis aus, gilt er als zu (wie bisher zuerst Z.ai).
 $1,50/$9,00 je Million Tokens gegen $0,20/$1,10 bei `glm-4.5-air`, also etwa das
 Achtfache: ein Zug mit 6k rein und 1,5k raus rund $0,0225 statt $0,0029. Darum ein
 eigenes Tagesbudget (`LLM_FAILOVER_DAILY_CALLS`, Vorgabe 200 Züge, rund $4,50). Jeder
-Zug zählt außerdem weiter einmal gegen Monatskontingent und `LLM_DAILY_CALL_BUDGET`.
+Zug zählt außerdem weiter einmal gegen `LLM_DAILY_CALL_BUDGET`.
 Ist das Failover-Budget aufgebraucht, laufen keine Züge mehr auf Gemini.
 
 **Datenschutz.** Im Ausfall gehen Nachrichten, Anhänge und Projektdateien an Google.

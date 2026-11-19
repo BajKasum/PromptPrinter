@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LEGAL } from "@/shared/lib/legal";
 
-// Every value in LEGAL is rendered verbatim into Impressum, Datenschutz, AGB
-// and Rückerstattung. A leftover placeholder therefore does not look like an
+// Every value in LEGAL is rendered verbatim into Impressum, Datenschutz and
+// AGB. A leftover placeholder therefore does not look like an
 // unfinished config value — it stands as literal text on a public legal page
 // and makes the statement it belongs to worthless.
 //
