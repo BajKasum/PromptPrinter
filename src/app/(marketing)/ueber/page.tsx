@@ -7,6 +7,7 @@ import { Button } from "@/shared/ui/button";
 import { JsonLd } from "@/shared/ui/json-ld";
 import { profilePageJsonLd } from "@/features/marketing/lib/site-schema";
 import { LEGAL } from "@/shared/lib/legal";
+import { LICENSE_URL, REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
@@ -28,8 +29,8 @@ const PROMISES = [
     body: "Nirgends. Kein Banner, kein gesponserter Hinweis, kein Tracking-Pixel, den ich an jemanden verkaufe. Wenn ein Werkzeug beim Denken helfen soll, darf es dich nicht gleichzeitig ablenken wollen.",
   },
   {
-    title: "Der Free-Plan ist echt gemeint",
-    body: "Mit deinem eigenen API-Key kostet dich PromptPrinter nichts, dauerhaft, nicht 14 Tage. Du zahlst die Modellnutzung ohnehin schon bei deinem Anbieter, da muss ich nicht nochmal die Hand aufhalten.",
+    title: "Mit eigenem Key kostet es nichts",
+    body: "Dauerhaft, nicht 14 Tage. Du zahlst die Modellnutzung ohnehin schon bei deinem Anbieter, da muss ich nicht nochmal die Hand aufhalten.",
   },
   {
     title: "Ich sage, was es nicht kann",
@@ -112,6 +113,40 @@ export default function UeberPage() {
             </p>
           </div>
         </Rise>
+      </section>
+
+      <section aria-labelledby="ueber-code" className="container-x pb-20">
+        <FadeIn>
+          <div className="max-w-2xl text-[16px] leading-[1.75] text-foreground/70 [&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2 [&_p]:mb-5">
+            <h2
+              id="ueber-code"
+              className="mb-4 text-[26px] md:text-[32px] leading-[1.15] tracking-[-0.02em] font-semibold text-foreground"
+            >
+              Der Code ist offen
+            </h2>
+            <p>
+              PromptPrinter ist Open Source. Der ganze Code liegt auf{" "}
+              <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+                GitHub
+              </a>
+              , unter der{" "}
+              <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">
+                MIT-Lizenz
+              </a>
+              : Du darfst ihn lesen, verwenden, ändern und weitergeben. Ausgenommen
+              sind nur der Name, das Logo und die Bilder von Finn.
+            </p>
+            <p>
+              Wer PromptPrinter lieber bei sich laufen lässt, braucht dafür kein
+              Konto bei mir, nur ein freies Modell auf dem eigenen Rechner. Wie
+              das geht, steht in der Hilfe unter{" "}
+              <Link href={SELF_HOSTING_DOC_PATH}>Selbst betreiben</Link>. Und wer
+              erst sehen will, wie es gebaut ist: Die Tests, die Regeln der
+              Datenbank und ein Changelog mit den Gründen hinter den
+              Entscheidungen liegen im selben Repo.
+            </p>
+          </div>
+        </FadeIn>
       </section>
 
       <section className="container-x pb-20">

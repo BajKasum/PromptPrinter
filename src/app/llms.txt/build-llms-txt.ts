@@ -3,6 +3,7 @@ import { TASK_GUIDES, taskGuideHref } from "@/features/marketing/lib/task-guides
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
 import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
 import { LEGAL } from "@/shared/lib/legal";
+import { REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
 import { siteUrl } from "@/shared/lib/site-url";
 
 const NUMBER_WORDS = ["Kein", "Ein", "Zwei", "Drei", "Vier", "Fünf", "Sechs", "Sieben", "Acht", "Neun", "Zehn", "Elf", "Zwölf"];
@@ -60,10 +61,14 @@ ${plans}
 - [Startseite](${base}/): Wie PromptPrinter funktioniert, in drei Schritten
 - [Preise](${base}/pricing): Free und Pro im Detail, plus häufige Fragen
 - [Skill](${base}/skill): Der Skill /pp für Coding-Agenten zum Herunterladen
-- [CLI](${base}/terminal): Finn im Terminal, mit demselben Konto wie im Browser
+- [CLI](${base}/terminal): Finn im Terminal, mit demselben Konto wie im Browser oder ohne Konto mit einem freien Modell (\`--local\`)
 - [MCP](${base}/mcp): Der MCP-Server, über den ein Agent bei Finn einen Prompt holt
 - [Über](${base}/ueber): Wer dahintersteckt und was versprochen wird
 - [Kontakt](${base}/kontakt): Fehler melden, Fragen stellen
+
+## Open Source
+PromptPrinter ist Open Source unter der MIT-Lizenz (ausgenommen sind Name, Logo und die Bilder von Finn), der Code liegt auf GitHub: ${REPO_URL}. Die Web-App lässt sich selbst betreiben, mit einem freien Modell über Ollama oder jedem Server mit der Chat-Schnittstelle von OpenAI; das Terminal-Programm läuft mit \`--local\` ganz ohne Konto.
+- [Selbst betreiben](${base}${SELF_HOSTING_DOC_PATH}): die Schritte in Kurzform
 
 ## Dokumentation
 ${docs}
@@ -85,6 +90,6 @@ ${taskGuides}
 - [Rückerstattung](${base}/rueckerstattung)
 
 ## English
-PromptPrinter is an AI chat that asks one bundled clarifying question and then writes a finished, copy-ready prompt for any AI and any task. The app interface is available in German, English, French, Italian and Spanish, and Finn answers in the language you write in. The public website is in German only.
+PromptPrinter is an AI chat that asks one bundled clarifying question and then writes a finished, copy-ready prompt for any AI and any task. The app interface is available in German, English, French, Italian and Spanish, and Finn answers in the language you write in. The public website is in German only. PromptPrinter is open source under the MIT license (name, logo and Finn's images excluded), code: ${REPO_URL}. It can be self-hosted with a free local model through Ollama, and the terminal program runs without an account using \`--local\`.
 `;
 }
