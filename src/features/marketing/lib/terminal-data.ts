@@ -95,7 +95,7 @@ export function cliLocalSteps(published: boolean = NPM_PUBLISHED): InstallStep[]
     {
       title: "Ein anderer Server",
       body: `Jeder Server mit der Chat-Schnittstelle von OpenAI geht auch, zum Beispiel LM Studio, mit --base-url. Verlangt er einen Key, gehört der in die Umgebungsvariable ${CLI_LOCAL_KEY_ENV}, nie in ein Argument: dort landete er im Verlauf deiner Shell.`,
-      code: `${start} --base-url http://localhost:1234/v1 --model <name>`,
+      code: `${start} --base-url http://localhost:1234/v1`,
     },
   ];
 }
