@@ -61,7 +61,7 @@ export default function DatenschutzPage() {
         unseren Authentifizierungs-Dienst gespeichert; wir sehen es zu keinem Zeitpunkt im Klartext.
       </p>
       <p>
-        Nutzt du den Pro-Plan, speichern wir bei deinem Konto ausserdem, <strong>wann du</strong> der
+        Wir speichern bei deinem Konto ausserdem, <strong>wann du</strong> der
         Übermittlung deiner Nachrichten an Z.ai <strong>zugestimmt hast</strong> und zu welcher Fassung
         des Hinweises (siehe Ziffer 5). Du kannst die Zustimmung in den Einstellungen einsehen und
         widerrufen.
@@ -317,17 +317,6 @@ export default function DatenschutzPage() {
           bearbeitet zu diesem Zweck deine IP-Adresse bzw. eine Nutzerkennung. Datenregion: EU
           (Frankfurt).
         </li>
-        <li>
-          <strong>Lemon Squeezy</strong> (Lemon Squeezy, LLC, USA): Zahlungsabwicklung für den
-          Pro-Plan. Anders als die übrigen hier genannten Dienste handelt Lemon Squeezy nicht in
-          unserem Auftrag, sondern als „Merchant of Record“, also als Verkäufer in eigenem Namen,
-          und ist für die Zahlungs- und Rechnungsdaten <strong>eigenverantwortlich</strong>. Auf der{" "}
-          <a href="/pricing">Preisseite</a> und der Abrechnungsseite wird dazu ein Skript von Lemon
-          Squeezy in deinem Browser geladen, wobei deine <strong>IP-Adresse</strong> übermittelt
-          wird. Deine Zahlungsdaten gibst du im eingebetteten Bezahlfenster direkt bei Lemon Squeezy
-          ein; sie erreichen uns nicht. Wir erhalten von dort nur, was zur Zuordnung deines Abos
-          nötig ist, insbesondere Mailadresse und Status des Abonnements.
-        </li>
       </ul>
       <DatenschutzWeitereEmpfaenger />
 
@@ -338,14 +327,14 @@ export default function DatenschutzPage() {
         Wir speichern deine Konto- und Inhaltsdaten, solange dein Konto besteht. Löschst du dein
         Konto, werden Profil, Chats samt Anhängen, Projekte, gespeicherte Prompts sowie hochgeladene
         Projektdateien gelöscht. Dasselbe gilt für Anhänge, wenn du einen einzelnen Chat oder ein
-        Projekt löschst. Zähler für Rate-Limiting und Monatskontingente liegen in einem
+        Projekt löschst. Zähler für Rate-Limiting liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
         und werden danach selbsttätig entfernt. Nachrichten aus dem Kontaktformular und E-Mails an uns
         bewahren wir in unserem Postfach so lange auf, wie wir sie für die Antwort und mögliche
         Rückfragen brauchen. Der E-Mail-Dienst (Ziffer 4) bewahrt die Mailinhalte, auch die des
         Kontaktformulars, nach eigenen Angaben 30 Tage auf. Server- und Fehlerprotokolle unseres Hosting-Anbieters
-        sowie die Messwerte zur Ladegeschwindigkeit werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten,
-        insbesondere für Rechnungsunterlagen aus der Zahlungsabwicklung, bleiben vorbehalten.
+        sowie die Messwerte zur Ladegeschwindigkeit werden nach dessen Aufbewahrungsfristen gelöscht. Gesetzliche Aufbewahrungspflichten
+        bleiben vorbehalten.
         Sprachaufnahmen aus dem Sprachmodus durchlaufen unsere Server nicht und werden von uns
         nicht gespeichert (Ziffer 4); wie lange dein Browser-Anbieter sie bei sich verarbeitet,
         richtet sich nach dessen eigenen Bestimmungen. Das Sicherheitsprotokoll löschen wir nach 180 Tagen

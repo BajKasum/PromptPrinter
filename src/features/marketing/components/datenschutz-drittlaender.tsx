@@ -1,6 +1,6 @@
-// Ziffer 5 der Datenschutzerklaerung, Uebermittlung in Drittlaender. Aus der Seite ausgelagert,
-// damit sie unter der Dateigrenze von 400 Zeilen bleibt (tests/guards/file-size.test.ts).
-// Der Text ist unveraendert; LEGAL.appHost kommt wie auf der Seite aus shared/lib/legal.ts.
+// Ziffer 5 der Datenschutzerklärung, Übermittlung in Drittländer. Eigene Datei, damit die Seite unter der
+// Dateigrenze von 400 Zeilen bleibt (tests/guards/file-size.test.ts). LEGAL.appHost kommt wie auf der Seite aus
+// shared/lib/legal.ts.
 import { LEGAL } from "@/shared/lib/legal";
 
 export function DatenschutzDrittlaender() {
@@ -9,8 +9,8 @@ export function DatenschutzDrittlaender() {
       <h2>5. Übermittlung in Drittländer</h2>
       <p>
         Einzelne der oben genannten Dienste bearbeiten Daten ausserhalb der Schweiz bzw. des EWR,
-        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Resend,
-        Lemon Squeezy, gegebenenfalls der von dir gewählte eigene Anbieter, bei der Anmeldung über
+        namentlich in den <strong>USA</strong> ({LEGAL.appHost}, Cloudflare, Resend, gegebenenfalls
+        der von dir gewählte eigene Anbieter, bei der Anmeldung über
         diese Dienste Google bzw. GitHub sowie, wenn du den Sprachmodus mit Chrome oder Edge
         nutzt, Google bzw. Microsoft, siehe Ziffer 4) sowie in <strong>Singapur</strong> (Z.ai,
         möglicherweise auch in <strong>China</strong>). Bei Supabase (Vertragspartner in
@@ -34,7 +34,7 @@ export function DatenschutzDrittlaender() {
         Vereinbarung zur Auftragsbearbeitung für API-Kunden, Daten nur nach unseren Weisungen zu
         bearbeiten, und nach eigenen Angaben, Daten nur gestützt auf gesetzlich anerkannte
         Mechanismen ins Ausland zu übermitteln. Ein gleichwertiges Datenschutzniveau können wir für
-        diese Länder dennoch nicht vollständig zusichern. Deshalb holen wir im Pro-Plan, bevor deine
+        diese Länder dennoch nicht vollständig zusichern. Deshalb holen wir, bevor deine
         Nachrichten zum ersten Mal an Z.ai gehen, deine <strong>ausdrückliche Einwilligung</strong>
         ein (Art. 49 Abs. 1 lit. a DSGVO; Art. 17 Abs. 1 lit. a revDSG), und der Server prüft sie bei
         jeder Anfrage; das gilt auch für die Analyse im Projekt-Gedächtnis. Du kannst sie jederzeit

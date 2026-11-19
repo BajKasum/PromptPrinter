@@ -23,7 +23,7 @@ export default function NutzungsrichtliniePage() {
     <LegalShell
       badge="Rechtliches"
       title="Nutzungsrichtlinie"
-      intro="Was du mit PromptPrinter tun darfst und was nicht. Sie ergänzt die AGB und gilt für jeden Plan, auch mit eigenem API-Key."
+      intro="Was du mit PromptPrinter tun darfst und was nicht. Sie ergänzt die AGB und gilt auch mit eigenem API-Key."
       updated={LEGAL.lastUpdated}
     >
       <h2>1. Wofür diese Richtlinie gilt</h2>
@@ -34,7 +34,7 @@ export default function NutzungsrichtliniePage() {
         gespeicherte Prompts.
       </p>
       <p>
-        Sie gilt unabhängig von deinem Plan. Laufen deine Anfragen über deinen eigenen API-Key,
+        Laufen deine Anfragen über deinen eigenen API-Key,
         gelten <strong>zusätzlich die Nutzungsrichtlinien deines Modellanbieters</strong>.
       </p>
 
@@ -88,8 +88,8 @@ export default function NutzungsrichtliniePage() {
       <p>Ebenso unterlässt du es,</p>
       <ul>
         <li>
-          Schutz- und Begrenzungsmassnahmen zu umgehen, etwa Rate-Limits, Monatskontingente oder
-          das Captcha, zum Beispiel mit mehreren Konten;
+          Schutz- und Begrenzungsmassnahmen zu umgehen, etwa Rate-Limits oder das Captcha, zum
+          Beispiel mit mehreren Konten;
         </li>
         <li>
           den Dienst automatisiert zu nutzen (Skripte, Bots, Scraping), ausser über die normale
@@ -137,7 +137,7 @@ export default function NutzungsrichtliniePage() {
         <li>die betroffenen Inhalte entfernen,</li>
         <li>einzelne Funktionen für dein Konto einschränken oder</li>
         <li>
-          dein Konto vorübergehend oder dauerhaft sperren (Ziffer 15 der <a href="/agb">AGB</a>).
+          dein Konto vorübergehend oder dauerhaft sperren (Ziffer 14 der <a href="/agb">AGB</a>).
         </li>
       </ul>
       <p>
@@ -181,7 +181,7 @@ export default function NutzungsrichtliniePage() {
       <h2>8. Änderungen dieser Richtlinie</h2>
       <p>
         Wir können diese Richtlinie anpassen, etwa wenn neue Funktionen dazukommen oder sich die
-        Rechtslage ändert. Es gilt Ziffer 16 der <a href="/agb">AGB</a>: Über wesentliche
+        Rechtslage ändert. Es gilt Ziffer 15 der <a href="/agb">AGB</a>: Über wesentliche
         Änderungen informieren wir in geeigneter Form, die jeweils aktuelle Fassung steht auf
         dieser Seite.
       </p>

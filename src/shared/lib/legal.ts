@@ -31,8 +31,8 @@ export const LEGAL = {
   /** Gerichtsstand für die AGB, z. B. "Zürich". */
   jurisdiction: "Basel-Stadt",
   /**
-   * Letzte Aktualisierung der Rechtstexte (gilt für alle sechs gemeinsam, inkl.
+   * Letzte Aktualisierung der Rechtstexte (gilt für alle fünf gemeinsam, inkl.
    * /cookies und /nutzungsrichtlinie).
    */
-  lastUpdated: "2. November 2026",
+  lastUpdated: "19. November 2026",
 } as const;

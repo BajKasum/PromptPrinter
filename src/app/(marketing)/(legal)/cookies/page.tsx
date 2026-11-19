@@ -34,7 +34,7 @@ export default function CookiesPage() {
         messen wir (siehe Ziffer 3), ebenfalls ohne Cookies und ohne etwas im Browser zu speichern.
       </p>
       <p>
-        Wer nur die öffentlichen Seiten besucht, also Startseite, Preise, Hilfe und Rechtstexte,
+        Wer nur die öffentlichen Seiten besucht, also Startseite, Hilfe und Rechtstexte,
         bekommt von uns nichts im Browser gespeichert. Die Einträge unten entstehen erst beim
         Anmelden oder in der App selbst.
       </p>
@@ -81,18 +81,6 @@ export default function CookiesPage() {
         dein Browser ein Skript von Cloudflare, das kurzzeitig technische Merkmale deines Browsers
         auswertet. Cookies setzt Turnstile dabei nach Angaben von Cloudflare in der
         Standardeinstellung nicht. Der Zweck ist ausschliesslich der Schutz dieser Formulare vor automatisierten Zugriffen.
-      </p>
-      <h3>Lemon Squeezy (Bezahlung)</h3>
-      <p>
-        Wenn du angemeldet die Preisseite oder die Abrechnungsseite öffnest, lädt dein Browser ein
-        Skript von Lemon Squeezy, damit sich das Bezahlfenster öffnen lässt. Dieses Skript setzt
-        selbst keine Cookies. Öffnest du das Bezahlfenster, können Lemon Squeezy und die dort
-        eingebundenen Zahlungsanbieter eigene Cookies setzen, etwa zur Betrugsprävention. Dafür ist
-        Lemon Squeezy als Verkäufer selbst verantwortlich, siehe die{" "}
-        <a href="https://www.lemonsqueezy.com/privacy" rel="noopener noreferrer" target="_blank">
-          Datenschutzerklärung von Lemon Squeezy
-        </a>
-        .
       </p>
 
       <h2>4. Warum es kein Cookie-Banner gibt</h2>
