@@ -6,18 +6,13 @@ import { Button } from "@/shared/ui/button";
 import { ApiKeyField } from "@/shared/ui/api-key-field";
 import { KeyGuide } from "@/shared/ui/key-guide";
 import { useT } from "@/shared/i18n/provider";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 
-// Free chattet seit 30.07.2026 nur mit eigenem Key (plans.ts). Vorher erfuhr
-// ein neues Free-Konto das erst NACH dem Absenden seiner ersten Idee, als rote
-// Fehlermeldung mit einem "Erneut senden"-Knopf, der denselben 403 nur
-// wiederholte (Audit 23.09.2026, F-1). Dieser Hinweis steht jetzt schon im
-// leeren Chat und ersetzt nach einer 403-Antwort den Fehlerbanner.
+// Nach den Gratis-Prompts chattet ein Konto nur mit eigenem Key (shared/lib/plans.ts, server/free-trial.ts). Der
+// Hinweis steht deshalb schon im leeren Chat, nicht erst als Fehler nach dem Absenden, und ersetzt nach einer
+// 403-Antwort den Fehlerbanner: ein "Erneut senden" bekäme nur wieder dieselbe Ablehnung.
 //
-// Seit 01.10.2026 (Audit P-1) führt er nicht mehr nur zu den Einstellungen,
-// sondern erklärt den Weg zu einem kostenlosen Gemini-Key und nimmt den Key
-// gleich hier an: ein neuer Nutzer verliert den Chat nicht aus den Augen, und
-// die getippte Idee wartet im Eingabefeld, bis der Key steht.
+// Er erklärt den Weg zu einem kostenlosen Gemini-Key und nimmt den Key gleich hier an: der Chat bleibt im Blick,
+// und die getippte Idee wartet im Eingabefeld, bis der Key steht.
 export function ChatKeyNotice({ onConnected, reason = null }: { onConnected?: () => void; reason?: string | null }) {
   const t = useT();
   return (
@@ -38,7 +33,7 @@ export function ChatKeyNotice({ onConnected, reason = null }: { onConnected?: ()
             {t.chat.keyNoticeTitle}
           </p>
           {reason && <p className="mt-1 text-[13px] leading-relaxed text-foreground">{reason}</p>}
-          <p className="mt-1 text-[13px] leading-relaxed text-secondary">{PRO_AVAILABLE ? t.chat.keyNoticeBody : t.chat.keyNoticeBodySoon}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-secondary">{t.chat.keyNoticeBody}</p>
 
           <div className="mt-3">
             <KeyGuide
@@ -56,11 +51,6 @@ export function ChatKeyNotice({ onConnected, reason = null }: { onConnected?: ()
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            {PRO_AVAILABLE && (
-              <Button asChild size="sm" variant="ghost">
-                <Link href="/billing">{t.chat.keyNoticeSeePro}</Link>
-              </Button>
-            )}
             <Button asChild size="sm" variant="ghost">
               <Link href="/settings#api-keys">{t.chat.keyNoticeSettings}</Link>
             </Button>

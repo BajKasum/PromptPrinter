@@ -25,7 +25,6 @@ const BEST_EFFORT: Record<string, string> = {
   "src/features/chat/lib/attachment-store.ts:signed": "Signierte Bildadressen: ohne sie fehlt nur die Vorschau, die Chat-Seite bleibt",
   "src/server/activation-funnel.ts:recentProfiles": "Auswertung für die Statistik, keine Entscheidung hängt daran",
   "src/shared/i18n/use-change-locale.ts:profile": "Browser: das Speichern der Sprache ist ein Nebeneffekt, der Cookie gilt so oder so",
-  "src/features/auth/components/sign-up-experience.tsx:profile": "Browser: Hinweis nach der Anmeldung, nur Anzeige",
 };
 
 /** Noch nicht umgestellt (Rest von #202). Eintrag löschen, sobald die Stelle den Fehler liest. */

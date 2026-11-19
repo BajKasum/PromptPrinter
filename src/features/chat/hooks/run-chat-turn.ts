@@ -179,7 +179,7 @@ function presentFailure(
   t: ChatTurnContext["t"]
 ) {
   // Kein Banner und kein "Erneut senden": ein zweiter Versuch scheitert genauso. Der Key-Hinweis nennt die zwei
-  // Wege, die gehen. consentRequired: Pro läuft auf Z.ai (Singapur) und braucht vorher die Zustimmung des Kontos
+  // Wege, die gehen. consentRequired: der Server-Key läuft auf Z.ai (Singapur) und braucht vorher die Zustimmung des Kontos
   // (server/consent.ts); der Hinweis nimmt sie entgegen und schickt die wartende Nachricht gleich ab.
   if (outcome.failure === "byokRequired") return { kind: "keyRequired" } as const;
   // Gratis-Rahmen für heute leer: derselbe Key-Weg, dazu der Satz, dass es morgen weitergeht.

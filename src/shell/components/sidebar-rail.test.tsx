@@ -12,7 +12,7 @@ vi.mock("@/shell/components/account-menu", () => ({
   ),
 }));
 
-const account = { email: "anna@example.test", plan: "pro", isAdmin: false, displayName: "Anna" };
+const account = { email: "anna@example.test", isAdmin: false, displayName: "Anna" };
 
 describe("Rail", () => {
   it("zeigt Neuer Chat, die beiden Ziele und das eingeklappte Konto", () => {

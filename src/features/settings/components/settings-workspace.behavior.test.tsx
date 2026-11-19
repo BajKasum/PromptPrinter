@@ -114,7 +114,7 @@ afterEach(() => {
 
 describe("Karten", () => {
   it("zeigt die zehn Karten in dieser Reihenfolge, jede mit Titel und Hinweis", () => {
-    renderIt({ plan: "pro" });
+    renderIt({ isAdmin: true });
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual([
       "Profil",
@@ -132,11 +132,11 @@ describe("Karten", () => {
     expect(screen.getByTestId("about-me")).toBeInTheDocument();
     for (const hint of [
       "Wie du in deinem Workspace erscheinst.",
-      "Konto- und Plan-Übersicht.",
+      "Dein Konto auf einen Blick.",
       "Die Sprache der App. Die Landing Page und die Rechtstexte bleiben Deutsch.",
-      "Nutze dein eigenes Kontingent statt unserer Limits.",
+      "Nach den Gratis-Prompts chattest du mit deinem eigenen Key.",
       "Ändere dein Passwort.",
-      "Deine Zustimmung für Chats ohne eigenen Key (Gratis-Prompts und Pro).",
+      "Deine Zustimmung für Chats ohne eigenen Key (Gratis-Prompts).",
       "Eine Kopie von allem, was zu deinem Konto gehört.",
       "Unwiderrufliche Aktionen.",
     ]) {
@@ -145,7 +145,7 @@ describe("Karten", () => {
   });
 
   it("gibt nur Sprache, API-Keys und Terminals einen Sprunganker (Key-Hinweis im Chat, Sprachwahl)", () => {
-    const { container } = renderIt({ plan: "pro" });
+    const { container } = renderIt({ isAdmin: true });
     const withId = Array.from(container.querySelectorAll("section[id]")).map((s) => s.id);
     expect(withId).toEqual(["language", "api-keys", "terminals"]);
     expect(container.querySelectorAll("section")).toHaveLength(10);
@@ -154,7 +154,7 @@ describe("Karten", () => {
   });
 
   it("jede Karte trägt ihren Inhalt: Attrappen für Erscheinungsbild, Sprache, Passwort, Zustimmung, Export und Konto löschen", () => {
-    renderIt({ plan: "pro" });
+    renderIt({ isAdmin: true });
     for (const id of ["theme-pref", "language-pref", "change-password", "zai-consent", "data-export", "delete-account"]) {
       expect(screen.getByTestId(id)).toBeInTheDocument();
     }
@@ -162,11 +162,11 @@ describe("Karten", () => {
   });
 
   it("reicht den Zeitpunkt der Zustimmung zu Z.ai an ihre Karte weiter (leer, wenn keine erteilt ist)", () => {
-    const { unmount } = renderIt({ plan: "pro" });
+    const { unmount } = renderIt({ isAdmin: true });
     expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "");
     unmount();
 
-    renderIt({ plan: "pro", zaiConsentAt: "2026-10-17T10:00:00.000Z" });
+    renderIt({ isAdmin: true, zaiConsentAt: "2026-10-17T10:00:00.000Z" });
     expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "2026-10-17T10:00:00.000Z");
   });
 
@@ -185,11 +185,8 @@ describe("Karten", () => {
       expect(screen.getByTestId("zai-consent")).toHaveAttribute("data-at", "2026-10-17T10:00:00.000Z");
     });
 
-    it.each([
-      ["pro", false],
-      ["free", true],
-    ] as const)("erscheint für Plan %s (Admin: %s)", (plan, isAdmin) => {
-      renderIt({ plan, isAdmin });
+    it("erscheint für ein Admin-Konto, das auf dem Server-Key ohne Gratis-Rahmen chattet", () => {
+      renderIt({ isAdmin: true });
       expect(screen.getByTestId("zai-consent")).toBeInTheDocument();
     });
   });
@@ -201,12 +198,14 @@ describe("Karten", () => {
     expect(keys).toHaveAttribute("data-active", "openai");
     expect(keys).toHaveAttribute("data-custom", "ja");
     expect(
-      screen.getByText("Mit eigenem Key entfällt das monatliche Chat-Limit, dein Projekt-Limit bleibt bestehen.")
+      screen.getByText(
+        "Mit eigenem Key zählen keine Gratis-Prompts mehr, es gelten die Grenzen deines Anbieters. Dein Projekt-Limit bleibt bestehen."
+      )
     ).toBeInTheDocument();
   });
 
   it("färbt das Symbol jeder Karte mit ihrem Akzent, die Gefahrenzone mit dem Warnton", () => {
-    const { container } = renderIt({ plan: "pro" });
+    const { container } = renderIt({ isAdmin: true });
     const iconColors = Array.from(container.querySelectorAll("section > header > svg")).map(
       (svg) => (svg as SVGElement).getAttribute("style") ?? ""
     );
@@ -252,15 +251,16 @@ describe("Profil und Workspace", () => {
     expect(screen.getByText("-")).toBeInTheDocument();
   });
 
-  it("zeigt den Plan als Pille, für Admins stattdessen 'Admin', und verlinkt die Abrechnung", () => {
-    const { unmount } = renderIt({ plan: "pro" });
-    expect(screen.getByText("pro")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Plan verwalten/ })).toHaveAttribute("href", "/billing");
+  it("zeigt nur Admins ein Abzeichen und verlinkt die Nutzung, nicht die Abrechnung", () => {
+    const { unmount } = renderIt();
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^(free|pro)$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Nutzung ansehen/ })).toHaveAttribute("href", "/usage");
+    expect(screen.queryByRole("link", { name: /Plan verwalten/ })).not.toBeInTheDocument();
     unmount();
 
-    renderIt({ plan: "pro", isAdmin: true });
+    renderIt({ isAdmin: true });
     expect(screen.getByText("Admin")).toBeInTheDocument();
-    expect(screen.queryByText("pro")).not.toBeInTheDocument();
   });
 
   it("die Zeilen im Workspace und die Felder im Profil sind Beschriftung plus Wert", () => {

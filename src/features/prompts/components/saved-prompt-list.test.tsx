@@ -56,7 +56,7 @@ describe("SavedPromptList", () => {
 
   describe("list of titles", () => {
     it("shows only the title while closed", () => {
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
       expect(screen.getByRole("button", { name: "Alter Name" })).toHaveAttribute(
         "aria-expanded",
         "false"
@@ -67,7 +67,7 @@ describe("SavedPromptList", () => {
 
     it("opens the prompt on click and closes it again", async () => {
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       expect(screen.getByRole("button", { name: "Alter Name" })).toHaveAttribute(
@@ -83,7 +83,7 @@ describe("SavedPromptList", () => {
     it("opens each prompt on its own", async () => {
       const user = userEvent.setup();
       const second: SavedPrompt = { ...prompt, id: "p2", title: "Zweiter", content: "Zweiter Text." };
-      render(<SavedPromptList userId="u1" prompts={[prompt, second]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt, second]} />);
 
       await openPrompt(user, "Zweiter");
       expect(screen.getByText("Zweiter Text.")).toBeInTheDocument();
@@ -91,16 +91,9 @@ describe("SavedPromptList", () => {
     });
   });
 
-  it("hides the PDF export button on Free", async () => {
+  it("shows the PDF export button for every account", async () => {
     const user = userEvent.setup();
-    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
-    await openPrompt(user);
-    expect(screen.queryByRole("button", { name: "Als PDF exportieren" })).not.toBeInTheDocument();
-  });
-
-  it("shows the PDF export button on Pro/Team", async () => {
-    const user = userEvent.setup();
-    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf />);
+    render(<SavedPromptList userId="u1" prompts={[prompt]} />);
     await openPrompt(user);
     expect(screen.getByRole("button", { name: "Als PDF exportieren" })).toBeInTheDocument();
   });
@@ -111,7 +104,7 @@ describe("SavedPromptList", () => {
     // own click simulation never reaches this test's writeText mock.
     const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+    render(<SavedPromptList userId="u1" prompts={[prompt]} />);
     await openPrompt(user);
     await user.click(screen.getByRole("button", { name: /Kopieren/ }));
     expect(writeText).toHaveBeenCalledWith(prompt.content);
@@ -124,7 +117,7 @@ describe("SavedPromptList", () => {
       const chain = okWrite();
       update.mockReturnValue(chain);
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
@@ -144,7 +137,7 @@ describe("SavedPromptList", () => {
 
     it("cancels on Escape without calling Supabase", async () => {
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
@@ -157,7 +150,7 @@ describe("SavedPromptList", () => {
 
     it("does not rename to an empty title", async () => {
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
@@ -171,7 +164,7 @@ describe("SavedPromptList", () => {
     it("shows a toast and stays in rename mode when the update fails", async () => {
       update.mockReturnValue(failedWrite());
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
@@ -191,7 +184,7 @@ describe("SavedPromptList", () => {
       const chain = okWrite();
       del.mockReturnValue(chain);
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
@@ -205,7 +198,7 @@ describe("SavedPromptList", () => {
       const chain = okWrite();
       del.mockReturnValue(chain);
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
@@ -221,7 +214,7 @@ describe("SavedPromptList", () => {
       const chain = okWrite();
       del.mockReturnValue(chain);
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));
@@ -236,7 +229,7 @@ describe("SavedPromptList", () => {
     it("shows an error toast and keeps the prompt listed when delete fails", async () => {
       del.mockReturnValue(failedWrite());
       const user = userEvent.setup();
-      render(<SavedPromptList userId="u1" prompts={[prompt]} canExportPdf={false} />);
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
 
       await openPrompt(user);
       await user.click(screen.getByRole("button", { name: "Prompt löschen" }));

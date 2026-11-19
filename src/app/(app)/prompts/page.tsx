@@ -6,7 +6,6 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { createClient } from "@/server/supabase/server";
-import { resolvePlan } from "@/shared/lib/plans";
 import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
@@ -34,26 +33,19 @@ export default async function SavedPromptsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [rowsRawResult, profileResult] = await Promise.all([
-    // Explicit user_id on top of RLS (defense in depth, same as every other
-    // user-scoped query here), not project-scoped at all — that's the point.
-    // M-17 (Audit 06.09.2026): over-fetched by one (.range, not .limit) so
-    // splitAtLimit below can tell "exactly at the cap" from "there are more" —
-    // this used to silently drop anything past SAVED_PROMPTS_LOAD_LIMIT and
-    // show the truncated count as if it were the true total.
-    supabase
-      .from("saved_prompts")
-      .select("id, created_at, outputs")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .range(0, SAVED_PROMPTS_LOAD_LIMIT),
-    // PDF export is Pro/Team (lib/pricing.ts), Free only gets copy/markdown.
-    supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
-  ]);
+  // Explicit user_id on top of RLS (defense in depth, same as every other
+  // user-scoped query here), not project-scoped at all — that's the point.
+  // M-17 (Audit 06.09.2026): over-fetched by one (.range, not .limit) so
+  // splitAtLimit below can tell "exactly at the cap" from "there are more" —
+  // this used to silently drop anything past SAVED_PROMPTS_LOAD_LIMIT and
+  // show the truncated count as if it were the true total.
+  const rowsRawResult = await supabase
+    .from("saved_prompts")
+    .select("id, created_at, outputs")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .range(0, SAVED_PROMPTS_LOAD_LIMIT);
   const { data: rowsRaw } = orThrow(rowsRawResult, "saved_prompts");
-  const { data: profile } = orThrow(profileResult, "profiles");
-  const { plan, isAdmin } = resolvePlan(profile);
-  const canExportPdf = isAdmin || plan !== "free";
 
   const { items: rows, hasMore } = splitAtLimit(
     rowsRaw ?? [],
@@ -112,7 +104,7 @@ export default async function SavedPromptsPage() {
       </FadeIn>
 
       <FadeIn delay={0.06}>
-        <SavedPromptList prompts={prompts} userId={user.id} canExportPdf={canExportPdf} />
+        <SavedPromptList prompts={prompts} userId={user.id} />
       </FadeIn>
     </div>
   );

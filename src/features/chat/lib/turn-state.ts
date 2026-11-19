@@ -33,7 +33,7 @@ export type TurnState = {
   justFinished: boolean;
   /** Kommt aus dem Server-Check und wird durch ein 403 byokRequired gesetzt (zum Beispiel Key in einem anderen Tab gelöscht). */
   keyRequired: boolean;
-  /** Pro ohne Zustimmung zur Übermittlung an Z.ai: kommt nur aus dem 403 consentRequired. */
+  /** Server-Key ohne Zustimmung zur Übermittlung an Z.ai: kommt nur aus dem 403 consentRequired. */
   consentRequired: boolean;
   /** Warum der Key-Hinweis steht, wenn es mehr zu sagen gibt (Gratis-Rahmen heute aufgebraucht); sonst null. */
   keyNoticeReason: string | null;

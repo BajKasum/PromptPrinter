@@ -1,13 +1,11 @@
 import { jsPDF } from "jspdf";
 import { AI_GENERATED_FOOTER, AI_GENERATED_KEYWORD, AI_GENERATED_SUBJECT } from "@/shared/lib/ai-marker";
 
-// Pro-only export (lib/pricing.ts → "PDF- & Markdown-Export"). Renders
-// the artifact's markdown as real, selectable text, not a rasterized
-// screenshot (jsPDF's `.html()`/html2canvas path), so the output stays
-// small, crisp at any zoom, and searchable/copyable. Markdown support is
-// deliberately shallow (headings + bullet lists + stripped emphasis
-// markers): these are reference documents meant to be read, not a full
-// markdown renderer, a heading hierarchy and readable body text cover that.
+// Export eines gespeicherten Prompts als PDF, für jedes Konto. Der Markdown wird als echter, markierbarer Text
+// gesetzt, nicht als gerastertes Bildschirmfoto (der Weg über jsPDFs `.html()` und html2canvas): die Datei bleibt
+// klein, scharf in jeder Vergrösserung, durchsuchbar und kopierbar. Markdown nur flach (Überschriften,
+// Aufzählungen, Hervorhebungszeichen entfernt): es sind Dokumente zum Lesen, kein vollständiger Markdown-Renderer,
+// dafür reichen eine Gliederung und lesbarer Fliesstext.
 
 const MARGIN = 18; // mm
 const LINE_HEIGHT = 5.2; // mm

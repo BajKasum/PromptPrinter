@@ -4,15 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { SignUpExperience } from "./sign-up-experience";
 import { PASSWORD_RULE_HINT } from "@/shared/lib/password";
 
-// Schalter aus src/shared/lib/pro-availability.ts: aus wie in der Wirklichkeit, einzelne Tests schalten an.
-const flag = vi.hoisted(() => ({ available: false }));
-vi.mock("@/shared/lib/pro-availability", () => ({
-  get PRO_AVAILABLE() {
-    return flag.available;
-  },
-  PRO_UNAVAILABLE_PATH: "/pro-bald",
-}));
-
 const push = vi.fn();
 const refresh = vi.fn();
 const postAuthAction = vi.fn();
@@ -28,9 +19,9 @@ const profileUpdate = vi.fn();
 const profileSelect = vi.fn();
 
 // Signup and resend go through POST /api/auth so the Turnstile token is
-// redeemed in the same request (app/api/auth/route.ts). The browser Supabase
-// client survives here for one thing only: the best-effort Pro-interest write
-// after an account exists, which is not an auth call.
+// redeemed in the same request (app/api/auth/route.ts). Die Anmeldung selbst
+// schreibt nichts ins Profil; der Browser-Client ist hier nur nachgebildet, damit
+// ein Schreibversuch im Test sichtbar würde.
 vi.mock("@/shared/lib/auth-client", () => ({
   postAuthAction: (...args: unknown[]) => postAuthAction(...args),
 }));
@@ -239,10 +230,8 @@ describe("SignUpExperience", () => {
     await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
     expect(push).toHaveBeenCalledWith("/chats/new");
   });
-  // QA finding U-2: the pricing page's Pro button linked here with ?plan=pro
-  // and nobody read it. The visitor clicked a paid plan, landed on Free, and
-  // only learned that payment isn't live once past the login.
-  describe("arriving through the Pro button", () => {
+  // Es gibt nichts zu kaufen: ein alter Link mit ?plan=pro meldet kein Interesse an und zeigt keinen Pro-Hinweis.
+  describe("ein alter Link mit ?plan=pro", () => {
     beforeEach(() => {
       getUser.mockReset();
       profileSelect.mockReset();
@@ -250,57 +239,21 @@ describe("SignUpExperience", () => {
       getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
       profileSelect.mockResolvedValue({ data: { settings: { onboarding_done: true } } });
       profileUpdate.mockResolvedValue({ error: null });
-    });
-
-    // Bis zum 04.08.2026 stand hier, Bezahlung sei nicht freigeschaltet — der
-    // ehrliche Text, solange es keinen Checkout gab. Seit Lemon Squeezy
-    // angebunden ist, führt der Weg über die Abrechnungsseite, und genau das
-    // muss der Hinweis sagen: erst Konto, dann Kauf.
-    it("points the way on: account first, then buy under Abrechnung", () => {
-      flag.available = true;
-      try {
-        searchParams = new URLSearchParams("plan=pro");
-        render(<SignUpExperience />);
-        expect(screen.getByText(/direkt danach unter Abrechnung/)).toBeInTheDocument();
-      } finally {
-        flag.available = false;
-      }
-    });
-
-    // #125: ist Pro nicht buchbar, verspricht der Hinweis keinen Kauf unter Abrechnung.
-    it("does not promise a purchase while Pro cannot be bought", () => {
       searchParams = new URLSearchParams("plan=pro");
-      render(<SignUpExperience />);
-      expect(screen.getByText(/Das gibt es noch nicht/)).toBeInTheDocument();
-      expect(screen.queryByText(/unter Abrechnung/)).not.toBeInTheDocument();
     });
 
-    it("stays quiet for a plain signup", () => {
-      searchParams = new URLSearchParams();
+    it("zeigt keinen Pro-Hinweis", () => {
       render(<SignUpExperience />);
       expect(screen.queryByText(/Du kommst über Pro/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/\bPro\b/)).not.toBeInTheDocument();
     });
 
-    it("records the interest without discarding the existing settings", async () => {
-      searchParams = new URLSearchParams("plan=pro");
-        render(<SignUpExperience />);
-
+    it("schreibt nach der Registrierung nichts ins Profil", async () => {
+      render(<SignUpExperience />);
       await fillAndSubmit("neu@example.com", "sicheres-passwort");
       await screen.findByRole("status");
-
-      expect(profileUpdate).toHaveBeenCalledWith({
-        settings: { onboarding_done: true, interested_in: "pro" },
-      });
-    });
-
-    it("never records anything for a plain signup", async () => {
-      searchParams = new URLSearchParams();
-        render(<SignUpExperience />);
-
-      await fillAndSubmit("neu@example.com", "sicheres-passwort");
-      await screen.findByRole("status");
-
       expect(profileUpdate).not.toHaveBeenCalled();
+      expect(getUser).not.toHaveBeenCalled();
     });
   });
 });

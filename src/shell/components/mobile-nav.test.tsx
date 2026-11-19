@@ -55,16 +55,17 @@ describe("MobileNav", () => {
     expect(drawer?.parentElement?.parentElement).toBe(document.body);
   });
 
-  it("lists the account destinations, all plans and a collapsible 'Mehr erfahren'", async () => {
+  it("lists the account destinations and a collapsible 'Mehr erfahren'", async () => {
     const user = userEvent.setup();
     render(<MobileNav chats={chats} projects={[]} />);
     await user.click(screen.getByRole("button", { name: "Menü öffnen" }));
 
     expect(screen.getByRole("link", { name: "Nutzung" })).toHaveAttribute("href", "/usage");
-    expect(screen.getByRole("link", { name: "Alle Tarife anzeigen" })).toHaveAttribute(
-      "href",
-      "/plans"
-    );
+    expect(screen.getByRole("link", { name: "Gespeicherte Prompts" })).toHaveAttribute("href", "/prompts");
+    // Abrechnung und Tarife gibt es nicht: PromptPrinter kostet nichts.
+    const hrefs = Array.from(document.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    expect(hrefs).not.toContain("/billing");
+    expect(hrefs).not.toContain("/plans");
     const more = screen.getByRole("button", { name: "Mehr erfahren" });
     expect(more).toHaveAttribute("aria-expanded", "false");
     await user.click(more);

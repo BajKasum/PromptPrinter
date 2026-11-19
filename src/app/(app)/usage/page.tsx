@@ -1,41 +1,35 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Activity, Database, Gauge } from "lucide-react";
+import { AlertTriangle, Activity, Database, Gauge, KeyRound } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
-import { PlanBadge } from "@/shared/ui/plan-badge";
+import { AdminBadge } from "@/shared/ui/admin-badge";
 import { UsageMeter } from "@/features/settings/components/usage-meter";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
-import { resolvePlan } from "@/shared/lib/plans";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
+import { FREE_TRIAL, requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
 import { getConfiguredProviders } from "@/server/byok";
-import {
-  chatQuotaKey,
-  getMonthlyQuotaUsage,
-  readDailyServerKeyUsage,
-} from "@/server/security/rate-limit";
+import { freePromptsLeft } from "@/server/free-trial";
+import { readDailyServerKeyUsage } from "@/server/security/rate-limit";
 import { alertingConfigured } from "@/server/observability/alerting";
-import { llmConfig } from "@/server/llm";
+import { llmConfig, selfHostedEndpointActive } from "@/server/llm";
 import { getLocale, getT } from "@/server/i18n";
 import { loadActivationFunnel } from "@/server/activation-funnel";
 import { ActivationFunnelCard } from "@/features/settings/components/activation-funnel";
-import { fmt, rich } from "@/shared/i18n/format";
+import { fmt, plural, rich } from "@/shared/i18n/format";
 import { orThrow } from "@/server/supabase/query";
 
 export async function generateMetadata() {
   return { title: (await getT()).meta.usage };
 }
 
-// Always the live counters, never a cached snapshot.
+// Immer der aktuelle Stand, nie ein zwischengespeicherter.
 export const dynamic = "force-dynamic";
 
-// "Nutzung" im Kontomenü (Entscheid 29.09.2026). Vorher gab es zwei Orte mit
-// halbem Inhalt: das eigene Kontingent stand als Abschnitt auf /billing, und
-// "Betrieb" (/admin) zeigte die serverweiten Zahlen nur für Admins — normale
-// Nutzer hatten im Menü gar keinen Eintrag dafür. Jetzt eine Seite für alle,
-// die Betriebszahlen hängen darunter und erscheinen nur für is_admin.
-// /admin leitet hierher um (next.config.ts), damit alte Lesezeichen weiter
-// funktionieren.
+// "Nutzung" im Kontomenü: was ein Konto hat und was ihm bleibt. Es gibt keinen Plan und kein Monatskontingent,
+// also stehen hier genau die Grenzen, die wirklich zählen: die Projekte (Grenze auch im Trigger der Datenbank),
+// die Gratis-Prompts auf dem Server-Key (server/free-trial.ts) und ob ein eigener Key hinterlegt ist, der sie
+// ablöst. Für Admins hängen die Betriebszahlen darunter. /admin, /billing und /plans leiten hierher um
+// (next.config.ts).
 export default async function UsagePage() {
   const supabase = await createClient();
   const {
@@ -43,74 +37,42 @@ export default async function UsagePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Start of the current month (UTC), the chat-message allowance is per-month.
-  const now = new Date();
-  const monthStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
-  ).toISOString();
-
-  const [
-    profileResult,
-    projectsCountResult,
-    monthlyChatMessagesFromDbResult,
-    configuredProviders,
-    redisChatUsage,
-  ] = await Promise.all([
+  const [profileResult, projectsCountResult, configuredProviders] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
-    // Owner filter is explicit on top of RLS (defense in depth).
+    // Eigentümer zusätzlich zur RLS (Defense in depth).
     supabase
       .from("projects")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
-    // One row per turn (see api/chat/route.ts's own count for why role=assistant).
-    // Fallback only (see redisChatUsage below): a *deletable* balance, not the
-    // *monotonic* one /api/chat actually enforces.
-    supabase
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("role", "assistant")
-      .gte("created_at", monthStart),
     getConfiguredProviders(supabase, user.id),
-    // M-3 (Audit 06.09.2026): the DB count above drops when old chats are
-    // deleted, the Redis counter that actually gates /api/chat never does.
-    // Read the same counter enforcement reads from, fall back to the DB count
-    // when Redis isn't configured (dev/self-hosting, where enforcement itself
-    // falls back to that same DB count, see reserveMonthlyQuota).
-    getMonthlyQuotaUsage(chatQuotaKey(user.id)),
   ]);
   const { data: profile } = orThrow(profileResult, "profiles");
   const { count: projectsCount } = orThrow(projectsCountResult, "projects");
-  const t = await getT();
-  // Die Zählung der Datenbank ist nur der Rückfallwert ohne Redis: nur dann darf ihr Lesefehler die Seite brechen.
-  const monthlyChatMessages =
-    redisChatUsage ?? orThrow(monthlyChatMessagesFromDbResult, "messages").count;
+  const { plan, isAdmin, limits } = resolvePlan(profile);
+  const hasOwnKey = configuredProviders.length > 0;
 
-  const { plan: planKey, isAdmin, limits } = resolvePlan(profile);
-  const isFree = planKey === "free";
-  const hasByok = configuredProviders.length > 0;
-  // A BYOK key lifts the chat cap the same way admin lifts both, the project
-  // cap still applies either way.
-  const chatLimit = hasByok ? Infinity : limits.chatMessages;
+  // Dieselbe Bedingung wie im Chat (server/session.ts, api/cli/me): im Einzelbetrieb läuft jedes Konto auf dem
+  // Endpunkt des Betreibers ohne Gratis-Rahmen, sonst gilt er nur ohne eigenen Key und ohne Adminrechte.
+  const selfHosted = selfHostedEndpointActive();
+  const onFreeTrial = !selfHosted && requiresOwnKey(plan, isAdmin, hasOwnKey);
+  // null heisst "gerade nicht zählbar" (kein Redis), nicht "aufgebraucht": das sagt die Seite auch so.
+  const promptsLeft = onFreeTrial ? await freePromptsLeft(user.id) : null;
 
-  // Free-without-a-key needs its own branch, both of its numbers behave
-  // differently from the generic "voll, nächsten Monat" copy below: chat is 0
-  // by design (plans.ts) and never resets, adding a key or moving to Pro are
-  // the only ways past it; the project cap was never monthly either, it's a
-  // standing total, freed only by deleting one or upgrading. The plain
-  // "nächsten Monat" branch still fits Pro/Team as-is: their project cap is
-  // Infinity, so the only bar that can ever fill for them is chat, which
-  // genuinely does reset monthly.
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const m = t.pages.usage;
-  const usageNote = isAdmin
+  const note = isAdmin
     ? m.noteAdmin
-    : hasByok
-      ? m.noteByok
-      : isFree
-        ? PRO_AVAILABLE
-          ? m.noteFree
-          : m.noteFreeSoon
-        : m.notePaid;
+    : selfHosted
+      ? fmt(m.noteSelfHosted, { projects: limits.projects })
+      : fmt(m.note, { prompts: FREE_TRIAL.prompts, projects: limits.projects });
+  // Ohne zählbaren Gratis-Rahmen steht statt eines Balkens der Grund (UsageMeter mit limit 0).
+  const noFreePromptsReason = selfHosted
+    ? m.freePromptsSelfHosted
+    : isAdmin
+      ? m.freePromptsAdmin
+      : hasOwnKey
+        ? m.freePromptsOwnKey
+        : m.freePromptsUnknown;
 
   return (
     <div>
@@ -122,30 +84,48 @@ export default async function UsagePage() {
             </h1>
             <p className="mt-1.5 text-[14px] text-secondary">{m.subtitle}</p>
           </div>
-          <div className="flex items-center gap-2.5 pb-0.5">
-            <PlanBadge plan={planKey} isAdmin={isAdmin} />
-            <Link
-              href="/billing"
-              className="touch-hit-y relative text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
-            >
-              {m.planLink}
-            </Link>
-          </div>
+          {isAdmin && (
+            <div className="pb-0.5">
+              <AdminBadge />
+            </div>
+          )}
         </div>
       </FadeIn>
 
       <FadeIn delay={0.06}>
         <section>
-          <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">{m.thisMonth}</h2>
-          <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-secondary">{usageNote}</p>
+          <h2 className="mb-1.5 text-[15px] font-semibold text-foreground">{m.accountTitle}</h2>
+          <p className="mb-7 max-w-lg text-[13px] leading-relaxed text-secondary">{note}</p>
           <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
             <UsageMeter label={m.projects} used={projectsCount ?? 0} limit={limits.projects} />
-            <UsageMeter
-              label={m.chatMessages}
-              used={monthlyChatMessages ?? 0}
-              limit={chatLimit}
-              zeroLabel={m.freeWithoutKey}
-            />
+            {promptsLeft === null ? (
+              <UsageMeter label={m.freePrompts} used={0} limit={0} zeroLabel={noFreePromptsReason} />
+            ) : (
+              <div>
+                <UsageMeter
+                  label={m.freePrompts}
+                  used={FREE_TRIAL.prompts - promptsLeft}
+                  limit={FREE_TRIAL.prompts}
+                />
+                <p className="mt-2 text-[12.5px] leading-relaxed text-tertiary">
+                  {promptsLeft > 0 ? plural(m.freePromptsLeft, promptsLeft, locale) : m.freePromptsUsedUp}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border pt-6">
+            <div className="flex items-center gap-2.5 text-[13px]">
+              <KeyRound className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
+              <span className="font-medium text-foreground/80">{m.ownKey}</span>
+              <span className="text-secondary">{hasOwnKey ? m.ownKeySet : m.ownKeyNone}</span>
+            </div>
+            <Link
+              href="/settings#api-keys"
+              className="touch-hit-y relative text-[12.5px] text-tertiary underline underline-offset-2 transition-colors hover:text-foreground"
+            >
+              {m.ownKeyLink}
+            </Link>
           </div>
         </section>
       </FadeIn>

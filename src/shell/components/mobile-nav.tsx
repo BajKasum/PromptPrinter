@@ -28,7 +28,7 @@ import {
   type SidebarChat,
   type SidebarProject,
 } from "@/shell/components/sidebar";
-import { learnMoreLinks, plansNav, secondaryNav } from "@/shell/lib/nav";
+import { learnMoreLinks, secondaryNav } from "@/shell/lib/nav";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
@@ -238,7 +238,7 @@ export function MobileNav({
                 <div className="my-5 h-px bg-border" />
 
                 <nav aria-label={t.shell.accountNav} className="space-y-0.5">
-                  {[...secondaryNav, plansNav].map(({ labelKey, href, Icon }) => {
+                  {secondaryNav.map(({ labelKey, href, Icon }) => {
                     const active = pathname === href || pathname.startsWith(href + "/");
                     return (
                       <Link

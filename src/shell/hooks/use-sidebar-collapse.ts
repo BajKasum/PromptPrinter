@@ -23,7 +23,7 @@ export function useSidebarCollapse(initialCollapsed: boolean) {
   }, []);
 
   // Ctrl/⌘+B toggles the sidebar from anywhere, mirroring the ⌘K palette.
-  // Exakt, ohne Shift/Alt: Strg+Shift+B ist seit 29.09.2026 "Abrechnung"
+  // Exakt, ohne Shift/Alt: die Kontomenü-Kürzel liegen auf Strg+Shift
   // (shell/lib/shortcuts.ts), und Strg+Alt+B ist unter Windows AltGr+B.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

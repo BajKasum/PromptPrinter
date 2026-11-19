@@ -23,7 +23,6 @@ export const es: Messages = {
     tooManyRequests: "Demasiadas solicitudes, espera un momento e inténtalo de nuevo.",
     loading: "Cargando…",
     closeNotification: "Cerrar notificación",
-    paymentReceived: "¡Gracias! Tu pago ha llegado.",
   },
 
   nav: {
@@ -35,8 +34,6 @@ export const es: Messages = {
     settings: "Configuración",
     usage: "Uso",
     savedPrompts: "Prompts guardados",
-    billing: "Facturación",
-    allPlans: "Ver todos los planes",
     learnMore: "Más información",
     language: "Idioma",
     signOut: "Cerrar sesión",
@@ -45,7 +42,6 @@ export const es: Messages = {
     usagePolicy: "Política de uso",
     privacy: "Política de privacidad",
     cookies: "Política de cookies",
-    refund: "Reembolsos",
     imprint: "Aviso legal",
   },
 
@@ -116,11 +112,8 @@ export const es: Messages = {
     resultTitleReply: "Respuesta de Finn",
     keyNoticeTitle: "A partir de aquí necesito tu propia clave de IA.",
     keyNoticeBody:
-      "Tus prompts gratis se han agotado, a partir de ahora funciono con tu propia clave. Una clave de Gemini de Google es gratuita, y así PromptPrinter en sí no te cuesta nada. Si ya tienes una clave de Anthropic o de OpenAI, funciona igual. ¿No te apetece ocuparte de una clave? Con Pro me encargo yo.",
-    keyNoticeBodySoon:
       "Tus prompts gratis se han agotado, a partir de ahora funciono con tu propia clave. Una clave de Gemini de Google es gratuita, y así PromptPrinter en sí no te cuesta nada. Si ya tienes una clave de Anthropic o de OpenAI, funciona igual.",
     keyNoticeSettings: "¿Otro proveedor? Ve a los ajustes",
-    keyNoticeSeePro: "Ver Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Te queda {count} prompt gratis", other: "Te quedan {count} prompts gratis" },
     // Prompt terminado: abrir en otro sitio y prueba (prompt-actions.tsx)
@@ -389,11 +382,11 @@ export const es: Messages = {
     emailChange: "¿Necesitas otra dirección?",
     emailChangeLink: "Escríbeme a través del formulario de contacto.",
     workspace: "Espacio de trabajo",
-    workspaceHint: "Resumen de la cuenta y del plan.",
+    workspaceHint: "Tu cuenta de un vistazo.",
     role: "Rol",
     owner: "Propietario",
     memberSince: "Miembro desde",
-    managePlan: "Gestionar el plan",
+    viewUsage: "Ver el uso",
     appearance: "Apariencia",
     appearanceHint: "Claro, oscuro o automático según el sistema, solo aquí en el espacio de trabajo.",
     themeLight: "Claro",
@@ -402,8 +395,8 @@ export const es: Messages = {
     language: "Idioma",
     languageHint: "El idioma de la app. La página de inicio y los textos legales siguen en alemán.",
     apiKeys: "Tus propias claves API",
-    apiKeysHint: "Usa tu propia cuota en lugar de nuestros límites.",
-    apiKeysNote: "Con tu propia clave desaparece el límite mensual de chat. Tu límite de proyectos se mantiene.",
+    apiKeysHint: "Después de los prompts gratis, chateas con tu propia clave.",
+    apiKeysNote: "Con tu propia clave, los prompts gratis ya no cuentan y se aplican los límites de tu proveedor. Tu límite de proyectos se mantiene.",
     security: "Seguridad",
     securityHint: "Cambia tu contraseña.",
     passwordNote:
@@ -490,7 +483,7 @@ export const es: Messages = {
     },
     zaiConsent: {
       title: "Transferencia a Z.ai",
-      hint: "Tu consentimiento para los chats sin tu propia clave (prompts gratis y Pro).",
+      hint: "Tu consentimiento para los chats sin tu propia clave (prompts gratis).",
       granted: "El {date} aceptaste que tus mensajes se envíen a Z.ai en Singapur.",
       withdraw: "Retirar el consentimiento",
       withdrawn: "Retirado. Sin consentimiento, Finn solo responde con tu propia clave.",
@@ -607,9 +600,7 @@ export const es: Messages = {
     results: "Prompts guardados",
     savedPrompts: "Prompts guardados",
     settings: "Configuración",
-    billing: "Facturación",
     usage: "Uso",
-    plans: "Planes",
   },
 
   pages: {
@@ -683,55 +674,25 @@ export const es: Messages = {
       title: "Configuración",
       subtitle: "Perfil, espacio de trabajo y seguridad en un solo lugar.",
     },
-    billing: {
-      title: "Facturación",
-      subtitle: "Tu plan y tu suscripción. Lo que has usado este mes está en {usage}.",
-      usageLink: "Uso",
-      apiAccess: "Acceso a la API: {label}",
-      apiIncluded: "Incluido",
-      apiOwnKey: "Clave propia",
-      apiNoKey: "Sin clave añadida",
-      subscription: "Tu suscripción",
-      status: {
-        on_trial: "Periodo de prueba",
-        active: "Activa",
-        past_due: "Pago pendiente",
-        paused: "En pausa",
-        unpaid: "Sin pagar",
-        cancelled: "Cancelada",
-        expired: "Caducada",
-      },
-      cancelledUntil: "Cancelada. Pro sigue activo hasta el {date}, después vuelves a Free.",
-      renewsOn: "Se renueva automáticamente el {date}.",
-      manageHint:
-        "Puedes cancelar y cambiar el método de pago con el enlace de tu confirmación de compra de Lemon Squeezy.",
-      manage: "Gestionar la suscripción",
-      upsellTitle: "Más margen con Pro",
-      upsellTitleSoon: "Pro llegará más adelante",
-      compare: "Comparar Free y Pro",
-      getPro: "Pásate a Pro, {price} al {cadence}",
-      thanksAuto: "¡Gracias! Tu pago ha llegado. Recarga la página una vez y Pro estará activo.",
-      thanksManual:
-        "¡Gracias! Tu pago ha llegado. Paso esta cuenta a Pro y te aviso en cuanto esté listo.",
-      activatesAuto:
-        "En cuanto se complete el pago, Pro se desbloquea solo. Después, recarga la página una vez.",
-      activatesManual: "Tras el pago, paso tu cuenta a Pro a mano, normalmente el mismo día.",
-    },
     usage: {
       title: "Uso",
-      subtitle: "Lo que has usado en el mes actual.",
-      planLink: "Plan y suscripción",
-      thisMonth: "Este mes",
-      noteAdmin: "Cuenta de admin, las barras de abajo son solo orientativas, no se te aplican.",
-      noteByok: "Con tu propia clave desaparece el límite de chat. El límite de proyectos se mantiene.",
-      noteFree:
-        "Con Free, para chatear necesitas tu propia clave, no es un límite mensual que haya que esperar. Si el límite de proyectos está lleno, ayuda eliminar uno o Pro.",
-      noteFreeSoon:
-        "Con Free, para chatear necesitas tu propia clave, no es un límite mensual que haya que esperar. Si el límite de proyectos está lleno, ayuda eliminar uno.",
-      notePaid: "Si una barra está llena, sigue el mes que viene.",
+      subtitle: "Lo que usas ahora y lo que te queda.",
+      accountTitle: "Tu cuenta",
+      note: "Los primeros {prompts} prompts corren por mi cuenta, después chateas con tu propia clave de IA. Puedes tener hasta {projects} proyectos, al eliminar uno haces sitio.",
+      noteAdmin: "Cuenta de admin: no se te aplica ninguno de estos límites.",
+      noteSelfHosted: "Esta instalación es autoalojada: el chat usa su propio modelo, sin límite de prompts gratis. Puedes tener hasta {projects} proyectos.",
       projects: "Proyectos",
-      chatMessages: "Mensajes de chat",
-      freeWithoutKey: "No disponible en Free sin tu propia clave",
+      freePrompts: "Prompts gratis",
+      freePromptsLeft: { one: "Te queda {count} prompt gratis.", other: "Te quedan {count} prompts gratis." },
+      freePromptsUsedUp: "Agotados. A partir de ahora, el chat funciona con tu propia clave.",
+      freePromptsUnknown: "Ahora mismo no se puede leer el contador. Inténtalo más tarde.",
+      freePromptsOwnKey: "Chateas con tu propia clave, los prompts gratis no cuentan.",
+      freePromptsAdmin: "Como admin, chateas sin límite de prompts gratis.",
+      freePromptsSelfHosted: "En este servidor no hay límite de prompts gratis.",
+      ownKey: "Clave de IA propia",
+      ownKeySet: "Añadida",
+      ownKeyNone: "Ninguna por ahora",
+      ownKeyLink: "Ir a los ajustes",
       ops: {
         title: "Operación",
         hint: "Solo visible para admins. Las cifras donde un pico de costes se ve primero, para todos los usuarios.",
@@ -766,46 +727,6 @@ export const es: Messages = {
         truncated: "Más cuentas de las que la vista comprueba ({limit}), faltan las más antiguas.",
       },
     },
-    plans: {
-      title: "Planes",
-      subtitle: "Free con tu propia clave de IA, o Pro si yo me encargo de la clave por ti.",
-      subtitleSoon: "Free con tu propia clave de IA. Pro, donde yo me encargo de la clave por ti, todavía no está disponible.",
-      needKey: "Con Free necesitas tu propia clave para chatear.",
-      addKey: "Añadir una clave",
-      backToFree:
-        "Puedes volver a Free cuando quieras: cancela la suscripción en {billing}, Pro sigue hasta el final del mes pagado.",
-      billingLink: "Facturación",
-      adminAll: "Como admin, para ti está todo desbloqueado.",
-      current: "Tu plan actual",
-      manage: "Gestionar la suscripción",
-      cardLabel: "Plan {name}",
-      cardLabelCurrent: "Plan {name}, tu plan actual",
-      recommended: "La elección de Finn",
-      compareTitle: "Comparación",
-      compareCaption: "Free y Pro comparados",
-      feature: "Función",
-      included: "Incluido",
-      notIncluded: "No incluido",
-      rows: {
-        access: "Acceso a la IA",
-        accessFree: "Con tu propia clave (Anthropic, OpenAI, Gemini)",
-        accessPro: "Incluido, no necesitas clave propia",
-        replies: "Respuestas de chat",
-        repliesFree: "Con tu clave, sin límite mensual",
-        repliesPro: "{count} al mes incluidas, sin límite mensual con tu propia clave",
-        projects: "Proyectos",
-        projectsFree: "Hasta {count}",
-        projectsPro: "Ilimitados",
-        brain: "Memoria del proyecto",
-        brainFree: "Con tu clave",
-        savePrompts: "Guardar prompts",
-        markdown: "Exportar a Markdown",
-        pdf: "Exportar a PDF",
-        cancel: "Cancelación",
-        cancelFree: "Nada que cancelar",
-        cancelPro: "Mensual, 14 días de devolución",
-      },
-    },
   },
 
   api: {
@@ -835,14 +756,9 @@ export const es: Messages = {
     messageTooLong: "Tu mensaje es demasiado largo, como máximo {max} caracteres por mensaje.",
     consentRequired:
       "Antes de responder necesito tu consentimiento para que tus mensajes se envíen a Z.ai en Singapur. Puedes darlo en el chat o en los ajustes.",
-    byokRequired:
-      "Free solo funciona con tu propia clave de IA. Añade una clave de Anthropic, OpenAI o Gemini en la configuración, o pásate a Pro.",
     byokUnreadable:
       "No se puede leer tu clave de IA guardada. Vuelve a introducirla en la configuración.",
-    byokRequiredSoon:
-      "Free solo funciona con tu propia clave de IA. Añade una clave de Anthropic, OpenAI o Gemini en la configuración.",
-    chatLimit:
-      "Has alcanzado el límite mensual de mensajes de chat, tu plan ({plan}) permite {limit} al mes. Sigue el mes que viene, o añade tu propia clave API en la configuración.",
+    byokRequired: "Esto solo funciona con tu propia clave de IA. Añade una clave de Anthropic, OpenAI o Gemini en la configuración.",
     tooManyRequests: "Demasiadas solicitudes, espera un momento e inténtalo de nuevo.",
     chatBudget:
       "El chat no está disponible temporalmente. Inténtalo más tarde, o añade tu propia clave API en la configuración y sigue al momento.",
@@ -872,13 +788,11 @@ export const es: Messages = {
       empty: "El proveedor de IA no ha devuelto respuesta. Inténtalo de nuevo, quizá con otra formulación.",
       other: "Algo ha salido mal. Inténtalo de nuevo, o recarga la página.",
     },
-    projectLimit: "Has alcanzado el límite de proyectos, tu plan ({plan}) permite {limit} proyectos. Mejora tu plan para tener más.",
+    projectLimit: "Has alcanzado el límite de proyectos, puedes tener hasta {limit}. Elimina uno para hacer sitio a otro.",
     projectCreateFailed: "No se ha podido crear el proyecto. Inténtalo de nuevo, por favor.",
     brainUnavailable: "El análisis no está disponible ahora mismo, inténtalo de nuevo más tarde.",
     projectNotFound: "Proyecto no encontrado.",
     repoInvalid: "Eso no parece un repositorio público de GitHub.",
-    brainLimit:
-      "Has alcanzado el límite mensual, tu plan ({plan}) permite {limit} llamadas al modelo al mes. Sigue el mes que viene, o añade tu propia clave API en la configuración.",
     brainTooMany: "Demasiados análisis, espera un momento e inténtalo de nuevo.",
     brainBudget:
       "El análisis no está disponible temporalmente. Inténtalo más tarde, o añade tu propia clave API en la configuración.",
@@ -917,41 +831,6 @@ export const es: Messages = {
     accountReauthRequired: "Por seguridad, vuelve a iniciar sesión antes de eliminar tu cuenta.",
     accountExportNote: "Exportación de tus datos de PromptPrinter. Los archivos e imágenes subidos solo se incluyen con su nombre, tipo y tamaño, no su contenido. Las claves API nunca se incluyen.",
     accountExportFailed: "No se pudo crear la exportación. Inténtalo de nuevo.",
-  },
-
-  planCopy: {
-    free: {
-      description: "Tres prompts corren de mi cuenta. Después traes tu propia clave de IA, y la app sigue siendo totalmente gratis.",
-      cadence: "para siempre",
-      features: [
-        "3 prompts gratis, sin clave",
-        "Después, tu propia clave de IA (Anthropic, OpenAI, Gemini u otro proveedor)",
-        "Con tu clave: sin límite mensual, la app sigue siendo gratis",
-        "Hasta {projects} proyectos",
-        "Prompts para cualquier IA y cualquier tarea",
-        "Exportar a Markdown",
-      ],
-    },
-    proSoon: {
-      price: "Más adelante",
-      description:
-        "Si no quieres configurar tu propia clave, algún día me encargaré yo. Por ahora no se puede contratar Pro.",
-      badge: "Todavía no disponible",
-      cta: "¿Por qué todavía no?",
-    },
-    pro: {
-      description: "Si no quieres configurar tu propia clave, me encargo yo.",
-      cadence: "mes",
-      badge: "No necesitas clave propia",
-      note: "Cancelable cada mes. Devolución en 14 días sobre el primer pago, sin dar explicaciones.",
-      features: [
-        "Todo lo de Free",
-        "{chatMessages} respuestas de chat al mes con mi IA",
-        "No necesitas clave propia",
-        "Proyectos ilimitados",
-        "Exportar a PDF y Markdown",
-      ],
-    },
   },
 
   prompts: {
