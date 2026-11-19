@@ -65,7 +65,6 @@ export function Sidebar({
   chats,
   projects,
   email = "",
-  plan = "free",
   isAdmin = false,
   displayName,
 }: {
@@ -74,7 +73,6 @@ export function Sidebar({
   chats: SidebarChat[];
   projects: SidebarProject[];
   email?: string;
-  plan?: string;
   isAdmin?: boolean;
   displayName?: string | null;
 }) {
@@ -126,7 +124,7 @@ export function Sidebar({
   useNavShortcuts();
 
   const t = useT();
-  const accountProps = { email, plan, isAdmin, displayName };
+  const accountProps = { email, isAdmin, displayName };
 
   return (
     <aside
@@ -239,7 +237,7 @@ function Full({
   // Which list is on screen, driven by the route, not separate client state,
   // so a direct link into /projects/[id] lands on the right tab for free and
   // back/forward navigation can't drift out of sync with what's shown. Any
-  // other route (settings, billing) defaults to Chats.
+  // other route (settings, usage) defaults to Chats.
   const tab: "chats" | "projects" =
     pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";
   const t = useT();

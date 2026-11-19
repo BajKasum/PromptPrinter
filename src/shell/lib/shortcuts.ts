@@ -8,12 +8,10 @@
 // - Einstellungen auf Strg/⌘ + Komma, die verbreitete Konvention (Claude,
 //   VS Code, Slack, macOS-Apps). Im Browser ist sie frei, Chrome gibt der
 //   Seite den Vortritt.
-// - Die anderen drei auf Strg/⌘ + Shift + Buchstabe. Nur mit Shift, weil
+// - Die anderen beiden auf Strg/⌘ + Shift + Buchstabe. Nur mit Shift, weil
 //   Strg + Buchstabe fast vollständig vom Browser belegt ist und einige davon
 //   (Strg+N, Strg+T, Strg+W) eine Seite gar nicht abfangen darf.
-//   U = Usage/Nutzung, S = Saved/gespeichert, B = Billing. Strg+Shift+B
-//   blendet in Chrome sonst die Lesezeichenleiste ein; das bleibt ausserhalb
-//   der App unberührt und ist der seltenste der möglichen Konflikte.
+//   U = Usage/Nutzung, S = Saved/gespeichert.
 // - Alt ist ausgeschlossen: Strg+Alt ist unter Windows AltGr, auf einer
 //   Schweizer oder deutschen Tastatur also "@", "€" oder "#". Ein Kürzel
 //   darauf würde Tippen verhindern.

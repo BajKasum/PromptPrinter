@@ -23,7 +23,6 @@ export const it: Messages = {
     tooManyRequests: "Troppe richieste, aspetta un attimo e riprova.",
     loading: "Caricamento…",
     closeNotification: "Chiudi notifica",
-    paymentReceived: "Grazie! Il tuo pagamento è arrivato.",
   },
 
   nav: {
@@ -35,8 +34,6 @@ export const it: Messages = {
     settings: "Impostazioni",
     usage: "Utilizzo",
     savedPrompts: "Prompt salvati",
-    billing: "Fatturazione",
-    allPlans: "Vedi tutti i piani",
     learnMore: "Scopri di più",
     language: "Lingua",
     signOut: "Esci",
@@ -45,7 +42,6 @@ export const it: Messages = {
     usagePolicy: "Norme di utilizzo",
     privacy: "Informativa sulla privacy",
     cookies: "Informativa sui cookie",
-    refund: "Rimborsi",
     imprint: "Note legali",
   },
 
@@ -116,11 +112,8 @@ export const it: Messages = {
     resultTitleReply: "Risposta di Finn",
     keyNoticeTitle: "Da qui in poi mi serve la tua chiave IA.",
     keyNoticeBody:
-      "I tuoi prompt gratuiti sono esauriti, ora funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo. Non hai voglia di occuparti di una chiave? Con Pro ci penso io.",
-    keyNoticeBodySoon:
       "I tuoi prompt gratuiti sono esauriti, ora funziono con la tua chiave personale. Una chiave Gemini di Google è gratuita, e così PromptPrinter stesso non ti costa nulla. Se hai già una chiave di Anthropic o OpenAI, funziona allo stesso modo.",
     keyNoticeSettings: "Un altro fornitore? Vai alle impostazioni",
-    keyNoticeSeePro: "Scopri Pro",
     // Gratis-Rahmen (server/free-trial.ts)
     freePromptsLeft: { one: "Ancora {count} prompt gratuito", other: "Ancora {count} prompt gratuiti" },
     // Prompt finito: aprire altrove e prova (prompt-actions.tsx)
@@ -389,11 +382,11 @@ export const it: Messages = {
     emailChange: "Serve un altro indirizzo?",
     emailChangeLink: "Scrivimi tramite il modulo di contatto.",
     workspace: "Spazio di lavoro",
-    workspaceHint: "Panoramica di account e piano.",
+    workspaceHint: "Il tuo account in sintesi.",
     role: "Ruolo",
     owner: "Proprietario",
     memberSince: "Membro dal",
-    managePlan: "Gestisci il piano",
+    viewUsage: "Vedi l'utilizzo",
     appearance: "Aspetto",
     appearanceHint: "Chiaro, scuro o automatico in base al sistema, solo qui nello spazio di lavoro.",
     themeLight: "Chiaro",
@@ -402,8 +395,8 @@ export const it: Messages = {
     language: "Lingua",
     languageHint: "La lingua dell'app. La landing page e i testi legali restano in tedesco.",
     apiKeys: "Le tue chiavi API",
-    apiKeysHint: "Usa la tua quota invece dei nostri limiti.",
-    apiKeysNote: "Con la tua chiave il limite mensile di chat scompare. Il limite di progetti resta.",
+    apiKeysHint: "Dopo i prompt gratuiti chatti con la tua chiave.",
+    apiKeysNote: "Con la tua chiave i prompt gratuiti non contano più e valgono i limiti del tuo fornitore. Il limite di progetti resta.",
     security: "Sicurezza",
     securityHint: "Cambia la tua password.",
     passwordNote:
@@ -490,7 +483,7 @@ export const it: Messages = {
     },
     zaiConsent: {
       title: "Trasferimento a Z.ai",
-      hint: "Il tuo consenso per le chat senza una tua chiave (prompt gratuiti e Pro).",
+      hint: "Il tuo consenso per le chat senza una tua chiave (prompt gratuiti).",
       granted: "Il {date} hai acconsentito all'invio dei tuoi messaggi a Z.ai a Singapore.",
       withdraw: "Revoca il consenso",
       withdrawn: "Revocato. Senza consenso Finn risponde solo con la tua chiave.",
@@ -607,9 +600,7 @@ export const it: Messages = {
     results: "Prompt salvati",
     savedPrompts: "Prompt salvati",
     settings: "Impostazioni",
-    billing: "Fatturazione",
     usage: "Utilizzo",
-    plans: "Piani",
   },
 
   pages: {
@@ -682,55 +673,25 @@ export const it: Messages = {
       title: "Impostazioni",
       subtitle: "Profilo, spazio di lavoro e sicurezza in un unico posto.",
     },
-    billing: {
-      title: "Fatturazione",
-      subtitle: "Il tuo piano e il tuo abbonamento. Quello che hai usato questo mese è sotto {usage}.",
-      usageLink: "Utilizzo",
-      apiAccess: "Accesso API: {label}",
-      apiIncluded: "Incluso",
-      apiOwnKey: "Chiave personale",
-      apiNoKey: "Nessuna chiave aggiunta",
-      subscription: "Il tuo abbonamento",
-      status: {
-        on_trial: "Periodo di prova",
-        active: "Attivo",
-        past_due: "Pagamento in sospeso",
-        paused: "In pausa",
-        unpaid: "Non pagato",
-        cancelled: "Disdetto",
-        expired: "Scaduto",
-      },
-      cancelledUntil: "Disdetto. Pro resta attivo fino al {date}, poi torni a Free.",
-      renewsOn: "Si rinnova automaticamente il {date}.",
-      manageHint:
-        "Puoi disdire e cambiare metodo di pagamento tramite il link nella conferma d'acquisto di Lemon Squeezy.",
-      manage: "Gestisci l'abbonamento",
-      upsellTitle: "Più spazio con Pro",
-      upsellTitleSoon: "Pro arriverà più avanti",
-      compare: "Confronta Free e Pro",
-      getPro: "Passa a Pro, {price} al {cadence}",
-      thanksAuto: "Grazie! Il tuo pagamento è arrivato. Ricarica la pagina una volta e Pro è attivo.",
-      thanksManual:
-        "Grazie! Il tuo pagamento è arrivato. Passo questo account a Pro e ti avviso appena è fatto.",
-      activatesAuto:
-        "Appena il pagamento va a buon fine, Pro si sblocca da solo. Poi ricarica la pagina una volta.",
-      activatesManual: "Dopo il pagamento passo il tuo account a Pro a mano, di solito entro lo stesso giorno.",
-    },
     usage: {
       title: "Utilizzo",
-      subtitle: "Quello che hai usato nel mese corrente.",
-      planLink: "Piano e abbonamento",
-      thisMonth: "Questo mese",
-      noteAdmin: "Account admin, le barre qui sotto sono solo indicative, per te non valgono.",
-      noteByok: "Con la tua chiave il limite di chat scompare. Il limite di progetti resta.",
-      noteFree:
-        "Con Free per chattare serve la tua chiave, non è un limite mensile da aspettare. Se il limite di progetti è pieno, aiuta eliminarne uno o Pro.",
-      noteFreeSoon:
-        "Con Free per chattare serve la tua chiave, non è un limite mensile da aspettare. Se il limite di progetti è pieno, aiuta eliminarne uno.",
-      notePaid: "Se una barra è piena, si riparte il mese prossimo.",
+      subtitle: "Cosa stai usando e cosa ti resta.",
+      accountTitle: "Il tuo account",
+      note: "I primi {prompts} prompt te li offro io, poi chatti con la tua chiave IA. Puoi avere fino a {projects} progetti, eliminandone uno fai spazio.",
+      noteAdmin: "Account admin: per te non vale nessuno di questi limiti.",
+      noteSelfHosted: "Questa installazione è gestita in proprio: la chat usa il suo modello, senza limite di prompt gratuiti. Puoi avere fino a {projects} progetti.",
       projects: "Progetti",
-      chatMessages: "Messaggi in chat",
-      freeWithoutKey: "Non disponibile con Free senza la tua chiave",
+      freePrompts: "Prompt gratuiti",
+      freePromptsLeft: { one: "Ancora {count} prompt gratuito.", other: "Ancora {count} prompt gratuiti." },
+      freePromptsUsedUp: "Esauriti. Da ora la chat usa la tua chiave.",
+      freePromptsUnknown: "Al momento il conteggio non è leggibile. Riprova più tardi.",
+      freePromptsOwnKey: "Chatti con la tua chiave, i prompt gratuiti non contano.",
+      freePromptsAdmin: "Come admin chatti senza limite di prompt gratuiti.",
+      freePromptsSelfHosted: "Su questo server non c'è un limite di prompt gratuiti.",
+      ownKey: "Chiave IA personale",
+      ownKeySet: "Aggiunta",
+      ownKeyNone: "Nessuna per ora",
+      ownKeyLink: "Vai alle impostazioni",
       ops: {
         title: "Operatività",
         hint: "Visibile solo agli admin. I numeri in cui un picco di costi si vede per primo, su tutti gli utenti.",
@@ -765,46 +726,6 @@ export const it: Messages = {
         truncated: "Più account di quelli che la vista controlla ({limit}), mancano i più vecchi.",
       },
     },
-    plans: {
-      title: "Piani",
-      subtitle: "Free con la tua chiave IA, oppure Pro se della chiave mi occupo io.",
-      subtitleSoon: "Free con la tua chiave IA. Pro, in cui della chiave mi occupo io, non è ancora disponibile.",
-      needKey: "Con Free ti serve la tua chiave per chattare.",
-      addKey: "Aggiungi una chiave",
-      backToFree:
-        "Puoi tornare a Free in qualsiasi momento: disdici l'abbonamento sotto {billing}, Pro resta attivo fino alla fine del mese pagato.",
-      billingLink: "Fatturazione",
-      adminAll: "Come admin, per te è tutto sbloccato.",
-      current: "Il tuo piano attuale",
-      manage: "Gestisci l'abbonamento",
-      cardLabel: "Piano {name}",
-      cardLabelCurrent: "Piano {name}, il tuo piano attuale",
-      recommended: "Il consiglio di Finn",
-      compareTitle: "A confronto",
-      compareCaption: "Free e Pro a confronto",
-      feature: "Funzione",
-      included: "Incluso",
-      notIncluded: "Non incluso",
-      rows: {
-        access: "Accesso all'IA",
-        accessFree: "Con la tua chiave (Anthropic, OpenAI, Gemini)",
-        accessPro: "Incluso, non serve una chiave tua",
-        replies: "Risposte in chat",
-        repliesFree: "Con la tua chiave, senza limite mensile",
-        repliesPro: "{count} al mese incluse, senza limite mensile con la tua chiave",
-        projects: "Progetti",
-        projectsFree: "Fino a {count}",
-        projectsPro: "Illimitati",
-        brain: "Memoria del progetto",
-        brainFree: "Con la tua chiave",
-        savePrompts: "Salvare i prompt",
-        markdown: "Esportazione Markdown",
-        pdf: "Esportazione PDF",
-        cancel: "Disdetta",
-        cancelFree: "Niente da disdire",
-        cancelPro: "Mensile, rimborso entro 14 giorni",
-      },
-    },
   },
 
   api: {
@@ -834,14 +755,9 @@ export const it: Messages = {
     messageTooLong: "Il tuo messaggio è troppo lungo, al massimo {max} caratteri per messaggio.",
     consentRequired:
       "Prima di rispondere ho bisogno del tuo consenso a inviare i tuoi messaggi a Z.ai a Singapore. Puoi darlo nella chat o nelle impostazioni.",
-    byokRequired:
-      "Free funziona solo con la tua chiave IA. Aggiungi una chiave Anthropic, OpenAI o Gemini nelle impostazioni, oppure passa a Pro.",
     byokUnreadable:
       "La tua chiave IA salvata non è leggibile. Inseriscila di nuovo nelle impostazioni.",
-    byokRequiredSoon:
-      "Free funziona solo con la tua chiave IA. Aggiungi una chiave Anthropic, OpenAI o Gemini nelle impostazioni.",
-    chatLimit:
-      "Limite mensile di messaggi in chat raggiunto, il tuo piano ({plan}) ne consente {limit} al mese. Si riparte il mese prossimo, oppure aggiungi la tua chiave API nelle impostazioni.",
+    byokRequired: "Funziona solo con la tua chiave IA. Aggiungi una chiave Anthropic, OpenAI o Gemini nelle impostazioni.",
     tooManyRequests: "Troppe richieste, aspetta un attimo e riprova.",
     chatBudget:
       "La chat è temporaneamente non disponibile. Riprova più tardi, oppure aggiungi la tua chiave API nelle impostazioni e riparte subito.",
@@ -871,13 +787,11 @@ export const it: Messages = {
       empty: "Il provider di IA non ha restituito una risposta. Riprova, magari con una formulazione diversa.",
       other: "Qualcosa è andato storto. Riprova, oppure ricarica la pagina.",
     },
-    projectLimit: "Limite di progetti raggiunto, il tuo piano ({plan}) consente {limit} progetti. Passa a un piano superiore per averne di più.",
+    projectLimit: "Limite di progetti raggiunto, puoi averne fino a {limit}. Eliminane uno per fare spazio a uno nuovo.",
     projectCreateFailed: "Non è stato possibile creare il progetto. Riprova, per favore.",
     brainUnavailable: "L'analisi al momento non è raggiungibile, riprova più tardi.",
     projectNotFound: "Progetto non trovato.",
     repoInvalid: "Non sembra un repository GitHub pubblico.",
-    brainLimit:
-      "Limite mensile raggiunto, il tuo piano ({plan}) consente {limit} chiamate al modello al mese. Si riparte il mese prossimo, oppure aggiungi la tua chiave API nelle impostazioni.",
     brainTooMany: "Troppe analisi, aspetta un attimo e riprova.",
     brainBudget:
       "L'analisi è temporaneamente non disponibile. Riprova più tardi, oppure aggiungi la tua chiave API nelle impostazioni.",
@@ -916,41 +830,6 @@ export const it: Messages = {
     accountReauthRequired: "Per sicurezza, accedi di nuovo prima di eliminare il tuo account.",
     accountExportNote: "Esportazione dei tuoi dati PromptPrinter. I file e le immagini caricati sono inclusi solo con nome, tipo e dimensione, non con il contenuto. Le chiavi API non sono mai incluse.",
     accountExportFailed: "Non è stato possibile creare l'esportazione. Riprova.",
-  },
-
-  planCopy: {
-    free: {
-      description: "Tre prompt li offro io. Poi porti la tua chiave IA, e l'app resta completamente gratuita.",
-      cadence: "per sempre",
-      features: [
-        "3 prompt gratuiti, senza chiave",
-        "Poi la tua chiave IA (Anthropic, OpenAI, Gemini o un altro fornitore)",
-        "Con la tua chiave: senza limite mensile, l'app resta gratuita",
-        "Fino a {projects} progetti",
-        "Prompt per qualsiasi IA e qualsiasi compito",
-        "Esportazione Markdown",
-      ],
-    },
-    proSoon: {
-      price: "Più avanti",
-      description:
-        "Se non vuoi configurare una chiave tua, prima o poi me ne occuperò io. Al momento Pro non si può attivare.",
-      badge: "Non ancora disponibile",
-      cta: "Perché non ancora?",
-    },
-    pro: {
-      description: "Se non vuoi configurare una chiave tua, me ne occupo io.",
-      cadence: "mese",
-      badge: "Non serve una chiave tua",
-      note: "Disdicibile ogni mese. Rimborso entro 14 giorni sul primo pagamento, senza motivazione.",
-      features: [
-        "Tutto ciò che c'è in Free",
-        "{chatMessages} risposte in chat al mese con la mia IA",
-        "Non serve una chiave tua",
-        "Progetti illimitati",
-        "Esportazione PDF e Markdown",
-      ],
-    },
   },
 
   prompts: {

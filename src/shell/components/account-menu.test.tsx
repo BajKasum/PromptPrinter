@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 function renderMenu() {
-  render(<AccountMenu collapsed={false} email="finn@example.com" plan="free" isAdmin={false} />);
+  render(<AccountMenu collapsed={false} email="finn@example.com" isAdmin={false} />);
 }
 
 async function openMenu(user: ReturnType<typeof userEvent.setup>) {
@@ -35,6 +35,33 @@ describe("AccountMenu: Auslöser", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
+  });
+});
+
+describe("AccountMenu: Konto-Ziele", () => {
+  it("führt zu Einstellungen, Nutzung und gespeicherten Prompts, nicht zu Abrechnung oder Tarifen", async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await openMenu(user);
+    const hrefs = Array.from(document.querySelectorAll("[data-account-menu] a")).map((a) => a.getAttribute("href"));
+    expect(hrefs.slice(0, 3)).toEqual(["/settings", "/usage", "/prompts"]);
+    expect(hrefs).not.toContain("/billing");
+    expect(hrefs).not.toContain("/plans");
+  });
+
+  it("zeigt kein Abzeichen für ein gewöhnliches Konto, für ein Admin-Konto \"Admin\"", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<AccountMenu collapsed={false} email="finn@example.com" isAdmin={false} />);
+    await openMenu(user);
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^free$/i)).not.toBeInTheDocument();
+    unmount();
+
+    render(<AccountMenu collapsed={false} email="finn@example.com" isAdmin />);
+    // Am Auslöser und im Kopf des geöffneten Menüs.
+    expect(screen.getAllByText("Admin")).toHaveLength(1);
+    await openMenu(user);
+    expect(screen.getAllByText("Admin")).toHaveLength(2);
   });
 });
 
@@ -63,7 +90,6 @@ describe("AccountMenu: Mehr erfahren", () => {
       "/nutzungsrichtlinie",
       "/datenschutz",
       "/cookies",
-      "/rueckerstattung",
       "/impressum",
     ]);
     for (const a of Array.from(group.querySelectorAll("a"))) {
@@ -100,12 +126,11 @@ describe("AccountMenu in English", () => {
     const user = userEvent.setup();
     render(
       <I18nProvider locale="en" messages={en}>
-        <AccountMenu collapsed={false} email="finn@example.com" plan="free" isAdmin={false} />
+        <AccountMenu collapsed={false} email="finn@example.com" isAdmin={false} />
       </I18nProvider>
     );
     await user.click(screen.getByRole("button", { name: "Account menu" }));
     expect(screen.getByRole("link", { name: /Settings/ })).toHaveTextContent("Ctrl+,");
-    expect(screen.getByRole("link", { name: "View all plans" })).toBeInTheDocument();
 
     const language = screen.getByRole("button", { name: /Language/ });
     expect(language).toHaveTextContent("English");

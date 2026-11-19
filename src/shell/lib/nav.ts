@@ -3,9 +3,7 @@ import {
   FolderKanban,
   Bookmark,
   Settings,
-  CreditCard,
   Gauge,
-  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -34,30 +32,18 @@ export const primaryNav: NavItem[] = [
   { labelKey: "projects", href: "/projects", Icon: FolderKanban },
 ];
 
-// "Gespeicherte Prompts" (QA finding N-1) is deliberately here, not a third
-// primaryNav pill — the two-destinations decision above (Chats/Projekte)
-// stays a chat vs. workspace choice; a saved-prompt library is neither, it's
-// reachable the same way Einstellungen/Abrechnung already are: account menu,
-// ⌘K, and the URL directly.
-//
-// "Nutzung" (/usage) steht seit 2026-09-29 fuer alle hier. Davor gab es nur
-// einen Admin-Eintrag "Betrieb" (/admin) in einer eigenen adminNav-Liste; die
-// Betriebszahlen sind jetzt ein Abschnitt derselben Seite, den sie selbst nur
-// fuer is_admin rendert, deshalb braucht das Menue keine Rollen mehr.
+// Die Orte des eigenen Kontos, im Kontomenü, im Mobile-Drawer und in der Befehlspalette, jeder mit Kürzel.
+// "Gespeicherte Prompts" steht bewusst hier und nicht als dritte Pille in primaryNav: die Pillen wählen zwischen
+// Chat und Workspace, eine Bibliothek gespeicherter Prompts ist keins von beiden.
+// "Nutzung" steht für alle Konten hier; die Betriebszahlen sind ein Abschnitt derselben Seite, den sie nur für
+// is_admin rendert, deshalb braucht das Menü keine Rollen.
 export const secondaryNav: NavItem[] = [
   { labelKey: "settings", href: "/settings", Icon: Settings, shortcut: { key: ",", shift: false } },
   { labelKey: "usage", href: "/usage", Icon: Gauge, shortcut: { key: "u", shift: true } },
   { labelKey: "savedPrompts", href: "/prompts", Icon: Bookmark, shortcut: { key: "s", shift: true } },
-  { labelKey: "billing", href: "/billing", Icon: CreditCard, shortcut: { key: "b", shift: true } },
 ];
 
-// "Alle Tarife anzeigen" (29.09.2026): Free und Pro nebeneinander, in der App.
-// Bewusst nicht in secondaryNav: das sind die Orte des eigenen Kontos (jeder
-// mit Kürzel), dieser Eintrag ist ein Angebot und steht im Menü deshalb in
-// einer eigenen Gruppe darunter.
-export const plansNav: NavItem = { labelKey: "allPlans", href: "/plans", Icon: Sparkles };
-
-// "Mehr erfahren" (29.09.2026): Hilfe und alle Rechtstexte, als seitliches
+// "Mehr erfahren": Hilfe und alle Rechtstexte, als seitliches
 // Untermenü im Kontomenü und als aufklappbare Gruppe im Mobile-Drawer. Die
 // AGB tragen hier ihren Alltagsnamen, "Nutzungsbedingungen": danach sucht
 // man, wenn man wissen will, was man darf.
@@ -69,6 +55,5 @@ export const learnMoreLinks: { labelKey: NavLabelKey; href: string }[] = [
   { labelKey: "usagePolicy", href: "/nutzungsrichtlinie" },
   { labelKey: "privacy", href: "/datenschutz" },
   { labelKey: "cookies", href: "/cookies" },
-  { labelKey: "refund", href: "/rueckerstattung" },
   { labelKey: "imprint", href: "/impressum" },
 ];

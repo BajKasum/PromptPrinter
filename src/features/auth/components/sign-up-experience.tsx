@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as z from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
-import { createClient } from "@/shared/supabase/client";
 import { safeNextPath } from "@/shared/lib/site-url";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
@@ -13,7 +12,6 @@ import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
 import {
   MIN_PASSWORD_LENGTH,
@@ -38,12 +36,6 @@ export function SignUpExperience() {
   const router = useRouter();
   const search = useSearchParams();
   const next = safeNextPath(search.get("next"));
-  // The pricing page's Pro button links here with ?plan=pro. That parameter
-  // used to be read by nobody: the visitor clicked a paid plan, signed up, got
-  // Free, and only found out that payment isn't live at all once they were past
-  // the login and on the billing page (QA finding U-2). Acknowledged here
-  // instead, and recorded as interest where a session allows it.
-  const wantsPro = search.get("plan") === "pro";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -109,44 +101,9 @@ export function SignUpExperience() {
         setSignupSent(true);
         return;
       }
-      // A session exists at this point, so the interest can be recorded right
-      // away. When email confirmation is required the branch above returns
-      // first and there is no session to write with — the notice on screen is
-      // then all there is, which is still better than the parameter vanishing.
-      if (wantsPro) await notePlanInterest();
       setCelebrateMsg("Konto erstellt");
     } finally {
       setLoading(false);
-    }
-  }
-
-  // Records "this account came in through the Pro button" on the profile, so
-  // the interest survives as something to act on when payment goes live rather
-  // than as a lost click. profiles.settings is one of the three columns the
-  // owner may write (migration 0014), best-effort: a failure here must never
-  // cost someone their freshly created account.
-  async function notePlanInterest() {
-    try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("settings")
-        .eq("id", user.id)
-        .maybeSingle();
-      const current =
-        profile?.settings && typeof profile.settings === "object" && !Array.isArray(profile.settings)
-          ? (profile.settings as Record<string, unknown>)
-          : {};
-      await supabase
-        .from("profiles")
-        .update({ settings: { ...current, interested_in: "pro" } })
-        .eq("id", user.id);
-    } catch {
-      // Interest is a nice-to-have, the account is not.
     }
   }
 
@@ -249,19 +206,10 @@ export function SignUpExperience() {
           Konto erstellen
         </h1>
         <p className="text-[15px] font-light text-secondary">
-          {PRO_AVAILABLE
-            ? "Kostenlos und ohne Kreditkarte. Drei Prompts gehen auf mich, danach chattest du mit einem eigenen KI-Key oder Pro."
-            : "Kostenlos und ohne Kreditkarte. Drei Prompts gehen auf mich, danach chattest du mit einem eigenen KI-Key, am einfachsten einem kostenlosen von Google. Den holst du dir im Chat."}
+          Kostenlos und Open Source. Drei Prompts gehen auf mich, danach chattest du mit einem eigenen KI-Key, am
+          einfachsten einem kostenlosen von Google. Den holst du dir im Chat.
         </p>
       </div>
-
-      {wantsPro && (
-        <div className="rounded-lg border border-accent/30 bg-accent-subtle px-3.5 py-3 text-[13px] leading-relaxed text-accent-text">
-          {PRO_AVAILABLE
-            ? "Du kommst über Pro. Erstell hier zuerst dein Konto, buchen kannst du direkt danach unter Abrechnung. Bis dahin läuft es auf Free, mit vollem Funktionsumfang über deinen eigenen API-Key."
-            : "Du kommst über Pro. Das gibt es noch nicht, ein Konto kannst du trotzdem anlegen: Free läuft mit vollem Funktionsumfang über deinen eigenen API-Key."}
-        </div>
-      )}
 
       <OAuthButtons next={next} />
 

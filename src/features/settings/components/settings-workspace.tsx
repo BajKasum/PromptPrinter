@@ -31,7 +31,7 @@ import { ApiKeys } from "@/features/settings/components/api-keys";
 import { TerminalSessions } from "@/features/settings/components/terminal-sessions";
 import { TwoFactor } from "@/features/settings/components/two-factor";
 import { AboutMe } from "@/features/settings/components/about-me";
-import { PlanBadge } from "@/shared/ui/plan-badge";
+import { AdminBadge } from "@/shared/ui/admin-badge";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import { effectiveLimits, type PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
@@ -60,8 +60,7 @@ export function SettingsWorkspace({
   email: string;
   initialDisplayName: string;
   plan: PlanKey;
-  /** A role (profiles.is_admin), not a plan, shows "Admin" instead of the
-   * tier badge. */
+  /** Eine Rolle (profiles.is_admin), kein Plan: nur sie bekommt ein Abzeichen ("Admin"). */
   isAdmin?: boolean;
   memberSince: string | null;
   /** Which BYOK providers this user already has a key stored for. */
@@ -200,17 +199,17 @@ export function SettingsWorkspace({
             accent="--accent"
             title={t.settings.workspace}
             description={t.settings.workspaceHint}
-            headerRight={<PlanBadge plan={plan} isAdmin={isAdmin} />}
+            headerRight={isAdmin ? <AdminBadge /> : undefined}
           >
             <div className="divide-y divide-border">
               <InfoRow label={t.settings.role} value={t.settings.owner} />
               <InfoRow label={t.settings.memberSince} value={memberSinceLabel} />
             </div>
             <Link
-              href="/billing"
+              href="/usage"
               className="touch-hit-y relative mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent-text transition-colors hover:text-accent-text/80"
             >
-              {t.settings.managePlan}
+              {t.settings.viewUsage}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </SettingsCard>
@@ -292,10 +291,11 @@ export function SettingsWorkspace({
           <TerminalSessions />
         </SettingsCard>
 
-        {/* Zustimmung zur Übermittlung an Z.ai (Server-Key: Pro und Gratis-Prompts), Rechts-Audit R-1.
-            Nur dort, wo der Server-Key überhaupt läuft (Kontingent über null: Pro, Team, Admin),
-            oder wo schon einmal zugestimmt wurde, damit ein Widerruf immer möglich bleibt (#153).
-            Ein Free-Konto mit eigenem Key schickt nichts an Z.ai und soll dafür nichts erteilen. */}
+        {/* Zustimmung zur Übermittlung an Z.ai (Server-Key: Gratis-Prompts und Admins).
+            Nur dort, wo der Server-Key ohne Gratis-Rahmen läuft (Admin), oder wo schon einmal
+            zugestimmt wurde, damit ein Widerruf immer möglich bleibt (#153). Ein Konto mit eigenem
+            Key schickt nichts an Z.ai und soll dafür nichts erteilen; wer Gratis-Prompts nutzt,
+            stimmt im Chat zu. */}
         {(effectiveLimits(plan, isAdmin).chatMessages > 0 || zaiConsentAt !== null) && (
           <SettingsCard
             Icon={ShieldCheck}

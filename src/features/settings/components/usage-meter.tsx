@@ -18,9 +18,8 @@ function compactNumber(n: number, units: { thousand: string; million: string }):
 }
 
 /**
- * One metric's real relationship to its cap, not just a number, the bar is
- * the point. Shared between Settings' quick-glance card and Billing's full
- * usage section so the same metric never looks like two different widgets.
+ * Eine Kennzahl im Verhältnis zu ihrer Grenze, nicht nur eine Zahl: der Balken ist der Punkt. Die Nutzungsseite
+ * und der Betrieb-Abschnitt der Admins nutzen dieselbe Form, damit eine Kennzahl nie wie zwei Bauteile aussieht.
  */
 export function UsageMeter({
   label,
@@ -32,10 +31,9 @@ export function UsageMeter({
   used: number;
   limit: number;
   /**
-   * Shown instead of a numeric bar when `limit` is exactly 0 — a real,
-   * intentional state now (Free's server-key chat allowance, plans.ts), not
-   * an edge case to leave as a confusing "0 / 0". Omit to keep the plain
-   * numeric bar (e.g. for a meter that could never legitimately hit zero).
+   * Steht statt eines Balkens, wenn `limit` genau 0 ist: die Grenze gilt für dieses Konto nicht, und der Text sagt
+   * warum (auf der Nutzungsseite die Gratis-Prompts mit eigenem Key, für Admins oder im Einzelbetrieb), statt
+   * eines verwirrenden "0 / 0". Ohne den Text bleibt es beim Balken.
    */
   zeroLabel?: string;
 }) {

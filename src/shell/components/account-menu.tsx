@@ -4,27 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Check, ChevronDown, Globe, Info, LogOut, Loader2 } from "lucide-react";
-import { PlanBadge } from "@/shared/ui/plan-badge";
-import { learnMoreLinks, plansNav, secondaryNav } from "@/shell/lib/nav";
+import { AdminBadge } from "@/shared/ui/admin-badge";
+import { learnMoreLinks, secondaryNav } from "@/shell/lib/nav";
 import { ariaShortcut, formatShortcut, isMacPlatform } from "@/shell/lib/shortcuts";
 import { AccountSubmenu, SUBMENU_ROW } from "@/shell/components/account-submenu";
-import { toPlanKey, type PlanKey } from "@/shared/lib/plans";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { LOCALES, LOCALE_NAMES } from "@/shared/i18n/locales";
 import { useChangeLocale } from "@/shared/i18n/use-change-locale";
 
-// ─── Account menu: identity + Konto-Ziele + Angebote + Abmelden ────────────
-// Lives at the bottom of the sidebar in both states (was previously a
-// top-right dropdown in the now-removed Topbar). Expanded opens upward
-// (there's no room below it); collapsed opens to the right of the icon rail.
-// Seit 29.09.2026 eine eigene Datei: mit Kürzeln, Tarifen und den seitlichen
-// Untermenüs war es zum grössten Teil von sidebar.tsx geworden.
+// ─── Account menu: identity + Konto-Ziele + Sprache + Mehr erfahren + Abmelden ───
+// Sitzt in beiden Zuständen unten in der Seitenleiste. Ausgeklappt öffnet es nach oben (darunter ist kein
+// Platz), eingeklappt rechts neben der Symbolleiste. Eine eigene Datei, weil Kürzel und seitliche Untermenüs
+// sonst den grössten Teil von sidebar.tsx ausmachten.
 
 export type AccountProps = {
   email: string;
-  plan: string;
+  /** Eine Rolle (profiles.is_admin), kein Plan: nur sie bekommt ein Abzeichen. */
   isAdmin: boolean;
   displayName?: string | null;
 };
@@ -48,7 +45,6 @@ type Submenu = "language" | "learn-more" | null;
 export function AccountMenu({
   collapsed,
   email,
-  plan,
   isAdmin,
   displayName,
 }: { collapsed: boolean } & AccountProps) {
@@ -104,10 +100,6 @@ export function AccountMenu({
 
   const label = displayName || email.split("@")[0] || t.shell.fallbackName;
   const initial = (label[0] ?? "?").toUpperCase();
-  // `plan` arrives as a raw DB string (Sidebar's own prop stays loosely typed),
-  // narrow it the same way billing/settings already do before it reaches the
-  // shared PlanBadge, which needs a real PlanKey.
-  const planKey: PlanKey = toPlanKey(plan);
   const mac = open && isMacPlatform();
 
   useEffect(() => {
@@ -164,7 +156,7 @@ export function AccountMenu({
         {!collapsed && (
           <>
             <span className="min-w-0 flex-1 truncate text-left text-[13px]">{label}</span>
-            <PlanBadge plan={planKey} isAdmin={isAdmin} />
+            {isAdmin && <AdminBadge />}
             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </>
         )}
@@ -200,9 +192,11 @@ export function AccountMenu({
                   <div className="truncate text-[12px] text-muted-foreground">{email}</div>
                 </div>
               </div>
-              <div className="mt-2">
-                <PlanBadge plan={planKey} isAdmin={isAdmin} />
-              </div>
+              {isAdmin && (
+                <div className="mt-2">
+                  <AdminBadge />
+                </div>
+              )}
             </div>
             <div className="p-1.5">
               {secondaryNav.map(({ labelKey, href, Icon, shortcut }) => (
@@ -263,15 +257,6 @@ export function AccountMenu({
                   );
                 })}
               </AccountSubmenu>
-              <Link
-                href={plansNav.href}
-                onClick={close}
-                {...closeSubmenuOnHover}
-                className={MENU_ROW}
-              >
-                <plansNav.Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-                <span className="min-w-0 flex-1 truncate">{t.nav[plansNav.labelKey]}</span>
-              </Link>
               <AccountSubmenu
                 id="account-learn-more"
                 label={t.nav.learnMore}
