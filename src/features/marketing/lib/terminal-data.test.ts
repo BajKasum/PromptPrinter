@@ -63,13 +63,13 @@ describe("terminal-data", () => {
     expect(before).toEqual([
       "ollama pull qwen3",
       "node bin/promptprinter.mjs --local",
-      "node bin/promptprinter.mjs --local --base-url http://localhost:1234/v1 --model <name>",
+      "node bin/promptprinter.mjs --local --base-url http://localhost:1234/v1",
     ]);
     const after = cliLocalSteps(true).map((s) => s.code);
     expect(after).toEqual([
       "ollama pull qwen3",
       "promptprinter --local",
-      "promptprinter --local --base-url http://localhost:1234/v1 --model <name>",
+      "promptprinter --local --base-url http://localhost:1234/v1",
     ]);
   });
 

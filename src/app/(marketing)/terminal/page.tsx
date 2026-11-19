@@ -27,8 +27,27 @@ export const metadata: Metadata = pageMetadata({
 
 // Die Seite der Terminal-App aus dem Repo promptprinter-cli, im Header "CLI" (/cli selbst ist die
 // Bestätigungsseite der Geräte-Anmeldung). Aufbau wie /skill: zuerst der Kasten "So bekommst du es", darunter der
-// Weg ohne Konto (`--local`), dann die Erklärung. Die Befehle stehen in features/marketing/lib/terminal-data.ts; solange NPM_PUBLISHED false ist,
-// zeigt die Seite den Weg aus dem Quellcode. Genannt sind nur Claude Code und Codex, weil /an an sie weitergibt.
+// Weg ohne Konto (`--local`), dann die Erklärung. Die Befehle stehen in features/marketing/lib/terminal-data.ts;
+// solange NPM_PUBLISHED false ist, zeigt die Seite den Weg aus dem Quellcode. Genannt sind nur Claude Code und
+// Codex, weil /an an sie weitergibt.
+
+/** Flags, die Umgebungsvariable und Adressen im Fliesstext als Code, der nicht am Bindestrich umbricht. */
+const INLINE_CODE = /(--[a-z][a-z-]*|PROMPTPRINTER_API_KEY|https?:\/\/[^\s,]+?(?=[.,]?(?:\s|$)))/;
+
+function withInlineCode(text: string) {
+  return text.split(INLINE_CODE).map((part, i) =>
+    i % 2 === 1 ? (
+      <code
+        key={i}
+        className="whitespace-nowrap rounded border border-border bg-surface px-1 py-0.5 text-[13px] text-foreground"
+      >
+        {part}
+      </code>
+    ) : (
+      part
+    )
+  );
+}
 
 export default function TerminalPage() {
   const steps = cliInstallSteps();
@@ -125,7 +144,7 @@ export default function TerminalPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-[16px] font-semibold text-foreground">{step.title}</h3>
-                    <p className="mt-1 text-[14.5px] leading-[1.6] text-secondary">{step.body}</p>
+                    <p className="mt-1 text-[14.5px] leading-[1.6] text-secondary">{withInlineCode(step.body)}</p>
                     {step.code && (
                       <pre className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground">
                         <code>{step.code}</code>
