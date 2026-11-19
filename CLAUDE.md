@@ -35,7 +35,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   OpenAI-kompatible Endpunkt) hebt das Chat-Limit auf. Zahlung über Lemon Squeezy
   (Webhook `/api/webhooks/lemonsqueezy`). **Pro ist abgeschaltet** (seit 2026-10-17, `PRO_AVAILABLE = false`, jeder Pro-Knopf führt auf `/pro-bald`; Vercel Hobby erlaubt keine Zahlungen): Wiederaufnahme in docs/PRO-WIEDERAUFNAHME.md.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
-  (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch.
+  (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch. Das README ist englisch (Gesicht des Open-Source-Projekts, Bilder in `docs/readme/`): wer Funktionen, die Wege zum Ausprobieren oder die Lizenz ändert, zieht es mit, ohne Pro, Preise und Bau-Tools, Zahlen nur gemessen.
 - **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
   Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit vier Vergleichen, `/aufgaben` mit fünf Aufgabenseiten (Beispiel-Prompts von Hand nach Finns Regeln, keine Messwerte) und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
