@@ -14,7 +14,7 @@ const consented = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17
 // Anhänge an Chat-Nachrichten (2026-10-02), von der Anfrage bis zum Modell.
 //
 // Eigene Datei neben route.test.ts, mit eigenem kleinen Gerüst: dort geht es um
-// Auth, Kontingent und Fehlerwege einer Nachricht, hier darum, was mit Dateien
+// Auth, Zugang und Fehlerwege einer Nachricht, hier darum, was mit Dateien
 // passiert. Das Muster ist dasselbe (PostgREST-Builder als thenable Kette, der
 // Anbieter als vi.fn), nur dass zusätzlich der Service-Role-Client, über den
 // geschrieben wird, und die Bytes im Bucket nachgestellt werden.
@@ -104,7 +104,6 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
     ...actual,
     rateLimit: async () => ({ allowed: true, remaining: 119, resetAt: Date.now() + 1000 }),
     rateLimitKey: () => "u:user-1",
-    reserveMonthlyQuota: async () => null,
     reserveServerKeyCall: async () => null,
   };
 });
@@ -171,7 +170,8 @@ describe("POST /api/chat, attachments", () => {
     remove.mockResolvedValue({ error: null });
     download.mockResolvedValue({ data: new Blob([PNG]), error: null });
 
-    tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+    // Ein Admin läuft ohne Gratis-Rahmen auf dem Server-Key: diese Tests handeln von Dateien, nicht vom Zugang.
+    tableResults.profiles = { data: { plan: "free", is_admin: true } };
     tableResults.messages = { data: { id: NEW_ID }, error: null, count: 3 };
     tableResults.conversations = { data: { id: CONVERSATION_ID }, error: null };
     tableResults.projects = { data: null, error: null };

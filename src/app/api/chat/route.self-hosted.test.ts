@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 // Die Kostenkette (server/model-call.ts) im Einzelbetrieb: ein Zug ohne eigenen Key auf dem Endpunkt des Betreibers
-// zählt nicht gegen Plan und Gratis-Rahmen und braucht keine Einwilligung zu Z.ai. Stundenlimit und Tagesbudget
-// bleiben. Ohne SELF_HOSTED, auf Vercel oder auf Z.ai gilt alles wie bisher.
+// zählt nicht gegen den Gratis-Rahmen und braucht keine Einwilligung zu Z.ai. Stundenlimit und Tagesbudget
+// bleiben. Ohne SELF_HOSTED, auf Vercel oder auf Z.ai gilt alles wie auf promptprinter.app.
 //
 // Anders als route.exits.test.ts ist llmConfig hier NICHT ersetzt: die Auswahl des Anbieters kommt aus der Umgebung,
 // genau wie in einer echten Installation. Ersetzt sind nur Supabase, die Zähler und der Modellaufruf selbst.
@@ -11,18 +11,18 @@ import { POST } from "./route";
 const log: string[] = [];
 const getUser = vi.fn();
 const rateLimit = vi.fn();
-const reserveMonthlyQuota = vi.fn();
 const reserveServerKeyCall = vi.fn();
 const getUserOverride = vi.fn();
 const chatCompleteStream = vi.fn();
 const freePromptsLeft = vi.fn();
 const reserveFreeTrialTurn = vi.fn();
 let plan = "free";
+let isAdmin = false;
 let appMetadata: unknown = {};
 
 function builder(table: string) {
   const result = () => {
-    if (table === "profiles") return { data: { plan, is_admin: false }, error: null };
+    if (table === "profiles") return { data: { plan, is_admin: isAdmin }, error: null };
     if (table === "messages") return { data: { id: "msg-1" }, error: null, count: 0 };
     if (table === "conversations") return { data: { id: "conv-1" }, error: null };
     return { data: table === "project_files" ? [] : null, error: null };
@@ -54,7 +54,6 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
     ...actual,
     rateLimit: (...a: unknown[]) => rateLimit(...a),
     rateLimitKey: () => "u:user-1",
-    reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
     reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
   };
 });
@@ -88,6 +87,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   log.length = 0;
   plan = "free";
+  isAdmin = false;
   appMetadata = {};
   for (const name of ["ZAI_API_KEY", "GEMINI_API_KEY", "LLM_API_KEY"]) vi.stubEnv(name, "");
   getUser.mockImplementation(async () => ({ data: { user: { id: "user-1", app_metadata: appMetadata } } }));
@@ -97,10 +97,6 @@ beforeEach(() => {
   rateLimit.mockImplementation(async () => {
     log.push("rateLimit");
     return { allowed: true, remaining: 1, resetAt: Date.now() + 1000 };
-  });
-  reserveMonthlyQuota.mockImplementation(async () => {
-    log.push("reserveMonthlyQuota");
-    return { allowed: true, release: async () => {} };
   });
   reserveServerKeyCall.mockImplementation(async () => {
     log.push("reserveServerKeyCall");
@@ -115,14 +111,13 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Einzelbetrieb auf dem Endpunkt des Betreibers", () => {
-  it("ein Free-Konto ohne Key chattet: kein Monatskontingent, kein Gratis-Rahmen, keine Einwilligung", async () => {
+  it("ein Konto ohne Key chattet: kein Gratis-Rahmen, keine Einwilligung", async () => {
     ollama();
     const res = await POST(req());
     expect(res.status).toBe(200);
     await res.text();
 
     expect(log).toEqual(["rateLimit", "reserveServerKeyCall", "model"]);
-    expect(reserveMonthlyQuota).not.toHaveBeenCalled();
     expect(freePromptsLeft).not.toHaveBeenCalled();
     expect(reserveFreeTrialTurn).not.toHaveBeenCalled();
   });
@@ -153,18 +148,18 @@ describe("ohne Einzelbetrieb bleibt die Kette so streng wie vorher", () => {
     expect(chatCompleteStream).not.toHaveBeenCalled();
   });
 
-  it("Pro auf dem Endpunkt ohne Einzelbetrieb zählt gegen das Monatskontingent", async () => {
+  it("ein altes Konto mit plan = 'pro' ohne Einzelbetrieb ist Free: byokRequired, kein Server-Key", async () => {
     ollama({ SELF_HOSTED: "" });
     plan = "pro";
-    const res = await POST(req());
-    await res.text();
-    expect(reserveMonthlyQuota).toHaveBeenCalledTimes(1);
+    expect(await problemOf(await POST(req()))).toEqual({ status: 403, kind: "byokRequired" });
+    expect(reserveServerKeyCall).not.toHaveBeenCalled();
+    expect(chatCompleteStream).not.toHaveBeenCalled();
   });
 
-  it("mit SELF_HOSTED=1, aber auf Z.ai: Plan und Einwilligung gelten wie auf promptprinter.app", async () => {
+  it("mit SELF_HOSTED=1, aber auf Z.ai: Gratis-Rahmen und Einwilligung gelten wie auf promptprinter.app", async () => {
     ollama({ ZAI_API_KEY: "zk" });
     expect(await problemOf(await POST(req()))).toEqual({ status: 403, kind: "byokRequired" });
-    plan = "pro";
+    isAdmin = true;
     expect(await problemOf(await POST(req()))).toEqual({ status: 403, kind: "consentRequired" });
     expect(chatCompleteStream).not.toHaveBeenCalled();
   });

@@ -1,4 +1,4 @@
-import { test, expect, adminClient, makePro } from "./support/fixtures";
+import { test, expect, adminClient, makeAdmin } from "./support/fixtures";
 
 // Ein Projekt ist der Arbeitsraum: anlegen, Anweisungen und Dateien an einem
 // Ort, ein Chat darin, und beim Löschen verschwindet alles samt der Dateien im
@@ -9,7 +9,7 @@ test.describe("Projekte", () => {
   test("anlegen, Anweisungen und Datei halten, Chat im Projekt, Löschen räumt alles auf", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const admin = adminClient();
 
     // ── Anlegen ───────────────────────────────────────────────────────────

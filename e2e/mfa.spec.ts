@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { APIRequestContext, Browser, BrowserContext, Page } from "@playwright/test";
-import { test, expect, adminClient, createAccount, makePro, removeAccount, signIn, type Account } from "./support/fixtures";
+import { test, expect, adminClient, createAccount, makeAdmin, removeAccount, signIn, type Account } from "./support/fixtures";
 import { E2E_ORIGIN, localSupabase } from "./support/env";
 import { deleteMailsFor, linkContaining, waitForMail } from "./support/mailbox";
 import { totpCode } from "./support/totp";
@@ -266,7 +266,7 @@ test.describe("Zweiter Faktor", () => {
     browser,
     request: cli,
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const { secret } = await enroll(page);
 
     const { deviceCode, userCode } = await startTerminal(cli);

@@ -123,7 +123,7 @@ describe("GET /api/account/export", () => {
 
   it("nimmt den Betreiber von der Begrenzung aus, wie die übrigen Routen", async () => {
     profileSelect.mockResolvedValue({
-      data: { display_name: "Ich", plan: "pro", settings: {}, is_admin: true },
+      data: { display_name: "Ich", plan: "free", settings: {}, is_admin: true },
       error: null,
     });
     const res = await GET(req());

@@ -107,21 +107,42 @@ describe("GET /api/cli/me", () => {
     });
   });
 
-  it("Pro ohne Key auf Z.ai braucht die Zustimmung, mit ihr nicht mehr", async () => {
-    tables.profiles = { data: { plan: "pro", is_admin: false }, error: null };
-    expect(await (await GET(get("Bearer tok"))).json()).toMatchObject({
-      plan: "pro",
+  it("ein Admin ohne Key auf Z.ai braucht die Zustimmung, mit ihr nicht mehr", async () => {
+    tables.profiles = { data: { plan: "free", is_admin: true }, error: null };
+    expect(await (await GET(get("Bearer tok"))).json()).toEqual({
+      email: "du@beispiel.ch",
+      plan: "free",
+      hasOwnKey: false,
       needsOwnKey: false,
       needsConsent: true,
     });
+    expect(freePromptsLeft).not.toHaveBeenCalled();
     signedIn(CONSENT);
     expect((await (await GET(get("Bearer tok"))).json()).needsConsent).toBe(false);
   });
 
-  it("Pro auf einem anderen Anbieter als Z.ai braucht keine Zustimmung", async () => {
-    tables.profiles = { data: { plan: "pro", is_admin: false }, error: null };
+  it("ein Admin auf einem anderen Anbieter als Z.ai braucht keine Zustimmung", async () => {
+    tables.profiles = { data: { plan: "free", is_admin: true }, error: null };
     llmConfig.mockReturnValue({ provider: "gemini" });
     expect((await (await GET(get("Bearer tok"))).json()).needsConsent).toBe(false);
+  });
+
+  // Eine Zeile mit plan = 'pro' bleibt in der Datenbank stehen und ist Free (shared/lib/plans.ts): die Antwort
+  // nennt "free", und ohne Key gilt der Gratis-Rahmen.
+  it("ein altes Konto mit plan = 'pro' ist Free: Gratis-Rahmen, danach der eigene Key", async () => {
+    tables.profiles = { data: { plan: "pro", is_admin: false }, error: null };
+    freePromptsLeft.mockResolvedValue(3);
+    expect(await (await GET(get("Bearer tok"))).json()).toMatchObject({
+      plan: "free",
+      needsOwnKey: false,
+      freePromptsLeft: 3,
+    });
+    freePromptsLeft.mockResolvedValue(0);
+    expect(await (await GET(get("Bearer tok"))).json()).toMatchObject({
+      plan: "free",
+      needsOwnKey: true,
+      freePromptsLeft: 0,
+    });
   });
 
   it("Einzelbetrieb auf dem Endpunkt des Betreibers: Free ohne Key braucht weder Key noch Gratis-Rahmen noch Zustimmung", async () => {

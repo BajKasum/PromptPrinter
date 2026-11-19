@@ -11,7 +11,7 @@ export const maxDuration = 300;
 // stehen daneben (Betriebs-Audit M7, Teil 3, reine Zerlegung ohne Verhaltensaenderung):
 //
 //   gate.ts          1 Sitzung, 2 Verlauf lesen und pruefen, 2b Anhaenge pruefen
-//   allowance.ts     3 Monatskontingent, 4 Stundengrenze, 4b Tagesbudget, 4c Produktionssperre
+//   allowance.ts     3 Zugang zum Server-Key, 4 Stundengrenze, 4b Tagesbudget, 4c Produktionssperre
 //   turn.ts          5 Systemprompt, 6 Zug oeffnen, 6b Verlauf fuer das Modell
 //   reply-stream.ts  7 Antwort erzeugen, speichern, als SSE-Strom ausliefern
 //

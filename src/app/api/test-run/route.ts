@@ -29,7 +29,7 @@ export const maxDuration = 300;
  * damit sie sieht, was eine KI daraus macht. Ohne Finns Systemprompt (nur der neutrale Satz TEST_RUN_SYSTEM, den
  * Anthropic braucht, weil ein leerer Systemtext abgelehnt wird), mit begrenzter Ausgabe, nicht gespeichert.
  *
- * Dieselbe Kostenkette wie der Chat (server/model-call.ts): eigener Key, sonst Server-Key im Kontingent oder im
+ * Dieselbe Kostenkette wie der Chat (server/model-call.ts): eigener Key, sonst Server-Key als Admin oder im
  * Gratis-Rahmen, dort höchstens ein Probelauf je Prompt, der nicht als Gratis-Prompt zählt, aber gegen das
  * Gratis-Tagesbudget. Nur mit Sitzung im Browser (Cookie), kein Bearer.
  */
@@ -67,7 +67,6 @@ export async function POST(req: Request): Promise<Response> {
     m,
     checkHourlyLimit: () => rateLimit(rateLimitKey(req, "test-run", user.id), { limit: 30, windowMs: 60 * 60 * 1000 }),
     texts: {
-      monthlyLimit: m.chatLimit,
       tooMany: m.tooManyRequests,
       budget: m.chatBudget,
       notConfigured: m.chatNotConfigured,

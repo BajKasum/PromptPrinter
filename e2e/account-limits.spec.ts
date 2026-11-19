@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { ACCOUNT_CEILINGS, PLAN_LIMITS } from "../src/shared/lib/plans";
 import { localSupabase } from "./support/env";
-import { adminClient, createAccount, expect, makePro, removeAccount, test, type Account } from "./support/fixtures";
+import { adminClient, createAccount, expect, makeAdmin, removeAccount, test, type Account } from "./support/fixtures";
 
 // Die Grenzen je Konto und die Eigentümer-Prüfung, auf dem Weg, den die Routen nicht sehen: PostgREST und Storage
 // mit dem JWT eines Nutzers und dem öffentlichen anon-Key, also als `authenticated`. Auffüllen darf der Admin-Client,
@@ -66,7 +66,7 @@ async function removeObjects(account: Account, projectIds: string[]): Promise<vo
   }
 }
 
-test.describe("Projekt-Grenze des Plans", () => {
+test.describe("Projekt-Grenze", () => {
   test("zehn parallele Einfügungen ergeben höchstens die Grenze", async ({ account }) => {
     const client = await asUser(account);
     const cap = PLAN_LIMITS.free.projects;
@@ -86,7 +86,7 @@ test.describe("Projekt-Grenze des Plans", () => {
     expect(count).toBe(cap);
   });
 
-  test("ein Befehl mit vielen Zeilen kommt nicht durch, und Pro hat keine Grenze", async ({ account }) => {
+  test("ein Befehl mit vielen Zeilen kommt nicht durch, und ein Admin hat keine Grenze", async ({ account }) => {
     const client = await asUser(account);
     const tooMany = Array.from({ length: PLAN_LIMITS.free.projects + 1 }, (_, i) => ({
       user_id: account.id,
@@ -95,18 +95,18 @@ test.describe("Projekt-Grenze des Plans", () => {
 
     expect((await client.from("projects").insert(tooMany)).error?.message).toContain("Projekt-Limit");
 
-    await makePro(account);
+    await makeAdmin(account);
     expect((await client.from("projects").insert(tooMany)).error).toBeNull();
   });
 
   test("ein Konto über der Grenze behält alles und kann nur nicht neu anlegen", async ({ account }) => {
     const client = await asUser(account);
-    await makePro(account);
+    await makeAdmin(account);
     const ids = await Promise.all(
       Array.from({ length: PLAN_LIMITS.free.projects + 2 }, (_, i) => createProject(client, account, `P${i}`))
     );
-    const { error: downgrade } = await adminClient().from("profiles").update({ plan: "free" }).eq("id", account.id);
-    expect(downgrade).toBeNull();
+    const { error: noLongerAdmin } = await adminClient().from("profiles").update({ is_admin: false }).eq("id", account.id);
+    expect(noLongerAdmin).toBeNull();
 
     expect((await client.from("projects").update({ name: "Neu" }).eq("id", ids[0])).error).toBeNull();
     expect((await client.from("projects").select("id")).data).toHaveLength(ids.length);
@@ -292,7 +292,7 @@ test.describe("Obergrenzen je Konto", () => {
 
   test("Dateizeilen", async ({ account }) => {
     const client = await asUser(account);
-    await makePro(account);
+    await makeAdmin(account);
     const perProject = 20;
     const projects: string[] = [];
     for (let i = 0; i <= ACCOUNT_CEILINGS.projectFiles.rows / perProject; i += 1) {

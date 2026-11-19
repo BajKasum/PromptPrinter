@@ -16,22 +16,23 @@ const consented = { zai_consent: { version: ZAI_CONSENT_VERSION, at: "2026-10-17
 // behält, wenn er etwas gekostet hat, ist an wenigen Stellen belegt (Budget bei
 // Anbieterfehler, Produktionssperre). Diese Datei hält es für ALLE Ausstiege fest,
 // damit POST in benannte Schritte zerlegt werden kann, ohne dass ein Ausstieg die
-// Reservierung stillschweigend verliert: ein verlorener Platz im Monatskontingent
+// Reservierung stillschweigend verliert: ein verlorener Platz im Gratis-Rahmen
 // oder im Tagesbudget kostet jemanden eine Nachricht, die nie beantwortet wurde.
 //
-// Zwei Reservierungen gibt es: das Monatskontingent (zuerst) und das Tagesbudget
-// des Server-Keys (zuletzt vor dem Modell). Beide stehen hier als eigene Zähler.
+// Zwei Reservierungen gibt es: den Platz im Gratis-Rahmen (zuerst) und das Tagesbudget
+// des Server-Keys (zuletzt vor dem Modell). Beide stehen hier als eigene Zähler. Das
+// Konto der Tests ist deshalb eines ohne eigenen Key im Gratis-Rahmen, der übliche Weg
+// auf dem Server-Key: es hat beide Reservierungen und die Stundengrenze.
 
 const log: string[] = [];
 const getUser = vi.fn();
 const createClient = vi.fn();
 const rateLimit = vi.fn();
-const reserveMonthlyQuota = vi.fn();
 const reserveServerKeyCall = vi.fn();
 const getUserOverride = vi.fn();
 const chatCompleteStream = vi.fn();
 const llmConfig = vi.fn();
-const monthlyRelease = vi.fn();
+const trialRelease = vi.fn();
 const budgetRelease = vi.fn();
 
 const tableResults: Record<string, { data?: unknown; error?: unknown; count?: number }> = {};
@@ -87,13 +88,12 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
     ...actual,
     rateLimit: (...a: unknown[]) => rateLimit(...a),
     rateLimitKey: () => "u:user-1",
-    reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
     reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
   };
 });
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
-// Der Gratis-Rahmen (server/free-trial.ts): Standard ist "aufgebraucht", dann gilt für Free ohne Key der Key-Weg wie
-// vor dem Rahmen. Die Tests des Rahmens setzen beides selbst.
+// Der Gratis-Rahmen (server/free-trial.ts): Standard ist ein Konto mit zwei übrigen Gratis-Prompts, dessen Zug einen
+// Platz bekommt. Die Tests eines aufgebrauchten Rahmens setzen beides selbst.
 const freePromptsLeft = vi.fn();
 const reserveFreeTrialTurn = vi.fn();
 vi.mock("@/server/free-trial", () => ({
@@ -138,21 +138,24 @@ beforeEach(() => {
     log.push("getUserOverride");
     return null;
   });
-  freePromptsLeft.mockResolvedValue(0);
-  reserveFreeTrialTurn.mockResolvedValue("exhausted");
+  freePromptsLeft.mockResolvedValue(2);
+  reserveFreeTrialTurn.mockImplementation(async () => {
+    log.push("reserveFreeTrialTurn");
+    return {
+      release: trialRelease,
+      promptDelivered: async () => 1,
+      promptsLeft: async () => 2,
+    };
+  });
   rateLimit.mockImplementation(async () => {
     log.push("rateLimit");
     return { allowed: true, remaining: 119, resetAt: Date.now() + 1000 };
   });
-  monthlyRelease.mockImplementation(async () => {
-    log.push("release:monthly");
+  trialRelease.mockImplementation(async () => {
+    log.push("release:trial");
   });
   budgetRelease.mockImplementation(async () => {
     log.push("release:budget");
-  });
-  reserveMonthlyQuota.mockImplementation(async () => {
-    log.push("reserveMonthlyQuota");
-    return { allowed: true, release: monthlyRelease };
   });
   reserveServerKeyCall.mockImplementation(async () => {
     log.push("reserveServerKeyCall");
@@ -164,7 +167,7 @@ beforeEach(() => {
     yield "Hallo";
   });
 
-  tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+  tableResults.profiles = { data: { plan: "free", is_admin: false } };
   tableResults.messages = { data: { id: "msg-1" }, error: null, count: 3 };
   tableResults.conversations = { data: { id: "conv-1" }, error: null };
   tableResults.projects = { data: null, error: null };
@@ -180,7 +183,7 @@ const calls = (mock: { mock: { calls: unknown[] } }) => mock.mock.calls.length;
 // ─── Die Reihenfolge der Schranken ───────────────────────────────────────────
 
 describe("Reihenfolge der Schranken", () => {
-  it("Sitzung → Profil → Kontingent → Stundengrenze → Tagesbudget → Zug öffnen → Modell", async () => {
+  it("Sitzung → Profil → Gratis-Rahmen → Stundengrenze → Tagesbudget → Zug öffnen → Modell", async () => {
     const res = await POST(req());
     await text(res);
 
@@ -188,7 +191,7 @@ describe("Reihenfolge der Schranken", () => {
     const order = [
       "session",
       "from:profiles",
-      "reserveMonthlyQuota",
+      "reserveFreeTrialTurn",
       "rateLimit",
       "reserveServerKeyCall",
       "insert:conversations",
@@ -211,22 +214,25 @@ describe("Reihenfolge der Schranken", () => {
   it("Anhänge und Body werden geprüft, bevor irgendetwas reserviert wird", async () => {
     const res = await POST(req({ messages: [] }));
     expect(res.status).toBe(400);
-    expect(calls(reserveMonthlyQuota)).toBe(0);
+    expect(calls(reserveFreeTrialTurn)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(0);
     expect(calls(rateLimit)).toBe(0);
   });
 
-  it("ein BYOK-Konto reserviert weder Kontingent noch Tagesbudget, wird aber begrenzt", async () => {
+  it("ein BYOK-Konto reserviert weder Gratis-Rahmen noch Tagesbudget, wird aber begrenzt", async () => {
     getUserOverride.mockImplementation(async () => ({ provider: "anthropic", apiKey: "k" }));
     await text(await POST(req()));
-    expect(calls(reserveMonthlyQuota)).toBe(0);
+    expect(calls(reserveFreeTrialTurn)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(0);
     expect(calls(rateLimit)).toBe(1);
   });
 
-  it("ein Admin umgeht die Stundengrenze, nicht das Tagesbudget", async () => {
-    tableResults.profiles = { data: { plan: "pro", is_admin: true } };
-    await text(await POST(req()));
+  it("ein Admin umgeht Gratis-Rahmen und Stundengrenze, nicht das Tagesbudget", async () => {
+    tableResults.profiles = { data: { plan: "free", is_admin: true } };
+    const body = await text(await POST(req()));
+    expect(body).toContain("event: done");
+    expect(calls(freePromptsLeft)).toBe(0);
+    expect(calls(reserveFreeTrialTurn)).toBe(0);
     expect(calls(rateLimit)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(1);
   });
@@ -236,10 +242,10 @@ describe("Reihenfolge der Schranken", () => {
 
 describe("Ausstiege vor jeder Reservierung reservieren nichts", () => {
   const untouched = () => {
-    expect(calls(reserveMonthlyQuota)).toBe(0);
+    expect(calls(reserveFreeTrialTurn)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(0);
     expect(calls(rateLimit)).toBe(0);
-    expect(calls(monthlyRelease)).toBe(0);
+    expect(calls(trialRelease)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
     expect(calls(chatCompleteStream)).toBe(0);
   };
@@ -272,16 +278,15 @@ describe("Ausstiege vor jeder Reservierung reservieren nichts", () => {
     untouched();
   });
 
-  it("Free ohne eigenen Key und ohne Gratis-Prompts (403 byokRequired): kein Aufruf des Kontingents", async () => {
-    tableResults.profiles = { data: { plan: "free", is_admin: false } };
+  it("ohne eigenen Key und ohne Gratis-Prompts (403 byokRequired): kein Platz im Gratis-Rahmen", async () => {
+    freePromptsLeft.mockResolvedValue(0);
     const res = await POST(req());
     expect(res.status).toBe(403);
     expect((await res.json()).kind).toBe("byokRequired");
     untouched();
   });
 
-  it("gespeicherter Key nicht lesbar (409): kein Kontingent, kein Rückfall auf den Server-Key", async () => {
-    tableResults.profiles = { data: { plan: "pro", is_admin: false } };
+  it("gespeicherter Key nicht lesbar (409): kein Gratis-Rahmen, kein Rückfall auf den Server-Key", async () => {
     getUserOverride.mockImplementation(async () => "unreadable");
     const res = await POST(req());
     expect(res.status).toBe(409);
@@ -293,30 +298,31 @@ describe("Ausstiege vor jeder Reservierung reservieren nichts", () => {
 // ─── Ausstiege NACH einer Reservierung: Rückgabe oder Behalten ───────────────
 
 describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug nichts gekostet hat", () => {
-  it("Monatskontingent erschöpft (403): die eigene Reservierung geht zurück, nichts weiter", async () => {
-    reserveMonthlyQuota.mockImplementation(async () => {
-      log.push("reserveMonthlyQuota");
-      return { allowed: false, release: monthlyRelease };
+  it("Gratis-Rahmen heute aufgebraucht (403): der Rahmen gibt selbst zurück, nichts weiter wird reserviert", async () => {
+    reserveFreeTrialTurn.mockImplementation(async () => {
+      log.push("reserveFreeTrialTurn");
+      return "budget";
     });
     const res = await POST(req());
     expect(res.status).toBe(403);
-    expect((await res.json()).kind).toBe("chatMessages");
-    expect(calls(monthlyRelease)).toBe(1);
+    expect((await res.json()).kind).toBe("freeTrialBudget");
+    expect(calls(trialRelease)).toBe(0);
     expect(calls(rateLimit)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(0);
+    expect(calls(chatCompleteStream)).toBe(0);
   });
 
-  it("Stundengrenze (429): das Monatskontingent geht zurück, das Tagesbudget wurde noch nie reserviert", async () => {
+  it("Stundengrenze (429): der Platz im Gratis-Rahmen geht zurück, das Tagesbudget wurde noch nie reserviert", async () => {
     rateLimit.mockImplementation(async () => ({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 }));
     const res = await POST(req());
     expect(res.status).toBe(429);
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(reserveServerKeyCall)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
     expect(calls(chatCompleteStream)).toBe(0);
   });
 
-  it("Tagesbudget aufgebraucht (503): die eigene Reservierung UND das Monatskontingent gehen zurück", async () => {
+  it("Tagesbudget aufgebraucht (503): die eigene Reservierung UND der Platz im Gratis-Rahmen gehen zurück", async () => {
     reserveServerKeyCall.mockImplementation(async () => {
       log.push("reserveServerKeyCall");
       return { allowed: false, release: budgetRelease };
@@ -324,7 +330,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     const res = await POST(req());
     expect(res.status).toBe(503);
     expect(calls(budgetRelease)).toBe(1);
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(chatCompleteStream)).toBe(0);
   });
 
@@ -333,7 +339,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     llmConfig.mockReturnValue(null);
     const res = await POST(req());
     expect(res.status).toBe(503);
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(calls(chatCompleteStream)).toBe(0);
   });
@@ -342,7 +348,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     tableResults.conversations = { data: null, error: { message: "insert failed" } };
     const res = await POST(req());
     expect(res.status).toBe(503);
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(calls(chatCompleteStream)).toBe(0);
     expect(insertCalls.messages ?? []).toHaveLength(0);
@@ -354,7 +360,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     });
     const body = await text(await POST(req()));
     expect(body).toContain("event: error");
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(deleteCalls.conversations ?? 0).toBe(1);
   });
@@ -367,7 +373,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     const body = await text(await POST(req()));
     expect(body).toContain("event: error");
     expect(body).not.toContain("event: done");
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(deleteCalls.conversations ?? 0).toBe(1);
     expect(insertCalls.messages?.some((r) => (r as { role?: string }).role === "assistant") ?? false).toBe(false);
@@ -379,7 +385,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     });
     const body = await text(await POST(req()));
     expect(body).toContain("event: error");
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
   });
 
@@ -390,7 +396,7 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
       throw new DOMException("aborted", "AbortError");
     });
     await text(await POST(req(undefined, controller.signal)));
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(deleteCalls.conversations ?? 0).toBe(0);
     expect(deleteCalls.messages ?? 0).toBe(0);
@@ -401,7 +407,7 @@ describe("jeder Ausstieg, bei dem der Zug etwas gekostet hat, behält die Reserv
   it("normaler Abschluss", async () => {
     const body = await text(await POST(req()));
     expect(body).toContain("event: done");
-    expect(calls(monthlyRelease)).toBe(0);
+    expect(calls(trialRelease)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
   });
 
@@ -413,7 +419,7 @@ describe("jeder Ausstieg, bei dem der Zug etwas gekostet hat, behält die Reserv
       throw new DOMException("aborted", "AbortError");
     });
     await text(await POST(req(undefined, controller.signal)));
-    expect(calls(monthlyRelease)).toBe(0);
+    expect(calls(trialRelease)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
     expect(insertCalls.messages?.some((r) => (r as { role?: string }).role === "assistant")).toBe(true);
   });
@@ -424,21 +430,22 @@ describe("jeder Ausstieg, bei dem der Zug etwas gekostet hat, behält die Reserv
     expect(body).toContain("event: done");
     expect(body).toContain('"persistError":"persist_failed"');
     expect(body).not.toContain("insert failed");
-    expect(calls(monthlyRelease)).toBe(0);
+    expect(calls(trialRelease)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
   });
 });
 
 describe("Redis nicht erreichbar: es gibt nichts zurückzugeben, und nichts bricht", () => {
   it("ohne Reservierungen läuft der Zug, ein Fehler gibt nichts zurück", async () => {
-    reserveMonthlyQuota.mockImplementation(async () => null);
+    // Ein Admin reserviert keinen Platz im Gratis-Rahmen, ohne Redis auch keinen im Tagesbudget.
+    tableResults.profiles = { data: { plan: "free", is_admin: true } };
     reserveServerKeyCall.mockImplementation(async () => null);
     chatCompleteStream.mockImplementation(async function* () {
       throw new Error("Z.ai 500: down");
     });
     const body = await text(await POST(req()));
     expect(body).toContain("event: error");
-    expect(calls(monthlyRelease)).toBe(0);
+    expect(calls(trialRelease)).toBe(0);
     expect(calls(budgetRelease)).toBe(0);
   });
 });
@@ -511,8 +518,8 @@ describe("Vertrag des Antwort-Stroms", () => {
 // ─── Datenbank-Lesefehler sind kein "kein Treffer" (#202) ────────────────────
 
 // supabase-js wirft bei einem Fehler nicht. Ein Lesefehler, der als "nichts da" gelesen wird, wäre eine falsche
-// Fachentscheidung: Plan Free statt Pro, ein Zug auf dem Server-Key statt dem eigenen, kein Monatskontingent ohne Redis,
-// eine neue Konversation statt der laufenden, ein Chat ohne sein Projekt. Jeder dieser Ausstiege antwortet mit 503,
+// Fachentscheidung: kein Admin statt Admin, ein Zug auf dem Server-Key statt dem eigenen, eine neue Konversation statt
+// der laufenden, ein Chat ohne sein Projekt. Jeder dieser Ausstiege antwortet mit 503,
 // gibt zurück, was schon reserviert war, und fragt das Modell nie.
 describe("Datenbank-Lesefehler", () => {
   const readError = { message: "connection reset" };
@@ -523,10 +530,10 @@ describe("Datenbank-Lesefehler", () => {
     return res;
   };
 
-  it("Profil nicht lesbar: nicht Plan Free, sondern 503, noch bevor etwas reserviert wird", async () => {
+  it("Profil nicht lesbar: nicht ohne Adminrechte, sondern 503, noch bevor etwas reserviert wird", async () => {
     tableResults.profiles = { data: null, error: readError };
     await refused();
-    expect(calls(reserveMonthlyQuota)).toBe(0);
+    expect(calls(reserveFreeTrialTurn)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(0);
     expect(calls(rateLimit)).toBe(0);
   });
@@ -537,14 +544,7 @@ describe("Datenbank-Lesefehler", () => {
       throw new DatabaseReadError("user_api_keys", readError);
     });
     await refused();
-    expect(calls(reserveMonthlyQuota)).toBe(0);
-    expect(calls(reserveServerKeyCall)).toBe(0);
-  });
-
-  it("ohne Redis und mit Zählfehler: nicht 0 Nachrichten, sondern 503", async () => {
-    reserveMonthlyQuota.mockImplementation(async () => null);
-    tableResults.messages = { data: null, error: readError, count: 0 };
-    await refused();
+    expect(calls(reserveFreeTrialTurn)).toBe(0);
     expect(calls(reserveServerKeyCall)).toBe(0);
   });
 
@@ -555,7 +555,7 @@ describe("Datenbank-Lesefehler", () => {
     );
     expect(res.status).toBe(503);
     expect(calls(chatCompleteStream)).toBe(0);
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(insertCalls.conversations ?? []).toHaveLength(0);
   });
@@ -567,7 +567,7 @@ describe("Datenbank-Lesefehler", () => {
     );
     expect(res.status).toBe(503);
     expect(calls(chatCompleteStream)).toBe(0);
-    expect(calls(monthlyRelease)).toBe(1);
+    expect(calls(trialRelease)).toBe(1);
     expect(calls(budgetRelease)).toBe(1);
     expect(insertCalls.conversations ?? []).toHaveLength(0);
   });

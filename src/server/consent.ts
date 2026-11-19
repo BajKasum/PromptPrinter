@@ -6,7 +6,7 @@ import { createAdminClient } from "@/server/supabase/admin";
 /**
  * Die Einwilligung in die Übermittlung an Z.ai (Singapur), Rechts-Audit R-1.
  *
- * Im Pro-Plan geht jede Chat-Nachricht an Z.ai. Für Singapur (und China, wo
+ * Auf dem Server-Key (Gratis-Rahmen, Admin) geht jede Chat-Nachricht an Z.ai. Für Singapur (und China, wo
  * Z.ai-Konzerngesellschaften nicht auszuschliessen sind) gibt es weder einen
  * Angemessenheitsbeschluss der EU noch eine Anerkennung des Bundesrats, und die
  * Vereinbarung von Z.ai enthält keine Standardvertragsklauseln. Als Grundlage

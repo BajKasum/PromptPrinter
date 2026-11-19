@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { chatQuotaKey, clientIp, rateLimitKey, rateLimitKeyPerAddress } from "@/server/security/rate-limit";
+import { clientIp, rateLimitKey, rateLimitKeyPerAddress } from "@/server/security/rate-limit";
 import { counterRedisDouble } from "./redis-double";
 
 // Die Kopfzeilen-Tests prüfen, wen der Schlüssel meint; der Bereich ist dafür gleichgültig.
@@ -378,154 +378,6 @@ describe("rateLimit degrades to a stricter fallback on a Redis call failure (QA 
   });
 });
 
-// reserveMonthlyQuota is the atomic (Redis INCR) close for /api/chat's
-// check-then-act monthly-quota race; same fresh-module-per-test pattern as
-// above since it reads the module-level `redis` singleton at import time.
-describe("reserveMonthlyQuota", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.doUnmock("@upstash/redis");
-    vi.resetModules();
-  });
-
-  it("returns null when Redis isn't configured, so callers fall back to their own check", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
-    vi.resetModules();
-    const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
-
-    expect(await reserveMonthlyQuota("chat-quota:u1:2026-07", 200)).toBeNull();
-  });
-
-  it("allows a request under the limit, release() decrements the counter back", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    const incr = vi.fn().mockResolvedValue(5);
-    const decr = vi.fn().mockResolvedValue(4);
-    const expire = vi.fn().mockResolvedValue(0);
-    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => counterRedisDouble({ incr, decr, expire }) } }));
-    vi.resetModules();
-    const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
-
-    const reservation = await reserveMonthlyQuota("chat-quota:u1:2026-07", 200);
-    expect(reservation?.allowed).toBe(true);
-
-    await reservation?.release();
-    expect(decr).toHaveBeenCalledWith("chat-quota:u1:2026-07");
-  });
-
-  it("sets a cleanup expiry only on the first reservation for a month-key", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    const incr = vi.fn().mockResolvedValue(1);
-    const expire = vi.fn().mockResolvedValue(1);
-    vi.doMock("@upstash/redis", () => ({
-      Redis: { fromEnv: () => counterRedisDouble({ incr, expire, decr: vi.fn() }) },
-    }));
-    vi.resetModules();
-    const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
-
-    await reserveMonthlyQuota("chat-quota:u1:2026-07", 200);
-    expect(expire).toHaveBeenCalledWith("chat-quota:u1:2026-07", 45 * 24 * 60 * 60, "NX");
-  });
-
-  it("rejects once the reserved count exceeds the limit", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    const incr = vi.fn().mockResolvedValue(201);
-    vi.doMock("@upstash/redis", () => ({
-      Redis: { fromEnv: () => counterRedisDouble({ incr, expire: vi.fn(), decr: vi.fn() }) },
-    }));
-    vi.resetModules();
-    const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
-
-    const reservation = await reserveMonthlyQuota("chat-quota:u1:2026-07", 200);
-    expect(reservation?.allowed).toBe(false);
-  });
-
-  it("fails open (returns null) instead of throwing when Redis errors", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    vi.doMock("@upstash/redis", () => ({
-      Redis: { fromEnv: () => ({ incr: vi.fn().mockRejectedValue(new Error("down")) }) },
-    }));
-    vi.resetModules();
-    const { reserveMonthlyQuota } = await import("@/server/security/rate-limit");
-
-    expect(await reserveMonthlyQuota("chat-quota:u1:2026-07", 200)).toBeNull();
-  });
-});
-
-// chatQuotaKey is the one place that builds a chat-quota Redis key — shared by
-// /api/chat's reservation and the billing/settings pages' display read (M-3,
-// Audit 06.09.2026), so both sides can no longer drift apart by computing the
-// month string differently.
-describe("chatQuotaKey", () => {
-  it("formats as chat-quota:{userId}:{UTC year}-{zero-padded UTC month}", () => {
-    expect(chatQuotaKey("u1", new Date(Date.UTC(2026, 6, 15)))).toBe("chat-quota:u1:2026-07");
-  });
-
-  it("pads a single-digit month", () => {
-    expect(chatQuotaKey("u1", new Date(Date.UTC(2026, 0, 1)))).toBe("chat-quota:u1:2026-01");
-  });
-});
-
-// getMonthlyQuotaUsage is a read-only GET against the same counter
-// reserveMonthlyQuota's INCR enforces, for display (M-3, Audit 06.09.2026):
-// the DB count billing/settings used to show is deletable, this one isn't.
-describe("getMonthlyQuotaUsage", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.doUnmock("@upstash/redis");
-    vi.resetModules();
-  });
-
-  it("returns null when Redis isn't configured, so callers fall back to their own count", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
-    vi.resetModules();
-    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
-
-    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBeNull();
-  });
-
-  it("returns the counter's current value without incrementing it", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    const get = vi.fn().mockResolvedValue(42);
-    const incr = vi.fn();
-    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ get, incr }) } }));
-    vi.resetModules();
-    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
-
-    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBe(42);
-    expect(get).toHaveBeenCalledWith("chat-quota:u1:2026-07");
-    expect(incr).not.toHaveBeenCalled();
-  });
-
-  it("treats a missing key (nobody has reserved yet this month) as zero", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    vi.doMock("@upstash/redis", () => ({ Redis: { fromEnv: () => ({ get: vi.fn().mockResolvedValue(null) }) } }));
-    vi.resetModules();
-    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
-
-    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBe(0);
-  });
-
-  it("fails open (returns null) instead of throwing when Redis errors", async () => {
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token");
-    vi.doMock("@upstash/redis", () => ({
-      Redis: { fromEnv: () => ({ get: vi.fn().mockRejectedValue(new Error("down")) }) },
-    }));
-    vi.resetModules();
-    const { getMonthlyQuotaUsage } = await import("@/server/security/rate-limit");
-
-    expect(await getMonthlyQuotaUsage("chat-quota:u1:2026-07")).toBeNull();
-  });
-});
-
 // reserveFailoverCall: das eigene Tagesbudget fuer Zuege auf dem Ausweich-Anbieter
 // (Betriebs-Audit M3). Bisher nur in llm-failover.test.ts als Attrappe getestet; die
 // Zahl selbst (Standard 200, LLM_FAILOVER_DAILY_CALLS) nie. Folgesitzung 2026-10-07.
@@ -618,7 +470,7 @@ describe("reserveServerKeyCall", () => {
   });
 
   // Folgesitzung 2026-10-07: Number("") ist 0. Ein leer gesetztes Budget darf nicht
-  // "kein Aufruf erlaubt" heissen (die App antwortete dann jedem Pro-Nutzer mit "Tagesbudget
+  // "kein Aufruf erlaubt" heissen (die App antwortete dann jedem Admin und jedem Gratis-Zug mit "Tagesbudget
   // aufgebraucht"), sondern den Standard.
   it("treats an empty or blank budget like an unset one (default 1000), not as zero", async () => {
     for (const blank of ["", "   "]) {
@@ -658,7 +510,7 @@ describe("reserveServerKeyCall", () => {
     expect(decr).toHaveBeenCalledWith(`llm-daily-calls:${day}`);
   });
 
-  it("fails open when Redis errors, matching reserveMonthlyQuota", async () => {
+  it("fails open when Redis errors, so a hiccup does not take chat down for everyone", async () => {
     const { reserveServerKeyCall } = await withRedis(
       vi.fn().mockRejectedValue(new Error("down"))
     );

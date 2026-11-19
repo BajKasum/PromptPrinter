@@ -68,4 +68,20 @@ describe("Key-Hinweis im Chat", () => {
     const { getNeedsOwnKey } = await load();
     expect(await getNeedsOwnKey()).toBe(true);
   });
+
+  // Eine Zeile mit plan = 'pro' bleibt in der Datenbank stehen und ist Free (shared/lib/plans.ts).
+  it("eine alte Zeile mit plan = 'pro' ohne Key ist Free: erst der Gratis-Zähler, danach der Key-Hinweis", async () => {
+    vi.stubEnv("SELF_HOSTED", "");
+    plan = "pro";
+    freePromptsLeft.mockResolvedValue(2);
+    const inTrial = await load();
+    expect(await inTrial.getNeedsOwnKey()).toBe(false);
+    expect(await inTrial.getFreePromptsLeft()).toBe(2);
+
+    vi.resetModules();
+    freePromptsLeft.mockResolvedValue(0);
+    const afterTrial = await load();
+    expect(await afterTrial.getNeedsOwnKey()).toBe(true);
+    expect(await afterTrial.getFreePromptsLeft()).toBeNull();
+  });
 });

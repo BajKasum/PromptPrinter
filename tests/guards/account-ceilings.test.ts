@@ -54,9 +54,9 @@ describe("Grenzen je Konto", () => {
     expect(triggerArgs("project_files")).toEqual([String(ACCOUNT_CEILINGS.projectFiles.rows)]);
   });
 
-  it("setzt die Projekt-Grenze von Free aus PLAN_LIMITS durch", () => {
+  it("setzt die Projekt-Grenze von Free aus PLAN_LIMITS durch, Admins ausgenommen", () => {
     expect(sql).toContain(`from public.projects where user_id = account) > ${PLAN_LIMITS.free.projects}`);
-    expect(PLAN_LIMITS.pro.projects).toBe(Infinity);
+    expect(sql).toContain("not coalesce(account_is_admin, false)");
   });
 
   it("begrenzt den Bucket project-files je Konto nach Objekten und Bytes", () => {

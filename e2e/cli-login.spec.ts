@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { APIRequestContext, Page } from "@playwright/test";
-import { test, expect, adminClient, createAccount, makePro, removeAccount, signIn, type Account } from "./support/fixtures";
+import { test, expect, adminClient, createAccount, makeAdmin, removeAccount, signIn, type Account } from "./support/fixtures";
 import { E2E_ORIGIN, localSupabase } from "./support/env";
 
 // Die Anmeldung der Kommandozeile per Geräte-Code (api/cli, Bestätigungsseite /cli) gegen den lokalen
@@ -54,9 +54,9 @@ async function chat(cli: APIRequestContext, token: string, text = "Ich möchte e
   });
 }
 
-async function createProAccount(label: string): Promise<Account> {
+async function createAdminAccount(label: string): Promise<Account> {
   const account = await createAccount(label);
-  await makePro(account);
+  await makeAdmin(account);
   return account;
 }
 
@@ -65,7 +65,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
     signedIn: { page, account },
     request: cli,
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const { deviceCode, userCode, verificationUri, interval } = await startLogin(cli, "pp auf Test-Laptop");
     expect(userCode).toMatch(/^[BCDFGHJKLMNPQRSTVWXZ2-9]{4}-[BCDFGHJKLMNPQRSTVWXZ2-9]{4}$/);
     expect(verificationUri).toBe(`${E2E_ORIGIN}/cli`);
@@ -171,7 +171,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
     request: cli,
     browser,
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const session = await loginAs(cli, page);
 
     const second = await startLogin(cli);
@@ -197,7 +197,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
   test("Cookie gültig, Bearer ungültig ergibt 401: der Kopf gewinnt, das Cookie rettet nichts", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const body = { messages: [{ role: "user", content: "Hallo" }] };
 
     const withCookie = await page.request.post("/api/chat", { data: body });
@@ -217,7 +217,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
     request: cli,
     browser,
   }) => {
-    const victim = await createProAccount("victim");
+    const victim = await createAdminAccount("victim");
     const victimPage = await browser.newContext();
     try {
       const victimTab = await victimPage.newPage();
@@ -242,8 +242,8 @@ test.describe("Anmeldung der Kommandozeile", () => {
     }
   });
 
-  test("die Einwilligung in Z.ai und der Plan überstehen die Anmeldung", async ({ signedIn: { page, account }, request: cli }) => {
-    await makePro(account);
+  test("die Einwilligung in Z.ai und die Adminrolle überstehen die Anmeldung", async ({ signedIn: { page, account }, request: cli }) => {
+    await makeAdmin(account);
     const consent = { version: "2026-10-17", at: "2026-10-18T09:00:00.000Z" };
     const admin = adminClient();
     const set = await admin.auth.admin.updateUserById(account.id, { app_metadata: { zai_consent: consent } });
@@ -253,8 +253,8 @@ test.describe("Anmeldung der Kommandozeile", () => {
 
     const { data } = await admin.auth.admin.getUserById(account.id);
     expect(data.user?.app_metadata.zai_consent).toEqual(consent);
-    const { data: profile } = await admin.from("profiles").select("plan").eq("id", account.id).single();
-    expect(profile?.plan).toBe("pro");
+    const { data: profile } = await admin.from("profiles").select("is_admin").eq("id", account.id).single();
+    expect(profile?.is_admin).toBe(true);
   });
 
   test("ein Free-Konto ohne eigenen Key chattet auch per Bearer im Gratis-Rahmen, danach kommt der Hinweis", async ({
@@ -293,7 +293,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
     signedIn: { page, account },
     request: cli,
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const first = await loginAs(cli, page, "pp auf dem Laptop");
     const second = await loginAs(cli, page, "pp im Büro");
     expect((await chat(cli, first.access_token)).status()).toBe(200);
@@ -330,7 +330,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
   });
 
   test("ein fremdes Konto kann keine Terminal-Sitzung abmelden", async ({ signedIn: { page, account }, request: cli, browser }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const session = await loginAs(cli, page);
     const { data: rows } = await adminClient().from("cli_sessions").select("session_id").eq("user_id", account.id);
     const sessionId = rows?.[0]?.session_id;
@@ -353,7 +353,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
   });
 
   test("ein Terminal älter als das Höchstalter wird abgewiesen und beendet", async ({ signedIn: { page, account }, request: cli }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const session = await loginAs(cli, page);
     const admin = adminClient();
 
@@ -387,7 +387,7 @@ test.describe("Anmeldung der Kommandozeile", () => {
   });
 
   test("das Token einer Browser-Sitzung gilt nicht als Terminal", async ({ account, request: cli }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const { url, anonKey } = localSupabase();
     const browserClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data, error } = await browserClient.auth.signInWithPassword({ email: account.email, password: account.password });

@@ -38,7 +38,7 @@ type ApiMessages = Messages["api"];
 /**
  * Schritt 1: eine Sitzung, bevor der Body angefasst wird. Das Cookie des Browsers oder, von der
  * Kommandozeile, `Authorization: Bearer` (createClientForRequest): in beiden Fällen entscheidet
- * `getUser()` beim Auth-Server, und alles danach (Kontingent, Einwilligung, eigener Key) ist dasselbe.
+ * `getUser()` beim Auth-Server, und alles danach (Gratis-Rahmen, Einwilligung, eigener Key) ist dasselbe.
  */
 export async function authenticate(
   req: Request,
@@ -54,7 +54,7 @@ export async function authenticate(
   //    rate-limited harder"), which made it the only cost-incurring route
   //    without an auth gate — /api/projects, /api/settings/api-key and
   //    /api/account all 401 first. Two things compounded that: the entire
-  //    monthly-quota block below hangs off `userId`, so an anonymous request
+  //    server-key access check below hangs off `userId`, so an anonymous request
   //    skipped it and ran straight against the server's own provider key; and
   //    the only remaining ceiling was an hourly limit keyed on a header the
   //    caller controlled (see rateLimitKey, fixed alongside this). No UI ever
@@ -159,7 +159,7 @@ export async function checkAttachments(args: {
 }): Promise<ValidatedAttachment[] | Response> {
   const { supabase, userId, input, m, locale } = args;
   // 2b. Die Anhaenge der neuen Nachricht pruefen, BEVOR irgendetwas reserviert
-  //     oder geschrieben wird: ein kaputter Anhang kostet weder Kontingent noch
+  //     oder geschrieben wird: ein kaputter Anhang kostet weder Gratis-Rahmen noch
   //     Ratelimit, und es entsteht keine halbe Frage in der Datenbank.
   //     Beim Neu-Erzeugen gibt es keine neue Nachricht, also auch keine neuen
   //     Anhaenge (die der bestehenden Frage hat openTurn damals abgelegt).
