@@ -34,7 +34,8 @@ const release = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   getUser.mockResolvedValue({ data: { user: { id: "u1", app_metadata: {} } } });
-  reserveModelCall.mockResolvedValue({ override: null, plan: "pro", isAdmin: false, freeTrial: null, releaseReservations: release });
+  // Server-Key ohne Gratis-Rahmen: so läuft nur ein Admin (shared/lib/plans.ts).
+  reserveModelCall.mockResolvedValue({ override: null, plan: "free", isAdmin: true, freeTrial: null, releaseReservations: release });
   chatCompleteStream.mockImplementation(async function* () {
     yield "Sehr geehrte ";
     yield "Frau Muster";

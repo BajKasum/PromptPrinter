@@ -8,7 +8,7 @@ export type CounterReservation = { allowed: boolean; release: () => Promise<void
 const RELEASE_SCRIPT = `if redis.call('EXISTS', KEYS[1]) == 1 then return redis.call('DECR', KEYS[1]) end return 0`;
 
 /**
- * Die eine Regel hinter den Kostenbremsen (Monatskontingent, Tagesbudgets): atomar hochzählen, Platz
+ * Die eine Regel hinter den Kostenbremsen (Gratis-Rahmen, Tagesbudgets): atomar hochzählen, Platz
  * reservieren, `release()` gibt ihn zurück, wenn der Aufruf nicht stattfand.
  *
  * Zählen und Ablauf laufen in einer Transaktion: ein Schlüssel ohne Ablauf bliebe für immer liegen, und ein

@@ -220,6 +220,8 @@ describe("accountExportStream", () => {
 });
 
 describe("buildAccountSection", () => {
+  // Eine alte Zeile mit plan = 'pro' und Abo-Spalten: der Export zeigt, was gespeichert ist, auch wenn der Code den Plan
+  // nicht mehr liest (shared/lib/plans.ts).
   it("trägt die Konto-Angaben, aber nichts vom Zahlungsanbieter oder vom Betrieb", () => {
     const section = buildAccountSection(
       { id: USER, email: "du@example.com", created_at: "2026-05-01T00:00:00Z" },

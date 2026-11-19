@@ -1,4 +1,4 @@
-import { test, expect, adminClient, makePro } from "./support/fixtures";
+import { test, expect, adminClient, makeAdmin } from "./support/fixtures";
 
 // Der Kern des Produkts: Frage senden, Antwort bekommen, nach dem Neuladen ist
 // beides noch da. Chat läuft im Stub-Modus (kein Modell-Anbieter in der
@@ -12,7 +12,7 @@ test.describe("Chat", () => {
   test("Frage senden, Demo-Antwort kommt, nach dem Neuladen ist alles noch da", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
 
     await page.goto("/chats/new");
     await page.getByLabel("Nachricht an Finn").fill(QUESTION);
@@ -41,7 +41,7 @@ test.describe("Chat", () => {
   test("ein Textanhang wird mit der Frage gespeichert und ist nach dem Neuladen noch da", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     const fileText = "Zielgruppe: Hundetrainer in Zürich.\nWichtig: Terminbuchung per Handy.";
 
     await page.goto("/chats/new");
@@ -90,7 +90,7 @@ test.describe("Chat", () => {
   test("am fertigen Prompt: In Claude öffnen kopiert und öffnet einen leeren Chat, der Probelauf antwortet sichtbar", async ({
     signedIn: { page, account },
   }) => {
-    await makePro(account);
+    await makeAdmin(account);
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
     // Nichts verlässt den Test: claude.ai bekommt eine leere Seite.
     await page.context().route("https://claude.ai/**", (route) => route.fulfill({ status: 200, body: "ok" }));

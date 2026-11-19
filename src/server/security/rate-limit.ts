@@ -16,7 +16,6 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { logWarning } from "@/shared/lib/observability";
 import { logRateLimited } from "@/server/security/security-log";
 import { redis } from "@/server/security/redis-client";
-import { reserveCounter } from "@/server/security/reserve-counter";
 import { addressBucket } from "@/server/security/url-safety";
 import { isSelfHosted } from "@/server/self-hosted";
 
@@ -163,92 +162,6 @@ async function checkRateLimit(
   }
 
   return memoryRateLimit(key, { limit, windowMs });
-}
-
-// ─── Monthly quota reservation (atomic, Redis-only) ─────────────────────────
-
-/**
- * Closes a check-then-act race /api/chat's monthly chat-message quota used to
- * have: it read a DB count, compared to the plan limit, then called the LLM,
- * then persisted the turn, all as separate steps with the slow LLM call in
- * between, so concurrent requests could all read the same under-limit count
- * before any of them persisted. Redis INCR is atomic, so the reservation
- * itself can't race even when several requests land at the same instant.
- *
- * `key` should already encode the calendar month (e.g. "chat-quota:{userId}:
- * 2026-07"), a fresh key each month is what makes the count reset, the TTL
- * below is pure cleanup, not the reset mechanism.
- *
- * Returns null when Redis isn't configured or errors, callers should degrade
- * to their previous plain DB-count check in that case, same known limitation
- * as the in-memory rate-limit fallback elsewhere in this file. Deliberately
- * fails OPEN here (unlike rateLimit()'s fail-closed-in-production policy for
- * the hourly ceiling): a transient Redis hiccup briefly leaving the monthly
- * cost quota unenforced is a far smaller risk than breaking chat outright for
- * every free user during that same hiccup, and the hourly rate limit still
- * bounds the damage either way.
- *
- * The DB-count fallback this leaves callers to is soft in a way this reservation
- * isn't (QA finding F-9): it counts a user's own `messages` rows, which the
- * user can delete (conversations cascade), so the counter measures a
- * *deletable* balance rather than a *monotonic* one — deleting old chats
- * resets it. That is a real gap in principle, but Upstash is a hard
- * requirement in production (src/server/env.ts's boot check refuses to start
- * without it, see QA finding S-2), so the DB-count path only ever runs in
- * dev/self-hosting, where it is an accepted, documented soft spot rather than
- * something worth a new `usage_counters` table and its own RLS/grants for.
- * Revisit if self-hosting without Redis ever becomes a real deployment target.
- */
-export async function reserveMonthlyQuota(
-  key: string,
-  limit: number
-): Promise<{ allowed: boolean; release: () => Promise<void> } | null> {
-  return reserveCounter({ key, limit, ttlSeconds: 45 * 24 * 60 * 60 });
-}
-
-/**
- * The exact Redis key `/api/chat` reserves the caller's monthly chat
- * allowance against. Exported so the billing/settings pages that DISPLAY
- * usage read the very counter enforcement gates on, instead of a second,
- * independently-computed value for the same month (M-3, Audit 06.09.2026):
- * two call sites building "chat-quota:{userId}:{year}-{month}" by hand can
- * only drift apart, one typo or off-by-one away from a display that quietly
- * stops matching what actually blocks the next message.
- */
-export function chatQuotaKey(userId: string, at: Date = new Date()): string {
-  const monthKey = `${at.getUTCFullYear()}-${String(at.getUTCMonth() + 1).padStart(2, "0")}`;
-  return `chat-quota:${userId}:${monthKey}`;
-}
-
-/**
- * Reads a monthly quota counter's current value without mutating it (a plain
- * GET, never an INCR) — for display, not enforcement.
- *
- * Exists because the DB count billing/settings used to show is a *deletable*
- * balance (reserveMonthlyQuota's own comment above), while this Redis counter
- * is the *monotonic* one /api/chat actually enforces: deleting old chats
- * lowers the DB count mid-month without lowering this one, so a page built
- * on the DB count alone can promise room that has already been used up
- * (M-3, Audit 06.09.2026). Reading the enforcement counter itself for display
- * closes that gap whenever Redis is configured — which production requires
- * (env.ts's boot check) — and callers fall back to their own DB count
- * otherwise, matching what enforcement itself falls back to.
- *
- * Same fail-open contract as reserveMonthlyQuota: null means "Redis isn't
- * configured or didn't answer, use your own count," never zero — a missing
- * key (nobody has reserved against it yet this month) is the one case that
- * legitimately IS zero, and Redis's own `null` for a missing key collapses
- * into that below.
- */
-export async function getMonthlyQuotaUsage(key: string): Promise<number | null> {
-  if (!redis) return null;
-  try {
-    const raw = await redis.get<number>(key);
-    const count = Number(raw ?? 0);
-    return Number.isFinite(count) ? Math.max(0, count) : null;
-  } catch {
-    return null;
-  }
 }
 
 // Das Tagesbudget des Servers liegt in daily-budget.ts (Dateigröße), bleibt von hier aus erreichbar.

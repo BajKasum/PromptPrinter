@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Die Route ist die Stelle, an der Eigentuemerschaft, Plan-Kontingent,
+// Die Route ist die Stelle, an der Eigentuemerschaft, Zugang zum Server-Key,
 // Tagesbudget und Ratelimit ueber einem Modellaufruf sitzen — genau die
 // Schranken, die stillschweigend aufhoeren zu wirken, wenn niemand sie prueft
 // (QA-Befund C-6, derselbe Grund wie bei /api/chat und /api/projects).
+//
+// Auf den Server-Key darf eine Analyse nur als Admin (shared/lib/plans.ts), einen Gratis-Rahmen bietet sie nicht
+// an. Das Konto der Tests ist deshalb ein Admin; was für ein Konto mit eigenem Key gilt (Stundenlimit), setzen
+// die Tests mit onOwnKey() selbst.
 
 const getUser = vi.fn();
 const rateLimit = vi.fn();
-const reserveMonthlyQuota = vi.fn();
 const reserveServerKeyCall = vi.fn();
 const getUserOverride = vi.fn();
 const llmConfig = vi.fn();
@@ -66,15 +69,11 @@ vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: () => ({ from: (t: string) => adminBuilder(t) }),
 }));
 vi.mock("@/server/security/rate-limit", async (importOriginal) => {
-  // chatQuotaKey is real below (pure string formatting, no Redis I/O) — one
-  // test asserts its actual month format, which a stub would have to fake
-  // right back.
   const actual = await importOriginal<typeof import("@/server/security/rate-limit")>();
   return {
     ...actual,
     rateLimit: (...a: unknown[]) => rateLimit(...a),
     rateLimitKey: (_req: Request, scope: string) => `${scope}:u:user-1`,
-    reserveMonthlyQuota: (...a: unknown[]) => reserveMonthlyQuota(...a),
     reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
   };
 });
@@ -129,17 +128,21 @@ function req(body: unknown = {}) {
 
 const params = { params: Promise.resolve({ id: "proj-1" }) };
 
+/** Ein Konto ohne Adminrechte mit eigenem Key: läuft auf seinem Konto, mit Stundenlimit, ohne Tagesbudget. */
+function onOwnKey() {
+  tableResults.profiles = { data: { plan: "free", is_admin: false }, error: null };
+  getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-x" });
+}
+
 describe("POST /api/projects/[id]/brain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     adminWrites.length = 0;
     for (const key of Object.keys(adminReads)) delete adminReads[key];
-    delete tableResults.messages;
     for (const key of Object.keys(adminWriteErrors)) delete adminWriteErrors[key];
 
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
-    reserveMonthlyQuota.mockResolvedValue({ allowed: true, release: vi.fn() });
     reserveServerKeyCall.mockResolvedValue({ allowed: true, release: vi.fn() });
     getUserOverride.mockResolvedValue(null);
     llmConfig.mockReturnValue({ provider: "zai", model: "glm-4.5-air" });
@@ -147,7 +150,7 @@ describe("POST /api/projects/[id]/brain", () => {
     analyzeProjectBrain.mockResolvedValue({ facts: FACTS, model: "glm-4.5-air" });
 
     tableResults.projects = { data: { name: "Demo" }, error: null };
-    tableResults.profiles = { data: { plan: "pro", is_admin: false }, error: null };
+    tableResults.profiles = { data: { plan: "free", is_admin: true }, error: null };
   });
 
   it("analyses and stores the brain", async () => {
@@ -248,8 +251,8 @@ describe("POST /api/projects/[id]/brain", () => {
 
       expect(res.status).toBe(403);
       expect((await res.json()).kind).toBe("consentRequired");
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
       expect(reserveServerKeyCall).not.toHaveBeenCalled();
+      expect(rateLimit).not.toHaveBeenCalled();
       expect(collectBrainSources).not.toHaveBeenCalled();
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
@@ -265,16 +268,29 @@ describe("POST /api/projects/[id]/brain", () => {
   });
 
   describe("Kosten-Schranken", () => {
-    it("refuses a free account without its own key", async () => {
+    // Die Analyse bietet keinen Gratis-Rahmen an: ohne eigenen Key bleibt einem Konto ohne Adminrechte nur der Key-Weg,
+    // vor jeder Reservierung.
+    it("refuses an account without its own key", async () => {
       tableResults.profiles = { data: { plan: "free", is_admin: false }, error: null };
       const res = await POST(req(), params);
       expect(res.status).toBe(403);
       expect((await res.json()).kind).toBe("byokRequired");
+      expect(rateLimit).not.toHaveBeenCalled();
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
+      expect(analyzeProjectBrain).not.toHaveBeenCalled();
+    });
+
+    // Eine Zeile mit plan = 'pro' bleibt in der Datenbank stehen und ist Free (shared/lib/plans.ts).
+    it("refuses an old account with plan = 'pro' and without its own key like any other", async () => {
+      tableResults.profiles = { data: { plan: "pro", is_admin: false }, error: null };
+      const res = await POST(req(), params);
+      expect(res.status).toBe(403);
+      expect(await res.json()).toMatchObject({ kind: "byokRequired", plan: "free" });
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
 
     it("refuses when the stored key is unreadable, without falling back to the server key", async () => {
-      tableResults.profiles = { data: { plan: "pro", is_admin: false }, error: null };
       getUserOverride.mockResolvedValue("unreadable");
       const res = await POST(req(), params);
       expect(res.status).toBe(409);
@@ -282,42 +298,12 @@ describe("POST /api/projects/[id]/brain", () => {
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
 
-    it("lets a free account through on its own key", async () => {
-      tableResults.profiles = { data: { plan: "free", is_admin: false }, error: null };
-      getUserOverride.mockResolvedValue({ provider: "anthropic", apiKey: "sk-x" });
+    it("lets an account through on its own key", async () => {
+      onOwnKey();
       const res = await POST(req(), params);
       expect(res.status).toBe(200);
-      // Und belastet dabei weder Monatskontingent noch Tagesbudget.
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      // Und belastet dabei das Tagesbudget des Server-Keys nicht.
       expect(reserveServerKeyCall).not.toHaveBeenCalled();
-    });
-
-    it("counts against the same monthly allowance as a chat turn", async () => {
-      await POST(req(), params);
-      expect(reserveMonthlyQuota).toHaveBeenCalledWith(
-        expect.stringMatching(/^chat-quota:user-1:\d{4}-\d{2}$/),
-        400
-      );
-    });
-
-    // Redis kann nicht entscheiden (nicht erreichbar): wie im Chat zählt dann die Datenbank. Eine
-    // Analyse darf ohne Redis nicht mehr, als ein aufgebrauchtes Monatskontingent mit Redis erlaubte
-    // (Entscheid zu #213: angleichen; vorher entfiel das Kontingent hier ganz, es blieb das Stundenlimit).
-    it("Redis nicht erreichbar: ein aufgebrauchtes Monatskontingent blockiert auch die Analyse", async () => {
-      reserveMonthlyQuota.mockResolvedValue(null);
-      tableResults.messages = { data: null, error: null, count: 400 };
-      const res = await POST(req(), params);
-      expect(res.status).toBe(403);
-      expect(await res.json()).toMatchObject({ kind: "chatMessages", limit: 400, current: 400 });
-      expect(reserveServerKeyCall).not.toHaveBeenCalled();
-      expect(analyzeProjectBrain).not.toHaveBeenCalled();
-    });
-
-    it("Redis nicht erreichbar: unter dem Monatskontingent läuft die Analyse", async () => {
-      reserveMonthlyQuota.mockResolvedValue(null);
-      tableResults.messages = { data: null, error: null, count: 399 };
-      expect((await POST(req(), params)).status).toBe(200);
-      expect(analyzeProjectBrain).toHaveBeenCalledTimes(1);
     });
 
     // #202: ein Lesefehler ist weder "nicht gefunden" noch "kein Treffer".
@@ -325,7 +311,7 @@ describe("POST /api/projects/[id]/brain", () => {
       tableResults.projects = { data: null, error: { message: "connection reset" } };
       const res = await POST(req(), params);
       expect(res.status).toBe(503);
-      expect(reserveMonthlyQuota).not.toHaveBeenCalled();
+      expect(reserveServerKeyCall).not.toHaveBeenCalled();
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
 
@@ -337,23 +323,20 @@ describe("POST /api/projects/[id]/brain", () => {
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
 
-    it("startet die bezahlte Analyse nicht und gibt die Reservierungen zurück, wenn die Zeile nicht angelegt werden kann", async () => {
-      const release = vi.fn();
+    it("startet die bezahlte Analyse nicht und gibt die Reservierung zurück, wenn die Zeile nicht angelegt werden kann", async () => {
       const budgetRelease = vi.fn();
-      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
       reserveServerKeyCall.mockResolvedValue({ allowed: true, release: budgetRelease });
       adminWriteErrors.upsert = { message: "write failed" };
       const res = await POST(req(), params);
       expect(res.status).toBe(503);
       expect(collectBrainSources).not.toHaveBeenCalled();
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
-      expect(release).toHaveBeenCalledTimes(1);
       expect(budgetRelease).toHaveBeenCalledTimes(1);
     });
 
     it("meldet einen Fehler statt eines Ergebnisses, das nach dem Neuladen fehlt, wenn das Speichern scheitert", async () => {
       const release = vi.fn();
-      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
+      reserveServerKeyCall.mockResolvedValue({ allowed: true, release });
       adminWriteErrors.update = { message: "write failed" };
       const res = await POST(req(), params);
       expect(res.status).toBeGreaterThanOrEqual(500);
@@ -363,19 +346,10 @@ describe("POST /api/projects/[id]/brain", () => {
       expect(adminWrites.some((w) => w.op === "update" && w.values.status === "failed")).toBe(true);
     });
 
-    it("blocks when the monthly allowance is used up", async () => {
-      const release = vi.fn();
-      reserveMonthlyQuota.mockResolvedValue({ allowed: false, release });
-      const res = await POST(req(), params);
-      expect(res.status).toBe(403);
-      expect((await res.json()).kind).toBe("chatMessages");
-      expect(release).toHaveBeenCalled();
-      expect(analyzeProjectBrain).not.toHaveBeenCalled();
-    });
-
     // Eine Analyse liest ein ganzes Repo — die teuerste Einzelaktion der App,
     // deshalb ein deutlich knapperes Stundenlimit als der Chat.
     it("has its own, much tighter hourly limit", async () => {
+      onOwnKey();
       await POST(req(), params);
       expect(rateLimit).toHaveBeenCalledWith("brain:u:user-1", {
         limit: 5,
@@ -384,13 +358,14 @@ describe("POST /api/projects/[id]/brain", () => {
     });
 
     it("returns 429 when that limit is hit", async () => {
+      onOwnKey();
       rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 60_000 });
       expect((await POST(req(), params)).status).toBe(429);
       expect(analyzeProjectBrain).not.toHaveBeenCalled();
     });
 
     it("exempts an admin from the hourly limit", async () => {
-      tableResults.profiles = { data: { plan: "pro", is_admin: true }, error: null };
+      tableResults.profiles = { data: { plan: "free", is_admin: true }, error: null };
       const res = await POST(req(), params);
       expect(res.status).toBe(200);
       expect(rateLimit).not.toHaveBeenCalled();
@@ -415,7 +390,7 @@ describe("POST /api/projects/[id]/brain", () => {
   describe("Fehlerbehandlung", () => {
     it("records a stable code and hands the allowance back", async () => {
       const release = vi.fn();
-      reserveMonthlyQuota.mockResolvedValue({ allowed: true, release });
+      reserveServerKeyCall.mockResolvedValue({ allowed: true, release });
       collectBrainSources.mockImplementation(() =>
         Promise.reject(Object.assign(new Error("boom"), { name: "GithubImportError" }))
       );

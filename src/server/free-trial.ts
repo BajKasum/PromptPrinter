@@ -13,8 +13,8 @@ import { FREE_TRIAL } from "@/shared/lib/plans";
 // je IP und Tag, ein eigenes Tagesbudget des Rahmens und dahinter das allgemeine Tagesbudget des Server-Keys
 // (model-call.ts). Alles in Redis, ohne Migration.
 //
-// Ohne Redis gibt es in Produktion keinen Gratis-Rahmen (fail closed): anders als Kontingent und Tagesbudget, die
-// zahlenden Konten gelten und offen ausfallen, ist der Rahmen ein Geschenk, und ohne Zähler wäre er unbegrenzt.
+// Ohne Redis gibt es in Produktion keinen Gratis-Rahmen (fail closed): das Tagesbudget des Server-Keys fällt offen
+// aus, weil es nur die Rückversicherung ist; der Rahmen aber ist ein Geschenk, und ohne Zähler wäre er unbegrenzt.
 // In der Entwicklung zählt eine Map im Prozess, damit der Ablauf lokal ohne Upstash prüfbar bleibt.
 
 const ACCOUNT_TTL_SECONDS = 400 * 24 * 60 * 60;
