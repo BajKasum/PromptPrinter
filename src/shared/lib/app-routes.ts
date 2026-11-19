@@ -20,8 +20,6 @@ export const APP_PREFIXES = [
   "/prompts",
   "/settings",
   "/usage",
-  "/billing",
-  "/plans",
   // Bestätigung der Terminal-Anmeldung (api/cli), eingeloggt und ohne Link-Code.
   "/cli",
   // Leitet seit 2026-09-29 per next.config.ts auf /usage um und erreicht die
@@ -50,8 +48,8 @@ export const PUBLIC_PREFIXES = [
   // No "/features": next.config.ts redirects it to /#funktionen, and
   // next.config redirects resolve before middleware runs, so the path never
   // reaches this check.
-  "/pricing",
-  "/skill", // der Skill /pp zum Herunterladen (Seite im Header neben Preise)
+  "/open-source", // kostenlos und Open Source: die Demo, selbst betreiben, die Lizenz
+  "/skill", // der Skill /pp zum Herunterladen
   "/terminal", // die Terminal-App, im Header "CLI" (/cli ist die Bestätigung der Geräte-Anmeldung)
   "/mcp", // der MCP-Server der Terminal-App
   "/geteilt", // ein per Link geteilter Prompt (server/prompt-share.ts), noindex
@@ -62,8 +60,6 @@ export const PUBLIC_PREFIXES = [
   "/datenschutz",
   "/impressum",
   "/kontakt",
-  "/pro-bald", // Ziel der Pro-Knöpfe, solange Pro nicht kaufbar ist (shared/lib/pro-availability.ts)
-  "/rueckerstattung",
   "/ueber",
   "/vergleich",
   "/aufgaben", // Was eine KI für eine Aufgabe wissen muss, je Aufgabe eine Seite (features/marketing/lib/task-guides.ts)

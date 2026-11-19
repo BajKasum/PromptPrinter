@@ -21,7 +21,7 @@ const SOCIAL_IMAGE = {
  *   sich als Startseite aus (behoben am 28.09.2026, bei den Formularseiten am
  *   01.10.2026).
  * - Ohne eigenes `openGraph` zeigte jede geteilte Unterseite Titel,
- *   Beschreibung und `og:url` der Startseite. Ein Link auf /pricing in
+ *   Beschreibung und `og:url` der Startseite. Ein Link auf /open-source in
  *   WhatsApp, Slack oder LinkedIn sah aus wie ein Link auf die Startseite.
  *
  * Deshalb setzt diese Funktion alle drei aus denselben drei Angaben.
@@ -49,7 +49,7 @@ export function pageMetadata({
   /** Kurz, ohne Markenname: das Root-Layout hängt " · PromptPrinter" an. */
   title: string;
   description: string;
-  /** Der Pfad der Seite, z. B. "/pricing". */
+  /** Der Pfad der Seite, z. B. "/open-source". */
   path: string;
   /**
    * Für Titel, die den Markennamen schon enthalten ("PromptPrinter oder

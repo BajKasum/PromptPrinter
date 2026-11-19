@@ -1,6 +1,3 @@
-import { PRO_PRICE_LABEL } from "@/shared/lib/pricing";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
-
 // Die Vergleichsseiten unter /vergleich, an EINER Stelle: die Übersicht, jede
 // einzelne Seite, die Sitemap und llms.txt lesen dieses Array.
 //
@@ -13,8 +10,8 @@ import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
 //    unlautere vergleichende Werbung (Schweiz: Art. 3 Abs. 1 lit. e UWG).
 // 2. Jede Seite sagt, wann der ANDERE Weg der bessere ist. Das ist dasselbe
 //    Versprechen wie auf /ueber ("Ich sage, was es nicht kann").
-// 3. Über PromptPrinter steht nur, was der Code hält. Preis und Kontingent
-//    kommen aus pricing.ts, nicht als zweite Zahl von Hand.
+// 3. Über PromptPrinter steht nur, was der Code hält. PromptPrinter kostet
+//    nichts, deshalb steht hier kein Preis und kein Plan (PRICE_ROW unten).
 //
 // Alle Texte sind einfache Strings, kein JSX: dieselben Fragen und Antworten
 // gehen als FAQPage-JSON-LD an Suchmaschinen, und das muss wörtlich das sein,
@@ -52,12 +49,10 @@ export type Comparison = {
 };
 
 /** Wann die Vergleiche zuletzt inhaltlich geprüft wurden. */
-export const COMPARISONS_UPDATED = "2026-11-01";
+export const COMPARISONS_UPDATED = "2026-11-19";
 
-// Solange Pro nicht buchbar ist (pro-availability.ts), steht hier kein Preis für einen Plan, den man nicht holen kann.
-const PRICE_ROW = PRO_AVAILABLE
-  ? `Free: drei Prompts gratis, danach mit eigenem API-Key, sonst Pro für ${PRO_PRICE_LABEL} im Monat`
-  : "Free: drei Prompts gratis, danach mit eigenem API-Key, ein Pro-Plan ohne eigenen Key folgt später";
+/** Die Zeile "Kosten" in jeder Tabelle, an einer Stelle, damit die Vergleiche dasselbe sagen wie /open-source. */
+const PRICE_ROW = "Kostenlos und Open Source: drei Prompts gratis, danach mit eigenem API-Key";
 
 export const COMPARISONS: Comparison[] = [
   {
@@ -122,7 +117,7 @@ export const COMPARISONS: Comparison[] = [
       {
         question: "Kann ich beides zusammen nutzen?",
         paragraphs: [
-          "Ja. Mit einem eigenen API-Key von Anthropic, OpenAI oder Google läuft PromptPrinter über das Modell dieses Anbieters, und der Free-Plan kostet dich nichts zusätzlich.",
+          "Ja. Mit einem eigenen API-Key von Anthropic, OpenAI oder Google läuft PromptPrinter über das Modell dieses Anbieters, und PromptPrinter selbst kostet dich nichts.",
           "Ein Abo für ChatGPT oder Claude ist allerdings kein API-Key. Den Key bekommst du beim Anbieter separat und zahlst dort nach Verbrauch.",
         ],
       },
@@ -136,7 +131,7 @@ export const COMPARISONS: Comparison[] = [
     related: [
       { href: "/docs/chat-mit-finn", label: "Chat mit Finn" },
       { href: "/docs/eigene-api-keys", label: "Eigene API-Keys" },
-      { href: "/pricing", label: "Preise" },
+      { href: "/open-source", label: "Kostenlos und Open Source" },
     ],
   },
   {

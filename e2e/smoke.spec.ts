@@ -57,8 +57,13 @@ test("öffentliche Seiten antworten, Unbekanntes ist ein 404", async ({ page, re
   expect(landing?.status()).toBe(200);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-  const pricing = await request.get("/pricing");
-  expect(pricing.status()).toBe(200);
+  const openSource = await request.get("/open-source");
+  expect(openSource.status()).toBe(200);
+
+  // Die alte Preisseite leitet dauerhaft um (next.config.ts), statt mit 404 zu antworten.
+  const pricing = await request.get("/pricing", { maxRedirects: 0 });
+  expect(pricing.status()).toBe(308);
+  expect(pricing.headers()["location"]).toMatch(/\/open-source$/);
 
   const missing = await request.get("/gibt-es-nicht");
   expect(missing.status()).toBe(404);

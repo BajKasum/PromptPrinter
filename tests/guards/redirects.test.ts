@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { COMPARISONS } from "@/features/marketing/lib/comparisons";
 import nextConfig from "../../next.config";
@@ -42,6 +44,35 @@ describe("Umleitungen in next.config.ts", () => {
     for (const redirect of await redirects()) {
       if (!redirect.source.startsWith(COMPARISON_PREFIX)) continue;
       expect(slugs.has(redirect.source.slice(COMPARISON_PREFIX.length)), redirect.source).toBe(false);
+    }
+  });
+});
+
+// PromptPrinter kostet nichts: Preisseite, Pro-Seite, Rückerstattung und die Abrechnung der App gibt es nicht mehr.
+// Ihre Adressen waren öffentlich oder in Mails und Lesezeichen; ohne Umleitung wären sie ein 404.
+describe("Umleitungen der Seiten ohne Bezahlung", () => {
+  it.each([
+    ["/pricing", "/open-source"],
+    ["/pro-bald", "/open-source"],
+    ["/rueckerstattung", "/agb"],
+    ["/billing", "/usage"],
+    ["/billing/:path*", "/usage"],
+    ["/plans", "/usage"],
+    ["/plans/:path*", "/usage"],
+  ])("leitet %s dauerhaft auf %s", async (source, destination) => {
+    const entry = (await redirects()).find((redirect) => redirect.source === source);
+    expect(entry, source).toMatchObject({ destination, permanent: true });
+  });
+
+  it("zeigt auf Seiten, die es gibt", () => {
+    for (const page of ["(marketing)/open-source", "(marketing)/(legal)/agb", "(app)/usage"]) {
+      expect(existsSync(join(process.cwd(), "src", "app", page, "page.tsx")), page).toBe(true);
+    }
+  });
+
+  it("lässt keine umgeleitete Seite als Ordner stehen (sie wäre nicht mehr erreichbar)", () => {
+    for (const page of ["(marketing)/pricing", "(marketing)/pro-bald", "(marketing)/(legal)/rueckerstattung", "(app)/billing", "(app)/plans"]) {
+      expect(existsSync(join(process.cwd(), "src", "app", page)), page).toBe(false);
     }
   });
 });

@@ -1,7 +1,8 @@
 import { COMPARISONS, comparisonHref } from "@/features/marketing/lib/comparisons";
 import { TASK_GUIDES, taskGuideHref } from "@/features/marketing/lib/task-guides";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
-import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
+import { REPO_URL } from "@/features/marketing/lib/open-source";
+import { FREE_TRIAL } from "@/shared/lib/plans";
 import { LEGAL } from "@/shared/lib/legal";
 import { siteUrl } from "@/shared/lib/site-url";
 
@@ -15,7 +16,7 @@ export const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n);
 // job robots.txt does for crawlers and sitemap.xml does for indexers, but
 // aimed at something that reads prose instead of following links. Every fact
 // below is pulled from the same source the rest of the site already reads
-// from (DOCS_ORDER, PLANS, LEGAL) rather than restated by hand, so this
+// from (DOCS_ORDER, FREE_TRIAL, LEGAL) rather than restated by hand, so this
 // can't drift into claiming something the product doesn't do.
 //
 // Lives in its own module, not route.ts: Next's App Router type-checks a
@@ -23,16 +24,6 @@ export const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n);
 // exports), and rejects any other export at build time.
 export function buildLlmsTxt(): string {
   const base = siteUrl();
-
-  const plans = PLANS.map((plan) => {
-    // Solange Pro nicht buchbar ist (pro-availability.ts), steht dort kein Preis, den niemand zahlen kann.
-    const price = plan.soon
-      ? "derzeit nicht buchbar"
-      : plan.name === "Pro"
-        ? `${PRO_PRICE_EUR.toFixed(2)} €/Monat`
-        : "0 €";
-    return `- ${plan.name} (${price}): ${plan.description}`;
-  }).join("\n");
 
   const docs = DOCS_ORDER.map(
     (doc) => `- [${doc.title}](${base}${docHref(doc.slug)}): ${doc.summary}`
@@ -53,12 +44,12 @@ export function buildLlmsTxt(): string {
 
 PromptPrinter ist für alle, die eine KI für etwas einsetzen wollen und dafür einen guten Prompt brauchen, ob für ein Dokument, eine Webseite, eine Datenbank oder eine Sicherheitsprüfung. Bevor der Prompt entsteht, stellt der Chat-Assistent Finn eine gebündelte Rückfrage zu dem, was für die Aufgabe zählt, und liefert danach den fertigen Prompt, der in jeder KI funktioniert und auf Wunsch auf eine bestimmte zugeschnitten ist. Die App gibt es auf Deutsch, Englisch, Französisch, Italienisch und Spanisch, Finn antwortet in der Sprache, in der man schreibt; die öffentlichen Seiten sind nur auf Deutsch. Solo-Projekt von ${LEGAL.operator}, ${LEGAL.postalCity}, ${LEGAL.country}.
 
-## Preise
-${plans}
+## Kosten
+PromptPrinter ist kostenlos und Open Source, einen bezahlten Plan gibt es nicht. Im Browser sind die ersten ${numberWord(FREE_TRIAL.prompts).toLowerCase()} Prompts ohne eigenen Key frei, danach chattet man mit einem eigenen KI-Key (Anthropic, OpenAI, Gemini oder ein anderer OpenAI-kompatibler Anbieter; einen Gemini-Key gibt es kostenlos). Selbst betrieben läuft PromptPrinter mit einem eigenen Modell, etwa über Ollama, die Terminal-App mit --local ganz ohne Konto. Der Quellcode steht unter der MIT-Lizenz, ausgenommen sind der Name, das Logo und die Bilder von Finn: ${REPO_URL}
 
 ## Seiten
 - [Startseite](${base}/): Wie PromptPrinter funktioniert, in drei Schritten
-- [Preise](${base}/pricing): Free und Pro im Detail, plus häufige Fragen
+- [Open Source](${base}/open-source): Was PromptPrinter kostet (nichts), wie man es selbst betreibt und unter welcher Lizenz der Code steht
 - [Skill](${base}/skill): Der Skill /pp für Coding-Agenten zum Herunterladen
 - [CLI](${base}/terminal): Finn im Terminal, mit demselben Konto wie im Browser
 - [MCP](${base}/mcp): Der MCP-Server, über den ein Agent bei Finn einen Prompt holt
@@ -82,7 +73,6 @@ ${taskGuides}
 - [Cookies](${base}/cookies)
 - [AGB](${base}/agb)
 - [Nutzungsrichtlinie](${base}/nutzungsrichtlinie)
-- [Rückerstattung](${base}/rueckerstattung)
 
 ## English
 PromptPrinter is an AI chat that asks one bundled clarifying question and then writes a finished, copy-ready prompt for any AI and any task. The app interface is available in German, English, French, Italian and Spanish, and Finn answers in the language you write in. The public website is in German only.

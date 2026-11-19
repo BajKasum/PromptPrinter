@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SITE_DESCRIPTION } from "@/shared/lib/site-description";
 import { articleJsonLd } from "./article-schema";
 import { entityIds } from "./entity-ids";
+import { REPO_URL } from "./open-source";
 import {
   organizationJsonLd,
   profilePageJsonLd,
@@ -111,19 +114,26 @@ describe("Structured Data der öffentlichen Seiten", () => {
     expect(software.url).toBe(ORIGIN);
   });
 
-  // Kategorie und Angebote hat Kasum in #127 so entschieden, sie bleiben.
-  it("lässt Kategorie und Angebote der Software unverändert", () => {
+  // Die Kategorie hat Kasum in #127 so entschieden, sie bleibt. PromptPrinter kostet nichts: ein Angebot, Preis 0.
+  it("lässt die Kategorie unverändert und bietet die Software nur kostenlos an", () => {
     const { software } = build();
 
     expect(software.applicationCategory).toBe("DeveloperApplication");
-    expect(software.offers.map((offer) => offer.name)).toEqual(["Free", "Pro"]);
+    expect(software.offers).toHaveLength(1);
+    expect(software.offers[0]).toMatchObject({ name: "Free", price: "0.00", priceCurrency: "EUR" });
+    expect(software.offers[0].description).toContain("Open Source");
   });
 
-  // Structured Data darf nichts behaupten, was keine Seite zeigt: bis ein Profil sichtbar verlinkt ist, kein sameAs.
-  it("nennt kein sameAs, solange keine öffentliche Seite ein Profil verlinkt", () => {
+  // Structured Data darf nichts behaupten, was keine Seite zeigt: sameAs nennt nur das Repository, das der Footer
+  // auf jeder öffentlichen Seite verlinkt, und steht nur an der Organisation.
+  it("nennt als sameAs genau das Repository aus dem Footer", () => {
     const { organization, website, software, profile } = build();
 
-    for (const node of [organization, website, software, profile]) {
+    expect(organization.sameAs).toEqual([REPO_URL]);
+    expect(readFileSync(join(process.cwd(), "src/features/marketing/components/footer.tsx"), "utf8")).toContain(
+      "href={REPO_URL}"
+    );
+    for (const node of [website, software, profile]) {
       expect(JSON.stringify(node)).not.toContain("sameAs");
     }
   });

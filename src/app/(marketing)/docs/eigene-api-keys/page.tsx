@@ -17,15 +17,14 @@ export default function Page() {
     >
       <h2>Warum einen eigenen API-Key nutzen?</h2>
       <p>
-        Standardmässig läuft der Chat über meinen Modellzugang, und dafür gibt es
-        ein monatliches Nachrichtenkontingent, sonst wird das für ein
-        Solo-Projekt schlicht unbezahlbar. Hinterlegst du deinen eigenen Key,
-        zahlst du das Modell direkt bei deinem Anbieter, und mein Limit gilt für
-        dich nicht mehr.
+        Ohne Key laufen die ersten drei Prompts über meinen Modellzugang, danach
+        nicht mehr: für alle und ohne Ende wäre das für ein Solo-Projekt
+        schlicht unbezahlbar. Hinterlegst du deinen eigenen Key, zahlst du das
+        Modell direkt bei deinem Anbieter, und es gibt kein Nachrichtenlimit.
       </p>
       <p>
-        Das ist auch der Grund, warum der Free-Plan echt nutzbar ist und nicht
-        nur eine Testphase: mit eigenem Key kostet dich PromptPrinter nichts.
+        Das ist auch der Grund, warum PromptPrinter kostenlos bleiben kann und
+        keine Testphase ist: mit eigenem Key kostet es dich nichts.
       </p>
 
       <h2>Wie bekomme ich einen kostenlosen Gemini-Key?</h2>
@@ -108,7 +107,7 @@ export default function Page() {
       <ul>
         <li>Deine Anfragen laufen über dein Anbieterkonto, nicht über meines.</li>
         <li>
-          Das monatliche Nachrichtenlimit greift nicht mehr, siehe{" "}
+          Nach den drei Gratis-Prompts chattest du ohne Nachrichtenlimit weiter, siehe{" "}
           <Link href="/docs/plaene-und-limits">Pläne und Limits</Link>.
         </li>
         <li>
@@ -129,11 +128,9 @@ export default function Page() {
       <h2>Wie entferne ich meinen Key wieder?</h2>
       <p>
         In denselben Einstellungen kannst du einen Key jederzeit löschen.
-        Löschst du den letzten, hängt es von deinem Plan ab. Mit{" "}
-        <strong>Pro</strong> läuft alles wieder über meinen Zugang, samt des
-        monatlichen Kontingents. Auf <strong>Free</strong> gibt es dieses
-        Kontingent nicht, nur die drei Gratis-Prompts; sind sie verbraucht, läuft
-        ohne Key kein Chat mehr. Deine Chats
+        Löschst du den letzten, bleiben dir nur die drei Gratis-Prompts, soweit
+        du sie noch nicht verbraucht hast; danach läuft ohne Key kein Chat mehr.
+        Deine Chats
         und Projekte bleiben dabei erhalten, und einen neuen Key kannst du
         jederzeit wieder hinterlegen.
       </p>

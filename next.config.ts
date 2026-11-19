@@ -70,10 +70,21 @@ const nextConfig: NextConfig = {
   },
   // Alte öffentliche Adressen bleiben erreichbar. Diese Umleitungen laufen vor der Middleware, die Auth-Prüfung
   // sieht die Pfade also nicht. /admin ist heute ein Abschnitt von /usage, sichtbar nur für is_admin.
+  //
+  // PromptPrinter kostet nichts, es gibt keine Preise, keine Rückerstattung und keine Abrechnung: wer eine alte
+  // Preisseite verlinkt hat, landet bei /open-source, die Rückerstattung bei den AGB, Abrechnung und Tarife der
+  // App bei /usage.
   async redirects() {
     return [
       { source: "/features", destination: "/#funktionen", permanent: true },
       { source: "/admin/:path*", destination: "/usage", permanent: true },
+      { source: "/pricing", destination: "/open-source", permanent: true },
+      { source: "/pro-bald", destination: "/open-source", permanent: true },
+      { source: "/rueckerstattung", destination: "/agb", permanent: true },
+      { source: "/billing", destination: "/usage", permanent: true },
+      { source: "/billing/:path*", destination: "/usage", permanent: true },
+      { source: "/plans", destination: "/usage", permanent: true },
+      { source: "/plans/:path*", destination: "/usage", permanent: true },
       {
         source: "/vergleich/direkt-im-bau-tool-prompten",
         destination: "/vergleich/direkt-in-die-ki-tippen",

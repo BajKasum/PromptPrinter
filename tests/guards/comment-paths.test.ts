@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 // Geprüft werden Pfade in Kommentarzeilen unter `src/` und in den Konfigurations- und Betriebsdateien
 // (CHECKED_ROOT, CHECKED_DIRS; #218): ein Pfad mit mindestens einem Schrägstrich und einer Endung wie .ts, .tsx,
 // .mjs, .sql, .md, .json oder .yml. Er gilt als vorhanden, wenn irgendeine Datei im Repository (src, tests, e2e,
-// scripts, docs, supabase, .github) so heißt oder auf ihn endet: `lib/pricing.ts` trifft `src/shared/lib/pricing.ts`,
+// scripts, docs, supabase, .github) so heißt oder auf ihn endet: `lib/plans.ts` trifft `src/shared/lib/plans.ts`,
 // `server/consent.ts` trifft `src/server/consent.ts`. Gemeint ist der Weg "Pfad relativ zu `src/`" aus CLAUDE.md.
 // Ein Dateiname ohne Verzeichnis (.ts, .tsx, .mjs) in den Konfigurations- und Betriebsdateien gilt als vorhanden, wenn
 // irgendeine Datei so heißt; unter `src/` bleibt er ungeprüft (dort stehen viele Kurznamen wie `llm.ts` für ein Modul).

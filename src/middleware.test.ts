@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 describe("middleware", () => {
-  it.each(["/", "/pricing", "/login", "/signup", "/agb", "/docs", "/docs/erste-schritte"])(
+  it.each(["/", "/open-source", "/login", "/signup", "/agb", "/docs", "/docs/erste-schritte"])(
     "gibt %s eine Policy ohne Nonce, aber mit 'unsafe-inline' — hier threadet niemand mehr einen Nonce durch",
     async (path) => {
       const csp = cspOf(await middleware(request(path)));
@@ -48,7 +48,7 @@ describe("middleware", () => {
     }
   );
 
-  it.each(["/chats", "/chats/new", "/projects", "/settings", "/billing", "/usage", "/admin", "/prompts"])(
+  it.each(["/chats", "/chats/new", "/projects", "/settings", "/usage", "/admin", "/prompts"])(
     "gibt %s weiterhin die strikte Nonce-Policy — hier liest (app)/layout.tsx headers() und threadet sie durch",
     async (path) => {
       // (app)-Routen brauchen eine Sitzung; ohne eine würde updateSession auf
@@ -106,8 +106,8 @@ describe("middleware", () => {
   });
 
   it("die statische Policy ist für jede öffentliche Route dieselbe, ohne Nonce-Zufall", async () => {
-    const first = cspOf(await middleware(request("/pricing")));
-    const second = cspOf(await middleware(request("/pricing")));
+    const first = cspOf(await middleware(request("/open-source")));
+    const second = cspOf(await middleware(request("/open-source")));
     expect(first).toBe(second);
   });
 });

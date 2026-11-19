@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMPARISONS } from "@/features/marketing/lib/comparisons";
+import { REPO_URL } from "@/features/marketing/lib/open-source";
 import { TASK_GUIDES } from "@/features/marketing/lib/task-guides";
-import { PRO_AVAILABLE } from "@/shared/lib/pro-availability";
+import { DOCS_ORDER } from "@/shared/lib/docs-nav";
+import { FREE_TRIAL } from "@/shared/lib/plans";
 import { buildLlmsTxt, numberWord } from "./build-llms-txt";
 
 // Same drift guard as robots.test.ts / sitemap.test.ts: every URL in here
@@ -28,28 +30,26 @@ describe("llms.txt", () => {
     expect(buildLlmsTxt()).not.toContain("promptprinter.app");
   });
 
-  it("lists every docs article and every plan by name", () => {
+  it("lists every docs article", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
     const text = buildLlmsTxt();
-    expect(text).toContain("Free");
-    expect(text).toContain("Pro");
-    expect(text).toContain("/docs/erste-schritte");
+    for (const doc of DOCS_ORDER) expect(text).toContain(`/docs/${doc.slug}`);
   });
 
-  // #125: Antwortmaschinen lesen diese Datei, nicht die Entschuldigungsseite.
-  it("nennt keinen Preis für Pro, solange Pro nicht buchbar ist", () => {
+  // PromptPrinter kostet nichts. Antwortmaschinen lesen diese Datei: kein Preis, kein Plan, den man kaufen müsste,
+  // und keine Seite, die nur noch umleitet.
+  it("sagt, dass es kostenlos und Open Source ist, und nennt keinen Preis", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.com");
-    const proLine = buildLlmsTxt()
-      .split("\n")
-      .find((line) => line.startsWith("- Pro"));
+    const text = buildLlmsTxt();
+    const costs = text.split("## Kosten")[1]?.split("\n## ")[0] ?? "";
 
-    expect(proLine).toBeDefined();
-    if (PRO_AVAILABLE) {
-      expect(proLine).toMatch(/€\/Monat/);
-    } else {
-      expect(proLine).toContain("derzeit nicht buchbar");
-      expect(proLine).not.toMatch(/\d/);
-    }
+    expect(costs).toContain("kostenlos und Open Source");
+    expect(costs).toContain(`ersten ${numberWord(FREE_TRIAL.prompts).toLowerCase()} Prompts`);
+    expect(costs).toContain(REPO_URL);
+    expect(costs).toContain("MIT-Lizenz");
+    expect(text).not.toMatch(/€|\bPro\b/);
+    expect(text).toContain("](https://staging.example.com/open-source)");
+    for (const gone of ["/pricing", "/pro-bald", "/rueckerstattung"]) expect(text).not.toContain(gone);
   });
 
   // #252: Antwortmaschinen sollen die Sprachen der App kennen, ohne dass die Seiten übersetzt sind.
