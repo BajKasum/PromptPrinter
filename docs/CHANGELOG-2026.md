@@ -11,6 +11,16 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-19: README auf Englisch und GitHub-Auftritt (Branch `docs/readme-englisch`)
+
+- **Ziel (Open Source, Schritt 5, Teil README):** Das README ist das Gesicht des offenen Projekts und jetzt englisch: was Finn tut, drei Wege zum Ausprobieren (Demo auf promptprinter.app, die CLI mit `--local` und Ollama aus dem Quelltext, die Web-App mit `SELF_HOSTED=1`), Funktionen ohne Pro, Preise und Bau-Tools, "Under the hood", Struktur, Lizenz mit der Ausnahme für Name, Logo und Finn (jetzt auch die Screenshots in `docs/readme/`) und Tag `v1-saas`. Die Anleitungen in `docs/` bleiben deutsch, das README sagt es an jeder Verweisstelle.
+- **Bilder:** drei Screenshots in `docs/readme/`, headless mit Playwright von promptprinter.app (hell, je unter 110 KB): Rückfrage und fertiger Prompt der Hero-Demo, die Workspace-Vorschau. Die Navbar ist weggeschnitten, weil sie an dem Tag noch "Preise" trug; `/skill` und `/terminal` nicht, weil `/terminal` nur den Weg mit Konto zeigte und der Skill nicht mehr gepflegt ist.
+- **Zahlen nur gemessen** (2026-11-19): `vitest run` 4228 Tests in 293 Dateien, 60 Migrationen, 52 Guard-Testdateien, 201 gemergte PRs. Im README gerundet ("over 4,000", "more than 50", "over 200"), weil der Ausbau von Pro in derselben Nacht Tests und Guards entfernt.
+- **GitHub:** Beschreibung "Open-source AI chat that asks one bundled question and writes a finished prompt for any AI. Next.js and Supabase, self-hostable with Ollama.", Homepage promptprinter.app, Themen dazu `open-source`, `self-hosted`, `ollama`, `supabase`, `typescript`, `llm` (die bisherigen sieben bleiben). Sonst keine Repo-Einstellung.
+- **Geprüft:** `doc-links.test.ts`, jeder externe Link per `curl -sI` (alle 200), das README über die Markdown-API von GitHub gerendert und angesehen, Gate grün. Nicht geprüft: die drei Wege mit einem echten Ollama (auf dem Rechner nicht installiert).
+
+---
+
 ## 2026-11-18: Selbst betreiben mit eigenem Modell (Branch `feat/selbst-hosten`)
 
 - **Ziel (Open Source, Schritt 4):** `git clone`, eine `.env`, `npm run dev` oder das Docker-Image, dann läuft Finn mit einem Modell über eine OpenAI-kompatible Schnittstelle (Standard Ollama), ohne Upstash, Turnstile, Resend und Lemon Squeezy. promptprinter.app wird an keiner Stelle lockerer.
