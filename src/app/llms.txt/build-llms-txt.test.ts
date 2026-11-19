@@ -45,8 +45,11 @@ describe("llms.txt", () => {
 
     expect(costs).toContain("kostenlos und Open Source");
     expect(costs).toContain(`ersten ${numberWord(FREE_TRIAL.prompts).toLowerCase()} Prompts`);
-    expect(costs).toContain(REPO_URL);
-    expect(costs).toContain("MIT-Lizenz");
+    // Repo und Lizenz stehen einmal, im Abschnitt "Open Source"; "Kosten" verweist dorthin.
+    const openSource = text.split("## Open Source")[1]?.split("\n## ")[0] ?? "";
+    expect(openSource).toContain(REPO_URL);
+    expect(openSource).toContain("MIT-Lizenz");
+    expect(costs).toContain('Abschnitt "Open Source"');
     expect(text).not.toMatch(/€|\bPro\b/);
     expect(text).toContain("](https://staging.example.com/open-source)");
     for (const gone of ["/pricing", "/pro-bald", "/rueckerstattung"]) expect(text).not.toContain(gone);

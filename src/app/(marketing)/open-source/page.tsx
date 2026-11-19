@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { Rise } from "@/shared/motion/rise";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { GithubIcon } from "@/shared/ui/github-icon";
-import { LICENSE_URL, REPO_URL, SELF_HOSTING_GUIDE_URL } from "@/features/marketing/lib/open-source";
+import { LICENSE_URL, REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
 import { cliStartCommand } from "@/features/marketing/lib/terminal-data";
 import { pageMetadata } from "@/shared/lib/page-metadata";
 
@@ -97,15 +96,9 @@ export default function OpenSourcePage() {
                 mit Ollama. Gratis-Prompts und eigener Key fallen dann weg: jedes Konto chattet über dein Modell.
               </p>
               <p>Du brauchst dafür Node, Docker für die Datenbank und einen Server für das Modell.</p>
-              <a
-                href={SELF_HOSTING_GUIDE_URL}
-                target="_blank"
-                rel="noopener"
-                className="inline-flex items-center gap-1 font-medium"
-              >
-                Zur Anleitung auf GitHub
-                <ArrowUpRight className="h-4 w-4" strokeWidth={1.8} aria-hidden />
-              </a>
+              <Link href={SELF_HOSTING_DOC_PATH} className="font-medium">
+                Zur Anleitung in der Hilfe
+              </Link>
             </section>
           </FadeIn>
 

@@ -1,7 +1,6 @@
 import { COMPARISONS, comparisonHref } from "@/features/marketing/lib/comparisons";
 import { TASK_GUIDES, taskGuideHref } from "@/features/marketing/lib/task-guides";
 import { DOCS_ORDER, docHref } from "@/shared/lib/docs-nav";
-import { REPO_URL } from "@/features/marketing/lib/open-source";
 import { FREE_TRIAL } from "@/shared/lib/plans";
 import { LEGAL } from "@/shared/lib/legal";
 import { REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
@@ -46,7 +45,7 @@ export function buildLlmsTxt(): string {
 PromptPrinter ist für alle, die eine KI für etwas einsetzen wollen und dafür einen guten Prompt brauchen, ob für ein Dokument, eine Webseite, eine Datenbank oder eine Sicherheitsprüfung. Bevor der Prompt entsteht, stellt der Chat-Assistent Finn eine gebündelte Rückfrage zu dem, was für die Aufgabe zählt, und liefert danach den fertigen Prompt, der in jeder KI funktioniert und auf Wunsch auf eine bestimmte zugeschnitten ist. Die App gibt es auf Deutsch, Englisch, Französisch, Italienisch und Spanisch, Finn antwortet in der Sprache, in der man schreibt; die öffentlichen Seiten sind nur auf Deutsch. Solo-Projekt von ${LEGAL.operator}, ${LEGAL.postalCity}, ${LEGAL.country}.
 
 ## Kosten
-PromptPrinter ist kostenlos und Open Source, einen bezahlten Plan gibt es nicht. Im Browser sind die ersten ${numberWord(FREE_TRIAL.prompts).toLowerCase()} Prompts ohne eigenen Key frei, danach chattet man mit einem eigenen KI-Key (Anthropic, OpenAI, Gemini oder ein anderer OpenAI-kompatibler Anbieter; einen Gemini-Key gibt es kostenlos). Selbst betrieben läuft PromptPrinter mit einem eigenen Modell, etwa über Ollama, die Terminal-App mit --local ganz ohne Konto. Der Quellcode steht unter der MIT-Lizenz, ausgenommen sind der Name, das Logo und die Bilder von Finn: ${REPO_URL}
+PromptPrinter ist kostenlos und Open Source, einen bezahlten Plan gibt es nicht. Im Browser sind die ersten ${numberWord(FREE_TRIAL.prompts).toLowerCase()} Prompts ohne eigenen Key frei, danach chattet man mit einem eigenen KI-Key (Anthropic, OpenAI, Gemini oder ein anderer OpenAI-kompatibler Anbieter; einen Gemini-Key gibt es kostenlos). Selbst betreiben und Lizenz: Abschnitt "Open Source" unten.
 
 ## Seiten
 - [Startseite](${base}/): Wie PromptPrinter funktioniert, in drei Schritten
