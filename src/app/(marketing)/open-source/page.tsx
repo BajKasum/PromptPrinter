@@ -116,7 +116,10 @@ export default function OpenSourcePage() {
               </h2>
               <p>
                 Die Terminal-App braucht kein Konto, wenn du sie mit{" "}
-                <code className={CODE}>{cliStartCommand()} --local</code> startest. Dann spricht sie direkt mit
+                {/* Umbruch nur an Leerzeichen: hinter einem Bindestrich bräche der Browser sonst "--local" auseinander. */}
+                <code className={CODE}>
+                  {cliStartCommand()} <span className="whitespace-nowrap">--local</span>
+                </code> startest. Dann spricht sie direkt mit
                 Ollama oder einem anderen Server, der die Schnittstelle von OpenAI spricht, und nichts geht über
                 promptprinter.app.
               </p>
