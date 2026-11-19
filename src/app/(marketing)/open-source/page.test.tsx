@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { LICENSE_URL, REPO_URL, SELF_HOSTING_GUIDE_URL } from "@/features/marketing/lib/open-source";
+import { LICENSE_URL, REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
 import OpenSourcePage from "./page";
 
 // Die Seite sagt, was PromptPrinter kostet: nichts. Der Test liest, was auf ihr STEHT, weil ein Preis, ein Plan
@@ -39,7 +39,7 @@ describe("Seite /open-source", () => {
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
 
     expect(hrefs).toEqual(
-      expect.arrayContaining(["/signup", "/terminal", SELF_HOSTING_GUIDE_URL, LICENSE_URL, REPO_URL])
+      expect.arrayContaining(["/signup", "/terminal", SELF_HOSTING_DOC_PATH, LICENSE_URL, REPO_URL])
     );
     expect(screen.getByText(/--local/)).toBeInTheDocument();
     expect(screen.getByText(/Ausgenommen sind der Name/)).toBeInTheDocument();
