@@ -16,7 +16,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 
 - **Nav:** Chats | Projekte (Pillen-Umschalter in der Sidebar, einklappbar, Cookie
   `pp-sidebar`, Strg/⌘+B). Das Konto sitzt unten in der Sidebar (Einstellungen,
-  Nutzung, Gespeicherte Prompts, Abrechnung, Sprache, Hilfe). ⌘K ist die
+  Nutzung, Gespeicherte Prompts, Sprache, Hilfe). ⌘K ist die
   Befehlspalette, ohne sichtbaren Button. Login landet auf `/chats/new`; `/chat` und
   `/dashboard` leiten um.
 - **Ein Chat (Finn):** eine gebündelte Rückfrage, nur zu dem, was für die Aufgabe zählt
@@ -28,19 +28,17 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
   (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
   `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne Auto-Generieren), per Link teilbar (`/geteilt/<token>`, noindex, `server/prompt-share.ts`).
-- **Pläne:** Free hat drei Gratis-Prompts auf dem Server-Key (`server/free-trial.ts`, Redis, je IP und Tag
+- **Kostenlos, ein Plan (Free, `shared/lib/plans.ts`):** drei Gratis-Prompts auf dem Server-Key (`server/free-trial.ts`, Redis, je IP und Tag
   begrenzt, eigenes Tagesbudget), danach nur mit eigenem Key (der Key-Assistent führt im Chat-Hinweis und in
-  den Einstellungen zu einem Gratis-Gemini-Key), Pro mit Server-Key und Kontingent.
-  **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder
-  OpenAI-kompatible Endpunkt) hebt das Chat-Limit auf. Zahlung über Lemon Squeezy
-  (Webhook `/api/webhooks/lemonsqueezy`). **Pro ist abgeschaltet** (seit 2026-10-17, `PRO_AVAILABLE = false`, jeder Pro-Knopf führt auf `/pro-bald`; Vercel Hobby erlaubt keine Zahlungen): Wiederaufnahme in docs/PRO-WIEDERAUFNAHME.md.
+  den Einstellungen zu einem Gratis-Gemini-Key), Projekt-Grenze 3. **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder
+  OpenAI-kompatible Endpunkt) hebt das Chat-Limit auf. Admins (`profiles.is_admin`): Server-Key und Projekte ohne Grenze.
+  Bezahlung gibt es nicht (seit 2026-11-19, Stand davor im Tag `v1-saas`); `/usage` zeigt Projekte, Gratis-Prompts und den eigenen Key.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch. Das README ist englisch (Gesicht des Open-Source-Projekts, Bilder in `docs/readme/`): wer Funktionen, die Wege zum Ausprobieren oder die Lizenz ändert, zieht es mit, ohne Pro, Preise und Bau-Tools, Zahlen nur gemessen.
-- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
+- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/open-source` (kostenlos und Open Source, ohne Preis; `/pricing` und `/pro-bald` leiten dorthin), `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
   Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit vier Vergleichen, `/aufgaben` mit fünf Aufgabenseiten (Beispiel-Prompts von Hand nach Finns Regeln, keine Messwerte) und die
-  Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
-  Rückerstattung).
-- **Entfernt, nicht wiederherstellen:** die Generierungs-Pipeline (`/api/generate`,
+  Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie; `/rueckerstattung` leitet auf `/agb`).
+- **Entfernt, nicht wiederherstellen:** Bezahlung und Pro (Lemon Squeezy, Checkout, Webhook, Kundenportal, `/billing` und `/plans` leiten auf `/usage`), die Generierungs-Pipeline (`/api/generate`,
   Paket-Prompts, 10-Tab-Ergebnisse), Modus-Wahl, Ziel-Tool-Auswahl, Erst-Login-Tour,
   Topbar, Profilbild-Upload, `/features`, die Sektionen Problem, ExampleOutput,
   Integrations, FeaturesGrid und PricingBridge. Gründe im Changelog.
@@ -61,11 +59,11 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `src/features/auth/lib/recovery-session.ts`), die Mail-Vorlagen liegen in
   `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
-  Rechte. Billing, Gedächtnis, Anhänge und die eigenen API-Keys schreibt nur der Server (Service-Role, Keys seit 0060). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
+  Rechte. Gedächtnis, Anhänge und die eigenen API-Keys schreibt nur der Server (Service-Role, Keys seit 0060). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
   Migrationen 0001 bis 0060 in `supabase/migrations/`, alle in Produktion angewendet (0058 bis 0060 am 2026-11-12,
   0060 erst nach dem Code, der Keys mit dem Service-Role-Schlüssel schreibt; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
-  Kontingent, Tagesbudget, Failover-Schalter), strukturierte Logs
+  Gratis-Rahmen, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
   ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsprotokoll: Tabelle `security_events`, nur zum Anhängen, 180 Tage per `pg_cron` (`docs/SETUP.md`). Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Terminal-Anmeldung (Server-Teil der Terminal-App):** Geräte-Code unter `src/app/api/cli/`, Bestätigungsseite `/cli`,
@@ -89,19 +87,16 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 Auth-Mails Plan 2026-10-06; Stand der Umsetzung je Punkt im Changelog)
 
 - **Kritisch, nicht Teil der M-Punkte:** K1 Backup und Tarife (Supabase Free, Vercel Hobby),
-  K2 Alarm-Webhook (bewusst nicht eingerichtet), K3 der Bezahlweg: gegen die Doku und im Browser-Test mit selbst
-  signierten Ereignissen belegt (#73), Live-Produkt und Live-Webhook seit 2026-10-15
-  eingerichtet, ein echtes Ereignis steht aus.
+  K2 Alarm-Webhook (bewusst nicht eingerichtet). K3 (der Bezahlweg) entfällt mit der Bezahlung.
 - **Wartet auf Kasum:** `RESEND_API_KEY` in Vercel für das Kontaktformular (docs/SETUP.md, "Kontaktformular"); Entscheid zum Fehler-Tracker; der Eintrag bei AlternativeTo (#249, braucht sein Konto; Future Tools am 2026-11-03 eingereicht); **ab Februar 2027** die Search-Console-Zahlen der `/aufgaben`-Seiten ins Changelog;
   **Auth-Mails** (Resend, 2026-10-15 eingerichtet: Domain verifiziert, SMTP und Vorlagen im
   Dashboard, `_dmarc` angelegt, **nie getestet**, "Confirm email" bleibt aus): Test mit fremder
-  Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **Lemon Squeezy** (echter Testkauf mit Erstattung, danach das Testprodukt löschen,
-  Preise brutto oder netto: am Checkout keine Steuerzeile gesehen); Dependabot alerts und security updates einschalten (beide aus,
+  Adresse (Resend steht seit 2026-10-15 im Datenschutz, PR #103); **nach dem Ausbau der Bezahlung:** in Vercel `NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL` und `LEMON_SQUEEZY_*` löschen, bei Lemon Squeezy Produkt und Live-Webhook archivieren, alte Zeilen mit `profiles.plan = 'pro'` (der Trigger `enforce_project_cap` nimmt sie von der Projekt-Grenze aus) per Update oder Migration auf Free; Dependabot alerts und security updates einschalten (beide aus,
   am 2026-10-11 geprüft).
 - **Juristisch zu prüfen (Aufwand bewusst klein, Entscheid 2026-10-17: Hobby- und Lernprojekt ohne Werbung, kein Jurist, keine Verträge, kein EU-Vertreter nach Art. 27 DSGVO und DSA Art. 13, keine Angebote einholen, nicht wieder vorschlagen; die Seite soll vor allem gut aussehen und laufen):** Übermittlung an Z.ai (Antwort auf Kasums Mail steht aus), Sprachmodus
   (Google/Microsoft), Speed Insights (Aufbewahrung bei Vercel nicht belegt), Resend (Region Irland gegen Vertrag USA),
   Supabase (Vertragspartner Pte. Ltd. Singapur, Daten in Irland), jeder weitere
-  Empfänger (Fehler-Tracker); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
+  Empfänger (Fehler-Tracker), Datenschutz Ziffer 6 (nennt bis zu 45 Tage, die Zähler des Gratis-Rahmens leben 400 Tage); die Punkte R-1 bis R-17 stehen im Vault (Rechts-Audit 2026-09-28, Stand 2026-10-17).
 - **Speed Insights:** am 2026-10-07 keine Messwerte (kaum echte Besuche). **Suche:** Search Console (Domain-Property, TXT-Eintrag in Vercel DNS) und Bing seit 2026-11-03, beide mit Sitemap ("Erfolgreich", 34 Seiten); am 2026-11-06 waren 21 der 34 bei Google indexiert, keine aus technischem Grund ausgeschlossen (#246). **Über 400 Zeilen:** nur `hero.tsx` (Nicht-anfassen-Liste),
   Obergrenzen in `tests/guards/file-size.test.ts`.
 
@@ -134,10 +129,10 @@ Tailwind 4 (HSL-Token-System in `globals.css`) · Framer Motion · next-themes �
    Server-Key komplett und hebt das Chat-Limit auf. Routen sprechen nie direkt mit
    einem Provider-SDK, und kein Aufruf geht an `llm-retry.ts` und `llm-failover.ts`
    vorbei.
-2. **Zahlungen laufen über Lemon Squeezy.** Checkout, Webhook
-   (`/api/webhooks/lemonsqueezy`) und Kundenportal sind gebaut. Seit 2026-10-15 zeigt der
-   Pro-Knopf auf das Live-Produkt (vorher ein Testmodus-Link), ein echter Kauf steht aus.
-   Stripe ist aus Code, Datenbank (Migration `0043`, 2026-10-05) und Vercel entfernt. **Pro ist nicht kaufbar** (`src/shared/lib/pro-availability.ts`), nichts davon gelöscht; "nimm Pro wieder auf" heisst: docs/PRO-WIEDERAUFNAHME.md abarbeiten.
+2. **Es gibt keine Bezahlung.** Lemon Squeezy, Checkout, Webhook, Kundenportal und der Pro-Plan sind aus
+   dem Code entfernt (2026-11-19), der Stand davor liegt im Tag `v1-saas`. `PlanKey` ist nur `"free"`;
+   `profiles.plan`, `subscriptions` und die Abo-Spalten bleiben in der Datenbank, der Code liest den Plan
+   nicht (eine alte Zeile mit `'pro'` ist Free). `api/cli/me` liefert `plan` weiter, für die Terminal-App.
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
    Prod-Docker-Container liest `.env` (via `env_file` in
    `docker-compose.prod.yml`). Das `--env-file .env.local` im Compose-Befehl steuert
@@ -261,7 +256,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 |---|---|
 | Cookie oder `localStorage`-Schlüssel | Eintrag in `features/marketing/lib/cookie-inventory.ts` (und `/cookies` stimmt dann) |
 | Seite in der eingeloggten App | Eintrag in `APP_PREFIXES`, öffentliche Seite in `PUBLIC_PREFIXES`, beide Listen in `shared/lib/app-routes.ts` |
-| Seite mit Captcha oder Checkout | Eintrag in `thirdPartiesFor()` (`shared/lib/third-party-paths.ts`; ein Seitenwechsel im Browser behält die Policy der ersten Seite, `FreshDocumentForThirdParties` im Root-Layout lädt dann neu) |
+| Seite mit Captcha | Eintrag in `thirdPartiesFor()` (`shared/lib/third-party-paths.ts`; ein Seitenwechsel im Browser behält die Policy der ersten Seite, `FreshDocumentForThirdParties` im Root-Layout lädt dann neu) |
 | Öffentliche Seite | Metadaten über `pageMetadata()`; keine `FadeIn` und kein `motion.h1` um eine `h1` |
 | Text eines Hilfe-Artikels geändert | `updated` in `docs-nav.ts` nachziehen |
 | UI-Text | Wörterbuch `shared/i18n/messages/`, alle fünf Sprachen (fr/it/es sind nie von Muttersprachlern geprüft: im PR kennzeichnen) |
@@ -374,7 +369,7 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 - Hero-Demo-Narration: `curious → listening → delivering` (Idee, Rückfrage, Prompt)
 - HowItWorks: `building`
 - ProductShowcase: `organizing` (float, rechts neben der Headline, ab lg; Brand-Audit #1, 2026-07-17)
-- Pricing: `helping`
+- `/open-source`: `helping`
 - FinalCTA: `celebrating`
 - Footer: idle (Base-PNG via `<Mascot>`)
 
@@ -390,13 +385,13 @@ Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, ni
 
 ## Landing Page, aktueller Zustand
 
-Die öffentliche Website hat zwei Seiten, die das Produkt verkaufen: die Landing Page
-und `/pricing`. `/features` gibt es nicht mehr (`next.config.ts` leitet auf
+Die öffentliche Website stellt das Produkt auf zwei Seiten vor: die Landing Page
+und `/open-source`. `/features` gibt es nicht mehr (`next.config.ts` leitet auf
 `/#funktionen` um). Daneben stehen die Hilfe (`/docs`), `/ueber`, `/kontakt`,
 `/vergleich` mit vier Vergleichsseiten und die Rechtstexte. Die Vergleiche sind wie
 die Hilfe geschrieben, nicht in Finns Ich-Form, und nur über Footer, Hilfe-Übersicht,
-Sitemap und `llms.txt` erreichbar (die Aufgabenseiten unter `/aufgaben` über Hilfe-Übersicht, Sitemap und `llms.txt`), nicht über die Navbar. Die Landing Page nennt keinen
-Preis und stellt keine Fragen, beides lebt nur auf `/pricing`.
+Sitemap und `llms.txt` erreichbar (die Aufgabenseiten unter `/aufgaben` über Hilfe-Übersicht, Sitemap und `llms.txt`), nicht über die Navbar. Die Landing Page stellt keine
+Fragen; dass PromptPrinter nichts kostet und wie man es selbst betreibt, steht auf `/open-source`.
 
 **Reihenfolge** (`src/app/(marketing)/page.tsx`):
 ```
@@ -409,15 +404,15 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 | `how-it-works.tsx` | Drei Schritte (Idee → kurz klären → startklar) in flachen `card-surface`-Karten. Trägt `id="funktionen"`, das Sprungziel der Navbar. Darunter die Karte „Einmal vorab" zum KI-Key, bewusst kein vierter Schritt. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau (Chats / Projekte) mit demselben Pillen-Umschalter (`NavSwitcher`) wie die echte Sidebar. Einziges „Schau es dir an"-Element. | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir." | `celebrating` |
-| `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
-| `navbar.tsx` | Fest oben und beim Scrollen unverändert (keine Pille, keine Linie): helle, leicht durchscheinende Fläche mit Blur (`--header-surface`), darunter eine Wasserkante aus drei Lagen (`header-water.tsx`, unter reduced-motion still). Raster `1fr auto 1fr`: Logo, fünf Links mittig ohne Untermenü (`MARKETING_NAV`: Funktionen, Preise, Skill, CLI `/terminal`, MCP), Knöpfe. | kein Finn |
+| `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, zuletzt GitHub, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
+| `navbar.tsx` | Fest oben und beim Scrollen unverändert (keine Pille, keine Linie): helle, leicht durchscheinende Fläche mit Blur (`--header-surface`), darunter eine Wasserkante aus drei Lagen (`header-water.tsx`, unter reduced-motion still). Raster `1fr auto 1fr`: Logo, fünf Links mittig ohne Untermenü (`MARKETING_NAV`: Funktionen, Open Source, Skill, CLI `/terminal`, MCP), Knöpfe. | kein Finn |
 
-**`/pricing`:** `PageHeader` (nur Headline) → `PricingGrid` (Finns auf den Plan-Karten) →
-`FAQ` (zwei Fragen) → `Footer`.
+**`/open-source`:** Fliesstext in Finns Ich-Form, vier Abschnitte (Browser, selbst betreiben, Terminal mit
+`--local`, Code und Lizenz), Finn `helping`; bewusst keine Karten, sie läsen sich wie Tarife.
 
 **Entfernt, nicht wiederherstellen:** `Capabilities`, `Problem`, `ExampleOutput`,
-`Integrations`, `FeaturesGrid`, `PricingBridge`, die Beruhigungs-Kartenreihe auf
-`/pricing`. Die Gründe stehen im Changelog.
+`Integrations`, `FeaturesGrid`, `PricingBridge`, `PricingGrid`, `FAQ` und die Preisseite
+`/pricing` samt Beruhigungs-Kartenreihe. Die Gründe stehen im Changelog.
 
 ---
 
