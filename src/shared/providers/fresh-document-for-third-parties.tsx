@@ -6,14 +6,13 @@ import { needsFreshDocument } from "@/shared/lib/third-party-paths";
 
 /**
  * Lädt die Seite neu, wenn ein Seitenwechsel im Browser eine Seite erreicht, deren
- * Drittanbieter (Cloudflare Turnstile, Lemon Squeezy) die Policy des geladenen
+ * Drittanbieter (Cloudflare Turnstile) die Policy des geladenen
  * Dokuments sperrt.
  *
  * Warum, im Einzelnen: shared/lib/third-party-paths.ts. Kurz: die Content-Security-Policy
  * kommt mit dem Dokument und je nach Pfad; Next.js wechselt die Seite ohne neues
  * Dokument. Ohne diese Komponente scheitert das Captcha nach dem Weg Startseite → Login
- * oder nach dem Abmelden, und der Checkout nach dem Weg Chat → Pläne (dort fällt er auf
- * die Seite bei Lemon Squeezy zurück, statt als Fenster aufzugehen).
+ * oder nach dem Abmelden.
  *
  * Gewählt ist ein Neuladen NACH dem Wechsel statt eines Abfangens der Klicks, weil es
  * jeden Weg erfasst: Links, `router.push`, Zurück/Vor, serverseitige Weiterleitungen.

@@ -80,23 +80,8 @@ export const maxLegitimateChatBodyBytes = () =>
   Math.ceil((MAX_ATTACHMENTS_REQUEST_BYTES * 4) / 3);
 
 /**
- * Ceiling for the Lemon Squeezy webhook. Its payloads are a handful of KB
- * (one order or subscription object plus meta); 64 KB is generous headroom
- * for a provider that may add fields, and still far below anything that
- * could hurt. This one has no session check in front of it — the signature IS
- * the check, and it can only run after the body has been read — so the bound
- * matters more here than anywhere else.
- */
-export const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
-
-/**
- * Reads a request body as text, refusing anything past `maxBytes`.
- *
- * Split out of readJsonBody (below) for the webhook, which must verify an HMAC
- * over the bytes EXACTLY as they arrived: re-serializing a parsed object gives
- * different bytes (key order, whitespace, number formatting) and the signature
- * would never match. Callers that only need the parsed value keep using
- * readJsonBody.
+ * Reads a request body as text, refusing anything past `maxBytes`. readJsonBody
+ * (below) parses on top of it.
  */
 export async function readCappedText(req: Request, maxBytes: number): Promise<string> {
   const declared = Number(req.headers.get("content-length"));

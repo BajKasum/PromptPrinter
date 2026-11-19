@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   assertEnv,
   encryptionSecretProblem,
-  hasCheckoutWithoutWebhook,
   hasInsecureAppUrl,
-  hasInvalidCheckoutUrl,
   hasNoModelProvider,
   hasNoTrustedClientIp,
   hasOpenEncryptionRotation,
@@ -199,23 +197,8 @@ describe("assertEnv", () => {
     warn.mockRestore();
   });
 
-  it("warns about an unusable checkout address without blocking the boot", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(() =>
-      assertEnv({
-        ...complete,
-        NODE_ENV: "production",
-        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "https://example.com/checkout",
-      })
-    ).not.toThrow();
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("LEMONSQUEEZY"));
-    warn.mockRestore();
-  });
 });
 
-// Zahlungen sind optional konfigurierbar, aber eine falsch konfigurierte
-// Adresse ist schlimmer als gar keine: die Seite sieht normal aus, nur kauft
-// niemand mehr. Deshalb dieselbe Sorte Prüfung wie bei NEXT_PUBLIC_APP_URL.
 describe("hasNoTrustedClientIp", () => {
   it("meldet eine eigene Installation in Produktion ohne TRUSTED_PROXY_HOPS", () => {
     expect(hasNoTrustedClientIp({ NODE_ENV: "production" })).toBe(true);
@@ -225,68 +208,6 @@ describe("hasNoTrustedClientIp", () => {
     expect(hasNoTrustedClientIp({ NODE_ENV: "production", VERCEL: "1" })).toBe(false);
     expect(hasNoTrustedClientIp({ NODE_ENV: "production", TRUSTED_PROXY_HOPS: "1" })).toBe(false);
     expect(hasNoTrustedClientIp({ NODE_ENV: "development" })).toBe(false);
-  });
-});
-
-describe("hasInvalidCheckoutUrl", () => {
-  it("stays quiet when payments are deliberately not configured", () => {
-    expect(hasInvalidCheckoutUrl({})).toBe(false);
-    expect(hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "  " })).toBe(false);
-  });
-
-  it("accepts the store's checkout address", () => {
-    expect(
-      hasInvalidCheckoutUrl({
-        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL:
-          "https://promptprinter.lemonsqueezy.com/checkout/buy/abc?embed=1",
-      })
-    ).toBe(false);
-  });
-
-  it("flags a foreign host, which the CSP would block anyway", () => {
-    expect(
-      hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "https://example.com/buy" })
-    ).toBe(true);
-  });
-
-  it("flags the realistic mistakes: http, and a value that is not a URL at all", () => {
-    expect(
-      hasInvalidCheckoutUrl({
-        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "http://promptprinter.lemonsqueezy.com/checkout",
-      })
-    ).toBe(true);
-    expect(hasInvalidCheckoutUrl({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "7a06a455" })).toBe(true);
-  });
-});
-
-// Die Turnstile-Lehre auf Geld angewandt: dort sah ein Widget, dessen Token
-// niemand einloeste, wie ein funktionierendes Captcha aus. Hier sieht ein
-// Checkout, dessen Webhook niemand empfaengt, wie ein funktionierendes Upgrade
-// aus — der Kunde zahlt, der Plan bleibt free, und das einzige Signal ist eine
-// Supportmail.
-describe("hasCheckoutWithoutWebhook", () => {
-  const checkout = "https://promptprinter.lemonsqueezy.com/checkout/buy/abc";
-
-  it("warnt, wenn man kaufen kann, aber niemand die Zahlung entgegennimmt", () => {
-    expect(hasCheckoutWithoutWebhook({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: checkout })).toBe(
-      true
-    );
-  });
-
-  it("schweigt, sobald beide Haelften da sind", () => {
-    expect(
-      hasCheckoutWithoutWebhook({
-        NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: checkout,
-        LEMON_SQUEEZY_WEBHOOK_SECRET: "secret",
-      })
-    ).toBe(false);
-  });
-
-  it("schweigt, wenn es gar keinen Checkout gibt — dann fehlt auch nichts", () => {
-    expect(hasCheckoutWithoutWebhook({})).toBe(false);
-    expect(
-      hasCheckoutWithoutWebhook({ NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "kaputt" })
-    ).toBe(false);
   });
 });
 

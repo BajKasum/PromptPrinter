@@ -51,13 +51,12 @@ describe("Herkunftsprüfung der API-Routen", () => {
     }
   });
 
-  it("die Ausnahmen sind genau diese fünf, und jede ist eine echte Route", () => {
+  it("die Ausnahmen sind genau diese vier, und jede ist eine echte Route", () => {
     expect([...CROSS_ORIGIN_API_ROUTES].sort()).toEqual([
       "/api/cli/device",
       "/api/cli/logout",
       "/api/cli/refresh",
       "/api/cli/token",
-      "/api/webhooks/lemonsqueezy",
     ]);
     const known = new Set(unsafeRoutes.map((route) => route.path));
     for (const path of CROSS_ORIGIN_API_ROUTES) expect(known.has(path), path).toBe(true);

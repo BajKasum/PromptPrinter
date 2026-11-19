@@ -47,7 +47,6 @@ describe("isForbiddenCrossOriginApiCall", () => {
   });
 
   it.each([
-    "/api/webhooks/lemonsqueezy",
     "/api/cli/device",
     "/api/cli/token",
     "/api/cli/refresh",

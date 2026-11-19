@@ -11,7 +11,6 @@ const storageRemove = vi.fn();
 const deleteUser = vi.fn();
 const rateLimit = vi.fn();
 const captureError = vi.fn();
-const cancelSubscriptionImmediately = vi.fn();
 
 vi.mock("@/server/supabase/server", () => ({
   createClient: vi.fn(async () => ({
@@ -67,13 +66,6 @@ vi.mock("@/shared/lib/observability", async (importOriginal) => ({
   captureError: (...args: unknown[]) => captureError(...args),
 }));
 
-// K-5 (Audit 06.09.2026): das eigentlich riskante Netzwerk-Ding, komplett
-// gemockt — lemonsqueezy-api.test.ts deckt cancelSubscriptionImmediately
-// selbst ab, hier zaehlt nur, DASS und WANN die Route sie aufruft.
-vi.mock("@/server/billing/lemonsqueezy-api", () => ({
-  cancelSubscriptionImmediately: (...args: unknown[]) => cancelSubscriptionImmediately(...args),
-}));
-
 function req() {
   return new Request("https://promptprinter.app/api/account", { method: "DELETE" });
 }
@@ -95,28 +87,25 @@ describe("DELETE /api/account", () => {
     deleteUser.mockReset();
     rateLimit.mockReset();
     captureError.mockReset();
-    cancelSubscriptionImmediately.mockReset();
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     // Standard: gerade angemeldet (Passwort, vor einer Minute). Die Fälle mit alter Sitzung setzen es um.
     getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(60_000)] } }, error: null });
     projectFilesRange.mockResolvedValue({ data: [], error: null });
     attachmentsRange.mockResolvedValue({ data: [], error: null });
-    profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: null } });
+    profileSelect.mockResolvedValue({ data: { is_admin: false } });
     storageRemove.mockResolvedValue({ error: null });
     deleteUser.mockResolvedValue({ error: null });
     signOut.mockResolvedValue({ error: null });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
-    cancelSubscriptionImmediately.mockResolvedValue({ ok: true, skipped: true });
   });
 
-  // #202: ohne das Profil wüsste die Route nichts vom Abo; das Konto wäre gelöscht und das Abo liefe weiter.
+  // #202: ein Lesefehler ist kein "kein Admin", die Route rät nicht.
   it("löscht nichts und antwortet 503, wenn das Profil nicht gelesen werden kann", async () => {
     profileSelect.mockResolvedValue({ data: null, error: { message: "connection reset" } });
     const res = await DELETE(req());
     expect(res.status).toBe(503);
     expect(deleteUser).not.toHaveBeenCalled();
     expect(storageRemove).not.toHaveBeenCalled();
-    expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
     expect(captureError).toHaveBeenCalled();
   });
 
@@ -144,7 +133,6 @@ describe("DELETE /api/account", () => {
     expect((await res.json()).code).toBe("aal2_required");
     expect(deleteUser).not.toHaveBeenCalled();
     expect(storageRemove).not.toHaveBeenCalled();
-    expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
   });
 
   it("löscht mit eingerichtetem Faktor nach dem Nachweis", async () => {
@@ -175,8 +163,7 @@ describe("DELETE /api/account", () => {
     const nothingTouched = () => {
       expect(deleteUser).not.toHaveBeenCalled();
       expect(storageRemove).not.toHaveBeenCalled();
-      expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
-      expect(signOut).not.toHaveBeenCalled();
+        expect(signOut).not.toHaveBeenCalled();
     };
 
     it("weist eine Sitzung ab, deren Anmeldung Stunden her ist, mit einem Code, den der Dialog versteht", async () => {
@@ -236,7 +223,7 @@ describe("DELETE /api/account", () => {
     });
 
     it("auch für Admin-Konten (sie sind nur vom Ratenlimit ausgenommen)", async () => {
-      profileSelect.mockResolvedValue({ data: { is_admin: true, subscription_id: null } });
+      profileSelect.mockResolvedValue({ data: { is_admin: true } });
       getClaims.mockResolvedValue({ data: { claims: { amr: [signedInAgo(3 * 3600 * 1000)] } }, error: null });
       const res = await DELETE(req());
       expect(res.status).toBe(403);
@@ -255,7 +242,7 @@ describe("DELETE /api/account", () => {
   });
 
   it("skips the rate limit entirely for admin accounts", async () => {
-    profileSelect.mockResolvedValue({ data: { is_admin: true, subscription_id: null } });
+    profileSelect.mockResolvedValue({ data: { is_admin: true } });
     rateLimit.mockResolvedValue({ allowed: false, remaining: 0, resetAt: Date.now() + 1000 });
     const res = await DELETE(req());
     expect(rateLimit).not.toHaveBeenCalled();
@@ -288,7 +275,7 @@ describe("DELETE /api/account", () => {
   });
 
   // #131: PostgREST kappt eine Antwort bei 1000 Zeilen. Die Projektdateien wurden ohne Seiten gelesen, ein Konto mit
-  // mehr als 1000 Zeilen (Pro oder Admin ohne Projektgrenze, 20 Dateien je Projekt) liess den Rest als Waisen im
+  // mehr als 1000 Zeilen (Admin ohne Projektgrenze, 20 Dateien je Projekt) liess den Rest als Waisen im
   // Bucket zurueck, obwohl die Datenschutzerklaerung (Ziffer 8) zusagt, dass beim Loeschen alles verschwindet.
   describe("project files past the first page (#131)", () => {
     const page = (n: number, prefix: string) =>
@@ -441,57 +428,5 @@ describe("DELETE /api/account", () => {
   it("signs out locally after a successful deletion", async () => {
     await DELETE(req());
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
-  });
-
-  // K-5 (Audit 06.09.2026): ein zahlender Nutzer, der sein Konto loeschte,
-  // wurde bisher weiter monatlich abgebucht -- fuer einen Zugang, den es
-  // nicht mehr gab. Kontoloeschung muss deshalb zuerst das Abo bei
-  // Lemon Squeezy kuendigen, waehrend die subscription_id noch bekannt ist.
-  describe("Lemon-Squeezy-Abo kuendigen (K-5)", () => {
-    it("kuendigt ein laufendes Abo, bevor das Konto geloescht wird", async () => {
-      profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: "sub_1" } });
-      const order: string[] = [];
-      cancelSubscriptionImmediately.mockImplementation(async () => {
-        order.push("cancel");
-        return { ok: true, skipped: false };
-      });
-      deleteUser.mockImplementation(async () => {
-        order.push("delete");
-        return { error: null };
-      });
-
-      const res = await DELETE(req());
-
-      expect(res.status).toBe(200);
-      expect(cancelSubscriptionImmediately).toHaveBeenCalledWith("sub_1");
-      expect(order).toEqual(["cancel", "delete"]);
-    });
-
-    it("ruft Lemon Squeezy gar nicht auf, wenn kein Abo hinterlegt ist", async () => {
-      profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: null } });
-
-      const res = await DELETE(req());
-
-      expect(res.status).toBe(200);
-      expect(cancelSubscriptionImmediately).not.toHaveBeenCalled();
-    });
-
-    it("loescht das Konto trotzdem, wenn die Kuendigung fehlschlaegt", async () => {
-      profileSelect.mockResolvedValue({ data: { is_admin: false, subscription_id: "sub_1" } });
-      cancelSubscriptionImmediately.mockResolvedValue({
-        ok: false,
-        reason: "lemonsqueezy-unreachable",
-      });
-
-      const res = await DELETE(req());
-
-      expect(res.status).toBe(200);
-      expect(deleteUser).toHaveBeenCalledWith("user-1");
-      expect(captureError).toHaveBeenCalledWith(
-        "account.subscription_cancel_failed",
-        expect.anything(),
-        expect.objectContaining({ userId: "user-1", subscriptionId: "sub_1" })
-      );
-    });
   });
 });

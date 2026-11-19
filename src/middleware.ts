@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   // "ist das eine (app)-Route" (shared/lib/app-routes.ts). Bis 2026-10-01
   // stand hier `requiresSession()`: das traf auch jede tote Adresse, deren
   // 404-Seite statisch ist und unter der Nonce-Policy genauso wenig hydrierte.
-  // Drittanbieter (Captcha, Checkout) nur für die Routen, die sie laden — nicht
+  // Drittanbieter (Captcha) nur für die Routen, die sie laden — nicht
   // mehr pauschal in jeder Policy (Betriebs-Audit 04.10.2026, siehe csp.ts).
   const pathname = request.nextUrl.pathname;
   const parties = thirdPartiesFor(pathname);

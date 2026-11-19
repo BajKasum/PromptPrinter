@@ -10,7 +10,6 @@ import { denied } from "@/server/security/security-log";
 import { avatarStoragePath } from "@/features/settings/lib/avatar";
 import { signedInRecently } from "@/features/auth/lib/fresh-sign-in";
 import { collectStoragePaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
-import { cancelSubscriptionImmediately } from "@/server/billing/lemonsqueezy-api";
 import { requestT } from "@/server/i18n";
 import type { Messages } from "@/shared/i18n/messages/de";
 
@@ -21,7 +20,7 @@ export const runtime = "nodejs";
  *
  * Seitenweise gelesen (collectStoragePaths), weil PostgREST eine Antwort bei 1000 Zeilen kappt und ein Konto
  * beliebig viele hat: Anhaenge bis zum Speicherkontingent (bei lauter kleinen Textdateien weit mehr als tausend),
- * Projektdateien mit Pro und als Admin ohne Projektgrenze (20 je Projekt, MAX_FILES_PER_PROJECT). Wuerde nach der
+ * Projektdateien als Admin ohne Projektgrenze (20 je Projekt, MAX_FILES_PER_PROJECT). Wuerde nach der
  * ersten Seite aufgehoert, blieben die uebrigen Objekte fuer immer im Bucket, ohne dass noch irgendeine Zeile auf
  * sie zeigt (#131). Entfernt wird in Stapeln, die einzeln scheitern duerfen: ein uebrig gebliebenes Objekt ist
  * harmlos (Migration 0029), alle liegen zu lassen, weil ein zu grosser Aufruf scheiterte, nicht.
@@ -78,15 +77,6 @@ async function removeUserObjects(
 // paragraph silently becomes false. Die eine Ausnahme ist public.security_events:
 // "Konto gelöscht" muss das Konto überleben, nur die Kennung, höchstens 180 Tage.
 //
-// A running Lemon Squeezy subscription does NOT cascade with any of that
-// (K-5, Audit 06.09.2026): it lives entirely on Lemon Squeezy's side, keyed
-// by profiles.subscription_id. Without cancelling it here first, a paying
-// user who deletes their account keeps getting billed for an access that no
-// longer exists — and once profiles is gone, no webhook can find them again
-// to fix it (resolveUserId in the webhook route has nothing left to match).
-// So the subscription is cancelled immediately (not "at period end") while
-// the id to do that with still exists, before anything is torn down.
-//
 // Storage objects don't cascade
 // with a DB row (same reason delete-project.tsx cleans up "project-files"
 // itself, see 0012_project_files.sql's comment), so every project's attached
@@ -130,22 +120,16 @@ export async function DELETE(req: Request) {
   // mirrors the other three routes.
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("is_admin, subscription_id")
+    .select("is_admin")
     .eq("id", user.id)
     .maybeSingle();
-  // Ohne das Profil wüsste die Route nichts vom Abo: das Konto wäre gelöscht, das Abo liefe weiter und würde abgebucht.
+  // Ein Lesefehler ist kein "kein Admin": die Route rät nicht, sie antwortet 503, und ein neuer Versuch kostet nichts.
   if (profileError) {
     captureError("account.delete_profile_read_failed", profileError, { userId: user.id });
     return problem(503, m.accountDeleteFailed);
   }
   const limited = await enforceDeleteLimit(req, user.id, profile?.is_admin ?? false, m);
   if (limited) return limited;
-
-  // K-5: best-effort, wie jeder Aufraeumschritt hier -- ein unerreichbares
-  // oder ablehnendes Lemon Squeezy blockiert das Loeschen des Kontos nicht,
-  // ein Nutzer, der deshalb nicht loeschen kann, waere schlimmer als ein Abo,
-  // das von Hand nachgezogen werden muss.
-  await cancelRunningSubscription(user.id, profile?.subscription_id ?? null);
 
   await removeAccountObjects(supabase, user.id);
 
@@ -179,14 +163,6 @@ async function enforceDeleteLimit(req: Request, userId: string, isAdmin: boolean
   return problem(429, m.tooManyRequests, {
     retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
   });
-}
-
-async function cancelRunningSubscription(userId: string, subscriptionId: string | null): Promise<void> {
-  if (!subscriptionId) return;
-  const result = await cancelSubscriptionImmediately(subscriptionId);
-  if (!result.ok) {
-    captureError("account.subscription_cancel_failed", new Error(result.reason), { userId, subscriptionId });
-  }
 }
 
 async function removeAccountObjects(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<void> {
