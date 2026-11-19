@@ -36,10 +36,10 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (Webhook `/api/webhooks/lemonsqueezy`). **Pro ist abgeschaltet** (seit 2026-10-17, `PRO_AVAILABLE = false`, jeder Pro-Knopf führt auf `/pro-bald`; Vercel Hobby erlaubt keine Zahlungen): Wiederaufnahme in docs/PRO-WIEDERAUFNAHME.md.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch. Das README ist englisch (Gesicht des Open-Source-Projekts, Bilder in `docs/readme/`): wer Funktionen, die Wege zum Ausprobieren oder die Lizenz ändert, zieht es mit, ohne Pro, Preise und Bau-Tools, Zahlen nur gemessen.
-- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
-  Hilfe `/docs`, `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit vier Vergleichen, `/aufgaben` mit fünf Aufgabenseiten (Beispiel-Prompts von Hand nach Finns Regeln, keine Messwerte) und die
+- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/pricing`, `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung, dazu der Weg ohne Konto mit `--local`) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
+  Hilfe `/docs` (mit "Selbst betreiben", Befehle in `self-hosting.ts`, gegen `docs/SETUP.md` getestet), `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit vier Vergleichen, `/aufgaben` mit fünf Aufgabenseiten (Beispiel-Prompts von Hand nach Finns Regeln, keine Messwerte) und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie,
-  Rückerstattung).
+  Rückerstattung). Dass PromptPrinter Open Source ist, steht auf Landing, `/ueber`, `/terminal`, in der Hilfe und in `llms.txt` (Links aus `features/marketing/lib/open-source.ts`, Guard `open-source-pages.test.ts`).
 - **Entfernt, nicht wiederherstellen:** die Generierungs-Pipeline (`/api/generate`,
   Paket-Prompts, 10-Tab-Ergebnisse), Modus-Wahl, Ziel-Tool-Auswahl, Erst-Login-Tour,
   Topbar, Profilbild-Upload, `/features`, die Sektionen Problem, ExampleOutput,
@@ -72,7 +72,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Bearer neben dem Cookie nur im Chat, in `api/cli/me` und in den Leserouten `GET /api/cli/prompts` und `/api/cli/prompts/[id]` für den MCP-Server des Programms (gespeicherte Prompts; `createClientForRequest`, Guard `bearer-routes.test.ts`); das Programm liegt im Repo `promptprinter-cli`. Migration 0050
   und Code sind in Produktion. Entscheid #228: echte Supabase-Sitzung, kein eigener Token-Typ; `cli_sessions` macht sie sichtbar, einzeln widerrufbar und höchstens 30 Tage gültig. Verlauf: Changelog 2026-10-29 und 2026-11-02.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
-  nur im Produktions-Build. Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
+  nur im Produktions-Build auf Vercel (`measuresSpeed`: `VERCEL` gesetzt, eine eigene Installation lädt nichts). Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
   Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen
   fremden Host stellt, zieht `src/server/security/csp.ts` mit** (`csp.test.ts`). Genannt in Datenschutz (Ziffern 2, 3, 4,
   6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide Texte mit. Kein Env-Wert, kein
@@ -173,8 +173,8 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
   ausgelieferten Baum (`npm audit --omit=dev`) blockiert immer, **ohne Ausnahmen und ohne
   Fristen**. Ein Fund nur in einem Entwicklungswerkzeug blockiert, wenn es eine gepatchte
   Version gibt (dann anheben), und wird nur **gemeldet**, wenn keine gepatchte Version
-  existiert (der Bereich des Pakets im Bericht ist `*`). Aktuell: nichts gemeldet, `npm audit` meldet 0
-  (`minimatch` 11 per Override, Falle im `//overrides` von `package.json`). Es gibt keine Ausnahmeliste
+  existiert (der Bereich des Pakets im Bericht ist `*`). Aktuell (Lauf am 2026-11-19): nichts gemeldet, `npm audit` meldet 0
+  (`minimatch` 11 per Override, Falle im `//overrides` von `package.json`; den Dev-Fund `picomatch`, GHSA-fc5q-39xc-vjpf, hat GitHub am 2026-11-18 zurückgezogen). Es gibt keine Ausnahmeliste
   mehr, also auch kein Ablaufdatum, das jemand vergessen kann; die Bedingung prüft das Gate bei jedem
   Lauf selbst. Funde unter "high" blockieren nicht: dafür Dependabot-Alarme und `audit.yml` lesen.
 - **Die Schritte des Gates nie durch `| tail` oder `| head` leiten.** Eine Pipe gibt
@@ -406,9 +406,9 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 | Datei | Zustand | Finn |
 |---|---|---|
 | `hero.tsx` | Finn + Sprechblase links, Headline und CTAs rechts, darunter die HeroDemo in drei Stufen (Idee → Rückfrage → Prompt, spiegelt das echte CodeBlock-Chrome aus `chat-markdown.tsx`). „Erst mal zuschauen" springt auf `#produkt`. Keine Key-Zeile unter den Knöpfen (Kasum 2026-10-20, `landing-key-hint.test.ts` hält es fest). | `welcoming` + Stage-States |
-| `how-it-works.tsx` | Drei Schritte (Idee → kurz klären → startklar) in flachen `card-surface`-Karten. Trägt `id="funktionen"`, das Sprungziel der Navbar. Darunter die Karte „Einmal vorab" zum KI-Key, bewusst kein vierter Schritt. | `building` |
+| `how-it-works.tsx` | Drei Schritte (Idee → kurz klären → startklar) in flachen `card-surface`-Karten. Trägt `id="funktionen"`, das Sprungziel der Navbar. Darunter die Karte „Einmal vorab": der KI-Key und im zweiten Absatz Open Source und Selbstbetrieb („Ganz ohne Key", Links GitHub und `/docs/selbst-betreiben`), bewusst kein vierter Schritt. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau (Chats / Projekte) mit demselben Pillen-Umschalter (`NavSwitcher`) wie die echte Sidebar. Einziges „Schau es dir an"-Element. | `organizing` |
-| `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir." | `celebrating` |
+| `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir.", darunter Gratis-Prompts, KI-Key und dass der Code offen auf GitHub liegt (kein Wort zu Zahlungsmitteln). | `celebrating` |
 | `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
 | `navbar.tsx` | Fest oben und beim Scrollen unverändert (keine Pille, keine Linie): helle, leicht durchscheinende Fläche mit Blur (`--header-surface`), darunter eine Wasserkante aus drei Lagen (`header-water.tsx`, unter reduced-motion still). Raster `1fr auto 1fr`: Logo, fünf Links mittig ohne Untermenü (`MARKETING_NAV`: Funktionen, Preise, Skill, CLI `/terminal`, MCP), Knöpfe. | kein Finn |
 
