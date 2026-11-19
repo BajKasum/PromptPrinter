@@ -3,13 +3,14 @@
 import { useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Laptop } from "lucide-react";
 import { m, useReducedMotion } from "framer-motion";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 import { cn } from "@/shared/lib/utils";
 import { intro, title, steps } from "@/features/marketing/lib/how-it-works-data";
+import { REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
 
 // GSAP (DrawSVG + MotionPath) lives entirely in this sibling chunk, loaded
 // only client-side and only once mounted, see how-it-works-spine.tsx for
@@ -147,19 +148,44 @@ export function HowItWorks() {
 
       {/* Bewusst kein vierter Schritt: die drei Schritte sind das Versprechen, der
           Key ist die einmalige Einrichtung nach den drei Gratis-Prompts (#126). Ehrlich
-          gesagt, bevor jemand im Chat davon überrascht wird. */}
+          gesagt, bevor jemand im Chat davon überrascht wird. Der zweite Absatz nennt den
+          dritten Weg zu einem Modell: PromptPrinter selbst betreiben, mit einem freien
+          Modell auf dem eigenen Rechner. Er gehört zum Key, weil er dieselbe Frage
+          beantwortet (womit rede ich?), deshalb in derselben Karte statt in einer eigenen. */}
       <FadeIn>
-        <div className="relative z-10 mx-auto mt-10 flex max-w-3xl items-start gap-3 rounded-2xl border border-dashed border-border px-5 py-4 md:gap-4 md:px-6">
-          <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-accent-text" strokeWidth={1.8} aria-hidden />
-          <p className="text-[14.5px] leading-[1.6] text-secondary">
-            <span className="font-medium text-foreground">Gut zu wissen:</span> Die ersten drei
-            Prompts gehen auf mich, ganz ohne Key. Danach brauchst du einen KI-Key, eine Art
-            Zugangscode zu einer KI. Am einfachsten ist der kostenlose von Google, im Chat führ
-            ich dich Schritt für Schritt hin.{" "}
-            <Link href="/docs/eigene-api-keys" className="text-accent-text underline underline-offset-2">
-              Mehr zu Keys
-            </Link>
-          </p>
+        <div className="relative z-10 mx-auto mt-10 max-w-3xl space-y-3 rounded-2xl border border-dashed border-border px-5 py-4 md:px-6">
+          <div className="flex items-start gap-3 md:gap-4">
+            <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-accent-text" strokeWidth={1.8} aria-hidden />
+            <p className="text-[14.5px] leading-[1.6] text-secondary">
+              <span className="font-medium text-foreground">Gut zu wissen:</span> Die ersten drei
+              Prompts gehen auf mich, ganz ohne Key. Danach brauchst du einen KI-Key, eine Art
+              Zugangscode zu einer KI. Am einfachsten ist der kostenlose von Google, im Chat führ
+              ich dich Schritt für Schritt hin.{" "}
+              <Link href="/docs/eigene-api-keys" className="text-accent-text underline underline-offset-2">
+                Mehr zu Keys
+              </Link>
+            </p>
+          </div>
+          <div className="flex items-start gap-3 md:gap-4">
+            <Laptop className="mt-0.5 h-5 w-5 shrink-0 text-accent-text" strokeWidth={1.8} aria-hidden />
+            <p className="text-[14.5px] leading-[1.6] text-secondary">
+              <span className="font-medium text-foreground">Ganz ohne Key:</span> Ich bin Open
+              Source, mein ganzer Code liegt offen auf{" "}
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-text underline underline-offset-2"
+              >
+                GitHub
+              </a>
+              . Hol ihn dir und lass mich mit einem freien Modell auf deinem eigenen Rechner laufen,
+              dann bleibt alles bei dir.{" "}
+              <Link href={SELF_HOSTING_DOC_PATH} className="text-accent-text underline underline-offset-2">
+                So geht&apos;s
+              </Link>
+            </p>
+          </div>
         </div>
       </FadeIn>
     </section>

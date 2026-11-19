@@ -4,6 +4,7 @@ import { Button } from "@/shared/ui/button";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
 import { ArrowRight } from "lucide-react";
+import { REPO_URL } from "@/features/marketing/lib/open-source";
 
 const FINAL_CTA_FLOATERS: FloaterSpec[] = [
   { kind: "star", top: "10%", left: "6%", size: 13, delay: 0.1, duration: 3.3 },
@@ -32,9 +33,21 @@ export function FinalCTA() {
               Die Idee ist der schwere Teil.{" "}
               <span className="text-accent-text">Den Rest mach ich mit dir.</span>
             </h2>
+            {/* Kein Wort zu Zahlungsmitteln: es gibt nichts zu bezahlen. Der zweite Satz sagt, dass der Code offen
+                liegt; wie man PromptPrinter selbst betreibt, steht in der Karte unter den drei Schritten. */}
             <p className="mt-6 text-[17px] text-secondary max-w-xl mx-auto">
-              Fang kostenlos an, ohne Kreditkarte. Die ersten drei Prompts gehen auf
-              mich, danach bringst du einen KI-Key mit, am einfachsten einen kostenlosen von Google.
+              Die ersten drei Prompts gehen auf mich, danach bringst du einen KI-Key mit, am einfachsten
+              einen kostenlosen von Google. Und wer wissen will, wie ich ticke: mein ganzer Code liegt
+              offen auf{" "}
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-text underline underline-offset-2"
+              >
+                GitHub
+              </a>
+              .
             </p>
             <div className="mt-9 flex justify-center">
               <Button asChild size="lg" variant="primary">
