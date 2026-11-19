@@ -134,6 +134,19 @@ export const DOCS_GROUPS: DocGroup[] = [
       },
     ],
   },
+  {
+    title: "Open Source",
+    articles: [
+      {
+        slug: "selbst-betreiben",
+        title: "Selbst betreiben",
+        published: "2026-11-19",
+        summary:
+          "PromptPrinter auf deinem eigenen Rechner, mit einem freien Modell über Ollama: was du brauchst, die Schritte in Kurzform und was dann anders ist.",
+        updated: "2026-11-19",
+      },
+    ],
+  },
 ];
 
 /** Flat reading order across all groups, drives step numbers and prev/next. */
