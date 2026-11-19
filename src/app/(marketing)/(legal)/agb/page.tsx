@@ -101,7 +101,7 @@ export default function AgbPage() {
 
       <h2>8. Nutzungsgrenzen</h2>
       <p>
-        Der Dienst enthält mengenmässige Grenzen, etwa für Chat-Antworten pro Monat und für die Zahl
+        Der Dienst enthält mengenmässige Grenzen, etwa für Chat-Antworten und für die Zahl
         der Projekte, sowie einen stündlichen Missbrauchsschutz. Diese Grenzen halten den Betrieb
         bezahlbar und stabil. Die jeweils geltenden Werte sind in der{" "}
         <a href="/docs/plaene-und-limits">Hilfe</a> dokumentiert und können angepasst werden; sie
@@ -111,7 +111,7 @@ export default function AgbPage() {
       <h2>9. Eigene API-Keys</h2>
       <p>
         Du kannst einen eigenen Zugang zu einem Modellanbieter hinterlegen. Dann laufen deine
-        Anfragen über dein Konto bei diesem Anbieter, und das monatliche Nachrichtenlimit entfällt.
+        Anfragen über dein Konto bei diesem Anbieter, und das Nachrichtenlimit entfällt.
       </p>
       <p>
         In diesem Fall gelten <strong>zusätzlich die Bedingungen und Preise deines Anbieters</strong>,
@@ -120,39 +120,7 @@ export default function AgbPage() {
         bei deinem Anbieter zu widerrufen, wenn du sie hier entfernst.
       </p>
 
-      <h2>10. Pläne, Preise und Zahlung</h2>
-      <p>
-        Es gibt einen kostenlosen Plan und einen kostenpflichtigen Pro-Plan. Der kostenlose Plan ist
-        dauerhaft nutzbar, insbesondere in Verbindung mit einem eigenen API-Key.
-      </p>
-      <p>
-        Die Zahlung für den Pro-Plan wird über <strong>Lemon Squeezy</strong> (Lemon Squeezy, LLC,
-        USA) abgewickelt. Lemon Squeezy tritt dabei als „Merchant of Record“ auf, verkauft also in
-        eigenem Namen an dich, stellt die Rechnung aus und führt die jeweils anfallende
-        Umsatzsteuer ab. Für den Zahlungsvorgang gelten daher zusätzlich die Bedingungen von Lemon
-        Squeezy. Es gilt:
-      </p>
-      <ul>
-        <li>
-          Die jeweils gültigen Preise werden vor dem Kauf auf der <a href="/pricing">Preisseite</a>{" "}
-          ausgewiesen.
-        </li>
-        <li>
-          Abonnements verlängern sich automatisch um den jeweiligen Abrechnungszeitraum, bis sie
-          gekündigt werden. Du kannst jederzeit kündigen und behältst den Zugang bis zum Ende des
-          bezahlten Zeitraums.
-        </li>
-        <li>
-          Für die Erstattung gilt unsere <a href="/rueckerstattung">Rückerstattungsrichtlinie</a>,
-          einschliesslich einer 14-tägigen Geld-zurück-Garantie auf die erste Zahlung.
-        </li>
-        <li>
-          Preise und Leistungsumfang können geändert werden. Änderungen an einem laufenden
-          Abonnement kündigen wir vorher an; sie gelten ab dem nächsten Abrechnungszeitraum.
-        </li>
-      </ul>
-
-      <h2>11. Drittdienste</h2>
+      <h2>10. Drittdienste</h2>
       <p>
         Der Dienst greift auf Dritte zurück, insbesondere auf Modellanbieter für die Erzeugung der
         Antworten, auf Supabase für Konto, Datenbank und Dateispeicher, auf die Anmeldung über
@@ -161,7 +129,7 @@ export default function AgbPage() {
         die wir nicht kontrollieren, übernehmen wir keine Verantwortung.
       </p>
 
-      <h2>12. Verfügbarkeit</h2>
+      <h2>11. Verfügbarkeit</h2>
       <p>
         Wir bemühen uns um eine möglichst hohe Verfügbarkeit, schulden jedoch keinen
         unterbrechungsfreien Betrieb. Wartungsarbeiten, Störungen oder Anpassungen können zu
@@ -169,7 +137,7 @@ export default function AgbPage() {
         keine zugesicherte Reaktionszeit und keine Rufbereitschaft.
       </p>
 
-      <h2>13. Geistiges Eigentum</h2>
+      <h2>12. Geistiges Eigentum</h2>
       <p>
         Der Dienst selbst, einschliesslich Software, Gestaltung, Marke und Maskottchen, steht dem
         Anbieter zu und ist rechtlich geschützt. Diese AGB verschaffen dir daran keine Rechte,
@@ -177,7 +145,7 @@ export default function AgbPage() {
         davon unberührt, siehe Ziffer 4.
       </p>
 
-      <h2>14. Haftung</h2>
+      <h2>13. Haftung</h2>
       <p>
         Wir haften für Schäden nur bei Vorsatz oder grober Fahrlässigkeit sowie bei der Verletzung
         wesentlicher Vertragspflichten. Im Übrigen ist die Haftung (soweit gesetzlich zulässig)
@@ -186,7 +154,7 @@ export default function AgbPage() {
         gesetzlich nicht beschränkt werden kann, bleibt unberührt.
       </p>
 
-      <h2>15. Sperrung und Kündigung</h2>
+      <h2>14. Sperrung und Kündigung</h2>
       <p>
         Du kannst dein Konto jederzeit über die Einstellungen löschen. Wir können Konten bei
         Verstössen gegen diese AGB oder zum Schutz des Dienstes sperren oder löschen, wo angemessen
@@ -196,7 +164,7 @@ export default function AgbPage() {
         fortgelten sollen, etwa zu geistigem Eigentum und Haftung, gelten weiter.
       </p>
 
-      <h2>16. Änderungen dieser AGB</h2>
+      <h2>15. Änderungen dieser AGB</h2>
       <p>
         Wir können diese AGB anpassen, etwa bei Änderungen des Funktionsumfangs oder der Rechtslage.
         Über wesentliche Änderungen informieren wir in geeigneter Form. Die jeweils aktuelle Fassung
@@ -204,14 +172,14 @@ export default function AgbPage() {
         Zustimmung.
       </p>
 
-      <h2>17. Anwendbares Recht und Gerichtsstand</h2>
+      <h2>16. Anwendbares Recht und Gerichtsstand</h2>
       <p>
         Es gilt schweizerisches Recht unter Ausschluss der Kollisionsnormen. Soweit gesetzlich
         zulässig, ist Gerichtsstand {LEGAL.jurisdiction}. Zwingende Verbraucherschutzbestimmungen
         deines Wohnsitzstaates bleiben unberührt.
       </p>
 
-      <h2>18. Kontakt</h2>
+      <h2>17. Kontakt</h2>
       <p>
         Bei Fragen zu diesen AGB erreichst du uns unter{" "}
         <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a> oder über die{" "}
