@@ -10,12 +10,11 @@ import { siteUrl } from "@/shared/lib/site-url";
  */
 
 /**
- * Routen ohne Cookie, die fremde Aufrufer haben dürfen: Lemon Squeezy prüft seine Signatur selbst, die
- * Geräte-Routen ruft das Terminal mit einem Code oder Token auf. Exakte Pfade, kein Präfix:
+ * Routen ohne Cookie, die fremde Aufrufer haben dürfen: die Geräte-Routen ruft das Terminal mit einem
+ * Code oder Token auf. Exakte Pfade, kein Präfix:
  * `/api/cli/approve` nimmt das Cookie und bleibt unter der Schranke.
  */
 export const CROSS_ORIGIN_API_ROUTES = [
-  "/api/webhooks/lemonsqueezy",
   "/api/cli/device",
   "/api/cli/token",
   "/api/cli/refresh",

@@ -47,17 +47,6 @@ describe("FreshDocumentForThirdParties", () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it("lädt neu, wenn aus dem Chat zu /plans gewechselt wird (der Checkout braucht Lemon Squeezy)", () => {
-    pathname = "/chats/new";
-    setDocumentPath("/chats/new");
-    const { rerender } = render(<FreshDocumentForThirdParties />);
-
-    pathname = "/plans";
-    rerender(<FreshDocumentForThirdParties />);
-
-    expect(reload).toHaveBeenCalledTimes(1);
-  });
-
   it("lädt nicht neu zwischen Seiten, deren Drittanbieter das Dokument schon freigibt", () => {
     pathname = "/login";
     setDocumentPath("/login");

@@ -99,15 +99,6 @@ function runSecret(name: string): string {
   return process.env[name];
 }
 
-/**
- * Signing-Secret des Webhook-Tests (e2e/billing-webhook.spec.ts), ein Wert nur für diesen
- * Test: der Next-Server der Tests und der Test selbst lesen ihn von hier, das echte Secret
- * aus dem Lemon-Squeezy-Dashboard kommt nirgends vor. Er schaltet nichts frei, was ein
- * Fremder nutzen könnte: der Server lauscht nur auf localhost und schreibt in den lokalen
- * Stack.
- */
-export const E2E_WEBHOOK_SECRET = runSecret("E2E_WEBHOOK_SECRET");
-
 /** Port des Next-Servers der Tests, bewusst nicht 3000: dort läuft oft der eigene Dev-Server. */
 export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100);
 export const E2E_ORIGIN = `http://localhost:${E2E_PORT}`;
@@ -177,13 +168,6 @@ function sharedServerEnv(origin: string): Record<string, string> {
     GEMINI_MODEL: "",
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
     TURNSTILE_SECRET: "",
-    NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL: "",
-    // Kein Checkout und kein Lemon-Squeezy-Konto, aber der Webhook lauscht: der Test
-    // schickt selbst signierte Ereignisse (e2e/billing-webhook.spec.ts).
-    LEMON_SQUEEZY_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
-    // Die Ereignisse des Tests tragen `test_mode: true` wie ein Testkauf.
-    LEMON_SQUEEZY_ACCEPT_TEST_MODE: "1",
-    LEMON_SQUEEZY_API_KEY: "",
     ALERT_WEBHOOK_URL: "",
     GITHUB_TOKEN: "",
     GOOGLE_SITE_VERIFICATION: "",
