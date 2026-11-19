@@ -24,7 +24,7 @@ import { cn } from "@/shared/lib/utils";
 // ist (app/(app)/cli/).
 export const MARKETING_NAV = [
   { label: "Funktionen", href: "/#funktionen", route: null },
-  { label: "Preise", href: "/pricing", route: "/pricing" },
+  { label: "Open Source", href: "/open-source", route: "/open-source" },
   { label: "Skill", href: "/skill", route: "/skill" },
   { label: "CLI", href: "/terminal", route: "/terminal" },
   { label: "MCP", href: "/mcp", route: "/mcp" },

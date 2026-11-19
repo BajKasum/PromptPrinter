@@ -185,7 +185,7 @@ export default async function TaskGuidePage({ params }: Props) {
                 <Link href="/signup">Ausprobieren</Link>
               </Button>
               <Button asChild variant="ghost">
-                <Link href="/pricing">Preise ansehen</Link>
+                <Link href="/open-source">Kostenlos und Open Source</Link>
               </Button>
             </div>
           </FadeIn>

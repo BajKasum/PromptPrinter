@@ -24,8 +24,7 @@ export default function Page() {
       <p>
         Wichtig zu wissen: <strong>Speichern kostet nichts und ruft kein Modell
         auf.</strong> Es sichert nur den Text, den du ohnehin schon vor dir hast.
-        Es zählt deshalb auch nicht gegen dein monatliches Nachrichtenkontingent
-        und ist in jedem Plan unbegrenzt.
+        Es zählt deshalb auch nicht als Gratis-Prompt und ist unbegrenzt.
       </p>
 
       <h2>Wo finde ich gespeicherte Prompts?</h2>
@@ -41,9 +40,9 @@ export default function Page() {
 
       <h2>Kann ich einen Prompt als PDF exportieren?</h2>
       <p>
-        Mit Pro lässt sich ein gespeicherter Prompt zusätzlich als PDF
-        exportieren, praktisch, um ihn weiterzugeben oder in eine Dokumentation
-        zu legen. Kopieren und der Markdown-Export sind in jedem Plan dabei.
+        Ja, ein gespeicherter Prompt lässt sich als PDF exportieren, praktisch,
+        um ihn weiterzugeben oder in eine Dokumentation zu legen. Kopieren und
+        der Markdown-Export gehen genauso.
       </p>
 
       <h2>Erzeugt Speichern automatisch weitere Dokumente?</h2>

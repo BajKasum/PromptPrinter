@@ -27,8 +27,8 @@ export default function Page() {
       <p>
         In der Seitenleiste auf <strong>Projekte</strong> wechseln und ein neues
         anlegen. Mehr als einen Namen brauchst du nicht, alles Weitere wächst
-        später im Arbeitsplatz. Im Free-Plan hast du bis zu drei Projekte, mit
-        Pro beliebig viele.
+        später im Arbeitsplatz. Du kannst bis zu drei Projekte gleichzeitig
+        haben.
       </p>
 
       <h2>Was ist die Kontext-Leiste?</h2>
@@ -139,15 +139,13 @@ export default function Page() {
 
       <h2>Was kostet eine Analyse?</h2>
       <p>
-        Eine Analyse ist ein Modellaufruf wie eine Chat-Antwort und zählt auch
-        so: sie verbraucht eine Chat-Antwort aus deinem Monatskontingent. Mit
-        einem <Link href="/docs/eigene-api-keys">eigenen API-Key</Link> entfällt
-        das, wie beim Chat. Auf Free läuft die Analyse deshalb nur mit eigenem
-        Key. Schlägt eine Analyse fehl, wird sie nicht angerechnet.
+        Eine Analyse ist ein Modellaufruf wie eine Chat-Antwort. Sie läuft nur
+        mit einem <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>,
+        die drei Gratis-Prompts gelten für den Chat. Du zahlst sie also direkt
+        bei deinem Anbieter.
       </p>
       <p>
-        Unabhängig vom Kontingent sind höchstens fünf Analysen pro Stunde
-        möglich, auch mit eigenem Key. Mehr dazu unter{" "}
+        Höchstens fünf Analysen pro Stunde sind möglich. Mehr dazu unter{" "}
         <Link href="/docs/plaene-und-limits">Pläne und Limits</Link>.
       </p>
 

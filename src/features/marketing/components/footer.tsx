@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mascot } from "@/shared/brand/mascot";
 import { NavWave } from "@/shared/ui/nav-wave";
+import { REPO_URL } from "@/features/marketing/lib/open-source";
 
 // Finn's farewell: the page opens with him, it closes with him — image only,
 // no sign-off line underneath (the words were the request to remove; the
@@ -13,10 +14,10 @@ import { NavWave } from "@/shared/ui/nav-wave";
 const FOOTER_LINKS = [
   // Anchor, not a route: "Wie es funktioniert" is a section of the landing
   // page again (see src/app/(marketing)/page.tsx). The leading "/" matters —
-  // this footer is on /pricing too, where a bare "#funktionen" would scroll
-  // nowhere.
+  // this footer is on every public page, where a bare "#funktionen" would
+  // scroll nowhere.
   { href: "/#funktionen", label: "Funktionen" },
-  { href: "/pricing", label: "Preise" },
+  { href: "/open-source", label: "Open Source" },
   { href: "/skill", label: "Skill" },
   { href: "/terminal", label: "CLI" },
   { href: "/mcp", label: "MCP" },
@@ -28,9 +29,12 @@ const FOOTER_LINKS = [
   { href: "/cookies", label: "Cookies" },
   { href: "/agb", label: "AGB" },
   { href: "/nutzungsrichtlinie", label: "Nutzungsrichtlinie" },
-  { href: "/rueckerstattung", label: "Rückerstattung" },
   { href: "/impressum", label: "Impressum" },
 ];
+
+const LINK_CLASS =
+  "group focus-glow relative isolate rounded-full px-3 py-1.5 text-[13px] text-secondary transition-colors duration-200 hover:text-accent-text";
+const PILL_CLASS = "nav-pill absolute inset-0 -z-10 rounded-full bg-accent-subtle";
 
 export function Footer() {
   return (
@@ -43,19 +47,18 @@ export function Footer() {
             className="flex flex-wrap items-center gap-x-1 gap-y-1"
           >
             {FOOTER_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="group focus-glow relative isolate rounded-full px-3 py-1.5 text-[13px] text-secondary transition-colors duration-200 hover:text-accent-text"
-              >
-                <span
-                  aria-hidden
-                  className="nav-pill absolute inset-0 -z-10 rounded-full bg-accent-subtle"
-                />
+              <Link key={l.href} href={l.href} className={LINK_CLASS}>
+                <span aria-hidden className={PILL_CLASS} />
                 {l.label}
                 <NavWave active={false} />
               </Link>
             ))}
+            {/* Der Quellcode, der einzige Link nach draussen: PromptPrinter ist Open Source (/open-source). */}
+            <a href={REPO_URL} target="_blank" rel="noopener" className={LINK_CLASS}>
+              <span aria-hidden className={PILL_CLASS} />
+              GitHub
+              <NavWave active={false} />
+            </a>
           </nav>
         </div>
 

@@ -29,7 +29,7 @@ export const metadata: Metadata = pageMetadata({
 // Knöpfen und den drei Schritten steht direkt unter der Überschrift, die Erklärung danach; die Messung des
 // Skills steht im README des Schwester-Repos, nicht hier. Keine Bau-Tools als Versprechen (CLAUDE.md,
 // 2026-10-11): genannt ist nur Claude Code. Kein Preis auf der Seite ausser "kostenlos": der Skill kostet
-// nichts, und die App-Preise stehen auf /pricing.
+// nichts, wie die App auch (/open-source).
 
 export default function SkillPage() {
   return (

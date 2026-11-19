@@ -2,36 +2,35 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
 import { docBySlug } from "@/shared/lib/docs-nav";
-import { PLAN_LIMITS } from "@/shared/lib/plans";
-import { PRO_AVAILABLE, PRO_UNAVAILABLE_PATH } from "@/shared/lib/pro-availability";
+import { FREE_TRIAL, PLAN_LIMITS } from "@/shared/lib/plans";
 import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("plaene-und-limits")!;
 
 export const metadata: Metadata = docMetadata(doc);
 
-// Numbers come from the same module the server enforces them with, so this
-// page can't quietly drift away from the real limits.
+// Die Zahlen kommen aus demselben Modul, mit dem der Server sie durchsetzt, damit die Seite nicht still von den
+// echten Grenzen abweicht. Die Adresse /docs/plaene-und-limits bleibt, auch wenn es nur noch einen Plan gibt:
+// Hilfe, Vergleiche und Kontaktseite verlinken sie.
 const free = PLAN_LIMITS.free;
-const pro = PLAN_LIMITS.pro;
 
 export default function Page() {
   return (
     <DocsShell
       slug={doc.slug}
       title="Pläne und Limits"
-      intro="Zwei Pläne, zwei Grenzen, die wirklich zählen. Hier steht, was gemessen wird und was nicht."
+      intro="PromptPrinter kostet nichts. Ein paar Grenzen gibt es trotzdem, hier steht, welche und warum."
     >
-      <h2>Was enthält der Free-Plan?</h2>
+      <h2>Was kostet PromptPrinter?</h2>
       <p>
-        Auf Free gehen die <strong>ersten drei Prompts auf mich</strong>, ganz
-        ohne Key. Gezählt wird der fertige Prompt, nicht meine Rückfrage davor.
+        Nichts. Es gibt keinen bezahlten Plan, PromptPrinter ist{" "}
+        <Link href="/open-source">kostenlos und Open Source</Link>. Die{" "}
+        <strong>ersten drei Prompts gehen auf mich</strong>, ganz ohne Key.
         Danach brauchst du einen{" "}
-        <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>{" "}
-        (Anthropic, OpenAI, Gemini oder ein anderer OpenAI-kompatibler
-        Anbieter), dafür läuft dann alles über deinen eigenen Zugang und kostet
-        mich nichts, also dich auch nichts extra. Wie du einen kostenlosen Gemini-Key bekommst,
-        steht unter{" "}
+        <Link href="/docs/eigene-api-keys">eigenen API-Key</Link> (Anthropic,
+        OpenAI, Gemini oder ein anderer OpenAI-kompatibler Anbieter), dann läuft
+        alles über deinen eigenen Zugang. Wie du einen kostenlosen Gemini-Key
+        bekommst, steht unter{" "}
         <Link href="/docs/eigene-api-keys">Eigene API-Keys</Link>.
       </p>
       <ul>
@@ -39,78 +38,55 @@ export default function Page() {
           <strong>{free.projects} Projekte</strong>
         </li>
         <li>
-          <strong>3 Prompts gratis</strong>, danach{" "}
+          <strong>{FREE_TRIAL.prompts} Prompts gratis</strong>, danach{" "}
           <strong>eigener API-Key</strong>, mit ihm kein Nachrichtenlimit
         </li>
-        <li>Kopieren und Markdown-Export</li>
+        <li>Kopieren, Markdown- und PDF-Export</li>
       </ul>
 
-      <h2>Was enthält der Pro-Plan?</h2>
-      {!PRO_AVAILABLE && (
-        <p>
-          <strong>Pro ist gerade nicht buchbar.</strong> Ich schalte das
-          Bezahlen erst frei, wenn ich es sauber betreiben kann. Bis dahin
-          läuft alles über deinen eigenen Key, der Abschnitt beschreibt den
-          Plan, wie er sein wird.
-        </p>
-      )}
+      <h2>Wie werden die Gratis-Prompts gezählt?</h2>
       <p>
-        Pro läuft <strong>ohne eigenen Key</strong>, ich stelle meinen
-        Modellzugang bereit.
+        Gezählt wird der <strong>fertige Prompt</strong>, nicht meine Rückfrage
+        davor und nicht deine Nachricht. Die drei gelten einmal je Konto, nicht
+        je Monat. Damit niemand mit Rückfragen allein den Rahmen dehnt, endet er
+        auch nach {FREE_TRIAL.turns} Antworten von mir, selbst wenn noch kein
+        dritter Prompt dabei war. Ein gescheiterter Versuch zählt nicht.
       </p>
-      <ul>
-        <li>
-          <strong>Unbegrenzt Projekte</strong>
-        </li>
-        <li>
-          <strong>{pro.chatMessages} Chat-Antworten pro Monat</strong> über
-          meinen Modellzugang
-        </li>
-        <li>Zusätzlich PDF-Export</li>
-        <li>Kein eigener API-Key nötig</li>
-      </ul>
       <p>
-        Mein Modellzugang läuft über <strong>Z.ai in Singapur</strong>. Beim
-        ersten Chat im Pro-Plan frage ich dich deshalb einmal, ob du damit
-        einverstanden bist, dass deine Nachrichten dorthin gehen. Du kannst das
-        in den Einstellungen widerrufen, dann antworte ich nur noch mit deinem
-        eigenen Key. Die Einzelheiten stehen in der{" "}
+        Weil sich Konten ohne Bestätigung anlegen lassen, ist der Gratis-Rahmen
+        zusätzlich je Anschluss und Tag begrenzt. Ist er an einem Tag
+        ausgeschöpft, geht es am nächsten weiter, mit eigenem Key sofort.
+      </p>
+      <p>
+        Die Gratis-Prompts laufen über meinen Modellzugang bei{" "}
+        <strong>Z.ai in Singapur</strong>. Vor dem ersten frage ich dich deshalb
+        einmal, ob du damit einverstanden bist, dass deine Nachrichten dorthin
+        gehen. Du kannst das in den Einstellungen widerrufen, dann antworte ich
+        nur noch mit deinem eigenen Key. Die Einzelheiten stehen in der{" "}
         <Link href="/datenschutz">Datenschutzerklärung</Link>.
       </p>
+
+      <h2>Was gilt mit eigenem Key?</h2>
       <p>
-        {PRO_AVAILABLE ? (
-          <>
-            Die aktuellen Preise stehen auf der{" "}
-            <Link href="/pricing">Preisseite</Link>.
-          </>
-        ) : (
-          <>
-            Warum Pro noch nicht buchbar ist, steht{" "}
-            <Link href={PRO_UNAVAILABLE_PATH}>hier</Link>.
-          </>
-        )}
+        Hinterlegst du einen{" "}
+        <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>, gibt es kein
+        Nachrichtenlimit. Du zahlst die Modellnutzung direkt bei deinem
+        Anbieter. Nach den drei Gratis-Prompts ist das kein Bonus, sondern die
+        Voraussetzung für weitere Chats.
+      </p>
+      <p>
+        Die Analyse eines Projekts (das{" "}
+        <Link href="/docs/projekte">Gedächtnis</Link> einmal einlesen) läuft nur
+        mit eigenem Key, die Gratis-Prompts gelten für den Chat.
       </p>
 
-      <h2>Was zählt gegen mein Monatskontingent?</h2>
+      <h2>Wie viele Projekte kann ich anlegen?</h2>
       <p>
-        Gezählt wird <strong>eine Antwort von Finn</strong>, nicht deine eigene
-        Nachricht und nicht das Gespräch als Ganzes. Ein Chat mit fünf Hin und
-        Her verbraucht also fünf.
-      </p>
-      <p>
-        Eine Projekt-Analyse (das{" "}
-        <Link href="/docs/projekte">Gedächtnis</Link> eines Projekts einmal
-        einlesen) ist ein Modellaufruf wie eine Chat-Antwort und zählt genauso
-        eine, aus demselben Kontingent. Mit eigenem Key entfällt das wie beim
-        Chat vollständig.
-      </p>
-      <p>
-        Der Zähler läuft pro Kalendermonat und springt am Monatsersten wieder auf
-        null. Deinen Stand siehst du im Kontomenü unter Nutzung.
+        Bis zu {free.projects} gleichzeitig. Löschst du eins, ist wieder Platz
+        für ein neues. Chats ohne Projekt zählen nicht mit.
       </p>
 
-      <h2>Was zählt nicht gegen das Kontingent?</h2>
-      <p>Gar nicht gezählt werden:</p>
+      <h2>Was zählt gar nicht?</h2>
       <ul>
         <li>
           <Link href="/docs/ergebnisse">Prompts speichern</Link>, dabei wird kein
@@ -120,23 +96,13 @@ export default function Page() {
         <li>Projekte anlegen, Dateien hochladen, Chats umbenennen</li>
       </ul>
 
-      <h2>Gilt das Monatslimit auch mit eigenem Key?</h2>
-      <p>
-        Hinterlegst du einen{" "}
-        <Link href="/docs/eigene-api-keys">eigenen API-Key</Link>, entfällt das
-        monatliche Nachrichtenlimit vollständig, in jedem Plan. Du zahlst die
-        Modellnutzung dann direkt bei deinem Anbieter. Auf Free ist das kein
-        Bonus, sondern nach den drei Gratis-Prompts die Voraussetzung.
-      </p>
-
       <h2>Gibt es ein Limit pro Stunde?</h2>
       <p>
-        Unabhängig vom Monatslimit gibt es eine stündliche Obergrenze. Die ist
-        kein Sparmodell, sondern verhindert, dass ein Skript oder ein Fehler den
+        Ja, eine stündliche Obergrenze, auch mit eigenem Key. Die ist kein
+        Sparmodell, sondern verhindert, dass ein Skript oder ein Fehler den
         Dienst für alle lahmlegt. Im normalen Arbeiten wirst du sie nicht
-        bemerken, sie greift auch mit eigenem Key. Läufst du doch hinein,
-        bekommst du eine deutliche Meldung und kannst es kurz darauf wieder
-        versuchen.
+        bemerken. Läufst du doch hinein, bekommst du eine deutliche Meldung und
+        kannst es kurz darauf wieder versuchen.
       </p>
 
       <h2>Was passiert, wenn ein Limit erreicht ist?</h2>
@@ -144,6 +110,13 @@ export default function Page() {
         Du bekommst eine klare Meldung, die sagt, welches Limit es war und was du
         tun kannst. Nichts geht dabei verloren, deine Chats und Projekte bleiben
         vollständig erhalten und lesbar.
+      </p>
+
+      <h2>Und wenn ich PromptPrinter selbst betreibe?</h2>
+      <p>
+        Dann gibt es keine Gratis-Prompts und keinen Zwang zum eigenen Key: jedes
+        Konto chattet über dein eigenes Modell. Wie das geht, steht auf{" "}
+        <Link href="/open-source">Kostenlos und Open Source</Link>.
       </p>
     </DocsShell>
   );

@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { test, expect, type Page, type Response } from "@playwright/test";
-import { createAccount, makePro, removeAccount, type Account } from "../support/fixtures";
+import { createAccount, makeAdmin, removeAccount, type Account } from "../support/fixtures";
 import { E2E_PROD_ORIGIN, localSupabase } from "../support/env";
 
 // Der Produktionsaufbau im Browser (#220): `next build` und `next start`, NODE_ENV=production.
@@ -132,7 +132,7 @@ const PUBLIC_PAGES: { path: string; status: number }[] = [
   { path: "/login", status: 200 },
   { path: "/signup", status: 200 },
   { path: "/reset-password", status: 200 },
-  { path: "/pricing", status: 200 },
+  { path: "/open-source", status: 200 },
   { path: "/docs", status: 200 },
   { path: "/skill", status: 200 },
   { path: "/vergleich", status: 200 },
@@ -167,7 +167,7 @@ test.describe("Öffentliche Seiten im Produktionsaufbau", () => {
 
   // Hydration heißt: ein Klick wirkt. Das Menü der Navigation gibt es nur im Telefonmaß, und es öffnet sich nur,
   // wenn Nexts Skripte mit den Seitendaten gelaufen sind (blockiert die Policy sie, bleibt der Knopf tot).
-  for (const path of ["/", "/pricing", "/docs"]) {
+  for (const path of ["/", "/open-source", "/docs"]) {
     test(`${path}: das Menü öffnet sich (die Seite ist hydriert)`, async ({ page }) => {
       const seen = await watch(page);
       await page.setViewportSize({ width: 390, height: 844 });
@@ -217,7 +217,7 @@ test.describe("App-Seite im Produktionsaufbau", () => {
 
   test.beforeEach(async () => {
     account = await createAccount("prod");
-    await makePro(account);
+    await makeAdmin(account);
   });
   test.afterEach(async () => {
     await removeAccount(account.id);

@@ -102,8 +102,8 @@ export default function VergleichPage() {
               was schon dasteht, oder die KI erst bei der Arbeit.
             </p>
             <p>
-              Wie PromptPrinter selbst arbeitet, steht in der <Link href="/docs">Hilfe</Link>. Was
-              es kostet, steht auf der <Link href="/pricing">Preisseite</Link>.
+              Wie PromptPrinter selbst arbeitet, steht in der <Link href="/docs">Hilfe</Link>. Es
+              kostet nichts und ist <Link href="/open-source">Open Source</Link>.
             </p>
           </div>
         </FadeIn>

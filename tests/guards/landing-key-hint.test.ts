@@ -5,7 +5,8 @@ import { FREE_TRIAL } from "@/shared/lib/plans";
 
 // #126: wer auf "Leg mit Finn los" klickt, soll vorher wissen, wie es auf Free läuft: drei Prompts gehen auf
 // Finn (FREE_TRIAL in shared/lib/plans.ts), danach braucht es einen eigenen KI-Key. Dieser Guard hält die Stellen
-// fest, an denen beides stehen muss: unter den drei Schritten, im Abschluss und in der Anmeldung. **Nicht im Hero**:
+// fest, an denen beides stehen muss: unter den drei Schritten, im Abschluss, in der Anmeldung und auf /open-source.
+// **Nicht im Hero**:
 // die Zeile unter den Knöpfen ("Du brauchst dafür einen KI-Key ...") hat Kasum am 2026-10-20 wieder
 // entfernt, sie passt nicht auf die Startseite. Der Guard sorgt dafür, dass sie nicht zurückkommt.
 
@@ -21,7 +22,7 @@ describe("Startseite nennt Gratis-Prompts und Key vor der Registrierung", () => 
       "src/features/marketing/components/how-it-works.tsx",
       "src/features/marketing/components/final-cta.tsx",
       "src/features/auth/components/sign-up-experience.tsx",
-      "src/shared/lib/pricing.ts",
+      "src/app/(marketing)/open-source/page.tsx",
     ]) {
       expect(read(path), path).toMatch(/drei (Gratis-)?Prompts|3 Prompts gratis|Drei Prompts/);
     }

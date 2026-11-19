@@ -21,23 +21,15 @@ const HEADER_FLOATERS: FloaterSpec[] = [
 ];
 
 /**
- * The opener for /pricing, the one page besides the landing page that needs a
- * header of its own.
+ * Der Seitenkopf von /skill, /terminal und /mcp: nur die Überschrift, zentriert,
+ * damit der Inhalt darunter sofort folgt. Eine einzelne
+ * zentrierte Zeile liesse den breiten Rand links und rechts leer wirken, dafür
+ * stehen dort zwei Finns und die Sterne und Blasen oben.
  *
- * This replaces FinnGreeting, which put a 148px Finn and a speech bubble above
- * the headline here. That was too much: the mascot plus his greeting plus a
- * subline meant three stacked elements before the actual plans. So the
- * headline now stands on its own and gets to the plans faster — but a lone
- * centred line of text left the wide gap on either side of it looking bare
- * (flagged from a live screenshot), which is what the two Finns and the wider
- * floater spread below are for.
- *
- * The two mascots split the headline's own two sentences: "explaining" (he
- * already holds a piece of paper in his art) sits with "Bring deinen eigenen
- * Key mit", "helping" (an offered flipper) sits with "Oder ich übernehme das
- * für dich". Both `hidden lg:block` — there is no room for them once the
- * headline wraps to three lines on a phone, and centred text flanked by
- * nothing reads fine there anyway.
+ * "explaining" (er hält in seinem Bild schon ein Blatt) steht links, "helping"
+ * (die angebotene Flosse) rechts. Beide `hidden lg:block`: sobald die
+ * Überschrift auf dem Handy umbricht, ist kein Platz für sie, und zentrierter
+ * Text ohne Begleitung liest sich dort ohnehin gut.
  */
 export function PageHeader({ headline }: { headline: React.ReactNode }) {
   return (

@@ -1,18 +1,16 @@
-import { PLANS, PRO_PRICE_EUR } from "@/shared/lib/pricing";
 import { LOCALES } from "@/shared/i18n/locales";
 import { LEGAL } from "@/shared/lib/legal";
 import { SITE_DESCRIPTION } from "@/shared/lib/site-description";
 import { siteUrl } from "@/shared/lib/site-url";
 import { AUTHOR_PATH, entityIds } from "./entity-ids";
+import { FREE_OFFER_TEXT, REPO_URL } from "./open-source";
 
 // Die Structured Data, die mehrere Seiten teilen: die Organisation und die Website im Layout aller öffentlichen
 // Seiten, die Software auf der Startseite, die Person auf /ueber. Jeder Knoten steht hier einmal und trägt seine
 // feste @id (entity-ids.ts); Artikel, Website und Software verweisen mit derselben @id darauf.
 //
-// `sameAs` fehlt mit Absicht: Structured Data darf nichts behaupten, was die Seite nicht zeigt, und auf keiner
-// öffentlichen Seite ist ein Profil verlinkt, das die Marke eindeutig macht (das Repository promptprinter-pp
-// steht nur auf /skill). Sobald /ueber oder der Footer das GitHub-Profil oder -Repository zeigen, gehört die
-// Adresse hier in `organization.sameAs`.
+// `organization.sameAs` nennt genau das Repository, das der Footer auf jeder öffentlichen Seite verlinkt: Structured
+// Data darf nichts behaupten, was die Seite nicht zeigt. Ein weiteres Profil kommt erst dazu, wenn eine Seite es zeigt.
 
 const [postalCode, ...cityParts] = LEGAL.postalCity.split(" ");
 
@@ -46,6 +44,7 @@ export function organizationJsonLd() {
     description: SITE_DESCRIPTION,
     founder: personRef(),
     email: LEGAL.email,
+    sameAs: [REPO_URL],
     address: {
       "@type": "PostalAddress",
       streetAddress: LEGAL.street,
@@ -69,10 +68,9 @@ export function websiteJsonLd() {
   };
 }
 
-// Die Preise sind dieselben zwei Zahlen wie auf /pricing (PLANS in shared/lib/pricing.ts, eine Quelle), kein
-// zweiter, potenziell driftender Preis. Bewusst KEIN `aggregateRating`: es gibt keine echten Bewertungen, eine
-// erfundene Zahl wäre genau der Structured-Data-Missbrauch, den Google abstraft. Kategorie und Angebote sind
-// Kasums Entscheid (#127) und bleiben, wie sie sind.
+// Ein Angebot zum Preis 0: PromptPrinter kostet nichts (/open-source). Bewusst KEIN `aggregateRating`: es gibt
+// keine echten Bewertungen, eine erfundene Zahl wäre genau der Structured-Data-Missbrauch, den Google abstraft. Die
+// Kategorie ist Kasums Entscheid (#127) und bleibt, wie sie ist.
 export function softwareApplicationJsonLd() {
   return {
     "@context": "https://schema.org",
@@ -86,13 +84,15 @@ export function softwareApplicationJsonLd() {
     // Die Oberfläche der App; die Hilfe nennt die Sprachen im Artikel "Konto und Daten".
     inLanguage: [...LOCALES],
     publisher: { "@id": entityIds().organization },
-    offers: PLANS.map((plan) => ({
-      "@type": "Offer",
-      name: plan.name,
-      price: plan.name === "Pro" ? PRO_PRICE_EUR.toFixed(2) : "0.00",
-      priceCurrency: "EUR",
-      description: plan.description,
-    })),
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Free",
+        price: "0.00",
+        priceCurrency: "EUR",
+        description: FREE_OFFER_TEXT,
+      },
+    ],
   };
 }
 
