@@ -17,14 +17,13 @@ import { thirdPartiesFor, type ThirdParties } from "@/shared/lib/third-party-pat
 //   smuggled-in markup hole could load from. Every LLM provider call — Z.ai,
 //   Gemini, BYOK Anthropic/OpenAI/custom — happens server-side, so none of them
 //   need a connect-src entry here.
-// - lemonsqueezy.com: Zahlungen. Siehe LEMONSQUEEZY_* unten.
 //
 // ─── Zwei Varianten, nicht eine (gefunden 05.08.2026) ──────────────────────
 // `buildCsp(nonce)` braucht einen PRO-REQUEST-Nonce, den nur `(app)/layout.tsx`
 // noch per `headers()` liest und weiterreicht (Planpunkt B-2 hat diesen Aufruf
 // aus dem Root-Layout entfernt, um die oeffentlichen Seiten statisch
 // auszuliefern — ein `headers()`-Aufruf dort haette wieder den GESAMTEN
-// Routenbaum dynamisch gemacht). Auf jeder anderen Route — Landing, `/pricing`,
+// Routenbaum dynamisch gemacht). Auf jeder anderen Route — Landing, `/open-source`,
 // `/login`, `/signup`, `/agb`, `/docs/*` — threadet nichts mehr einen Nonce zu
 // Next' eigenen Hydration-Scripts durch, middleware.ts setzte aber weiterhin
 // unveraendert die STRIKTE, nonce-only-Policy auf JEDE Antwort. Ergebnis: Next'
@@ -52,29 +51,6 @@ import { thirdPartiesFor, type ThirdParties } from "@/shared/lib/third-party-pat
 // das auch jede tote Adresse traf: deren statische 404-Seite bekam die
 // Nonce-Policy und hydrierte aus demselben Grund nicht.
 
-// Lemon Squeezy braucht ZWEI Skript-Hosts, nicht einen.
-//
-// `app.lemonsqueezy.com/js/lemon.js` — die Adresse, die Lemon Squeezy selbst
-// ausgibt — antwortet mit `301` auf `assets.lemonsqueezy.com/lemon.js`
-// (nachgeprüft am 04.08.2026). Eine CSP prüft bei einer Weiterleitung auch
-// das Ziel: stünde hier nur der `app.`-Host, würde das Skript nach der
-// Weiterleitung blockiert, und zwar mit einer Meldung, die auf den falschen
-// Host zeigt. Beide Einträge gehören also zusammen; wer einen entfernt,
-// entfernt den Checkout. Auch auf statischen Seiten noetig: `/pricing` zeigt
-// den Pro-Checkout (ProCheckoutCta) einem Besucher, der eingeloggt ist.
-const LEMONSQUEEZY_SCRIPT_HOSTS = [
-  "https://app.lemonsqueezy.com",
-  "https://assets.lemonsqueezy.com",
-];
-
-// Das Overlay ist ein <iframe> auf den Checkout des eigenen Stores
-// (promptprinter.lemonsqueezy.com). Der Store-Name steckt in der
-// Checkout-Adresse und ist damit Konfiguration, keine Konstante — deshalb der
-// Platzhalter statt eines festen Hosts. Muss zur Host-Prüfung in
-// shared/lib/lemon-squeezy.ts passen: was dort erlaubt ist, muss hier
-// einbettbar sein.
-const LEMONSQUEEZY_FRAME_HOST = "https://*.lemonsqueezy.com";
-
 // ─── Drittanbieter nur dort, wo eine Seite sie wirklich einbindet ──────────
 // (Betriebs-Audit 04.10.2026, Punkt "unsafe-inline auf öffentlichen Seiten")
 //
@@ -83,23 +59,23 @@ const LEMONSQUEEZY_FRAME_HOST = "https://*.lemonsqueezy.com";
 // und Seite ist mit statischen Seiten nicht machbar). Das lässt sich nicht
 // wegdiskutieren, aber seine Wirkung begrenzen:
 //
-// 1. Cloudflare Turnstile und Lemon Squeezy standen bisher in JEDER Policy,
-//    also auch auf /agb, in der Hilfe und auf der Startseite, die keines von
-//    beiden laden. Ein eingeschleustes Skript hätte dort zwei fremde Hosts
-//    mehr zum Nachladen gehabt, ohne dass die Seite sie je braucht. Jetzt
-//    bekommt eine Route nur, was sie einbindet (`thirdPartiesFor`).
+// 1. Cloudflare Turnstile steht nur in der Policy der Routen, die es laden.
+//    Auf /agb, in der Hilfe und auf der Startseite hätte ein eingeschleustes
+//    Skript sonst einen fremden Host mehr zum Nachladen, ohne dass die Seite
+//    ihn je braucht. Eine Route bekommt nur, was sie einbindet
+//    (`thirdPartiesFor`).
 // 2. `script-src-attr 'none'` sperrt Inline-Event-Handler (`onerror=`,
 //    `onclick=`): der übliche Weg, eine HTML-Injektion in Code zu verwandeln.
 //    `'unsafe-inline'` in `script-src` erlaubt sie sonst mit. React hängt
-//    Handler per addEventListener an, lemon.js und Turnstile ebenso (beide
-//    geprüft: kein Inline-Handler in ihrem Quelltext). `<script>`-Blöcke bleiben
+//    Handler per addEventListener an, Turnstile ebenso (geprüft: kein
+//    Inline-Handler in seinem Quelltext). `<script>`-Blöcke bleiben
 //    erlaubt, das ist die Grenze, die diese Variante nicht überschreitet.
 // Die Pfadlisten (`thirdPartiesFor`) stehen in shared/lib/third-party-paths.ts, weil der Browser sie auch
 // braucht: die Policy hängt am Dokument, ein Seitenwechsel ohne Neuladen behält die der ersten Seite
 // (shared/providers/fresh-document-for-third-parties.tsx lädt dann neu).
 export { thirdPartiesFor, type ThirdParties };
 
-const NO_THIRD_PARTIES: ThirdParties = { turnstile: false, lemonSqueezy: false };
+const NO_THIRD_PARTIES: ThirdParties = { turnstile: false };
 
 const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 
@@ -121,10 +97,7 @@ function sharedDirectives(scriptSrc: string, parties: ThirdParties): string[] {
   // Ohne eingebundenen Drittanbieter bleibt `frame-src` nicht leer stehen
   // (eine fehlende Direktive fällt auf default-src zurück, also 'self'),
   // sondern wird ausdrücklich zu 'none'.
-  const frameSrc =
-    [parties.turnstile ? TURNSTILE_ORIGIN : "", parties.lemonSqueezy ? LEMONSQUEEZY_FRAME_HOST : ""]
-      .filter(Boolean)
-      .join(" ") || "'none'";
+  const frameSrc = parties.turnstile ? TURNSTILE_ORIGIN : "'none'";
   // Die Supabase-Origin traegt die Vorschaubilder der Chat-Anhaenge (signierte
   // Adressen, features/chat/lib/attachment-store.ts); ohne den Eintrag blockierte
   // der Browser jedes angehaengte Foto. Sonst nur eigene Bilder und data:-URLs.
@@ -157,14 +130,13 @@ function sharedDirectives(scriptSrc: string, parties: ThirdParties): string[] {
  *
  * `parties` nennt die Drittanbieter, die die Seite einbindet (`thirdPartiesFor`).
  * Ohne Angabe bekommt sie keinen: sicher als Voreinstellung, und eine Seite, die
- * einen braucht, merkt es sofort (der Checkout oder das Captcha laden nicht).
+ * einen braucht, merkt es sofort (das Captcha lädt nicht).
  */
 export function buildCsp(nonce: string, parties: ThirdParties = NO_THIRD_PARTIES): string {
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
     parties.turnstile ? TURNSTILE_ORIGIN : "",
-    ...(parties.lemonSqueezy ? LEMONSQUEEZY_SCRIPT_HOSTS : []),
     devEvalSource(),
   ]
     .filter(Boolean)
@@ -194,7 +166,6 @@ export function buildStaticCsp(parties: ThirdParties = NO_THIRD_PARTIES): string
   const scriptSrc = [
     "'self'",
     parties.turnstile ? TURNSTILE_ORIGIN : "",
-    ...(parties.lemonSqueezy ? LEMONSQUEEZY_SCRIPT_HOSTS : []),
     "'unsafe-inline'",
     devEvalSource(),
   ]

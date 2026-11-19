@@ -7,11 +7,7 @@ describe("needsFreshDocument", () => {
     ["/", "/login", "Startseite → Login"],
     ["/", "/signup", "Startseite → Registrieren"],
     ["/chats/new", "/login", "Abmelden aus der App → Login"],
-    ["/chats/abc", "/plans", "Chat → Pläne (Checkout)"],
-    ["/settings", "/billing", "Einstellungen → Abrechnung (Checkout)"],
-    ["/", "/pricing", "Startseite → Preise (Checkout)"],
-    ["/pricing", "/login", "Preise → Login (anderer Drittanbieter)"],
-    ["/login", "/pricing", "Login → Preise (anderer Drittanbieter)"],
+    ["/open-source", "/login", "Open Source → Login"],
     ["/docs", "/kontakt", "Hilfe → Kontakt (Captcha im Formular)"],
     ["/", "/reset-password", "Startseite → Passwort vergessen"],
   ])("verlangt ein neues Dokument: %s → %s (%s)", (from, to) => {
@@ -22,12 +18,10 @@ describe("needsFreshDocument", () => {
     ["/login", "/signup", "beide mit Turnstile"],
     ["/login", "/reset-password", "beide mit Turnstile"],
     ["/signup", "/kontakt", "beide mit Turnstile"],
-    ["/billing", "/plans", "beide mit Lemon Squeezy"],
-    ["/pricing", "/billing", "beide mit Lemon Squeezy"],
     ["/login", "/", "Ziel braucht nichts"],
     ["/", "/agb", "beide brauchen nichts"],
     ["/chats/new", "/settings", "beide brauchen nichts"],
-    ["/pricing", "/docs", "Ziel braucht nichts"],
+    ["/open-source", "/docs", "beide brauchen nichts"],
     ["/login", "/login", "derselbe Pfad"],
   ])("lässt es bei %s → %s (%s)", (from, to) => {
     expect(needsFreshDocument(from, to)).toBe(false);
@@ -40,6 +34,6 @@ describe("needsFreshDocument", () => {
 
   it("hält /reset-password/update draussen: die Seite bindet Turnstile nicht ein", () => {
     expect(needsFreshDocument("/", "/reset-password/update")).toBe(false);
-    expect(thirdPartiesFor("/reset-password/update")).toEqual({ turnstile: false, lemonSqueezy: false });
+    expect(thirdPartiesFor("/reset-password/update")).toEqual({ turnstile: false });
   });
 });

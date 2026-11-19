@@ -7,12 +7,11 @@ import { thirdPartiesFor, type ThirdParties } from "@/server/security/csp";
 // Quelltext, den sie beschreiben.
 //
 // ─── Warum es diesen Guard gibt ────────────────────────────────────────────
-// Die CSP gibt Cloudflare Turnstile und Lemon Squeezy nur noch den Routen frei,
-// die sie einbinden. Das ist eine handgepflegte Liste, und sie scheitert auf
-// die leiseste Art: bindet jemand das Captcha oder den Checkout auf einer
-// weiteren Seite ein und vergisst die Liste, lädt das Skript dort nicht, und
-// der Browser meldet es nur in der Konsole. Der Checkout wäre tot, ohne dass
-// ein Test oder der Build es merkt. Dieser Guard folgt deshalb den Importen von
+// Die CSP gibt Cloudflare Turnstile nur den Routen frei, die es einbinden.
+// Das ist eine handgepflegte Liste, und sie scheitert auf die leiseste Art:
+// bindet jemand das Captcha auf einer weiteren Seite ein und vergisst die
+// Liste, lädt das Skript dort nicht, und der Browser meldet es nur in der
+// Konsole. Das Formular wäre tot, ohne dass ein Test oder der Build es merkt. Dieser Guard folgt deshalb den Importen von
 // jeder page.tsx aus und prüft, dass die Liste genau die Seiten nennt, die das
 // Modul tatsächlich erreichen.
 //
@@ -74,7 +73,7 @@ function reaches(entry: string, targets: Set<string>): boolean {
   return false;
 }
 
-/** `src/app/(marketing)/pricing/page.tsx` -> `/pricing` (Routengruppen fallen weg). */
+/** `src/app/(marketing)/(legal)/agb/page.tsx` -> `/agb` (Routengruppen fallen weg). */
 function routeOf(file: string): string {
   const rel = relative(join(SRC, "app"), dirname(file)).replace(/\\/g, "/");
   const segments = rel.split("/").filter((s) => s && !/^\(.*\)$/.test(s));
@@ -94,11 +93,6 @@ const CASES: { party: keyof ThirdParties; label: string; modules: string[] }[] =
     party: "turnstile",
     label: "Cloudflare Turnstile",
     modules: ["shared/ui/turnstile-widget.tsx"],
-  },
-  {
-    party: "lemonSqueezy",
-    label: "Lemon Squeezy",
-    modules: ["shared/ui/lemon-checkout-button.tsx", "shared/lib/use-lemon-squeezy.ts"],
   },
 ];
 

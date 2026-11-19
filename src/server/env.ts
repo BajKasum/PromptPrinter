@@ -1,6 +1,5 @@
 import "server-only";
 
-import { normalizeCheckoutUrl } from "@/shared/lib/lemon-squeezy";
 import { hasSelfHostedOnVercel, isSelfHosted } from "@/server/self-hosted";
 
 // Startup validation of the environment (QA finding S-2).
@@ -201,39 +200,6 @@ export function hasInsecureAppUrl(env: EnvLike = process.env): boolean {
 }
 
 /**
- * True when a Lemon Squeezy checkout address is configured but unusable.
- *
- * Same failure shape as hasInsecureAppUrl above, one layer quieter: an empty
- * value is a legitimate deployment ("keine Zahlungen hier"), and the button
- * falls back to its `fallbackHref` either way, so nothing breaks. A value
- * that is *set but wrong* is the state worth naming — a typo, an http link, a
- * copied dashboard URL instead of the checkout link — because the page then
- * looks entirely normal while the one button that earns money quietly points
- * back at the signup form.
- */
-export function hasInvalidCheckoutUrl(env: EnvLike = process.env): boolean {
-  const raw = env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL;
-  if (isBlank(raw)) return false;
-  return normalizeCheckoutUrl(raw) === null;
-}
-
-/**
- * True when Pro is buyable but nothing listens for the payment.
- *
- * The Turnstile lesson (2026-08-02) applied to money: there, a visible widget
- * whose token nobody redeemed looked exactly like a working captcha. Here, a
- * working checkout whose webhook nobody receives looks exactly like a working
- * upgrade — the customer pays, the plan stays free, and the only signal is a
- * support mail. Unlike Turnstile this is a legitimate mode (the operator can
- * upgrade by hand, and did so between 04.08. morning and this change), so it
- * warns rather than refusing to boot.
- */
-export function hasCheckoutWithoutWebhook(env: EnvLike = process.env): boolean {
-  if (normalizeCheckoutUrl(env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL) === null) return false;
-  return isBlank(env.LEMON_SQUEEZY_WEBHOOK_SECRET);
-}
-
-/**
  * True while a secret rotation is open: a previous encryption secret is set and
  * differs from the current one (Betriebs-Audit 04.10.2026).
  *
@@ -310,25 +276,6 @@ export function assertEnv(env: EnvLike = process.env): void {
       "[env] TRUSTED_PROXY_HOPS ist nicht gesetzt. Folge: Weiterleitungs-Köpfe zählen nicht, alle " +
         "anonymen Anfragen (Anmeldung, Kontaktformular, Terminal-Anmeldung) teilen sich einen " +
         "Ratenlimit-Zähler. Hinter einem Reverse Proxy die Zahl der Proxys eintragen (docs/DOCKER.md)."
-    );
-  }
-
-  if (hasInvalidCheckoutUrl(env)) {
-    console.warn(
-      "[env] NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL ist gesetzt, aber unbrauchbar " +
-        `(${env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL}). Erwartet wird eine https-Adresse ` +
-        "auf einem *.lemonsqueezy.com-Host. Folge: Der Pro-Knopf führt auf die " +
-        "Registrierung statt in den Checkout, es kann niemand kaufen."
-    );
-  }
-
-  if (hasCheckoutWithoutWebhook(env)) {
-    console.warn(
-      "[env] Der Pro-Checkout ist konfiguriert, LEMON_SQUEEZY_WEBHOOK_SECRET aber nicht. " +
-        "Folge: Kunden können bezahlen, aber niemand schaltet sie frei — " +
-        "/api/webhooks/lemonsqueezy antwortet mit 503, und jede Freischaltung " +
-        "bleibt Handarbeit. Das Secret steht im Lemon-Squeezy-Dashboard unter " +
-        "Settings → Webhooks."
     );
   }
 

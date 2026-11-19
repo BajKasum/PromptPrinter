@@ -7,8 +7,8 @@
  * is left behind rather than some.
  *
  * Deleting a PROJECT never needs this (MAX_FILES_PER_PROJECT caps it at 10),
- * but deleting an ACCOUNT removes every file across every project, and Pro has
- * no project cap (lib/plans.ts) — so that path has no upper bound at all.
+ * but deleting an ACCOUNT removes every file across every project, and an admin
+ * account has no project cap (shared/lib/plans.ts) — so that path has no upper bound at all.
  */
 export const STORAGE_REMOVE_BATCH = 100;
 

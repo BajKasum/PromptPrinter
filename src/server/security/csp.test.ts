@@ -6,9 +6,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-const TURNSTILE: ThirdParties = { turnstile: true, lemonSqueezy: false };
-const LEMON: ThirdParties = { turnstile: false, lemonSqueezy: true };
-const BOTH: ThirdParties = { turnstile: true, lemonSqueezy: true };
+const TURNSTILE: ThirdParties = { turnstile: true };
 
 const directive = (csp: string, name: string) =>
   csp.split("; ").find((d) => d === name || d.startsWith(`${name} `)) ?? "";
@@ -76,25 +74,8 @@ describe("buildCsp", () => {
     expect(buildCsp("n")).not.toContain("'unsafe-eval'");
   });
 
-  it("allows both Lemon Squeezy script hosts, not just the advertised one", () => {
-    const csp = buildCsp("n", LEMON);
-    // Der beworbene Host leitet auf den Asset-Host weiter, und eine CSP prüft
-    // das Weiterleitungsziel mit. Fehlt der zweite Eintrag, ist der Checkout
-    // tot — deshalb steht hier beides einzeln, nicht als ein Teilstring.
-    expect(csp).toContain("https://app.lemonsqueezy.com");
-    expect(csp).toContain("https://assets.lemonsqueezy.com");
-  });
-
-  it("allows the checkout overlay to be framed", () => {
-    expect(buildCsp("n", LEMON)).toContain("frame-src https://*.lemonsqueezy.com");
-    expect(buildCsp("n", BOTH)).toContain("frame-src https://challenges.cloudflare.com https://*.lemonsqueezy.com");
-  });
-
-  it("keeps Lemon Squeezy out of connect-src and img-src (the script needs neither)", () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-    const csp = buildCsp("n", BOTH);
-    expect(directive(csp, "connect-src")).not.toContain("lemonsqueezy");
-    expect(directive(csp, "img-src")).not.toContain("lemonsqueezy");
+  it("allows the Turnstile challenge to be framed, and nothing else", () => {
+    expect(directive(buildCsp("n", TURNSTILE), "frame-src")).toBe("frame-src https://challenges.cloudflare.com");
   });
 
   it("blocks plugins and restricts base/form targets to same-origin", () => {
@@ -105,9 +86,8 @@ describe("buildCsp", () => {
   });
 });
 
-// Betriebs-Audit 04.10.2026: Turnstile und Lemon Squeezy standen in JEDER
-// Policy, auch auf Seiten, die keines von beiden laden. Jetzt bekommt eine
-// Route nur, was sie einbindet.
+// Eine Route bekommt nur den Drittanbieter, den sie einbindet. Einen
+// Zahlungsanbieter gibt es nicht mehr, keine Policy nennt einen.
 describe("Drittanbieter pro Route", () => {
   it("gibt ohne Angabe keinem Drittanbieter etwas frei, in keiner Direktive", () => {
     for (const csp of [buildCsp("n"), buildStaticCsp()]) {
@@ -122,23 +102,16 @@ describe("Drittanbieter pro Route", () => {
     expect(directive(buildStaticCsp(), "frame-src")).toBe("frame-src 'none'");
   });
 
-  it("gibt Turnstile nur dort frei, wo es gebraucht wird, nicht Lemon Squeezy dazu", () => {
+  it("gibt Turnstile dort frei, wo es gebraucht wird, und sonst keinen Host", () => {
     for (const csp of [buildCsp("n", TURNSTILE), buildStaticCsp(TURNSTILE)]) {
       expect(csp).toContain("challenges.cloudflare.com");
       expect(csp).not.toContain("lemonsqueezy");
     }
   });
 
-  it("gibt Lemon Squeezy nur dort frei, wo es gebraucht wird, nicht Turnstile dazu", () => {
-    for (const csp of [buildCsp("n", LEMON), buildStaticCsp(LEMON)]) {
-      expect(csp).toContain("lemonsqueezy.com");
-      expect(csp).not.toContain("cloudflare");
-    }
-  });
-
   it("sperrt Inline-Event-Handler in beiden Policies", () => {
-    expect(directive(buildCsp("n", BOTH), "script-src-attr")).toBe("script-src-attr 'none'");
-    expect(directive(buildStaticCsp(BOTH), "script-src-attr")).toBe("script-src-attr 'none'");
+    expect(directive(buildCsp("n", TURNSTILE), "script-src-attr")).toBe("script-src-attr 'none'");
+    expect(directive(buildStaticCsp(TURNSTILE), "script-src-attr")).toBe("script-src-attr 'none'");
   });
 
   // Vercel Speed Insights (shared/providers/site-speed-insights.tsx) braucht
@@ -156,21 +129,18 @@ describe("Drittanbieter pro Route", () => {
 });
 
 describe("thirdPartiesFor", () => {
-  const none = { turnstile: false, lemonSqueezy: false };
+  const none = { turnstile: false };
 
   it.each([
-    ["/login", { turnstile: true, lemonSqueezy: false }],
-    ["/signup", { turnstile: true, lemonSqueezy: false }],
-    ["/reset-password", { turnstile: true, lemonSqueezy: false }],
-    ["/kontakt", { turnstile: true, lemonSqueezy: false }],
-    ["/pricing", { turnstile: false, lemonSqueezy: true }],
-    ["/billing", { turnstile: false, lemonSqueezy: true }],
-    ["/plans", { turnstile: false, lemonSqueezy: true }],
+    ["/login", { turnstile: true }],
+    ["/signup", { turnstile: true }],
+    ["/reset-password", { turnstile: true }],
+    ["/kontakt", { turnstile: true }],
   ])("%s -> %j", (path, expected) => {
     expect(thirdPartiesFor(path)).toEqual(expected);
   });
 
-  it.each(["/", "/docs", "/docs/chat-mit-finn", "/agb", "/datenschutz", "/chats/new", "/settings", "/usage"])(
+  it.each(["/", "/docs", "/docs/chat-mit-finn", "/agb", "/datenschutz", "/chats/new", "/settings", "/usage", "/open-source"])(
     "%s bekommt nichts",
     (path) => {
       expect(thirdPartiesFor(path)).toEqual(none);
@@ -182,12 +152,12 @@ describe("thirdPartiesFor", () => {
   });
 
   it("nimmt einen angehängten Schrägstrich nicht als andere Seite", () => {
-    expect(thirdPartiesFor("/pricing/")).toEqual({ turnstile: false, lemonSqueezy: true });
+    expect(thirdPartiesFor("/login/")).toEqual({ turnstile: true });
     expect(thirdPartiesFor("/")).toEqual(none);
   });
 
   it("schliesst Pfade mit gleichem Anfang nicht versehentlich ein", () => {
-    expect(thirdPartiesFor("/pricing-extra")).toEqual(none);
+    expect(thirdPartiesFor("/login-extra")).toEqual(none);
     expect(thirdPartiesFor("/login/x")).toEqual(none);
   });
 });
@@ -208,11 +178,11 @@ describe("buildStaticCsp", () => {
     // Erlaubnis. Diese Policy darf deshalb niemals einen 'nonce-…'-Token
     // enthalten, gleich welcher Wert.
     expect(buildStaticCsp()).not.toMatch(/'nonce-/);
-    expect(buildStaticCsp(BOTH)).not.toMatch(/'nonce-/);
+    expect(buildStaticCsp(TURNSTILE)).not.toMatch(/'nonce-/);
   });
 
   it("allows inline execution via 'unsafe-inline' instead, so Next's own scripts run", () => {
-    for (const parties of [undefined, TURNSTILE, LEMON, BOTH]) {
+    for (const parties of [undefined, TURNSTILE]) {
       expect(directive(buildStaticCsp(parties), "script-src")).toContain("'unsafe-inline'");
     }
   });
@@ -223,22 +193,18 @@ describe("buildStaticCsp", () => {
     // buildStaticCsp() in der Praxis genauso blockieren wie buildCsp() es
     // ohne passenden Nonce tut — der Test hält fest, dass die beiden
     // Varianten sich nie überschneiden können.
-    const scriptSrc = directive(buildStaticCsp(BOTH), "script-src");
+    const scriptSrc = directive(buildStaticCsp(TURNSTILE), "script-src");
     expect(scriptSrc).not.toMatch(/'nonce-/);
     expect(scriptSrc).toContain("'unsafe-inline'");
   });
 
-  it("allows Turnstile and Lemon Squeezy where a public route loads them", () => {
-    // Turnstile: /login, /signup, /reset-password. Lemon Squeezy: /pricing
-    // (ProCheckoutCta zeigt den Checkout auch einem eingeloggten Besucher).
-    const csp = buildStaticCsp(BOTH);
+  it("allows Turnstile where a public route loads it (/login, /signup, /reset-password, /kontakt)", () => {
+    const csp = buildStaticCsp(TURNSTILE);
     expect(csp).toContain("https://challenges.cloudflare.com");
-    expect(csp).toContain("https://app.lemonsqueezy.com");
-    expect(csp).toContain("https://assets.lemonsqueezy.com");
-    expect(csp).toContain("frame-src https://challenges.cloudflare.com https://*.lemonsqueezy.com");
+    expect(csp).toContain("frame-src https://challenges.cloudflare.com");
   });
 
-  it("still reaches Supabase directly from the browser (login/signup forms, ProCheckoutCta)", () => {
+  it("still reaches Supabase directly from the browser (login/signup forms)", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://abcxyz.supabase.co");
     expect(buildStaticCsp(TURNSTILE)).toContain(
       "connect-src 'self' https://challenges.cloudflare.com https://abcxyz.supabase.co"
@@ -247,7 +213,7 @@ describe("buildStaticCsp", () => {
   });
 
   it("shares every other directive verbatim with buildCsp, only script-src differs", () => {
-    for (const parties of [undefined, TURNSTILE, LEMON, BOTH]) {
+    for (const parties of [undefined, TURNSTILE]) {
       const strict = buildCsp("irrelevant-for-this-comparison", parties);
       const staticCsp = buildStaticCsp(parties);
       const directivesOf = (csp: string) =>
