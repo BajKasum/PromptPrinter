@@ -1,6 +1,7 @@
 // Die Befehle der Seiten /terminal (im Header "CLI") und /mcp, an einer Stelle und gegen das Repo
 // `promptprinter-cli` gelesen (README, package.json: Befehl `promptprinter`, Einstieg die Datei promptprinter.mjs im
-// Ordner bin, Node 22 oder neuer, keine Abhängigkeiten).
+// Ordner bin, Node 22 oder neuer, keine Abhängigkeiten; ohne Konto `--local` mit `--base-url`, `--model` und dem
+// Key nur in `PROMPTPRINTER_API_KEY`).
 //
 // Solange das Paket nicht auf npm liegt, zeigen beide Seiten die Installation aus dem Quellcode. Ein Paket
 // namens `promptprinter` auf npm, das nicht von diesem Projekt stammt, soll niemand wegen dieser Seite
@@ -60,6 +61,43 @@ export function cliInstallSteps(published: boolean = NPM_PUBLISHED): InstallStep
 /** Der Befehl, der die Terminal-App startet, je nach Stand. */
 export function cliStartCommand(published: boolean = NPM_PUBLISHED): string {
   return published ? CLI_PACKAGE : "node bin/promptprinter.mjs";
+}
+
+/** Mit `--local` ohne `--base-url`: Ollama auf diesem Rechner, über die Chat-Schnittstelle von OpenAI. */
+export const CLI_LOCAL_DEFAULT_BASE_URL = "http://localhost:11434/v1";
+
+/**
+ * Der einzige Weg für einen Key mit `--local`: diese Umgebungsvariable. Als Argument landete er im Verlauf der Shell
+ * und in der Prozessliste, deshalb kennt das Programm kein Argument dafür.
+ */
+export const CLI_LOCAL_KEY_ENV = "PROMPTPRINTER_API_KEY";
+
+/** Das freie Modell, mit dem das README von promptprinter-cli den Weg ohne Konto zeigt. */
+export const CLI_LOCAL_MODEL = "qwen3";
+
+/**
+ * Finn ohne Konto (`--local`): an einem Modell auf dem eigenen Rechner oder an jedem Server mit der Chat-Schnittstelle
+ * von OpenAI. Nichts davon geht an PromptPrinter. Der Code kommt aus der Installation oben (cliInstallSteps).
+ */
+export function cliLocalSteps(published: boolean = NPM_PUBLISHED): InstallStep[] {
+  const start = `${cliStartCommand(published)} --local`;
+  return [
+    {
+      title: "Ein Modell holen",
+      body: "Installiere Ollama und hol dir ein freies Modell. Es läuft danach auf deinem eigenen Rechner.",
+      code: `ollama pull ${CLI_LOCAL_MODEL}`,
+    },
+    {
+      title: "Mich ohne Konto starten",
+      body: `${published ? "Nach der Installation oben" : "Im Ordner aus Schritt 1 oben"}, mit --local. Ohne weitere Angabe rede ich mit Ollama unter ${CLI_LOCAL_DEFAULT_BASE_URL}. Hat es genau ein Modell, nehme ich das, bei mehreren sagst du mit --model, welches.`,
+      code: start,
+    },
+    {
+      title: "Ein anderer Server",
+      body: `Jeder Server mit der Chat-Schnittstelle von OpenAI geht auch, zum Beispiel LM Studio, mit --base-url. Verlangt er einen Key, gehört der in die Umgebungsvariable ${CLI_LOCAL_KEY_ENV}, nie in ein Argument: dort landete er im Verlauf deiner Shell.`,
+      code: `${start} --base-url http://localhost:1234/v1 --model <name>`,
+    },
+  ];
 }
 
 /** Was man im Programm tippt. Reihenfolge wie im README des Repos. */
