@@ -8,7 +8,7 @@ import { reserveModelCall } from "@/server/model-call";
 import { chatCompleteStream, classifyLlmFailure, llmConfig, LlmEmptyReplyError } from "@/server/llm";
 import { requestT } from "@/server/i18n";
 import { describeLlmFailure } from "@/features/chat/lib/turn-failures";
-import { isFilledFrom } from "@/features/chat/lib/placeholders";
+import { isFilledFrom } from "@/shared/lib/placeholders";
 import { deliveredPromptHash } from "@/server/free-trial";
 import { captureError, logEvent } from "@/shared/lib/observability";
 import {

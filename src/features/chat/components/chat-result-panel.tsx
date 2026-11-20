@@ -5,7 +5,7 @@ import { PromptCopiedContext } from "@/features/chat/lib/prompt-copied";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { ChatReplyActions } from "@/features/chat/components/chat-transcript";
 import { RefineChips } from "@/features/chat/components/refine-chips";
-import { PlaceholderForm } from "@/features/chat/components/placeholder-form";
+import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { PromptActions } from "@/features/chat/components/prompt-actions";
 import { useCallback, useEffect, useRef, useState } from "react";
