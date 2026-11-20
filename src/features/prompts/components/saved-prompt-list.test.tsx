@@ -110,6 +110,49 @@ describe("SavedPromptList", () => {
     expect(writeText).toHaveBeenCalledWith(prompt.content);
   });
 
+  describe("filling in placeholders", () => {
+    const template: SavedPrompt = {
+      ...prompt,
+      id: "p3",
+      title: "Brief",
+      content: "Schreib an [Name des Vermieters] wegen [Thema]. Unterschrift: [dein Name]",
+    };
+
+    it("offers the chat's form, with a hint that does not mention the test run", async () => {
+      const user = userEvent.setup();
+      render(<SavedPromptList userId="u1" prompts={[template]} />);
+      await openPrompt(user, "Brief");
+
+      await user.click(screen.getByRole("button", { name: "Platzhalter ausfüllen (3)" }));
+      expect(screen.getByText(/Gespeichert bleibt der Prompt mit seinen Platzhaltern/)).toBeInTheDocument();
+      expect(screen.queryByText(/Probelauf/)).not.toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Name des Vermieters"), "Frau Muster");
+      expect(screen.getByText("Schreib an Frau Muster wegen [Thema]. Unterschrift: [dein Name]")).toBeInTheDocument();
+    });
+
+    it("copies the filled-in version from the form and keeps the saved text in the bar", async () => {
+      const user = userEvent.setup();
+      Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+      render(<SavedPromptList userId="u1" prompts={[template]} />);
+      await openPrompt(user, "Brief");
+      await user.click(screen.getByRole("button", { name: "Platzhalter ausfüllen (3)" }));
+      await user.type(screen.getByLabelText("Thema"), "Heizung");
+
+      await user.click(screen.getByRole("button", { name: "Ausgefüllt kopieren" }));
+      expect(writeText).toHaveBeenLastCalledWith("Schreib an [Name des Vermieters] wegen Heizung. Unterschrift: [dein Name]");
+      await user.click(screen.getByRole("button", { name: "Kopieren" }));
+      expect(writeText).toHaveBeenLastCalledWith(template.content);
+    });
+
+    it("shows no form for a prompt without placeholders", async () => {
+      const user = userEvent.setup();
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      await openPrompt(user);
+      expect(screen.queryByRole("button", { name: /Platzhalter ausfüllen/ })).not.toBeInTheDocument();
+    });
+  });
+
   // QA finding N-1: naming is the point of a saved-prompt library
   // ("sessionStartPrompt"), so a saved prompt must be renameable.
   describe("renaming", () => {

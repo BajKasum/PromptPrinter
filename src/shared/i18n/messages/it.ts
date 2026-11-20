@@ -185,6 +185,7 @@ export const it: Messages = {
       open: "Compila i segnaposto ({count})",
       title: "Compila i segnaposto",
       hint: "Quello che scrivi resta in questo browser finché non clicchi su Prova, che invia la versione compilata all'IA. Il prompt salvato mantiene i suoi segnaposto.",
+      hintSaved: "Quello che scrivi resta in questo browser. Il prompt salvato mantiene i suoi segnaposto.",
       skip: "Non è un segnaposto",
       skipLabel: "Non trattare «{name}» come segnaposto",
       preview: "Anteprima",
