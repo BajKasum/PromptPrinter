@@ -850,6 +850,9 @@ export const it: Messages = {
     deleteConfirmTitle: "Eliminare il prompt?",
     deleteConfirmBody: "«{title}» verrà rimosso definitivamente. L'operazione non può essere annullata.",
     deleteConfirm: "Elimina definitivamente",
+    startFrom: "Usa come punto di partenza",
+    startFromLabel: "Inizia una nuova chat a partire da «{title}»",
+    startFromPrefix: "Adatta questo prompt:",
   },
 
   library: {

@@ -854,6 +854,9 @@ export const fr: Messages = {
     deleteConfirmTitle: "Supprimer le prompt ?",
     deleteConfirmBody: "« {title} » sera supprimé définitivement. Cette action est irréversible.",
     deleteConfirm: "Supprimer définitivement",
+    startFrom: "Utiliser comme point de départ",
+    startFromLabel: "Démarrer un nouveau chat à partir de « {title} »",
+    startFromPrefix: "Adapte ce prompt :",
   },
 
   library: {

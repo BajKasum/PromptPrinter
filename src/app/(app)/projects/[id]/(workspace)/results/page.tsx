@@ -69,7 +69,7 @@ export default async function ProjectResultsPage({ params }: { params: Params })
     RESULTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);
-  const prompts = mapSavedPromptRows(rows, t.prompts.fallbackTitle);
+  const prompts = mapSavedPromptRows(rows, t.prompts.fallbackTitle).map((p) => ({ ...p, projectId: id }));
 
   const backLink = (
     <Link
