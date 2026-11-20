@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import SkillPage from "./page";
 import {
   SKILL_COMMIT,
-  SKILL_REPO_URL,
+  SKILL_SOURCE_URL,
   SKILL_ZIP_FILENAME,
   SKILL_ZIP_SHA256,
   SKILL_ZIP_URL,
@@ -43,7 +43,7 @@ describe("Seite /skill", () => {
     // Ein fester Commit, kein Tag (#240): was die Seite zeigt, kann sich nicht unter den Besuchern verschieben.
     expect(SKILL_ZIP_URL).toBe(`https://github.com/BajKasum/promptprinter-pp/archive/${SKILL_COMMIT}.zip`);
     const repo = screen.getByRole("link", { name: /Auf GitHub ansehen/ });
-    expect(repo).toHaveAttribute("href", SKILL_REPO_URL);
+    expect(repo).toHaveAttribute("href", SKILL_SOURCE_URL);
     expect(repo).toHaveAttribute("target", "_blank");
     expect(repo.getAttribute("rel")).toContain("noopener");
   });
@@ -70,7 +70,7 @@ describe("Seite /skill", () => {
     const box = screen.getByRole("region", { name: "So bekommst du ihn" });
     expect(box.className).toContain("bg-accent");
     expect(within(box).getByRole("link", { name: /ZIP herunterladen/ })).toHaveAttribute("href", SKILL_ZIP_URL);
-    expect(within(box).getByRole("link", { name: /Auf GitHub ansehen/ })).toHaveAttribute("href", SKILL_REPO_URL);
+    expect(within(box).getByRole("link", { name: /Auf GitHub ansehen/ })).toHaveAttribute("href", SKILL_SOURCE_URL);
     // Die drei Schritte stehen im Kasten, nicht erst darunter.
     expect(within(box).getAllByRole("listitem").map((li) => li.querySelector("h3")?.textContent)).toEqual([
       "Herunterladen",

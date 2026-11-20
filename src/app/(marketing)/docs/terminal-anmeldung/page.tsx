@@ -8,12 +8,13 @@ const doc = docBySlug("terminal-anmeldung")!;
 
 export const metadata: Metadata = docMetadata(doc);
 
-// Die Befehle folgen dem Repo `promptprinter-cli` (README). Das Paket liegt noch nicht auf npm, deshalb zeigt die
+// Die Befehle folgen dem Programm in `cli/` dieses Repos (README). Das Paket liegt noch nicht auf npm, deshalb zeigt die
 // Seite den Weg aus dem Quellcode und keinen `npm install`: ein fremdes Paket gleichen Namens soll niemand wegen
 // dieser Seite installieren. Nach der Veröffentlichung kommen `npm install -g promptprinter`, `npx promptprinter`
 // und die Einrichtung mit `npx -y promptprinter mcp` hierher, zusammen mit `updated` in docs-nav.ts.
-const REPO_URL = "https://github.com/BajKasum/promptprinter-cli";
-const ENTRY = "/pfad/zu/promptprinter-cli/bin/promptprinter.mjs";
+const REPO_URL = "https://github.com/BajKasum/PromptPrinter";
+const SOURCE_URL = `${REPO_URL}/tree/main/cli`;
+const ENTRY = "/pfad/zu/PromptPrinter/cli/bin/promptprinter.mjs";
 const DESKTOP_CONFIG = JSON.stringify(
   { mcpServers: { promptprinter: { command: "node", args: [ENTRY, "mcp"] } } },
   null,
@@ -31,13 +32,13 @@ export default function Page() {
       <p>
         Node 22 oder neuer und ein Konto bei PromptPrinter. Das Programm heisst <code>promptprinter</code> und
         hat keine weiteren Abhängigkeiten. Es liegt noch nicht auf npm, du holst es dir von{" "}
-        <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
           GitHub
         </a>
         :
       </p>
       <pre>
-        <code>{`git clone ${REPO_URL}.git\ncd promptprinter-cli\nnode bin/promptprinter.mjs`}</code>
+        <code>{`git clone --depth 1 ${REPO_URL}.git\ncd PromptPrinter/cli\nnode bin/promptprinter.mjs`}</code>
       </pre>
       <p>
         Ein Konto auf Free chattet auch im Terminal nur mit einem{" "}

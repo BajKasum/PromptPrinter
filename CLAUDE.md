@@ -22,7 +22,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Ein Chat (Finn):** eine gebündelte Rückfrage, nur zu dem, was für die Aufgabe zählt
   (Text: Leser, Ton, Länge; Software: Screens, Daten, Login), dann ein fertiger Prompt im Codeblock,
   der in jeder KI läuft. Systemprompt: `src/server/system-prompt.ts` (mit Test; die Regeln nutzt auch der
-  Skill `/pp` im Schwester-Repo `promptprinter-pp`, Änderungen dort mitprüfen). Streaming per SSE, Antwort neu erzeugen,
+  Skill `/pp` in `skill/`, wörtlich kopiert die CLI in `cli/`, `cli-contract.test.ts`; Änderungen dort mitprüfen). Streaming per SSE, Antwort neu erzeugen,
   eigene Frage bearbeiten, Sprachmodus (Web Speech API), Fotos und Dateien als Anhänge (dauerhaft gespeichert). "Über mich" (Einstellungen, `profiles.about_me`, `shared/lib/about-me.ts`) geht als gekennzeichneter Block in jeden Zug (`api/chat/turn.ts`). Am fertigen Prompt: In ChatGPT/Claude öffnen (kopieren, Seite leer öffnen) und Probelauf (`api/test-run`, ohne Finns Systemprompt, nicht gespeichert).
 - **Projekte sind Workspaces:** Anweisungen, Struktur (je nach `projects.type`
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
@@ -35,7 +35,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Bezahlung gibt es nicht (seit 2026-11-19, Stand davor im Tag `v1-saas`); `/usage` zeigt Projekte, Gratis-Prompts und den eigenen Key.
 - **Sprachen:** die eingeloggte App gibt es auf de/en/fr/it/es
   (`src/shared/i18n/messages/`), Landing, Auth-Seiten und Rechtstexte bleiben deutsch. Das README ist englisch (Gesicht des Open-Source-Projekts, Bilder in `docs/readme/`): wer Funktionen, die Wege zum Ausprobieren oder die Lizenz ändert, zieht es mit, ohne Pro, Preise und Bau-Tools, Zahlen nur gemessen.
-- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/open-source` (kostenlos und Open Source, ohne Preis; `/pricing` und `/pro-bald` leiten dorthin), `/skill` (der Skill `/pp` zum Herunterladen als ZIP eines festen Commits mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung, dazu der Weg ohne Konto mit `--local`) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
+- **Öffentlich:** Landing (Hero, HowItWorks, ProductShowcase, FinalCTA), `/open-source` (kostenlos und Open Source, ohne Preis; `/pricing` und `/pro-bald` leiten dorthin), `/skill` (der Skill `/pp` aus `skill/` zum Herunterladen als ZIP eines festen Commits des archivierten Repos `promptprinter-pp` mit SHA-256, Kasten oben, keine Messung auf der Seite; `skill-data.ts`, `skill-archive.yml` rechnet wöchentlich nach), `/terminal` (Header "CLI", `/cli` ist die Geräte-Anmeldung, dazu der Weg ohne Konto mit `--local`) und `/mcp` für die Terminal-App und ihren MCP-Server (Befehle in `terminal-data.ts`, `NPM_PUBLISHED` steht auf false, bis Kasum das Paket veröffentlicht),
   Hilfe `/docs` (mit "Selbst betreiben", Befehle in `self-hosting.ts`, gegen `docs/SETUP.md` getestet), `/ueber`, `/kontakt` (mit Formular, `/api/contact` über Resend), `/vergleich` mit vier Vergleichen, `/aufgaben` mit fünf Aufgabenseiten (Beispiel-Prompts von Hand nach Finns Regeln, keine Messwerte) und die
   Rechtstexte (Impressum, AGB, Datenschutz, Cookies, Nutzungsrichtlinie; `/rueckerstattung` leitet auf `/agb`). Dass PromptPrinter Open Source ist, steht auf Landing, `/open-source`, `/ueber`, `/terminal`, in der Hilfe und in `llms.txt` (Links aus `features/marketing/lib/open-source.ts`, Guard `open-source-pages.test.ts`).
 - **Entfernt, nicht wiederherstellen:** Bezahlung und Pro (Lemon Squeezy, Checkout, Webhook, Kundenportal, `/billing` und `/plans` leiten auf `/usage`), die Generierungs-Pipeline (`/api/generate`,
@@ -67,7 +67,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst
   ohne URL (Entscheid 2026-10-15). `GITHUB_TOKEN` ist gesetzt. Sicherheitsprotokoll: Tabelle `security_events`, nur zum Anhängen, 180 Tage per `pg_cron` (`docs/SETUP.md`). Sicherheitsmeldungen: `SECURITY.md`, per Mail an die Adresse aus `legal.ts`.
 - **Terminal-Anmeldung (Server-Teil der Terminal-App):** Geräte-Code unter `src/app/api/cli/`, Bestätigungsseite `/cli`,
-  Bearer neben dem Cookie nur im Chat, in `api/cli/me` und in den Leserouten `GET /api/cli/prompts` und `/api/cli/prompts/[id]` für den MCP-Server des Programms (gespeicherte Prompts; `createClientForRequest`, Guard `bearer-routes.test.ts`); das Programm liegt im Repo `promptprinter-cli`. Migration 0050
+  Bearer neben dem Cookie nur im Chat, in `api/cli/me` und in den Leserouten `GET /api/cli/prompts` und `/api/cli/prompts/[id]` für den MCP-Server des Programms (gespeicherte Prompts; `createClientForRequest`, Guard `bearer-routes.test.ts`); das Programm liegt in `cli/` (eigenes Paket, CI `cli.yml`; ändert sich eine Datei aus `cli/contract/pins.json`, schlägt `cli-contract.test.ts` an: `cli/` nachziehen, dann `node cli/scripts/check-contract.mjs --update`). Migration 0050
   und Code sind in Produktion. Entscheid #228: echte Supabase-Sitzung, kein eigener Token-Typ; `cli_sessions` macht sie sichtbar, einzeln widerrufbar und höchstens 30 Tage gültig. Verlauf: Changelog 2026-10-29 und 2026-11-02.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
   nur im Produktions-Build auf Vercel (`measuresSpeed`: `VERCEL` gesetzt, eine eigene Installation lädt nichts). Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
@@ -78,7 +78,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
 - **Qualität:** das Gate (siehe "Befehle"), Guards in `tests/guards/` (Schichten,
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
   Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit),
-  `e2e.yml`, `e2e-prod.yml` (Produktionsaufbau), `docker.yml`, `audit.yml` (täglich, meldet per Issue); `permissions: contents: read`, Actions an
+  `e2e.yml`, `e2e-prod.yml` (Produktionsaufbau), `docker.yml`, `audit.yml` (täglich, meldet per Issue), `cli.yml` und `skill.yml` (Node 22 und 24 auf drei Systemen, die einzige erlaubte Matrix in `node-version.test.ts`); `permissions: contents: read`, Actions an
   Commit-SHAs (`workflows.test.ts`, dazu die Repo-Einstellung `sha_pinning_required`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
   ändern würde: [docs/SETUP.md](docs/SETUP.md), Abschnitt "Projekt-Gedächtnis".
@@ -303,6 +303,8 @@ tests/guards/  Repo-weite Invarianten (Kontrast, server-only, Schichtgrenzen,
                Routenlisten, SEO-Metadaten, sichtbare Überschriften, Cookies,
                Node-Version, Mail-Vorlagen, Dependabot, Migrationen)
 e2e/           Browser-Smoketests (Playwright, lokaler Supabase-Stack, Postfach)
+cli/           Terminal-App, eigenes npm-Paket ohne Abhängigkeiten (node:test, Mutationen; ESLint und tsc lassen es aus)
+skill/         Skill /pp (skill/pp), Installer, Tests, Messung; nicht mehr weiterentwickelt
 supabase/migrations/  SQL, Schema, RLS, Grants, gehärtete Funktionen (0001→)
 ```
 

@@ -8,7 +8,7 @@ import { PageHeader } from "@/features/marketing/components/page-header";
 import { TerminalWindow } from "@/features/marketing/components/terminal-window";
 import {
   CLI_PATH_PLACEHOLDER,
-  CLI_REPO_URL,
+  CLI_SOURCE_URL,
   MCP_TOOLS,
   NPM_PUBLISHED,
   cliStartCommand,
@@ -23,7 +23,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/mcp",
 });
 
-// Der MCP-Server der Terminal-App (`promptprinter mcp`, stdio, Repo promptprinter-cli). Aufbau wie /skill und
+// Der MCP-Server der Terminal-App (`promptprinter mcp`, stdio, cli/ in diesem Repo). Aufbau wie /skill und
 // /terminal. Die Befehle stehen in features/marketing/lib/terminal-data.ts und wechseln mit NPM_PUBLISHED von
 // der Einrichtung aus dem Quellcode auf npx. Genannt sind Claude Code und Claude Desktop, weil die Einrichtung
 // für genau diese beiden hier steht.
@@ -67,7 +67,7 @@ export default function McpPage() {
                 <Link href="/terminal">Erst die Terminal-App</Link>
               </Button>
               <Button asChild variant="ghost">
-                <a href={CLI_REPO_URL} target="_blank" rel="noopener">
+                <a href={CLI_SOURCE_URL} target="_blank" rel="noopener">
                   <GithubIcon className="h-4 w-4" aria-hidden />
                   Auf GitHub ansehen
                 </a>

@@ -10,7 +10,7 @@ import {
   SKILL_CARDS,
   SKILL_COMMIT,
   SKILL_INSTALL_STEPS,
-  SKILL_REPO_URL,
+  SKILL_SOURCE_URL,
   SKILL_VERSION,
   SKILL_ZIP_FILENAME,
   SKILL_ZIP_SHA256,
@@ -25,9 +25,9 @@ export const metadata: Metadata = pageMetadata({
   path: "/skill",
 });
 
-// Die Seite für den Skill aus dem Schwester-Repo promptprinter-pp. Der Kasten "So bekommst du ihn" mit den
+// Die Seite für den Skill aus skill/ in diesem Repo. Der Kasten "So bekommst du ihn" mit den
 // Knöpfen und den drei Schritten steht direkt unter der Überschrift, die Erklärung danach; die Messung des
-// Skills steht im README des Schwester-Repos, nicht hier. Keine Bau-Tools als Versprechen (CLAUDE.md,
+// Skills steht in skill/README.md, nicht hier. Keine Bau-Tools als Versprechen (CLAUDE.md,
 // 2026-10-11): genannt ist nur Claude Code. Kein Preis auf der Seite ausser "kostenlos": der Skill kostet
 // nichts, wie die App auch (/open-source).
 
@@ -67,7 +67,7 @@ export default function SkillPage() {
                 </a>
               </Button>
               <Button asChild variant="ghost">
-                <a href={SKILL_REPO_URL} target="_blank" rel="noopener">
+                <a href={SKILL_SOURCE_URL} target="_blank" rel="noopener">
                   <GithubIcon className="h-4 w-4" aria-hidden />
                   Auf GitHub ansehen
                 </a>

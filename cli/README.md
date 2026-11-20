@@ -6,7 +6,7 @@
 
 # PromptPrinter in your terminal
 
-Tell Finn what you want, answer one short question, get one finished prompt that works in any AI. Two ways to run it:
+Tell Finn what you want, answer one short question, get one finished prompt that works in any AI. This program lives in the `cli/` folder of [PromptPrinter](https://github.com/BajKasum/PromptPrinter), next to the web app. Two ways to run it:
 
 - **Without an account** (`--local`): Finn runs on a free open model on your own computer through [Ollama](https://ollama.com), or on any server with an OpenAI-compatible chat API (LM Studio, llama.cpp, vLLM, OpenRouter). Nothing goes to PromptPrinter.
 - **With your [PromptPrinter](https://promptprinter.app) account**: the same Finn as in the browser, your conversations show up there too.
@@ -29,8 +29,8 @@ Finn: Here is your prompt.
 Needs Node 22 or newer. No dependencies.
 
 ```bash
-git clone https://github.com/BajKasum/promptprinter-cli.git
-cd promptprinter-cli
+git clone --depth 1 https://github.com/BajKasum/PromptPrinter.git
+cd PromptPrinter/cli
 ```
 
 ### Without an account, with a free model
@@ -48,7 +48,7 @@ If Ollama has exactly one model, Finn takes it; with several, name one with `--m
 PROMPTPRINTER_API_KEY=sk-or-... node bin/promptprinter.mjs --local --base-url https://openrouter.ai/api/v1 --model <name>:free
 ```
 
-A key goes only into `PROMPTPRINTER_API_KEY`, never into an argument, where it would land in your shell history and the process list. Only `https` is accepted, `http` only for a server on this computer. Finn's rules are the same as on promptprinter.app ([`src/finn-prompt.mjs`](src/finn-prompt.mjs), copied from the main repository). How good the prompts get depends on the model you choose.
+A key goes only into `PROMPTPRINTER_API_KEY`, never into an argument, where it would land in your shell history and the process list. Only `https` is accepted, `http` only for a server on this computer. Finn's rules are the same as on promptprinter.app ([`src/finn-prompt.mjs`](src/finn-prompt.mjs), a copy of the web app's rules that a test keeps identical). How good the prompts get depends on the model you choose.
 
 ### With a PromptPrinter account
 
@@ -113,7 +113,7 @@ It never signs in by itself: run `promptprinter` once in a terminal and sign in,
 From source, register it with the full path to this folder:
 
 ```bash
-claude mcp add promptprinter -- node /path/to/promptprinter-cli/bin/promptprinter.mjs mcp
+claude mcp add promptprinter -- node /path/to/PromptPrinter/cli/bin/promptprinter.mjs mcp
 ```
 
 <!-- Ab der ersten Veröffentlichung sichtbar machen und den Satz "From source" samt Befehl oben ersetzen (CLAUDE.md, "Veröffentlichung"):
@@ -160,9 +160,9 @@ The server speaks MCP `2026-07-28` (per-request metadata, `server/discover`) and
 npm test          # tests against local stub servers (PromptPrinter and an OpenAI-compatible model server)
 npm run check     # syntax
 npm run mutation  # breaks each safeguard, the tests must notice
-npm run contract  # compares the server's interface with the pinned version
+npm run contract  # compares the web app's files this program builds on with pinned checksums
 ```
 
-The real program against a local server, confirmed in the browser, needs the main repository and runs outside `npm test`: [acceptance/README.md](acceptance/README.md).
+The real program against a local server, confirmed in the browser, needs the web app in the repository root and runs outside `npm test`: [acceptance/README.md](acceptance/README.md).
 
 MIT, see [LICENSE](LICENSE). Security reports: [SECURITY.md](SECURITY.md).

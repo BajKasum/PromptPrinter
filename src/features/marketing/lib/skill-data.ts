@@ -1,7 +1,14 @@
-// Die Adressen und Texte der Seite /skill, an einer Stelle und gegen den Stand des Schwester-Repos
-// `promptprinter-pp` gelesen (README, Skill 0.3.0). Die Messung des Skills steht dort im README, nicht auf
-// der Seite: sie führt direkt zum Download.
+// Die Adressen und Texte der Seite /skill, an einer Stelle und gegen den Skill in skill/ gelesen (README,
+// Skill 0.3.0 im Download). Die Messung des Skills steht in skill/README.md, nicht auf der Seite: sie führt
+// direkt zum Download.
 
+/** Der Quelltext des Skills in diesem Repo, für den Link "auf GitHub". */
+export const SKILL_SOURCE_URL = "https://github.com/BajKasum/PromptPrinter/tree/main/skill";
+
+/**
+ * Das archivierte Repo, in dem der Skill entstand. Es liefert das ZIP des festen Commits unten weiter aus; ein
+ * archiviertes Repo ist nur noch lesbar, Commit und Prüfsumme bleiben dieselben.
+ */
 export const SKILL_REPO_URL = "https://github.com/BajKasum/promptprinter-pp";
 
 /** Der Skill in der Fassung, die das Schwester-Repo trägt (Datei SKILL.md, Feld version). */

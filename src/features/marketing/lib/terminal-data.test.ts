@@ -28,14 +28,14 @@ describe("terminal-data", () => {
   it("zeigt vor der Veröffentlichung nur den Weg aus dem Quellcode", () => {
     const text = all(false);
     expect(text).not.toMatch(/\bnpm install\b|\bnpx\b/);
-    expect(text).toContain("git clone https://github.com/BajKasum/promptprinter-cli.git");
+    expect(text).toContain("git clone --depth 1 https://github.com/BajKasum/PromptPrinter.git\ncd PromptPrinter/cli");
     expect(cliStartCommand(false)).toBe("node bin/promptprinter.mjs");
     expect(mcpSetup(false).claudeCode).toBe(
-      "claude mcp add promptprinter -- node /pfad/zu/promptprinter-cli/bin/promptprinter.mjs mcp"
+      "claude mcp add promptprinter -- node /pfad/zu/PromptPrinter/cli/bin/promptprinter.mjs mcp"
     );
     expect(JSON.parse(mcpSetup(false).claudeDesktop)).toEqual({
       mcpServers: {
-        promptprinter: { command: "node", args: ["/pfad/zu/promptprinter-cli/bin/promptprinter.mjs", "mcp"] },
+        promptprinter: { command: "node", args: ["/pfad/zu/PromptPrinter/cli/bin/promptprinter.mjs", "mcp"] },
       },
     });
   });
@@ -56,7 +56,7 @@ describe("terminal-data", () => {
     expect(NPM_PUBLISHED).toBe(false);
   });
 
-  // Der Weg ohne Konto, gegen README und Quellcode (local.mjs) von promptprinter-cli gelesen: `--local` steht als erstes
+  // Der Weg ohne Konto, gegen README und Quellcode (local.mjs) in cli/ gelesen: `--local` steht als erstes
   // Argument, Standard ist Ollama, ein Key nur über die Umgebung.
   it("zeigt den Weg ohne Konto mit --local, vor und nach der Veröffentlichung", () => {
     const before = cliLocalSteps(false).map((s) => s.code);

@@ -15,7 +15,7 @@ Logo, Name und die Bilder von Finn fallen nicht unter die MIT-Lizenz des Codes (
 | `promptprinter-logo-transparent.png` | 4800 px breit, transparent |
 | `promptprinter-logo.svg` | Schriftzug als Vektor, Finn als eingebettetes Bild (3,4 MB), transparent |
 | `promptprinter-finn.png` | Finn allein, 1434 x 1450 px, transparent |
-| `promptprinter-pp-logo.png` | Das Logo mit `/pp` in Blau hinter dem Schriftzug, 5737 px breit, weißer Grund. Für den Skill `/pp` (README von `promptprinter-pp`) und Dokumente |
+| `promptprinter-pp-logo.png` | Das Logo mit `/pp` in Blau hinter dem Schriftzug, 5737 px breit, weißer Grund. Für den Skill `/pp` (README in `skill/`) und Dokumente |
 | `promptprinter-pp-logo-transparent.png` | dasselbe, 5737 px breit, transparent |
 | `promptprinter-pp-logo.svg` | dasselbe als SVG: Schriftzug und `/pp` als Vektor, Finn als eingebettetes Bild (3,4 MB), transparent |
 
