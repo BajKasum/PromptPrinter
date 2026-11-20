@@ -28,6 +28,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   allgemein oder Software, `shared/lib/project-kind.ts`), Dateien, mehrere Chats, das **Gedächtnis**
   (einmalige Analyse von Dateien, bei Software auch eines öffentlichen GitHub-Repos, Tabelle
   `project_brains`) und gespeicherte Prompts ("Ergebnisse", ohne Auto-Generieren), per Link teilbar (`/geteilt/<token>`, noindex, `server/prompt-share.ts`).
+  Gespeicherte und geteilte Prompts füllen Platzhalter aus wie der Chat (`shared/ui/placeholder-form.tsx`); "Als Ausgangspunkt nutzen" öffnet einen neuen Chat mit `?from=<id>` (Text nur serverseitig geladen, RLS plus `user_id`, `server/start-from-prompt.ts`, ungesendet im Eingabefeld); "Für Entwickler exportieren" baut JSON (OpenAI-kompatibel, Anthropic, Gemini), curl, Python, JavaScript und `.prompt.md` im Browser (`shared/lib/prompt-export.ts`, Platzhalter erst dort zu `{{name}}`). Versionen und Vergleich (Deck-Ideen Paket 2 und 3) warten auf Kasum.
 - **Kostenlos, ein Plan (Free, `shared/lib/plans.ts`):** drei Gratis-Prompts auf dem Server-Key (`server/free-trial.ts`, Redis, je IP und Tag
   begrenzt, eigenes Tagesbudget), danach nur mit eigenem Key (der Key-Assistent führt im Chat-Hinweis und in
   den Einstellungen zu einem Gratis-Gemini-Key), Projekt-Grenze 3. **BYOK** (Anthropic, OpenAI, Gemini am Key-Format erkannt, dazu jeder
