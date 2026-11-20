@@ -130,8 +130,9 @@ describe("Structured Data der öffentlichen Seiten", () => {
     const { organization, website, software, profile } = build();
 
     expect(organization.sameAs).toEqual([REPO_URL]);
+    // Der Footer führt das Repository als ersten seiner Knöpfe (FOOTER_BUTTONS).
     expect(readFileSync(join(process.cwd(), "src/features/marketing/components/footer.tsx"), "utf8")).toContain(
-      "href={REPO_URL}"
+      '{ href: REPO_URL, label: "GitHub"'
     );
     for (const node of [website, software, profile]) {
       expect(JSON.stringify(node)).not.toContain("sameAs");
