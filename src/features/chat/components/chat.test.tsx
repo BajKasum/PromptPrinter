@@ -65,6 +65,19 @@ describe("Chat", () => {
     expect(screen.getByText("Woran arbeiten wir, Kasum?")).toBeInTheDocument();
   });
 
+  // "Als Ausgangspunkt nutzen" (?from=): der Starttext steht im Feld, der Cursor am Ende der ersten Zeile, gesendet
+  // wird erst auf Wunsch.
+  it("setzt einen Starttext ins Eingabefeld, ohne ihn zu senden", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const start = "Pass diesen Prompt an: \n\nSchreib eine Einladung.";
+    render(<Chat initialInput={start} />);
+    const field = screen.getByPlaceholderText("Beschreib, woran wir arbeiten…") as HTMLTextAreaElement;
+    expect(field.value).toBe(start);
+    await waitFor(() => expect(field).toHaveFocus());
+    expect(field.selectionStart).toBe("Pass diesen Prompt an: ".length);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   // Startideen im leeren Chat (#156): ein Tipp füllt das Feld, gesendet wird nichts.
   describe("Startideen im leeren Chat", () => {
     it("füllt das Eingabefeld mit der gewählten Idee, setzt den Fokus und sendet nicht", async () => {

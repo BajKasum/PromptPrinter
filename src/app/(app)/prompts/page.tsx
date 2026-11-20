@@ -41,7 +41,7 @@ export default async function SavedPromptsPage() {
   // show the truncated count as if it were the true total.
   const rowsRawResult = await supabase
     .from("saved_prompts")
-    .select("id, created_at, outputs")
+    .select("id, created_at, outputs, project_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .range(0, SAVED_PROMPTS_LOAD_LIMIT);
@@ -52,7 +52,12 @@ export default async function SavedPromptsPage() {
     SAVED_PROMPTS_LOAD_LIMIT
   );
   const [t, locale] = await Promise.all([getT(), getLocale()]);
-  const prompts = mapSavedPromptRows(rows, t.prompts.fallbackTitle);
+  // Das Projekt je Prompt: "Als Ausgangspunkt nutzen" öffnet den neuen Chat dort, wo der Prompt gespeichert wurde.
+  const projectOf = new Map(rows.map((row) => [row.id, row.project_id]));
+  const prompts = mapSavedPromptRows(rows, t.prompts.fallbackTitle).map((p) => ({
+    ...p,
+    projectId: projectOf.get(p.id) ?? null,
+  }));
 
   if (prompts.length === 0) {
     return (

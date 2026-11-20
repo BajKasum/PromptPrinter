@@ -868,6 +868,9 @@ export const de = {
     deleteConfirmTitle: "Prompt löschen?",
     deleteConfirmBody: "„{title}“ wird endgültig entfernt. Das kann nicht rückgängig gemacht werden.",
     deleteConfirm: "Endgültig löschen",
+    startFrom: "Als Ausgangspunkt nutzen",
+    startFromLabel: "Neuen Chat mit „{title}“ als Ausgangspunkt beginnen",
+    startFromPrefix: "Pass diesen Prompt an:",
   },
 
   library: {
