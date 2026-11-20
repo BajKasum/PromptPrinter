@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { SharedPromptCopy } from "@/features/prompts/components/shared-prompt-copy";
+import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { loadSharedPrompt } from "@/server/prompt-share";
 import { checkPrompt } from "@/shared/lib/prompt-check";
 import { de } from "@/shared/i18n/messages/de";
@@ -66,6 +67,12 @@ export default async function SharedPromptPage({ params }: { params: Promise<{ t
                 {risks.map((r) => `${de.chat.promptCheck[r.kind]} (${r.samples.join(", ")})`).join("; ")}
               </div>
             )}
+            {/* Ohne Provider spricht das Formular Deutsch wie die Seite. Die Eingaben bleiben im Browser. */}
+            <PlaceholderForm
+              prompt={prompt.content}
+              hint="Was du einträgst, bleibt in diesem Browser und geht an niemanden."
+              className="md:px-5"
+            />
             <div className="flex items-center justify-end border-t border-border px-3 py-2">
               <SharedPromptCopy content={prompt.content} />
             </div>

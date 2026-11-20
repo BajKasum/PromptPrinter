@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "203.0.113.7" }) }));
 const notFound = vi.fn(() => {
@@ -48,6 +48,22 @@ describe("/geteilt/[token]", () => {
     });
     render(await SharedPromptPage(params("t")));
     expect(screen.getByRole("note")).toHaveTextContent("Das solltest du prüfen:");
+  });
+
+  it("bietet bei Platzhaltern das Formular zum Ausfüllen an, auf Deutsch und ohne Probelauf", async () => {
+    loadSharedPrompt.mockResolvedValue({ title: "Brief", content: "Schreib an [Name des Vermieters].", sharedAt: "x" });
+    render(await SharedPromptPage(params("t")));
+    const toggle = screen.getByRole("button", { name: "Platzhalter ausfüllen (1)" });
+    fireEvent.click(toggle);
+    expect(screen.getByText("Was du einträgst, bleibt in diesem Browser und geht an niemanden.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Name des Vermieters"), { target: { value: "Frau Muster" } });
+    expect(screen.getByText("Schreib an Frau Muster.")).toBeInTheDocument();
+  });
+
+  it("zeigt ohne Platzhalter kein Formular", async () => {
+    loadSharedPrompt.mockResolvedValue({ title: "Einladung", content: "Schreibe eine Einladung", sharedAt: "x" });
+    render(await SharedPromptPage(params("t")));
+    expect(screen.queryByRole("button", { name: /Platzhalter ausfüllen/ })).not.toBeInTheDocument();
   });
 
   it("zeigt keinen Hinweis bei einem harmlosen Prompt", async () => {

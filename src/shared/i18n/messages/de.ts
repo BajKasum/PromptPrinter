@@ -192,6 +192,7 @@ export const de = {
       open: "Platzhalter ausfüllen ({count})",
       title: "Platzhalter ausfüllen",
       hint: "Was du einträgst, bleibt in diesem Browser, bis du auf Probelauf klickst: der schickt die ausgefüllte Fassung an die KI. Gespeichert wird der Prompt mit seinen Platzhaltern.",
+      hintSaved: "Was du einträgst, bleibt in diesem Browser. Gespeichert bleibt der Prompt mit seinen Platzhaltern.",
       skip: "Kein Platzhalter",
       skipLabel: "„{name}“ nicht als Platzhalter behandeln",
       preview: "Vorschau",
