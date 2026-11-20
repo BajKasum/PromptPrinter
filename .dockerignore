@@ -63,3 +63,7 @@ tests/*
 !tests/support
 e2e/*
 !e2e/support
+
+# Eigene Pakete neben der Web-App, gehören nicht ins Image
+cli
+skill

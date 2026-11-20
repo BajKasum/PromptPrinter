@@ -1,0 +1,139 @@
+// Mutationstests (Hausregel): macht je eine Schranke kaputt, lässt die Tests laufen und stellt die Datei
+// wieder her. Aufruf: npm run mutation [Teil des Namens]. Jede Zeile muss "erkannt" sein. Dateirechte
+// nach POSIX gibt es unter Windows nicht, diese Zeilen laufen nur anderswo (in der CI unter Linux); die
+// Zugriffslisten von Windows nur dort (in der CI: npm run mutation -- "unter Windows").
+import { spawnSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+
+const POSIX = "posix";
+const WINDOWS = "win32";
+const filter = process.argv[2];
+const mutations = [
+  ["package.json", "Tests im Paket", '"files": ["bin", "src", "LICENSE", "README.md"]', '"files": ["bin", "src", "test", "LICENSE", "README.md"]'],
+  ["../.github/workflows/cli-release.yml", "Release auch ohne Tag", '    tags: ["cli-v*.*.*"]', '    branches: [main]\n    tags: ["cli-v*.*.*"]'],
+  ["../.github/workflows/cli-release.yml", "Release mit Token", "run: npm publish --provenance --access public", "run: npm publish --provenance --access public\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}"],
+  ["src/text.mjs", "Steuerfolgen bleiben", '.replace(ESCAPE_SEQUENCE, "")', ""],
+  ["src/text.mjs", "Steuerzeichen bleiben", '.replace(UNSAFE, "")', ""],
+  ["src/chat.mjs", "Modelltext unbereinigt", "const clean = sanitize(parsed.data.text);", "const clean = parsed.data.text;"],
+  ["src/chat.mjs", "Fehlertext unbereinigt", "detail: sanitize(parsed.data.detail)", "detail: parsed.data.detail"],
+  ["src/chat.mjs", "Verlauf ohne Grenze", ".slice(-MAX_TRANSCRIPT_MESSAGES)", ""],
+  ["src/chat.mjs", "leere Antwort im Verlauf", "if (content) messages.push", "messages.push"],
+  ["src/chat.mjs", "unbekanntes Ereignis bricht ab", 'if (parsed.kind === "unknown") continue;', 'if (parsed.kind === "unknown") return { kind: "protocol", text: reply };'],
+  ["src/chat.mjs", "kaputtes Ereignis übergangen", 'if (parsed.kind === "invalid") return { kind: "protocol", text: reply };', 'if (parsed.kind === "invalid") continue;'],
+  ["src/chat.mjs", "Gespräch nicht weitergeführt", "if (id) body.conversationId = id;", ""],
+  ["src/api.mjs", "folgt Umleitungen", 'redirect: "error",', 'redirect: "follow",'],
+  ["src/api.mjs", "Servertext unbereinigt", "sanitize(body.detail)", "body.detail"],
+  ["src/config.mjs", "http überall erlaubt", 'url.protocol !== "https:" && !(url.protocol === "http:" && local)', "false"],
+  ["src/config.mjs", "fremder Host zählt als lokal", 'hostname.endsWith(".localhost")', 'hostname.includes("localhost")'],
+  ["src/local.mjs", "ohne Konto: folgt Umleitungen", 'redirect: "error",', 'redirect: "follow",'],
+  ["src/local.mjs", "ohne Konto: Modelltext unbereinigt", "const clean = sanitize(raw);", "const clean = raw;"],
+  ["src/local.mjs", "ohne Konto: Absage unbereinigt", "super(detail ? sanitize(detail) : `HTTP ${status}`);", "super(detail ? detail : `HTTP ${status}`);"],
+  ["src/local.mjs", "ohne Konto: http überall erlaubt", 'url.protocol !== "https:" && !(url.protocol === "http:" && onThisComputer)', "false"],
+  ["src/local.mjs", "ohne Konto: Zugangsdaten in der Adresse", "if (url.username || url.password || url.search || url.hash) {", "if (false) {"],
+  ["src/local.mjs", "ohne Konto: Key als Argument", 'if (name !== "--model" && name !== "--base-url") return null;', 'if (name !== "--model" && name !== "--base-url" && name !== "--api-key") return null;'],
+  ["src/local.mjs", "ohne Konto: Authorization auch ohne Key", "if (apiKey) headers.authorization", "headers.authorization"],
+  ["src/local.mjs", "ohne Konto: Finns Regeln fehlen", '[{ role: "system", content: FINN_SYSTEM_PROMPT }, ...messages]', "[...messages]"],
+  ["src/local.mjs", "ohne Konto: Denken sichtbar", 'if (part.kind === "text") emit(filter.push(part.text));', 'if (part.kind === "text") emit(part.text);'],
+  ["src/local.mjs", "ohne Konto: leere Antwort im Verlauf", 'if (!reply.trim()) return { kind: "empty", text: reply };', ""],
+  ["src/local.mjs", "ohne Konto: Ende ohne Abschluss zählt als fertig", 'yield { kind: finished ? "done" : "dropped" };', 'yield { kind: "done" };'],
+  ["src/repl.mjs", "ohne Konto: Kontext nennt PromptPrinter als Empfänger", "if (local) {\n      const { settings } = local;", "if (false) {\n      const { settings } = local;"],
+  ["src/cli.mjs", "ohne Konto: braucht eine gültige PROMPTPRINTER_URL", '  if (argv[0] === "--local") return runLocal(', '  serverUrl(env);\n  if (argv[0] === "--local") return runLocal('],
+  ["src/session.mjs", "Sitzung für jeden Server", "parsed.server === server ? parsed : null", "parsed"],
+  ["src/session.mjs", "Temp-Datei für alle lesbar", 'open(tmp, "wx", 0o600)', 'open(tmp, "wx", 0o644)', POSIX],
+  ["src/session.mjs", "Ordner für alle lesbar", "await mkdir(dir, { recursive: true, mode: 0o700 });\n    if (process.platform", "await mkdir(dir, { recursive: true });\n    if (process.platform", POSIX],
+  ["src/session.mjs", "Ordner unter Windows mit geerbten Rechten", 'if (process.platform === "win32") await restrictToUser(dir);', "", WINDOWS],
+  ["src/session.mjs", "Zugriffsliste unter Windows behält Geerbtes", '"/inheritance:r", ', "", WINDOWS],
+  ["src/session.mjs", "neues Token nicht gespeichert", "return (await store.save(refreshed.session)).access_token;", "return refreshed.session.access_token;"],
+  ["src/session.mjs", "abgelehntes Token bleibt liegen", "if (err instanceof ApiError && err.status === 401) {\n          await store.clear();", "if (err instanceof ApiError && err.status === 401) {"],
+  ["src/session.mjs", "Ausfall löscht die Sitzung", "if (err instanceof ApiError && err.status === 401) {\n          await store.clear();", "if (err instanceof ApiError) {\n          await store.clear();"],
+  ["src/session.mjs", "kein erneutes Lesen unter der Sperre", "if (renewedElsewhere && isFresh(current)) return current.access_token;", ""],
+  ["src/session.mjs", "ohne Reserve vor dem Ablauf", "session.expires_at - nowSeconds() > EXPIRY_MARGIN_S", "session.expires_at - nowSeconds() > -100000"],
+  ["src/session.mjs", "kein zweiter Versuch nach 401", "const renewed = await accessToken({ rejected: token });", "throw new NotLoggedInError();\n    const renewed = await accessToken({ rejected: token });"],
+  ["src/session.mjs", "Sperre wirkungslos", 'if (err.code !== "EEXIST" && err.code !== "EPERM") throw err;\n        if (await isStale(lockPath, now)) {', 'if (err.code !== "EEXIST" && err.code !== "EPERM") throw err;\n        if (true) {'],
+  ["src/login.mjs", "fremde Adresse geöffnet", "if (url.origin === api.server) return url.href;", "return url.href;"],
+  ["src/login.mjs", "Abfragepause nicht verlängert", "interval = Math.max(interval + 5, err.interval ?? 0);", ""],
+  ["src/login.mjs", "Netzfehler beendet die Anmeldung", "if (err instanceof NetworkError) continue;", ""],
+  ["src/login.mjs", "Sitzung nicht gespeichert", "await store.save(answer.session);", ""],
+  ["src/login.mjs", "Warnung fehlt", 'print.step("loginWarning");', ""],
+  ["src/system.mjs", "Speichern überschreibt", '{ flag: "wx" });\n      return { kind: "saved", path };', '{ flag: "w" });\n      return { kind: "saved", path };'],
+  ["src/system.mjs", "Speichern ohne Kennzeichnung", "`${AI_GENERATED_MARKER}\\n\\n${prompt}\\n`", "`${prompt}\\n`"],
+  ["src/system.mjs", "Browser öffnet alles", 'if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;', ""],
+  ["src/system.mjs", "Zwischenablage nicht als UTF-8", 'pipeTo(candidate, Buffer.from(text, "utf8"), spawn)', 'pipeTo(candidate, Buffer.from(text, "utf16le"), spawn)'],
+  ["src/render.mjs", "Abschluss am Zeilenende übersehen", 'if (run >= length && char === "`") {', "if (false) {"],
+  ["src/render.mjs", "offener Block bleibt offen", "if (this.open) this.closeFrame();", ""],
+  ["src/extract-prompt.mjs", "erster statt letzter Block", "text[text.length - 1].body", "text[0].body"],
+  ["src/banner.mjs", "Bild auch in der Pipe", "!term.isTTY || ", ""],
+  ["src/banner.mjs", "Bild auch ohne Unicode", "!term.unicode || ", ""],
+  ["src/banner.mjs", "Bild auch unter 60 Spalten", " || term.columns < MIN_COLUMNS", ""],
+  ["src/banner.mjs", "eine Zeile auch im schmalen Terminal", "    term.columns >= BANNER_WIDTH + 2\n", "    true\n"],
+  ["src/banner.mjs", "Finn ohne Farbe", "if (term.color && term.columns >= FINN_COLUMNS) {", "if (term.columns >= FINN_COLUMNS) {"],
+  ["src/banner.mjs", "Finn im schmalen Terminal", "if (term.color && term.columns >= FINN_COLUMNS) {", "if (term.color) {"],
+  ["src/banner.mjs", "Rahmenlinien statt Blöcke", '.replaceAll("#", "█")', '.replaceAll("#", "═")'],
+  ["src/terminal.mjs", "NO_COLOR übergangen", " && !env.NO_COLOR", ""],
+  ["src/account.mjs", "Mailadresse unbereinigt", 'sanitize(String(me.email ?? "?"))', 'String(me.email ?? "?")'],
+  ["src/account.mjs", "Abmelden behält die Datei", "await store.clear();\n  return result;", "return result;"],
+  ["src/cli.mjs", "Pipe wartet auf den Browser", 'if (!term.isTTY) {\n      say(t("loginRequired"));\n      return 1;\n    }', ""],
+  ["src/agents.mjs", "/an über eine Shell", "{ stdio, cwd, env, shell: false,", "{ stdio, cwd, env, shell: true,"],
+  ["src/agents.mjs", "/an startet die .cmd-Datei selbst", 'if (platform === "win32" && (ext === ".cmd" || ext === ".bat")) {', "if (false) {"],
+  ["src/agents.mjs", "/an ohne -- vor dem Prompt", 'args: [target, "--", prompt]', "args: [target, prompt]"],
+  ["src/agents.mjs", "/an: Shim-Ziel ausserhalb seines Ordners", 'if (!inside || inside.startsWith("..") || isAbsolute(inside)) return null;', ""],
+  ["src/agents.mjs", "/an sucht auch im aktuellen Ordner", ".filter((dir) => dir && isAbsolute(dir))", ".filter(Boolean)"],
+  ["src/agents.mjs", "/an: Datei ohne Endung unter Windows", 'if (platform === "win32" && ext !== ".exe" && ext !== ".com") return { kind: "unsupported", file };', ""],
+  ["src/repl.mjs", "/an aus der Pipe", 'if (!term.isTTY || !input.isTTY) {\n      say(t("anNoTerminal"', 'if (false) {\n      say(t("anNoTerminal"'],
+  ["src/mcp.mjs", "MCP: Text vom Server unbereinigt", 'title: sanitize(String(p.title ?? "")),', 'title: String(p.title ?? ""),'],
+  ["src/mcp.mjs", "MCP: ungültige id geht an den Server", 'if (typeof args.id !== "string" || !UUID.test(args.id))', 'if (typeof args.id !== "string")'],
+  ["src/mcp.mjs", "MCP: Protokollversion nicht geprüft", "if (!MODERN_VERSIONS.includes(requested)) {", "if (false) {"],
+  ["src/mcp.mjs", "MCP: Anfrage ohne Version bedient", 'if (legacyVersion || method === "ping") return "legacy";', 'return "legacy";'],
+  ["src/mcp.mjs", "MCP: abgebrochene Anfrage beantwortet", "if (controller.signal.aborted) return null; // abgebrochen", "// abgebrochen"],
+  ["src/mcp.mjs", "MCP: Rückfrage ohne Verlauf", "conversations.set(conversation.id, conversation);", ""],
+  ["src/mcp.mjs", "MCP: 401 als Rohtext", "if (err instanceof NotLoggedInError || (err instanceof ApiError && err.status === 401)) return t(\"mcpLogin\");", ""],
+  ["src/cli.mjs", "MCP: Hinweis auf stdout", 'if (input.isTTY) errors.write(', 'output.write('],
+  ["src/repl.mjs", "/pp führt das Gespräch fort", 'case "/pp":\n        conversation.reset();', 'case "/pp":'],
+  ["src/repl.mjs", "zu lange Nachricht geht raus", "if (text.length > MAX_USER_MESSAGE_CHARS) {", "if (false) {"],
+  ["src/repl.mjs", "Strg+C beendet statt abzubrechen", 'rl.on("SIGINT", () => {\n      if (turn) turn.abort();\n      else rl.close();', 'rl.on("SIGINT", () => {\n      rl.close();'],
+  ["src/repl.mjs", "Anmeldung nicht abbrechbar", "await login(turn.signal);", "await login(new AbortController().signal);"],
+  ["src/repl.mjs", "eingefügte Zeilen einzeln", 'queue.push(pasted.join("\\n"));', "queue.push(...pasted);"],
+  ["src/repl.mjs", "Befehl im eingefügten Text ausgeführt", 'trimmed.startsWith("/") && !trimmed.includes("\\n")', 'trimmed.startsWith("/")'],
+  ["src/repl.mjs", "Wartehinweis bleibt stehen", "write(term.clearLine);", ""],
+  ["src/repl.mjs", "Kontext aus der Pipe gesammelt", 'if (!term.isTTY || !input.isTTY) return { refusal: t("kontextNoTerminal") };', ""],
+  ["src/repl.mjs", "Kontext: nur die Ausgabe als Terminal geprüft", "!term.isTTY || !input.isTTY", "!term.isTTY"],
+  ["src/repl.mjs", "Kontext ohne Key gesammelt", "if (me.needsOwnKey || me.needsConsent) {", "if (false) {"],
+  ["src/repl.mjs", "Kontext: jede Antwort sendet", 'if (answer?.trim().toLowerCase() !== t("kontextYes")) {', "if (answer === null) {"],
+  ["src/repl.mjs", "Kontext: Strg+C an der Frage beendet das Programm", "turn = new AbortController();\n      const { signal } = turn;", "const { signal } = new AbortController();"],
+  ["src/repl.mjs", "Kontext: abgebrochene Frage nimmt die nächste Zeile", "rl.question(query, { signal }, finish);", "rl.question(query, finish);"],
+  ["src/repl.mjs", "Kontext: Vorschau ohne die Nachricht", "for (const part of wrapLine(line, width)) say(", "for (const part of []) say("],
+  ["src/repl.mjs", "Kontext: falscher Empfänger", 't(me.hasOwnKey ? "kontextToOwn" : "kontextToServer")', 't("kontextToOwn")'],
+  ["src/repl.mjs", "Kontext: Chat-Verlauf verschwiegen", 'say(t("kontextStored"));', ""],
+  ["src/project-context.mjs", "Kontext ungeschwärzt", '.split("\\n").map(redactText).join("\\n")', ""],
+  ["src/project-context.mjs", "Kontext unbereinigt", "const clean = (text) => sanitize(text).split", "const clean = (text) => text.split"],
+  ["src/project-context.mjs", "Kontext erst geschwärzt, dann bereinigt", 'sanitize(text).split("\\n").map(redactText).join("\\n")', 'text.split("\\n").map(redactText).map(sanitize).join("\\n")'],
+  ["src/project-context.mjs", "Kontext ohne Grenze", "const budget = max - head.length;", "const budget = max;"],
+  ["src/project-context.mjs", "Stummel statt Absage", 'if (budget < MIN_CONTEXT_CHARS) return { kind: "noRoom" };', ""],
+];
+
+let missed = 0;
+for (const [file, name, from, to, only] of mutations) {
+  if (filter && !name.includes(filter)) continue;
+  if ((only === POSIX && process.platform === "win32") || (only === WINDOWS && process.platform !== "win32")) {
+    console.log(`übersprungen  ${file}: ${name}`);
+    continue;
+  }
+  const original = readFileSync(file, "utf8");
+  if (!original.includes(from)) {
+    console.log(`NICHT GEFUNDEN  ${file}: ${name}`);
+    missed++;
+    continue;
+  }
+  writeFileSync(file, original.replace(from, to));
+  let result;
+  try {
+    result = spawnSync(process.execPath, ["--test", "--test-timeout=30000", "test/*.test.mjs"], { encoding: "utf8", timeout: 180_000 });
+  } finally {
+    writeFileSync(file, original);
+  }
+  const caught = result.status !== 0;
+  if (!caught) missed++;
+  console.log(`${caught ? "erkannt " : "ÜBERLEBT"}  ${file}: ${name}`);
+}
+console.log(`${mutations.length} Mutationen, ${missed} nicht erkannt`);
+process.exit(missed === 0 ? 0 : 1);

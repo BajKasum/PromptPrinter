@@ -19,6 +19,10 @@ const eslintConfig = [
       "screenshots_Docs/**",
       "public/**",
       "next-env.d.ts",
+      // Eigene Pakete ohne Abhängigkeiten, mit eigenen Prüfungen (node --check, node:test, Mutationen) in
+      // .github/workflows/cli.yml und skill.yml.
+      "cli/**",
+      "skill/**",
     ],
   },
   ...coreWebVitals,

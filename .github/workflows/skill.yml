@@ -1,0 +1,82 @@
+name: Skill
+
+# Der Agent Skill /pp in skill/: der Skill selbst liegt in skill/pp, daneben Installer, Tests mit node:test,
+# Mutationen und die Messung (skill/eval). Er läuft beim Nutzer mit dem Node aus seinem engines.node (">=22"),
+# deshalb testet die Matrix die untere Grenze und die Version aus .nvmrc (tests/guards/node-version.test.ts).
+
+# Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker, wie in docker.yml.
+on:
+  # push nur auf main, jeder Branch mit PR läuft über pull_request: ein Lauf je Commit (ci.yml, #222).
+  push:
+    branches: [main]
+    paths:
+      - skill/**
+      - .github/workflows/skill.yml
+  pull_request:
+    paths:
+      - skill/**
+      - .github/workflows/skill.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    working-directory: skill
+
+jobs:
+  verify:
+    name: Pflichtdateien
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: README, Lizenz, Sicherheitsrichtlinie und Projektregeln sind da
+        run: test -f README.md && test -f LICENSE && test -f SECURITY.md && test -f CLAUDE.md
+
+  mutation:
+    name: Mutationen
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Jede Schranke wird von einem Test bemerkt
+        run: npm run mutation
+
+  test:
+    name: Test (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ["22", "24"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax
+        run: npm run check
+
+      - name: Tests
+        run: npm test
