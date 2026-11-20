@@ -113,8 +113,13 @@ How good the prompts get depends on the model you pick. Small local models have 
   thing in every chat.
 - **Project memory.** Let Finn analyse your files once, or a public GitHub repository for software projects. Finn
   then knows the framework, database, design system and conventions.
-- **Saved prompts.** Keep good prompts in a project and share one by link. Any prompt in the chat also downloads
-  as a Markdown file.
+- **Saved prompts as templates.** Keep good prompts, in a project or on their own, and share one by link. Fill in
+  a saved prompt's placeholders right there (also on a shared link), or start a new chat from it to adapt it. Any
+  prompt in the chat also downloads as a Markdown file.
+- **Export for developers.** Take a saved prompt into your own code: the request as JSON for an OpenAI-compatible
+  API (Ollama, LM Studio, vLLM, OpenRouter and others), Anthropic or Gemini, a ready call in curl, Python or
+  JavaScript, or a `.prompt.md` file with a YAML header. Empty placeholders become `{{variables}}`, the API key
+  stays in an environment variable, and the first paragraph can become the system message.
 - **About me.** A few lines about you that Finn takes into every conversation.
 - **Voice mode.** Speak your idea instead of typing it.
 - **Your own key.** Anthropic, OpenAI, Gemini (recognised by the key format) or any OpenAI-compatible endpoint.
