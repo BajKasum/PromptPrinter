@@ -40,7 +40,7 @@ test.describe("Gespeicherten Prompt wiederverwenden", () => {
     await openCard(page);
 
     await page.getByRole("button", { name: "Platzhalter ausfüllen (2)" }).click();
-    await page.getByLabel("Name des Vermieters").fill("Frau Muster");
+    await page.getByRole("textbox", { name: "Name des Vermieters" }).fill("Frau Muster");
     await expect(page.locator("pre", { hasText: "Schreib an Frau Muster wegen [Thema]." })).toBeVisible();
 
     await page.getByRole("button", { name: "Für Entwickler exportieren" }).click();
@@ -155,7 +155,7 @@ test.describe("Gespeicherten Prompt wiederverwenden", () => {
     await visitor.goto(`/geteilt/${token}`);
     await visitor.getByRole("button", { name: "Platzhalter ausfüllen (2)" }).click();
     await expect(visitor.getByText("Was du einträgst, bleibt in diesem Browser und geht an niemanden.")).toBeVisible();
-    await visitor.getByLabel("Thema").fill("Heizung");
+    await visitor.getByRole("textbox", { name: "Thema" }).fill("Heizung");
     await expect(visitor.locator("pre", { hasText: "Schreib an [Name des Vermieters] wegen Heizung." })).toBeVisible();
   });
 });
