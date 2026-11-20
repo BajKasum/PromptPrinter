@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatNotices } from "@/features/chat/components/chat-notices";
 import { ChatThread } from "@/features/chat/components/chat-thread";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
@@ -14,6 +14,7 @@ import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-vari
 import type { Msg } from "@/features/chat/lib/chat-wire";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { plural } from "@/shared/i18n/format";
+import { startFromCaret } from "@/shared/lib/start-from-prompt";
 
 // Orchestrator only, every UI role that used to live inline here now has its
 // own file (chat-empty-state, chat-result-panel, chat-transcript,
@@ -26,6 +27,7 @@ export function Chat({
   projectId,
   initialMessages,
   initialConversationId,
+  initialInput,
   hasResults = false,
   savedPrompts,
   name,
@@ -35,6 +37,8 @@ export function Chat({
   projectId?: string;
   initialMessages?: Msg[];
   initialConversationId?: string;
+  /** Starttext im Eingabefeld ("Als Ausgangspunkt nutzen", ?from=), nicht gesendet. */
+  initialInput?: string;
   /** For project chats: whether saved results exist (drives the empty-state copy). */
   hasResults?: boolean;
   /** Prompt text of every result already saved in this project (QA F-7: dedup without a migration). */
@@ -59,6 +63,7 @@ export function Chat({
     projectId,
     initialMessages,
     initialConversationId,
+    initialInput,
     needsKey,
     freePromptsLeft,
     attachments,
@@ -90,6 +95,15 @@ export function Chat({
     if (draft) setInput(draft);
   };
   const focusComposer = () => composerRef.current?.focus();
+  // Ein Starttext: Cursor ans Ende der ersten Zeile, dort schreibt die Person, was sich am Prompt ändern soll.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!initialInput || !el) return;
+    const caret = startFromCaret(initialInput);
+    el.focus();
+    el.setSelectionRange(caret, caret);
+    el.scrollTop = 0;
+  }, [initialInput]);
   const [voiceOpen, setVoiceOpen] = useState(false);
   // Vor dem ersten Diktat fragen wir nach: Chrome und Edge schicken die Aufnahme an Google
   // bzw. Microsoft (Rechts-Audit 28.09.2026, Sprachmodus). Die Zustimmung gilt je Browser.

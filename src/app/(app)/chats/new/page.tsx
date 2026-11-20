@@ -7,6 +7,8 @@ import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
+import { loadStartPrompt } from "@/server/start-from-prompt";
+import { startFromText } from "@/shared/lib/start-from-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -19,14 +21,16 @@ export async function generateMetadata() {
 // IS the greeting. Screen readers still get a level-1 heading (#151, every other
 // app page has one); the greeting inside the chat is the h2 below it. Once the
 // first turn is persisted, the Chat component replaces the URL with the
-// canonical /chats/[id].
-export default async function NewChatPage() {
+// canonical /chats/[id]. `?from=<id>` legt einen eigenen gespeicherten Prompt ins Eingabefeld
+// (server/start-from-prompt.ts), ungesendet.
+export default async function NewChatPage({ searchParams }: { searchParams: Promise<{ from?: string | string[] }> }) {
   const t = await getT();
   const supabase = await createClient();
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [profile, savedPromptRowsResult, needsKey, freePromptsLeft] = await Promise.all([
+  const { from } = await searchParams;
+  const [profile, savedPromptRowsResult, needsKey, freePromptsLeft, startPrompt] = await Promise.all([
     getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts, not
@@ -40,6 +44,7 @@ export default async function NewChatPage() {
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
     getNeedsOwnKey(),
     getFreePromptsLeft(),
+    loadStartPrompt(supabase, user.id, from),
   ]);
   const { data: savedPromptRows } = orThrow(savedPromptRowsResult, "saved_prompts");
   const name = profile?.display_name || user.email?.split("@")[0] || null;
@@ -51,8 +56,13 @@ export default async function NewChatPage() {
     <div className="mx-auto max-w-[900px]">
       <h1 className="sr-only">{t.nav.newChat}</h1>
       <FadeIn>
-        <Chat name={name} savedPrompts={savedPrompts} needsKey={needsKey}
-        freePromptsLeft={freePromptsLeft} />
+        <Chat
+          name={name}
+          savedPrompts={savedPrompts}
+          needsKey={needsKey}
+          freePromptsLeft={freePromptsLeft}
+          initialInput={startPrompt ? (startFromText(t.prompts.startFromPrefix, startPrompt) ?? undefined) : undefined}
+        />
       </FadeIn>
     </div>
   );

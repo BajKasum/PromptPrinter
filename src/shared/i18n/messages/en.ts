@@ -849,6 +849,9 @@ export const en: Messages = {
     deleteConfirmTitle: "Delete prompt?",
     deleteConfirmBody: "“{title}” will be removed for good. This can't be undone.",
     deleteConfirm: "Delete for good",
+    startFrom: "Use as starting point",
+    startFromLabel: "Start a new chat from “{title}”",
+    startFromPrefix: "Adapt this prompt:",
   },
 
   library: {

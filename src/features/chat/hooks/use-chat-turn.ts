@@ -18,6 +18,7 @@ export function useChatTurn({
   projectId,
   initialMessages,
   initialConversationId,
+  initialInput,
   needsKey,
   freePromptsLeft,
   attachments,
@@ -26,6 +27,7 @@ export function useChatTurn({
   projectId?: string;
   initialMessages?: Msg[];
   initialConversationId?: string;
+  initialInput?: string;
   needsKey: boolean;
   /** Gratis-Prompts beim Laden der Seite; null oder fehlend ausserhalb des Gratis-Rahmens. */
   freePromptsLeft?: number | null;
@@ -36,7 +38,13 @@ export function useChatTurn({
   const router = useRouter();
   // Der Zustand des Zugs steht in turn-state.ts (Felder und ihre Bedeutung), runChatTurn meldet ihm Ereignisse.
   const [state, dispatch] = useReducer(turnReducer, undefined, () =>
-    initialTurnState({ messages: initialMessages, conversationId: initialConversationId, needsKey, freePromptsLeft })
+    initialTurnState({
+      messages: initialMessages,
+      input: initialInput,
+      conversationId: initialConversationId,
+      needsKey,
+      freePromptsLeft,
+    })
   );
   const { messages, conversationId, input, loading, pending } = state;
   const setInput = useCallback((value: string) => dispatch({ type: "inputChanged", value }), []);

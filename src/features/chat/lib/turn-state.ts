@@ -75,13 +75,15 @@ export type TurnAction =
 
 export function initialTurnState(args: {
   messages?: Msg[];
+  /** Was beim Laden schon im Eingabefeld steht ("Als Ausgangspunkt nutzen"); gesendet wird es erst auf Wunsch. */
+  input?: string;
   conversationId?: string;
   needsKey: boolean;
   freePromptsLeft?: number | null;
 }): TurnState {
   return {
     messages: args.messages ?? [],
-    input: "",
+    input: args.input ?? "",
     conversationId: args.conversationId,
     loading: false,
     error: null,

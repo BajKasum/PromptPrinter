@@ -14,6 +14,10 @@ import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
 import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { SharePrompt } from "@/features/prompts/components/share-prompt";
+import { PromptReuseBar } from "@/features/prompts/components/prompt-reuse-bar";
+
+/** Ein gespeicherter Prompt in der Liste, mit dem Projekt, in dem ein neuer Chat ihn als Ausgangspunkt nimmt. */
+export type ListedPrompt = SavedPrompt & { projectId?: string | null };
 
 // The Ergebnisse/Gespeicherte-Prompts list, newest first.
 //
@@ -37,7 +41,7 @@ export function SavedPromptList({
   prompts,
   userId,
 }: {
-  prompts: SavedPrompt[];
+  prompts: ListedPrompt[];
   /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). */
   userId: string;
 }) {
@@ -49,7 +53,7 @@ export function SavedPromptList({
   // back where it was rather than appending it, otherwise a failed delete
   // silently reorders the list (it is sorted newest-first by the server).
   const removeAt = (id: string) => {
-    let removed: { item: SavedPrompt; index: number } | null = null;
+    let removed: { item: ListedPrompt; index: number } | null = null;
     setItems((list) => {
       const index = list.findIndex((it) => it.id === id);
       if (index === -1) return list;
@@ -57,7 +61,7 @@ export function SavedPromptList({
       return list.filter((it) => it.id !== id);
     });
     return () => {
-      const r = removed as { item: SavedPrompt; index: number } | null;
+      const r = removed as { item: ListedPrompt; index: number } | null;
       if (!r) return;
       setItems((list) => {
         const next = list.slice();
@@ -105,7 +109,7 @@ function SavedPromptCard({
   onDelete,
   onRename,
 }: {
-  prompt: SavedPrompt;
+  prompt: ListedPrompt;
   userId: string;
   /** Applies the removal immediately and returns the undo for a failed write. */
   onDelete: () => () => void;
@@ -334,6 +338,7 @@ function SavedPromptCard({
               </button>
             </div>
           </div>
+          <PromptReuseBar promptId={prompt.id} title={prompt.title} content={prompt.content} projectId={prompt.projectId} />
           {/* Teilen per Link (Migration 0057): erst nach einer Rückfrage, widerrufbar. */}
           <SharePrompt promptId={prompt.id} content={prompt.content} />
         </div>

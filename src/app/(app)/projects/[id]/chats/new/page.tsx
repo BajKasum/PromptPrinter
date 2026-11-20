@@ -8,6 +8,8 @@ import { getFreePromptsLeft, getNeedsOwnKey, getSessionProfile, getSessionUser }
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
+import { loadStartPrompt } from "@/server/start-from-prompt";
+import { startFromText } from "@/shared/lib/start-from-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -19,16 +21,24 @@ type Params = Promise<{ id: string }>;
 
 // Ein frischer Chat innerhalb des Workspace: erbt Briefing + Struktur als
 // Kontext (buildProjectContext im Chat-API), bekommt nach dem ersten Turn
-// seine kanonische Subroute /projects/[id]/chats/[cid].
-export default async function NewProjectChatPage({ params }: { params: Params }) {
+// seine kanonische Subroute /projects/[id]/chats/[cid]. `?from=<id>` legt einen eigenen gespeicherten Prompt
+// ins Eingabefeld (server/start-from-prompt.ts), ungesendet.
+export default async function NewProjectChatPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: Promise<{ from?: string | string[] }>;
+}) {
   const { id } = await params;
+  const { from } = await searchParams;
   const project = await getProject(id);
 
   // Whether saved results exist decides the empty-state copy: refining
   // something vs. starting the project's first work.
   const supabase = await createClient();
   const user = await getSessionUser();
-  const [savedPromptRowsResult, profile, needsKey, freePromptsLeft] = await Promise.all([
+  const [savedPromptRowsResult, profile, needsKey, freePromptsLeft, startPrompt] = await Promise.all([
     // Selecting `outputs` (not just a head-count) also gives the save button
     // the already-saved prompt texts, so it can start disabled for a prompt
     // that's already in the project's Ergebnisse (F-7). Explicit user_id
@@ -43,6 +53,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
     getSessionProfile(),
     getNeedsOwnKey(),
     getFreePromptsLeft(),
+    loadStartPrompt(supabase, project.userId, from),
   ]);
   const { data: savedPromptRows, count } = orThrow(savedPromptRowsResult, "saved_prompts");
   const t = await getT();
@@ -73,6 +84,7 @@ export default async function NewProjectChatPage({ params }: { params: Params })
         name={name}
         needsKey={needsKey}
         freePromptsLeft={freePromptsLeft}
+        initialInput={startPrompt ? (startFromText(t.prompts.startFromPrefix, startPrompt) ?? undefined) : undefined}
       />
     </div>
   );
