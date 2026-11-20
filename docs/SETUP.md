@@ -878,6 +878,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `security-events.spec.ts` | Sicherheitsprotokoll: Routen schreiben hinein, Browser kommt nicht heran, der Server kann nichts umschreiben, die 180 Tage greifen |
 | `cli-login.spec.ts` | Anmeldung des Terminals: Code, Freigabe, einmal abholen, Chat per Bearer, Details auf `/cli`, Einzelwiderruf in den Einstellungen, Höchstalter, Job in der Datenbank |
 | `mfa.spec.ts` | Zweiter Faktor mit echten Codes: einrichten, Anmelden mit und ohne, die heiklen Aktionen auf AAL1, Rückweg mit Wiederherstellungscode, Passwort-Reset, Zusammenspiel mit Terminals |
+| `saved-prompt-reuse.spec.ts` | gespeicherte Prompts wiederverwenden: Platzhalter ausfüllen auf `/prompts` und auf einem geteilten Link, "Als Ausgangspunkt nutzen" im globalen und im Projekt-Chat (nur ins Eingabefeld, fremde ID ergibt einen leeren Chat), jeder Export wörtlich gegen `shared/lib/prompt-export.ts`, `.prompt.md` als Download |
 
 ### Was bewusst NICHT geprüft wird
 
