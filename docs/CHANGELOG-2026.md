@@ -11,6 +11,13 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-20: Footer mit Spalten und drei Knöpfen (Branch `feat/footer-spalten`)
+
+- **Ziel:** Kasum wollte den Footer "so richtig", nicht mehr als lose Link-Zeile: Seiten in Spalten mit Überschrift, das kazuvate-Logo weg, Finn bleibt, dazu GitHub, LinkedIn und sein Portfolio als blaue Knöpfe.
+- **Neu:** links Finn, ein Satz in seiner Stimme ("Ich mache aus deiner Idee den fertigen Prompt. Kostenlos und Open Source.") und drei Knöpfe der Variante `accent` (44 px hoch, neuer Tab): GitHub (`REPO_URL`), LinkedIn und Portfolio (`features/marketing/lib/author-links.ts`). Rechts drei Spalten: Produkt (Funktionen, Open Source, Skill, CLI, MCP), Hilfe und Kontakt (Hilfe, Vergleiche, Über PromptPrinter, Kontakt), Rechtliches (Impressum, Datenschutz, Cookies, AGB, Nutzungsrichtlinie); Links 32 px hoch, auf Touch per `touch-hit-y` 44 px. Darunter Linie und Copyright. Das LinkedIn-Symbol ist eine eigene Komponente wie das GitHub-Symbol (`shared/ui/linkedin-icon.tsx`, Pfade aus lucide 0.474, lucide 1.x hat keine Marken-Symbole mehr).
+- **Weg:** der kazuvate-Credit samt Farbton `--kazuvate` in `globals.css` (nur dafür da), die Wasser-Pille (`NavWave`) an den Footer-Links. Die Brand-Regel "keine corporate Footer-Spalten" in `CLAUDE.md` hat jetzt diese Ausnahme.
+- **Geprüft:** headless mit Playwright auf `/ueber` bei 1280, 820 und 375 px: kein waagrechtes Scrollen, Knöpfe 44 px hoch (auf dem Handy rutscht "Portfolio" in eine zweite Reihe), kein "kazuvate" mehr im Text. `footer.test.tsx`: nur Seiten, die es gibt, jede einmal, alle Navbar-Punkte dabei, die drei Spalten, die drei Knöpfe mit Adresse, neuem Tab und blauer Fläche.
+
 ## 2026-11-20: Die Repos promptprinter-cli und promptprinter-pp werden gelöscht (Branch `chore/alte-repos-loeschen`)
 
 - **Ziel:** Kasum will die beiden alten Repos nicht archiviert, sondern ganz gelöscht ("keine Public Archives, sondern komplett gelöscht"). Ihr Inhalt liegt seit PR #340 in `cli/` und `skill/`; ihr Git-Verlauf geht mit ihnen verloren (der Import war je ein Commit).
