@@ -45,29 +45,38 @@ export const FOOTER_GROUPS = [
   },
 ] as const;
 
-/** Die drei Knöpfe nach draussen, in dieser Reihenfolge. */
+/**
+ * Die drei Knöpfe nach draussen, in dieser Reihenfolge. Auf dem Handy (unter 640 px) zeigen GitHub und LinkedIn nur
+ * ihr Symbol, als quadratischer Knopf von 44 px, damit alle drei in eine Reihe passen; ihr Name bleibt für
+ * Screenreader stehen. Portfolio hat kein bekanntes Symbol und behält seinen Namen.
+ */
 export const FOOTER_BUTTONS = [
-  { href: REPO_URL, label: "GitHub", Icon: GithubIcon },
-  { href: LINKEDIN_URL, label: "LinkedIn", Icon: LinkedinIcon },
-  { href: PORTFOLIO_URL, label: "Portfolio", Icon: Globe },
+  { href: REPO_URL, label: "GitHub", Icon: GithubIcon, iconOnMobile: true },
+  { href: LINKEDIN_URL, label: "LinkedIn", Icon: LinkedinIcon, iconOnMobile: true },
+  { href: PORTFOLIO_URL, label: "Portfolio", Icon: Globe, iconOnMobile: false },
 ] as const;
 
 export function Footer() {
   return (
     <footer className="border-t border-border">
       <div className="container-x pb-8 pt-12 md:pt-16">
-        <div className="grid gap-10 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
           <div>
             <Mascot size={48} state="idle" alt="Finn" />
             <p className="mt-4 max-w-xs text-[14px] leading-[1.6] text-secondary">
               Ich mache aus deiner Idee den fertigen Prompt. Kostenlos und Open Source.
             </p>
             <div className="mt-6 flex flex-wrap gap-2.5">
-              {FOOTER_BUTTONS.map(({ href, label, Icon }) => (
-                <Button key={href} asChild variant="accent">
+              {FOOTER_BUTTONS.map(({ href, label, Icon, iconOnMobile }) => (
+                <Button
+                  key={href}
+                  asChild
+                  variant="accent"
+                  className={iconOnMobile ? "max-sm:w-11 max-sm:px-0" : undefined}
+                >
                   <a href={href} target="_blank" rel="noopener">
-                    <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden />
-                    {label}
+                    <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden />
+                    <span className={iconOnMobile ? "max-sm:sr-only" : undefined}>{label}</span>
                   </a>
                 </Button>
               ))}

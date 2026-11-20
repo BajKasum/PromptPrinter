@@ -67,6 +67,20 @@ describe("Footer", () => {
     expect(PORTFOLIO_URL).toBe("https://kasumbajrami.dev/");
   });
 
+  // Auf dem Handy passen drei Knöpfe mit Namen nicht in eine Reihe: GitHub und LinkedIn zeigen dort nur ihr Symbol,
+  // ihr Name bleibt für Screenreader (sr-only), Portfolio behält ihn. Ab 640 px tragen alle drei ihren Namen.
+  it("zeigt auf dem Handy GitHub und LinkedIn nur als Symbol, Portfolio mit Namen", () => {
+    render(<Footer />);
+    for (const name of ["GitHub", "LinkedIn"]) {
+      const link = screen.getByRole("link", { name });
+      expect(within(link).getByText(name)).toHaveClass("max-sm:sr-only");
+      expect(link.className).toContain("max-sm:w-11");
+    }
+    const portfolio = screen.getByRole("link", { name: "Portfolio" });
+    expect(within(portfolio).getByText("Portfolio").className).not.toContain("sr-only");
+    expect(portfolio.className).not.toContain("max-sm:w-11");
+  });
+
   it("zeigt Finn und keinen Credit einer Agentur mehr", () => {
     const { container } = render(<Footer />);
     expect(screen.getByAltText("Finn")).toBeInTheDocument();

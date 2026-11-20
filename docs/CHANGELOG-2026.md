@@ -11,6 +11,12 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-20: Footer, die drei Knöpfe auf dem Handy in einer Reihe (Branch `feat/footer-handy-symbole`)
+
+- **Ziel:** Kasum nach dem Live-Blick: auf dem Handy sollen alle drei Knöpfe nebeneinander stehen, GitHub und LinkedIn nur mit ihrem Symbol, Portfolio mit Namen; im Browser bleibt es, wie es ist.
+- **Neu:** unter 640 px sind GitHub und LinkedIn quadratisch (44 px, `max-sm:w-11 max-sm:px-0`), ihr Name steht dort nur für Screenreader (`max-sm:sr-only`), der Linkname bleibt "GitHub" und "LinkedIn". Das Raster Finn links, Spalten rechts gilt erst ab 1024 px (`lg:` statt `md:`): bei 820 px rutschte "Portfolio" sonst in eine zweite Reihe.
+- **Geprüft:** headless bei 375, 820 und 1280 px, alle drei Knöpfe mit derselben Oberkante, kein waagrechtes Scrollen; `footer.test.tsx` hält die Klassen fest.
+
 ## 2026-11-20: Footer mit Spalten und drei Knöpfen (Branch `feat/footer-spalten`)
 
 - **Ziel:** Kasum wollte den Footer "so richtig", nicht mehr als lose Link-Zeile: Seiten in Spalten mit Überschrift, das kazuvate-Logo weg, Finn bleibt, dazu GitHub, LinkedIn und sein Portfolio als blaue Knöpfe.
