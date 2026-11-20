@@ -8,7 +8,6 @@ import { GithubIcon } from "@/shared/ui/github-icon";
 import { PageHeader } from "@/features/marketing/components/page-header";
 import {
   SKILL_CARDS,
-  SKILL_COMMIT,
   SKILL_INSTALL_STEPS,
   SKILL_SOURCE_URL,
   SKILL_VERSION,
@@ -61,7 +60,7 @@ export default function SkillPage() {
 
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild variant="primary">
-                <a href={SKILL_ZIP_URL} rel="noopener">
+                <a href={SKILL_ZIP_URL} download={SKILL_ZIP_FILENAME}>
                   <Download className="h-4 w-4" strokeWidth={1.8} aria-hidden />
                   ZIP herunterladen
                 </a>
@@ -74,18 +73,14 @@ export default function SkillPage() {
               </Button>
             </div>
 
-            {/* Die Prüfsumme der Datei, die der Knopf lädt (#240): ein Commit, kein Tag, den jemand verschieben könnte. */}
+            {/* Die Prüfsumme der Datei, die der Knopf lädt (#240): eine feste Datei dieser Seite, keine, die sich verschieben könnte. */}
             <details className="group mt-5 text-[14px] leading-[1.6] text-foreground/75">
               <summary className="cursor-pointer font-medium text-foreground/80 transition-colors hover:text-foreground">
                 Prüfsumme vergleichen (freiwillig)
               </summary>
               <div className="mt-3">
                 <p>
-                  Das ZIP ist der Stand des Commits{" "}
-                  <code className="rounded border border-border bg-surface px-1.5 py-0.5 text-[13px] text-foreground">
-                    {SKILL_COMMIT.slice(0, 7)}
-                  </code>
-                  . SHA-256 der Datei <span className="break-all">{SKILL_ZIP_FILENAME}</span>:
+                  SHA-256 der Datei <span className="break-all">{SKILL_ZIP_FILENAME}</span>:
                 </p>
                 <code
                   data-testid="skill-sha256"

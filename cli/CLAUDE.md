@@ -9,7 +9,7 @@ Das Programm zu PromptPrinter fürs Terminal, in zwei Arten:
 - **Ohne Konto (`--local`):** das Programm spricht selbst mit einem Modell über die Chat-Schnittstelle von OpenAI (`/chat/completions`), Standard Ollama auf `http://localhost:11434/v1`, sonst jeder Server mit `--base-url` (LM Studio, OpenRouter, ...). Finns Regeln stehen in `src/finn-prompt.mjs`. Kein Server von PromptPrinter, keine Sitzung. Seit 2026-11-17, der Teil, mit dem PromptPrinter als offenes Projekt mit freien Modellen läuft.
 - **Mit Konto:** dünner Client auf dem Chat der Web-App im selben Repo (`BajKasum/PromptPrinter`, Wurzelordner). Anmeldung per Geräte-Code im Browser, danach eine eigene Supabase-Sitzung als `Authorization: Bearer`.
 
-Das Programm liegt im Ordner `cli/` des Haupt-Repos; das frühere Repo `promptprinter-cli` ist archiviert. Plan und Stand stehen im Vault: "PromptPrinter Terminal-App Stand und Restplan", "PromptPrinter Terminal-App Architektur".
+Das Programm liegt im Ordner `cli/` des Haupt-Repos, ein eigenes Repo gibt es nicht mehr. Plan und Stand stehen im Vault: "PromptPrinter Terminal-App Stand und Restplan", "PromptPrinter Terminal-App Architektur".
 
 ## IST-Zustand
 

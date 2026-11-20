@@ -11,6 +11,13 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-20: Die Repos promptprinter-cli und promptprinter-pp werden gelöscht (Branch `chore/alte-repos-loeschen`)
+
+- **Ziel:** Kasum will die beiden alten Repos nicht archiviert, sondern ganz gelöscht ("keine Public Archives, sondern komplett gelöscht"). Ihr Inhalt liegt seit PR #340 in `cli/` und `skill/`; ihr Git-Verlauf geht mit ihnen verloren (der Import war je ein Commit).
+- **Was daran hing:** `/skill` lieferte das ZIP von `github.com/BajKasum/promptprinter-pp/archive/4451250e….zip`, `skill-archive.yml` lud es wöchentlich nach. Mit dem Repo wäre der Knopf ins Leere gegangen.
+- **Neu:** dieselbe Datei (Skill 0.3.0, SHA-256 `88bceb21…` unverändert, 151 184 Bytes) liegt als `public/skill/promptprinter-pp-0.3.0.zip` und kommt von promptprinter.app selbst, der Knopf mit `download`. Unter `/skill/`, weil der Middleware-`matcher` auch `.zip` erfasst und `/skill` schon in `PUBLIC_PREFIXES` steht; ein Ordner `/downloads` hätte Besucher ohne Konto auf `/login` geleitet. Der Satz mit dem Commit fällt weg (den Commit gibt es danach nirgends mehr). `skill-data.test.ts` rechnet die Prüfsumme der Datei bei jedem Testlauf nach und prüft den öffentlichen Pfad; `skill-archive.yml`, `scripts/verify-skill-archive.mjs` und sein Guard entfallen, denn eine eigene Datei ändert ihre Bytes nicht wie ein Archiv, das GitHub neu packt. `.gitattributes`: `*.zip binary`.
+- **Nebenbei:** `SECURITY.md` in `cli/` und `skill/` zeigen auf den Security-Tab des Haupt-Repos; der Pin der Kontext-Kopie (`cli/contract/context-pin.json`, Kopf von `cli/src/context.mjs`) nennt `BajKasum/PromptPrinter` und den Import-Commit `e0edf3a0` statt des alten Repos.
+
 ## 2026-11-20: CLI und Skill /pp liegen im Haupt-Repo (Branch `feat/cli-und-skill-im-repo`)
 
 - **Ziel:** Kasums Frage, ob CLI und Skill noch nötig sind und ins Haupt-Repo gehören. Empfehlung: die CLI ist der wichtigste Teil des Open-Source-Wegs (`--local` ohne Konto), der Skill ist entbehrlich (dreimal gemessen, Ziel verfehlt, beendet). Kasums Wahl: beide ins Haupt-Repo ("Skill auch reinholen"). Ein Repo fürs Portfolio statt drei.

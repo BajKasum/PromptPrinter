@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import SkillPage from "./page";
 import {
-  SKILL_COMMIT,
   SKILL_SOURCE_URL,
   SKILL_ZIP_FILENAME,
   SKILL_ZIP_SHA256,
@@ -36,12 +35,14 @@ describe("Seite /skill", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
   });
 
-  it("verlinkt das ZIP und das Repository auf GitHub, das ZIP ohne neuen Tab", () => {
+  it("verlinkt das ZIP auf dieser Seite und das Repository auf GitHub, das ZIP ohne neuen Tab", () => {
     render(<SkillPage />);
     const zip = screen.getByRole("link", { name: /ZIP herunterladen/ });
     expect(zip).toHaveAttribute("href", SKILL_ZIP_URL);
-    // Ein fester Commit, kein Tag (#240): was die Seite zeigt, kann sich nicht unter den Besuchern verschieben.
-    expect(SKILL_ZIP_URL).toBe(`https://github.com/BajKasum/promptprinter-pp/archive/${SKILL_COMMIT}.zip`);
+    // Eine feste Datei dieser Seite (#240): was die Seite zeigt, kann sich nicht unter den Besuchern verschieben.
+    expect(SKILL_ZIP_URL).toBe(`/skill/${SKILL_ZIP_FILENAME}`);
+    expect(zip).toHaveAttribute("download", SKILL_ZIP_FILENAME);
+    expect(zip).not.toHaveAttribute("target");
     const repo = screen.getByRole("link", { name: /Auf GitHub ansehen/ });
     expect(repo).toHaveAttribute("href", SKILL_SOURCE_URL);
     expect(repo).toHaveAttribute("target", "_blank");
@@ -52,10 +53,9 @@ describe("Seite /skill", () => {
     render(<SkillPage />);
     const box = screen.getByRole("region", { name: "So bekommst du ihn" });
     expect(within(box).getByTestId("skill-sha256")).toHaveTextContent(SKILL_ZIP_SHA256);
-    // Die Befehle nennen den Dateinamen, den GitHub vergibt, nicht einen erfundenen.
+    // Die Befehle nennen den Dateinamen, unter dem der Knopf speichert, nicht einen erfundenen.
     expect(box.textContent).toContain(`shasum -a 256 ${SKILL_ZIP_FILENAME}`);
     expect(box.textContent).toContain(`Get-FileHash ${SKILL_ZIP_FILENAME}`);
-    expect(box.textContent).toContain(SKILL_COMMIT.slice(0, 7));
   });
 
   it("nennt den Installationsbefehl und den Aufruf", () => {

@@ -1,12 +1,12 @@
 # Security Policy
 
-`promptprinter-cli` (the PromptPrinter terminal client) is a solo project run in my spare time. If you find a security vulnerability, please report it privately before you publish it.
+The PromptPrinter terminal client (the `cli/` folder of PromptPrinter) is a solo project run in my spare time. If you find a security vulnerability, please report it privately before you publish it.
 
 ## Reporting a vulnerability
 
-**Preferred:** use GitHub's private vulnerability reporting. Open the [Security tab](https://github.com/BajKasum/promptprinter-cli/security), choose "Report a vulnerability", and describe the problem.
+**Preferred:** use GitHub's private vulnerability reporting. Open the [Security tab](https://github.com/BajKasum/PromptPrinter/security), choose "Report a vulnerability", and describe the problem.
 
-**Alternative:** write an email to **kasumbajrami7@gmail.com** with the subject "Security vulnerability promptprinter-cli".
+**Alternative:** write an email to **kasumbajrami7@gmail.com** with the subject "Security vulnerability PromptPrinter CLI".
 
 Please do **not** open a public issue or pull request for a vulnerability that is not fixed yet.
 
@@ -18,4 +18,4 @@ I read reports as soon as I can, usually within a few days, and tell you what ha
 
 ## Scope
 
-This repository: the client, how it stores the sign-in, what it sends, what it prints. For the website, the server and the account, report to the [main project](https://github.com/BajKasum/PromptPrinter/security).
+The `cli/` folder: the client, how it stores the sign-in, what it sends, what it prints. The website, the server and the account are covered by the [policy of the whole project](../SECURITY.md).

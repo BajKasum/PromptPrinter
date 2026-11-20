@@ -5,33 +5,23 @@
 /** Der Quelltext des Skills in diesem Repo, für den Link "auf GitHub". */
 export const SKILL_SOURCE_URL = "https://github.com/BajKasum/PromptPrinter/tree/main/skill";
 
-/**
- * Das archivierte Repo, in dem der Skill entstand. Es liefert das ZIP des festen Commits unten weiter aus; ein
- * archiviertes Repo ist nur noch lesbar, Commit und Prüfsumme bleiben dieselben.
- */
-export const SKILL_REPO_URL = "https://github.com/BajKasum/promptprinter-pp";
-
-/** Der Skill in der Fassung, die das Schwester-Repo trägt (Datei SKILL.md, Feld version). */
+/** Der Skill in der Fassung, die das ZIP trägt (Datei SKILL.md, Feld version). */
 export const SKILL_VERSION = "0.3.0";
 
+/** Der Name der Datei, auch in den Befehlen zum Vergleichen der Prüfsumme. */
+export const SKILL_ZIP_FILENAME = `promptprinter-pp-${SKILL_VERSION}.zip`;
+
 /**
- * Der Commit des Schwester-Repos, den die Seite ausliefert (die Spitze von v0.3.0, volle 40 Stellen). Ein Tag lässt
- * sich verschieben oder löschen, ein Commit nicht: wer den Download prüft, prüft immer dieselben Dateien. Version,
- * Commit und Prüfsumme ändern sich nur zusammen; skill-data.test.ts hält das Tripel fest, und
- * scripts/verify-skill-archive.mjs lädt das ZIP und rechnet nach (`--print` gibt die neue Prüfsumme aus).
+ * Das ZIP liegt in public/skill/ und kommt von dieser Seite selbst: eine feste Datei, deren Bytes sich nie ändern,
+ * anders als ein Archiv, das GitHub bei jeder Anfrage neu packt. Unter /skill, weil der Pfad schon öffentlich ist
+ * (PUBLIC_PREFIXES in shared/lib/app-routes.ts); ein eigener Ordner wie /downloads leitete Besucher ohne Konto zur
+ * Anmeldung.
  */
-export const SKILL_COMMIT = "4451250e7b3d5deadf922504ef4a5861ee68aeb4";
-
-/** Das ZIP genau dieses Commits (kein Tag, kein Branch). */
-export const SKILL_ZIP_URL = `${SKILL_REPO_URL}/archive/${SKILL_COMMIT}.zip`;
-
-/** Der Dateiname, unter dem GitHub das ZIP ausliefert (Content-Disposition). */
-export const SKILL_ZIP_FILENAME = `promptprinter-pp-${SKILL_COMMIT}.zip`;
+export const SKILL_ZIP_URL = `/skill/${SKILL_ZIP_FILENAME}`;
 
 /**
- * SHA-256 der Datei, die SKILL_ZIP_URL ausliefert: zweimal nacheinander geladen und verglichen, beide
- * Male dieselbe. GitHub sagt nicht zu, dass sie für immer gleich bleibt; die wöchentliche Prüfung steht in
- * .github/workflows/skill-archive.yml.
+ * SHA-256 der Datei unter SKILL_ZIP_URL. Version, Datei und Prüfsumme ändern sich nur zusammen; skill-data.test.ts
+ * rechnet die Prüfsumme der Datei in public/ bei jedem Testlauf nach.
  */
 export const SKILL_ZIP_SHA256 = "88bceb21837d06ac04eb3902ff83a38dd4015d188e041f78e4bb74e88ce75e37";
 
@@ -56,7 +46,7 @@ export const SKILL_CARDS = [
 export const SKILL_INSTALL_STEPS = [
   {
     title: "Herunterladen",
-    body: "Das ZIP von GitHub laden, mit der Prüfsumme oben vergleichen und entpacken. Es ist ein fester Commit: ein geklontes Repository hätte den aktuellen Stand, den die Prüfsumme nicht deckt.",
+    body: "Das ZIP laden, mit der Prüfsumme oben vergleichen und entpacken. Es ist eine feste Fassung: ein geklontes Repository hätte den aktuellen Stand, den die Prüfsumme nicht deckt.",
   },
   {
     title: "Installieren",
