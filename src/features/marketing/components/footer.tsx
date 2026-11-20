@@ -1,104 +1,104 @@
 import Link from "next/link";
+import { Globe } from "lucide-react";
 import { Mascot } from "@/shared/brand/mascot";
-import { NavWave } from "@/shared/ui/nav-wave";
+import { Button } from "@/shared/ui/button";
+import { GithubIcon } from "@/shared/ui/github-icon";
+import { LinkedinIcon } from "@/shared/ui/linkedin-icon";
 import { REPO_URL } from "@/features/marketing/lib/open-source";
+import { LINKEDIN_URL, PORTFOLIO_URL } from "@/features/marketing/lib/author-links";
 
-// Finn's farewell: the page opens with him, it closes with him — image only,
-// no sign-off line underneath (the words were the request to remove; the
-// mascot itself stays). One flat row of links next to him, all sharing the
-// navbar's own hover language (nav-pill + NavWave from shared/ui) instead of
-// the navbar being the only place a hover does anything. Deliberately no
-// product/legal weight split anymore (an earlier version sat the legal links
-// quieter underneath): the request was one consistent link style for every
-// page, not a hierarchy.
-const FOOTER_LINKS = [
-  // Anchor, not a route: "Wie es funktioniert" is a section of the landing
-  // page again (see src/app/(marketing)/page.tsx). The leading "/" matters —
-  // this footer is on every public page, where a bare "#funktionen" would
-  // scroll nowhere.
-  { href: "/#funktionen", label: "Funktionen" },
-  { href: "/open-source", label: "Open Source" },
-  { href: "/skill", label: "Skill" },
-  { href: "/terminal", label: "CLI" },
-  { href: "/mcp", label: "MCP" },
-  { href: "/docs", label: "Hilfe" },
-  { href: "/vergleich", label: "Vergleich" },
-  { href: "/ueber", label: "Über" },
-  { href: "/kontakt", label: "Kontakt" },
-  { href: "/datenschutz", label: "Datenschutz" },
-  { href: "/cookies", label: "Cookies" },
-  { href: "/agb", label: "AGB" },
-  { href: "/nutzungsrichtlinie", label: "Nutzungsrichtlinie" },
-  { href: "/impressum", label: "Impressum" },
-];
+// Finns Abschied: die Seite beginnt mit ihm und endet mit ihm. Links Finn, ein Satz in seiner Stimme und drei
+// blaue Knöpfe nach draussen (der Code, LinkedIn, das Portfolio), rechts die Seiten in drei Spalten mit
+// Überschrift, darunter eine Linie und das Copyright. Jede öffentliche Seite steht genau einmal hier;
+// footer.test.tsx prüft, dass es sie gibt.
+export const FOOTER_GROUPS = [
+  {
+    title: "Produkt",
+    links: [
+      // Ein Sprungziel auf der Landing Page, keine Route. Der führende "/" zählt: der Footer steht auf jeder
+      // öffentlichen Seite, ein blosses "#funktionen" spränge dort ins Leere.
+      { href: "/#funktionen", label: "Funktionen" },
+      { href: "/open-source", label: "Open Source" },
+      { href: "/skill", label: "Skill" },
+      { href: "/terminal", label: "CLI" },
+      { href: "/mcp", label: "MCP" },
+    ],
+  },
+  {
+    title: "Hilfe und Kontakt",
+    links: [
+      { href: "/docs", label: "Hilfe" },
+      { href: "/vergleich", label: "Vergleiche" },
+      { href: "/ueber", label: "Über PromptPrinter" },
+      { href: "/kontakt", label: "Kontakt" },
+    ],
+  },
+  {
+    title: "Rechtliches",
+    links: [
+      { href: "/impressum", label: "Impressum" },
+      { href: "/datenschutz", label: "Datenschutz" },
+      { href: "/cookies", label: "Cookies" },
+      { href: "/agb", label: "AGB" },
+      { href: "/nutzungsrichtlinie", label: "Nutzungsrichtlinie" },
+    ],
+  },
+] as const;
 
-const LINK_CLASS =
-  "group focus-glow relative isolate rounded-full px-3 py-1.5 text-[13px] text-secondary transition-colors duration-200 hover:text-accent-text";
-const PILL_CLASS = "nav-pill absolute inset-0 -z-10 rounded-full bg-accent-subtle";
+/** Die drei Knöpfe nach draussen, in dieser Reihenfolge. */
+export const FOOTER_BUTTONS = [
+  { href: REPO_URL, label: "GitHub", Icon: GithubIcon },
+  { href: LINKEDIN_URL, label: "LinkedIn", Icon: LinkedinIcon },
+  { href: PORTFOLIO_URL, label: "Portfolio", Icon: Globe },
+] as const;
 
 export function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="container-x py-8 md:py-10">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6">
-          <Mascot size={40} state="idle" alt="Finn" />
-          <nav
-            aria-label="Seiten"
-            className="flex flex-wrap items-center gap-x-1 gap-y-1"
-          >
-            {FOOTER_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className={LINK_CLASS}>
-                <span aria-hidden className={PILL_CLASS} />
-                {l.label}
-                <NavWave active={false} />
-              </Link>
+      <div className="container-x pb-8 pt-12 md:pt-16">
+        <div className="grid gap-10 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12">
+          <div>
+            <Mascot size={48} state="idle" alt="Finn" />
+            <p className="mt-4 max-w-xs text-[14px] leading-[1.6] text-secondary">
+              Ich mache aus deiner Idee den fertigen Prompt. Kostenlos und Open Source.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              {FOOTER_BUTTONS.map(({ href, label, Icon }) => (
+                <Button key={href} asChild variant="accent">
+                  <a href={href} target="_blank" rel="noopener">
+                    <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden />
+                    {label}
+                  </a>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <nav aria-label="Seiten" className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
+            {FOOTER_GROUPS.map((group) => (
+              <div key={group.title}>
+                <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-foreground">{group.title}</h2>
+                <ul className="mt-3 space-y-1">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      {/* 32 px hoch, auf Touch mit 44 px Trefferfläche (globals.css), ohne die Liste zu strecken. */}
+                      <Link
+                        href={link.href}
+                        className="touch-hit-y focus-glow relative inline-block rounded-sm py-1.5 text-[14px] leading-5 text-secondary transition-colors duration-200 hover:text-foreground"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-            {/* Der Quellcode, der einzige Link nach draussen: PromptPrinter ist Open Source (/open-source). */}
-            <a href={REPO_URL} target="_blank" rel="noopener" className={LINK_CLASS}>
-              <span aria-hidden className={PILL_CLASS} />
-              GitHub
-              <NavWave active={false} />
-            </a>
           </nav>
         </div>
 
-        {/* No second full-width border here on purpose — a rule above the
-            links plus one above the copyright read as one footer split in
-            two. One line, at the top of the whole block, is enough. */}
-        <p className="mt-5 text-[12px] text-tertiary">
+        <p className="mt-12 border-t border-border pt-6 text-[12px] text-tertiary">
           © {new Date().getFullYear()} PromptPrinter
         </p>
-
-        {/* Erbauer-Credit, gleich aufgebaut wie auf den Kundenseiten der
-            eigenen Agentur (ProMeti, Artemis, Portfolio): ein eigener Block
-            unter dem Rest, abgesetzt durch eine KURZE Linie (nicht über die
-            ganze Breite, sonst wäre das wieder die doppelte Trennlinie von
-            oben), Zeichen + Name gross genug, dass es als Logo gelesen wird,
-            und in kazuvate-Oliv statt im Seitenakzent. Vorher stand es
-            12 px klein und grau rechts neben dem Copyright und ging unter. */}
-        <div className="mt-6 w-fit border-t border-border pt-5">
-          <a
-            href="https://kazuvate.ch"
-            target="_blank"
-            rel="noopener"
-            aria-label="Website von kazuvate, öffnet in einem neuen Tab"
-            className="focus-glow inline-flex items-center gap-2.5 rounded-sm text-[20px] font-bold leading-none tracking-[-0.015em] text-kazuvate transition-opacity duration-200 hover:opacity-75"
-          >
-            <svg
-              viewBox="0 0 585.51 442.90"
-              className="h-7 w-auto shrink-0"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                fill="currentColor"
-                fillRule="evenodd"
-                d="M0.00 0.19L79.97 0.39L80.19 169.50L153.51 170.08L283.43 0.19L380.99 0.15L222.91 208.75L314.29 442.90L226.95 442.73L153.34 250.65L79.93 250.95L79.93 442.90L0.03 442.90ZM256.87 212.24L328.91 117.34L382.37 254.94L487.38 0.26L585.51 0.00L417.18 442.90L346.61 442.90Z"
-              />
-            </svg>
-            <span>kazuvate</span>
-          </a>
-        </div>
       </div>
     </footer>
   );

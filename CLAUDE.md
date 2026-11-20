@@ -406,7 +406,7 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 | `how-it-works.tsx` | Drei Schritte (Idee → kurz klären → startklar) in flachen `card-surface`-Karten. Trägt `id="funktionen"`, das Sprungziel der Navbar. Darunter die Karte „Einmal vorab": der KI-Key und im zweiten Absatz Open Source und Selbstbetrieb („Ganz ohne Key", Links GitHub und `/docs/selbst-betreiben`), bewusst kein vierter Schritt. | `building` |
 | `product-showcase.tsx` | Interaktive Workspace-Vorschau (Chats / Projekte) mit demselben Pillen-Umschalter (`NavSwitcher`) wie die echte Sidebar. Einziges „Schau es dir an"-Element. | `organizing` |
 | `final-cta.tsx` | Persönlicher Abschluss, „Den Rest mach ich mit dir.", darunter Gratis-Prompts, KI-Key und dass der Code offen auf GitHub liegt (kein Wort zu Zahlungsmitteln). | `celebrating` |
-| `footer.tsx` | Kleiner Finn (nur das Bild) und eine flache Link-Zeile mit allen öffentlichen Seiten, zuletzt GitHub, Copyright, eine Trennlinie, darunter der kazuvate-Credit. Links tragen dieselbe Wasser-Pille wie die Navbar (`NavWave`, `shared/ui/nav-wave.tsx`). | `idle` |
+| `footer.tsx` | Links Finn, ein Satz in seiner Stimme und drei blaue Knöpfe nach draussen (GitHub, LinkedIn, Portfolio; `author-links.ts`), rechts die Seiten in drei Spalten mit Überschrift (Produkt, Hilfe und Kontakt, Rechtliches), darunter Linie und Copyright. Kein Agentur-Credit (Kasum 2026-11-20). | `idle` |
 | `navbar.tsx` | Fest oben und beim Scrollen unverändert (keine Pille, keine Linie): helle, leicht durchscheinende Fläche mit Blur (`--header-surface`), darunter eine Wasserkante aus drei Lagen (`header-water.tsx`, unter reduced-motion still). Raster `1fr auto 1fr`: Logo, fünf Links mittig ohne Untermenü (`MARKETING_NAV`: Funktionen, Open Source, Skill, CLI `/terminal`, MCP), Knöpfe. | kein Finn |
 
 **`/open-source`:** Fliesstext in Finns Ich-Form, vier Abschnitte (Browser, selbst betreiben, Terminal mit
@@ -425,7 +425,7 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
   RLS sind aus allen Landing-Page-Texten gestrichen. Nur im App-UI und FAQ (wo Nutzer
   es erwarten) erlaubt.
 - **Keine SaaS-Template-Muster**, kein Feature-Grid, keine nummerierten Karten,
-  keine corporate Footer-Spalten, keine Status-Pulse-Indikatoren.
+  keine Status-Pulse-Indikatoren. Ausnahme auf Kasums Wunsch: der Footer hat Spalten mit Überschrift.
 - **Whitespace ist Absicht**, Litany-Prinzip: weniger Struktur = mehr emotionaler Impact.
 - **Finn reist durch die Seite**, welcoming → building → delivering → helping → celebrating → idle.
   Er soll nicht als dekorativer Sticker wirken, sondern als Begleiter.
@@ -436,7 +436,7 @@ Navbar → Hero → HowItWorks → ProductShowcase → FinalCTA → Footer
 ## Nicht anfassen (stabil), und was bewusst offen ist
 
 - Mascot-State-System und alle 14 Assets.
-- Hero-Demo (drei Stufen), Footer (Finn's Farewell).
+- Hero-Demo (drei Stufen), Finn im Footer.
 - Auth-Flow, DB-Migrationen, RLS-Policies: nur mit Test und Grund. Der Auth-Flow
   wurde am 2026-10-06 angefasst (Reset-Link, siehe Changelog), mit Tests und einem
   Browser-Test, der ihn Ende zu Ende prüft.
