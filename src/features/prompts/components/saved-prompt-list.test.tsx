@@ -145,6 +145,19 @@ describe("SavedPromptList", () => {
       expect(writeText).toHaveBeenLastCalledWith(template.content);
     });
 
+    it("hands what is filled in to the developer export", async () => {
+      const user = userEvent.setup();
+      render(<SavedPromptList userId="u1" prompts={[template]} />);
+      await openPrompt(user, "Brief");
+      await user.click(screen.getByRole("button", { name: "Platzhalter ausfüllen (3)" }));
+      await user.type(screen.getByLabelText("Thema"), "Heizung");
+      await user.click(screen.getByRole("button", { name: "„dein Name“ nicht als Platzhalter behandeln" }));
+
+      await user.click(screen.getByRole("button", { name: "Für Entwickler exportieren" }));
+      const body = JSON.parse(screen.getByLabelText("Vorschau des Exports").textContent!);
+      expect(body.messages[0].content).toBe("Schreib an {{name_des_vermieters}} wegen Heizung. Unterschrift: [dein Name]");
+    });
+
     it("shows no form for a prompt without placeholders", async () => {
       const user = userEvent.setup();
       render(<SavedPromptList userId="u1" prompts={[prompt]} />);

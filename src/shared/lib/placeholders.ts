@@ -10,6 +10,9 @@ export type Placeholder = {
   label: string;
 };
 
+/** Was die Person im Formular eingetragen hat, und welche Schlüssel sie als "kein Platzhalter" markiert hat. */
+export type PlaceholderFill = { values: Record<string, string>; skipped: ReadonlySet<string> };
+
 // Davor kein Wortzeichen, keine schliessende Klammer und kein "/", "<" oder ".": `liste[index]`, `[Text][ref]`,
 // Routensegmente wie `/[id]/` in einem Pfad und Typen wie `Array<[string, number]>` sind keine Platzhalter.
 // Dahinter kein "(" oder "[" (Markdown-Link, Bild) und kein ": http" (Verweis).
@@ -49,6 +52,26 @@ export function findPlaceholders(prompt: string): Placeholder[] {
   return [...seen.values()];
 }
 
+/** Ersetzt jeden Platzhalter samt Klammern durch das, was `replace` liefert; bei null bleibt er stehen. */
+export function mapPlaceholders(prompt: string, replace: (placeholder: Placeholder) => string | null): string {
+  let out = "";
+  let cursor = 0;
+  for (const hit of scan(prompt)) {
+    const next = replace({ key: keyOf(hit.label), label: hit.label });
+    if (next === null) continue;
+    out += prompt.slice(cursor, hit.index) + next;
+    cursor = hit.index + hit.length;
+  }
+  return out + prompt.slice(cursor);
+}
+
+/** Die getrimmte Eingabe zu einem Schlüssel, oder null (leer, nur Leerraum, oder als "kein Platzhalter" markiert). */
+export function filledValue(key: string, values: Record<string, string>, skip: ReadonlySet<string>): string | null {
+  // Nur eigene Schlüssel: ein Platzhalter "[constructor]" fände sonst Object.prototype.constructor.
+  const value = Object.hasOwn(values, key) ? values[key]?.trim() : undefined;
+  return value && !skip.has(key) ? value : null;
+}
+
 /**
  * Setzt die Eingaben ein. Ein Platzhalter ohne Eingabe (leer oder nur Leerraum) bleibt stehen, und
  * Schlüssel in `skip` sind von der Person als "kein Platzhalter" markiert und bleiben ebenfalls.
@@ -58,17 +81,7 @@ export function fillPlaceholders(
   values: Record<string, string>,
   skip: ReadonlySet<string> = new Set()
 ): string {
-  let out = "";
-  let cursor = 0;
-  for (const hit of scan(prompt)) {
-    const key = keyOf(hit.label);
-    // Nur eigene Schlüssel: ein Platzhalter "[constructor]" fände sonst Object.prototype.constructor.
-    const value = Object.hasOwn(values, key) ? values[key]?.trim() : undefined;
-    if (!value || skip.has(key)) continue;
-    out += prompt.slice(cursor, hit.index) + value;
-    cursor = hit.index + hit.length;
-  }
-  return out + prompt.slice(cursor);
+  return mapPlaceholders(prompt, (p) => filledValue(p.key, values, skip));
 }
 
 /**
