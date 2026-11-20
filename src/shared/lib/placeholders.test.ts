@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fillPlaceholders, findPlaceholders, isFilledFrom } from "@/features/chat/lib/placeholders";
+import { fillPlaceholders, findPlaceholders, isFilledFrom } from "@/shared/lib/placeholders";
 import { CORPUS } from "@tests/support/prompt-corpus";
 
 const labels = (prompt: string) => findPlaceholders(prompt).map((p) => p.label);

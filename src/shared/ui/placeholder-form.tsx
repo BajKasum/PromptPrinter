@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Check, Copy, PenLine } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
-import { fillPlaceholders, findPlaceholders } from "@/features/chat/lib/placeholders";
+import { fillPlaceholders, findPlaceholders } from "@/shared/lib/placeholders";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { fmt } from "@/shared/i18n/format";
 import { useT } from "@/shared/i18n/provider";
