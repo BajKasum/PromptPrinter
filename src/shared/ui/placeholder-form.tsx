@@ -5,21 +5,29 @@ import { Check, Copy, PenLine } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { fillPlaceholders, findPlaceholders } from "@/shared/lib/placeholders";
+import { cn } from "@/shared/lib/utils";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { fmt } from "@/shared/i18n/format";
 import { useT } from "@/shared/i18n/provider";
 
-// Platzhalter im fertigen Prompt direkt ausfüllen (#224). Die Eingaben bleiben im Browser: kein Aufruf,
-// kein Speichern, kein <form>, das ein Browser zum Merken anbieten könnte. Erst der Probelauf
-// (prompt-actions.tsx) schickt die ausgefüllte Fassung ab, und der Hinweis sagt das. Gespeichert wird
-// weiter der Prompt mit seinen Platzhaltern.
+// Platzhalter im fertigen Prompt direkt ausfüllen (#224), im Chat, an gespeicherten Prompts und auf /geteilt/<token>.
+// Die Eingaben bleiben im Browser: kein Aufruf, kein Speichern, kein <form>, das ein Browser zum Merken anbieten
+// könnte. Im Chat schickt erst der Probelauf (features/chat/components/prompt-actions.tsx) die ausgefüllte Fassung
+// ab, und der Standard-Hinweis sagt das; wo es keinen Probelauf gibt, übergibt der Aufrufer einen eigenen Hinweis.
+// Gespeichert wird weiter der Prompt mit seinen Platzhaltern.
 export function PlaceholderForm({
   prompt,
   onFilledChange,
+  hint,
+  className,
 }: {
   prompt: string;
   /** Die ausgefüllte Fassung, sobald etwas eingetragen ist, sonst null (für "In ChatGPT öffnen" und den Probelauf). */
   onFilledChange?: (filled: string | null) => void;
+  /** Ersetzt den Hinweis über den Feldern; der Standard nennt den Probelauf des Chats. */
+  hint?: string;
+  /** Rand und Abstand des Rahmens, passend zur Fläche, in der das Formular steht. */
+  className?: string;
 }) {
   const t = useT();
   const baseId = useId();
@@ -44,7 +52,7 @@ export function PlaceholderForm({
     });
 
   return (
-    <div className="border-t border-border px-3 py-2 md:px-7">
+    <div className={cn("border-t border-border px-3 py-2 md:px-7", className)}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -58,7 +66,7 @@ export function PlaceholderForm({
 
       {open && (
         <div id={`${baseId}-panel`} role="group" aria-label={t.chat.fill.title} className="pb-3 pt-1">
-          <p className="text-[12px] leading-relaxed text-secondary">{t.chat.fill.hint}</p>
+          <p className="text-[12px] leading-relaxed text-secondary">{hint ?? t.chat.fill.hint}</p>
           <div className="mt-3 space-y-3">
             {placeholders.map((p, i) => {
               const inputId = `${baseId}-${i}`;

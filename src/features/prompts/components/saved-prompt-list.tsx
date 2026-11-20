@@ -12,6 +12,7 @@ import type { SavedPrompt } from "@/shared/lib/saved-prompts";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { SharePrompt } from "@/features/prompts/components/share-prompt";
 
 // The Ergebnisse/Gespeicherte-Prompts list, newest first.
@@ -282,6 +283,9 @@ function SavedPromptCard({
           <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
             {prompt.content}
           </pre>
+          {/* Dasselbe Formular wie im Chat. Kopieren in der Leiste darunter nimmt weiter den gespeicherten Text, die
+              ausgefüllte Fassung kopiert der Knopf im Formular. */}
+          <PlaceholderForm prompt={prompt.content} hint={t.chat.fill.hintSaved} className="md:px-4" />
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
             <span className="px-1 text-[12px] text-tertiary">
               {fmt(t.prompts.savedAgo, {
