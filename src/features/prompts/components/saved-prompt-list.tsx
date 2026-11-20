@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { cn, relativeTime } from "@/shared/lib/utils";
 import type { SavedPrompt } from "@/shared/lib/saved-prompts";
+import type { PlaceholderFill } from "@/shared/lib/placeholders";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
@@ -125,6 +126,8 @@ function SavedPromptCard({
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(prompt.title);
+  // Was im Formular der Platzhalter steht, nimmt der Export mit.
+  const [fill, setFill] = useState<PlaceholderFill>();
   // K-6 (Audit 06.09.2026): der Loesch-Knopf entfernte den gespeicherten
   // Prompt bisher mit einem einzigen Klick, ohne Rueckfrage und ohne Undo —
   // live ausgeloest: ein Klick, sofort weg. Projekt, Datei und Gedaechtnis
@@ -289,7 +292,12 @@ function SavedPromptCard({
           </pre>
           {/* Dasselbe Formular wie im Chat. Kopieren in der Leiste darunter nimmt weiter den gespeicherten Text, die
               ausgefüllte Fassung kopiert der Knopf im Formular. */}
-          <PlaceholderForm prompt={prompt.content} hint={t.chat.fill.hintSaved} className="md:px-4" />
+          <PlaceholderForm
+            prompt={prompt.content}
+            hint={t.chat.fill.hintSaved}
+            onFillChange={setFill}
+            className="md:px-4"
+          />
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2">
             <span className="px-1 text-[12px] text-tertiary">
               {fmt(t.prompts.savedAgo, {
@@ -338,7 +346,13 @@ function SavedPromptCard({
               </button>
             </div>
           </div>
-          <PromptReuseBar promptId={prompt.id} title={prompt.title} content={prompt.content} projectId={prompt.projectId} />
+          <PromptReuseBar
+            promptId={prompt.id}
+            title={prompt.title}
+            content={prompt.content}
+            projectId={prompt.projectId}
+            fill={fill}
+          />
           {/* Teilen per Link (Migration 0057): erst nach einer Rückfrage, widerrufbar. */}
           <SharePrompt promptId={prompt.id} content={prompt.content} />
         </div>

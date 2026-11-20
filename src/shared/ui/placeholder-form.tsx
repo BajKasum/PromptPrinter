@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Check, Copy, PenLine } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
-import { fillPlaceholders, findPlaceholders } from "@/shared/lib/placeholders";
+import { fillPlaceholders, findPlaceholders, type PlaceholderFill } from "@/shared/lib/placeholders";
 import { cn } from "@/shared/lib/utils";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { fmt } from "@/shared/i18n/format";
@@ -18,12 +18,15 @@ import { useT } from "@/shared/i18n/provider";
 export function PlaceholderForm({
   prompt,
   onFilledChange,
+  onFillChange,
   hint,
   className,
 }: {
   prompt: string;
   /** Die ausgefüllte Fassung, sobald etwas eingetragen ist, sonst null (für "In ChatGPT öffnen" und den Probelauf). */
   onFilledChange?: (filled: string | null) => void;
+  /** Eingaben und "Kein Platzhalter" als Daten, für den Export (shared/lib/prompt-export.ts). */
+  onFillChange?: (fill: PlaceholderFill) => void;
   /** Ersetzt den Hinweis über den Feldern; der Standard nennt den Probelauf des Chats. */
   hint?: string;
   /** Rand und Abstand des Rahmens, passend zur Fläche, in der das Formular steht. */
@@ -41,6 +44,9 @@ export function PlaceholderForm({
   useEffect(() => {
     onFilledChange?.(anythingTyped ? filled : null);
   }, [anythingTyped, filled, onFilledChange]);
+  useEffect(() => {
+    onFillChange?.({ values, skipped });
+  }, [values, skipped, onFillChange]);
 
   if (placeholders.length === 0) return null;
 
