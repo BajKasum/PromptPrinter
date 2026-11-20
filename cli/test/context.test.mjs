@@ -7,9 +7,9 @@ import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
 import { buildPack, findSecrets, isDeniedPath, redactText, renderPack, searchRepo } from "../src/context.mjs";
 
-// src/context.mjs ist eine Kopie aus promptprinter-pp. Die Fälle hier sind aus dessen test/context.test.mjs
+// src/context.mjs ist eine Kopie von skill/pp/scripts/context.mjs. Die Fälle hier sind aus skill/test/context.test.mjs
 // übernommen, so weit das Programm die Teile nutzt: Schwärzen, Sperrliste, pack und search als Modul.
-// check, save und doctor ruft das Programm nie auf, ihre Fälle bleiben drüben.
+// check, save und doctor ruft das Programm nie auf, ihre Fälle stehen dort.
 const SOURCE = new URL("../src/context.mjs", import.meta.url);
 const temps = [];
 after(() => {

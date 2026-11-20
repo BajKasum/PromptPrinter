@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // ---- Kopie: hier nicht ändern -----------------------------------------------------------------------
-// Herkunft: BajKasum/promptprinter-pp, skill/pp/scripts/context.mjs auf main bei Commit
-// 2e3e545f75475e68f60faf5b42f01061c23845a9 (Skill 0.4.0, Skript 0.2.0), MIT. Nie eine ältere Fassung:
+// Herkunft: skill/pp/scripts/context.mjs in diesem Repo (BajKasum/PromptPrinter) bei Commit
+// e0edf3a0c4d20afcb2fcb6ea88d52664fd471d6c (Skill 0.4.0, Skript 0.2.0), MIT. Nie eine ältere Fassung:
 // Skill 0.3.0 liess Geheimnisse durch. Gegenüber der Quelle geändert sind nur dieser Kopf und `export`
 // vor renderPack, damit das Programm den Kontext ohne Kindprozess baut. Die Prüfsumme der Quelle steht
 // in contract/context-pin.json: test/context.test.mjs prüft, dass diese Datei bis auf die zwei Stellen
-// der Quelle entspricht, `npm run contract` meldet, wenn sich die Quelle auf main ändert.
+// der Quelle entspricht, `npm run contract` meldet, wenn sich die Quelle im Checkout ändert.
 // ---- Ende der Herkunft -------------------------------------------------------------------------------
 // Kontext-Skript des Skills /pp: sammelt Fakten aus Git und Dateien, prüft einen Auftrag, legt ihn ab.
 //   node context.mjs <pack|search|check|save|doctor> [Optionen]

@@ -4,7 +4,7 @@ Wird bei jedem Session-Start geladen. Kurz: was das Projekt ist, in welchem Zust
 
 ## Was ist der Skill /pp (`skill/`)?
 
-Der Agent Skill `/pp` (Claude Code, später Codex und VS Code Copilot) plus ein kleines lokales Skript. Er macht aus einer Absicht einen fertigen Prompt für den Coding-Agenten, mit Kontext aus Git, Struktur, Regeldateien und passenden Dateien. Er ändert nie Dateien, führt erst nach ausdrücklichem Ja etwas aus, hat keinen Server und kein Konto. Eigene Produktlinie neben der Web-App PromptPrinter (Entscheid D1 vom 25.10.2026), im Ordner `skill/` des Haupt-Repos `BajKasum/PromptPrinter`; das frühere Repo `promptprinter-pp` ist archiviert und liefert nur noch das ZIP für `/skill`.
+Der Agent Skill `/pp` (Claude Code, später Codex und VS Code Copilot) plus ein kleines lokales Skript. Er macht aus einer Absicht einen fertigen Prompt für den Coding-Agenten, mit Kontext aus Git, Struktur, Regeldateien und passenden Dateien. Er ändert nie Dateien, führt erst nach ausdrücklichem Ja etwas aus, hat keinen Server und kein Konto. Eigene Produktlinie neben der Web-App PromptPrinter (Entscheid D1 vom 25.10.2026), im Ordner `skill/` des Haupt-Repos `BajKasum/PromptPrinter`, ein eigenes Repo gibt es nicht mehr. Das ZIP für `/skill` (Skill 0.3.0) liegt in `public/skill/` der Web-App.
 
 ## IST-Zustand (Stand 2026-11-20)
 

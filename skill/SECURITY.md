@@ -1,12 +1,12 @@
 # Security Policy
 
-`promptprinter-pp` (the `/pp` skill and its local context script) is a solo project run in my spare time. If you find a security vulnerability, please report it privately before you publish it.
+The `/pp` skill and its local context script (the `skill/` folder of PromptPrinter) is a solo project run in my spare time. If you find a security vulnerability, please report it privately before you publish it.
 
 ## Reporting a vulnerability
 
-**Preferred:** use GitHub's private vulnerability reporting. Open the [Security tab](https://github.com/BajKasum/promptprinter-pp/security), choose "Report a vulnerability", and describe the problem. Only the maintainer can see the report.
+**Preferred:** use GitHub's private vulnerability reporting. Open the [Security tab](https://github.com/BajKasum/PromptPrinter/security), choose "Report a vulnerability", and describe the problem. Only the maintainer can see the report.
 
-**Alternative:** write an email to **kasumbajrami7@gmail.com** with the subject "Security vulnerability promptprinter-pp".
+**Alternative:** write an email to **kasumbajrami7@gmail.com** with the subject "Security vulnerability /pp skill".
 
 Please do **not** open a public issue or pull request for a vulnerability that is not fixed yet.
 
@@ -23,11 +23,11 @@ This is a hobby project, so I answer as fast as I can: expect a reply within a f
 
 ## Supported versions
 
-The latest [release](https://github.com/BajKasum/promptprinter-pp/releases) and the current `main` are supported. Older versions are not maintained.
+The download on [promptprinter.app/skill](https://promptprinter.app/skill) and `skill/` on the current `main` are supported. Older versions are not maintained.
 
 ## Scope
 
-In scope is the code and the documentation in this repository: the skill, the context script and the install script. These are examples of what counts:
+In scope is the code and the documentation in `skill/`: the skill, the context script and the install script. These are examples of what counts:
 
 - a secret that gets through the redaction into a context pack, a search result or a saved prompt
 - a command that writes or deletes files outside the folders it is meant to touch (path traversal, symbolic links, overwriting files that are not its own)
