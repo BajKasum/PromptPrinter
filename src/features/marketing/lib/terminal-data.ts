@@ -1,5 +1,5 @@
-// Die Befehle der Seiten /terminal (im Header "CLI") und /mcp, an einer Stelle und gegen das Repo
-// `promptprinter-cli` gelesen (README, package.json: Befehl `promptprinter`, Einstieg die Datei promptprinter.mjs im
+// Die Befehle der Seiten /terminal (im Header "CLI") und /mcp, an einer Stelle und gegen das Programm in
+// `cli/` dieses Repos gelesen (README, package.json: Befehl `promptprinter`, Einstieg die Datei promptprinter.mjs im
 // Ordner bin, Node 22 oder neuer, keine Abhängigkeiten; ohne Konto `--local` mit `--base-url`, `--model` und dem
 // Key nur in `PROMPTPRINTER_API_KEY`).
 //
@@ -10,12 +10,14 @@
 
 export const NPM_PUBLISHED = false;
 
-export const CLI_REPO_URL = "https://github.com/BajKasum/promptprinter-cli";
+export const CLI_REPO_URL = "https://github.com/BajKasum/PromptPrinter";
+/** Der Ordner des Programms im Repo, für den Link "auf GitHub". */
+export const CLI_SOURCE_URL = `${CLI_REPO_URL}/tree/main/cli`;
 export const CLI_PACKAGE = "promptprinter";
 export const CLI_NODE_MIN = 22;
 
-/** Der Platzhalter für den Ordner, in den das Repo geklont wurde. */
-export const CLI_PATH_PLACEHOLDER = "/pfad/zu/promptprinter-cli";
+/** Der Platzhalter für den Ordner des Programms im geklonten Repo. */
+export const CLI_PATH_PLACEHOLDER = "/pfad/zu/PromptPrinter/cli";
 
 export type InstallStep = { title: string; body: string; code?: string };
 
@@ -43,7 +45,7 @@ export function cliInstallSteps(published: boolean = NPM_PUBLISHED): InstallStep
     {
       title: "Herunterladen",
       body: `Noch liegt das Programm nicht auf npm, du holst es dir direkt von GitHub. Du brauchst Node ${CLI_NODE_MIN} oder neuer, sonst nichts.`,
-      code: `git clone ${CLI_REPO_URL}.git\ncd promptprinter-cli`,
+      code: `git clone --depth 1 ${CLI_REPO_URL}.git\ncd PromptPrinter/cli`,
     },
     {
       title: "Starten und anmelden",
@@ -72,7 +74,7 @@ export const CLI_LOCAL_DEFAULT_BASE_URL = "http://localhost:11434/v1";
  */
 export const CLI_LOCAL_KEY_ENV = "PROMPTPRINTER_API_KEY";
 
-/** Das freie Modell, mit dem das README von promptprinter-cli den Weg ohne Konto zeigt. */
+/** Das freie Modell, mit dem das README in cli/ den Weg ohne Konto zeigt. */
 export const CLI_LOCAL_MODEL = "qwen3";
 
 /**

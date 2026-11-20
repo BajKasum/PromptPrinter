@@ -44,20 +44,20 @@ German, the app itself in English, German, French, Italian and Spanish.
 
 ### 2. In the terminal, without an account
 
-[promptprinter-cli](https://github.com/BajKasum/promptprinter-cli) brings Finn to your terminal. With `--local` it
+The terminal app in [`cli/`](cli/) brings Finn to your terminal. With `--local` it
 needs no account and talks straight to a model on your computer through [Ollama](https://ollama.com), or to any
 server with an OpenAI-compatible chat API. It is not on npm yet, so run it from source (Node 22 or newer, no
 dependencies):
 
 ```bash
-git clone https://github.com/BajKasum/promptprinter-cli.git
-cd promptprinter-cli
+git clone --depth 1 https://github.com/BajKasum/PromptPrinter.git
+cd PromptPrinter/cli
 ollama pull qwen3
 node bin/promptprinter.mjs --local
 ```
 
 Then type `/pp` and your idea. Other servers work through `--base-url` and `--model`; the
-[CLI's README](https://github.com/BajKasum/promptprinter-cli#readme) has the details.
+[CLI's README](cli/README.md) has the details.
 
 ### 3. Run the web app yourself
 
@@ -120,8 +120,11 @@ How good the prompts get depends on the model you pick. Small local models have 
 - **Your own key.** Anthropic, OpenAI, Gemini (recognised by the key format) or any OpenAI-compatible endpoint.
   Keys are stored encrypted and only the server reads them.
 - **Five languages, light and dark.** English, German, French, Italian, Spanish.
-- **Terminal and MCP.** [promptprinter-cli](https://github.com/BajKasum/promptprinter-cli) runs Finn in the
-  terminal; with an account it also serves your saved prompts to MCP clients.
+- **Terminal and MCP.** The app in [`cli/`](cli/) runs Finn in the terminal; with an account it also serves your
+  saved prompts to MCP clients.
+- **Skill `/pp` for Claude Code.** [`skill/`](skill/) holds an Agent Skill that turns your next step into a
+  checked work order for your coding agent. It was measured three times and missed its own bar each time; it stays
+  as it is and is no longer developed ([the measurement](skill/eval/README.md)).
 
 <p align="center">
   <img src="docs/readme/workspace.png" alt="Preview of the projects view with three projects" width="720" />
@@ -135,8 +138,8 @@ How good the prompts get depends on the model you pick. Small local models have 
   Gemini, the user's own key or your own endpoint. Each call is wrapped in a retry (three attempts, never on a wrong
   key) and a failover layer; no route talks to a provider SDK directly. Without a key, development falls back to a
   stub, production refuses it.
-- **Data.** Row-level security on every table, the `anon` role holds no privileges. Billing, memory, attachments
-  and API keys are written only by the server. Per-account limits sit in the database, because the browser writes
+- **Data.** Row-level security on every table, the `anon` role holds no privileges. Memory, attachments and API
+  keys are written only by the server. Per-account limits sit in the database, because the browser writes
   to it directly. 60 SQL migrations in [`supabase/migrations/`](supabase/migrations/); a guard checks that new
   tables come with policy and grant and that functions granted to `authenticated` are revoked from `PUBLIC`.
 - **Security work.** User keys are encrypted with AES-256-GCM. A nonce-based Content Security Policy per request,
@@ -148,7 +151,8 @@ How good the prompts get depends on the model you pick. Small local models have 
   against the cookie page, text contrast, SEO metadata, grants in migrations, pinned workflow actions, and that
   the strict settings of the hosted demo can't be loosened by self-hosting. A new safeguard counts only once
   breaking it makes a test fail. Browser smoke tests ([`e2e/`](e2e/)) run Playwright against a local Supabase
-  stack with a mailbox.
+  stack with a mailbox. The terminal app and the skill bring their own `node:test` suites and mutation runs, on
+  Linux, macOS and Windows with Node 22 and 24, and a contract test keeps the terminal app in step with the server.
 - **CI.** GitHub Actions on every pull request and on `main`: dependency audit, type check, lint with zero
   warnings, tests and production build, plus end-to-end runs, a Docker build and a daily audit. Every action is
   pinned to a commit SHA, every workflow reads the repository with `contents: read`, Dependabot runs weekly
@@ -165,6 +169,8 @@ src/shell/       app frame: sidebar, mobile navigation, command palette
 src/server/      server only: model access, security, project memory, Supabase clients
 src/shared/      usable everywhere: UI, brand, i18n, small libraries
 tests/guards/    repo-wide rules
+cli/             the terminal app (own package without dependencies, not on npm yet)
+skill/           the Agent Skill /pp (skill/pp), its installer and the measurement
 e2e/             browser smoke tests
 supabase/        migrations, local stack config, mail templates
 ```
@@ -177,7 +183,8 @@ Setup, operations and the structure in detail are in [docs/SETUP.md](docs/SETUP.
 The source code is under the [MIT License](LICENSE): use it, change it, run it yourself, pass it on.
 
 Not covered are the name PromptPrinter, the logo ([`docs/brand/`](docs/brand/)) and the pictures of Finn
-([`public/mascot/`](public/mascot/), also visible in the screenshots in [`docs/readme/`](docs/readme/)). A fork may
+([`public/mascot/`](public/mascot/), also visible in the screenshots in [`docs/readme/`](docs/readme/) and in
+the logos in [`cli/assets/`](cli/assets/) and [`skill/assets/`](skill/assets/)). A fork may
 keep them for trying things out; a release of your own gets its own name and its own pictures.
 
 The state as a paid service (with Pro and payments through Lemon Squeezy) is kept as the tag

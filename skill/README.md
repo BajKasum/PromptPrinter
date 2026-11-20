@@ -6,11 +6,11 @@
 
 `/pp` turns what you want into one ready-to-use prompt for your coding agent. It reads the context you are already working in (conversation, git state, project structure, rule files, the files that matter for the task), and the agent's own model writes the prompt. It never edits a file and never runs anything without your explicit yes.
 
-> **Status (2026-11-03): version 0.4.0, quality bar not reached in the last measurement.** The skill and its context script exist and work (`skill/pp/`, plus `install.mjs` and tests on Linux, macOS and Windows with Node 22 and 24). Versions 0.1.0 to 0.3.0 were measured on twelve tasks (0.1.0 and 0.2.0 without the script, 0.3.0 with it). They missed the bar every time: recall 84, 88 and 82 of 99 facts where 90 were required, and writing the order cost far more than the limit set for it (about 15 percent of the work; measured 21 to 73 percent). The rating was done by Claude, not blind. Version 0.4.0 fixes defects found in a review (secrets that got through the redaction, a test command fixed to npm, the refused `check` step, a permission rule that was too wide, a bugfix template that asked for a needless test) and was not measured. Whether to measure again is the maintainer's decision.
+> **Status (2026-11-03): version 0.4.0, quality bar not reached in the last measurement.** The skill and its context script exist and work (`pp/`, plus `install.mjs` and tests on Linux, macOS and Windows with Node 22 and 24). Versions 0.1.0 to 0.3.0 were measured on twelve tasks (0.1.0 and 0.2.0 without the script, 0.3.0 with it). They missed the bar every time: recall 84, 88 and 82 of 99 facts where 90 were required, and writing the order cost far more than the limit set for it (about 15 percent of the work; measured 21 to 73 percent). The rating was done by Claude, not blind. Version 0.4.0 fixes defects found in a review (secrets that got through the redaction, a test command fixed to npm, the refused `check` step, a permission rule that was too wide, a bugfix template that asked for a needless test) and was not measured. The skill is no longer developed; it stays here as it is, together with its measurement.
 
 ## What is here
 
-- **`skill/pp/`**: the Agent Skill (version 0.4.0) with four reference files and `scripts/context.mjs`, a Node script without dependencies and without network access (`pack`, `search`, `check`, `save`, `doctor`). Built for Claude Code, where you call it as `/pp`. Without Node 22 or git the skill falls back to reading the repository itself. Only Claude Code was measured, Codex and VS Code Copilot were not.
+- **`pp/`**: the Agent Skill (version 0.4.0) with four reference files and `scripts/context.mjs`, a Node script without dependencies and without network access (`pack`, `search`, `check`, `save`, `doctor`). Built for Claude Code, where you call it as `/pp`. Without Node 22 or git the skill falls back to reading the repository itself. Only Claude Code was measured, Codex and VS Code Copilot were not.
 - **`install.mjs`**: copies the skill to `~/.claude/skills/pp` and `~/.agents/skills/pp` (`--update`, `--force`, `--uninstall`, `--dry-run`).
 - **`test/`**: tests for the script and the installer (`npm test`, no dependencies) and a mutation check (`npm run mutation`).
 - **`eval/`**: the measurement. Twelve tasks with known facts, three conditions (the raw sentence, plan mode, `/pp`), small Node scripts without dependencies that run the conditions, check the result and compare, and the result tables. The rating was done by Claude, not blind, so differences of a few facts are within the noise.
@@ -21,7 +21,7 @@ The redaction works on file names and known patterns. It catches common keys, to
 
 ## Install
 
-Run `node install.mjs` in a clone of this repository (Node 22 or newer), or copy the folder `skill/pp/` to `~/.claude/skills/pp/` yourself. Then call `/pp` followed by what you want.
+Run `node skill/install.mjs` in a clone of [PromptPrinter](https://github.com/BajKasum/PromptPrinter) (Node 22 or newer), or copy the folder `skill/pp/` to `~/.claude/skills/pp/` yourself. Then call `/pp` followed by what you want.
 
 ## What the measurement showed
 
@@ -38,7 +38,7 @@ In all thirty-six runs of the three versions, `/pp` invented no file or function
 
 ## How it relates to PromptPrinter
 
-[PromptPrinter](https://promptprinter.app) is a web app: Finn asks one question and writes a prompt for any AI and any task. `promptprinter-pp` is a separate line next to it, made for people who work in a terminal with a coding agent. The two share ideas, not code: the rules for good prompts are taken from Finn, adapted for coding work. There is no runtime dependency in either direction. `CLAUDE.md` lists which parts of the web app this repository draws from.
+[PromptPrinter](https://promptprinter.app) is a web app: Finn asks one question and writes a prompt for any AI and any task. The skill is a separate line next to it, in the `skill/` folder of the same repository, made for people who work in a terminal with a coding agent. The two share ideas, not code: the rules for good prompts are taken from Finn, adapted for coding work. There is no runtime dependency in either direction. `CLAUDE.md` lists which parts of the web app this repository draws from.
 
 ## License
 

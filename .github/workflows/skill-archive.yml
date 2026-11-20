@@ -1,7 +1,7 @@
 name: Skill-Archiv
 
 # Hält die Prüfsumme auf /skill ehrlich (#240). Die Seite verlinkt das ZIP eines
-# festen Commits aus dem Schwester-Repo promptprinter-pp und nennt seine
+# festen Commits aus dem archivierten Repo promptprinter-pp und nennt seine
 # SHA-256, damit Besucher prüfen können, dass sie die Datei haben, die geprüft
 # wurde, bevor sie den Installer ausführen.
 #

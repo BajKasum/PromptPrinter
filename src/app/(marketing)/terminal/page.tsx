@@ -9,7 +9,7 @@ import { TerminalWindow } from "@/features/marketing/components/terminal-window"
 import {
   CLI_COMMANDS,
   CLI_NODE_MIN,
-  CLI_REPO_URL,
+  CLI_SOURCE_URL,
   NPM_PUBLISHED,
   cliInstallSteps,
   cliLocalSteps,
@@ -25,7 +25,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/terminal",
 });
 
-// Die Seite der Terminal-App aus dem Repo promptprinter-cli, im Header "CLI" (/cli selbst ist die
+// Die Seite der Terminal-App aus cli/ in diesem Repo, im Header "CLI" (/cli selbst ist die
 // Bestätigungsseite der Geräte-Anmeldung). Aufbau wie /skill: zuerst der Kasten "So bekommst du es", darunter der
 // Weg ohne Konto (`--local`), dann die Erklärung. Die Befehle stehen in features/marketing/lib/terminal-data.ts;
 // solange NPM_PUBLISHED false ist, zeigt die Seite den Weg aus dem Quellcode. Genannt sind nur Claude Code und
@@ -83,7 +83,7 @@ export default function TerminalPage() {
 
             <div className="mt-5 flex flex-wrap gap-3">
               <Button asChild variant="ghost">
-                <a href={CLI_REPO_URL} target="_blank" rel="noopener">
+                <a href={CLI_SOURCE_URL} target="_blank" rel="noopener">
                   <GithubIcon className="h-4 w-4" aria-hidden />
                   Auf GitHub ansehen
                 </a>

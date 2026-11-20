@@ -123,7 +123,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         published: "2026-10-29",
         summary:
           "Das Terminal-Programm: ohne Passwort per Code anmelden, Prompts mit /pp schreiben, über MCP an Claude Code oder Claude Desktop geben und wieder abmelden.",
-        updated: "2026-11-08",
+        updated: "2026-11-20",
       },
       {
         slug: "tastenkuerzel",
