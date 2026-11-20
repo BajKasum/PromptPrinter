@@ -29,6 +29,24 @@ const pkg = JSON.parse(read("package.json")) as {
 
 const workflowFiles = readdirSync(join(ROOT, ".github", "workflows")).filter((f) => /\.ya?ml$/.test(f));
 
+// Ausnahme für die Programme, die beim Nutzer laufen (cli/, skill/): ihr engines.node nennt eine untere Grenze
+// (">=22"), ihr Workflow testet eine Matrix. Sie enthält die untere Grenze und die Version aus .nvmrc und nichts
+// ausserhalb; jeder andere Workflow hat keine Matrix für Node.
+const PACKAGE_OF_WORKFLOW: Record<string, string> = { "cli.yml": "cli/package.json", "skill.yml": "skill/package.json" };
+
+function nodeMatrixFits(file: string, text: string): boolean {
+  const packageFile = PACKAGE_OF_WORKFLOW[file];
+  if (!packageFile) return false;
+  const engines = (JSON.parse(read(packageFile)) as { engines?: { node?: string } }).engines?.node ?? "";
+  const floor = Number(engines.match(/^>=\s*(\d+)$/)?.[1]);
+  const versions = text
+    .match(/^\s*node:\s*\[([^\]]*)\]/m)?.[1]
+    .split(",")
+    .map((entry) => Number(entry.trim().replace(/^["']|["']$/g, "")));
+  if (!floor || !versions) return false;
+  return versions.includes(floor) && versions.includes(major) && versions.every((v) => v >= floor && v <= major);
+}
+
 describe(".nvmrc", () => {
   it("nennt genau eine ganze Hauptversion", () => {
     expect(nvmrc).toMatch(/^\d+$/);
@@ -59,9 +77,10 @@ describe(`Node ${major} an allen Stellen`, () => {
         const withBlock = m[1];
         const fromFile = /^\s*node-version-file:\s*\.nvmrc\s*$/m.test(withBlock);
         const literal = withBlock.match(/^\s*node-version:\s*["']?(\d+)/m);
+        const matrix = /^\s*node-version:\s*\$\{\{\s*matrix\.node\s*\}\}\s*$/m.test(withBlock) && nodeMatrixFits(file, text);
         expect(
-          fromFile || (literal !== null && Number(literal[1]) === major),
-          `${file}: setup-node ohne node-version-file: .nvmrc und ohne Version ${major}`
+          fromFile || (literal !== null && Number(literal[1]) === major) || matrix,
+          `${file}: setup-node ohne node-version-file: .nvmrc, ohne Version ${major} und ohne passende Matrix`
         ).toBe(true);
       }
     }

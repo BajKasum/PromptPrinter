@@ -1,0 +1,247 @@
+import { readFileSync } from "node:fs";
+import { describeAccount, fetchAccount, signOut } from "./account.mjs";
+import { createApi } from "./api.mjs";
+import { banner } from "./banner.mjs";
+import { ConfigError, configDir, serverUrl } from "./config.mjs";
+import { describeError } from "./errors.mjs";
+import { chooseModel, createLocalModel, describeLocalError, localSettings, parseLocalArgs } from "./local.mjs";
+import { runLogin } from "./login.mjs";
+import { createMcpServer, serveStdio } from "./mcp.mjs";
+import { detectLang, translator } from "./messages.mjs";
+import { runRepl } from "./repl.mjs";
+import { createAuth, createSessionStore, NotLoggedInError } from "./session.mjs";
+import { copyToClipboard, openBrowser, savePrompt } from "./system.mjs";
+import { detectTerminal } from "./terminal.mjs";
+
+const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+
+export async function main(
+  argv,
+  { env = process.env, input = process.stdin, output = process.stdout, errors = process.stderr } = {}
+) {
+  const t = translator(detectLang(env));
+  const say = (text) => output.write(`${text}\n`);
+
+  // Ohne Konto braucht es keinen PromptPrinter-Server, auch keine gültige PROMPTPRINTER_URL.
+  if (argv[0] === "--local") return runLocal(argv.slice(1), { env, input, output, t, say });
+
+  let server;
+  try {
+    server = serverUrl(env);
+  } catch (err) {
+    if (err instanceof ConfigError) {
+      say(err.message);
+      return 1;
+    }
+    throw err;
+  }
+
+  const [command, ...extra] = argv;
+  if (command === "--version" || command === "-v") {
+    say(VERSION);
+    return 0;
+  }
+  if (command === "--help" || command === "-h" || command === "help") {
+    say(t("usage"));
+    return 0;
+  }
+
+  const term = detectTerminal(output, env);
+  const api = createApi({ server, version: VERSION, lang: detectLang(env) });
+  const store = createSessionStore({ dir: configDir(env), server });
+  const auth = createAuth({ store, api });
+
+  // Aus dem Programm heraus und als eigener Befehl derselbe Weg. Strg+C beendet das Warten, nicht mehr:
+  // ausserhalb der Eingabezeile kommt es als Signal an den Prozess, in ihr über `signal` vom Aufrufer.
+  async function login(signal) {
+    if (await store.load()) {
+      say(t("alreadyIn"));
+      return true;
+    }
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    signal?.addEventListener("abort", cancel, { once: true });
+    process.once("SIGINT", cancel);
+    try {
+      const result = await runLogin({
+        api,
+        store,
+        signal: controller.signal,
+        print: { step: (key, vars) => say(t(key, vars)) },
+        open: term.isTTY && !env.PROMPTPRINTER_NO_BROWSER ? (url) => openBrowser(url) : undefined,
+      });
+      const outcome = {
+        done: "loginDone",
+        denied: "loginDenied",
+        expired: "loginExpired",
+        invalid: "loginInvalid",
+        failed: "loginFailed",
+        cancelled: "loginCancelled",
+      };
+      say(t(outcome[result]));
+      return result === "done";
+    } catch (err) {
+      say(describeError(err, { t, server }));
+      return false;
+    } finally {
+      signal?.removeEventListener("abort", cancel);
+      process.removeListener("SIGINT", cancel);
+    }
+  }
+
+  async function showAccount() {
+    const me = await fetchAccount({ auth, api });
+    if (!me) return;
+    const { line, hints } = describeAccount(me, { t, server });
+    say(term.dim(line));
+    for (const hint of hints) say(hint);
+  }
+
+  // MCP: stdout gehört dem Protokoll. Kein Startbild, keine Anmeldung, Meldungen nur nach stderr.
+  if (command === "mcp") {
+    if (extra.length > 0) {
+      say(t("usage"));
+      return 2;
+    }
+    const log = (text) => errors.write(`promptprinter mcp: ${text}
+`);
+    if (input.isTTY) errors.write(`${t("mcpReady")}
+`);
+    const server = createMcpServer({ api, auth, t, version: VERSION, log });
+    await serveStdio({ input, output, server, log });
+    return 0;
+  }
+
+  if (command === "login") return (await login()) ? 0 : 1;
+
+  if (command === "logout") {
+    const result = await signOut({ auth, api, store });
+    say(t({ none: "notLoggedIn", out: "loggedOut", local: "logoutLocalOnly" }[result]));
+    return 0;
+  }
+
+  if (command === "whoami") {
+    try {
+      const me = await fetchAccount({ auth, api });
+      if (!me) return 1;
+      const { line, hints } = describeAccount(me, { t, server });
+      say(line);
+      for (const hint of hints) say(hint);
+      return 0;
+    } catch (err) {
+      say(err instanceof NotLoggedInError ? t("notLoggedIn") : describeError(err, { t, server }));
+      return 1;
+    }
+  }
+
+  if (command !== undefined || extra.length > 0) {
+    say(t("usage"));
+    return 2;
+  }
+
+  say(banner(term, VERSION));
+  say(term.dim(t("disclosure")));
+
+  // Ohne Anmeldung geht nichts: im Terminal gleich anmelden, aus einer Pipe nur sagen, was fehlt.
+  if (!(await store.load())) {
+    if (!term.isTTY) {
+      say(t("loginRequired"));
+      return 1;
+    }
+    if (!(await login())) return 1;
+  }
+  try {
+    await showAccount();
+  } catch (err) {
+    if (!(err instanceof NotLoggedInError)) {
+      say(describeError(err, { t, server }));
+    } else if (term.isTTY) {
+      say(t("loginAgain"));
+      if (!(await login())) return 1;
+      await showAccount().catch((again) => say(describeError(again, { t, server })));
+    } else {
+      say(t("loginRequired"));
+      return 1;
+    }
+  }
+  say(term.dim(t("tips")));
+
+  await runRepl({
+    input,
+    output,
+    term,
+    t,
+    api,
+    auth,
+    store,
+    login,
+    copy: (text) => copyToClipboard(text, { env }),
+    save: (text, options) => savePrompt(text, options),
+    onInterrupt: (handler) => {
+      if (!term.isTTY) process.on("SIGINT", handler);
+    },
+  });
+  return 0;
+}
+
+/**
+ * `promptprinter --local`: Finn ohne Konto, direkt an einem Modell. Kein Server, keine Sitzung, nichts wird
+ * gespeichert ausser dem, was `/save` ausdrücklich schreibt.
+ */
+async function runLocal(args, { env, input, output, t, say }) {
+  const flags = parseLocalArgs(args);
+  if (!flags) {
+    say(t("usage"));
+    return 2;
+  }
+  let settings;
+  try {
+    settings = localSettings(flags, env);
+  } catch (err) {
+    if (err instanceof ConfigError) {
+      say(err.message);
+      return 1;
+    }
+    throw err;
+  }
+
+  let choice;
+  try {
+    choice = await chooseModel(createLocalModel({ ...settings, version: VERSION }), settings);
+  } catch (err) {
+    say(describeLocalError(err, { t, settings }));
+    return 1;
+  }
+  if (choice.kind === "none") {
+    say(t("localNoModels", { url: settings.baseUrl }));
+    return 1;
+  }
+  if (choice.kind === "many") {
+    const shown = choice.models.slice(0, 20).map((name) => `  ${name}`);
+    if (choice.models.length > 20) shown.push(`  ... (${choice.models.length - 20})`);
+    say(t("localPickModel", { url: settings.baseUrl, models: shown.join("\n") }));
+    return 1;
+  }
+  settings = { ...settings, model: choice.model };
+  const endpoint = createLocalModel({ ...settings, version: VERSION });
+
+  const term = detectTerminal(output, env);
+  say(banner(term, VERSION));
+  say(term.dim(t("disclosure")));
+  say(term.dim(t(settings.onThisComputer ? "localStartHere" : "localStartRemote", { model: settings.model, url: settings.baseUrl, host: settings.host })));
+  say(term.dim(t("tips")));
+
+  await runRepl({
+    input,
+    output,
+    term,
+    t,
+    local: { settings, endpoint },
+    copy: (text) => copyToClipboard(text, { env }),
+    save: (text, options) => savePrompt(text, options),
+    onInterrupt: (handler) => {
+      if (!term.isTTY) process.on("SIGINT", handler);
+    },
+  });
+  return 0;
+}

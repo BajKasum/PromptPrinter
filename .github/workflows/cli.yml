@@ -1,0 +1,104 @@
+name: CLI
+
+# Das Programm fürs Terminal in cli/: ohne Abhängigkeiten, eigene Tests mit node:test, eigene Mutationen. Es läuft
+# beim Nutzer mit dem Node aus seinem engines.node (">=22"), deshalb testet die Matrix die untere Grenze und die
+# Version aus .nvmrc (tests/guards/node-version.test.ts) auf drei Systemen. Den Vertrag mit dem Web-Teil prüft
+# jeder Lauf von npm run test im Haupt-Repo (tests/guards/cli-contract.test.ts), nicht dieser Workflow.
+
+# Die Pfadliste steht zweimal da (push, pull_request) und nicht als YAML-Anker, wie in docker.yml.
+on:
+  # push nur auf main, jeder Branch mit PR läuft über pull_request: ein Lauf je Commit (ci.yml, #222).
+  push:
+    branches: [main]
+    paths:
+      - cli/**
+      - .github/workflows/cli.yml
+      - .github/workflows/cli-release.yml
+  pull_request:
+    paths:
+      - cli/**
+      - .github/workflows/cli.yml
+      - .github/workflows/cli-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    working-directory: cli
+
+jobs:
+  verify:
+    name: Pflichtdateien
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: README, Lizenz, Sicherheitsrichtlinie und Projektregeln sind da
+        run: test -f README.md && test -f LICENSE && test -f SECURITY.md && test -f CLAUDE.md
+
+      - name: Keine Laufzeit-Abhängigkeiten
+        run: node -e "const p=require('./package.json');process.exit(p.dependencies||p.optionalDependencies?1:0)"
+
+  mutation:
+    name: Mutationen
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Jede Schranke wird von einem Test bemerkt
+        run: npm run mutation
+
+  mutation-windows:
+    name: Mutationen unter Windows
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Die Zugriffsliste der Sitzung wird von einem Test bemerkt
+        run: npm run mutation -- "unter Windows"
+
+  test:
+    name: Test (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ["22", "24"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax
+        run: npm run check
+
+      - name: Tests
+        run: npm test
