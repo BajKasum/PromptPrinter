@@ -23,11 +23,13 @@ function migrationSql(suffix = "_account_ceilings.sql"): string {
 const sql = migrationSql();
 // Dieselbe Byte-Grenze nach einem UPDATE: outputs darf authenticated ändern (0026).
 const onUpdate = migrationSql("_saved_prompts_ceiling_on_update.sql");
+// Die Versionen gespeicherter Prompts zählen mit derselben Funktion, in eigener Migration.
+const versions = migrationSql("_saved_prompt_versions.sql");
 const ACCOUNT_LOCK = "pg_advisory_xact_lock(hashtextextended(tg_table_name || ':' || account::text, 0))";
 
 /** Die Argumente, mit denen der Trigger der Tabelle enforce_account_ceiling aufruft. */
-function triggerArgs(table: string): string[] {
-  const match = sql.match(
+function triggerArgs(table: string, source = sql): string[] {
+  const match = source.match(
     new RegExp(
       `create trigger ${table}_account_ceiling after insert on public\\.${table}\\s+` +
         `referencing new table as new_rows\\s+` +
@@ -52,6 +54,11 @@ describe("Grenzen je Konto", () => {
       String(ACCOUNT_CEILINGS.savedPrompts.bytes),
     ]);
     expect(triggerArgs("project_files")).toEqual([String(ACCOUNT_CEILINGS.projectFiles.rows)]);
+    expect(triggerArgs("saved_prompt_versions", versions)).toEqual([
+      String(ACCOUNT_CEILINGS.savedPromptVersions.rows),
+      "content",
+      String(ACCOUNT_CEILINGS.savedPromptVersions.bytes),
+    ]);
   });
 
   it("setzt die Projekt-Grenze von Free aus PLAN_LIMITS durch, Admins ausgenommen", () => {
@@ -97,5 +104,25 @@ describe("Grenzen je Konto", () => {
     expect(sql).toMatch(/p\.id = conversations\.project_id and p\.user_id = \(select auth\.uid\(\)\)/);
     expect(sql).toMatch(/c\.id = messages\.conversation_id and c\.user_id = \(select auth\.uid\(\)\)/);
     expect(sql).toMatch(/p\.id = project_files\.project_id and p\.user_id = \(select auth\.uid\(\)\)/);
+  });
+
+  // 0061 legt conversations_owner und die Policies von saved_prompts neu an: die Projekt-Prüfung muss mitkommen.
+  it("prüft auch Chat am Prompt und Ursprung am Chat, ohne die Projekt-Prüfung zu verlieren", () => {
+    const policy = (name: string): string => {
+      const start = versions.indexOf(`create policy ${name} `);
+      expect(start, name).toBeGreaterThan(-1);
+      return versions.slice(start, versions.indexOf(");\n", start) + 2);
+    };
+    const owner = (column: string, alias: string, parent: string): RegExp =>
+      new RegExp(
+        `${column.replace(".", "\\.")} is null\\s+or exists \\(\\s+select 1 from public\\.${parent} ${alias}\\s+` +
+          `where ${alias}\\.id = ${column.replace(".", "\\.")} and ${alias}\\.user_id = \\(select auth\\.uid\\(\\)\\)`
+      );
+
+    expect(policy("saved_prompts_owner_insert")).toMatch(owner("saved_prompts.project_id", "p", "projects"));
+    expect(policy("saved_prompts_owner_insert")).toMatch(owner("saved_prompts.conversation_id", "c", "conversations"));
+    expect(policy("saved_prompts_owner_update")).toMatch(owner("saved_prompts.conversation_id", "c", "conversations"));
+    expect(policy("conversations_owner")).toMatch(owner("conversations.project_id", "p", "projects"));
+    expect(policy("conversations_owner")).toMatch(owner("conversations.source_prompt_id", "sp", "saved_prompts"));
   });
 });

@@ -46,13 +46,13 @@ export type Database = {
                   ]
                 },"conversations": {
                   Row: {
-                    "created_at": string,"id": string,"project_id": string | null,"title": string,"updated_at": string,"user_id": string
+                    "created_at": string,"id": string,"project_id": string | null,"source_prompt_id": string | null,"title": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"id"?: string,"project_id"?: string | null,"title"?: string,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"id"?: string,"project_id"?: string | null,"source_prompt_id"?: string | null,"title"?: string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"project_id"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"project_id"?: string | null,"source_prompt_id"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -60,6 +60,12 @@ export type Database = {
       columns: ["project_id"]
 isOneToOne: false
       referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_source_prompt_id_fkey"
+      columns: ["source_prompt_id"]
+isOneToOne: false
+      referencedRelation: "saved_prompts"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "conversations_user_id_fkey"
@@ -245,18 +251,49 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"saved_prompts": {
+                },"saved_prompt_versions": {
                   Row: {
-                    "created_at": string,"id": string,"outputs": NonNullable<Json>,"project_id": string | null,"user_id": string
+                    "content": string,"created_at": string,"id": string,"prompt_id": string,"user_id": string,"version": number
                   }
                   Insert: {
-                    "created_at"?: string,"id"?: string,"outputs": NonNullable<Json>,"project_id"?: string | null,"user_id": string
+                    "content": string,"created_at"?: string,"id"?: string,"prompt_id": string,"user_id": string,"version": number
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"outputs"?: NonNullable<Json>,"project_id"?: string | null,"user_id"?: string
+                    "content"?: string,"created_at"?: string,"id"?: string,"prompt_id"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
+      foreignKeyName: "saved_prompt_versions_prompt_owner_fkey"
+      columns: ["prompt_id","user_id"]
+isOneToOne: false
+      referencedRelation: "saved_prompts"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "saved_prompt_versions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"saved_prompts": {
+                  Row: {
+                    "conversation_id": string | null,"created_at": string,"id": string,"outputs": NonNullable<Json>,"project_id": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "conversation_id"?: string | null,"created_at"?: string,"id"?: string,"outputs": NonNullable<Json>,"project_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "conversation_id"?: string | null,"created_at"?: string,"id"?: string,"outputs"?: NonNullable<Json>,"project_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "saved_prompts_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "saved_prompts_project_id_fkey"
       columns: ["project_id"]
 isOneToOne: false
