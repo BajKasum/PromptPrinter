@@ -808,7 +808,7 @@ Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nac
 
 ## Grenzen je Konto
 
-Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`, für das Ändern gespeicherter Prompts `*_saved_prompts_ceiling_on_update.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
+Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`, für das Ändern gespeicherter Prompts `*_saved_prompts_ceiling_on_update.sql`, für ihre Versionen `*_saved_prompt_versions.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
 
 | Was | Grenze je Konto | Gilt für |
 |---|---|---|
@@ -816,6 +816,7 @@ Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API
 | Chats (`conversations`) | 10 000 Zeilen | alle |
 | Nachrichten (`messages`) | 50 000 Zeilen, 50 MiB | alle |
 | Gespeicherte Prompts (`saved_prompts`) | 5 000 Zeilen, 20 MiB | alle |
+| Versionen gespeicherter Prompts (`saved_prompt_versions`) | 20 000 Zeilen, 40 MiB | alle |
 | Dateizeilen (`project_files`) | 500 Zeilen | alle |
 | Objekte im Bucket `project-files` | 500 Objekte, 100 MiB | alle |
 
@@ -823,13 +824,32 @@ Dazu kommen die älteren Grenzen je Projekt (20 Dateien, 25 MiB) und je Konto f�
 
 **Warum diese Zahlen.** Das aktivste Konto der Produktion hatte am 2026-11-02 89 Nachrichten (48 kB), 19 Chats, 3 gespeicherte Prompts und keine Dateien, die Datenbank war 13 MB gross. 50 000 Nachrichten sind 40 am Tag über mehr als drei Jahre. Free erreicht mit 3 Projekten höchstens 75 MiB Dateien. Zeilen allein reichen nicht: 50 000 Nachrichten mit je 40 000 Zeichen wären 2 GB. Die Bytes zählt `pg_column_size`, also den belegten Platz nach der Kompression.
 
-**Was sie nicht leisten.** Ein Konto belegt höchstens rund 85 MiB Datenbank und 100 MiB Speicher. Bei den Kontingenten des Supabase-Free-Tarifs (500 MB, 1 GB) reichen also ein paar Konten, um sie zu füllen, die Grenzen machen das nur teurer. Davor stehen die Anmeldung mit Turnstile und das Ratenlimit. Die Belegung steht im Supabase-Dashboard unter Organization → Usage, einen Alarm dafür gibt es nicht.
+Die Versionen zählen nur je Konto, nicht je Prompt, und gelöscht wird keine (Kasums Entscheid, Changelog 2026-11-21): 20 000 sind vier Fassungen jedes der 5 000 möglichen Prompts, 40 MiB das Doppelte der aktuellen Fassungen.
 
-**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen beim Einfügen, bei gespeicherten Prompts zusätzlich, wenn ein Ändern `outputs` eines Kontos ändert (sonst brächten viele kleine Zeilen, die danach wachsen, ein Konto auf rund 1 GB). Auch ein Konto über einer Grenze kann alles lesen und löschen und legt wieder an, sobald es darunter liegt; gespeicherte Prompts ändern kann es erst wieder unter der Byte-Grenze, weil sich alte und neue Grösse in der Datenbank nicht gleich messen lassen (Kommentar in `*_saved_prompts_ceiling_on_update.sql`). Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
+**Was sie nicht leisten.** Ein Konto belegt höchstens rund 125 MiB Datenbank und 100 MiB Speicher. Bei den Kontingenten des Supabase-Free-Tarifs (500 MB, 1 GB) reichen also ein paar Konten, um sie zu füllen, die Grenzen machen das nur teurer. Davor stehen die Anmeldung mit Turnstile und das Ratenlimit. Die Belegung steht im Supabase-Dashboard unter Organization → Usage, einen Alarm dafür gibt es nicht.
+
+**An der Grenze.** Bestehende Daten bleiben: die Trigger laufen beim Einfügen, bei gespeicherten Prompts zusätzlich, wenn ein Ändern `outputs` eines Kontos ändert (sonst brächten viele kleine Zeilen, die danach wachsen, ein Konto auf rund 1 GB). Auch ein Konto über einer Grenze kann alles lesen und löschen und legt wieder an, sobald es darunter liegt; gespeicherte Prompts ändern kann es erst wieder unter der Byte-Grenze, weil sich alte und neue Grösse in der Datenbank nicht gleich messen lassen (Kommentar in `*_saved_prompts_ceiling_on_update.sql`). An der Grenze der Versionen scheitert jede Änderung des Texts samt ihrer Version, der Text bleibt beim alten; Umbenennen geht weiter, weil es keine Version anlegt. Die Datenbank antwortet mit einem Fehler (`P0001`, "Obergrenze des Kontos erreicht" oder "Projekt-Limit des Plans erreicht"), bei Dateien im Bucket mit einem Policy-Fehler. Die Oberfläche zeigt die allgemeine Fehlermeldung der jeweiligen Stelle, einen eigenen Text gibt es bewusst nicht, weil normale Nutzung nie anstösst. Nur `/api/projects` antwortet vorher freundlich. Im Chat: scheitert die Frage, antwortet die Route mit 503 und gibt die Reservierung zurück; passt nur die Antwort nicht mehr, kommt sie im Browser an, wird aber nicht gespeichert.
 
 **Grenzfälle.** Parallele Einfügungen eines Kontos reiht eine Sperre (`pg_advisory_xact_lock`) hintereinander, die Grenze hält dabei genau. Im Bucket geht das nicht, weil die Grösse erst nach dem Hochladen feststeht: ein Upload kann die Bytes um höchstens ein Objekt (2 MiB) überschreiten, parallele Uploads um je eines. Die Zählung kostet an der Grenze von 50 000 Nachrichten rund 8 ms je Einfügung (lokal gemessen).
 
-**Wer eine Zahl ändert:** neue Migration mit `create or replace` beziehungsweise neuem Trigger, `ACCOUNT_CEILINGS` in `plans.ts`, dieser Abschnitt, und den Guard auf die neue Datei richten. Die Byte-Grenze der gespeicherten Prompts steht in zwei Triggern (Einfügen und Ändern), beide nachziehen.
+**Wer eine Zahl ändert:** neue Migration mit `create or replace` beziehungsweise neuem Trigger, `ACCOUNT_CEILINGS` in `plans.ts`, dieser Abschnitt, und den Guard auf die neue Datei richten. Die Byte-Grenze der gespeicherten Prompts steht in zwei Triggern (Einfügen und Ändern), beide nachziehen. Die Grenze der Versionen steht im Trigger `saved_prompt_versions_account_ceiling`.
+
+## Versionen gespeicherter Prompts
+
+Migration `0061_saved_prompt_versions.sql`. `saved_prompts.outputs` bleibt die aktuelle Fassung, alles, was einen gespeicherten Prompt liest (Liste, Teilen, Export für Entwickler, `api/cli/prompts` für CLI und MCP), läuft unverändert. Der Verlauf steht in `saved_prompt_versions`, je Version der ganze Text.
+
+| Was | Wie |
+|---|---|
+| Wer schreibt | nur die Datenbank: die Trigger `saved_prompts_version_log_insert` und `_update` (Funktion `log_saved_prompt_versions()`, `security definer`) hängen nach jedem Einfügen und nach jeder Änderung von `outputs->>'prompt'` eine Version an. Umbenennen (`outputs.title`) und ein Update mit demselben Text legen keine an |
+| Rechte | `authenticated` liest die eigenen Zeilen (Policy `saved_prompt_versions_owner_select`), `service_role` liest alles; insert, update und delete hat niemand. Wiederherstellen schreibt den alten Text als aktuelle Fassung zurück, der Trigger legt ihn als neueste Version an |
+| Nummer | höchste Nummer des Prompts plus eins, `unique (prompt_id, version)` |
+| Löschen | nur mit dem Prompt oder dem Konto (Fremdschlüssel `(prompt_id, user_id)` auf `saved_prompts (id, user_id)`) |
+| Bestand | jeder Prompt, der beim Einspielen da ist, bekommt Version 1 mit seinem Text und seinem `created_at` |
+| Grenze | 20 000 Versionen, 40 MiB je Konto ("Grenzen je Konto") |
+
+Dazu zwei Verweise, an denen Speichern eine neue Version erkennt: `saved_prompts.conversation_id` (der Chat, aus dem gespeichert wurde) und `conversations.source_prompt_id` (der Prompt, aus dem ein Chat mit "Als Ausgangspunkt nutzen" entstand). Beide prüfen in der Policy, dass die Elternzeile demselben Konto gehört, und werden beim Löschen der Elternzeile leer (`on delete set null`). Das Leeren von `source_prompt_id` setzt `conversations.updated_at` nicht neu, sonst sprängen die Chats eines gelöschten Prompts an den Anfang der Liste.
+
+`e2e/prompt-versions-db.spec.ts` prüft das gegen den lokalen Stack, `tests/guards/migrations.test.ts` und `account-ceilings.test.ts` halten Rechte, Trigger und Zahlen fest.
 
 ## Ende-zu-Ende-Tests
 
@@ -878,6 +898,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `security-events.spec.ts` | Sicherheitsprotokoll: Routen schreiben hinein, Browser kommt nicht heran, der Server kann nichts umschreiben, die 180 Tage greifen |
 | `cli-login.spec.ts` | Anmeldung des Terminals: Code, Freigabe, einmal abholen, Chat per Bearer, Details auf `/cli`, Einzelwiderruf in den Einstellungen, Höchstalter, Job in der Datenbank |
 | `mfa.spec.ts` | Zweiter Faktor mit echten Codes: einrichten, Anmelden mit und ohne, die heiklen Aktionen auf AAL1, Rückweg mit Wiederherstellungscode, Passwort-Reset, Zusammenspiel mit Terminals |
+| `prompt-versions-db.spec.ts` | Versionen in der Datenbank, als `authenticated` über PostgREST: Einfügen legt Version 1 an, Text ändern die nächste, Umbenennen keine, Wiederherstellen eine neue; ein fremdes Konto liest keine, niemand schreibt eine von Hand (auch der Server nicht); Chat am Prompt und Ursprung am Chat nur aus dem eigenen Konto; Löschen nimmt die Versionen mit und lässt `updated_at` des Chats stehen; die Grenze nach Zeilen und Bytes |
 | `saved-prompt-reuse.spec.ts` | gespeicherte Prompts wiederverwenden: Platzhalter ausfüllen auf `/prompts` und auf einem geteilten Link, "Als Ausgangspunkt nutzen" im globalen und im Projekt-Chat (nur ins Eingabefeld, fremde ID ergibt einen leeren Chat), jeder Export wörtlich gegen `shared/lib/prompt-export.ts`, `.prompt.md` als Download |
 
 ### Was bewusst NICHT geprüft wird
