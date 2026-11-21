@@ -27,6 +27,15 @@ test.describe("Konto", () => {
         role: "user",
         content: "GEHEIME-NACHRICHT-DES-ANDEREN",
       });
+      // Ein eigener gespeicherter Prompt mit zwei Fassungen und ein fremder: der Verlauf (Migration 0061) gehört in
+      // den Export, der fremde nicht.
+      const { data: own } = await admin
+        .from("saved_prompts")
+        .insert({ user_id: account.id, outputs: { prompt: "Erste Fassung", title: "Export" } })
+        .select("id")
+        .single();
+      await admin.from("saved_prompts").update({ outputs: { prompt: "Zweite Fassung", title: "Export" } }).eq("id", own!.id);
+      await admin.from("saved_prompts").insert({ user_id: other.id, outputs: { prompt: "GEHEIMER-PROMPT-DES-ANDEREN" } });
 
       await page.goto("/settings");
       const [download] = await Promise.all([
@@ -42,6 +51,10 @@ test.describe("Konto", () => {
       expect(data.messages.map((m: { content: string }) => m.content)).toContain("Frage für den Export");
       expect(data.messageAttachments).toHaveLength(1);
       expect(data.messageAttachments[0].name).toBe("briefing.txt");
+      expect(data.savedPromptVersions).toEqual([
+        expect.objectContaining({ promptId: own!.id, version: 1, content: "Erste Fassung" }),
+        expect.objectContaining({ promptId: own!.id, version: 2, content: "Zweite Fassung" }),
+      ]);
 
       // Nichts Fremdes, und keine Geheimnisse oder Interna.
       expect(raw).not.toContain("GEHEIME");
