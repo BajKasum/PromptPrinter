@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Copy, Check, X, Trash2, FileDown, Pencil } from "lucide-react";
+import { ChevronRight, Copy, Check, X, Trash2, FileDown, Pencil, SquarePen } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
@@ -16,28 +16,16 @@ import { LOCALE_TAGS } from "@/shared/i18n/locales";
 import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { SharePrompt } from "@/features/prompts/components/share-prompt";
 import { PromptReuseBar } from "@/features/prompts/components/prompt-reuse-bar";
+import { PromptTextEditor } from "@/features/prompts/components/prompt-text-editor";
+import { PromptHistory } from "@/features/prompts/components/prompt-history";
 
 /** Ein gespeicherter Prompt in der Liste, mit dem Projekt, in dem ein neuer Chat ihn als Ausgangspunkt nimmt. */
 export type ListedPrompt = SavedPrompt & { projectId?: string | null };
 
-// The Ergebnisse/Gespeicherte-Prompts list, newest first.
-//
-// Seit 23.09.2026 eine Liste von Titeln, auf Kasums Wunsch: zugeklappt steht
-// nur der Name des Prompts, ein Klick darauf klappt den Prompt auf, und erst
-// dort sitzen Kopieren, Umbenennen, PDF und Loeschen. Vorher stand jeder
-// Prompt in voller Laenge in der Liste, mit fuenf gespeicherten Prompts war
-// das schon eine lange Textwand, in der man seinen Prompt suchen musste.
-//
-// Der Titel entsteht beim Speichern automatisch aus der ersten Zeile des
-// Prompts (derivePromptTitle, saved-prompts.ts), gefragt wird dabei nichts.
-// Umbenennen bleibt moeglich (QA finding N-1: "sessionStartPrompt" bedeutet
-// nur etwas, wenn man den Namen selbst gewaehlt hat).
-//
-// Rename and delete go through the RLS-scoped browser client (owner-only
-// update/delete policy, 0018/0026) and refresh so any visible counters
-// (project header/rail) stay in sync. No editing the prompt text itself: a
-// saved prompt is an immutable snapshot, to change one, save a fresh version
-// from the chat.
+// Die Liste der gespeicherten Prompts, neueste zuerst. Zugeklappt steht nur der Titel (beim Speichern aus der ersten
+// Zeile, umbenennbar), aufgeklappt der Text mit Kopieren, Umbenennen, Text bearbeiten, PDF und Löschen, darunter
+// Wiederverwenden, Verlauf und Teilen. Geschrieben wird mit dem Browser-Client unter RLS und zusätzlich `user_id`;
+// ein neuer Text wird in der Datenbank zur nächsten Version (Migration 0061), der Verlauf steht in prompt-history.tsx.
 export function SavedPromptList({
   prompts,
   userId,
@@ -48,11 +36,7 @@ export function SavedPromptList({
 }) {
   const [items, setItems] = useState(prompts);
 
-  // Both mutations apply to this list immediately and undo themselves if the
-  // write fails, the same optimistic-with-rollback shape useLibraryFavorites
-  // already uses for the favourite toggle. Restoring a delete puts the row
-  // back where it was rather than appending it, otherwise a failed delete
-  // silently reorders the list (it is sorted newest-first by the server).
+  // Löschen und Umbenennen wirken sofort und geben ihr Rückgängig zurück; ein gelöschter Prompt kommt an seinen Platz zurück.
   const removeAt = (id: string) => {
     let removed: { item: ListedPrompt; index: number } | null = null;
     setItems((list) => {
@@ -69,6 +53,22 @@ export function SavedPromptList({
         next.splice(Math.min(r.index, next.length), 0, r.item);
         return next;
       });
+    };
+  };
+
+  // Bearbeiten und Wiederherstellen setzen den Text sofort und nehmen ihn bei einem Fehler zurück, wie renameTo.
+  const changeText = (id: string, content: string) => {
+    let previous: string | null = null;
+    setItems((list) =>
+      list.map((it) => {
+        if (it.id !== id) return it;
+        previous = it.content;
+        return { ...it, content };
+      })
+    );
+    return () => {
+      const p = previous as string | null;
+      if (p !== null) setItems((list) => list.map((it) => (it.id === id ? { ...it, content: p } : it)));
     };
   };
 
@@ -97,6 +97,7 @@ export function SavedPromptList({
             userId={userId}
             onDelete={() => removeAt(p.id)}
             onRename={(title) => renameTo(p.id, title)}
+            onTextChange={(content) => changeText(p.id, content)}
           />
         </li>
       ))}
@@ -109,6 +110,7 @@ function SavedPromptCard({
   userId,
   onDelete,
   onRename,
+  onTextChange,
 }: {
   prompt: ListedPrompt;
   userId: string;
@@ -116,6 +118,8 @@ function SavedPromptCard({
   onDelete: () => () => void;
   /** Applies the new title immediately and returns the undo for a failed write. */
   onRename: (title: string) => () => void;
+  /** Applies a new text (edited or restored) immediately and returns the undo for a failed write. */
+  onTextChange: (content: string) => () => void;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -125,14 +129,11 @@ function SavedPromptCard({
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(prompt.title);
   // Was im Formular der Platzhalter steht, nimmt der Export mit.
   const [fill, setFill] = useState<PlaceholderFill>();
-  // K-6 (Audit 06.09.2026): der Loesch-Knopf entfernte den gespeicherten
-  // Prompt bisher mit einem einzigen Klick, ohne Rueckfrage und ohne Undo —
-  // live ausgeloest: ein Klick, sofort weg. Projekt, Datei und Gedaechtnis
-  // fragen alle ueber dieselbe ConfirmDialog nach, ausgerechnet der einzige
-  // Prompt, den der Nutzer bewusst aufgehoben hat, tat es nicht.
+  // Löschen fragt nach, wie bei Projekt, Datei und Gedächtnis.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   async function exportPdf() {
@@ -145,12 +146,7 @@ function SavedPromptCard({
     setRenaming(false);
   }
 
-  // Both writes are optimistic: the list updates first, the row goes to the
-  // server after, and a failure undoes the change and says so. Renaming and
-  // deleting your own saved prompt are owner-scoped single-row writes that
-  // essentially only fail if the network does — making the user watch a
-  // spinner for the round trip (what both of these did before) spent the
-  // common case's latency to handle the rare one.
+  // Umbenennen und Löschen sind optimistisch: die Liste ändert sich sofort, ein Fehler nimmt es zurück und sagt es.
   async function rename() {
     const next = title.trim().slice(0, 80);
     if (!next || next === prompt.title) {
@@ -161,9 +157,7 @@ function SavedPromptCard({
     const undo = onRename(next);
 
     const supabase = createClient();
-    // outputs is one JSONB column (prompt, title), so renaming writes it back
-    // whole — the card already holds the prompt in memory, no
-    // read-modify-write round trip needed.
+    // outputs ist eine JSONB-Spalte (prompt, title): der Text kommt aus dem Speicher der Karte mit.
     const { error } = await supabase
       .from("saved_prompts")
       .update({
@@ -175,11 +169,7 @@ function SavedPromptCard({
       .eq("id", prompt.id)
       .eq("user_id", userId);
     if (error) {
-      // Roll the title back, but reopen the editor holding what the user
-      // actually typed. Closing it and dropping their text would make a failed
-      // rename cost them the edit — the reason this stayed in rename mode
-      // before it became optimistic, and worth keeping now that the close
-      // happens up front.
+      // Titel zurück, aber das Feld mit dem Getippten wieder öffnen, damit ein Fehler die Eingabe nicht kostet.
       undo();
       setTitle(next);
       setRenaming(true);
@@ -287,9 +277,20 @@ function SavedPromptCard({
 
       {open && (
         <div id={panelId} className="border-t border-border">
-          <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
-            {prompt.content}
-          </pre>
+          {editing ? (
+            <PromptTextEditor
+              promptId={prompt.id}
+              userId={userId}
+              title={prompt.title}
+              content={prompt.content}
+              onSaved={onTextChange}
+              onClose={() => setEditing(false)}
+            />
+          ) : (
+            <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground/85">
+              {prompt.content}
+            </pre>
+          )}
           {/* Dasselbe Formular wie im Chat. Kopieren in der Leiste darunter nimmt weiter den gespeicherten Text, die
               ausgefüllte Fassung kopiert der Knopf im Formular. */}
           <PlaceholderForm
@@ -328,6 +329,16 @@ function SavedPromptCard({
               </button>
               <button
                 type="button"
+                onClick={() => setEditing(true)}
+                disabled={editing}
+                aria-label={fmt(t.prompts.edit.label, { title: prompt.title })}
+                title={t.prompts.edit.open}
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-tertiary transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+              >
+                <SquarePen className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
                 onClick={() => void exportPdf()}
                 aria-label={t.prompts.exportPdf}
                 title={t.prompts.exportPdf}
@@ -352,6 +363,13 @@ function SavedPromptCard({
             content={prompt.content}
             projectId={prompt.projectId}
             fill={fill}
+          />
+          <PromptHistory
+            promptId={prompt.id}
+            userId={userId}
+            title={prompt.title}
+            content={prompt.content}
+            onRestored={onTextChange}
           />
           {/* Teilen per Link (Migration 0057): erst nach einer Rückfrage, widerrufbar. */}
           <SharePrompt promptId={prompt.id} content={prompt.content} />
