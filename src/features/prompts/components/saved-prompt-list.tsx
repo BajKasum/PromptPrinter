@@ -56,21 +56,9 @@ export function SavedPromptList({
     };
   };
 
-  // Bearbeiten und Wiederherstellen setzen den Text sofort und nehmen ihn bei einem Fehler zurück, wie renameTo.
-  const changeText = (id: string, content: string) => {
-    let previous: string | null = null;
-    setItems((list) =>
-      list.map((it) => {
-        if (it.id !== id) return it;
-        previous = it.content;
-        return { ...it, content };
-      })
-    );
-    return () => {
-      const p = previous as string | null;
-      if (p !== null) setItems((list) => list.map((it) => (it.id === id ? { ...it, content: p } : it)));
-    };
-  };
+  // Bearbeiten und Wiederherstellen setzen den Text erst, wenn er geschrieben ist (der Verlauf lädt dann nach).
+  const changeText = (id: string, content: string) =>
+    setItems((list) => list.map((it) => (it.id === id ? { ...it, content } : it)));
 
   const renameTo = (id: string, title: string) => {
     let previous: string | null = null;
@@ -118,8 +106,8 @@ function SavedPromptCard({
   onDelete: () => () => void;
   /** Applies the new title immediately and returns the undo for a failed write. */
   onRename: (title: string) => () => void;
-  /** Applies a new text (edited or restored) immediately and returns the undo for a failed write. */
-  onTextChange: (content: string) => () => void;
+  /** Sets a new text (edited or restored) once it is written. */
+  onTextChange: (content: string) => void;
 }) {
   const t = useT();
   const locale = useLocale();
