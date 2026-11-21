@@ -19,6 +19,7 @@ export function useChatTurn({
   initialMessages,
   initialConversationId,
   initialInput,
+  fromPromptId,
   needsKey,
   freePromptsLeft,
   attachments,
@@ -28,6 +29,8 @@ export function useChatTurn({
   initialMessages?: Msg[];
   initialConversationId?: string;
   initialInput?: string;
+  /** Der gespeicherte Prompt aus "Als Ausgangspunkt nutzen" (?from=); der erste Zug schickt ihn mit. */
+  fromPromptId?: string;
   needsKey: boolean;
   /** Gratis-Prompts beim Laden der Seite; null oder fehlend ausserhalb des Gratis-Rahmens. */
   freePromptsLeft?: number | null;
@@ -225,7 +228,7 @@ export function useChatTurn({
   ): Promise<string | null> {
     return runChatTurn(
       {
-        snapshot: { messages, conversationId, projectId, initialConversationId },
+        snapshot: { messages, conversationId, projectId, initialConversationId, fromPromptId },
         t,
         router,
         refs: {
@@ -257,6 +260,8 @@ export function useChatTurn({
 
   return {
     messages,
+    /** Die ID des Chats, sobald der erste Zug ihn angelegt hat; Speichern vermerkt sie am Prompt. */
+    conversationId,
     input,
     setInput,
     loading,

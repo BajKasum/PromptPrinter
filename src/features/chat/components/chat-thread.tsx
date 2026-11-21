@@ -1,5 +1,6 @@
 "use client";
 
+import type { VersionTarget } from "@/shared/lib/prompt-versions";
 import { useMemo, type RefObject } from "react";
 import { RotateCcw } from "lucide-react";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
@@ -27,6 +28,8 @@ export function ChatThread({
   lastAssistantIndex,
   projectId,
   savedPrompts,
+  conversationId,
+  versionTarget,
   resultRef,
   endRef,
   onEdit,
@@ -48,6 +51,8 @@ export function ChatThread({
   lastAssistantIndex: number;
   projectId?: string;
   savedPrompts?: string[];
+  conversationId?: string;
+  versionTarget?: VersionTarget | null;
   resultRef: RefObject<HTMLDivElement | null>;
   endRef: RefObject<HTMLDivElement | null>;
   onEdit: (id: string, next: string) => Promise<string | null>;
@@ -115,6 +120,8 @@ export function ChatThread({
                       content={m.content}
                       projectId={projectId}
                       savedPrompts={savedPrompts}
+                      conversationId={conversationId}
+                      versionTarget={versionTarget}
                       index={i}
                       typed={typed}
                       busy={busy || pending !== null}

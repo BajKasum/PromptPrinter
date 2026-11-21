@@ -1,5 +1,6 @@
 "use client";
 
+import type { VersionTarget } from "@/shared/lib/prompt-versions";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { PromptCopiedContext } from "@/features/chat/lib/prompt-copied";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
@@ -28,6 +29,8 @@ export function ChatResultPanel({
   content,
   projectId,
   savedPrompts,
+  conversationId,
+  versionTarget,
   index = 0,
   typed,
   busy = false,
@@ -39,6 +42,10 @@ export function ChatResultPanel({
   projectId?: string | null;
   /** Prompt text of every result already saved (project-scoped, or every one of this user's for a global chat). */
   savedPrompts?: string[];
+  /** Der Chat, aus dem gespeichert wird; ein neuer Prompt vermerkt ihn. */
+  conversationId?: string;
+  /** Wovon Speichern eine neue Version anbietet. */
+  versionTarget?: VersionTarget | null;
   /** Position of the reply in the chat, names the export file the same way the older replies do. */
   index?: number;
   /** Was die Person im Gespräch geschrieben hat; schaltet die Prompt-Prüfung ein. */
@@ -86,6 +93,8 @@ export function ChatResultPanel({
         {savablePrompt && (
           <SavePromptButton
             projectId={projectId}
+            conversationId={conversationId}
+            versionTarget={versionTarget}
             prompt={savablePrompt}
             initiallySaved={alreadySaved}
           />

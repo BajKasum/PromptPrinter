@@ -133,6 +133,7 @@ export async function openTurn(
         user_id: userId,
         title,
         project_id: verifiedProjectId,
+        source_prompt_id: await ownSourcePrompt(supabase, userId, input.fromPromptId),
       })
       .select("id")
       .single();
@@ -360,6 +361,24 @@ export async function rollbackTurn(
   } catch {
     // siehe oben: best effort
   }
+}
+
+/**
+ * Der Ursprung eines neuen Chats aus "Als Ausgangspunkt nutzen", nur wenn der Prompt diesem Konto gehört (RLS plus
+ * `user_id`), sonst null. Die Policy auf conversations prüft dasselbe; ohne diese Abfrage scheiterte bei einer fremden
+ * ID das Anlegen und damit der ganze Zug, statt still ohne Ursprung weiterzugehen.
+ */
+async function ownSourcePrompt(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  promptId: string | undefined
+): Promise<string | null> {
+  if (!promptId) return null;
+  const { data } = orThrow(
+    await supabase.from("saved_prompts").select("id").eq("id", promptId).eq("user_id", userId).maybeSingle(),
+    "saved_prompts"
+  );
+  return data?.id ?? null;
 }
 
 // A short, single-line title derived from the opening message.

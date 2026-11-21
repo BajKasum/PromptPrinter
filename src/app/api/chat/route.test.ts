@@ -860,6 +860,29 @@ describe("POST /api/chat", () => {
     });
   });
 
+  // Der Ursprung eines Chats aus "Als Ausgangspunkt nutzen": nur ein eigener gespeicherter Prompt wird
+  // conversations.source_prompt_id, sonst startet der Chat still ohne Ursprung (die Policy lehnte sonst den Zug ab).
+  describe("fromPromptId, der Ursprung eines neuen Chats", () => {
+    const PROMPT_ID = "22222222-2222-4222-8222-222222222222";
+
+    it("schreibt source_prompt_id: null, wenn der Prompt nicht dem Konto gehört", async () => {
+      await readSse(await POST(req({ fromPromptId: PROMPT_ID, messages: [{ role: "user", content: "Hi" }] })));
+      expect(insertCalls.conversations?.[0]).toMatchObject({ source_prompt_id: null });
+    });
+
+    it("schreibt den Ursprung, sobald der Prompt als eigener gelesen ist", async () => {
+      tableResults.saved_prompts = { data: { id: PROMPT_ID }, error: null };
+      await readSse(await POST(req({ fromPromptId: PROMPT_ID, messages: [{ role: "user", content: "Hi" }] })));
+      expect(insertCalls.conversations?.[0]).toMatchObject({ source_prompt_id: PROMPT_ID });
+    });
+
+    it("lehnt eine ID ab, die keine UUID ist", async () => {
+      const res = await POST(req({ fromPromptId: "../../etc", messages: [{ role: "user", content: "Hi" }] }));
+      expect(res.status).toBe(400);
+      expect(insertCalls.conversations).toBeUndefined();
+    });
+  });
+
   // QA finding F-8: the route only checked projectId was a UUID, never that
   // the caller actually owns that project, and wrote it straight into
   // conversations.project_id regardless. A chat could end up filed under a

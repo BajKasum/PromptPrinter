@@ -9,6 +9,7 @@ import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
 import { loadStartPrompt } from "@/server/start-from-prompt";
+import { loadVersionTarget } from "@/server/prompt-version-target";
 import { startFromText } from "@/shared/lib/start-from-prompt";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function NewProjectChatPage({
   // something vs. starting the project's first work.
   const supabase = await createClient();
   const user = await getSessionUser();
-  const [savedPromptRowsResult, profile, needsKey, freePromptsLeft, startPrompt] = await Promise.all([
+  const [savedPromptRowsResult, profile, needsKey, freePromptsLeft, startPrompt, versionTarget] = await Promise.all([
     // Selecting `outputs` (not just a head-count) also gives the save button
     // the already-saved prompt texts, so it can start disabled for a prompt
     // that's already in the project's Ergebnisse (F-7). Explicit user_id
@@ -54,6 +55,7 @@ export default async function NewProjectChatPage({
     getNeedsOwnKey(),
     getFreePromptsLeft(),
     loadStartPrompt(supabase, project.userId, from),
+    loadVersionTarget(supabase, project.userId, { from }),
   ]);
   const { data: savedPromptRows, count } = orThrow(savedPromptRowsResult, "saved_prompts");
   const t = await getT();
@@ -85,6 +87,8 @@ export default async function NewProjectChatPage({
         needsKey={needsKey}
         freePromptsLeft={freePromptsLeft}
         initialInput={startPrompt ? (startFromText(t.prompts.startFromPrefix, startPrompt) ?? undefined) : undefined}
+        fromPromptId={startPrompt && versionTarget ? versionTarget.id : undefined}
+        versionTarget={versionTarget}
       />
     </div>
   );

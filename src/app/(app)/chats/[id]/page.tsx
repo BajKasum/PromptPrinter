@@ -11,6 +11,7 @@ import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { isUuid } from "@/shared/lib/uuid";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
+import { loadVersionTarget } from "@/server/prompt-version-target";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   // Project chats live in their workspace, forward to the canonical subroute.
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
-  const [initialMessages, profile, savedPromptRowsResult, needsKey, freePromptsLeft] = await Promise.all([
+  const [initialMessages, profile, savedPromptRowsResult, needsKey, freePromptsLeft, versionTarget] = await Promise.all([
     // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
     // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
     loadConversationMessages(supabase, user.id, id),
@@ -61,6 +62,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
       .limit(SAVED_PROMPTS_LOAD_LIMIT),
     getNeedsOwnKey(),
     getFreePromptsLeft(),
+    loadVersionTarget(supabase, user.id, { conversationId: id }),
   ]);
   const { data: savedPromptRows } = orThrow(savedPromptRowsResult, "saved_prompts");
 
@@ -90,6 +92,7 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
         initialMessages={initialMessages}
         initialConversationId={convo.id as string}
         savedPrompts={savedPrompts}
+        versionTarget={versionTarget}
         name={name}
         needsKey={needsKey}
         freePromptsLeft={freePromptsLeft}

@@ -15,6 +15,8 @@ export function buildChatBody(args: {
   next: Msg[];
   conversationId: string | undefined;
   projectId: string | undefined;
+  /** Der gespeicherte Prompt aus "Als Ausgangspunkt nutzen"; geht nur mit, solange der Chat noch keine ID hat. */
+  fromPromptId?: string;
   replaceMessageId?: string;
   supersededMessageIds?: string[];
   attach?: { uploads?: DraftAttachment[]; inheritFrom?: string };
@@ -24,6 +26,7 @@ export function buildChatBody(args: {
   return {
     conversationId: args.conversationId,
     projectId: args.projectId,
+    ...(args.fromPromptId && !args.conversationId ? { fromPromptId: args.fromPromptId } : {}),
     messages: windowed.map((m, i) => toWire(m, i === windowed.length - 1 ? attach?.uploads : undefined)),
     // Nur beim Neu-Erzeugen gesetzt (C-2). Die Route liest daran zwei Dinge ab: die Frage nicht ein zweites
     // Mal speichern, und die alte Antwort erst wegnehmen, wenn die neue sicher steht.

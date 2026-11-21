@@ -11,6 +11,7 @@ import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
+import { loadVersionTarget } from "@/server/prompt-version-target";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
   if (!convo.project_id) redirect(`/chats/${cid}`);
   if (convo.project_id !== id) redirect(`/projects/${convo.project_id}/chats/${cid}`);
 
-  const [initialMessages, savedPromptRowsResult, profile, needsKey, freePromptsLeft] =
+  const [initialMessages, savedPromptRowsResult, profile, needsKey, freePromptsLeft, versionTarget] =
     await Promise.all([
       // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
       // zuerst, mit Limit, dann umgedreht, QA-Befund P-1) steht in
@@ -72,6 +73,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
       getSessionProfile(),
       getNeedsOwnKey(),
     getFreePromptsLeft(),
+    loadVersionTarget(supabase, project.userId, { conversationId: cid }),
     ]);
   const { data: savedPromptRows, count: resultCount } = orThrow(savedPromptRowsResult, "saved_prompts");
 
@@ -103,6 +105,7 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
         initialConversationId={convo.id as string}
         hasResults={(resultCount ?? 0) > 0}
         savedPrompts={savedPrompts}
+        versionTarget={versionTarget}
         name={name}
         needsKey={needsKey}
         freePromptsLeft={freePromptsLeft}

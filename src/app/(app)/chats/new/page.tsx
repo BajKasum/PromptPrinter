@@ -8,6 +8,7 @@ import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
 import { loadStartPrompt } from "@/server/start-from-prompt";
+import { loadVersionTarget } from "@/server/prompt-version-target";
 import { startFromText } from "@/shared/lib/start-from-prompt";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function NewChatPage({ searchParams }: { searchParams: Prom
   if (!user) redirect("/login");
 
   const { from } = await searchParams;
-  const [profile, savedPromptRowsResult, needsKey, freePromptsLeft, startPrompt] = await Promise.all([
+  const [profile, savedPromptRowsResult, needsKey, freePromptsLeft, startPrompt, versionTarget] = await Promise.all([
     getSessionProfile(),
     // QA finding N-1: saving is project-independent now, a global chat's
     // dedup (F-7) checks against every one of this user's saved prompts, not
@@ -45,6 +46,7 @@ export default async function NewChatPage({ searchParams }: { searchParams: Prom
     getNeedsOwnKey(),
     getFreePromptsLeft(),
     loadStartPrompt(supabase, user.id, from),
+    loadVersionTarget(supabase, user.id, { from }),
   ]);
   const { data: savedPromptRows } = orThrow(savedPromptRowsResult, "saved_prompts");
   const name = profile?.display_name || user.email?.split("@")[0] || null;
@@ -62,6 +64,8 @@ export default async function NewChatPage({ searchParams }: { searchParams: Prom
           needsKey={needsKey}
           freePromptsLeft={freePromptsLeft}
           initialInput={startPrompt ? (startFromText(t.prompts.startFromPrefix, startPrompt) ?? undefined) : undefined}
+          fromPromptId={startPrompt && versionTarget ? versionTarget.id : undefined}
+          versionTarget={versionTarget}
         />
       </FadeIn>
     </div>

@@ -60,7 +60,6 @@
   "src/features/chat/components/chat.tsx": 5,
   "src/features/chat/components/copy-moment.tsx": 1,
   "src/features/chat/components/move-to-project.tsx": 1,
-  "src/features/chat/components/save-prompt-button.tsx": 2,
   "src/features/chat/components/voice-bar.tsx": 1,
   "src/features/chat/components/word-stream.tsx": 2,
   "src/features/chat/hooks/run-chat-turn.ts": 1,

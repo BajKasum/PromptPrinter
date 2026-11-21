@@ -36,6 +36,8 @@ export type ChatTurnContext = {
     conversationId: string | undefined;
     projectId: string | undefined;
     initialConversationId: string | undefined;
+    /** Der gespeicherte Prompt aus "Als Ausgangspunkt nutzen", nur für den ersten Zug. */
+    fromPromptId?: string;
   };
   t: ReturnType<typeof useT>;
   router: ReturnType<typeof useRouter>;
@@ -92,6 +94,7 @@ export async function runChatTurn(
           next,
           conversationId: snapshot.conversationId,
           projectId: snapshot.projectId,
+          fromPromptId: snapshot.fromPromptId,
           replaceMessageId,
           supersededMessageIds,
           attach,
