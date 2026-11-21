@@ -334,12 +334,19 @@ describe("SavedPromptList", () => {
         { version: 1, content: "Erste Fassung.", created_at: prompt.createdAt },
         { version: 2, content: prompt.content, created_at: prompt.createdAt },
       ];
-      // Bearbeiten schreibt update().eq().eq().select("id"); danach steht die dritte Version in der Datenbank.
-      const written = { eq: () => written, select: async () => ({ data: [{ id: "p1" }], error: null }) };
-      update.mockImplementation(() => {
-        versionRows.push({ version: 3, content: "Neuer Text.", created_at: prompt.createdAt });
-        return written;
-      });
+      // Bearbeiten schreibt update().eq().eq().select("id"); die dritte Version steht erst in der Datenbank, wenn die
+      // Antwort ankommt (verzögert wie im Netz). Ein Nachladen davor sähe noch zwei.
+      const written = {
+        eq: () => written,
+        select: () =>
+          new Promise((resolve) =>
+            setTimeout(() => {
+              versionRows.push({ version: 3, content: "Neuer Text.", created_at: prompt.createdAt });
+              resolve({ data: [{ id: "p1" }], error: null });
+            }, 30)
+          ),
+      };
+      update.mockReturnValue(written);
       render(<SavedPromptList userId="u1" prompts={[prompt]} />);
       const user = userEvent.setup();
       await openPrompt(user);

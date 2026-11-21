@@ -32,8 +32,11 @@ export function PromptTextEditor({
   userId: string;
   title: string;
   content: string;
-  /** Setzt den neuen Text in der Liste und gibt das Rückgängig für einen gescheiterten Schreibvorgang zurück. */
-  onSaved: (content: string) => () => void;
+  /**
+   * Setzt den neuen Text in der Liste, erst wenn er geschrieben ist: der Verlauf lädt bei einem neuen Text nach und
+   * sähe sonst noch die alte Zahl der Versionen.
+   */
+  onSaved: (content: string) => void;
   onClose: () => void;
 }) {
   const t = useT();
@@ -72,7 +75,6 @@ export function PromptTextEditor({
       return;
     }
     setSaving(true);
-    const undo = onSaved(next);
     const { data, error } = await createClient()
       .from("saved_prompts")
       .update({ outputs: { prompt: next, title } })
@@ -81,10 +83,10 @@ export function PromptTextEditor({
       .select("id");
     setSaving(false);
     if (error || !data?.length) {
-      undo();
       toast({ title: t.prompts.edit.failed, description: t.prompts.tryAgain, variant: "error" });
       return;
     }
+    onSaved(next);
     toast({ title: t.prompts.edit.saved, variant: "success" });
     onClose();
     router.refresh();

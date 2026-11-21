@@ -30,8 +30,8 @@ export function PromptHistory({
   title: string;
   /** Die aktuelle Fassung; ändert sie sich (Bearbeiten, Wiederherstellen), lädt der Verlauf neu. */
   content: string;
-  /** Setzt den wiederhergestellten Text in der Liste und gibt das Rückgängig für einen gescheiterten Schreibvorgang zurück. */
-  onRestored: (content: string) => () => void;
+  /** Setzt den wiederhergestellten Text in der Liste, erst wenn er geschrieben ist (sonst lüde der Verlauf zu früh nach). */
+  onRestored: (content: string) => void;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -105,7 +105,6 @@ export function PromptHistory({
   async function restore(version: PromptVersion) {
     if (restoring) return;
     setRestoring(true);
-    const undo = onRestored(version.content);
     const { data, error } = await createClient()
       .from("saved_prompts")
       .update({ outputs: { prompt: version.content, title } })
@@ -113,18 +112,14 @@ export function PromptHistory({
       .eq("user_id", userId)
       .select("id");
     if (error || !data?.length) {
-      undo();
       setRestoring(false);
       toast({ title: t.prompts.history.restoreFailed, description: t.prompts.tryAgain, variant: "error" });
       return;
     }
+    // Die neue Nummer für die Meldung; den Verlauf selbst lädt der neue Text nach (Effekt oben).
     const page = await load(0);
     setRestoring(false);
-    if (page) {
-      setVersions(page);
-      setTo(page[0]?.version ?? null);
-      setFrom(version.version);
-    }
+    onRestored(version.content);
     toast({
       title: fmt(t.prompts.history.restored, { old: version.version, new: page?.[0]?.version ?? "" }),
       variant: "success",
@@ -188,7 +183,8 @@ export function PromptHistory({
                   )}
             </div>
           )}
-          {older && older.version !== latest && (
+          {/* Eine Fassung mit demselben Text wie die aktuelle legte die Datenbank nicht neu an: nichts anzubieten. */}
+          {older && older.version !== latest && older.content !== content && (
             <button
               type="button"
               onClick={() => void restore(older)}

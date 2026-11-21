@@ -42,7 +42,7 @@ vi.mock("@/shared/supabase/client", () => ({
 
 const at = "2026-11-20T10:00:00Z";
 
-function renderHistory(content = "Ton: förmlich.", onRestored = vi.fn(() => vi.fn())) {
+function renderHistory(content = "Ton: förmlich.", onRestored = vi.fn()) {
   render(<PromptHistory promptId="p1" userId="u1" title="Brief" content={content} onRestored={onRestored} />);
   return { onRestored };
 }
@@ -126,14 +126,38 @@ describe("PromptHistory", () => {
     expect(screen.queryByRole("button", { name: /wiederherstellen/ })).toBeNull();
   });
 
-  it("nimmt den Text bei einem Fehler zurück und sagt es", async () => {
-    const undo = vi.fn();
-    renderHistory(undefined, vi.fn(() => undo));
+  it("setzt bei einem Fehler keinen Text und sagt es", async () => {
+    const { onRestored } = renderHistory();
     updated.mockResolvedValue({ data: null, error: { message: "nope" } });
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
     await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
-    expect(undo).toHaveBeenCalled();
+    expect(onRestored).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
+  });
+
+  it("gibt den alten Text erst weiter, wenn er geschrieben ist", async () => {
+    const { onRestored } = renderHistory();
+    let finish: (value: unknown) => void = () => {};
+    updated.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
+    await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+
+    expect(onRestored).not.toHaveBeenCalled();
+    rows.push({ version: 3, content: "Ton: locker.", created_at: at });
+    finish({ data: [{ id: "p1" }], error: null });
+    await waitFor(() => expect(onRestored).toHaveBeenCalledWith("Ton: locker."));
+  });
+
+  it("bietet kein Wiederherstellen an, wenn die alte Fassung der aktuellen gleicht", async () => {
+    rows.push({ version: 3, content: "Ton: locker.", created_at: at });
+    renderHistory("Ton: locker.");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Verlauf (3 Versionen)" }));
+    await user.selectOptions(screen.getByLabelText("Ältere Fassung"), "1");
+    expect(screen.queryByRole("button", { name: /wiederherstellen/ })).toBeNull();
+    await user.selectOptions(screen.getByLabelText("Ältere Fassung"), "2");
+    expect(screen.getByRole("button", { name: "Version 2 wiederherstellen" })).toBeInTheDocument();
   });
 });

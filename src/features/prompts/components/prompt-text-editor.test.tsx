@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PromptTextEditor } from "./prompt-text-editor";
 
@@ -32,7 +32,7 @@ vi.mock("@/shared/supabase/client", () => ({
   }),
 }));
 
-function renderEditor(onSaved = vi.fn(() => vi.fn()), onClose = vi.fn()) {
+function renderEditor(onSaved = vi.fn(), onClose = vi.fn()) {
   render(
     <PromptTextEditor promptId="p1" userId="u1" title="Brief" content="Alter Text." onSaved={onSaved} onClose={onClose} />
   );
@@ -74,17 +74,30 @@ describe("PromptTextEditor", () => {
     expect(save).toBeDisabled();
   });
 
-  it("nimmt den Text bei einem Fehler zurück und sagt es", async () => {
+  it("setzt bei einem Fehler keinen Text und sagt es", async () => {
     written.mockResolvedValue({ data: null, error: { message: "nope" } });
-    const undo = vi.fn();
-    const { field, onClose } = renderEditor(vi.fn(() => undo));
+    const { field, onClose, onSaved } = renderEditor();
     const user = userEvent.setup();
     await user.type(field, " Mehr.");
     await user.click(screen.getByRole("button", { name: "Als neue Version speichern" }));
 
-    expect(undo).toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  // Der Verlauf lädt bei einem neuen Text nach. Käme der Text vor dem Schreiben in die Karte, sähe er die alte Zahl.
+  it("gibt den neuen Text erst weiter, wenn er geschrieben ist", async () => {
+    let finish: (value: unknown) => void = () => {};
+    written.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const { field, onSaved } = renderEditor();
+    const user = userEvent.setup();
+    await user.type(field, " Mehr.");
+    await user.click(screen.getByRole("button", { name: "Als neue Version speichern" }));
+
+    expect(onSaved).not.toHaveBeenCalled();
+    finish({ data: [{ id: "p1" }], error: null });
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith("Alter Text. Mehr."));
   });
 
   it("schliesst mit Escape ohne zu speichern", async () => {
