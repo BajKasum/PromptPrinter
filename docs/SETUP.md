@@ -849,7 +849,9 @@ Migration `0061_saved_prompt_versions.sql`. `saved_prompts.outputs` bleibt die a
 
 Dazu zwei Verweise, an denen Speichern eine neue Version erkennt: `saved_prompts.conversation_id` (der Chat, aus dem gespeichert wurde) und `conversations.source_prompt_id` (der Prompt, aus dem ein Chat mit "Als Ausgangspunkt nutzen" entstand). Beide prüfen in der Policy, dass die Elternzeile demselben Konto gehört, und werden beim Löschen der Elternzeile leer (`on delete set null`). Das Leeren von `source_prompt_id` setzt `conversations.updated_at` nicht neu, sonst sprängen die Chats eines gelöschten Prompts an den Anfang der Liste.
 
-`e2e/prompt-versions-db.spec.ts` prüft das gegen den lokalen Stack, `tests/guards/migrations.test.ts` und `account-ceilings.test.ts` halten Rechte, Trigger und Zahlen fest.
+In der Oberfläche: Speichern im Chat fragt "Als neue Version" oder "Als neuen Prompt", sobald es einen Kandidaten mit anderem Text gibt (`src/server/prompt-version-target.ts`: zuletzt aus diesem Chat gespeichert, sonst der Ursprung, für einen neuen Chat `?from=`); der erste Zug eines Chats aus "Als Ausgangspunkt nutzen" schickt `fromPromptId`, `openTurn` setzt `source_prompt_id` nur für einen eigenen Prompt. An der Karte: Text bearbeiten (`prompt-text-editor.tsx`, bei einem geteilten Prompt mit Hinweis und Prompt-Prüfung), Verlauf ab zwei Versionen mit Wort-Diff (`src/shared/lib/word-diff.ts`, Myers ohne Paket, bei sehr vielen Änderungen über Zeilen) und Wiederherstellen (`prompt-history.tsx`). Der Export des Kontos enthält den Verlauf.
+
+`e2e/prompt-versions-db.spec.ts` prüft die Datenbank gegen den lokalen Stack, `e2e/prompt-versions.spec.ts` die Oberfläche; `tests/guards/migrations.test.ts` und `account-ceilings.test.ts` halten Rechte, Trigger und Zahlen fest.
 
 ## Ende-zu-Ende-Tests
 
@@ -899,6 +901,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `cli-login.spec.ts` | Anmeldung des Terminals: Code, Freigabe, einmal abholen, Chat per Bearer, Details auf `/cli`, Einzelwiderruf in den Einstellungen, Höchstalter, Job in der Datenbank |
 | `mfa.spec.ts` | Zweiter Faktor mit echten Codes: einrichten, Anmelden mit und ohne, die heiklen Aktionen auf AAL1, Rückweg mit Wiederherstellungscode, Passwort-Reset, Zusammenspiel mit Terminals |
 | `prompt-versions-db.spec.ts` | Versionen in der Datenbank, als `authenticated` über PostgREST: Einfügen legt Version 1 an, Text ändern die nächste, Umbenennen keine, Wiederherstellen eine neue; ein fremdes Konto liest keine, niemand schreibt eine von Hand (auch der Server nicht); Chat am Prompt und Ursprung am Chat nur aus dem eigenen Konto; Löschen nimmt die Versionen mit und lässt `updated_at` des Chats stehen; die Grenze nach Zeilen und Bytes |
+| `prompt-versions.spec.ts` | Versionen in der Oberfläche: zweimal speichern im selben Chat fragt nach der Version, ein Chat aus "Als Ausgangspunkt nutzen" vermerkt seinen Ursprung und bietet dessen Version an, Text an der Karte bearbeiten, Verlauf mit Wort-Diff, Wiederherstellen als neue Version, Umbenennen ohne Version |
 | `saved-prompt-reuse.spec.ts` | gespeicherte Prompts wiederverwenden: Platzhalter ausfüllen auf `/prompts` und auf einem geteilten Link, "Als Ausgangspunkt nutzen" im globalen und im Projekt-Chat (nur ins Eingabefeld, fremde ID ergibt einen leeren Chat), jeder Export wörtlich gegen `shared/lib/prompt-export.ts`, `.prompt.md` als Download |
 
 ### Was bewusst NICHT geprüft wird

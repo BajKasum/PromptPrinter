@@ -26,12 +26,18 @@ export default function Page() {
         auf.</strong> Es sichert nur den Text, den du ohnehin schon vor dir hast.
         Es zählt deshalb auch nicht als Gratis-Prompt und ist unbegrenzt.
       </p>
+      <p>
+        Hast du in diesem Chat schon einen Prompt gespeichert, oder ist der Chat mit{" "}
+        <strong>Als Ausgangspunkt nutzen</strong> entstanden, fragt Speichern bei einem geänderten Text, wohin er
+        soll: <strong>Als neue Version</strong> des bisherigen Prompts oder <strong>Als neuen Prompt</strong>. Eine
+        neue Version behält den Titel und hängt den Text an den Verlauf an.
+      </p>
 
       <h2>Wo finde ich gespeicherte Prompts?</h2>
       <p>
         Im Kontomenü unter <strong>Gespeicherte Prompts</strong>, neueste zuerst.
         Die Liste zeigt nur die Titel, ein Klick klappt den Prompt auf. Dort
-        kopierst du ihn, benennst ihn um oder löschst ihn.
+        kopierst du ihn, benennst ihn um, änderst seinen Text oder löschst ihn.
       </p>
       <p>
         Den Titel musst du beim Speichern nicht vergeben: er entsteht aus der
@@ -52,8 +58,24 @@ export default function Page() {
         Mit <strong>Als Ausgangspunkt nutzen</strong>. Das öffnet einen neuen Chat, im Projekt des Prompts oder
         ohne Projekt, und legt den Prompt ins Eingabefeld, darüber die Zeile „Pass diesen Prompt an:“. Du
         schreibst dazu, was sich ändern soll, und schickst es ab, wenn du so weit bist; vorher geht nichts an
-        Finn. Der gespeicherte Prompt bleibt, wie er ist, die neue Fassung speicherst du als neuen Prompt. Der
+        Finn. Der gespeicherte Prompt bleibt, wie er ist, bis du die neue Fassung als neue Version speicherst. Der
         Weg steht bei jedem Prompt, der samt dieser Zeile in eine Nachricht passt (bis 8000 Zeichen).
+      </p>
+
+      <h2>Kann ich den Text eines gespeicherten Prompts ändern?</h2>
+      <p>
+        Ja, mit <strong>Text bearbeiten</strong> am aufgeklappten Prompt. Jede Änderung wird eine neue Version, der
+        Titel bleibt. Ist der Prompt geteilt, steht die neue Fassung sofort unter dem Link; enthält sie dann einen
+        Schlüssel oder persönliche Angaben, fragt PromptPrinter vorher nach, wie beim Teilen.
+      </p>
+
+      <h2>Sehe ich frühere Fassungen?</h2>
+      <p>
+        Ja. Ab zwei Versionen steht unter dem Prompt der <strong>Verlauf</strong>. Dort wählst du zwei Versionen
+        und siehst den Unterschied Wort für Wort: Entferntes durchgestrichen, Neues unterstrichen. Mit{" "}
+        <strong>Version wiederherstellen</strong> wird eine alte Fassung wieder die aktuelle; sie kommt als neueste
+        Version dazu, es geht also nichts verloren. Gelöscht wird der Verlauf nur mit dem Prompt selbst. Kopieren,
+        Teilen, der Export und die Terminal-App nehmen immer die aktuelle Fassung.
       </p>
 
       <h2>Kann ich einen Prompt in meinen eigenen Code übernehmen?</h2>
