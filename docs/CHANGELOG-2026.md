@@ -11,6 +11,14 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-21: Migration 0062 in Produktion (Branch `docs/0062-produktion`)
+
+- **Kasums Ja** in der Session, die 0062 gebaut hat ("Ja, anwenden"), nach dem Merge von #348. Angewendet mit dem Supabase-Werkzeug, Inhalt genau die Datei aus `main` (`e994513`); Migration `20261121125815 saved_prompts_ceiling_execute`.
+- **Vorher gelesen:** Stand `0061`, `enforce_saved_prompts_bytes_on_update()` ohne `execute` (md5 des Funktionstexts `23182ada…`, gleich dem Text aus 0058), ACL nur `postgres`, Trigger wie in 0058, 3 gespeicherte Prompts.
+- **Nachher lesend geprüft:** eine Funktion, md5 des Funktionstexts `d284a87f…`, gleich dem Text aus der Datei in `main`, mit `for account in execute $sql$`; `security invoker`, `search_path=""`, ACL unverändert, `anon` und `authenticated` ohne EXECUTE; Trigger-Definition unverändert, aktiv und auf dieselbe Funktion; 3 Prompts, 3 Versionen. Advisors gleich wie vorher: Sicherheit 2 Hinweise (`billing_events` ohne Policy, Schutz vor geleakten Passwörtern aus), Performance 2 Fremdschlüssel ohne Index und 15 ungenutzte Indizes.
+- **Nicht geprüft:** ein Update auf Produktion (keine Testdaten, nur lesend), die Zeiten dort.
+- **Doku:** `CLAUDE.md` nennt 0001 bis 0062 als angewendet.
+
 ## 2026-11-21: Die Byte-Grenze beim Ändern plant jeden Aufruf neu, Migration 0062 (Branch `fix/byte-trigger-plan`)
 
 - **Ziel:** der offene Befund aus Paket 2 (Eintrag "Versionen gespeicherter Prompts, die Datenbank", "Gefunden, nicht behoben"). `enforce_saved_prompts_bytes_on_update()` aus 0058 sucht die geänderten Konten mit einem Join von `new_rows` und `old_rows` als feste Abfrage. plpgsql behält deren Plan je Verbindung, geplant beim ersten Aufruf; war das ein Update über eine Zeile, verbindet derselbe Plan später 5 000 Zeilen Zeile für Zeile. Heute trifft es niemanden (Produktion hat 3 gespeicherte Prompts, die Oberfläche ändert einen je Befehl), es ist Vorsorge.
