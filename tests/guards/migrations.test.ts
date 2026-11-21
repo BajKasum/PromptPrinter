@@ -247,6 +247,38 @@ describe("Migrations-Konventionen", () => {
     expect(sql).toMatch(/\(status = 'pending'\) = \(user_id is null\)/i);
   });
 
+  // Versionen gespeicherter Prompts: nur die Datenbank schreibt sie. Ein Schreibrecht fuer authenticated oder den
+  // Server machte den Verlauf faelschbar, ein Trigger ohne Vergleich des Texts legte bei jedem Umbenennen eine an.
+  it("haelt saved_prompt_versions nur zum Anhaengen, geschrieben allein vom Trigger", () => {
+    const sql = withoutComments(read("0061_saved_prompt_versions.sql"));
+    expect(sql).toMatch(/alter table public\.saved_prompt_versions enable row level security/i);
+    expect(sql).toMatch(/revoke all on public\.saved_prompt_versions from anon, authenticated, service_role;/i);
+    expect(sql).toMatch(/^grant select on public\.saved_prompt_versions to authenticated, service_role;$/im);
+    // Genau eine Policy auf der Tabelle, nur zum Lesen, nur eigene Zeilen.
+    const policies = [...sql.matchAll(/create policy \w+ on public\.saved_prompt_versions\s+([^;]*);/gi)];
+    expect(policies).toHaveLength(1);
+    expect(policies[0][1]).toMatch(/^for select to authenticated\s+using \(\(select auth\.uid\(\)\) = user_id\)$/i);
+    // Die Funktion schreibt als Eigentuemer, festes search_path, fuer niemanden aufrufbar.
+    const fn = sql.slice(sql.indexOf("create or replace function public.log_saved_prompt_versions()"));
+    expect(fn).toMatch(/^create or replace function public\.log_saved_prompt_versions\(\)\s+returns trigger\s+language plpgsql\s+security definer\s+set search_path = ''/i);
+    expect(sql).toMatch(/revoke execute on function public\.log_saved_prompt_versions\(\) from public, anon, authenticated;/i);
+    // Ein Update legt nur bei geaendertem Text eine Version an, Umbenennen nicht.
+    expect(fn).toMatch(/join old_rows o on o\.id = n\.id\s+where n\.outputs->>'prompt' is distinct from o\.outputs->>'prompt';/i);
+    expect(sql).toMatch(/create trigger saved_prompts_version_log_insert after insert on public\.saved_prompts\s+referencing new table as new_rows\s+for each statement execute function public\.log_saved_prompt_versions\(\);/i);
+    expect(sql).toMatch(/create trigger saved_prompts_version_log_update after update on public\.saved_prompts\s+referencing old table as old_rows new table as new_rows\s+for each statement execute function public\.log_saved_prompt_versions\(\);/i);
+    // Bestand als Version 1, und eine Version geht mit ihrem Prompt.
+    expect(sql).toMatch(/select p\.id, p\.user_id, 1, coalesce\(p\.outputs->>'prompt', ''\), p\.created_at\s+from public\.saved_prompts p/i);
+    expect(sql).toMatch(/foreign key \(prompt_id, user_id\)\s+references public\.saved_prompts \(id, user_id\) on delete cascade/i);
+
+    const later = migrationFiles().filter((f) => f.slice(0, 4) > "0061");
+    const writable = later.filter((file) =>
+      /grant [^;]*\b(insert|update|delete|all)\b[^;]* on (table )?public\.saved_prompt_versions/i.test(
+        withoutComments(read(file))
+      )
+    );
+    expect(writable, "Diese Migrationen vergeben Schreibrechte am Verlauf:\n  " + writable.join("\n  ")).toEqual([]);
+  });
+
   it("fuehrt keine Ausnahme, die es nicht mehr braucht", () => {
     const stale = [
       ...Object.keys(EXEMPT_SEARCH_PATH).filter((file) => {

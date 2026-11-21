@@ -40,13 +40,14 @@ const MIB = 1024 * 1024;
 /**
  * Obergrenzen je Konto, auch für Admins. Sie schützen die gemeinsame Datenbank und den Speicher vor einem
  * einzelnen Konto, normale Nutzung stösst nie an. Durchgesetzt werden sie in der Datenbank (Migration
- * `*_account_ceilings.sql`), die Zahlen hier sind ihr Spiegel für Tests und Doku. Rechnung und Verhalten an der
- * Grenze: docs/SETUP.md, "Grenzen je Konto".
+ * `*_account_ceilings.sql`, für die Versionen `*_saved_prompt_versions.sql`), die Zahlen hier sind ihr Spiegel für
+ * Tests und Doku. Rechnung und Verhalten an der Grenze: docs/SETUP.md, "Grenzen je Konto".
  */
 export const ACCOUNT_CEILINGS = {
   conversations: { rows: 10_000 },
   messages: { rows: 50_000, bytes: 50 * MIB },
   savedPrompts: { rows: 5_000, bytes: 20 * MIB },
+  savedPromptVersions: { rows: 20_000, bytes: 40 * MIB },
   projectFiles: { rows: 500 },
   projectFileStorage: { objects: 500, bytes: 100 * MIB },
 } as const;
