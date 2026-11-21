@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
+import { adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
 import {
   MIN_PASSWORD_LENGTH,
   PASSWORD_TOO_SHORT_MESSAGE,
@@ -39,6 +40,15 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const nextRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
+
+  // Einmal nach dem Hydrieren: der Server rendert das Formular, was schon in den Feldern stand, kommt in den State
+  // (lib/prefilled-input.ts).
+  useEffect(() => {
+    adoptPrefilledValue(nextRef.current, setNext);
+    adoptPrefilledValue(confirmRef.current, setConfirm);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,6 +124,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
               masked values you can't see helps nobody. */}
           <div className="relative">
             <input
+              ref={nextRef}
               id="new-password"
               type={showPassword ? "text" : "password"}
               placeholder={`Neues Passwort (mind. ${MIN_PASSWORD_LENGTH} Zeichen)`}
@@ -143,6 +154,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
             Passwort bestätigen
           </label>
           <input
+            ref={confirmRef}
             id="confirm-password"
             type={showPassword ? "text" : "password"}
             placeholder="Passwort wiederholen"

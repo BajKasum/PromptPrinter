@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import * as z from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
@@ -8,20 +8,26 @@ import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
 import { Input } from "@/shared/ui/input";
+import { adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
 
 const emailSchema = z.string().email("Bitte eine gültige Email eingeben");
 
 /**
- * "Request password reset", right column of the two-column auth layout.
- * Sends the recovery link through the shared /auth/callback, which forwards
- * to the password-update page. Carries the Turnstile token when configured,
- * Supabase enforces the captcha on this endpoint too once it's enabled.
+ * "Passwort vergessen", rechte Spalte der Auth-Hülle. Der Link zum Zurücksetzen läuft über /auth/callback, das auf die
+ * Seite "Neues Passwort" weiterleitet. Mit Site-Key geht das Turnstile-Token mit.
  */
 export function RequestPasswordResetExperience() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Einmal nach dem Hydrieren: die Seite kommt statisch mit Formular, eine schon eingetragene Adresse kommt in den
+  // State (lib/prefilled-input.ts).
+  useEffect(() => {
+    adoptPrefilledValue(emailRef.current, setEmail);
+  }, []);
 
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaNonce, setCaptchaNonce] = useState(0);
@@ -110,6 +116,7 @@ export function RequestPasswordResetExperience() {
             Email
           </label>
           <Input
+            ref={emailRef}
             id="reset-email"
             type="email"
             placeholder="du@example.com"

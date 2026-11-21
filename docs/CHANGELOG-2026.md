@@ -11,6 +11,14 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-21: Passwort zurücksetzen übernimmt vorher Eingetragenes (Branch `fix/reset-password-prefilled`)
+
+- **Ziel:** der Fund aus dem Eintrag darunter gilt auch für `/reset-password` (statisch mit Formular seit dem Ladezeit-Durchgang) und `/reset-password/update` (auf dem Server gerendert). Kasum: "Yes, do it here".
+- **Live belegt, vor der Änderung** (headless Playwright gegen promptprinter.app, alle Skripte der Seite zurückgehalten, `/api/auth` abgefangen, nichts erreichte den Server): auf `/reset-password` eine Adresse vor dem Hydrieren eingetragen, dann geklickt: "Bitte eine gültige Email eingeben" neben der sichtbaren Adresse, danach war das Feld leer. Auf `/login` (mit dem Eintrag darunter) blieb die Adresse stehen, die Meldung war die Mensch-Prüfung. Ein erster Versuch hielt auf Vercel kein Skript zurück (die Seite war schon hydriert) und zeigte deshalb nichts; zurückhalten nach Herkunft und Typ, nicht nach dem Pfad `/_next/static/chunks/`.
+- **Geändert:** `request-password-reset-experience.tsx` übernimmt die Adresse, `update-password-experience.tsx` beide Passwortfelder einmal nach dem Einhängen (`features/auth/lib/prefilled-input.ts`).
+- **Geprüft:** lokaler Produktions-Build, dieselbe Probe: die vorher eingetragene Adresse geht an `/api/auth`, die Seite zeigt "Email unterwegs". `/reset-password/update` braucht eine Sitzung aus einem Reset-Link, dort nur im Test.
+- **Tests und Mutationen:** neu `request-password-reset-experience.test.tsx` (gab es nicht: ungültige Adresse, Senden, Formular im Server-HTML, Übernahme beim Hydrieren), in `update-password-experience.test.tsx` zwei Fälle mit Hydrieren (beide Felder gleich, beide verschieden). 4 Mutationen, alle erkannt: Adresse nicht übernommen, je ein Passwortfeld nicht übernommen, die Felder vertauscht (fiel erst mit verschiedenen Werten auf, deshalb der zweite Fall).
+
 ## 2026-11-21: Anmelden, Registrieren und zweiter Faktor mit Formular im HTML (Branch `perf/auth-ssr`)
 
 - **Ziel:** der offene Punkt aus dem Eintrag "Ladezeit, Finn und die Teilchen per CSS" vom selben Tag: `/login`, `/signup` und `/login/zweiter-faktor` sollen ihr Formular schon im statischen HTML ausliefern. Sie bleiben statisch vom CDN (`X-Nextjs-Prerender: 1`); `searchParams` auf dem Server hätte sie dynamisch gemacht und jeden Besuch die Antwortzeit gekostet, deshalb nicht.
