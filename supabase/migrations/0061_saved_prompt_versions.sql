@@ -162,6 +162,12 @@ grant select on public.saved_prompt_versions to authenticated, service_role;
 -- ─── Versionen anlegen ─────────────────────────────────────────────────────
 -- Ein Trigger je Befehl: ein Befehl mit vielen Zeilen schreibt seine Versionen in einem Einfügen, die Grenze zählt
 -- einmal. security definer, weil sonst niemand schreiben dürfte; search_path leer wie jede Funktion seit 0003.
+--
+-- EXECUTE statt einer festen Abfrage: plpgsql behält den Plan einer festen Abfrage je Verbindung, geplant beim ersten
+-- Aufruf. Hatten die Transition-Tabellen dort eine Zeile, verbindet der behaltene Plan später 5 000 geänderte Zeilen
+-- Zeile für Zeile, und die Suche nach der höchsten Nummer läuft über die ganze Tabelle, solange sie beim Planen klein
+-- war (gemessen: ein Update über 5 000 Prompts nach einem Update über einen 2,5 s statt 0,35 s). EXECUTE plant jedes
+-- Mal mit den echten Zahlen.
 create or replace function public.log_saved_prompt_versions()
 returns trigger
 language plpgsql
@@ -170,23 +176,27 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
-    insert into public.saved_prompt_versions (prompt_id, user_id, version, content)
-    select
-      n.id,
-      n.user_id,
-      coalesce((select max(v.version) from public.saved_prompt_versions v where v.prompt_id = n.id), 0) + 1,
-      coalesce(n.outputs->>'prompt', '')
-    from new_rows n;
+    execute $sql$
+      insert into public.saved_prompt_versions (prompt_id, user_id, version, content)
+      select
+        n.id,
+        n.user_id,
+        coalesce((select max(v.version) from public.saved_prompt_versions v where v.prompt_id = n.id), 0) + 1,
+        coalesce(n.outputs->>'prompt', '')
+      from new_rows n
+    $sql$;
   else
-    insert into public.saved_prompt_versions (prompt_id, user_id, version, content)
-    select
-      n.id,
-      n.user_id,
-      coalesce((select max(v.version) from public.saved_prompt_versions v where v.prompt_id = n.id), 0) + 1,
-      coalesce(n.outputs->>'prompt', '')
-    from new_rows n
-    join old_rows o on o.id = n.id
-    where n.outputs->>'prompt' is distinct from o.outputs->>'prompt';
+    execute $sql$
+      insert into public.saved_prompt_versions (prompt_id, user_id, version, content)
+      select
+        n.id,
+        n.user_id,
+        coalesce((select max(v.version) from public.saved_prompt_versions v where v.prompt_id = n.id), 0) + 1,
+        coalesce(n.outputs->>'prompt', '')
+      from new_rows n
+      join old_rows o on o.id = n.id
+      where n.outputs->>'prompt' is distinct from o.outputs->>'prompt'
+    $sql$;
   end if;
 
   return null;
