@@ -47,7 +47,7 @@ describe("Floaters", () => {
   });
 
   it("verschwindet unter prefers-reduced-motion", () => {
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[^@]*\.finn-floaters \{ display: none; \}/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[^@]*\.finn-floaters(?:, [^{]*)? \{ display: none; \}/);
   });
 
   it("braucht kein JavaScript im Browser", () => {
