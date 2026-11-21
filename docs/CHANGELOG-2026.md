@@ -11,6 +11,14 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-21: Pulsringe in "So geht's" per CSS, React-Fehler #418 auf der Startseite behoben (Branch `perf/schritt-ringe-v3`, ersetzt #349 und #350)
+
+- **Ziel:** Kasum nach `perf/ladezeit`: die drei pulsierenden Ringe um die Knoten in "So geht's" ebenfalls auf CSS umstellen. Sie waren die letzte Endlos-Bewegung der Startseite in framer-motion und wurden nur ohne reduzierte Bewegung gerendert (`{!reduceMotion && …}`): der Server kennt die Einstellung nicht, also lieferte er die Ringe aus, und ein Browser mit reduzierter Bewegung renderte sie nicht. Das war der React-Fehler #418, der auf `/` nach `perf/ladezeit` noch übrig war.
+- **Geändert:** `features/marketing/components/how-it-works.tsx` rendert den Ring immer als `<span class="finn-pulse">` mit der Verzögerung inline (`PULSE_STAGGER_S` = 0,45 s je Schritt); `.finn-pulse` in `app/globals.css`: 2,8 s, `ease-out`, Grösse 1 auf 1,6, Deckkraft 0,55 auf 0, unter reduced-motion `display: none`. Das CSS liegt weiter in einer Datei: 100 010 Bytes auf dem Stand von `perf/ladezeit`, 100 745 Bytes nach dem Rebase auf die Versionen (Paket 2). Die Grenze liegt damit zwischen 100 745 und 102 379 Bytes, es bleiben rund 1,6 KB; der CI-Schritt `check-css-chunks.mjs` schlägt an, sobald sie überschritten ist.
+- **Geprüft:** headless mit reduzierter Bewegung auf `/`, `/terminal`, `/open-source`, `/mcp`, `/skill`: im Build von `main` #418 auf `/`, mit der Änderung auf keiner Seite ein Fehler. Die Ringe abgetastet: in beiden Builds Grösse 1 bis 1,6, Deckkraft 0 bis 0,55, Periode rund 2,8 s, Versatz rund 450 ms.
+- **Gemessen** (Lighthouse 13.6 mobil, sechs Läufe je Build im Wechsel gegen `main`, Median): Score 89 auf 92, TBT 456 auf 347 ms, Hauptthread 3,84 auf 3,37 s (in allen sechs Paaren niedriger), FCP und LCP 956 gegen 959 ms, Speed Index 1,41 gegen 1,55 s (Spannen überlappen). CPU-Profil (zehn Paare, 10 s, 4x CPU): JavaScript-Zeit in acht von zehn Paaren niedriger (Median 1,95 auf 1,75 s), der Leerlauf insgesamt nicht von der Streuung zu trennen. Der Gewinn ist klein; der Grund für die Änderung ist vor allem #418.
+- **Tests und Mutationen:** `how-it-works.test.tsx` (drei Ringe mit 0, 0,45 und 0,9 s; gleiches HTML mit und ohne reduzierte Bewegung, über ein geschaltetes `useReducedMotion`; Werte und reduced-motion in `globals.css`). `floaters.test.tsx` liest die gemeinsame Regel `.finn-floaters, .finn-pulse`. Sieben Mutationen, alle erkannt: Klasse nur ohne reduzierte Bewegung, Versatz 0,5, Dauer 3 s, Grösse 1,5, `.finn-pulse` und `.finn-floaters` unter reduced-motion umbenannt (zweimal); eine erste, zu lockere Fassung des Floaters-Tests liess `.finn-floatersX` durch und ist ersetzt.
+
 ## 2026-11-21: Anmelden, Registrieren und zweiter Faktor mit Formular im HTML (Branch `perf/auth-ssr`)
 
 - **Ziel:** der offene Punkt aus dem Eintrag "Ladezeit, Finn und die Teilchen per CSS" vom selben Tag: `/login`, `/signup` und `/login/zweiter-faktor` sollen ihr Formular schon im statischen HTML ausliefern. Sie bleiben statisch vom CDN (`X-Nextjs-Prerender: 1`); `searchParams` auf dem Server hätte sie dynamisch gemacht und jeden Besuch die Antwortzeit gekostet, deshalb nicht.
@@ -30,7 +38,20 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 - **Kasums Ja** in der Session, die 0062 gebaut hat ("Ja, anwenden"), nach dem Merge von #348. Angewendet mit dem Supabase-Werkzeug, Inhalt genau die Datei aus `main` (`e994513`); Migration `20261121125815 saved_prompts_ceiling_execute`.
 - **Vorher gelesen:** Stand `0061`, `enforce_saved_prompts_bytes_on_update()` ohne `execute` (md5 des Funktionstexts `23182ada…`, gleich dem Text aus 0058), ACL nur `postgres`, Trigger wie in 0058, 3 gespeicherte Prompts.
-- **Nachher lesend geprüft:** eine Funktion, md5 des Funktionstexts `d284a87f…`, gleich dem Text aus der Datei in `main`, mit `for account in execute $sql$`; `security invoker`, `search_path=""`, ACL unverändert, `anon` und `authenticated` ohne EXECUTE; Trigger-Definition unverändert, aktiv und auf dieselbe Funktion; 3 Prompts, 3 Versionen. Advisors gleich wie vorher: Sicherheit 2 Hinweise (`billing_events` ohne Policy, Schutz vor geleakten Passwörtern aus), Performance 2 Fremdschlüssel ohne Index und 15 ungenutzte Indizes.
+- **Nachher lesend geprüft:** eine Funktion, md5 des Funktionstexts `d284a87f…`, gleich dem Text aus der Datei in `main`, mit `for account in execute $sql# Changelog 2026, Verlauf der Entscheidungen und Umbauten
+
+Aus `CLAUDE.md` hierher verschoben (2026-10-06, Betriebs-Audit M7), **unverändert**:
+jeder Block beschreibt den Stand zum Zeitpunkt seines Datums, nicht den heutigen.
+Was heute gilt, steht in [CLAUDE.md](../CLAUDE.md), Abschnitt "IST-Zustand".
+Ein Block darf also etwas als offen oder noch nicht angewendet bezeichnen, das später
+erledigt wurde (z. B. die Migrationen 0043 und 0046, am 2026-10-05 angewendet).
+Neue Einträge kommen **oben** unter diesen Kopf, jeder mit Datum im Titel. Einzige Änderung
+gegenüber dem Original: die Pfade der Links sind relativ zu `docs/`, und ein Link auf eine
+verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server/llm/index.ts`).
+
+---
+
+; `security invoker`, `search_path=""`, ACL unverändert, `anon` und `authenticated` ohne EXECUTE; Trigger-Definition unverändert, aktiv und auf dieselbe Funktion; 3 Prompts, 3 Versionen. Advisors gleich wie vorher: Sicherheit 2 Hinweise (`billing_events` ohne Policy, Schutz vor geleakten Passwörtern aus), Performance 2 Fremdschlüssel ohne Index und 15 ungenutzte Indizes.
 - **Nicht geprüft:** ein Update auf Produktion (keine Testdaten, nur lesend), die Zeiten dort.
 - **Doku:** `CLAUDE.md` nennt 0001 bis 0062 als angewendet.
 
