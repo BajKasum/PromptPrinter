@@ -2,16 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SignUpExperience } from "./sign-up-experience";
+import { fillBeforeHydration, renderStaticPage, serverHtml } from "@tests/support/static-page";
 import { PASSWORD_RULE_HINT } from "@/shared/lib/password";
 
 const push = vi.fn();
 const refresh = vi.fn();
 const postAuthAction = vi.fn();
-let searchParams = new URLSearchParams();
+const visit = (url: string) => window.history.replaceState(null, "", url);
 
+// Ohne `useSearchParams`: die Seite liest die Adresse selbst (lib/location-search.ts). Liest die Komponente es doch
+// wieder, scheitert hier jeder Test, weil die Attrappe es nicht anbietet.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, refresh }),
-  useSearchParams: () => searchParams,
 }));
 
 const getUser = vi.fn();
@@ -86,7 +88,7 @@ async function fillAndSubmit(email: string, password: string, acceptTerms = true
 
 describe("SignUpExperience", () => {
   beforeEach(() => {
-    searchParams = new URLSearchParams();
+    visit("/signup");
     push.mockReset();
     refresh.mockReset();
     postAuthAction.mockReset();
@@ -216,7 +218,7 @@ describe("SignUpExperience", () => {
   });
 
   it("never redirects to an attacker-supplied next target", async () => {
-    searchParams = new URLSearchParams({ next: "https://evil.example/phish" });
+    visit("/signup?" + new URLSearchParams({ next: "https://evil.example/phish" }));
     render(<SignUpExperience />);
     await fillAndSubmit("user@example.com", "Fensterbank-77x");
     await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
@@ -224,7 +226,7 @@ describe("SignUpExperience", () => {
   });
 
   it("never redirects to a protocol-relative next target", async () => {
-    searchParams = new URLSearchParams({ next: "//evil.example" });
+    visit("/signup?" + new URLSearchParams({ next: "//evil.example" }));
     render(<SignUpExperience />);
     await fillAndSubmit("user@example.com", "Fensterbank-77x");
     await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
@@ -239,7 +241,7 @@ describe("SignUpExperience", () => {
       getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
       profileSelect.mockResolvedValue({ data: { settings: { onboarding_done: true } } });
       profileUpdate.mockResolvedValue({ error: null });
-      searchParams = new URLSearchParams("plan=pro");
+      visit("/signup?plan=pro");
     });
 
     it("zeigt keinen Pro-Hinweis", () => {
@@ -254,6 +256,58 @@ describe("SignUpExperience", () => {
       await screen.findByRole("status");
       expect(profileUpdate).not.toHaveBeenCalled();
       expect(getUser).not.toHaveBeenCalled();
+    });
+  });
+
+  it("führt mit Sitzung zu next aus der Adresse", async () => {
+    visit("/signup?next=/projects/42");
+    render(<SignUpExperience />);
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
+    await userEvent.setup().click(await screen.findByRole("button", { name: "weiter" }));
+    expect(push).toHaveBeenCalledWith("/projects/42");
+  });
+
+  it("schickt next aus der Adresse mit, damit der Bestätigungslink dorthin führt", async () => {
+    postAuthAction.mockResolvedValue({ ok: true, session: false });
+    visit("/signup?next=/projects/42");
+    render(<SignUpExperience />);
+    await fillAndSubmit("user@example.com", "Fensterbank-77x");
+    await screen.findByText("Email unterwegs");
+    expect(postAuthAction).toHaveBeenCalledWith(expect.objectContaining({ action: "sign-up", next: "/projects/42" }), null);
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /Email erneut senden/ }));
+    expect(postAuthAction).toHaveBeenLastCalledWith(expect.objectContaining({ action: "resend", next: "/projects/42" }), null);
+  });
+
+  // /signup ist statisch vorgerendert (lib/location-search.ts): das Formular steht im HTML, und was bis zum Hydrieren
+  // eingetragen wurde, übernimmt die Seite danach (lib/prefilled-input.ts).
+  describe("statisch vorgerendert", () => {
+    it("liefert das Formular im Server-HTML, ohne die Adresse zu kennen", () => {
+      const html = serverHtml(<SignUpExperience />, "/signup");
+      expect(html).toContain("Konto erstellen");
+      expect(html).toContain('id="signup-email"');
+      expect(html).toContain('id="signup-password"');
+      expect(html).toContain('type="checkbox"');
+    });
+
+    it("übernimmt Adresse, Passwort und Häkchen von vor dem Hydrieren", async () => {
+      const { hydrationErrors } = await renderStaticPage(<SignUpExperience />, {
+        url: "/signup?next=/projects/42",
+        beforeHydration: (container) => {
+          fillBeforeHydration(container, "#signup-email", "user@example.com");
+          fillBeforeHydration(container, "#signup-password", "Fensterbank-77x");
+          container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.checked = true;
+        },
+      });
+      expect(hydrationErrors).toEqual([]);
+      fireEvent.submit(screen.getByPlaceholderText("du@example.com").closest("form")!);
+
+      expect(postAuthAction).toHaveBeenCalledWith(
+        { action: "sign-up", email: "user@example.com", password: "Fensterbank-77x", next: "/projects/42" },
+        null
+      );
+      await screen.findByRole("status");
+      expect(screen.getByRole("checkbox")).toBeChecked();
     });
   });
 });

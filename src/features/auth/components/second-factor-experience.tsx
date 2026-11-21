@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { createClient } from "@/shared/supabase/client";
 import { Input } from "@/shared/ui/input";
-import { safeNextPath } from "@/shared/lib/site-url";
+import { nextPathFromLocation } from "@/features/auth/lib/location-search";
+import { adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
+
+/** Ein Code aus der App hat sechs Ziffern; alles andere fällt beim Tippen weg. */
+function codeDigits(value: string): string {
+  return value.replace(/\D/g, "").slice(0, 6);
+}
 
 /**
  * Der zweite Schritt der Anmeldung (/login/zweiter-faktor): der Code aus der Authenticator-App, oder ohne Gerät ein
@@ -16,20 +22,25 @@ import { safeNextPath } from "@/shared/lib/site-url";
  */
 export function SecondFactorExperience() {
   const router = useRouter();
-  const search = useSearchParams();
-  const next = safeNextPath(search.get("next"));
 
   const [mode, setMode] = useState<"code" | "recovery">("code");
   const [code, setCode] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+
+  // Einmal nach dem Hydrieren: ein schon eingetippter Code kommt in den State (lib/prefilled-input.ts).
+  useEffect(() => {
+    adoptPrefilledValue(codeRef.current, (value) => setCode(codeDigits(value)));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     async function check() {
       const res = await fetch("/api/auth/mfa").catch(() => null);
       if (cancelled || !res) return;
+      const next = nextPathFromLocation();
       if (res.status === 401) {
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- gewollt: ganzer Neuaufbau, es gibt keine Sitzung
         window.location.href = `/login?next=${encodeURIComponent(next)}`;
@@ -42,7 +53,7 @@ export function SecondFactorExperience() {
     return () => {
       cancelled = true;
     };
-  }, [next, router]);
+  }, [router]);
 
   async function send(payload: Record<string, string>) {
     setLoading(true);
@@ -54,7 +65,7 @@ export function SecondFactorExperience() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        router.replace(next);
+        router.replace(nextPathFromLocation());
         router.refresh();
         return;
       }
@@ -108,9 +119,10 @@ export function SecondFactorExperience() {
               Code aus der App
             </label>
             <Input
+              ref={codeRef}
               id="mfa-code"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => setCode(codeDigits(e.target.value))}
               inputMode="numeric"
               autoComplete="one-time-code"
               autoFocus

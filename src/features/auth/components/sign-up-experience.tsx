@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import * as z from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
-import { safeNextPath } from "@/shared/lib/site-url";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
@@ -13,6 +12,8 @@ import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widge
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
+import { nextPathFromLocation } from "@/features/auth/lib/location-search";
+import { adoptPrefilledCheck, adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
 import {
   MIN_PASSWORD_LENGTH,
   PASSWORD_RULE_HINT,
@@ -34,8 +35,6 @@ const schema = z.object({
  */
 export function SignUpExperience() {
   const router = useRouter();
-  const search = useSearchParams();
-  const next = safeNextPath(search.get("next"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +44,16 @@ export function SignUpExperience() {
   const [info, setInfo] = useState<string | null>(null);
   const [signupSent, setSignupSent] = useState(false);
   const [celebrateMsg, setCelebrateMsg] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const termsRef = useRef<HTMLInputElement>(null);
+
+  // Einmal nach dem Hydrieren: was schon in den Feldern stand, kommt in den State (lib/prefilled-input.ts).
+  useEffect(() => {
+    adoptPrefilledValue(emailRef.current, setEmail);
+    adoptPrefilledValue(passwordRef.current, setPassword);
+    adoptPrefilledCheck(termsRef.current, setTermsAccepted);
+  }, []);
 
   // Turnstile tokens are single-use, bump the nonce after any failed auth
   // call so the widget issues a fresh one for the retry.
@@ -87,7 +96,7 @@ export function SignUpExperience() {
       // Server-side (see lib/auth-client.ts): the Turnstile token is redeemed
       // in the same request that creates the account, so it cannot be skipped
       // from here.
-      const result = await postAuthAction({ action: "sign-up", email, password, next }, captchaToken);
+      const result = await postAuthAction({ action: "sign-up", email, password, next: nextPathFromLocation() }, captchaToken);
       if (!result.ok) {
         setError(result.message);
         // Tokens are single-use and one was just spent, successfully or not —
@@ -116,7 +125,7 @@ export function SignUpExperience() {
     }
     setLoading(true);
     try {
-      const result = await postAuthAction({ action: "resend", email, next }, captchaToken);
+      const result = await postAuthAction({ action: "resend", email, next: nextPathFromLocation() }, captchaToken);
       if (!result.ok) setError(result.message);
       else setInfo("Bestätigungs-Email wurde erneut gesendet.");
       refreshCaptcha();
@@ -194,7 +203,7 @@ export function SignUpExperience() {
             message={celebrateMsg}
             description="Schön, dass du da bist."
             onDone={() => {
-              router.push(next);
+              router.push(nextPathFromLocation());
               router.refresh();
             }}
           />
@@ -211,7 +220,7 @@ export function SignUpExperience() {
         </p>
       </div>
 
-      <OAuthButtons next={next} />
+      <OAuthButtons />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
@@ -219,6 +228,7 @@ export function SignUpExperience() {
             Email
           </label>
           <Input
+            ref={emailRef}
             id="signup-email"
             type="email"
             placeholder="du@example.com"
@@ -237,6 +247,7 @@ export function SignUpExperience() {
             Passwort
           </label>
           <PasswordInput
+            ref={passwordRef}
             id="signup-password"
             placeholder={`Passwort (mind. ${MIN_PASSWORD_LENGTH} Zeichen)`}
             value={password}
@@ -249,6 +260,7 @@ export function SignUpExperience() {
 
         <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-relaxed text-foreground/70">
           <input
+            ref={termsRef}
             type="checkbox"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
