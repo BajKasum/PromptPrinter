@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, History } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
@@ -45,9 +45,13 @@ export function PromptHistory({
   const [from, setFrom] = useState<number | null>(null);
   const [to, setTo] = useState<number | null>(null);
   const [restoring, setRestoring] = useState(false);
+  // Nur die zuletzt gestartete Abfrage zählt: ein Nachladen von vor dem Wiederherstellen kommt sonst später an und
+  // zeigte den alten Stand.
+  const latestRequest = useRef(0);
 
   const load = useCallback(
     async (offset: number) => {
+      const request = ++latestRequest.current;
       const { data, error, count: total } = await createClient()
         .from("saved_prompt_versions")
         .select("version, content, created_at", { count: "exact" })
@@ -55,6 +59,7 @@ export function PromptHistory({
         .eq("user_id", userId)
         .order("version", { ascending: false })
         .range(offset, offset + VERSIONS_PAGE - 1);
+      if (request !== latestRequest.current) return null;
       if (error) {
         setFailed(true);
         return null;
