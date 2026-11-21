@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UpdatePasswordExperience } from "./update-password-experience";
+import { fillBeforeHydration, renderStaticPage } from "@tests/support/static-page";
 import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from "@/shared/lib/password";
 
 const push = vi.fn();
@@ -115,5 +116,39 @@ describe("UpdatePasswordExperience", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "weiter" }));
     expect(push).toHaveBeenCalledWith("/chats/new");
     expect(refresh).toHaveBeenCalled();
+  });
+
+  // Die Seite rendert das Formular auf dem Server, React hydriert danach: was bis dahin in beiden Feldern stand
+  // (getippt oder vom Passwort-Manager vorgeschlagen), übernimmt sie (lib/prefilled-input.ts).
+  it("übernimmt beide Passwörter von vor dem Hydrieren", async () => {
+    updateUser.mockResolvedValue({ error: null });
+    const { hydrationErrors } = await renderStaticPage(<UpdatePasswordExperience email="user@example.com" />, {
+      url: "/reset-password/update",
+      beforeHydration: (container) => {
+        fillBeforeHydration(container, "#new-password", "Fensterbank-77x");
+        fillBeforeHydration(container, "#confirm-password", "Fensterbank-77x");
+      },
+    });
+    expect(hydrationErrors).toEqual([]);
+    fireEvent.submit(screen.getByPlaceholderText("Passwort wiederholen").closest("form")!);
+
+    expect(updateUser).toHaveBeenCalledWith({ password: "Fensterbank-77x" });
+    expect(await screen.findByRole("status")).toHaveTextContent("Passwort aktualisiert");
+  });
+
+  it("übernimmt jedes Feld in seinen eigenen State", async () => {
+    await renderStaticPage(<UpdatePasswordExperience email="user@example.com" />, {
+      url: "/reset-password/update",
+      beforeHydration: (container) => {
+        fillBeforeHydration(container, "#new-password", "Fensterbank-77x");
+        fillBeforeHydration(container, "#confirm-password", "Fensterbank-78x");
+      },
+    });
+    fireEvent.submit(screen.getByPlaceholderText("Passwort wiederholen").closest("form")!);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("stimmen nicht überein");
+    expect(updateUser).not.toHaveBeenCalled();
+    expect(screen.getByPlaceholderText(`Neues Passwort (mind. ${MIN_PASSWORD_LENGTH} Zeichen)`)).toHaveValue("Fensterbank-77x");
+    expect(screen.getByPlaceholderText("Passwort wiederholen")).toHaveValue("Fensterbank-78x");
   });
 });
