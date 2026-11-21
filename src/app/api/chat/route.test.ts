@@ -39,6 +39,8 @@ const insertCalls: Record<string, unknown[]> = {};
 // wieder zurueck, und ohne diesen Zaehler wuerde ein fehlendes delete im
 // Stub stillschweigend durch rollbackTurns try/catch fallen.
 const deleteCalls: Record<string, number> = {};
+// Die eq-Filter je Tabelle: die canned results kennen keine Filter, also hält dies fest, wonach gefragt wurde.
+const eqCalls: Record<string, [string, unknown][]> = {};
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null, count: 0 };
@@ -47,9 +49,13 @@ function builder(table: string) {
     single: vi.fn(async () => result()),
     then: (resolve: (v: unknown) => unknown) => resolve(result()),
   };
-  for (const method of ["select", "eq", "gte", "is", "order", "limit", "update"]) {
+  for (const method of ["select", "gte", "is", "order", "limit", "update"]) {
     chain[method] = vi.fn(() => chain);
   }
+  chain.eq = vi.fn((column: string, value: unknown) => {
+    (eqCalls[table] ??= []).push([column, value]);
+    return chain;
+  });
   chain.insert = vi.fn((row: unknown) => {
     (insertCalls[table] ??= []).push(row);
     return chain;
@@ -129,6 +135,7 @@ describe("POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     for (const table of Object.keys(insertCalls)) delete insertCalls[table];
+    for (const table of Object.keys(eqCalls)) delete eqCalls[table];
     for (const table of Object.keys(deleteCalls)) delete deleteCalls[table];
     createClient.mockResolvedValue(supabaseStub);
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
@@ -874,6 +881,8 @@ describe("POST /api/chat", () => {
       tableResults.saved_prompts = { data: { id: PROMPT_ID }, error: null };
       await readSse(await POST(req({ fromPromptId: PROMPT_ID, messages: [{ role: "user", content: "Hi" }] })));
       expect(insertCalls.conversations?.[0]).toMatchObject({ source_prompt_id: PROMPT_ID });
+      // Gelesen nur als eigener Prompt: RLS plus user_id.
+      expect(eqCalls.saved_prompts).toEqual(expect.arrayContaining([["id", PROMPT_ID], ["user_id", "user-1"]]));
     });
 
     it("lehnt eine ID ab, die keine UUID ist", async () => {
