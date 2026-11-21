@@ -113,12 +113,13 @@ export const EXPORT_SECTIONS: readonly Section[] = [
   {
     key: "conversations",
     table: "conversations",
-    columns: "id, title, project_id, created_at, updated_at",
+    columns: "id, title, project_id, source_prompt_id, created_at, updated_at",
     orderBy: ["created_at", "id"],
     map: (r) => ({
       id: r.id,
       title: r.title,
       projectId: r.project_id,
+      sourcePromptId: r.source_prompt_id,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }),
@@ -157,12 +158,26 @@ export const EXPORT_SECTIONS: readonly Section[] = [
   {
     key: "savedPrompts",
     table: "saved_prompts",
-    columns: "id, project_id, outputs, created_at",
+    columns: "id, project_id, conversation_id, outputs, created_at",
     orderBy: ["created_at", "id"],
     map: (r) => ({
       id: r.id,
       projectId: r.project_id,
+      conversationId: r.conversation_id,
       outputs: r.outputs,
+      createdAt: r.created_at,
+    }),
+  },
+  {
+    // Der Verlauf jedes gespeicherten Prompts (Migration 0061), je Version der ganze Text.
+    key: "savedPromptVersions",
+    table: "saved_prompt_versions",
+    columns: "prompt_id, version, content, created_at",
+    orderBy: ["prompt_id", "version"],
+    map: (r) => ({
+      promptId: r.prompt_id,
+      version: r.version,
+      content: r.content,
       createdAt: r.created_at,
     }),
   },

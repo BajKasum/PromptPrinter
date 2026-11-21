@@ -92,7 +92,7 @@ describe("accountExportStream", () => {
   });
 
   it("nimmt die Zeilen des Nutzers auf und ordnet sie den Abschnitten zu", async () => {
-    const { client } = fakeClient({
+    const { client, queries } = fakeClient({
       projects: [
         { id: "p1", user_id: USER, name: "Mein Projekt", is_favorite: true, created_at: "2026-01-01" },
       ],
@@ -102,14 +102,25 @@ describe("accountExportStream", () => {
         { id: "m2", user_id: USER, conversation_id: "c1", role: "assistant", content: "Hi", created_at: "t2" },
       ],
       saved_prompts: [{ id: "g1", user_id: USER, project_id: "p1", outputs: { prompt: "x", title: "T" } }],
+      saved_prompt_versions: [
+        { prompt_id: "g1", user_id: USER, version: 1, content: "erste Fassung", created_at: "t3" },
+        { prompt_id: "g1", user_id: USER, version: 2, content: "x", created_at: "t4" },
+        { prompt_id: "g9", user_id: OTHER, version: 1, content: "FREMDE-FASSUNG", created_at: "t3" },
+      ],
     });
     const json = JSON.parse(await readAll(accountExportStream(options(client))));
+    expect(queries.find((q) => q.table === "saved_prompt_versions")?.orders).toEqual(["prompt_id", "version"]);
 
     expect(json.projects).toEqual([expect.objectContaining({ id: "p1", name: "Mein Projekt", isFavorite: true })]);
     expect(json.conversations).toEqual([expect.objectContaining({ id: "c1", projectId: "p1" })]);
     expect(json.messages.map((m: Row) => m.content)).toEqual(["Hallo", "Hi"]);
     expect(json.messages[0]).toMatchObject({ conversationId: "c1", role: "user" });
     expect(json.savedPrompts[0].outputs).toEqual({ prompt: "x", title: "T" });
+    // Der Verlauf jedes Prompts, nach Prompt und Nummer geordnet, ohne Fremdes.
+    expect(json.savedPromptVersions).toEqual([
+      { promptId: "g1", version: 1, content: "erste Fassung", createdAt: "t3" },
+      { promptId: "g1", version: 2, content: "x", createdAt: "t4" },
+    ]);
   });
 
   it("enthält NIE Zeilen eines anderen Nutzers", async () => {
