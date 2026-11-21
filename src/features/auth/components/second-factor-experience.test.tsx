@@ -4,11 +4,11 @@ import userEvent from "@testing-library/user-event";
 
 const replace = vi.fn();
 const refresh = vi.fn();
-let nextParam: string | null = "/settings";
 const router = { replace, refresh };
+const visit = (url: string) => window.history.replaceState(null, "", url);
+// Ohne `useSearchParams`: die Seite liest die Adresse selbst (lib/location-search.ts).
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  useSearchParams: () => ({ get: () => nextParam }),
 }));
 vi.mock("@/features/auth/components/auth-experience-shell", () => ({
   AuthExperienceShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -17,6 +17,7 @@ const signOut = vi.fn();
 vi.mock("@/shared/supabase/client", () => ({ createClient: () => ({ auth: { signOut } }) }));
 
 import { SecondFactorExperience } from "./second-factor-experience";
+import { fillBeforeHydration, renderStaticPage, serverHtml } from "@tests/support/static-page";
 
 const fetchMock = vi.fn();
 
@@ -28,7 +29,7 @@ const needsCode = reply(200, { enabled: true, needsVerification: true, recoveryC
 
 beforeEach(() => {
   vi.clearAllMocks();
-  nextParam = "/settings";
+  visit("/login/zweiter-faktor?next=/settings");
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => (init ? reply(200, { ok: true }) : needsCode));
 });
@@ -93,7 +94,7 @@ describe("SecondFactorExperience", () => {
   });
 
   it("folgt keiner fremden Adresse", async () => {
-    nextParam = "https://evil.example/";
+    visit("/login/zweiter-faktor?next=" + encodeURIComponent("https://evil.example/"));
     fetchMock.mockResolvedValue(reply(200, { enabled: false, needsVerification: false, recoveryCodesLeft: null }));
     render(<SecondFactorExperience />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/chats/new"));
@@ -105,5 +106,28 @@ describe("SecondFactorExperience", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Code aus der App")).toBeInTheDocument();
+  });
+
+  // /login/zweiter-faktor ist statisch vorgerendert (lib/location-search.ts): das Formular steht im HTML, und ein vor
+  // dem Hydrieren eingetippter Code kommt danach in den State (lib/prefilled-input.ts).
+  describe("statisch vorgerendert", () => {
+    it("liefert das Formular im Server-HTML, ohne die Adresse zu kennen", () => {
+      const html = serverHtml(<SecondFactorExperience />, "/login/zweiter-faktor");
+      expect(html).toContain("Noch ein Schritt");
+      expect(html).toContain('id="mfa-code"');
+    });
+
+    it("übernimmt einen vor dem Hydrieren eingetippten Code, nur seine Ziffern", async () => {
+      const { hydrationErrors } = await renderStaticPage(<SecondFactorExperience />, {
+        url: "/login/zweiter-faktor?next=/settings",
+        beforeHydration: (container) => fillBeforeHydration(container, "#mfa-code", "123 456"),
+      });
+      expect(hydrationErrors).toEqual([]);
+      expect(screen.getByLabelText("Code aus der App")).toHaveValue("123456");
+
+      await userEvent.setup().click(screen.getByRole("button", { name: "Bestätigen" }));
+      await waitFor(() => expect(replace).toHaveBeenCalledWith("/settings"));
+      expect(lastBody()).toEqual({ action: "verify", code: "123456" });
+    });
   });
 });

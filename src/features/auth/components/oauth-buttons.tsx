@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { siteUrl } from "@/shared/lib/site-url";
 import { translateAuthError } from "@/shared/lib/auth-errors";
+import { nextPathFromLocation } from "@/features/auth/lib/location-search";
 
 type Provider = "google" | "github";
 
@@ -46,13 +47,12 @@ const BUTTON_ROW =
   "flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-surface-raised text-[14px] font-medium text-foreground transition-colors hover:bg-surface-hover disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50";
 
 /**
- * "Weiter mit Google / GitHub", Supabase OAuth (PKCE). The provider redirect
- * lands on the existing /auth/callback, which exchanges the code and forwards
- * to `next`. Requires the providers to be enabled in the Supabase dashboard
- * (Authentication → Providers), until then Supabase returns a clear
- * "provider is not enabled" error, surfaced right here.
+ * "Weiter mit Google / GitHub", Supabase OAuth (PKCE). Der Anbieter leitet auf /auth/callback zurück, das den Code
+ * einlöst und auf `?next=` der Seite weiterleitet; das Ziel wird erst beim Klick gelesen (lib/location-search.ts),
+ * weil die Seite statisch gerendert ist. Die Anbieter müssen im Supabase-Dashboard eingeschaltet sein
+ * (Authentication → Providers), sonst meldet Supabase "provider is not enabled", und das steht dann hier.
  */
-export function OAuthButtons({ next }: { next: string }) {
+export function OAuthButtons() {
   const [pending, setPending] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +64,7 @@ export function OAuthButtons({ next }: { next: string }) {
       const supabase = createClient();
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(next)}`) },
+        options: { redirectTo: siteUrl(`/auth/callback?next=${encodeURIComponent(nextPathFromLocation())}`) },
       });
       if (oauthError) {
         setError(translateAuthError(oauthError.message));

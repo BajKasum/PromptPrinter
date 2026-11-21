@@ -86,11 +86,11 @@ export function AuthExperienceShell({
             and screen-reader users could not jump to the form (axe
             landmark-one-main, Rechts-Audit 28.09.2026). */}
         <main className="flex flex-1 items-center justify-center px-6 py-8 md:px-12 lg:py-16">
-          {/* Rise (reines CSS, nur transform) statt eines framer-motion-Einstiegs mit opacity 0: wo der Server die Seite
-              rendert (Passwort zurücksetzen), ist das Formular ab dem ersten Bild sichtbar statt erst nach dem
-              Hydrieren, und auf dem Handy ist ein Absatz des Formulars das grösste Element. Anmelden, Registrieren und
-              der zweite Faktor lesen useSearchParams in einem Suspense ohne Fallback und rendern erst im Browser; dort
-              entfällt nur das Einblenden aus opacity 0. Dauer 0,4 s, Versatz 16 px und Easing wie der Seiteneinstieg. */}
+          {/* Rise (reines CSS, nur transform) statt eines framer-motion-Einstiegs mit opacity 0: jede Seite mit dieser
+              Hülle kommt mit fertigem Formular vom Server (Anmelden, Registrieren und der zweite Faktor lesen die
+              Adresse erst im Browser, features/auth/lib/location-search.ts), das Formular ist also ab dem ersten Bild
+              sichtbar statt erst nach dem Hydrieren, und auf dem Handy ist ein Absatz des Formulars das grösste
+              Element. Dauer 0,4 s, Versatz 16 px und Easing wie der Seiteneinstieg. */}
           <Rise
             style={{ animationDuration: "0.4s" }}
             // `lg:pt-6`: unter Tailwind 3 bekam das Formular auch am Desktop 24 px Abstand nach oben, weil `space-y-6` den
