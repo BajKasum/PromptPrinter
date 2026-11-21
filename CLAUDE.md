@@ -61,10 +61,10 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   `supabase/templates/`. **Zweiter Faktor:** optional, TOTP über Supabase MFA; mit Faktor verlangen Konto löschen, Keys verwalten und Terminal freigeben AAL2, RLS nicht (`docs/SETUP.md`, "Zweiter Faktor").
 - **Daten:** Supabase (Irland, `eu-west-1`), RLS auf allen Tabellen, `anon` ohne
   Rechte. Gedächtnis, Anhänge und die eigenen API-Keys schreibt nur der Server (Service-Role, Keys seit 0060). Die Projekt-Grenze und die Obergrenzen je Konto stehen in der Datenbank, weil der Browser direkt schreibt (`docs/SETUP.md`, "Grenzen je Konto"; Zahlen auch in `plans.ts`, `account-ceilings.test.ts`).
-  Migrationen 0001 bis 0061 in `supabase/migrations/`, alle in Produktion angewendet (0061 am 2026-11-21 nach Kasums Ja,
-  vor dem Code, der sie liest; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank). Offen: der Byte-Trigger
-  aus 0058 behält seinen Plan je Verbindung und braucht nach einem Update über eine Zeile für eines über Tausende Sekunden
-  (Changelog 2026-11-21); die Korrektur per `EXECUTE` wie in 0061 braucht eine Migration und Kasums Ja.
+  Migrationen 0001 bis 0062 in `supabase/migrations/`; 0001 bis 0061 in Produktion angewendet (0061 am 2026-11-21 nach Kasums Ja,
+  vor dem Code, der sie liest; 0001 von Hand eingespielt, fehlt in der Migrationsliste der Datenbank). **0062 ist noch nicht
+  in Produktion** (nur mit Kasums Ja): bis dahin behält der Byte-Trigger aus 0058 seinen Plan je Verbindung (Changelog 2026-11-21).
+  Ein Join über Transition-Tabellen läuft nur per `EXECUTE`, wie in 0061 und 0062 (`migrations.test.ts`).
 - **Betrieb:** Vercel (Funktionen in `dub1`, Node 24), Upstash Redis (Ratenlimit,
   Gratis-Rahmen, Tagesbudget, Failover-Schalter), strukturierte Logs
   (`src/server/observability`), `/api/health`. Der Alarm-Webhook ist gebaut, bewusst

@@ -73,6 +73,46 @@ function withoutComments(sql: string): string {
     .join("\n");
 }
 
+/** Je Funktion die letzte Fassung über alle Migrationen: der Endzustand, den die Datenbank hat. */
+function latestFunctions(): Map<string, { file: string; body: string }> {
+  const latest = new Map<string, { file: string; body: string }>();
+  for (const file of migrationFiles()) {
+    const sql = withoutComments(read(file));
+    for (const m of sql.matchAll(/create (?:or replace )?function\s+([\w.]+)\s*\([^)]*\)[\s\S]*?\bas \$\$([\s\S]*?)\$\$/gi)) {
+      latest.set(m[1].toLowerCase(), { file, body: m[2] });
+    }
+  }
+  return latest;
+}
+
+/** Namen, unter denen Trigger ihre Transition-Tabellen zeigen (`referencing old table as …`). */
+function transitionTableNames(): string[] {
+  const names = new Set<string>();
+  for (const file of migrationFiles()) {
+    for (const m of withoutComments(read(file)).matchAll(/\b(?:old|new)\s+table\s+as\s+(\w+)/gi)) {
+      names.add(m[1].toLowerCase());
+    }
+  }
+  return [...names];
+}
+
+/**
+ * Abfragen einer plpgsql-Funktion, die Transition-Tabellen in einem Join lesen, ohne EXECUTE. Dynamisches SQL
+ * (`execute $tag$ … $tag$`, Zeichenketten) zählt nicht, es wird bei jedem Aufruf neu geplant. Eine Abfrage endet an
+ * `;` oder, als Kopf einer Schleife, an `loop`.
+ */
+function fixedTransitionJoins(body: string, names: string[]): string[] {
+  if (names.length === 0) return [];
+  const alt = names.join("|");
+  const fixed = body.replace(/\bexecute\s+(\$\w*\$)[\s\S]*?\1/gi, " ").replace(/'(?:[^']|'')*'/g, "''");
+  const reads = new RegExp(`\\b(?:from|join)\\s+(?:${alt})\\b`, "i");
+  const commaJoin = new RegExp(`\\bfrom\\s+(?:${alt})\\b(?:\\s+(?:as\\s+)?\\w+)?\\s*,`, "i");
+  return fixed
+    .split(/;|\bloop\b/i)
+    .filter((q) => reads.test(q) && (/\bjoin\b/i.test(q) || commaJoin.test(q)))
+    .map((q) => q.replace(/\s+/g, " ").trim());
+}
+
 describe("Migrations-Konventionen", () => {
   it("nummeriert luecken- und dublettenfrei ab 0001", () => {
     const numbers = migrationFiles().map((f) => Number(f.slice(0, 4)));
@@ -280,6 +320,54 @@ describe("Migrations-Konventionen", () => {
       )
     );
     expect(writable, "Diese Migrationen vergeben Schreibrechte am Verlauf:\n  " + writable.join("\n  ")).toEqual([]);
+  });
+
+  // plpgsql behält den Plan einer festen Abfrage je Verbindung, geplant beim ersten Aufruf mit den Zeilenzahlen der
+  // Transition-Tabellen dieses Aufrufs. War das ein Befehl über eine Zeile, verbindet derselbe Plan später Tausende
+  // Zeilen Zeile für Zeile (gemessen für 0062: ein Update über 5 000 Prompts um ein Vielfaches langsamer). Ein Join
+  // über Transition-Tabellen läuft deshalb per EXECUTE, das jeden Aufruf neu plant. Geprüft wird die letzte Fassung
+  // jeder Funktion, ältere Migrationen bleiben, wie sie liefen.
+  it("erkennt einen festen Join über Transition-Tabellen und lässt EXECUTE durch", () => {
+    const names = ["new_rows", "old_rows"];
+    const loopHead = "for a in select distinct n.user_id from new_rows n join old_rows o on o.id = n.id order by 1 loop";
+    expect(fixedTransitionJoins(`begin ${loopHead} perform 1; end loop; end;`, names)).toHaveLength(1);
+    expect(fixedTransitionJoins("insert into t select n.id from new_rows n, old_rows o where o.id = n.id;", names)).toHaveLength(1);
+    expect(fixedTransitionJoins("insert into t select n.id from public.x x join new_rows n on n.id = x.id;", names)).toHaveLength(1);
+    expect(fixedTransitionJoins("for a in execute $sql$ select n.user_id from new_rows n join old_rows o on o.id = n.id $sql$ loop", names)).toEqual([]);
+    expect(fixedTransitionJoins("for a in select distinct user_id from new_rows order by user_id loop", names)).toEqual([]);
+    expect(fixedTransitionJoins("select count(*) from public.saved_prompts s join public.projects p on p.id = s.project_id;", names)).toEqual([]);
+  });
+
+  // 0062 ändert an der Byte-Grenze beim Ändern nur, wie die Schleife ihre Konten findet. Sperre, Summe, Meldung,
+  // security invoker, search_path, Rechte und Trigger bleiben wie in 0058.
+  it("plant die Byte-Grenze beim Ändern per EXECUTE und ändert sonst nichts an 0058", () => {
+    const fn = (file: string): string => {
+      const sql = withoutComments(read(file));
+      const start = sql.indexOf("create or replace function public.enforce_saved_prompts_bytes_on_update()");
+      expect(start, file).toBeGreaterThan(-1);
+      return sql.slice(start, sql.indexOf("$$;", start) + 3).replace(/\s+/g, " ");
+    };
+    const before = fn("0058_saved_prompts_ceiling_on_update.sql");
+    const after = fn("0062_saved_prompts_ceiling_execute.sql");
+    expect(after).toMatch(/for account in execute \$sql\$ select distinct n\.user_id from new_rows n join old_rows o .* \$sql\$ loop/);
+    expect(after.replace(/execute \$sql\$ (.*?) \$sql\$ loop/, "$1 loop")).toBe(before);
+
+    const sql = withoutComments(read("0062_saved_prompts_ceiling_execute.sql"));
+    expect(sql).toMatch(/^revoke execute on function public\.enforce_saved_prompts_bytes_on_update\(\) from public, anon, authenticated;$/im);
+    expect(sql).not.toMatch(/\b(create|drop) trigger\b/i);
+  });
+
+  it("liest Transition-Tabellen in einem Join nur per EXECUTE", () => {
+    const names = transitionTableNames();
+    expect(names).toEqual(expect.arrayContaining(["new_rows", "old_rows"]));
+    const offenders = [...latestFunctions()].flatMap(([fn, { file, body }]) =>
+      fixedTransitionJoins(body, names).map((q) => `${fn} (${file}): ${q}`)
+    );
+    expect(
+      offenders,
+      "Feste Abfrage mit Join über Transition-Tabellen (per EXECUTE schreiben, siehe 0061 und 0062):\n  " +
+        offenders.join("\n  ")
+    ).toEqual([]);
   });
 
   it("fuehrt keine Ausnahme, die es nicht mehr braucht", () => {
