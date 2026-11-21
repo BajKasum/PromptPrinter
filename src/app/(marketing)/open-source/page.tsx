@@ -62,7 +62,9 @@ export default function OpenSourcePage() {
 
       <div className="container-x pb-24 md:pb-32">
         <div className="max-w-2xl divide-y divide-border">
-          <FadeIn>
+          {/* Rise statt FadeIn: auf dem Handy steht dieser Abschnitt im ersten Bild, und sein Absatz ist das
+              grösste Element der Seite. FadeIn liefert ihn mit opacity 0 aus, sichtbar erst nach dem Hydrieren. */}
+          <Rise>
             <section aria-labelledby="im-browser" className="py-12">
               <div className={PROSE}>
                 <h2 id="im-browser" className={H2}>
@@ -82,7 +84,7 @@ export default function OpenSourcePage() {
                 </Button>
               </div>
             </section>
-          </FadeIn>
+          </Rise>
 
           <FadeIn>
             <section aria-labelledby="selbst-betreiben" className={`py-12 ${PROSE}`}>
