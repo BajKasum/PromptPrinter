@@ -34,6 +34,15 @@ describe("Seite /open-source", () => {
     expect(container.textContent).not.toMatch(/€|\bPro\b|Abo/);
   });
 
+  it("zeigt den ersten Abschnitt ohne Einblenden per JavaScript, er ist mobil das grösste Element", () => {
+    render(<OpenSourcePage />);
+    const section = screen.getByRole("region", { name: "Im Browser, gleich hier" });
+    expect(section.closest(".enter-rise")).not.toBeNull();
+    for (let el: HTMLElement | null = section; el; el = el.parentElement) {
+      expect(el.style.opacity, "ein Vorfahr liefert opacity 0 aus").not.toBe("0");
+    }
+  });
+
   it("zeigt die drei Wege und die Lizenz, je mit ihrem Link", () => {
     render(<OpenSourcePage />);
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
