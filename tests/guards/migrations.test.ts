@@ -263,7 +263,10 @@ describe("Migrations-Konventionen", () => {
     expect(fn).toMatch(/^create or replace function public\.log_saved_prompt_versions\(\)\s+returns trigger\s+language plpgsql\s+security definer\s+set search_path = ''/i);
     expect(sql).toMatch(/revoke execute on function public\.log_saved_prompt_versions\(\) from public, anon, authenticated;/i);
     // Ein Update legt nur bei geaendertem Text eine Version an, Umbenennen nicht.
-    expect(fn).toMatch(/join old_rows o on o\.id = n\.id\s+where n\.outputs->>'prompt' is distinct from o\.outputs->>'prompt';/i);
+    expect(fn).toMatch(/join old_rows o on o\.id = n\.id\s+where n\.outputs->>'prompt' is distinct from o\.outputs->>'prompt'\s+\$sql\$;/i);
+    // Beide Einfuegungen per EXECUTE: ein je Verbindung behaltener Plan aus einem Aufruf mit einer Zeile machte ein
+    // Update ueber viele Prompts um ein Vielfaches langsamer (Kommentar in der Migration).
+    expect(fn.slice(0, fn.indexOf("end;\n$$;")).match(/execute \$sql\$\s+insert into public\.saved_prompt_versions/gi)).toHaveLength(2);
     expect(sql).toMatch(/create trigger saved_prompts_version_log_insert after insert on public\.saved_prompts\s+referencing new table as new_rows\s+for each statement execute function public\.log_saved_prompt_versions\(\);/i);
     expect(sql).toMatch(/create trigger saved_prompts_version_log_update after update on public\.saved_prompts\s+referencing old table as old_rows new table as new_rows\s+for each statement execute function public\.log_saved_prompt_versions\(\);/i);
     // Bestand als Version 1, und eine Version geht mit ihrem Prompt.

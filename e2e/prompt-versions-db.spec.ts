@@ -224,17 +224,25 @@ test.describe("Grenze je Konto", () => {
     const prompts = ACCOUNT_CEILINGS.savedPrompts.rows;
     expect(rows % prompts).toBe(0);
 
-    // Je Befehl eine Version für jeden Prompt: so viele Runden, bis die Grenze genau erreicht ist.
-    const seeded = await admin
-      .from("saved_prompts")
-      .insert(Array.from({ length: prompts }, () => ({ user_id: account.id, outputs: { prompt: "v1", title: "T" } })));
-    expect(seeded.error).toBeNull();
-    for (let round = 2; round <= rows / prompts; round += 1) {
+    // Je Befehl eine Version für jeden Prompt einer Gruppe, so viele Runden, bis die Grenze genau erreicht ist. Gruppen
+    // zu 1 000, weil der Byte-Trigger aus 0058 seinen Plan je Verbindung behält: nach einem Update über eine Zeile
+    // braucht ein Update über alle 5 000 Prompts Sekunden und reisst die Zeitgrenze der Data API.
+    const groups = Array.from({ length: prompts / 1000 }, (_, g) => `G${g}`);
+    for (const title of groups) {
       const { error } = await admin
         .from("saved_prompts")
-        .update({ outputs: { prompt: `v${round}`, title: "T" } })
-        .eq("user_id", account.id);
-      expect(error, `Runde ${round}`).toBeNull();
+        .insert(Array.from({ length: 1000 }, () => ({ user_id: account.id, outputs: { prompt: "v1", title } })));
+      expect(error, title).toBeNull();
+    }
+    for (let round = 2; round <= rows / prompts; round += 1) {
+      for (const title of groups) {
+        const { error } = await admin
+          .from("saved_prompts")
+          .update({ outputs: { prompt: `v${round}`, title } })
+          .eq("user_id", account.id)
+          .eq("outputs->>title", title);
+        expect(error, `Runde ${round}, ${title}`).toBeNull();
+      }
     }
     expect(await countVersions(account.id)).toBe(rows);
 
