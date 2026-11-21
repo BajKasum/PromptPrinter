@@ -808,7 +808,7 @@ Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nac
 
 ## Grenzen je Konto
 
-Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`, für das Ändern gespeicherter Prompts `*_saved_prompts_ceiling_on_update.sql`, für ihre Versionen `*_saved_prompt_versions.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
+Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`, für das Ändern gespeicherter Prompts `*_saved_prompts_ceiling_on_update.sql` mit der Funktion in der Fassung aus `*_saved_prompts_ceiling_execute.sql`, für ihre Versionen `*_saved_prompt_versions.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.
 
 | Was | Grenze je Konto | Gilt für |
 |---|---|---|
