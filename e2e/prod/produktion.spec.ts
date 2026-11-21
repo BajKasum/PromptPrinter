@@ -194,6 +194,21 @@ test.describe("Öffentliche Seiten im Produktionsaufbau", () => {
     });
   }
 
+  // Die Anmeldeseiten kommen statisch und mit fertigem Formular: es steht schon im HTML, auch mit Query, statt erst nach
+  // dem Hydrieren (features/auth/lib/location-search.ts). Mit `useSearchParams` stünde dort nur der Titel.
+  for (const { path, field } of [
+    { path: "/login", field: 'id="login-email"' },
+    { path: "/signup", field: 'id="signup-email"' },
+    { path: "/login/zweiter-faktor", field: 'id="mfa-code"' },
+  ]) {
+    test(`${path}: das Formular steht schon im statischen HTML`, async ({ request }) => {
+      const response = await request.get(`${path}?next=/settings`, { maxRedirects: 0 });
+      expect(response.status()).toBe(200);
+      expect(response.headers()["x-nextjs-prerender"]).toBeTruthy();
+      expect(await response.text()).toContain(field);
+    });
+  }
+
   test("/reset-password: das Formular prüft die Adresse im Browser (die Seite ist hydriert)", async ({ page }) => {
     const seen = await watch(page);
     await page.goto("/reset-password");

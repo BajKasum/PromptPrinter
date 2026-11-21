@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import * as z from "@/shared/lib/zod";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { safeNextPath } from "@/shared/lib/site-url";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
@@ -13,6 +12,8 @@ import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widge
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
+import { locationSearchParam, nextPathFromLocation } from "@/features/auth/lib/location-search";
+import { adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
 
 // Login validates an EXISTING password, so it deliberately checks only that
 // something was typed — no length rule (Security-Audit finding M-5).
@@ -56,16 +57,23 @@ function authCallbackErrorMessage(code: string | null): string | null {
  */
 export function SignInExperience() {
   const router = useRouter();
-  const search = useSearchParams();
-  const next = safeNextPath(search.get("next"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(
-    authCallbackErrorMessage(search.get("error"))
-  );
+  const [error, setError] = useState<string | null>(null);
   const [celebrateMsg, setCelebrateMsg] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Einmal nach dem Hydrieren: die Seite ist statisch gerendert, erst hier ist die Adresse bekannt
+  // (lib/location-search.ts), und was vorher in den Feldern stand, kommt in den State (lib/prefilled-input.ts).
+  useEffect(() => {
+    adoptPrefilledValue(emailRef.current, setEmail);
+    adoptPrefilledValue(passwordRef.current, setPassword);
+    const callbackError = authCallbackErrorMessage(locationSearchParam("error"));
+    if (callbackError) setError(callbackError);
+  }, []);
 
   // Turnstile tokens are single-use, bump the nonce after any failed auth
   // call so the widget issues a fresh one for the retry.
@@ -104,7 +112,7 @@ export function SignInExperience() {
         return;
       }
       if (result.mfaRequired) {
-        router.push(`/login/zweiter-faktor?next=${encodeURIComponent(next)}`);
+        router.push(`/login/zweiter-faktor?next=${encodeURIComponent(nextPathFromLocation())}`);
         return;
       }
       setCelebrateMsg("Erfolgreich eingeloggt");
@@ -122,7 +130,7 @@ export function SignInExperience() {
           <SuccessCelebration
             message={celebrateMsg}
             onDone={() => {
-              router.push(next);
+              router.push(nextPathFromLocation());
               router.refresh();
             }}
           />
@@ -138,7 +146,7 @@ export function SignInExperience() {
         </p>
       </div>
 
-      <OAuthButtons next={next} />
+      <OAuthButtons />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
@@ -146,6 +154,7 @@ export function SignInExperience() {
             Email
           </label>
           <Input
+            ref={emailRef}
             id="login-email"
             type="email"
             placeholder="du@example.com"
@@ -169,6 +178,7 @@ export function SignInExperience() {
             </Link>
           </div>
           <PasswordInput
+            ref={passwordRef}
             id="login-password"
             placeholder="Passwort"
             value={password}
