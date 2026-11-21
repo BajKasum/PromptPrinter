@@ -79,7 +79,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Dashboard-Schalter. Kosten, Grenzen, Prüfung: `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
 - **Qualität:** das Gate (siehe "Befehle"), Guards in `tests/guards/` (Schichten,
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
-  Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit),
+  Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit, nach dem Build `check-css-chunks.mjs`: genau ein Stylesheet),
   `e2e.yml`, `e2e-prod.yml` (Produktionsaufbau), `docker.yml`, `audit.yml` (täglich, meldet per Issue), `cli.yml` und `skill.yml` (Node 22 und 24 auf drei Systemen, die einzige erlaubte Matrix in `node-version.test.ts`); `permissions: contents: read`, Actions an
   Commit-SHAs (`workflows.test.ts`, dazu die Repo-Einstellung `sha_pinning_required`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
@@ -365,8 +365,8 @@ building | organizing | explaining | delivering | celebrating | helping | waitin
 - `public/mascot/dolphin-<state>.png`, 14 Assets, eins pro State (zwei
   zusätzliche, unreferenzierte Originale sind seit B-7, Audit 06.09.2026, entfernt)
 
-**Animations-Presets:** `float | lean | nod | think | bob | cheer | peek | sigh`
-Alle reduced-motion-safe. Keyframe-Arrays brauchen `TargetAndTransition`-Typ, nicht `Target`.
+**Animations-Presets:** `float | lean | nod | think | bob | cheer | peek | sigh`, reines CSS (`.finn-idle-*` in `globals.css`,
+Werte in `animated-mascot.test.tsx`, ebenso die `Floaters`): läuft im Compositor statt je Bild in JavaScript, unter reduced-motion still.
 
 **State-Zuordnung (Landing Page):**
 - Hero-Intro: `welcoming`

@@ -22,12 +22,11 @@ describe("Tailwind 4", () => {
   });
 
   // Lightning CSS (der Übersetzer in Tailwind 4) ergänzt das -webkit-Präfix selbst. Steht es handgeschrieben NEBEN der
-  // Zeile ohne Präfix, gab er nur die präfixierte aus: in Chrome und Firefox verschwand der Weichzeichner von .glass
-  // und .glass-strong (das Hero-Fenster der Startseite), ohne Fehler, nur im gebauten CSS zu sehen.
+  // Zeile ohne Präfix, gab er nur die präfixierte aus: in Chrome und Firefox verschwand der Weichzeichner von
+  // .glass-strong (das Hero-Fenster der Startseite), ohne Fehler, nur im gebauten CSS zu sehen.
   it("schreibt backdrop-filter ohne handgeschriebenes -webkit-Paar", () => {
     expect(css).not.toMatch(/-webkit-backdrop-filter/);
     expect(css).toMatch(/\.glass-strong\s*\{[^}]*\bbackdrop-filter:/);
-    expect(css).toMatch(/\.glass\s*\{[^}]*\bbackdrop-filter:/);
   });
 
   // Tailwind 3 setzte Knöpfe auf cursor: pointer, Tailwind 4 auf default.

@@ -4,7 +4,7 @@ import { useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { KeyRound, Laptop } from "lucide-react";
-import { m, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { FadeIn, StaggerChildren, StaggerItem } from "@/shared/motion/fade-in";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Floaters, type FloaterSpec } from "@/shared/brand/floaters";
@@ -13,12 +13,19 @@ import { intro, title, steps } from "@/features/marketing/lib/how-it-works-data"
 import { REPO_URL, SELF_HOSTING_DOC_PATH } from "@/features/marketing/lib/open-source";
 
 // GSAP (DrawSVG + MotionPath) lives entirely in this sibling chunk, loaded
-// only client-side and only once mounted, see how-it-works-spine.tsx for
-// why ssr:false is safe here (purely decorative overlay, no content).
+// only client-side and only once the rail comes near the viewport (SPINE_MARGIN
+// below), see how-it-works-spine.tsx for why ssr:false is safe here (purely
+// decorative overlay, no content).
 const HowItWorksSpine = dynamic(
   () => import("@/features/marketing/components/how-it-works-spine").then((mod) => mod.HowItWorksSpine),
   { ssr: false }
 );
+
+// GSAP lädt erst, wenn die Schrittleiste auf 600 px an den sichtbaren Bereich herankommt, nicht beim Hydrieren
+// der Startseite: dort kostet es auf dem Handy Download und Hauptthread, genau während die Seite bedienbar
+// werden soll. Die Linie zeichnet sich ab "top 80%" (how-it-works-spine.tsx), 600 px Vorlauf reichen, damit
+// sie schon steht, wenn sie anfängt.
+export const SPINE_MARGIN = "600px 0px";
 
 // In place of NoteMage's leaves (a forest motif that doesn't fit a dolphin's
 // world), see shared/brand/floaters.tsx for the shared component.
@@ -37,6 +44,7 @@ export function HowItWorks() {
 
   const railRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const spineNear = useInView(railRef, { once: true, margin: SPINE_MARGIN });
 
   return (
     // The navbar's "Funktionen" lands here: this is where the product
@@ -74,7 +82,9 @@ export function HowItWorks() {
           continuous spine threads every node (see how-it-works-spine.tsx),
           drawn progressively as the section scrolls into view. */}
       <div ref={railRef} className="relative z-10 mx-auto max-w-3xl">
-        <HowItWorksSpine railRef={railRef} nodeRefs={nodeRefs} reduceMotion={Boolean(reduceMotion)} />
+        {spineNear && (
+          <HowItWorksSpine railRef={railRef} nodeRefs={nodeRefs} reduceMotion={Boolean(reduceMotion)} />
+        )}
 
         <StaggerChildren>
           {steps.map(({ n, Icon, title, body, chat }, i) => {
