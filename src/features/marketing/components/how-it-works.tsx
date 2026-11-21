@@ -27,6 +27,9 @@ const HowItWorksSpine = dynamic(
 // sie schon steht, wenn sie anfängt.
 export const SPINE_MARGIN = "600px 0px";
 
+/** Versatz des Pulses je Schritt in Sekunden, damit die drei Knoten nicht im Gleichtakt pulsieren. */
+export const PULSE_STAGGER_S = 0.45;
+
 // In place of NoteMage's leaves (a forest motif that doesn't fit a dolphin's
 // world), see shared/brand/floaters.tsx for the shared component.
 const FLOATERS: FloaterSpec[] = [
@@ -104,20 +107,15 @@ export function HowItWorks() {
                       className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/40 bg-surface-raised shadow-[0_0_0_1px_hsl(var(--accent)/0.12),0_0_22px_3px_hsl(var(--accent)/0.28)] md:h-12 md:w-12"
                     >
                       {/* Pulsing glow ring, a slow radar ping, staggered per step
-                          so the three nodes don't pulse in lockstep. */}
-                      {!reduceMotion && (
-                        <m.span
-                          aria-hidden
-                          className="absolute inset-0 rounded-full bg-accent/25"
-                          animate={{ scale: [1, 1.6, 1], opacity: [0.55, 0, 0.55] }}
-                          transition={{
-                            duration: 2.8,
-                            repeat: Infinity,
-                            ease: "easeOut",
-                            delay: i * 0.45,
-                          }}
-                        />
-                      )}
+                          so the three nodes don't pulse in lockstep. Bewegt per CSS (`.finn-pulse` in
+                          app/globals.css), im Compositor statt je Bild in JavaScript. Immer gerendert und
+                          unter reduced-motion per CSS versteckt: so liefern Server und Browser dasselbe
+                          HTML, ein Rendern nur ohne reduzierte Bewegung ergäbe React-Fehler #418. */}
+                      <span
+                        aria-hidden
+                        className="finn-pulse absolute inset-0 rounded-full bg-accent/25"
+                        style={{ animationDelay: `${i * PULSE_STAGGER_S}s` }}
+                      />
                       <Icon className="relative z-10 h-5 w-5 text-accent-text" strokeWidth={1.8} />
                     </m.div>
                   </div>

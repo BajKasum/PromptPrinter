@@ -705,6 +705,23 @@
       opacity: 0.85;
     }
   }
+  /* Der Puls um die drei Knoten in "So geht's" (features/marketing/components/how-it-works.tsx), ein langsamer
+     Radar-Ping; die Verzögerung je Schritt steht inline. ease-out je Abschnitt entspricht dem `easeOut` von
+     framer-motion (cubic-bezier 0, 0, 0.58, 1). */
+  .finn-pulse {
+    animation: finn-pulse 2.8s ease-out infinite both;
+  }
+  @keyframes finn-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .finn-idle-float,
     .finn-idle-lean,
@@ -716,7 +733,8 @@
     .finn-idle-sigh {
       animation: none;
     }
-    .finn-floaters {
+    .finn-floaters,
+    .finn-pulse {
       display: none;
     }
   }
