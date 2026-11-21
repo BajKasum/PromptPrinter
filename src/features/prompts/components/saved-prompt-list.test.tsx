@@ -19,9 +19,32 @@ vi.mock("@/shared/ui/toast", () => ({
   useToast: () => ({ toast }),
 }));
 
+// Die Karte liest beim Aufklappen den Verlauf (saved_prompt_versions) und beim Bearbeiten die Freigabe (prompt_shares).
+let versionRows: { version: number; content: string; created_at: string }[] = [];
+function readChain(result: () => unknown) {
+  const chain = {
+    eq: () => chain,
+    order: () => chain,
+    range: async () => result(),
+    maybeSingle: async () => result(),
+  };
+  return chain;
+}
 vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({
-    from: () => ({ update, delete: del }),
+    from: (table: string) =>
+      table === "saved_prompt_versions"
+        ? {
+            select: () =>
+              readChain(() => ({
+                data: [...versionRows].sort((a, b) => b.version - a.version),
+                error: null,
+                count: versionRows.length,
+              })),
+          }
+        : table === "prompt_shares"
+          ? { select: () => readChain(() => ({ data: null, error: null })) }
+          : { update, delete: del },
   }),
 }));
 
@@ -47,6 +70,7 @@ describe("SavedPromptList", () => {
     writeText.mockClear();
     update.mockReturnValue(okWrite());
     del.mockReturnValue(okWrite());
+    versionRows = [{ version: 1, content: prompt.content, created_at: prompt.createdAt }];
     // Deliberately not defining navigator.clipboard here: user-event's
     // clipboard interception is wired up at setup() time, so it must run
     // before navigator.clipboard is ever (re)defined, or its click
@@ -293,6 +317,43 @@ describe("SavedPromptList", () => {
 
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
       expect(screen.getByText("Alter Name")).toBeInTheDocument();
+    });
+  });
+
+  describe("Versionen an der Karte", () => {
+    it("zeigt den Verlauf erst ab zwei Versionen", async () => {
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      await waitFor(() => expect(screen.getByText(prompt.content)).toBeInTheDocument());
+      expect(screen.queryByRole("button", { name: /^Verlauf/ })).toBeNull();
+    });
+
+    it("übernimmt einen bearbeiteten Text in die Karte, der Verlauf zeigt die neue Zahl", async () => {
+      versionRows = [
+        { version: 1, content: "Erste Fassung.", created_at: prompt.createdAt },
+        { version: 2, content: prompt.content, created_at: prompt.createdAt },
+      ];
+      // Bearbeiten schreibt update().eq().eq().select("id"); danach steht die dritte Version in der Datenbank.
+      const written = { eq: () => written, select: async () => ({ data: [{ id: "p1" }], error: null }) };
+      update.mockImplementation(() => {
+        versionRows.push({ version: 3, content: "Neuer Text.", created_at: prompt.createdAt });
+        return written;
+      });
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      expect(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" })).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Text von „Alter Name“ bearbeiten" }));
+      const field = screen.getByLabelText("Text von „Alter Name“", { exact: true });
+      await user.clear(field);
+      await user.type(field, "Neuer Text.");
+      await user.click(screen.getByRole("button", { name: "Als neue Version speichern" }));
+
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: "Neuer Text.", title: "Alter Name" } });
+      expect(await screen.findByText("Neuer Text.")).toBeInTheDocument();
+      expect(await screen.findByRole("button", { name: "Verlauf (3 Versionen)" })).toBeInTheDocument();
     });
   });
 });
