@@ -116,6 +116,10 @@ How good the prompts get depends on the model you pick. Small local models have 
 - **Saved prompts as templates.** Keep good prompts, in a project or on their own, and share one by link. Fill in
   a saved prompt's placeholders right there (also on a shared link), or start a new chat from it to adapt it. Any
   prompt in the chat also downloads as a Markdown file.
+- **Versions.** Saving again from the same chat, or from a chat started from a saved prompt, asks whether the text
+  becomes a new version or a new prompt. You can also edit a saved prompt's text directly. Every version is kept:
+  compare two of them word by word and restore an old one, which comes back as the newest version. The database
+  writes the history itself, so no change goes unrecorded.
 - **Export for developers.** Take a saved prompt into your own code: the request as JSON for an OpenAI-compatible
   API (Ollama, LM Studio, vLLM, OpenRouter and others), Anthropic or Gemini, a ready call in curl, Python or
   JavaScript, or a `.prompt.md` file with a YAML header. Empty placeholders become `{{variables}}`, the API key
