@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  AnimatePresence,
-  m,
-  useReducedMotion,
-  type TargetAndTransition,
-  type Transition,
-} from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
+import { cn } from "@/shared/lib/utils";
 import { Mascot } from "./mascot";
 import { MASCOT_STATES, type MascotMotion, type MascotState } from "./mascot-states";
 
@@ -22,44 +17,21 @@ interface AnimatedMascotProps {
   sizes?: string;
 }
 
-type Preset = { animate: TargetAndTransition; transition: Transition };
-
-// Idle-motion presets. Each loops gently and is skipped entirely under
-// prefers-reduced-motion (the mascot then renders perfectly still). Durations
-// and easings follow DESIGN.md, calm, never hectic.
-const PRESETS: Record<Exclude<MascotMotion, "none">, Preset> = {
-  float: {
-    animate: { y: [0, -8, 0] },
-    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-  },
-  lean: {
-    animate: { rotate: [-2.5, 2.5, -2.5], y: [0, -3, 0] },
-    transition: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-  },
-  nod: {
-    animate: { rotate: [-3, 3, -3] },
-    transition: { duration: 1.8, repeat: Infinity, ease: "easeInOut" },
-  },
-  think: {
-    animate: { y: [0, -4, 0], rotate: [-1.5, 1.5, -1.5] },
-    transition: { duration: 3.2, repeat: Infinity, ease: "easeInOut" },
-  },
-  bob: {
-    animate: { y: [0, -6, 0], rotate: [-4, 4, -4] },
-    transition: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
-  },
-  cheer: {
-    animate: { y: [0, -10, 0], rotate: [-4, 4, -4], scale: [1, 1.04, 1] },
-    transition: { duration: 1.4, repeat: Infinity, ease: "easeInOut" },
-  },
-  peek: {
-    animate: { x: [0, 4, 0], rotate: [-2, 2, -2] },
-    transition: { duration: 3.4, repeat: Infinity, ease: "easeInOut" },
-  },
-  sigh: {
-    animate: { y: [0, 3, 0] },
-    transition: { duration: 4.4, repeat: Infinity, ease: "easeInOut" },
-  },
+/**
+ * Die Leerlauf-Bewegung je Preset als Klasse; Keyframes, Dauer und Easing stehen in app/globals.css
+ * (`.finn-idle-*`, ruhig wie in DESIGN.md). Eine CSS-Animation auf `transform` läuft im Compositor: Finn
+ * bewegt sich, ohne dass der Hauptthread je Bild rechnet, auch während die Seite hydriert. Unter
+ * prefers-reduced-motion steht er still (Media Query in derselben Datei).
+ */
+export const IDLE_CLASS: Record<Exclude<MascotMotion, "none">, string> = {
+  float: "finn-idle-float",
+  lean: "finn-idle-lean",
+  nod: "finn-idle-nod",
+  think: "finn-idle-think",
+  bob: "finn-idle-bob",
+  cheer: "finn-idle-cheer",
+  peek: "finn-idle-peek",
+  sigh: "finn-idle-sigh",
 };
 
 /**
@@ -80,14 +52,12 @@ export function AnimatedMascot({
 }: AnimatedMascotProps) {
   const reduce = useReducedMotion() ?? false;
   const preset = motionOverride ?? MASCOT_STATES[state].motion;
-  // Skip the idle loop entirely under reduced-motion or for the "none" preset.
-  const anim = !reduce && preset !== "none" ? PRESETS[preset] : undefined;
   const swap = reduce ? 0 : 0.28;
 
   // Outer wrapper carries the idle loop + caller layout (hidden md:block,
   // mx-auto, shrink-0, …). Inner AnimatePresence crossfades on state change.
   return (
-    <m.div animate={anim?.animate} transition={anim?.transition} className={className}>
+    <div className={cn(preset !== "none" && IDLE_CLASS[preset], className)}>
       <AnimatePresence mode="wait" initial={false}>
         <m.div
           key={state}
@@ -99,6 +69,6 @@ export function AnimatedMascot({
           <Mascot state={state} size={size} alt={alt} priority={priority} sizes={sizes} />
         </m.div>
       </AnimatePresence>
-    </m.div>
+    </div>
   );
 }

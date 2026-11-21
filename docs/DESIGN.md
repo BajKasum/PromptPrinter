@@ -106,7 +106,7 @@ Hex-Werte in Komponenten**, immer Token-Utilities nutzen.
 > Ganzes `src` ist frei von alten Brand-Farben (per Grep verifiziert). Bewusste
 > Ausnahme: offizielle Tool-Logo-SVGs behalten ihre Markenfarben.
 
-> Alte Deko-Klassen (`.glass`, `.gradient-text`, …) sind in `globals.css` als
+> Alte Deko-Klassen (`.glass-strong`, `.gradient-text`, …) sind in `globals.css` als
 > token-basierte Shims erhalten, damit noch nicht migrierte Komponenten in
 > beiden Themes nicht zerbrechen. Beim Migrieren durch echte Token-Utilities
 > ersetzen.
@@ -186,7 +186,7 @@ Bewegung. **Dark-Mode-First**, WCAG jederzeit (Text ≥ 4,5:1, `prefers-reduced-
   Subtiler Hintergrund-Gradient + **eine** weiche Lichtquelle ✅ (`FinnAtmosphere`,
   Landing). Biolumineszenter Fokus-Ring ✅ (2026-07-17, `005718d`): `.focus-glow`
   (Buttons, focus-visible) + `.input-glow` (Textfelder, focus) in globals.css,
-  an den geteilten Primitives (`ui/button.tsx`, `ui/input.tsx`, `.input-base`),
+  an den geteilten Primitives (`ui/button.tsx`, `ui/input.tsx`),
   Wasser-Ring + weicher Bloom, box-shadow-only. **Offen:** gemeinsame „Finn-Physik"-
   Spring-Konstante (Motion-Konsistenz). Risiko: Performance (GPU-freundlich:
   opacity/transform statt schwerer Box-Shadows) + Subtilität.

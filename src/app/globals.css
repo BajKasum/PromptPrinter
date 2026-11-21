@@ -3,6 +3,14 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Grösse zählt hier: Turbopack legt diese Datei, die erzeugten Utilities und das CSS der Schriften (next/font) nur
+ * bis rund 100 KB (unkomprimiert) in eine Datei. Darüber kommt die Schrift als zweites Stylesheet, das das erste
+ * Bild ebenfalls blockiert (Lighthouse mobil rund 250 ms spätere FCP und LCP auf der Startseite). Eine Regel, die
+ * niemand mehr nutzt, deshalb löschen statt liegen lassen; nach einer grösseren Änderung im Build nachsehen, ob
+ * unter .next/static/chunks genau eine .css-Datei liegt.
+ */
+
+/*
  * Die Farben stehen inline: jede Utility schreibt hsl(var(--token)) selbst aus,
  * statt eine an :root aufgelöste --color-*-Variable zu erben. Nur so wirkt eine
  * .dark-Klasse auch auf einem einzelnen Element (das Terminal-Fenster auf
@@ -388,13 +396,6 @@
    * Transitional shims — old decorative classes kept token-based so components
    * not yet migrated (Phase B/C) degrade gracefully instead of breaking.
    */
-  .glass {
-    background: hsl(var(--surface) / 0.8);
-    border: 1px solid hsl(var(--border));
-    /* Ohne handgeschriebenes -webkit-Paar: Tailwind 4 (Lightning CSS) ergänzt das Präfix selbst und gab sonst NUR
-       die präfixierte Zeile aus, also keinen Weichzeichner in Chrome und Firefox. */
-    backdrop-filter: blur(12px) saturate(140%);
-  }
   .glass-strong {
     background: hsl(var(--surface-raised) / 0.92);
     border: 1px solid hsl(var(--border));
@@ -516,24 +517,6 @@
       hsl(var(--surface));
   }
 
-  .btn-ghost {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-5 text-body-sm font-medium text-foreground/90 transition-colors duration-200;
-  }
-  .btn-ghost:hover {
-    background: hsl(var(--surface-hover));
-    border-color: hsl(var(--border-strong));
-  }
-
-  .input-base {
-    @apply h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-body-sm text-foreground placeholder:text-muted-foreground transition-colors duration-200;
-  }
-  .input-base:focus {
-    outline: none;
-    border-color: hsl(var(--ring));
-    /* Bioluminescent focus (Finn's World #9): crisp water ring + soft bloom. */
-    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18), 0 0 10px hsl(var(--ring) / 0.16);
-  }
-
   /* Shared bioluminescent focus (Finn's World, Manifesto #9): a soft
      water-light bloom just outside a crisp ring, "leuchtet sanft, nie Neon".
      Buttons glow on keyboard focus (focus-visible); text fields glow on any
@@ -597,6 +580,144 @@
   @media (prefers-reduced-motion: reduce) {
     .header-water-layer {
       animation: none;
+    }
+  }
+
+  /* Finns Leerlauf (shared/brand/animated-mascot.tsx, IDLE_CLASS) und die Sterne und Blasen um eine
+     Sektion (shared/brand/floaters.tsx). Reines CSS auf transform und opacity, also im Compositor: auf
+     dem Handy läuft keine Zeile JavaScript je Bild, auch nicht für die Teilchen, die unter `sm`
+     versteckt sind. Die Reihenfolge im transform (verschieben, skalieren, drehen) und ease-in-out
+     (cubic-bezier 0.42, 0, 0.58, 1) je Abschnitt zwischen zwei Keyframes entsprechen dem `easeInOut`
+     von framer-motion, das der Kreuzblende in animated-mascot.tsx bleibt; animated-mascot.test.tsx
+     hält Werte und Dauer je Preset fest. */
+  .finn-idle-float {
+    animation: finn-idle-float 4s ease-in-out infinite;
+  }
+  .finn-idle-lean {
+    animation: finn-idle-lean 5s ease-in-out infinite;
+  }
+  .finn-idle-nod {
+    animation: finn-idle-nod 1.8s ease-in-out infinite;
+  }
+  .finn-idle-think {
+    animation: finn-idle-think 3.2s ease-in-out infinite;
+  }
+  .finn-idle-bob {
+    animation: finn-idle-bob 2.6s ease-in-out infinite;
+  }
+  .finn-idle-cheer {
+    animation: finn-idle-cheer 1.4s ease-in-out infinite;
+  }
+  .finn-idle-peek {
+    animation: finn-idle-peek 3.4s ease-in-out infinite;
+  }
+  .finn-idle-sigh {
+    animation: finn-idle-sigh 4.4s ease-in-out infinite;
+  }
+  @keyframes finn-idle-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes finn-idle-lean {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-2.5deg);
+    }
+    50% {
+      transform: translateY(-3px) rotate(2.5deg);
+    }
+  }
+  @keyframes finn-idle-nod {
+    0%,
+    100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+  @keyframes finn-idle-think {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-1.5deg);
+    }
+    50% {
+      transform: translateY(-4px) rotate(1.5deg);
+    }
+  }
+  @keyframes finn-idle-bob {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-4deg);
+    }
+    50% {
+      transform: translateY(-6px) rotate(4deg);
+    }
+  }
+  @keyframes finn-idle-cheer {
+    0%,
+    100% {
+      transform: translateY(0) scale(1) rotate(-4deg);
+    }
+    50% {
+      transform: translateY(-10px) scale(1.04) rotate(4deg);
+    }
+  }
+  @keyframes finn-idle-peek {
+    0%,
+    100% {
+      transform: translateX(0) rotate(-2deg);
+    }
+    50% {
+      transform: translateX(4px) rotate(2deg);
+    }
+  }
+  @keyframes finn-idle-sigh {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(3px);
+    }
+  }
+  /* Dauer und Verzögerung je Teilchen setzt floaters.tsx inline; die Verzögerung gilt nur einmal am
+     Anfang, und bis dahin zeigt `both` das erste Bild (0.3 Deckkraft). */
+  .finn-floater {
+    animation-name: finn-floater;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+  }
+  @keyframes finn-floater {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translateY(-16px);
+      opacity: 0.85;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .finn-idle-float,
+    .finn-idle-lean,
+    .finn-idle-nod,
+    .finn-idle-think,
+    .finn-idle-bob,
+    .finn-idle-cheer,
+    .finn-idle-peek,
+    .finn-idle-sigh {
+      animation: none;
+    }
+    .finn-floaters {
+      display: none;
     }
   }
 
@@ -699,10 +820,6 @@
     .enter-rise {
       animation: none;
     }
-  }
-  .mask-fade-b {
-    mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
   }
 }
 

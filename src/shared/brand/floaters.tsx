@@ -1,6 +1,3 @@
-"use client";
-
-import { m, useReducedMotion } from "framer-motion";
 import { Star } from "lucide-react";
 
 export type FloaterSpec = {
@@ -17,25 +14,25 @@ export type FloaterSpec = {
  * plus a few playful sparks. Each caller passes its own tailored `items` (a
  * fixed, deterministic layout, not randomized per render) so density and
  * spread match that section's own size instead of every section reusing one
- * identical constellation. Renders nothing under prefers-reduced-motion.
+ * identical constellation. Hidden under prefers-reduced-motion.
  * Needs a `relative` (and usually `overflow-hidden`) ancestor to contain it.
+ *
+ * Bewegt wird per CSS (app/globals.css, `.finn-floater`): transform und opacity laufen im Compositor, der
+ * Hauptthread rechnet kein Bild, und versteckte Teilchen (unter `sm` sind alle `hidden`) kosten nichts.
+ * Ohne Hook und ohne "use client", eine Server-Komponente wie die Abschlusssektion liefert sie ohne JavaScript.
  */
 export function Floaters({ items }: { items: FloaterSpec[] }) {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) return null;
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div aria-hidden className="finn-floaters pointer-events-none absolute inset-0 overflow-hidden">
       {items.map((f, i) => (
-        <m.span
+        <span
           key={i}
-          className="absolute hidden sm:block"
-          style={{ top: f.top, left: f.left }}
-          animate={{ y: [0, -16, 0], opacity: [0.3, 0.85, 0.3] }}
-          transition={{
-            duration: f.duration,
-            delay: f.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
+          className="finn-floater absolute hidden sm:block"
+          style={{
+            top: f.top,
+            left: f.left,
+            animationDuration: `${f.duration}s`,
+            animationDelay: `${f.delay}s`,
           }}
         >
           {f.kind === "star" ? (
@@ -51,7 +48,7 @@ export function Floaters({ items }: { items: FloaterSpec[] }) {
               className="block rounded-full border border-accent/40 bg-accent/10"
             />
           )}
-        </m.span>
+        </span>
       ))}
     </div>
   );

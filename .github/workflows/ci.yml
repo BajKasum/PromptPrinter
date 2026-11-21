@@ -100,6 +100,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
 
+      # Genau ein Stylesheet: über rund 100 KB CSS legt Turbopack das Schrift-CSS in eine zweite Datei, und die
+      # blockiert das erste Bild ebenfalls (scripts/check-css-chunks.mjs, tests/guards/css-chunks.test.ts).
+      - name: One stylesheet
+        run: node scripts/check-css-chunks.mjs
+
   # Messung, keine Schranke (#221): welche Zeilen und Zweige die Tests
   # erreichen, damit "genug getestet" kein Gefühl bleibt. Eigener Job neben
   # verify, damit der Lauf nicht länger wird und eine Messung nie einen PR rot

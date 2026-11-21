@@ -248,8 +248,12 @@ Hebel fürs „geführt"-Gefühl, als Phase 2 nach den statischen Platzierungen.
 
 ## 7. Animations-Bibliothek
 
-Aufbauend auf den bestehenden Mustern; alle als Framer-Motion-Presets, alle mit
-`prefers-reduced-motion`-Fallback (statisch).
+Aufbauend auf den bestehenden Mustern, alle mit `prefers-reduced-motion`-Fallback
+(statisch). Die Leerlauf-Presets von `AnimatedMascot` (`float`, `lean`, `nod`, `think`,
+`bob`, `cheer`, `peek`, `sigh`) und die Sterne und Blasen (`Floaters`) sind
+CSS-Animationen in `src/app/globals.css` (`.finn-idle-*`, `.finn-floater`): sie laufen im
+Compositor und kosten auf dem Handy keinen Hauptthread. Einmalige Übergänge (Kreuzblende
+beim Zustandswechsel, Einblenden beim Scrollen) bleiben Framer Motion.
 
 | Preset | Bewegung | Status | States |
 |---|---|---|---|
