@@ -104,6 +104,13 @@ describe("buildChatBody", () => {
     expect(body).toMatchObject({ conversationId: "c", projectId: "p" });
   });
 
+  it("schickt den Ursprung aus \"Als Ausgangspunkt nutzen\" nur, solange der Chat noch keine ID hat", () => {
+    const first = buildChatBody({ next: [msg(0)], conversationId: undefined, projectId: undefined, fromPromptId: "f" });
+    expect(first).toMatchObject({ fromPromptId: "f" });
+    const later = buildChatBody({ next: [msg(0)], conversationId: "c", projectId: undefined, fromPromptId: "f" });
+    expect(later).not.toHaveProperty("fromPromptId");
+  });
+
   it("die optionalen Felder fehlen, wenn sie nicht gesetzt sind", () => {
     const body = buildChatBody({ next: [msg(0)], conversationId: undefined, projectId: undefined });
     expect(Object.keys(body).sort()).toEqual(["conversationId", "messages", "projectId"]);

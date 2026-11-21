@@ -1,5 +1,6 @@
 "use client";
 
+import type { VersionTarget } from "@/shared/lib/prompt-versions";
 import { useEffect, useRef, useState } from "react";
 import { ChatNotices } from "@/features/chat/components/chat-notices";
 import { ChatThread } from "@/features/chat/components/chat-thread";
@@ -28,6 +29,8 @@ export function Chat({
   initialMessages,
   initialConversationId,
   initialInput,
+  fromPromptId,
+  versionTarget,
   hasResults = false,
   savedPrompts,
   name,
@@ -39,6 +42,10 @@ export function Chat({
   initialConversationId?: string;
   /** Starttext im Eingabefeld ("Als Ausgangspunkt nutzen", ?from=), nicht gesendet. */
   initialInput?: string;
+  /** Der gespeicherte Prompt hinter initialInput; der erste Zug vermerkt ihn als Ursprung des Chats. */
+  fromPromptId?: string;
+  /** Wovon Speichern eine neue Version anbietet (server/prompt-version-target.ts). */
+  versionTarget?: VersionTarget | null;
   /** For project chats: whether saved results exist (drives the empty-state copy). */
   hasResults?: boolean;
   /** Prompt text of every result already saved in this project (QA F-7: dedup without a migration). */
@@ -64,6 +71,7 @@ export function Chat({
     initialMessages,
     initialConversationId,
     initialInput,
+    fromPromptId,
     needsKey,
     freePromptsLeft,
     attachments,
@@ -145,6 +153,8 @@ export function Chat({
         lastAssistantIndex={turn.lastAssistantIndex}
         projectId={projectId}
         savedPrompts={savedPrompts}
+        conversationId={turn.conversationId}
+        versionTarget={versionTarget}
         resultRef={resultRef}
         endRef={endRef}
         onEdit={turn.editMessage}

@@ -60,6 +60,10 @@ export const chatRequestSchema = z.object({
   // Present when the chat refines a specific project's build packet (Code mode).
   // The route loads that project's context and links the conversation to it.
   projectId: z.guid().optional(),
+  // Nur beim ersten Zug eines Chats aus "Als Ausgangspunkt nutzen" (?from=): der gespeicherte Prompt, aus dem er
+  // entstand. openTurn prüft den Eigentümer und setzt conversations.source_prompt_id, daran erkennt Speichern später
+  // eine neue Version. Die CLI schickt das Feld nie.
+  fromPromptId: z.guid().optional(),
   // Not a wall: /api/chat clamps an over-long transcript down to the newest
   // MAX_TRANSCRIPT_MESSAGES entries before it ever gets here, so exceeding this
   // is normalized away rather than rejected. See chat-limits.ts for why that

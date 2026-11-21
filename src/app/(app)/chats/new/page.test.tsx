@@ -23,12 +23,30 @@ vi.mock("@/server/session", () => ({
 }));
 const loadStartPrompt = vi.fn();
 vi.mock("@/server/start-from-prompt", () => ({ loadStartPrompt: (...a: unknown[]) => loadStartPrompt(...a) }));
+const loadVersionTarget = vi.fn();
+vi.mock("@/server/prompt-version-target", () => ({ loadVersionTarget: (...a: unknown[]) => loadVersionTarget(...a) }));
 vi.mock("@/shared/motion/fade-in", () => ({
   FadeIn: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("@/features/chat/components/chat", () => ({
-  Chat: ({ name, initialInput }: { name: string | null; initialInput?: string }) => (
-    <h2 data-initial-input={initialInput ?? ""}>Woran arbeiten wir, {name}?</h2>
+  Chat: ({
+    name,
+    initialInput,
+    fromPromptId,
+    versionTarget,
+  }: {
+    name: string | null;
+    initialInput?: string;
+    fromPromptId?: string;
+    versionTarget?: { id: string } | null;
+  }) => (
+    <h2
+      data-initial-input={initialInput ?? ""}
+      data-from-prompt={fromPromptId ?? ""}
+      data-version-target={versionTarget?.id ?? ""}
+    >
+      Woran arbeiten wir, {name}?
+    </h2>
   ),
 }));
 
@@ -39,6 +57,8 @@ describe("NewChatPage", () => {
   beforeEach(() => {
     loadStartPrompt.mockReset();
     loadStartPrompt.mockResolvedValue(null);
+    loadVersionTarget.mockReset();
+    loadVersionTarget.mockResolvedValue(null);
   });
 
   it("trägt genau eine h1 und lässt die Begrüßung im Chat darunter eine h2 bleiben", async () => {
@@ -52,8 +72,13 @@ describe("NewChatPage", () => {
 
   it("legt mit ?from= den eigenen gespeicherten Prompt ins Eingabefeld, mit der Zeile für die Änderung", async () => {
     loadStartPrompt.mockResolvedValue("Schreib eine Einladung.");
+    loadVersionTarget.mockResolvedValue({ id: ID, title: "Einladung", prompt: "Schreib eine Einladung." });
     render(await page(ID));
     expect(loadStartPrompt).toHaveBeenCalledWith(client, "user-1", ID);
+    expect(loadVersionTarget).toHaveBeenCalledWith(client, "user-1", { from: ID });
+    // Der erste Zug vermerkt den Ursprung, und Speichern bietet eine neue Version dieses Prompts an.
+    expect(screen.getByRole("heading", { level: 2 })).toHaveAttribute("data-from-prompt", ID);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveAttribute("data-version-target", ID);
     expect(screen.getByRole("heading", { level: 2 })).toHaveAttribute(
       "data-initial-input",
       "Pass diesen Prompt an: \n\nSchreib eine Einladung."
@@ -63,5 +88,6 @@ describe("NewChatPage", () => {
   it("startet leer, wenn es den Prompt für dieses Konto nicht gibt", async () => {
     render(await page(ID));
     expect(screen.getByRole("heading", { level: 2 })).toHaveAttribute("data-initial-input", "");
+    expect(screen.getByRole("heading", { level: 2 })).toHaveAttribute("data-from-prompt", "");
   });
 });
