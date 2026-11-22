@@ -367,7 +367,8 @@ describe("OpenAI (BYOK)", () => {
 
 describe("Gemini", () => {
   const override = { provider: "gemini" as const, apiKey: "gk-test" };
-  const GEMINI_RETRY_OFF = { httpOptions: { retryOptions: { attempts: 1 } } };
+  // Feste API-Version (ohne Angabe nähme der SDK `v1`) und keine Wiederholung im SDK.
+  const GEMINI_OPTIONS = { apiVersion: "v1beta", httpOptions: { retryOptions: { attempts: 1 } } };
 
   it("BYOK chatComplete: Rollen model/user, Bilder als inlineData, Systemanweisung, Token-Grenze", async () => {
     sdk.generateContent.mockResolvedValue({
@@ -377,7 +378,7 @@ describe("Gemini", () => {
 
     const result = await chatComplete({ system: "SYS", messages: history, override });
 
-    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "gk-test", ...GEMINI_RETRY_OFF });
+    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "gk-test", ...GEMINI_OPTIONS });
     expect(sdk.generateContent.mock.calls[0]).toEqual([
       {
         model: "gemini-3.5-flash",
@@ -428,7 +429,7 @@ describe("Gemini", () => {
 
     await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }));
 
-    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
+    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_OPTIONS });
     expect(sdk.generateContentStream.mock.calls[0][0].model).toBe("gemini-test-model");
   });
 
@@ -442,7 +443,7 @@ describe("Gemini", () => {
 
     expect(sdk.geminiCtor).toHaveBeenCalledTimes(2);
     for (const call of sdk.geminiCtor.mock.calls) {
-      expect(call[0]).toEqual({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
+      expect(call[0]).toEqual({ apiKey: "env-gem", ...GEMINI_OPTIONS });
     }
   });
 
@@ -453,7 +454,7 @@ describe("Gemini", () => {
 
     await collect(chatCompleteStream({ system: "S", messages: [{ role: "user", content: "x" }] }));
 
-    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_RETRY_OFF });
+    expect(sdk.geminiCtor).toHaveBeenCalledWith({ apiKey: "env-gem", ...GEMINI_OPTIONS });
     expect(sdk.generateContentStream.mock.calls[0][0].model).toBe("gemini-3.5-flash");
   });
 

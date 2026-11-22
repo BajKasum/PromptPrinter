@@ -66,6 +66,15 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = 6144;
 export const SDK_NO_RETRY = { maxRetries: 0 } as const;
 export const GEMINI_NO_RETRY = { httpOptions: { retryOptions: { attempts: 1 } } } as const;
 
+/**
+ * Gemini läuft über die API-Version `v1beta`, fest im Code. Ohne Angabe nimmt der SDK `v1`
+ * (oder was `GOOGLE_GENAI_API_VERSION` sagt), und auf `v1` fehlen die `-latest`-Aliase und
+ * manche `-preview`-Modelle, die ein eigener Key in `GEMINI_MODEL` nennen kann. Die Angabe im
+ * Code geht der Umgebungsvariable vor. Dieselbe Version nennt der Export in
+ * shared/lib/prompt-export.ts.
+ */
+export const GEMINI_API_VERSION = "v1beta";
+
 /** Der Anbieter dieses Aufrufs für die Logzeile eines Retries (kein Geheimnis). */
 export function providerLabel(override: LlmOverride | undefined, serverProvider?: ServerProvider): string {
   return override?.provider ?? serverProvider ?? llmConfig()?.provider ?? "stub";

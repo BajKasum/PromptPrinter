@@ -1,7 +1,7 @@
 import "server-only";
 
 import { GoogleGenAI } from "@google/genai";
-import { GEMINI_NO_RETRY } from "@/server/llm/config";
+import { GEMINI_API_VERSION, GEMINI_NO_RETRY } from "@/server/llm/config";
 import { toGeminiContents } from "@/server/llm/messages";
 import {
   LlmEmptyReplyError,
@@ -15,6 +15,11 @@ import {
 
 // ─── Gemini (secondary provider, and a BYOK choice) ─────────────────────────
 
+/** Ein Client je Aufruf: feste API-Version, keine Wiederholung im SDK (siehe config.ts). */
+function geminiClient(apiKey: string): GoogleGenAI {
+  return new GoogleGenAI({ apiKey, apiVersion: GEMINI_API_VERSION, ...GEMINI_NO_RETRY });
+}
+
 export async function geminiComplete(
   model: string,
   system: string,
@@ -22,7 +27,7 @@ export async function geminiComplete(
   maxOutputTokens: number,
   apiKey: string
 ): Promise<LlmResult> {
-  const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
+  const ai = geminiClient(apiKey);
   const res = await ai.models.generateContent({
     model,
     contents: toGeminiContents(messages),
@@ -51,7 +56,7 @@ export async function* geminiCompleteStream(
   apiKey: string,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
-  const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
+  const ai = geminiClient(apiKey);
   const stream = await ai.models.generateContentStream({
     model,
     contents: toGeminiContents(messages),
@@ -71,7 +76,7 @@ export async function geminiAnalyze(
   apiKey: string,
   signal?: AbortSignal
 ): Promise<AnalysisResult> {
-  const ai = new GoogleGenAI({ apiKey, ...GEMINI_NO_RETRY });
+  const ai = geminiClient(apiKey);
   const res = await ai.models.generateContent({
     model,
     contents: [
