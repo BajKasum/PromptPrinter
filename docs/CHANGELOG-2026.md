@@ -11,6 +11,14 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-22: `@google/genai` 3 mit fester API-Version `v1beta` (Branch `chore/google-genai-3`, ersetzt #333)
+
+- **Ziel:** Kasum: alle offenen PRs prüfen und mergen, wenn sie nichts mehr brauchen. #356 (Dependabot, Minor und Patch, 13 Updates) ist gemergt und live geprüft (`/api/health`, acht öffentliche Seiten ohne Hydrationsfehler). #333 (`@google/genai` 2.32 auf 3.6.1) brauchte noch etwas: ab 3.0 spricht der SDK ohne Angabe die API `v1` statt `v1beta` an, und dort fehlen die `-latest`-Aliase und manche `-preview`-Modelle. Ob `gemini-3.5-flash` (Standard für einen eigenen Gemini-Key, der Weg des Key-Assistenten) auf `v1` läuft, lässt sich ohne echten Key nicht prüfen, und die bisherigen Tests ersetzen den SDK. Kasum: "Ja, festlegen".
+- **Geändert:** `package.json` und `package-lock.json` genau wie in #333 (ein lokales `npm install` liess die `libc`-Angaben im Lockfile weg, deshalb Dependabots Diff übernommen). `server/llm/config.ts`: `GEMINI_API_VERSION = "v1beta"`; `server/llm/gemini.ts` baut alle drei Clients (Chat, Stream, Analyse) über `geminiClient()` mit dieser Version. Die Angabe im Code geht `GOOGLE_GENAI_API_VERSION` vor. Der Rest der Release Notes 3.0 bis 3.6.1 trifft uns nicht: Node ab 22 (wir haben 24), eine Typänderung nur in der Interactions-API, sonst neue Funktionen.
+- **Geprüft:** derselbe Aufruf mit ersetztem `fetch` gegen beide Pakete: 2.32 ohne Angabe `/v1beta/models/gemini-3.5-flash:generateContent`, 3.6.1 ohne Angabe `/v1/…`, 3.6.1 mit Angabe wieder `/v1beta/…`. Die Adresse bleibt also dieselbe wie vor dem Update.
+- **Tests und Mutationen:** neu `server/llm/gemini.test.ts` mit dem echten SDK und ersetztem `fetch`: Chat, Stream und Analyse gehen an `/v1beta/models/gemini-3.5-flash:…`, auch mit `GOOGLE_GENAI_API_VERSION=v1` in der Umgebung. `llm-providers.test.ts` erwartet `apiVersion: "v1beta"` im Konstruktor. Zwei Mutationen, beide erkannt (je 8 Tests rot): Angabe entfernt und Version `v1`.
+- **Nicht geprüft:** ein Aufruf gegen die echte Gemini-API (kein Key in dieser Sitzung, auf dem Server bewusst kein `GEMINI_API_KEY`).
+
 ## 2026-11-21: Pulsringe in "So geht's" per CSS, React-Fehler #418 auf der Startseite behoben (Branch `perf/schritt-ringe-v4`, ersetzt #349, #350 und #353)
 
 - **Ziel:** Kasum nach `perf/ladezeit`: die drei pulsierenden Ringe um die Knoten in "So geht's" ebenfalls auf CSS umstellen. Sie waren die letzte Endlos-Bewegung der Startseite in framer-motion und wurden nur ohne reduzierte Bewegung gerendert (`{!reduceMotion && …}`): der Server kennt die Einstellung nicht, also lieferte er die Ringe aus, und ein Browser mit reduzierter Bewegung renderte sie nicht. Das war der React-Fehler #418, der auf `/` nach `perf/ladezeit` noch übrig war.
