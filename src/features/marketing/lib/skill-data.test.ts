@@ -30,8 +30,8 @@ describe("Skill-Download", () => {
   // public/skill/, ändert Version und Prüfsumme in skill-data.ts UND hier.
   it("ändert Version und Prüfsumme nur zusammen", () => {
     expect({ version: SKILL_VERSION, sha256: SKILL_ZIP_SHA256 }).toEqual({
-      version: "0.3.0",
-      sha256: "88bceb21837d06ac04eb3902ff83a38dd4015d188e041f78e4bb74e88ce75e37",
+      version: "0.4.1",
+      sha256: "25ee9101377a220e4548ae7ef97cf5cd8ad8280ba7c65608e66d92b4dbc01b52",
     });
   });
 });

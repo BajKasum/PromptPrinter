@@ -11,6 +11,15 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-24: `/skill` verteilt Skill 0.4.1 statt 0.3.0 (Branch `fix/skill-zip-375`, #375)
+
+- **Ziel:** Der Download auf `/skill` war noch Skill 0.3.0, dessen Lücken beim Schwärzen erst 0.4.0 schloss; die Fixes aus #373 und #374 kamen dort gar nicht an. Kasum hat am 2026-11-24 entschieden, das ZIP neu zu bauen.
+- **Version:** Skill 0.4.1 mit Skript 0.2.1, kein ZIP unter 0.4.0. `install.mjs --update` ersetzt nur eine ältere Version: wer 0.4.0 aus einem Klon installiert hatte (das README nannte bisher nur diesen Weg), bekäme die Fixes unter derselben Nummer nicht, und `--version` nennte für beide Skripte 0.2.0. Die Kopie `cli/src/context.mjs` und `cli/contract/context-pin.json` ziehen mit (Commit `f9624e70`, wie im Eintrag darunter der Stand von `main`, auf dem der Pull Request aufsetzt).
+- **ZIP:** `public/skill/promptprinter-pp-0.4.1.zip` ist der Ordner `skill/` so, wie er im Repo steht (Baum `00f8fa14`, 42 Dateien unter `promptprinter-pp-0.4.1/`), gebaut mit `git -c core.autocrlf=false archive --format=zip --prefix=promptprinter-pp-0.4.1/ --mtime="2026-11-24 12:00:00 +0000" HEAD:skill`, SHA-256 `25ee9101…`. Ohne `core.autocrlf=false` packte Git unter Windows alle 41 Textdateien mit CRLF (nachgeprüft); den Befehl nennt `skill-data.ts`. Das ZIP mit 0.3.0 ist entfernt. Es war ein Archiv des alten Repos mit dem Skill unter `skill/pp/`; jetzt liegt `pp/` neben `install.mjs`, die Seite sagt deshalb "den Ordner pp/".
+- **Geprüft:** entpackt gleich `skill/` im Worktree (`diff -r` ohne Unterschied, keine CR); `node install.mjs` aus dem entpackten Ordner legt in einem leeren Home-Ordner 0.4.1 nach `.claude/skills/pp` und `.agents/skills/pp`, das Skript meldet `pp-context 0.2.1`; über ein 0.3.0 aus dem alten ZIP verweigert `node install.mjs` mit Hinweis auf `--update`, `--update` ersetzt es durch 0.4.1. Tests in `skill/` (74) und `cli/` grün, der Vertrag unverändert, `skill-data.test.ts` rechnet die neue Prüfsumme nach.
+- **README des Skills:** nennt zuerst den Weg über das ZIP (Prüfsumme vergleichen, `node install.mjs`, `--update`), danach den Klon.
+- **Nicht geprüft:** ein Lauf von `/pp` aus dem ZIP in Claude Code; der Download auf promptprinter.app erst nach dem Deployment.
+
 ## 2026-11-24: Kontext-Skript startet git nie aus dem Projekt und schwärzt `*_PASS`, Redis-URLs und Werte mit Klammer (Branch `fix/kontext-sicherheit-373-374`, #373 und #374)
 
 - **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`) im Kontext-Skript des Skills (`skill/pp/scripts/context.mjs`) und seiner Kopie in der Terminal-App (`cli/src/context.mjs`); #372 und #383 liefen parallel in einer zweiten Sitzung. `skill/` wird nicht weiterentwickelt, Sicherheitsfehler im Skript werden trotzdem behoben, weil die Terminal-App eine geprüfte Kopie davon trägt.

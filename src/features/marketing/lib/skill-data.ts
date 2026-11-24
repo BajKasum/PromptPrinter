@@ -1,12 +1,12 @@
 // Die Adressen und Texte der Seite /skill, an einer Stelle und gegen den Skill in skill/ gelesen (README,
-// Skill 0.3.0 im Download). Die Messung des Skills steht in skill/README.md, nicht auf der Seite: sie führt
+// Skill 0.4.1 im Download). Die Messung des Skills steht in skill/README.md, nicht auf der Seite: sie führt
 // direkt zum Download.
 
 /** Der Quelltext des Skills in diesem Repo, für den Link "auf GitHub". */
 export const SKILL_SOURCE_URL = "https://github.com/BajKasum/PromptPrinter/tree/main/skill";
 
 /** Der Skill in der Fassung, die das ZIP trägt (Datei SKILL.md, Feld version). */
-export const SKILL_VERSION = "0.3.0";
+export const SKILL_VERSION = "0.4.1";
 
 /** Der Name der Datei, auch in den Befehlen zum Vergleichen der Prüfsumme. */
 export const SKILL_ZIP_FILENAME = `promptprinter-pp-${SKILL_VERSION}.zip`;
@@ -21,9 +21,11 @@ export const SKILL_ZIP_URL = `/skill/${SKILL_ZIP_FILENAME}`;
 
 /**
  * SHA-256 der Datei unter SKILL_ZIP_URL. Version, Datei und Prüfsumme ändern sich nur zusammen; skill-data.test.ts
- * rechnet die Prüfsumme der Datei in public/ bei jedem Testlauf nach.
+ * rechnet die Prüfsumme der Datei in public/ bei jedem Testlauf nach. Das ZIP ist der Ordner skill/ so, wie er im
+ * Repo steht, gepackt mit (ohne core.autocrlf=false bekäme unter Windows jede Textdatei CRLF):
+ *   git -c core.autocrlf=false archive --format=zip --prefix=promptprinter-pp-<Version>/ -o <Datei> HEAD:skill
  */
-export const SKILL_ZIP_SHA256 = "88bceb21837d06ac04eb3902ff83a38dd4015d188e041f78e4bb74e88ce75e37";
+export const SKILL_ZIP_SHA256 = "25ee9101377a220e4548ae7ef97cf5cd8ad8280ba7c65608e66d92b4dbc01b52";
 
 export const SKILL_CARDS = [
   {
@@ -50,7 +52,7 @@ export const SKILL_INSTALL_STEPS = [
   },
   {
     title: "Installieren",
-    body: "Im entpackten Ordner den Installer starten (Node 22 oder neuer). Er legt den Skill nach ~/.claude/skills/pp. Von Hand geht es auch: den Ordner skill/pp/ dorthin kopieren.",
+    body: "Im entpackten Ordner den Installer starten (Node 22 oder neuer). Er legt den Skill nach ~/.claude/skills/pp. Von Hand geht es auch: den Ordner pp/ dorthin kopieren.",
     code: "node install.mjs",
   },
   {
