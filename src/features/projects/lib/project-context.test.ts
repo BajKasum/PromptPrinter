@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// getCachedFileContent laeuft ohne Upstash ohnehin direkt auf `download`
-// durch, aber der Mock haelt den Test unabhaengig davon, ob in der Umgebung
-// zufaellig Redis-Variablen gesetzt sind.
+// getCachedFileContent läuft ohne Upstash ohnehin direkt auf `download` durch, aber der Mock hält den Test
+// unabhängig davon, ob in der Umgebung zufällig Redis-Variablen gesetzt sind. `cacheHits` spielt einen Treffer
+// nach, der an `download` vorbeigeht.
+const cacheHits = vi.hoisted(() => new Map<string, unknown>());
 vi.mock("@/server/project-file-cache", () => ({
-  getCachedFileContent: (_path: string, download: () => Promise<string | null>) => download(),
+  getCachedFileContent: async (path: string, download: () => Promise<string | null>) =>
+    cacheHits.has(path) ? cacheHits.get(path) : download(),
 }));
 
 import { buildProjectContext } from "@/features/projects/lib/project-context";
@@ -53,7 +55,10 @@ const READY_BRAIN = {
 };
 
 describe("buildProjectContext", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cacheHits.clear();
+  });
 
   it("returns null for a project that is not there or not owned", async () => {
     expect(await buildProjectContext(supabaseWith({}), "u1", "p1")).toBeNull();
@@ -187,6 +192,30 @@ describe("buildProjectContext", () => {
       // Der eigentliche Punkt des Features: destilliert ist billiger als die
       // Quellen, aus denen destilliert wurde.
       expect(withBrain).toBeLessThan(withoutBrain);
+    });
+
+    // Kam eine package.json aus Upstash als Objekt zurück, stand "[object Object]" im Prompt, das Budget wurde NaN,
+    // und jede Datei danach ging ungekürzt durch.
+    it("lässt einen Inhalt aus, der kein Text ist, und hält das Budget für die Dateien danach", async () => {
+      cacheHits.set("p/1", { name: "demo" });
+      const context = await buildProjectContext(
+        supabaseWith(
+          {
+            projects: PROJECT,
+            project_files: [
+              { name: "package.json", storage_path: "p/1" },
+              { name: "daten.txt", storage_path: "p/2" },
+            ],
+          },
+          { "p/2": "x".repeat(20000) }
+        ),
+        "u1",
+        "p1"
+      );
+      expect(context).not.toContain("[object Object]");
+      expect(context).toContain("not shown due to context budget: package.json");
+      expect(context).toContain("File: daten.txt");
+      expect(context).not.toContain("x".repeat(3001));
     });
 
     it("names the files it had no room for", async () => {

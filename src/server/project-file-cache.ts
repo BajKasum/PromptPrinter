@@ -3,27 +3,23 @@ import "server-only";
 import { Redis } from "@upstash/redis";
 
 /**
- * Caches a project file's downloaded text content by its storage_path.
- * Every project chat turn re-injects every attached file (buildFilesContext
- * in api/chat/route.ts), which otherwise means one Storage round trip per
- * file per turn even though the files essentially never change mid-
- * conversation, pure latency + egress cost for nothing.
+ * Hält den Text einer Projektdatei je `storage_path` eine Stunde in Upstash. Jeder Zug eines Projekt-Chats gibt alle
+ * angehängten Dateien neu mit (`loadProjectFiles` in features/projects/lib/project-context.ts); ohne Cache kostete
+ * das je Datei und Zug einen Abruf aus dem Storage, obwohl sich die Dateien während eines Gesprächs nicht ändern.
  *
- * Safe without any invalidation logic because storage_path is immutable
- * once a file is uploaded: project-files.tsx always writes to a fresh
- * `${user.id}/${projectId}/${uuid}-${name}` path, there is no in-place edit,
- * only upload (new path) + delete (removes the row). A cache entry for a
- * deleted file just becomes unreferenced (no row selects that path anymore)
- * and ages out via the TTL below, never serves stale content for a path
- * that's still in use.
+ * Ohne Invalidierung richtig, weil `storage_path` nach dem Hochladen feststeht: project-files.tsx lädt jede Datei
+ * unter einem neuen Pfad mit eigener ID hoch, geändert wird nie an Ort und Stelle, nur neu hochgeladen (neuer Pfad)
+ * oder gelöscht (die Zeile verschwindet). Ein Eintrag zu einer gelöschten Datei liest niemand mehr, er läuft mit der
+ * TTL unten ab.
  *
- * Falls back to always calling `download` when Upstash isn't configured,
- * same posture as rate-limit.ts: uncached but correct in dev/without it.
+ * Ohne Upstash lädt jeder Aufruf direkt, wie in rate-limit.ts: ungecacht, aber richtig.
  */
 
+// Der Cache hält Dateitext, kein JSON. Mit der Voreinstellung wertet der Client jede Antwort aus, die sich als JSON
+// lesen lässt: eine package.json käme als Objekt zurück, eine Datei mit dem Inhalt "42" als Zahl.
 const redis =
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? Redis.fromEnv()
+    ? Redis.fromEnv({ automaticDeserialization: false })
     : null;
 
 const CACHE_PREFIX = "promptprinter/project-file";
@@ -37,10 +33,11 @@ export async function getCachedFileContent(
 
   const key = `${CACHE_PREFIX}:${storagePath}`;
   try {
-    const cached = await redis.get<string>(key);
-    if (cached !== null && cached !== undefined) return cached;
+    // Nur Text ist ein Treffer. Was sonst aus Upstash kommt, wird neu geladen, statt als Dateitext weiterzugehen.
+    const cached: unknown = await redis.get(key);
+    if (typeof cached === "string") return cached;
   } catch {
-    // Redis unreachable, degrade to an uncached download for this turn.
+    // Upstash nicht erreichbar: für diesen Zug ungecacht laden.
   }
 
   const text = await download();
@@ -48,7 +45,7 @@ export async function getCachedFileContent(
     try {
       await redis.set(key, text, { ex: TTL_SECONDS });
     } catch {
-      // Best-effort: a failed cache write just means the next turn re-downloads.
+      // Ein gescheitertes Schreiben heisst nur, dass der nächste Zug wieder lädt.
     }
   }
   return text;
