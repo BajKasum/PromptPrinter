@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ---- Kopie: hier nicht ändern -----------------------------------------------------------------------
-// Herkunft: skill/pp/scripts/context.mjs in diesem Repo (BajKasum/PromptPrinter), Skill 0.4.0, Skript 0.2.0, MIT.
-// Stand: Commit e82896c1bc185717213415ccad378e90abeb74dc und die Commits danach, die diese Kopie ändern; Quelle und
+// Herkunft: skill/pp/scripts/context.mjs in diesem Repo (BajKasum/PromptPrinter), Skill 0.4.1, Skript 0.2.1, MIT.
+// Stand: Commit f9624e703eef0ede179cca568137f4fed2f3b243 und die Commits danach, die diese Kopie ändern; Quelle und
 // Kopie ändern sich immer im selben Commit. Nie eine ältere Fassung: Skill 0.3.0 liess Geheimnisse durch. Gegenüber
 // der Quelle geändert sind nur dieser Kopf und `export` vor renderPack, damit das Programm den Kontext ohne
 // Kindprozess baut. Die Prüfsumme der Quelle steht in contract/context-pin.json: test/context.test.mjs prüft, dass
@@ -39,7 +39,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const SCHEMA = "pp-context/1";
 const MAX_STDIN = 200 * 1024;
 const PACK_BUDGET_MS = 2500;
