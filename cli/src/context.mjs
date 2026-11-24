@@ -79,14 +79,18 @@ const SECRET_PATTERNS = [
   ["hugging face token", /\bhf_[A-Za-z0-9]{30,}/g],
   // Die Ziffer trennt ein Token von einem langen Bezeichner im Fliesstext ("Bearer createClientForRequest").
   ["bearer token", /\bBearer\s+(?=[^\s]*\d)[A-Za-z0-9._~+/-]{20,}=*/gi],
-  // Platzhalter wie user:password@ und ${PASS} sind kein Geheimnis.
-  ["url credentials", /\b[a-z][a-z0-9+.-]*:\/\/[^\s/:@"']+:(?![$<{[%]|(?:pass|password|changeme|secret|x+)@)[^\s/@"']+@/gi],
+  // Platzhalter wie user:password@ und ${PASS} sind kein Geheimnis, der Benutzer darf fehlen (redis://:geheim@host).
+  // Das Schema hat höchstens 64 Zeichen: ohne Grenze liefe das Muster auf einer langen Zeile wie a.a.a.… quadratisch.
+  ["url credentials", /\b[a-z][a-z0-9+.-]{0,63}:\/\/[^\s/:@"']*:(?![$<{[%]|(?:pass|password|changeme|secret|x+)@)[^\s/@"']+@/gi],
 ];
-// Der Schlüsselname muss auf das Stichwort enden: AWS_SECRET_ACCESS_KEY zählt, TOKEN_URL und max_tokens nicht.
-const ASSIGNMENT = /((?:secret(?:[_-]?(?:access[_-]?)?key)?(?:[_-]?base)?|token|password|passwd|pwd|credentials?|api[_-]?key|private[_-]?key|access[_-]?key|encryption[_-]?key|service[_-]?role[_-]?key|signing[_-]?key|auth[_-]?key)["']?\s*[:=]\s*["']?)([^\s"']{12,})/gi;
-// Werte, die auf eine Quelle zeigen oder Code sind, und kein Geheimnis. Ein Passwort kann mit $ beginnen,
-// deshalb zählen nur ${...} und $NAME_IN_GROSS als Verweis.
-const NOT_A_VALUE = /^(?:\$\{|\$[A-Z_][A-Z0-9_]*[;,)]*$|<|\[|\{|%|process\.env|os\.environ|(?:env|ENV)\.|import\.meta)|\(/;
+// Der Schlüsselname muss auf das Stichwort enden: AWS_SECRET_ACCESS_KEY zählt, TOKEN_URL und max_tokens nicht. pass
+// zählt nur als eigenes Wort im Namen (SMTP_PASS, pass:), nicht als Ende von bypass oder compass.
+const ASSIGNMENT = /((?:secret(?:[_-]?(?:access[_-]?)?key)?(?:[_-]?base)?|token|password|passwd|pwd|(?<![a-z])pass|credentials?|api[_-]?key|private[_-]?key|access[_-]?key|encryption[_-]?key|service[_-]?role[_-]?key|signing[_-]?key|auth[_-]?key)["']?\s*[:=]\s*["']?)([^\s"']{12,})/gi;
+// Werte, die auf eine Quelle zeigen, und kein Geheimnis. Ein Passwort kann mit $ beginnen, deshalb zählen nur ${...}
+// und $NAME_IN_GROSS als Verweis.
+const NOT_A_VALUE = /^(?:\$\{|\$[A-Z_][A-Z0-9_]*[;,)]*$|<|\[|\{|%|process\.env|os\.environ|(?:env|ENV)\.|import\.meta)/;
+// Ein Wert mit Klammer ist Code (resolveKey(request)), ausser er steht in Anführungszeichen: dann ist er ein Wert.
+const isSecretValue = (head, value) => !NOT_A_VALUE.test(value) && (/["']$/.test(head) || !value.includes("("));
 
 // Der Körper eines privaten Schlüssels und ähnliche Blöcke: lang, gemischt aus Gross, Klein und Ziffern. Git-Hashes
 // haben keine Grossbuchstaben, Pfade haben viele Schrägstriche; beide bleiben stehen.
@@ -98,7 +102,7 @@ export function redactText(text) {
   let out = String(text);
   for (const [kind, pattern] of SECRET_PATTERNS) out = out.replace(pattern, `[redacted: ${kind}]`);
   out = out.replace(ASSIGNMENT, (whole, head, value) =>
-    NOT_A_VALUE.test(value) ? whole : `${head}[redacted: assignment]`,
+    isSecretValue(head, value) ? `${head}[redacted: assignment]` : whole,
   );
   return out.replace(LONG_ENCODED, (value) => (looksEncoded(value) ? "[redacted: long encoded value]" : value));
 }
@@ -116,7 +120,7 @@ export function findSecrets(text) {
       });
       if (hit) return found.push({ kind: hit[0], line: index + 1 });
       ASSIGNMENT.lastIndex = 0;
-      if ([...line.matchAll(ASSIGNMENT)].some((match) => !NOT_A_VALUE.test(match[2]))) {
+      if ([...line.matchAll(ASSIGNMENT)].some((match) => isSecretValue(match[1], match[2]))) {
         return found.push({ kind: "assignment", line: index + 1 });
       }
       if ((line.match(LONG_ENCODED) ?? []).some(looksEncoded)) found.push({ kind: "long encoded value", line: index + 1 });
@@ -370,8 +374,9 @@ function localIso(date = new Date()) {
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}${sign}${p(Math.floor(abs / 60))}:${p(abs % 60)}`;
 }
 
+// Erst schwärzen, dann kürzen: fiele das Ende eines Geheimnisses hinter den Schnitt, träfe kein Muster mehr.
 function cut(text, max) {
-  const clean = String(text).replace(/\s+/g, " ").trim();
+  const clean = redactText(text).replace(/\s+/g, " ").trim();
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 

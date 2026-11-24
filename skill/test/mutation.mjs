@@ -9,21 +9,27 @@ const TYPES = "pp/references/task-types.md";
 const CHECKLIST = "pp/references/checklist.md";
 const BACKUP = "mutation-backup.tmp";
 
-const ASSIGN_FROM = "NOT_A_VALUE.test(value) ? whole : `${head}[redacted: assignment]`";
+const ASSIGN_FROM = "isSecretValue(head, value) ? `${head}[redacted: assignment]` : whole";
 const context = [
   ["Schwärzmuster AWS entfernt", `  ["aws key", /\\bAKIA[0-9A-Z]{16}/g],\n`, ""],
   ["Schwärzmuster GitHub entfernt", `  ["github token", /\\bgh[pousr]_[A-Za-z0-9]{30,}/g],\n`, ""],
   ["Schwärzmuster Supabase entfernt", `  ["supabase key", /\\bsb_secret_[A-Za-z0-9_-]{16,}/g],\n`, ""],
   ["Schwärzmuster npm entfernt", `  ["npm token", /\\bnpm_[A-Za-z0-9]{30,}/g],\n`, ""],
   ["Bearer ohne Ziffernprobe", `/\\bBearer\\s+(?=[^\\s]*\\d)[A-Za-z0-9`, `/\\bBearer\\s+[A-Za-z0-9`],
-  ["URL-Passwort nicht geschwärzt", `  ["url credentials", /\\b[a-z][a-z0-9+.-]*:`, `  ["url credentials", /\\bnie[a-z0-9+.-]*:`],
+  ["URL-Passwort nicht geschwärzt", `  ["url credentials", /\\b[a-z][a-z0-9+.-]{0,63}:`, `  ["url credentials", /\\bnie[a-z0-9+.-]{0,63}:`],
   ["URL: Platzhalter wird geschwärzt", `(?![$<{[%]|(?:pass|password|changeme|secret|x+)@)`, ``],
+  ["URL: Benutzer wieder Pflicht", `:\\/\\/[^\\s/:@"']*:(?!`, `:\\/\\/[^\\s/:@"']+:(?!`],
+  ["URL: Schema ohne Längengrenze", `[a-z0-9+.-]{0,63}:\\/\\/`, `[a-z0-9+.-]*:\\/\\/`],
   ["Zuweisung nicht mehr geschwärzt", ASSIGN_FROM, "whole"],
   ["Zuweisung: Stichwort service_role entfernt", `|service[_-]?role[_-]?key`, ``],
   ["Zuweisung: Stichwort private_key entfernt", `|private[_-]?key`, ``],
+  ["Zuweisung: Stichwort pass entfernt", `|pwd|(?<![a-z])pass|`, `|pwd|`],
+  ["Zuweisung: pass auch als Ende eines Worts (bypass)", `|(?<![a-z])pass|`, `|pass|`],
   ["Zuweisung: JSON-Anführungszeichen vor dem Doppelpunkt", `auth[_-]?key)["']?\\s*[:=]`, `auth[_-]?key)\\s*[:=]`],
   ["Zuweisung: Passwort mit $ gilt als Verweis", `/^(?:\\$\\{|\\$[A-Z_][A-Z0-9_]*[;,)]*$|<`, `/^(?:\\$|<`],
-  ["Zuweisung: Code wird geschwärzt", `import\\.meta)|\\(/;`, `import\\.meta)/;`],
+  ["Zuweisung: Code wird geschwärzt", `|| !value.includes("("));`, `|| true);`],
+  ["Zuweisung: Klammer in Anführungszeichen gilt als Code", `(/["']$/.test(head) || !value.includes("("))`, `!value.includes("(")`],
+  ["Kürzen vor dem Schwärzen", `const clean = redactText(text).replace(`, `const clean = String(text).replace(`],
   ["Langer Block nicht geschwärzt", `(looksEncoded(value) ? "[redacted: long encoded value]" : value)`, `value`],
   ["Langer Block: check meldet nichts", `if ((line.match(LONG_ENCODED) ?? []).some(looksEncoded)) found.push(`, `if (false) found.push(`],
   ["Langer Block: Hash wird geschwärzt", `/[A-Z]/.test(value) && /[a-z]/.test(value) && /\\d/.test(value) && `, ``],
