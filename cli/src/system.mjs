@@ -1,11 +1,15 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
-import { basename, extname, resolve } from "node:path";
+import { basename, extname, resolve, win32 } from "node:path";
 
 // Dieselbe Markierung wie beim Markdown-Download im Web (shared/lib/ai-marker.ts im Haupt-Repo).
 const AI_GENERATED_MARKER = "<!-- ai-generated: true; generator: PromptPrinter (Finn) -->";
 // Grosszügig: ein kalter Start von PowerShell dauerte auf einem CI-Rechner über zehn Sekunden.
 const CLIPBOARD_TIMEOUT_MS = 30_000;
+
+// Unter Windows mit festem Pfad: ein Programm ohne Pfad sucht Node dort zuerst im Arbeitsordner, und in dem kann
+// ein fremdes powershell.exe oder rundll32.exe liegen (das Programm läuft oft in einem fremden Projekt).
+const system32 = (env) => win32.join(env.SystemRoot ?? "C:\\Windows", "System32");
 
 // Windows über PowerShell statt clip.exe: clip behält ein Byte-Order-Mark als unsichtbares Zeichen im
 // Prompt und errät ohne es die Kodierung falsch (ein einzelnes "ä" kommt kaputt an). Der Text steht nie im
@@ -18,7 +22,9 @@ const WINDOWS_SET_CLIPBOARD = [
 ];
 
 function clipboardCandidates(platform, env) {
-  if (platform === "win32") return [{ command: "powershell", args: WINDOWS_SET_CLIPBOARD }];
+  if (platform === "win32") {
+    return [{ command: win32.join(system32(env), "WindowsPowerShell", "v1.0", "powershell.exe"), args: WINDOWS_SET_CLIPBOARD }];
+  }
   if (platform === "darwin") return [{ command: "pbcopy", args: [] }];
   return [
     ...(env.WAYLAND_DISPLAY ? [{ command: "wl-copy", args: [] }] : []),
@@ -89,12 +95,12 @@ export async function savePrompt(prompt, { name, cwd = process.cwd(), now = new 
 }
 
 /** Öffnet eine Adresse im Browser. Scheitert still: die Adresse steht ohnehin im Terminal. */
-export function openBrowser(url, { platform = process.platform, spawn = nodeSpawn } = {}) {
+export function openBrowser(url, { platform = process.platform, env = process.env, spawn = nodeSpawn } = {}) {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
   const [command, args] =
     platform === "win32"
-      ? ["rundll32", ["url.dll,FileProtocolHandler", parsed.href]]
+      ? [win32.join(system32(env), "rundll32.exe"), ["url.dll,FileProtocolHandler", parsed.href]]
       : platform === "darwin"
         ? ["open", [parsed.href]]
         : ["xdg-open", [parsed.href]];

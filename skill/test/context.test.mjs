@@ -3,9 +3,20 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +26,7 @@ import {
   cleanTerms,
   extractOrder,
   extractPathCandidates,
+  findGit,
   findSecrets,
   isDeniedPath,
   redactText,
@@ -667,6 +679,52 @@ describe("doctor und Aufruf", () => {
 
   test("--version nennt Skript und Schema", () => {
     assert.match(run(["--version"]).out, /^pp-context \d+\.\d+\.\d+ \(pp-context\/1\)/);
+  });
+});
+
+describe("git nie aus dem Projektordner", () => {
+  const gitName = process.platform === "win32" ? "git.exe" : "git";
+
+  test("findGit sucht nur in absoluten Ordnern des PATH, nicht im Arbeitsordner", () => {
+    const dir = fixture({}, { init: false });
+    const sub = join(dir, "sub");
+    mkdirSync(sub);
+    for (const folder of [dir, sub]) writeFileSync(join(folder, gitName), "", { mode: 0o755 });
+    // Leere und relative Einträge, die vom Arbeitsordner aus genau dorthin zeigen, wo git liegt: trotzdem nicht.
+    const before = process.cwd();
+    process.chdir(dir);
+    try {
+      assert.equal(findGit({ PATH: [".", "", "sub", join(dir, "fehlt")].join(delimiter) }), null);
+    } finally {
+      process.chdir(before);
+    }
+    assert.equal(findGit({ PATH: [join(dir, "fehlt"), sub].join(delimiter) }), join(sub, gitName));
+    assert.equal(findGit({ PATH: `"${sub}"` }), join(sub, gitName));
+  });
+
+  test("eine git-Datei im Projekt läuft nie mit, auch nicht über einen leeren Eintrag im PATH", () => {
+    const dir = fixture({ "package.json": "{}", "src/a.ts": "needle\n" });
+    const marker = join(dir, "gepflanzt.txt");
+    if (process.platform === "win32") {
+      // Harmlos: eine Kopie von cmd.exe. Liefe sie, stünden ihre Ausgaben statt der Fakten von git im Ergebnis.
+      copyFileSync(join(process.env.SystemRoot ?? "C:\\Windows", "System32", "cmd.exe"), join(dir, "git.exe"));
+    } else {
+      writeFileSync(join(dir, "git"), `#!/bin/sh\necho gepflanzt > '${marker}'\n`, { mode: 0o755 });
+    }
+    // Ohne die Variable, mit der Windows den Arbeitsordner überspringt; anderswo meint ein leerer Eintrag im PATH ihn.
+    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "nodefaultcurrentdirectoryinexepath"));
+    if (process.platform !== "win32") env.PATH = `${delimiter}${process.env.PATH}`;
+    const json = (...args) => {
+      const result = spawnSync(process.execPath, [SCRIPT, ...args, "--cwd", dir, "--format", "json"], { cwd: dir, env, encoding: "utf8" });
+      assert.equal(result.status, 0, result.stderr);
+      return JSON.parse(result.stdout);
+    };
+    const pack = json("pack");
+    assert.equal(existsSync(marker), false, "die Datei aus dem Projekt ist gelaufen");
+    assert.equal(pack.root, realpathSync.native(dir).replaceAll("\\", "/"));
+    assert.equal(pack.repo.branch, "main");
+    assert.match(json("doctor").git, /^git version /);
+    assert.deepEqual(json("search", "--terms", "needle").results.map((r) => r.path), ["src/a.ts"]);
   });
 });
 

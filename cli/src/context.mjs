@@ -1,24 +1,27 @@
 #!/usr/bin/env node
 // ---- Kopie: hier nicht ändern -----------------------------------------------------------------------
-// Herkunft: skill/pp/scripts/context.mjs in diesem Repo (BajKasum/PromptPrinter) bei Commit
-// e0edf3a0c4d20afcb2fcb6ea88d52664fd471d6c (Skill 0.4.0, Skript 0.2.0), MIT. Nie eine ältere Fassung:
-// Skill 0.3.0 liess Geheimnisse durch. Gegenüber der Quelle geändert sind nur dieser Kopf und `export`
-// vor renderPack, damit das Programm den Kontext ohne Kindprozess baut. Die Prüfsumme der Quelle steht
-// in contract/context-pin.json: test/context.test.mjs prüft, dass diese Datei bis auf die zwei Stellen
-// der Quelle entspricht, `npm run contract` meldet, wenn sich die Quelle im Checkout ändert.
+// Herkunft: skill/pp/scripts/context.mjs in diesem Repo (BajKasum/PromptPrinter), Skill 0.4.0, Skript 0.2.0, MIT.
+// Stand: Commit e82896c1bc185717213415ccad378e90abeb74dc und die Commits danach, die diese Kopie ändern; Quelle und
+// Kopie ändern sich immer im selben Commit. Nie eine ältere Fassung: Skill 0.3.0 liess Geheimnisse durch. Gegenüber
+// der Quelle geändert sind nur dieser Kopf und `export` vor renderPack, damit das Programm den Kontext ohne
+// Kindprozess baut. Die Prüfsumme der Quelle steht in contract/context-pin.json: test/context.test.mjs prüft, dass
+// diese Datei bis auf die zwei Stellen der Quelle entspricht, `npm run contract` meldet, wenn sich die Quelle im
+// Checkout ändert.
 // ---- Ende der Herkunft -------------------------------------------------------------------------------
 // Kontext-Skript des Skills /pp: sammelt Fakten aus Git und Dateien, prüft einen Auftrag, legt ihn ab.
 //   node context.mjs <pack|search|check|save|doctor> [Optionen]
 //
 // Regeln, die der Test festhält:
 //   - keine Abhängigkeiten, kein Netzwerk (kein Import von net, http, https, dns, kein fetch)
-//   - Git nur über execFileSync mit Argumentliste, nie über eine Shell
+//   - Git nur über execFileSync mit Argumentliste, nie über eine Shell, und nur mit dem Pfad aus findGit
 //   - jede Ausgabezeile läuft durch das Schwärzen (emit)
 //   - schreibt nur bei `save`, und nur unter <Wurzel>/.promptprinter/prompts/
 //   - endet immer mit Exit-Code 0; ein Fehler ist eine Zeile "hint: ..."
 
 import { execFile, execFileSync } from "node:child_process";
 import {
+  accessSync,
+  constants,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -30,7 +33,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
@@ -44,7 +47,7 @@ const SEARCH_BUDGET_MS = 1500;
 const GIT_TIMEOUT_MS = 3000;
 const PACK_MAX_CHARS = 5000;
 
-const state = { debug: false, hints: [], gitMissing: false };
+const state = { debug: false, hints: [], gitMissing: false, gitPath: null };
 
 function hint(message) {
   if (!state.hints.includes(message)) state.hints.push(message);
@@ -203,16 +206,47 @@ const gitOptions = (cwd, timeoutMs) => ({
   env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_OPTIONAL_LOCKS: "0" },
 });
 
+// Ein Programm ohne Pfad sucht Node unter Windows zuerst im Arbeitsordner, und der ist hier das fremde Projekt: eine
+// git.exe darin liefe mit. Ein leerer oder relativer Eintrag im PATH zeigt auf jedem System in den Arbeitsordner.
+// Deshalb wird git vorher gesucht, nur in absoluten Ordnern, unter Windows wie bei Node mit .com und .exe.
+export function findGit(env = process.env, platform = process.platform) {
+  const windows = platform === "win32";
+  for (const entry of String(env.PATH ?? env.Path ?? "").split(windows ? ";" : ":")) {
+    // Windows lässt Einträge in Anführungszeichen zu.
+    const dir = entry.replace(/^"(.*)"$/, "$1");
+    if (!dir || !isAbsolute(dir)) continue;
+    for (const name of windows ? ["git.com", "git.exe"] : ["git"]) {
+      const file = join(dir, name);
+      try {
+        accessSync(file, constants.X_OK);
+        if (statSync(file).isFile()) return file;
+      } catch {
+        /* nicht in diesem Ordner */
+      }
+    }
+  }
+  return null;
+}
+
+function gitNotFound() {
+  state.gitMissing = true;
+  hint("git not found: facts come from the file system only");
+  return null;
+}
+
+// Der Pfad zu git, einmal je Prozess gesucht.
+function gitCommand() {
+  if (state.gitMissing) return null;
+  state.gitPath ??= findGit();
+  return state.gitPath ?? gitNotFound();
+}
+
 function gitFailed(error, args, cwd) {
   if (error.code === "ENOENT" && cwd && !existsSync(cwd)) {
     hint(`folder not found: ${toPosix(cwd)}`);
     return null;
   }
-  if (error.code === "ENOENT") {
-    state.gitMissing = true;
-    hint("git not found: facts come from the file system only");
-    return null;
-  }
+  if (error.code === "ENOENT") return gitNotFound();
   if (error.code === "ETIMEDOUT" || error.signal === "SIGTERM" || error.killed) {
     hint(`git ${args[0]} timed out and was skipped`);
     return null;
@@ -222,9 +256,10 @@ function gitFailed(error, args, cwd) {
 }
 
 function git(cwd, args, timeoutMs = GIT_TIMEOUT_MS) {
-  if (state.gitMissing) return null;
+  const command = gitCommand();
+  if (!command) return null;
   try {
-    const out = execFileSync("git", gitArgs(args), gitOptions(cwd, timeoutMs));
+    const out = execFileSync(command, gitArgs(args), gitOptions(cwd, timeoutMs));
     dbg("git", args.slice(0, 3).join(" "), "ok");
     return out;
   } catch (error) {
@@ -234,9 +269,10 @@ function git(cwd, args, timeoutMs = GIT_TIMEOUT_MS) {
 
 // Unabhängige Git-Aufrufe der Suche laufen nebeneinander: der Prozessstart kostet unter Windows je rund 100 ms.
 async function gitAsync(cwd, args, timeoutMs = GIT_TIMEOUT_MS) {
-  if (state.gitMissing) return null;
+  const command = gitCommand();
+  if (!command) return null;
   try {
-    const { stdout } = await execFileAsync("git", gitArgs(args), gitOptions(cwd, timeoutMs));
+    const { stdout } = await execFileAsync(command, gitArgs(args), gitOptions(cwd, timeoutMs));
     dbg("git", args.slice(0, 3).join(" "), "ok");
     return stdout;
   } catch (error) {

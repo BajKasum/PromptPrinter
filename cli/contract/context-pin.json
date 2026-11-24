@@ -1,8 +1,8 @@
 {
   "repo": "BajKasum/PromptPrinter",
   "path": "skill/pp/scripts/context.mjs",
-  "commit": "e0edf3a0c4d20afcb2fcb6ea88d52664fd471d6c",
+  "commit": "e82896c1bc185717213415ccad378e90abeb74dc",
   "skill": "0.4.0",
   "script": "0.2.0",
-  "sha256": "de8e3138113454a871bb925a6f701e45b574a1da60f46a2b1a5a76bcae4c5509"
+  "sha256": "a1e40221d5bb119a9884a0fea3d0ccae7895b02caf68396b276c1590f2667275"
 }
