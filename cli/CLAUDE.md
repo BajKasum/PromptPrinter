@@ -53,6 +53,7 @@ Node 22 oder neuer, ESM, **keine Laufzeit-Abhängigkeiten**.
 - **Ohne Konto geht ein Key nur an seinen Endpunkt:** nur aus `PROMPTPRINTER_API_KEY` (nie als Argument), nur als `Authorization`, wenn es einen gibt, keine Umleitung, `https` ausser auf dem eigenen Rechner, keine Zugangsdaten in `--base-url`. Was das Modell schickt, ist fremd wie Text vom Server: durch `sanitize`.
 - **Kein Token, kein Geräte-Code in einer Ausgabe.**
 - **Das neue Refresh-Token wird gespeichert, bevor es jemand benutzt.** Auf Produktion erkennt der Auth-Server wiederverwendete Tokens.
+- **Kein Programm nur mit seinem Namen starten.** Node sucht es unter Windows zuerst im Arbeitsordner, und das Programm läuft oft in einem fremden Projekt: git über `findGit` (`context.mjs`, nur absolute PATH-Ordner), PowerShell, rundll32, `whoami` und `icacls` mit festem Pfad aus System32, `/an` über `findOnPath`.
 
 ## Verhältnis zur Web-App
 
