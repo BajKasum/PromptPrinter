@@ -282,7 +282,10 @@ function renderFilesContext(files: LoadedFile[], hasBrain: boolean): string {
       skipped.push(file.name);
       continue;
     }
-    if (file.text === null) {
+    // Nur Text zählt gegen das Budget. Der Inhalt kommt aus einem fremden Speicher (server/project-file-cache.ts),
+    // sein Typ ist nur eine Behauptung: ein Objekt ergäbe "[object Object]" im Prompt und ein Budget von NaN, an dem
+    // keine Grenze mehr greift.
+    if (typeof file.text !== "string") {
       skipped.push(file.name);
       continue;
     }
