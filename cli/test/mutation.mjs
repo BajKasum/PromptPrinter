@@ -58,6 +58,8 @@ const mutations = [
   ["src/system.mjs", "Speichern überschreibt", '{ flag: "wx" });\n      return { kind: "saved", path };', '{ flag: "w" });\n      return { kind: "saved", path };'],
   ["src/system.mjs", "Speichern ohne Kennzeichnung", "`${AI_GENERATED_MARKER}\\n\\n${prompt}\\n`", "`${prompt}\\n`"],
   ["src/system.mjs", "Browser öffnet alles", 'if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;', ""],
+  ["src/system.mjs", "Windows: Zwischenablage über den Namen powershell", 'win32.join(system32(env), "WindowsPowerShell", "v1.0", "powershell.exe")', '"powershell"'],
+  ["src/system.mjs", "Windows: Browser über den Namen rundll32", 'win32.join(system32(env), "rundll32.exe")', '"rundll32"'],
   ["src/system.mjs", "Zwischenablage nicht als UTF-8", 'pipeTo(candidate, Buffer.from(text, "utf8"), spawn)', 'pipeTo(candidate, Buffer.from(text, "utf16le"), spawn)'],
   ["src/render.mjs", "Abschluss am Zeilenende übersehen", 'if (run >= length && char === "`") {', "if (false) {"],
   ["src/render.mjs", "offener Block bleibt offen", "if (this.open) this.closeFrame();", ""],

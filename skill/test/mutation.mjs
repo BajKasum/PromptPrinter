@@ -52,7 +52,10 @@ const context = [
   ["Terme: Shell-Zeichen bleiben", `part.replace(/[^\\p{L}\\p{N}_.\\-/: ]/gu, "")`, `part`],
   ["pack: Status ohne Untracked", `"status", "--porcelain=v1", "-z", "--untracked-files=all"]);\n    if (status != null)`, `"status", "--porcelain=v1", "-z", "--untracked-files=no"]);\n    if (status != null)`],
   ["Netzwerk-Import eingeschleust", `import { promisify } from "node:util";`, `import { promisify } from "node:util";\nimport { get } from "node:https";`],
-  ["Shell statt Argumentliste", `const out = execFileSync("git", gitArgs(args), gitOptions(cwd, timeoutMs));`, `const out = execFileSync("git", gitArgs(args), { ...gitOptions(cwd, timeoutMs), shell: true });`],
+  ["Shell statt Argumentliste", `const out = execFileSync(command, gitArgs(args), gitOptions(cwd, timeoutMs));`, `const out = execFileSync(command, gitArgs(args), { ...gitOptions(cwd, timeoutMs), shell: true });`],
+  ["pack: git wieder nur mit Namen", `const out = execFileSync(command, gitArgs(args),`, `const out = execFileSync("git", gitArgs(args),`],
+  ["search: git wieder nur mit Namen", `await execFileAsync(command, gitArgs(args),`, `await execFileAsync("git", gitArgs(args),`],
+  ["git: relative Einträge im PATH zählen", `if (!dir || !isAbsolute(dir)) continue;`, `if (!dir) continue;`],
 ];
 const text = [
   ["allowed-tools wieder mit Stern vor dem Skript", `allowed-tools: Bash(node "\${CLAUDE_SKILL_DIR}/scripts/context.mjs" *)`, `allowed-tools: Bash(node *context.mjs*)`, SKILL],

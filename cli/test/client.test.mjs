@@ -361,7 +361,7 @@ test("Zwischenablage: Windows bekommt den Text als UTF-8 über stdin, nie im Bef
   const { spawn, calls } = fakeSpawn(() => 0);
   const text = "Grüße $env:PATH";
   assert.equal(await copyToClipboard(text, { platform: "win32", env: {}, spawn }), true);
-  assert.equal(calls[0].command, "powershell");
+  assert.equal(calls[0].command, "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
   assert.equal(calls[0].options.shell, undefined);
   assert.equal(calls[0].args.join(" ").includes("Grüße"), false);
   assert.equal(calls[0].chunks[0].toString("utf8"), text);
@@ -433,9 +433,20 @@ test("Browser: nur http und https, jede Plattform mit ihrem Programm, ohne Shell
   assert.equal(openBrowser("file:///etc/passwd", { platform: "linux", spawn }), false);
   assert.equal(openBrowser("javascript:alert(1)", { platform: "win32", spawn }), false);
   assert.equal(calls.length, 0);
-  openBrowser("https://promptprinter.app/cli", { platform: "win32", spawn });
+  openBrowser("https://promptprinter.app/cli", { platform: "win32", env: {}, spawn });
   openBrowser("https://promptprinter.app/cli", { platform: "darwin", spawn });
   openBrowser("https://promptprinter.app/cli", { platform: "linux", spawn });
-  assert.deepEqual(calls.map((c) => c.command), ["rundll32", "open", "xdg-open"]);
+  assert.deepEqual(calls.map((c) => c.command), ["C:\\Windows\\System32\\rundll32.exe", "open", "xdg-open"]);
   assert.equal(calls.every((c) => c.options.shell === undefined), true);
+});
+
+// Ohne Pfad sucht Node unter Windows zuerst im Arbeitsordner: ein powershell.exe oder rundll32.exe im Projekt liefe mit.
+test("Windows: PowerShell und rundll32 kommen mit festem Pfad aus System32, nie über den Namen", async () => {
+  const env = { SystemRoot: "D:\\Win" };
+  const clipboard = fakeSpawn(() => 0);
+  assert.equal(await copyToClipboard("x", { platform: "win32", env, spawn: clipboard.spawn }), true);
+  assert.deepEqual(clipboard.calls.map((c) => c.command), ["D:\\Win\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"]);
+  const browser = fakeSpawn(() => 0);
+  openBrowser("https://promptprinter.app/cli", { platform: "win32", env, spawn: browser.spawn });
+  assert.deepEqual(browser.calls.map((c) => c.command), ["D:\\Win\\System32\\rundll32.exe"]);
 });
