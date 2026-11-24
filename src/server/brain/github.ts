@@ -1,6 +1,7 @@
 import "server-only";
 
 import { optionalEnv } from "@/server/env-value";
+import { readCappedText } from "@/server/llm/http";
 import { logEvent, logWarning } from "@/shared/lib/observability";
 import { selectSignalFiles, summarizeTree } from "@/server/brain/github-select";
 
@@ -135,6 +136,12 @@ export type RepoSnapshot = {
 
 /** Und höchstens so viel Text je Datei mitnehmen. */
 const MAX_REPO_FILE_CHARS = 20000;
+
+/**
+ * Größere Dateien liest der Import nicht: wie groß sie sind, bestimmt das fremde Repo, und bis zu 14 laufen parallel.
+ * Die Grenze greift an der Größe aus GitHubs Baum, bevor die Auswahl ihre Plätze vergibt, und beim Lesen.
+ */
+const MAX_REPO_FILE_BYTES = 200_000;
 
 /** Verzeichnisse, deren Inhalt über die Architektur nichts aussagt. */
 const IGNORED_TREE_PREFIXES = [
@@ -291,12 +298,18 @@ export async function fetchRepoSnapshot(
     signal
   );
 
-  const paths = (tree.tree ?? [])
+  const blobs = (tree.tree ?? [])
     .filter((entry) => entry.type === "blob" && typeof entry.path === "string")
-    .map((entry) => entry.path as string)
-    .filter((path) => !IGNORED_TREE_PREFIXES.some((prefix) => path.startsWith(prefix)));
+    .filter((entry) => !IGNORED_TREE_PREFIXES.some((prefix) => (entry.path as string).startsWith(prefix)));
+  const paths = blobs.map((entry) => entry.path as string);
 
   if (paths.length === 0) throw new GithubImportError("repo_empty");
+
+  // Eine zu große Datei zählt im Baum und in der Anzahl mit, kommt aber nicht in die Auswahl: so geht ihr Platz an die
+  // nächste Signaldatei. Fehlt die Größe, entscheidet die Grenze beim Lesen (fetchRawFile).
+  const readable = blobs
+    .filter((entry) => !(typeof entry.size === "number" && entry.size > MAX_REPO_FILE_BYTES))
+    .map((entry) => entry.path as string);
 
   // Parallel, denn keine dieser Dateien hängt von einer anderen ab, und sie
   // liegen alle auf dem CDN. Seriell wären es bei 14 Dateien 14 addierte
@@ -304,7 +317,7 @@ export async function fetchRepoSnapshot(
   // sichtbar wartet.
   const files = (
     await Promise.all(
-      selectSignalFiles(paths).map((path) => fetchRawFile(ref, defaultBranch, path, signal))
+      selectSignalFiles(readable).map((path) => fetchRawFile(ref, defaultBranch, path, signal))
     )
   ).filter((file): file is RepoFile => file !== null);
 
@@ -348,9 +361,9 @@ export async function fetchRepoHeadSha(ref: GithubRepoRef, signal?: AbortSignal)
 export const GIT_SHA = /^[0-9a-f]{40}$/;
 
 /**
- * Eine einzelne Datei vom Raw-CDN. Ein Fehlschlag ist hier kein Grund, die
- * ganze Analyse abzubrechen — eine fehlende Datei von vierzehn heisst nur,
- * dass ein Signal weniger da ist.
+ * Eine einzelne Datei vom Raw-CDN. Ein Fehlschlag ist hier kein Grund, die ganze Analyse abzubrechen — eine fehlende
+ * Datei von vierzehn heisst nur, dass ein Signal weniger da ist. Eine Datei über MAX_REPO_FILE_BYTES zählt wie eine
+ * fehlende (der Inhalt kann größer ankommen, als der Baum ankündigt, etwa wenn der Branch inzwischen weiterzog).
  */
 async function fetchRawFile(
   ref: GithubRepoRef,
@@ -364,19 +377,22 @@ async function fetchRawFile(
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   const url = `${RAW_HOST}/${encodeURIComponent(ref.owner)}/${encodeURIComponent(ref.repo)}/${encodeURIComponent(branch)}/${encodedPath}`;
 
+  let res: Response | undefined;
   try {
-    const res = await fetch(url, {
+    res = await fetch(url, {
       signal: withRequestTimeout(signal),
       redirect: "error",
       headers: { "user-agent": "PromptPrinter-ProjectBrain" },
     });
     if (!res.ok) return null;
-    const text = await res.text();
+    const text = await readCappedText(res, MAX_REPO_FILE_BYTES);
     return {
       path,
       content: text.length > MAX_REPO_FILE_CHARS ? `${text.slice(0, MAX_REPO_FILE_CHARS)}…` : text,
     };
   } catch {
+    // Zu groß oder abgebrochen: die Verbindung schließen, statt den Rest bis zum Zeitlimit weiterzuladen.
+    await res?.body?.cancel().catch(() => {});
     return null;
   }
 }

@@ -496,4 +496,79 @@ describe("fetchRepoSnapshot", () => {
     const snapshot = await fetchRepoSnapshot(ref);
     expect(snapshot.files).toHaveLength(1);
   });
+
+  // Ein fremdes Repo bestimmt, wie groß seine Dateien sind. Bis zu 14 laufen parallel, ungebremst gelesen reichten
+  // ein paar Signaldateien von je 100 MB für einen Speicherüberlauf.
+  describe("Größengrenze je Datei", () => {
+    /** Ein Body, der seine Bytes erst beim Lesen erzeugt und mitzählt, wie viel gelesen und ob abgebrochen wurde. */
+    function lazyBody(totalBytes: number, chunkBytes = 64 * 1024) {
+      let pulled = 0;
+      let cancelled = false;
+      const stream = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (pulled >= totalBytes) return controller.close();
+          const size = Math.min(chunkBytes, totalBytes - pulled);
+          pulled += size;
+          controller.enqueue(new Uint8Array(size).fill(0x61));
+        },
+        cancel() {
+          cancelled = true;
+        },
+      });
+      return { stream, pulledBytes: () => pulled, cancelled: () => cancelled };
+    }
+
+    function rawUrls(): string[] {
+      return fetchMock.mock.calls
+        .map((call) => String(call[0]))
+        .filter((url) => url.startsWith("https://raw.githubusercontent.com/"));
+    }
+
+    it("holt eine Datei, die laut Baum zu groß ist, gar nicht erst und gibt ihren Platz weiter", async () => {
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }))
+        .mockResolvedValueOnce(
+          jsonResponse({
+            tree: [
+              { path: "README.md", type: "blob", size: 50_000_000 },
+              { path: "docs/README.md", type: "blob", size: 1_200 },
+              { path: "web/README.md", type: "blob", size: 900 },
+            ],
+          })
+        )
+        .mockResolvedValue(textResponse("# Doku"));
+
+      const snapshot = await fetchRepoSnapshot(ref);
+
+      expect(rawUrls()).not.toContain("https://raw.githubusercontent.com/acme/app/main/README.md");
+      // Zwei Plätze je Dateiname: die große Datei belegt keinen davon.
+      expect(snapshot.files.map((f) => f.path).sort()).toEqual(["docs/README.md", "web/README.md"]);
+      // Im Baum zählt sie weiter mit, sie wird nur nicht gelesen.
+      expect(snapshot.fileCount).toBe(3);
+    });
+
+    it("bricht das Lesen ab, sobald eine Datei größer ankommt als angekündigt", async () => {
+      const body = lazyBody(10_000_000);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ default_branch: "main" }))
+        .mockResolvedValueOnce(
+          jsonResponse({
+            tree: [
+              { path: "package.json", type: "blob", size: 2_000 },
+              { path: "README.md", type: "blob", size: 1_000 },
+            ],
+          })
+        )
+        .mockImplementation(async (url: string) =>
+          String(url).endsWith("/package.json") ? new Response(body.stream) : textResponse("# App")
+        );
+
+      const snapshot = await fetchRepoSnapshot(ref);
+
+      expect(snapshot.files.map((f) => f.path)).toEqual(["README.md"]);
+      expect(body.pulledBytes()).toBeLessThan(1_000_000);
+      // Abgebrochen, nicht nur liegen gelassen: sonst lädt die Verbindung bis zum Zeitlimit weiter.
+      expect(body.cancelled()).toBe(true);
+    });
+  });
 });
