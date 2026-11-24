@@ -7,7 +7,7 @@ allowed-tools: Bash(node "${CLAUDE_SKILL_DIR}/scripts/context.mjs" *) Read(~/.cl
 license: MIT
 compatibility: Needs git and Node.js 22+ for scripts/context.mjs; works in a reduced mode without them.
 metadata:
-  version: "0.4.0"
+  version: "0.4.1"
   author: "PromptPrinter"
 ---
 

@@ -30,7 +30,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const SCHEMA = "pp-context/1";
 const MAX_STDIN = 200 * 1024;
 const PACK_BUDGET_MS = 2500;
