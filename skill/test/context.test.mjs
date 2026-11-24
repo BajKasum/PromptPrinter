@@ -184,9 +184,35 @@ describe("Schwärzen", () => {
     assert.equal(redactText(text), text);
   });
 
+  test("SMTP_PASS, eine Redis-URL ohne Benutzer und ein Wert mit Klammer in Anführungszeichen werden geschwärzt", () => {
+    const cases = [
+      ["SMTP_PASS=Sommer-Regen-2026-Lang", "Sommer-Regen-2026-Lang"],
+      ['DB_PASS: "Winter-Schnee-2026-Kurz"', "Winter-Schnee-2026-Kurz"],
+      ['auth: { user: "finn", pass: "Herbst-Laub-2026-Bunt" }', "Herbst-Laub-2026-Bunt"],
+      ["REDIS_URL=redis://:GeheimesRedisPasswort123@cache:6379/0", "GeheimesRedisPasswort123"],
+      ['API_TOKEN="abc(123)def-geheim-456789"', "abc(123)def-geheim-456789"],
+    ];
+    for (const [line, value] of cases) {
+      assert.ok(!redactText(line).includes(value), `Wert noch da: ${line}`);
+      assert.equal(findSecrets(line).length, 1, line);
+    }
+    // Wörter, die auf pass enden, Adressen ohne Passwort oder mit Platzhalter und Code ohne Anführungszeichen bleiben.
+    const fine = [
+      "bypass: skip-the-cache-for-now",
+      'compass = "north-north-west"',
+      "REDIS_URL=redis://cache:6379/0",
+      "REDIS_URL=redis://:password@localhost:6379",
+      "token: resolveTokenFromConfig(request)",
+    ].join("\n");
+    assert.deepEqual(findSecrets(fine), []);
+    assert.equal(redactText(fine), fine);
+  });
+
   test("lange Zeilen bleiben schnell", () => {
     const started = Date.now();
     redactText("a".repeat(200 * 1024));
+    // Viele Wortgrenzen in einer Folge aus Zeichen eines URL-Schemas: ohne Grenze für das Schema quadratisch.
+    redactText("a.".repeat(100 * 1024));
     findSecrets("a_".repeat(100 * 1024));
     assert.ok(Date.now() - started < 2000, `${Date.now() - started} ms`);
   });
@@ -453,6 +479,36 @@ describe("search", () => {
     const [hit] = (await searchRepo(dir, "needle", "S")).results;
     assert.equal(hit.lines.length, 3);
     assert.ok(hit.lines.every((l) => l.text.length <= 160));
+  });
+
+  test("lässt *_PASS, eine Redis-URL ohne Benutzer und einen Wert mit Klammer nicht durch", () => {
+    const compose = [
+      "services:",
+      "  app:",
+      "    environment:",
+      "      - SMTP_PASS=Sommer-Regen-2026-Lang",
+      "      - REDIS_URL=redis://:GeheimesRedisPasswort123@cache:6379/0",
+      '      - API_TOKEN="abc(123)def-geheim-456789"',
+    ].join("\n");
+    const dir = fixture({ "docker-compose.yml": `${compose}\n` });
+    const { out } = run(["search", "--cwd", dir, "--terms", "SMTP_PASS,REDIS_URL,API_TOKEN,DB_PASSWORD", "--size", "S"]);
+    assert.match(out, /docker-compose\.yml/);
+    for (const value of ["Sommer-Regen-2026-Lang", "GeheimesRedisPasswort123", "abc(123)def-geheim-456789"]) {
+      assert.ok(!out.includes(value), value);
+    }
+  });
+
+  test("erst schwärzen, dann kürzen: ein Geheimnis am Schnitt bleibt ganz verborgen", async () => {
+    // Das @ der Adresse steht hinter dem Schnitt bei 160 Zeichen, der Anfang des Passworts davor.
+    const dir = fixture({ "config.ts": `${"x".repeat(120)} DATABASE_URL=postgres://admin:hunter2hunter2hunter2@db.example.com/app\n` });
+    // Ebenso das Token im Betreff, der bei 72 Zeichen gekürzt wird.
+    git(dir, "commit", "-q", "--allow-empty", "-m", `Commit ${"y".repeat(56)} ${FAKE.github}`);
+    const lines = (await searchRepo(dir, "DATABASE_URL", "S")).results.flatMap((r) => r.lines.map((l) => l.text));
+    assert.match(lines.join("\n"), /DATABASE_URL=/);
+    assert.ok(!lines.some((l) => l.includes("hunter2")), lines.join("\n"));
+    const { out } = run(["pack", "--cwd", dir]);
+    assert.match(out, /Commit y+ /);
+    assert.ok(!out.includes(FAKE.github.slice(0, 7)), out);
   });
 
   test("Sperrliste, Lockfiles und gebaute Ordner liefern keine Treffer", async () => {
