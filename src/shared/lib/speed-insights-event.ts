@@ -11,14 +11,18 @@
 // - Hinter dem Fragezeichen können Einmalwerte stehen (Anmelde- und
 //   Bestätigungslinks hängen `code` oder `token_hash` an), hinter dem Doppelkreuz
 //   Fragmente. Beides ist für eine Ladezeit ohne Wert.
+// - Ein geteilter Prompt trägt seinen Link-Code im Pfad (`/geteilt/<token>`,
+//   server/prompt-share.ts). Er ist keine UUID, aber ein Schlüssel: wer ihn
+//   kennt, liest den Prompt. In eine Messreihe gehört er so wenig wie eine Kennung.
 //
-// Übrig bleibt der Pfad mit `[id]` an Stelle jeder UUID. Das Seitenmuster
-// (`route`, z. B. `/chats/[id]`) bleibt unberührt, es stammt aus dem Paket und
-// enthält schon keine Kennung. Was sich nicht als Adresse lesen lässt, wird
-// nicht gesendet: lieber ein Messwert weniger als einer, den wir nicht
-// geprüft haben.
+// Übrig bleibt der Pfad mit `[id]` an Stelle jeder UUID und `[token]` an Stelle
+// des Link-Codes. Das Seitenmuster (`route`, z. B. `/chats/[id]`) bleibt
+// unberührt, es stammt aus dem Paket und enthält schon keine Kennung. Was sich
+// nicht als Adresse lesen lässt, wird nicht gesendet: lieber ein Messwert
+// weniger als einer, den wir nicht geprüft haben.
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const SHARE_TOKEN = /^\/geteilt\/[^/]+/;
 
 // Vor dem Parsen muss etwas stehen, das eine relative Adresse auflöst. Der Wert
 // kommt nie in die Ausgabe, nur der Pfad.
@@ -33,7 +37,7 @@ export function scrubSpeedInsightsEvent<T extends { url: string }>(event: T): T 
     return null;
   }
 
-  const path = parsed.pathname.replace(UUID, "[id]");
+  const path = parsed.pathname.replace(UUID, "[id]").replace(SHARE_TOKEN, "/geteilt/[token]");
   // Form der Eingabe beibehalten: Mit Ursprung rein, mit Ursprung raus, relativ
   // rein, relativ raus.
   const url = ABSOLUTE_URL.test(event.url) ? `${parsed.origin}${path}` : path;
