@@ -235,6 +235,7 @@ ist nicht gemessen), Linux als Docker-Host, LM Studio und die übrigen Server.
 | `npm run test:e2e` | Playwright-Smoketests im Browser gegen einen lokalen Supabase-Stack (siehe „Ende-zu-Ende-Tests", braucht Docker) |
 | `npm run test:e2e:prod` | Dieselbe Technik gegen den Produktionsaufbau (`next build`, `next start`), siehe „Browser-Test gegen den Produktionsaufbau" |
 | `node scripts/take-screenshots.mjs` | Screenshots aller Seiten in Light+Dark → `screenshots_Docs/` (braucht laufenden Dev-Server, Chrome und `SCREENSHOT_EMAIL`/`SCREENSHOT_PASSWORD` in `.env.local`) |
+| `node scripts/reconcile-project-files-storage.mjs` | Verwaiste Objekte in `project-files` oder `chat-attachments` finden, mit `--delete` entfernen (siehe „Verwaiste Dateien im Speicher") |
 
 ## Environment
 
@@ -1224,7 +1225,43 @@ und gehen bei späteren Antworten erneut mit, soweit sie ins Modell-Budget passe
   (`ZAI_VISION_MODEL`, Default `glm-4.6v`) statt auf `glm-4.5-air`. Teurer, aber nur
   für Züge mit Bild.
 - Verwaiste Objekte im Bucket (ein Aufräumschritt, der nach dem Löschen scheiterte):
-  `node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments`
+  `node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments`, siehe
+  „Verwaiste Dateien im Speicher".
+
+## Verwaiste Dateien im Speicher
+
+Storage-Objekte kaskadieren nicht mit ihrer Zeile. Wer Zeilen löscht (ein Chat, ein Projekt, ein Konto,
+ersetzte Nachrichten), entfernt die Objekte erst danach und lässt sich davon nie aufhalten: scheitert dieser
+Schritt, bleibt ein Objekt ohne Zeile im Bucket. Das kostet Speicher, sonst nichts, die Buckets sind privat.
+Beim Löschen eines Kontos stehen solche Reste als `account.*_cleanup_partial` oder `account.*_cleanup_failed`
+im Log; die Route löscht erst das Konto und entfernt danach die Dateien, ein Fehler dabei lässt also nur
+Objekte zurück, nie ein Konto ohne seine Dateien.
+
+[`scripts/reconcile-project-files-storage.mjs`](../scripts/reconcile-project-files-storage.mjs) findet sie
+und entfernt sie auf Wunsch. Es liest den Service-Role-Zugang aus `.env.local`, sonst `.env`: zeigen die
+Werte dort auf die Produktion, läuft es gegen die Produktion.
+
+| Aufruf | Wirkung |
+|---|---|
+| `node scripts/reconcile-project-files-storage.mjs` | listet verwaiste Objekte in `project-files` (gegen `project_files`) |
+| `node scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments` | dasselbe für `chat-attachments` (gegen `message_attachments`) |
+| `… --delete` | entfernt danach die verwaisten Objekte, die älter als eine Stunde sind |
+
+- **Ganz gelesen.** Bucket und Tabelle werden Seite für Seite gelesen: Storage liefert ohne Angabe 100
+  Einträge, PostgREST höchstens 1000 Zeilen. Ordner haben in `list()` die `id` null, das Skript steigt in
+  jeden ab.
+- **Abbruch statt Raten.** Zählt die Datenbank andere Zeilen, als gelesen wurden, oder zeigt direkt vor dem
+  Löschen doch eine Zeile auf eine der Waisen, war eine Liste unvollständig (Zeilen kamen während des Laufs
+  dazu oder fielen weg): Exit 2, nichts gelöscht, später erneut starten.
+- **Nie frische Objekte.** Was jünger als eine Stunde ist oder keinen Zeitstempel hat, wird nur gelistet:
+  beim Hochladen kommt erst das Objekt, dann die Zeile.
+- **Exit:** 0 fertig, 1 Fehler (falscher Aufruf, Lesen oder Löschen gescheitert), 2 abgebrochen.
+- Node meldet beim Start einmal `MODULE_TYPELESS_PACKAGE_JSON`: das Skript lädt
+  `src/shared/lib/storage-cleanup.ts` ohne Bundler. Ein Hinweis, kein Fehler.
+- **Nicht abgedeckt:** der Bucket `avatars`. Er hat keine Tabelle mit Pfaden, hochladen lässt sich dort
+  nichts mehr (Migration 0048), das Löschen eines Kontos räumt `{uid}/avatar` mit ab.
+- Geprüft gegen eine Attrappe des Clients (`tests/guards/reconcile-project-files-storage.test.ts`), nicht
+  gegen einen echten Bucket.
 
 ## Geschwindigkeitsmessung (Vercel Speed Insights)
 
