@@ -11,6 +11,15 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-25: Nutzungsrichtlinie und Datenschutz nennen das Teilen per Link, die Ladezeit-Messung kürzt den Link-Code (Branch `docs/rechtstexte-geteilte-prompts`, #415)
+
+- **Ziel:** Fund aus #412 (PR #432): Die Nutzungsrichtlinie sagte "Die Inhalte der Nutzer sind nicht öffentlich einsehbar", die Datenschutzerklärung erwähnte das Teilen per Link nicht. Kasum hat am 2026-11-25 entschieden, beide Texte anzupassen. Nicht juristisch geprüft.
+- **Ladezeit-Messung (#415):** `scrubSpeedInsightsEvent` (`shared/lib/speed-insights-event.ts`) ersetzte nur UUIDs. Der Link-Code in `/geteilt/<token>` ging vollständig an Vercel Speed Insights, obwohl Datenschutz und `/cookies` gekürzte Kennungen versprechen, und wer ihn kennt, liest den Prompt. Jetzt wird der Pfad zu `/geteilt/[token]`; Test, Mutation erkannt. Die allgemeinere Variante aus dem Issue (immer das Seitenmuster `route` senden) ist bewusst nicht genommen, damit die übrigen Messreihen bleiben, wie sie sind.
+- **Nutzungsrichtlinie:** Ziffer 1 nennt geteilte Prompts, Ziffer 5 die Verantwortung beim Teilen (der Hinweis auf Schlüssel und persönliche Angaben ist keine Inhaltsprüfung), Ziffer 6 das Aufheben eines Links bei Verstössen, Ziffer 7 die Ausnahme von "nicht öffentlich einsehbar".
+- **Datenschutz:** neuer Abschnitt "Geteilte Prompts (optional)" in Ziffer 2: Link-Code, Konto-Kennung und Zeitpunkt gespeichert; lesbar für jeden mit dem Link, ohne Namen und E-Mail-Adresse; `noindex`; Widerruf oder Löschen von Prompt oder Konto löscht den Link-Code; Kopien Dritter lassen sich nicht zurückholen; Aufrufe je IP-Adresse begrenzt. Dazu Ziffer 2 (Messung), 3, 6 und 8; `LEGAL.lastUpdated` 25. November 2026.
+- **Gate:** grün; einzig `saved-prompt-list.test.tsx` war im vollen Lauf einmal rot (der bekannte Wackeltest, #361) und einzeln grün.
+- **Nicht geprüft:** juristisch; die Seiten im Browser; ob Speed Insights auf promptprinter.app `/geteilt/[token]` meldet (erst nach dem Deployment).
+
 ## 2026-11-25: Analyse schickt Z.ai-Felder nur an Z.ai, Hilfe zu Teilen, `/save` und Registrierung stimmt (Branch `fix/analyse-hilfe-384-412`, #384 und #412)
 
 - **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`); #380 und #425 liefen parallel in einer zweiten Sitzung.
