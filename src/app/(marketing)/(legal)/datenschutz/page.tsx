@@ -93,6 +93,22 @@ export default function DatenschutzPage() {
         {MAX_FILES_PER_PROJECT} Dateien und {MAX_PROJECT_MB} MB pro Projekt). Diese Inhalte werden in
         deinem Workspace gespeichert, damit du sie wieder aufrufen kannst.
       </p>
+      <h3>Geteilte Prompts (optional)</h3>
+      <p>
+        Einen gespeicherten Prompt kannst du <strong>per Link teilen</strong>. Dafür speichern wir
+        zu ihm einen zufälligen, nicht erratbaren Link-Code, deine Konto-Kennung und den Zeitpunkt
+        der Freigabe. Unter dem Link kann <strong>jeder, der ihn kennt</strong>, Titel und Text des
+        Prompts lesen, auch ohne Konto; dein Name, deine E-Mail-Adresse und deine übrigen Inhalte
+        stehen dort nicht. Änderst du den Text, zeigt der Link die neue Fassung. Die Seite ist so
+        gekennzeichnet, dass Suchmaschinen sie nicht aufnehmen sollen. Vor dem Teilen weisen wir
+        dich auf Schlüssel und persönliche Angaben hin, die wir im Text erkennen.
+      </p>
+      <p>
+        Widerrufst du die Freigabe oder löschst du den Prompt oder dein Konto, löschen wir den
+        Link-Code, und der Link führt ins Leere. Was andere vorher gelesen, kopiert oder
+        weitergegeben haben, können wir nicht zurückholen. Wie oft der Link aufgerufen werden kann,
+        begrenzen wir je IP-Adresse der aufrufenden Person (siehe „Nutzungs- und Protokolldaten“).
+      </p>
       <h3>Anhänge im Chat (optional)</h3>
       <p>
         An eine Chat-Nachricht kannst du <strong>Fotos und Dateien</strong> hängen (Bilder wie
@@ -197,8 +213,8 @@ export default function DatenschutzPage() {
         Messwert werden gespeichert: die aufgerufene Seite, die Netzwerkgeschwindigkeit, Browser,
         Gerätetyp und Betriebssystem, das Land, die Art des Messwerts samt dem betroffenen
         Seitenelement, die Version der Messbibliothek und der Zeitpunkt des Empfangs. Adressen mit
-        einer Kennung, etwa die eines einzelnen Chats oder Projekts, kürzen wir vor dem Senden auf ein
-        Muster, und Angaben hinter einem Fragezeichen oder Doppelkreuz in der Adresse senden wir gar
+        einer Kennung, etwa die eines einzelnen Chats, Projekts oder geteilten Prompts, kürzen wir
+        vor dem Senden auf ein Muster, und Angaben hinter einem Fragezeichen oder Doppelkreuz in der Adresse senden wir gar
         nicht erst mit. Nach Angaben von Vercel sind die Messwerte weder einer einzelnen Person noch
         einer IP-Adresse zugeordnet und erlauben es nicht, einen Besuch über mehrere Seiten hinweg
         nachzuvollziehen. Dafür werden weder Cookies gesetzt noch Daten in deinem Browser gespeichert.
@@ -223,7 +239,8 @@ export default function DatenschutzPage() {
       <ul>
         <li>
           <strong>Bereitstellung des Dienstes</strong> (Konto, Erstellung und Speicherung von
-          Projekten, KI-Generierung), zur Erfüllung des Nutzungsvertrags (Art. 6 Abs. 1 lit. b
+          Projekten, KI-Generierung, Teilen gespeicherter Prompts per Link), zur Erfüllung des
+          Nutzungsvertrags (Art. 6 Abs. 1 lit. b
           DSGVO; Art. 31 Abs. 1 revDSG).
         </li>
         <li>
@@ -327,7 +344,8 @@ export default function DatenschutzPage() {
         Wir speichern deine Konto- und Inhaltsdaten, solange dein Konto besteht. Löschst du dein
         Konto, werden Profil, Chats samt Anhängen, Projekte, gespeicherte Prompts sowie hochgeladene
         Projektdateien gelöscht. Dasselbe gilt für Anhänge, wenn du einen einzelnen Chat oder ein
-        Projekt löschst. Zähler für Rate-Limiting liegen in einem
+        Projekt löschst. Eine Freigabe per Link speichern wir, bis du sie widerrufst oder den Prompt
+        oder dein Konto löschst. Zähler für Rate-Limiting liegen in einem
         Zwischenspeicher mit automatischem Ablauf (je nach Zweck von wenigen Minuten bis zu 45 Tagen)
         und werden danach selbsttätig entfernt. Nachrichten aus dem Kontaktformular und E-Mails an uns
         bewahren wir in unserem Postfach so lange auf, wie wir sie für die Antwort und mögliche
@@ -366,7 +384,8 @@ export default function DatenschutzPage() {
         Du kannst dein Konto jederzeit selbst löschen, direkt in der App unter{" "}
         <strong>Einstellungen</strong>. Dabei werden dein Profil, deine Chats und Nachrichten, deine
         Projekte samt hochgeladenen Dateien und Projekt-Gedächtnis, alle Anhänge deiner Chats, deine
-        gespeicherten Prompts sowie hinterlegte API-Schlüssel unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
+        gespeicherten Prompts samt ihren Freigaben per Link sowie hinterlegte API-Schlüssel
+        unwiderruflich entfernt. Die Löschung erfolgt sofort und nicht erst nach
         einer Frist. Ausgenommen ist das Sicherheitsprotokoll (Ziffer 2): Seine Einträge enthalten nur
         deine frühere Konto-Kennung und werden nach spätestens 180 Tagen automatisch gelöscht.
       </p>

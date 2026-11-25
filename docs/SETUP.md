@@ -1282,7 +1282,8 @@ das Paket `@vercel/speed-insights` hängt das Skript an, Vercel stellt
 - **Adressen werden vor dem Senden gekürzt** ([`speed-insights-event.ts`](../src/shared/lib/speed-insights-event.ts)):
   Das Skript schickt `location.href`. Query und Fragment fallen weg (Anmeldelinks
   hängen Einmalwerte an), jede UUID im Pfad wird zu `[id]` (`/chats/<uuid>` →
-  `/chats/[id]`).
+  `/chats/[id]`), der Link-Code eines geteilten Prompts zu `[token]`
+  (`/geteilt/<token>` → `/geteilt/[token]`; wer ihn kennt, liest den Prompt).
 - **Keine CSP-Änderung**: Skript und Messwerte laufen über `'self'`. Stellt jemand
   `scriptSrc` oder `endpoint` auf einen fremden Host, muss `csp.ts` mitziehen, ein
   Test in `csp.test.ts` erinnert daran.

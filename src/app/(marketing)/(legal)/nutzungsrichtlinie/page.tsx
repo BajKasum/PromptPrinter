@@ -31,7 +31,7 @@ export default function NutzungsrichtliniePage() {
         Diese Nutzungsrichtlinie ist Bestandteil unserer <a href="/agb">AGB</a> und konkretisiert
         deren Ziffer 7. Sie gilt für alles, was du über PromptPrinter eingibst, hochlädst oder
         erzeugen lässt: Chats, Projekte, Projektdateien, ein verknüpftes GitHub-Repository und
-        gespeicherte Prompts.
+        gespeicherte Prompts, auch solche, die du per Link teilst.
       </p>
       <p>
         Laufen deine Anfragen über deinen eigenen API-Key,
@@ -126,6 +126,15 @@ export default function NutzungsrichtliniePage() {
         Feld, das ihn verschlüsselt speichert. Personenbezogene Daten Dritter gibst du nur ein, wenn
         du das darfst.
       </p>
+      <p>
+        Teilst du einen gespeicherten Prompt <strong>per Link</strong>, kann ihn jeder lesen, der
+        den Link hat, auch ohne Konto. Wem du ihn gibst, entscheidest du, und für seinen Inhalt
+        stehst du ein wie für alles, was du sonst veröffentlichst: Er enthält keine Zugangsdaten,
+        keine Angaben über andere Personen, die du nicht veröffentlichen darfst, und nichts, was
+        Ziffer 3 verbietet. Vor dem Teilen weist dich PromptPrinter auf Schlüssel und persönliche
+        Angaben hin, die es im Text erkennt; eine Prüfung des übrigen Inhalts ist das nicht. Den
+        Link kannst du jederzeit widerrufen.
+      </p>
 
       <h2>6. Was bei Verstössen passiert</h2>
       <p>
@@ -134,6 +143,7 @@ export default function NutzungsrichtliniePage() {
         Verstoss, etwa durch eine Meldung, können wir je nach Schwere
       </p>
       <ul>
+        <li>einen geteilten Link aufheben, sodass er ins Leere führt,</li>
         <li>die betroffenen Inhalte entfernen,</li>
         <li>einzelne Funktionen für dein Konto einschränken oder</li>
         <li>
@@ -145,8 +155,8 @@ export default function NutzungsrichtliniePage() {
         informieren wir die zuständigen Behörden, soweit das Gesetz es vorsieht oder erlaubt.
       </p>
       <p>
-        Entfernen wir Inhalte, schränken wir etwas für dein Konto ein oder sperren wir es, schreiben
-        wir dir <strong>mit Begründung</strong>: was wir getan haben, aus welchem Grund und auf
+        Heben wir einen Link auf, entfernen wir Inhalte, schränken wir etwas für dein Konto ein oder
+        sperren wir es, schreiben wir dir <strong>mit Begründung</strong>: was wir getan haben, aus welchem Grund und auf
         welcher Grundlage (ein Verstoss gegen diese Richtlinie oder gegen das Gesetz), und dass du
         widersprechen kannst. Das gilt nicht, wenn wir dich aus rechtlichen Gründen nicht
         informieren dürfen. Widersprechen kannst du formlos über die{" "}
@@ -168,8 +178,10 @@ export default function NutzungsrichtliniePage() {
         Act). Nenne bitte, wo du den Inhalt gefunden hast, warum er deiner Meinung nach
         rechtswidrig ist und deine E-Mail-Adresse; deinen Namen nur, wenn du willst. Wir bestätigen
         den Eingang per E-Mail, prüfen die Meldung sorgfältig und teilen dir die Entscheidung mit.
-        Die Inhalte der Nutzer sind nicht öffentlich einsehbar, sie liegen im jeweiligen Konto; wo
-        nötig, bitten wir dich um mehr Angaben.
+        Die Inhalte der Nutzer liegen im jeweiligen Konto und sind nicht öffentlich einsehbar,
+        ausser gespeicherten Prompts, die jemand per Link teilt (die Adresse enthält{" "}
+        <code>/geteilt/</code>). Betrifft deine Meldung einen solchen Prompt, nenne bitte den Link.
+        Wo nötig, bitten wir dich um mehr Angaben.
       </p>
       <p>
         <strong>Kontaktstelle:</strong> Für Nutzer und für Behörden ist die Kontaktstelle nach dem
