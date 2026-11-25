@@ -200,6 +200,33 @@ describe("Projekt-Gedächtnis über den eigenen Endpunkt", () => {
     expect(body).not.toHaveProperty("reasoning_effort");
   });
 
+  it("ein GLM-Modell hinter dem eigenen Endpunkt bekommt die Felder von Z.ai nicht, der Host entscheidet", async () => {
+    selfHostedOllama();
+    vi.stubEnv("LLM_MODEL", "glm-4.5-air");
+    const fetchMock = vi.fn(async () => json());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await analyzeComplete({ system: "S", text: "T" });
+
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ model: "glm-4.5-air" });
+    expect(body).not.toHaveProperty("thinking");
+    expect(body).not.toHaveProperty("reasoning_effort");
+  });
+
+  it("LLM_BASE_URL auf api.z.ai ist Z.ai: die Felder gehen mit wie beim Server-Key", async () => {
+    vi.stubEnv("LLM_BASE_URL", "https://api.z.ai/api/paas/v4");
+    vi.stubEnv("LLM_MODEL", "glm-4.5-air");
+    const fetchMock = vi.fn(async () => json());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await analyzeComplete({ system: "S", text: "T" });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.z.ai/api/paas/v4/chat/completions");
+    expect(JSON.parse(init.body as string)).toMatchObject({ model: "glm-4.5-air", thinking: { type: "disabled" } });
+  });
+
   it("verweigert dieselbe Adresse ohne SELF_HOSTED", async () => {
     selfHostedOllama();
     vi.stubEnv("SELF_HOSTED", "");

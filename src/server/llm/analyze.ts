@@ -13,6 +13,7 @@ import {
   openaiModel,
   ZAI_ENDPOINT,
   geminiApiKey,
+  isZaiEndpoint,
   llmConfig,
   providerLabel,
   serverConfigFor,
@@ -190,7 +191,8 @@ async function analyzeCompleteOnce(opts: {
 /**
  * Z.ai, der Custom-Slot und der eigene Endpunkt sprechen dieselbe API, also auch denselben Code. `endpointCheck`:
  * `fixed` ist die feste Adresse von Z.ai, `byok` eine Nutzer-Adresse (volle SSRF-Prüfung), `server` LLM_BASE_URL des
- * Betreibers (lokal nur im Einzelbetrieb, llm/custom.ts erklärt die Regel).
+ * Betreibers (lokal nur im Einzelbetrieb, llm/custom.ts erklärt die Regel). Was nur Z.ai betrifft (die Felder zum
+ * Denken, den Denktext verwerfen), hängt an der Adresse selbst (isZaiEndpoint), nicht an `endpointCheck`.
  */
 async function openAiCompatibleAnalyze(args: {
   endpoint: string;
@@ -206,6 +208,7 @@ async function openAiCompatibleAnalyze(args: {
 }): Promise<AnalysisResult> {
   if (args.endpointCheck === "byok") await assertPublicHttpsUrl(args.endpoint);
   if (args.endpointCheck === "server") await assertServerEndpointUrl(args.endpoint, isSelfHosted());
+  const zai = isZaiEndpoint(args.endpoint);
 
   const res = await fetch(args.endpoint, {
     method: "POST",
@@ -223,11 +226,10 @@ async function openAiCompatibleAnalyze(args: {
       ],
       max_tokens: args.maxOutputTokens,
       stream: false,
-      // Wie im Chat: GLM entscheidet sonst selbst, ob es "denkt", verbraucht
-      // das Ausgabebudget für unsichtbare Zwischenschritte und liefert am
-      // Ende ein leeres content-Feld. Aus, oder knapp bei Modellen, die immer denken.
-      // Nicht an den eigenen Endpunkt: das sind Felder von Z.ai, ein fremder Server kennt sie nicht.
-      ...(args.endpointCheck === "server" ? {} : zaiThinkingParams(args.model)),
+      // GLM entscheidet sonst selbst, ob es "denkt", verbraucht das Ausgabebudget für unsichtbare Zwischenschritte
+      // und liefert am Ende ein leeres content-Feld: aus, oder knapp bei Modellen, die immer denken. Nur an Z.ai,
+      // dort auch an eine Nutzer-Adresse; ein anderer Server kennt diese Felder nicht und darf die Anfrage ablehnen.
+      ...(zai ? zaiThinkingParams(args.model) : {}),
     }),
   });
 
@@ -235,5 +237,5 @@ async function openAiCompatibleAnalyze(args: {
 
   const json = JSON.parse(await readCappedText(res, MAX_RESPONSE_BYTES)) as OpenAiCompatibleResponse;
   // Der Denktext ist keine Faktenliste: bei Z.ai nie als Ersatz für eine leere Antwort nehmen.
-  return { ...readCompletion(json, args.label, { reasoning: args.label === "Z.ai" ? "drop" : "fallback" }), model: args.model };
+  return { ...readCompletion(json, args.label, { reasoning: zai ? "drop" : "fallback" }), model: args.model };
 }

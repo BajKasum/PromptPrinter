@@ -184,6 +184,19 @@ export function zaiThinkingParams(model: string): Record<string, unknown> {
     : { thinking: { type: "disabled" } };
 }
 
+/**
+ * Geht eine Anfrage an diese Adresse an Z.ai? Entscheidend ist der Host von ZAI_ENDPOINT, nicht wer die Adresse gesetzt
+ * hat: auch der Custom-Slot oder LLM_BASE_URL auf api.z.ai ist Z.ai. Nur dorthin gehören die Felder aus
+ * zaiThinkingParams; ein anderer OpenAI-kompatibler Server kennt sie nicht und darf die Anfrage deshalb ablehnen.
+ */
+export function isZaiEndpoint(endpoint: string): boolean {
+  try {
+    return new URL(endpoint).hostname === new URL(ZAI_ENDPOINT).hostname;
+  } catch {
+    return false;
+  }
+}
+
 /** Das sehende Z.ai-Modell: `ZAI_VISION_MODEL`, sonst der Standard (auch bei leerem Wert). */
 export function zaiVisionModel(): string {
   return optionalEnv("ZAI_VISION_MODEL") ?? ZAI_VISION_DEFAULT_MODEL;
