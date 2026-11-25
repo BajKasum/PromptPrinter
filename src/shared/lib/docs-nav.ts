@@ -44,7 +44,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Erste Schritte",
         summary:
           "Konto anlegen, ersten Chat öffnen und in ein paar Minuten den ersten fertigen Prompt in der Hand halten.",
-        updated: "2026-10-11",
+        updated: "2026-11-25",
       },
       {
         slug: "chat-mit-finn",
@@ -115,7 +115,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Konto und Daten",
         summary:
           "Passwort ändern, E-Mail-Adresse wechseln, zweiter Faktor, Anmeldewege, was gespeichert wird, wie du deine Daten herunterlädst und dein Konto restlos wieder löschst.",
-        updated: "2026-11-02",
+        updated: "2026-11-25",
       },
       {
         slug: "terminal-anmeldung",
@@ -123,7 +123,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         published: "2026-10-29",
         summary:
           "Das Terminal-Programm: ohne Passwort per Code anmelden, Prompts mit /pp schreiben, über MCP an Claude Code oder Claude Desktop geben und wieder abmelden.",
-        updated: "2026-11-20",
+        updated: "2026-11-25",
       },
       {
         slug: "tastenkuerzel",

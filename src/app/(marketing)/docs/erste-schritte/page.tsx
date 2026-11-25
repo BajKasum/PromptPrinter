@@ -19,8 +19,7 @@ export default function Page() {
       <p>
         Auf <Link href="/signup">der Registrierungsseite</Link> meldest du dich mit
         E-Mail und Passwort an (mindestens acht Zeichen) oder direkt über Google
-        oder GitHub. Bei der E-Mail-Variante bekommst du eine Bestätigungsmail,
-        klick den Link darin, dann bist du drin.
+        oder GitHub.
       </p>
       <p>
         Nach der Anmeldung landest du direkt in einem leeren Chat. Kein

@@ -122,9 +122,19 @@ export default function Page() {
       <h2>Wer kann auf meine Daten zugreifen?</h2>
       <p>
         Deine Chats und Projekte sind auf dein Konto beschränkt, durchgesetzt auf
-        Datenbankebene, nicht bloss in der Oberfläche. Es gibt aktuell keine
-        Freigabe- oder Teilen-Funktion, deine Inhalte sind für niemanden sonst
-        sichtbar.
+        Datenbankebene, nicht bloss in der Oberfläche. Niemand sonst sieht deine
+        Inhalte, ausser du teilst einen gespeicherten Prompt per Link.
+      </p>
+      <p>
+        Das geht am aufgeklappten Prompt mit <strong>Per Link teilen</strong>.
+        Vorher fragt PromptPrinter nach und weist dich auf Schlüssel oder
+        persönliche Angaben hin, die es im Text findet. Den Prompt kann dann
+        jeder lesen, der den Link hat: Titel und Text, ohne deinen Namen und
+        deine E-Mail-Adresse. Änderst du den Text, steht die neue Fassung sofort
+        unter dem Link. Mit <strong>Widerrufen</strong> ziehst du den Link
+        jederzeit zurück, danach führt er ins Leere, ebenso wenn du den Prompt
+        löschst. Mehr dazu unter{" "}
+        <Link href="/docs/ergebnisse">Prompts speichern</Link>.
       </p>
 
       <h2>Kann ich meine Daten herunterladen?</h2>

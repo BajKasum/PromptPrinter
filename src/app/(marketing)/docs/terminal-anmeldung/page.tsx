@@ -89,8 +89,10 @@ export default function Page() {
           <code>/copy</code>: der letzte Prompt in die Zwischenablage.
         </li>
         <li>
-          <code>/save</code>: der letzte Prompt landet bei deinen{" "}
-          <Link href="/docs/ergebnisse">gespeicherten Prompts</Link>, auch im Browser.
+          <code>/save [Datei]</code>: der letzte Prompt als Markdown-Datei im aktuellen Ordner. Ohne Namen heisst
+          sie <code>prompt-</code> mit Datum und Uhrzeit, eine vorhandene Datei überschreibt das Programm nie. Bei
+          deinen <Link href="/docs/ergebnisse">gespeicherten Prompts</Link> landet er damit nicht; dorthin
+          speicherst du ihn im Browser, das Gespräch steht auch dort.
         </li>
         <li>
           <code>/an claude</code> und <code>/an codex</code>: startet Claude Code oder Codex im selben
