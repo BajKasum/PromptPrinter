@@ -15,76 +15,107 @@ import type { Messages } from "@/shared/i18n/messages/de";
 
 export const runtime = "nodejs";
 
+type UserClient = Awaited<ReturnType<typeof createClient>>;
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+/** Eine Tabelle, deren Zeilen auf Storage-Objekte des Kontos zeigen, und wie ihre Fehler im Log heißen. */
+type ObjectSource = {
+  table: "message_attachments" | "project_files";
+  bucket: string;
+  /** Wie ein Objekt in der Fehlermeldung heißt, zum Beispiel "project file". */
+  label: string;
+  partialEvent: string;
+  failedEvent: string;
+};
+
+// Fotos und Dateien aus Chats (Migration 0045) und die Dateien der Projekte. Je Tabelle ein eigener Schritt: ein
+// Fehler bei der einen (zum Beispiel eine noch nicht angewendete Migration) hält weder die andere noch das Löschen
+// des Kontos auf.
+const OBJECT_SOURCES: readonly ObjectSource[] = [
+  {
+    table: "message_attachments",
+    bucket: "chat-attachments",
+    label: "chat attachment",
+    partialEvent: "account.attachment_cleanup_partial",
+    failedEvent: "account.attachment_cleanup_failed",
+  },
+  {
+    // project_files.user_id steht direkt in der Zeile: eine Abfrage deckt jedes Projekt des Kontos ab.
+    table: "project_files",
+    bucket: "project-files",
+    label: "project file",
+    partialEvent: "account.storage_cleanup_partial",
+    failedEvent: "account.storage_cleanup_failed",
+  },
+];
+
+type CollectedObjects = { source: ObjectSource; paths: string[] }[];
+
 /**
- * Entfernt alle Storage-Objekte, auf die die Zeilen EINER Tabelle des Kontos zeigen.
+ * Liest die Pfade aller Storage-Objekte des Kontos, mit der Sitzung des Nutzers, solange die Zeilen noch da sind.
  *
- * Seitenweise gelesen (collectStoragePaths), weil PostgREST eine Antwort bei 1000 Zeilen kappt und ein Konto
- * beliebig viele hat: Anhaenge bis zum Speicherkontingent (bei lauter kleinen Textdateien weit mehr als tausend),
- * Projektdateien als Admin ohne Projektgrenze (20 je Projekt, MAX_FILES_PER_PROJECT). Wuerde nach der
- * ersten Seite aufgehoert, blieben die uebrigen Objekte fuer immer im Bucket, ohne dass noch irgendeine Zeile auf
- * sie zeigt (#131). Entfernt wird in Stapeln, die einzeln scheitern duerfen: ein uebrig gebliebenes Objekt ist
- * harmlos (Migration 0029), alle liegen zu lassen, weil ein zu grosser Aufruf scheiterte, nicht.
+ * Seitenweise (collectStoragePaths), weil PostgREST eine Antwort bei 1000 Zeilen kappt und ein Konto beliebig viele
+ * hat: Anhänge bis zum Speicherkontingent (bei lauter kleinen Textdateien weit mehr als tausend), Projektdateien als
+ * Admin ohne Projektgrenze. Nach `id` sortiert, damit zwei Seiten sich weder überschneiden noch eine Zeile auslassen.
  *
- * Wirft nie. Ein Lesefehler und Stapel, die nicht durchgingen, werden gemeldet; das Konto wird trotzdem geloescht.
+ * Wirft nie. Scheitert das Lesen einer Tabelle, wird es gemeldet, und ihre Objekte bleiben nach dem Löschen liegen:
+ * scripts/reconcile-project-files-storage.mjs findet sie (docs/SETUP.md).
  */
-async function removeUserObjects(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  target: {
-    table: "message_attachments" | "project_files";
-    bucket: string;
-    /** Wie ein Objekt in der Fehlermeldung heisst, zum Beispiel "project file". */
-    label: string;
-    partialEvent: string;
-    failedEvent: string;
-  }
-): Promise<void> {
-  try {
-    const paths = await collectStoragePaths((from, to) =>
-      supabase
-        .from(target.table)
-        .select("storage_path")
-        .eq("user_id", userId)
-        // Stabile Reihenfolge, damit zwei Seiten sich weder ueberschneiden noch eine Zeile auslassen.
-        .order("id")
-        .range(from, to)
-    );
-    if (paths.length === 0) return;
-    const { failed } = await removeAllPaths(
-      (batch) => supabase.storage.from(target.bucket).remove(batch),
-      paths
-    );
-    if (failed > 0) {
-      captureError(target.partialEvent, new Error(`${failed} ${target.label}(s) could not be removed`), {
-        userId,
-      });
+async function collectAccountObjects(supabase: UserClient, userId: string): Promise<CollectedObjects> {
+  const collected: CollectedObjects = [];
+  for (const source of OBJECT_SOURCES) {
+    try {
+      const paths = await collectStoragePaths((from, to) =>
+        supabase.from(source.table).select("storage_path").eq("user_id", userId).order("id").range(from, to)
+      );
+      collected.push({ source, paths });
+    } catch (err) {
+      captureError(source.failedEvent, err, { userId });
     }
+  }
+  return collected;
+}
+
+/**
+ * Entfernt die eingesammelten Objekte und den Avatar, erst wenn das Konto gelöscht ist. Mit dem Admin-Client: die
+ * Sitzung gehört dann zu einem Konto, das es nicht mehr gibt.
+ *
+ * In Stapeln, die einzeln scheitern dürfen (removeAllPaths): ein übrig gebliebenes Objekt ist harmlos (Migration
+ * 0029), alle liegen zu lassen, weil ein zu großer Aufruf scheiterte, nicht. Wirft nie: Stapel, die nicht durchgingen,
+ * werden gemeldet, das Konto bleibt gelöscht.
+ */
+async function removeAccountObjects(admin: AdminClient, userId: string, collected: CollectedObjects): Promise<void> {
+  for (const { source, paths } of collected) {
+    if (paths.length === 0) continue;
+    const { failed } = await removeAllPaths((batch) => admin.storage.from(source.bucket).remove(batch), paths);
+    if (failed > 0) {
+      captureError(source.partialEvent, new Error(`${failed} ${source.label}(s) could not be removed`), { userId });
+    }
+  }
+
+  try {
+    // Immer der feste Pfad "{uid}/avatar" (Migration 0027). Hochladen lässt sich dort nichts mehr, alte Objekte kann es
+    // geben; einen nie hochgeladenen Pfad zu entfernen ist folgenlos.
+    await admin.storage.from("avatars").remove([avatarStoragePath(userId)]);
   } catch (err) {
-    captureError(target.failedEvent, err, { userId });
+    captureError("account.storage_cleanup_failed", err, { userId });
   }
 }
 
-// Permanently delete the signed-in user's account. The auth.users row cascades
-// to profiles, and profiles cascades to EVERY user-scoped table: projects,
-// conversations, messages, saved_prompts, project_files, subscriptions and
-// user_api_keys (all ON DELETE CASCADE, verified against the live schema
-// 2026-08-02 — this list used to name only four of them, which reads like the
-// encrypted BYOK keys outlive a deletion when in fact they do not).
+// Löscht das Konto der angemeldeten Person endgültig. Die Zeile in auth.users kaskadiert auf profiles, profiles auf
+// jede Tabelle mit Nutzerdaten: projects, conversations, messages, saved_prompts, project_files, subscriptions und
+// user_api_keys (alle ON DELETE CASCADE). Diese Vollständigkeit sagt die Datenschutzerklärung zu (Ziffer 8 von
+// /datenschutz), sie ist eine Zusage nach DSGVO und revDSG: jede neue Tabelle mit Nutzerdaten braucht dieselbe
+// Kaskade, sonst wird der Absatz still falsch. Die eine Ausnahme ist public.security_events: "Konto gelöscht" muss das
+// Konto überleben, nur die Kennung, höchstens 180 Tage.
 //
-// That completeness is a promise the privacy policy makes out loud ( Ziffer 8
-// of /datenschutz), so it is a DSGVO/revDSG commitment, not an implementation
-// detail: anything user-scoped added later needs the same cascade, or that
-// paragraph silently becomes false. Die eine Ausnahme ist public.security_events:
-// "Konto gelöscht" muss das Konto überleben, nur die Kennung, höchstens 180 Tage.
-//
-// Storage objects don't cascade
-// with a DB row (same reason delete-project.tsx cleans up "project-files"
-// itself, see 0012_project_files.sql's comment), so every project's attached
-// files plus the avatar are removed here first, while the rows/session that
-// let us read/authorize them still exist. Best-effort: a storage cleanup
-// failure is logged but never blocks the account from actually being deleted,
-// losing a few orphaned objects is far better than a user being stuck unable
-// to delete their account because of a storage hiccup.
+// Storage-Objekte kaskadieren nicht mit einer Zeile (wie beim Löschen eines Projekts, delete-project.tsx), die Route
+// räumt sie selbst ab, in dieser Reihenfolge:
+//   1. die Pfade einsammeln, solange die Zeilen noch lesbar sind;
+//   2. das Konto löschen; scheitert das, bleibt alles, wie es war, Zeilen und Dateien;
+//   3. erst danach die Objekte entfernen, ein Schritt ohne Rückweg.
+// Das Aufräumen hält das Löschen nie auf: lieber ein paar verwaiste Objekte (unsichtbar, das Skript findet sie) als ein
+// Konto, das sich wegen einer Störung im Speicher nicht löschen lässt.
 export async function DELETE(req: Request) {
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
   const m = requestT(req).t.api;
@@ -131,10 +162,11 @@ export async function DELETE(req: Request) {
   const limited = await enforceDeleteLimit(req, user.id, profile?.is_admin ?? false, m);
   if (limited) return limited;
 
-  await removeAccountObjects(supabase, user.id);
+  const objects = await collectAccountObjects(supabase, user.id);
 
+  let admin: AdminClient;
   try {
-    const admin = createAdminClient();
+    admin = createAdminClient();
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) throw error;
   } catch (err) {
@@ -147,6 +179,8 @@ export async function DELETE(req: Request) {
   }
 
   await recordSecurityEvent("account.deleted", user.id);
+
+  await removeAccountObjects(admin, user.id, objects);
 
   // The user no longer exists, so just clear this browser's session cookies
   // locally, a global sign-out would round-trip to the auth server and fail.
@@ -163,37 +197,4 @@ async function enforceDeleteLimit(req: Request, userId: string, isAdmin: boolean
   return problem(429, m.tooManyRequests, {
     retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
   });
-}
-
-async function removeAccountObjects(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<void> {
-  // Fotos und Dateien aus Chats (Migration 0045) und die Dateien der Projekte.
-  // Je Tabelle ein eigener Schritt mit eigenem try (removeUserObjects): ein
-  // Fehler bei der einen (zum Beispiel eine noch nicht angewendete Migration)
-  // darf weder die andere noch das Loeschen des Kontos aufhalten.
-  await removeUserObjects(supabase, userId, {
-    table: "message_attachments",
-    bucket: "chat-attachments",
-    label: "chat attachment",
-    partialEvent: "account.attachment_cleanup_partial",
-    failedEvent: "account.attachment_cleanup_failed",
-  });
-  // project_files.user_id is direct (no join through projects needed), one
-  // query covers every project this user has ever attached files to.
-  await removeUserObjects(supabase, userId, {
-    table: "project_files",
-    bucket: "project-files",
-    label: "project file",
-    partialEvent: "account.storage_cleanup_partial",
-    failedEvent: "account.storage_cleanup_failed",
-  });
-
-  try {
-    // Always a fixed "{uid}/avatar" path (migration 0027 pins the insert
-    // policy to exactly that name — the upload UI that used to write it here
-    // is gone, but old objects from before its removal may still exist),
-    // removing a path that was never uploaded is a harmless no-op.
-    await supabase.storage.from("avatars").remove([avatarStoragePath(userId)]);
-  } catch (err) {
-    captureError("account.storage_cleanup_failed", err, { userId });
-  }
 }
