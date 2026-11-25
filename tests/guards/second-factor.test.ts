@@ -37,10 +37,15 @@ describe("AAL2 vor den heiklen Aktionen", () => {
   it("das Konto wird erst nach der Prüfung angefasst", () => {
     const source = read("src/app/api/account/route.ts");
     const check = source.indexOf("await lacksSecondFactor(supabase, user)");
+    const deleteUser = source.indexOf("admin.auth.admin.deleteUser(");
+    const removeObjects = source.indexOf("await removeAccountObjects(");
     expect(check).toBeGreaterThan(-1);
-    // Der erste Schritt, der etwas löscht: die Dateien des Kontos, danach das Konto selbst.
-    expect(check).toBeLessThan(source.indexOf("await removeAccountObjects("));
-    expect(check).toBeLessThan(source.indexOf("admin.auth.admin.deleteUser("));
+    // Jeder Schritt steht genau einmal da, sonst sagt seine Stelle nichts.
+    expect(source.split("admin.auth.admin.deleteUser(")).toHaveLength(2);
+    expect(source.split("await removeAccountObjects(")).toHaveLength(2);
+    // Der erste unumkehrbare Schritt ist das Löschen des Kontos; die Dateien gehen erst, wenn es gelungen ist (#380).
+    expect(deleteUser).toBeGreaterThan(check);
+    expect(removeObjects).toBeGreaterThan(deleteUser);
   });
 });
 

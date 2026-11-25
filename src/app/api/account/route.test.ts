@@ -7,7 +7,10 @@ const signOut = vi.fn();
 const projectFilesRange = vi.fn();
 const attachmentsRange = vi.fn();
 const profileSelect = vi.fn();
+// Entfernen über den Admin-Client (der Weg nach dem Löschen) und über die Sitzung des Nutzers (darf nie vorkommen).
 const storageRemove = vi.fn();
+const userStorageRemove = vi.fn();
+const createAdminClient = vi.fn();
 const deleteUser = vi.fn();
 const rateLimit = vi.fn();
 const captureError = vi.fn();
@@ -41,15 +44,18 @@ vi.mock("@/server/supabase/server", () => ({
         return { select: () => ({ eq: () => ({ maybeSingle: () => profileSelect() }) }) };
       throw new Error(`unexpected table ${table}`);
     },
-    storage: { from: (bucket: string) => ({ remove: (paths: string[]) => storageRemove(bucket, paths) }) },
+    storage: { from: (bucket: string) => ({ remove: (paths: string[]) => userStorageRemove(bucket, paths) }) },
   })),
 }));
 
 vi.mock("@/server/supabase/admin", () => ({
-  createAdminClient: vi.fn(() => ({
-    auth: { admin: { deleteUser } },
-  })),
+  createAdminClient: (...args: unknown[]) => createAdminClient(...args),
 }));
+
+const adminClient = {
+  auth: { admin: { deleteUser } },
+  storage: { from: (bucket: string) => ({ remove: (paths: string[]) => storageRemove(bucket, paths) }) },
+};
 
 const recordSecurityEvent = vi.fn();
 vi.mock("@/server/security/security-events", () => ({
@@ -84,6 +90,8 @@ describe("DELETE /api/account", () => {
     attachmentsRange.mockReset();
     profileSelect.mockReset();
     storageRemove.mockReset();
+    userStorageRemove.mockReset();
+    createAdminClient.mockReset();
     deleteUser.mockReset();
     rateLimit.mockReset();
     captureError.mockReset();
@@ -94,6 +102,8 @@ describe("DELETE /api/account", () => {
     attachmentsRange.mockResolvedValue({ data: [], error: null });
     profileSelect.mockResolvedValue({ data: { is_admin: false } });
     storageRemove.mockResolvedValue({ error: null });
+    userStorageRemove.mockResolvedValue({ error: null });
+    createAdminClient.mockReturnValue(adminClient);
     deleteUser.mockResolvedValue({ error: null });
     signOut.mockResolvedValue({ error: null });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
@@ -106,6 +116,7 @@ describe("DELETE /api/account", () => {
     expect(res.status).toBe(503);
     expect(deleteUser).not.toHaveBeenCalled();
     expect(storageRemove).not.toHaveBeenCalled();
+    expect(userStorageRemove).not.toHaveBeenCalled();
     expect(captureError).toHaveBeenCalled();
   });
 
@@ -123,6 +134,99 @@ describe("DELETE /api/account", () => {
     expect(captureError).toHaveBeenCalledWith("account.delete_failed", expect.any(Error), { userId: "user-1" });
   });
 
+  // #380: Löschen des Kontos ist der Schritt, der scheitern kann, das Entfernen der Dateien lässt sich nicht
+  // wiederholen. Scheitert das Löschen, muss das Konto mit allen Dateien bestehen bleiben.
+  describe("erst das Konto, dann die Dateien", () => {
+    beforeEach(() => {
+      attachmentsRange.mockResolvedValue({ data: [{ storage_path: "user-1/conv-a/1.png" }], error: null });
+      projectFilesRange.mockResolvedValue({ data: [{ storage_path: "user-1/proj-a/f.md" }], error: null });
+    });
+
+    it.each([
+      ["einen Fehler meldet", () => deleteUser.mockResolvedValue({ error: new Error("auth down") })],
+      ["wirft", () => deleteUser.mockRejectedValue(new Error("network"))],
+      [
+        "ohne Admin-Zugang nicht beginnt",
+        () =>
+          createAdminClient.mockImplementation(() => {
+            throw new Error("Missing Supabase admin credentials.");
+          }),
+      ],
+    ])("entfernt keine Datei, wenn das Löschen %s", async (_case, arrange) => {
+      arrange();
+
+      const res = await DELETE(req());
+
+      expect(res.status).toBe(500);
+      expect(storageRemove).not.toHaveBeenCalled();
+      expect(userStorageRemove).not.toHaveBeenCalled();
+    });
+
+    it("liest die Pfade vor dem Löschen (danach sind die Zeilen weg) und entfernt die Dateien erst danach", async () => {
+      const res = await DELETE(req());
+
+      expect(res.status).toBe(200);
+      const deletedAt = deleteUser.mock.invocationCallOrder[0];
+      expect(attachmentsRange.mock.invocationCallOrder[0]).toBeLessThan(deletedAt);
+      expect(projectFilesRange.mock.invocationCallOrder[0]).toBeLessThan(deletedAt);
+      expect(storageRemove.mock.invocationCallOrder.length).toBe(3);
+      for (const removedAt of storageRemove.mock.invocationCallOrder) expect(removedAt).toBeGreaterThan(deletedAt);
+    });
+
+    it("entfernt mit dem Admin-Client, nicht mit der Sitzung eines Kontos, das es nicht mehr gibt", async () => {
+      await DELETE(req());
+
+      expect(storageRemove).toHaveBeenCalledWith("chat-attachments", ["user-1/conv-a/1.png"]);
+      expect(storageRemove).toHaveBeenCalledWith("project-files", ["user-1/proj-a/f.md"]);
+      expect(storageRemove).toHaveBeenCalledWith("avatars", ["user-1/avatar"]);
+      expect(userStorageRemove).not.toHaveBeenCalled();
+    });
+
+    it("hält das Löschen fest, auch wenn danach kein Stapel durchgeht", async () => {
+      storageRemove.mockRejectedValue(new Error("storage down"));
+
+      const res = await DELETE(req());
+
+      expect(res.status).toBe(200);
+      expect(recordSecurityEvent.mock.calls).toEqual([["account.deleted", "user-1"]]);
+      expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+    });
+  });
+
+  // Der Admin-Client umgeht die RLS des Buckets, die sonst nur den eigenen Ordner freigibt. Eine Zeile, die auf einen
+  // fremden Pfad zeigt, darf beim Löschen des eigenen Kontos kein fremdes Objekt treffen.
+  describe("nur Pfade im Ordner des Kontos", () => {
+    it.each([
+      ["project_files", "project-files", "project file", projectFilesRange],
+      ["message_attachments", "chat-attachments", "chat attachment", attachmentsRange],
+    ])("entfernt aus %s nur Pfade unter user-1/ und nennt fremde nicht", async (_table, bucket, label, range) => {
+      range.mockResolvedValue({
+        data: [
+          { storage_path: "user-1/p/own.md" },
+          { storage_path: "user-2/p/foreign.md" },
+          { storage_path: "user-10/p/prefix.md" },
+          { storage_path: "/user-1/p/slash.md" },
+        ],
+        error: null,
+      });
+
+      const res = await DELETE(req());
+
+      expect(res.status).toBe(200);
+      const removed = storageRemove.mock.calls.filter(([b]) => b === bucket).flatMap(([, paths]) => paths as string[]);
+      expect(removed).toEqual(["user-1/p/own.md"]);
+      expect(captureError).toHaveBeenCalledWith(
+        "account.cleanup_foreign_path_skipped",
+        expect.objectContaining({ message: `3 ${label}(s) outside the account folder skipped` }),
+        { userId: "user-1" }
+      );
+      const reported = captureError.mock.calls
+        .map(([event, err, context]) => `${event} ${err instanceof Error ? err.message : String(err)} ${JSON.stringify(context)}`)
+        .join("\n");
+      expect(reported).not.toMatch(/user-2\/|user-10\/|foreign\.md|prefix\.md|slash\.md/);
+    });
+  });
+
   it("verlangt mit eingerichtetem Faktor den Nachweis, auch bei frischer Anmeldung, und löscht sonst nichts", async () => {
     getUser.mockResolvedValue({ data: { user: { id: "user-1", factors: [{ status: "verified" }] } } });
     getClaims.mockResolvedValue({
@@ -133,6 +237,7 @@ describe("DELETE /api/account", () => {
     expect((await res.json()).code).toBe("aal2_required");
     expect(deleteUser).not.toHaveBeenCalled();
     expect(storageRemove).not.toHaveBeenCalled();
+    expect(userStorageRemove).not.toHaveBeenCalled();
   });
 
   it("löscht mit eingerichtetem Faktor nach dem Nachweis", async () => {
@@ -163,7 +268,8 @@ describe("DELETE /api/account", () => {
     const nothingTouched = () => {
       expect(deleteUser).not.toHaveBeenCalled();
       expect(storageRemove).not.toHaveBeenCalled();
-        expect(signOut).not.toHaveBeenCalled();
+      expect(userStorageRemove).not.toHaveBeenCalled();
+      expect(signOut).not.toHaveBeenCalled();
     };
 
     it("weist eine Sitzung ab, deren Anmeldung Stunden her ist, mit einem Code, den der Dialog versteht", async () => {
@@ -249,7 +355,7 @@ describe("DELETE /api/account", () => {
     expect(res.status).toBe(200);
   });
 
-  it("removes every attached project file and the avatar before deleting the account", async () => {
+  it("removes every attached project file and the avatar after deleting the account", async () => {
     projectFilesRange.mockResolvedValue({
       data: [{ storage_path: "user-1/proj-a/file1.md" }, { storage_path: "user-1/proj-b/file2.txt" }],
       error: null,
@@ -352,7 +458,7 @@ describe("DELETE /api/account", () => {
   });
 
   describe("chat attachments (migration 0045)", () => {
-    it("removes the objects of every attachment before deleting the account", async () => {
+    it("removes the objects of every attachment after deleting the account", async () => {
       attachmentsRange.mockResolvedValue({
         data: [{ storage_path: "user-1/conv-a/1.png" }, { storage_path: "user-1/conv-b/2.txt" }],
         error: null,
