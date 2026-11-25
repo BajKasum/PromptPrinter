@@ -11,6 +11,16 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-25: Nutzungsrichtlinie und Datenschutz nennen das Teilen per Link, die Ladezeit-Messung kürzt den Link-Code (Branch `docs/rechtstexte-geteilte-prompts-v2`, #415)
+
+- **Ziel:** Fund aus #412 (PR #432): Die Nutzungsrichtlinie sagte "Die Inhalte der Nutzer sind nicht öffentlich einsehbar", die Datenschutzerklärung erwähnte das Teilen per Link nicht. Kasum hat am 2026-11-25 entschieden, beide Texte anzupassen. Nicht juristisch geprüft.
+- **Ladezeit-Messung (#415):** `scrubSpeedInsightsEvent` (`shared/lib/speed-insights-event.ts`) ersetzte nur UUIDs. Der Link-Code in `/geteilt/<token>` ging vollständig an Vercel Speed Insights, obwohl Datenschutz und `/cookies` gekürzte Kennungen versprechen, und wer ihn kennt, liest den Prompt. Jetzt wird der Pfad zu `/geteilt/[token]`; Test, Mutation erkannt. Die allgemeinere Variante aus dem Issue (immer das Seitenmuster `route` senden) ist bewusst nicht genommen, damit die übrigen Messreihen bleiben, wie sie sind.
+- **Nutzungsrichtlinie:** Ziffer 1 nennt geteilte Prompts, Ziffer 5 die Verantwortung beim Teilen (der Hinweis auf Schlüssel und persönliche Angaben ist keine Inhaltsprüfung), Ziffer 6 das Aufheben eines Links bei Verstössen, Ziffer 7 die Ausnahme von "nicht öffentlich einsehbar".
+- **Datenschutz:** neuer Abschnitt "Geteilte Prompts (optional)" in Ziffer 2: Link-Code, Konto-Kennung und Zeitpunkt gespeichert; lesbar für jeden mit dem Link, ohne Namen und E-Mail-Adresse; `noindex`; Widerruf oder Löschen von Prompt oder Konto löscht den Link-Code; Kopien Dritter lassen sich nicht zurückholen; Aufrufe je IP-Adresse begrenzt. Dazu Ziffer 2 (Messung), 3, 6 und 8; `LEGAL.lastUpdated` 25. November 2026.
+- **Gate:** grün auf dem Stand von `main` mit #380 und #425 (Audit, Typecheck, Lint, 4159 Tests, Build). Im ersten Lauf für #435 war einzig `saved-prompt-list.test.tsx` einmal rot (der bekannte Wackeltest, #361) und einzeln grün.
+- **Nicht geprüft:** juristisch; die Seiten im Browser; ob Speed Insights auf promptprinter.app `/geteilt/[token]` meldet (erst nach dem Deployment).
+- **Erster PR:** #435 (Branch `docs/rechtstexte-geteilte-prompts`) ist geschlossen: nach dem Merge von #380 und #425 ging "Rebase and merge" am Kopf dieser Datei nicht mehr. Die beiden Commits sind unverändert übernommen (`git range-diff`).
+
 ## 2026-11-25: Konto löschen entfernt die Dateien erst nach dem Konto, das Abgleich-Skript findet Waisen (Branch `fix/speicher-380-425-v2`, #380 und #425)
 
 - **#380, Ziel:** `DELETE /api/account` entfernte alle Objekte in `chat-attachments`, `project-files` und `avatars`, bevor `deleteUser` lief. Scheiterte das Löschen (Störung bei Supabase Auth, fehlender Service-Role-Key), blieb das Konto bestehen, und jede Datei fehlte dauerhaft, die Zeilen in `message_attachments` und `project_files` zeigten ins Leere.
