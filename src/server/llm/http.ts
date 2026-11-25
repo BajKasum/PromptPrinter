@@ -169,12 +169,13 @@ export async function* readOpenAiCompatibleSse(
   }
 }
 
-// ─── Custom (BYOK only), any OpenAI-compatible chat/completions endpoint ───
-// The user supplies their own endpoint + model alongside the key (settings →
-// "Eigene API-Keys" → "Custom"), so this covers Z.ai, DeepSeek, Groq,
-// OpenRouter, a self-hosted gateway, anything speaking the OpenAI chat/
-// completions shape. No "thinking" flag here unlike the Z.ai request, that's a
-// Z.ai-specific quirk, not something to impose on an arbitrary endpoint.
+// ─── Eigene Endpunkte: jeder OpenAI-kompatible chat/completions-Endpunkt ───
+// Der Custom-Slot (BYOK: Adresse und Modell zum Key, Einstellungen → "Eigene API-Keys") und LLM_BASE_URL des
+// Betreibers (llm/custom.ts): Z.ai, DeepSeek, Groq, OpenRouter, ein eigenes Gateway, alles in der Form von OpenAI.
+// Die Felder, mit denen Z.ai das Denken steuert (zaiThinkingParams), gehen nur an eine Adresse auf dem Host von Z.ai
+// (isZaiEndpoint in llm/config.ts): ein anderer Server kennt sie nicht und darf die Anfrage ablehnen. Der Chat über
+// einen eigenen Endpunkt schickt sie gar nicht, nur die Felder von OpenAI; die Analyse (llm/analyze.ts) schickt sie,
+// wenn die Adresse auf api.z.ai zeigt.
 //
 // Unlike Z.ai's own fixed endpoint, `endpoint` here is a user-supplied URL
 // that already passed the SSRF check (url-safety.ts) but has none of Z.ai's

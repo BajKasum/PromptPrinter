@@ -19,8 +19,7 @@ import {
 //
 // Was hier bewusst "komisch" aussieht, ist festgehalten, nicht gutgeheißen: die
 // Reihenfolge von Text und Bild unterscheidet sich zwischen Chat und Analyse
-// (Anthropic), und die Analyse schickt `thinking: disabled` auch an den Custom-Slot.
-// Ein Schnitt darf daran nichts ändern.
+// (Anthropic). Ein Schnitt darf daran nichts ändern.
 
 const sdk = vi.hoisted(() => ({
   anthropicCtor: vi.fn(),
@@ -529,6 +528,19 @@ describe("analyzeComplete über fetch", () => {
     expect(result).toEqual({ text: "Fakten", usage: { inputTokens: 1, outputTokens: 2 }, model: "glm-4.5-air" });
   });
 
+  it("Z.ai mit einem Modell, das immer denkt: reasoning_effort statt thinking (zaiThinkingParams)", async () => {
+    vi.stubEnv("ZAI_API_KEY", "zk");
+    vi.stubEnv("ZAI_MODEL", "glm-5.3-flash");
+    const fetchMock = vi.fn(async () => respond(200, OK));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await analyzeComplete({ system: "S", text: "T" });
+
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ model: "glm-5.3-flash", reasoning_effort: "low" });
+    expect(body).not.toHaveProperty("thinking");
+  });
+
   it("Z.ai mit Bild: sehendes Modell und image_url als Data-URI, Text zuerst", async () => {
     vi.stubEnv("ZAI_API_KEY", "zk");
     const fetchMock = vi.fn(async () => respond(200, OK));
@@ -588,26 +600,75 @@ describe("analyzeComplete über fetch", () => {
     expect(init.headers).toEqual({ authorization: "Bearer zk", "content-type": "application/json" });
   });
 
-  it("Custom-Slot: eigene Adresse und eigenes Modell, trotzdem thinking aus (festgehalten wie es ist)", async () => {
+  // Der Host entscheidet, nicht der Modellname: auch ein GLM-Modell hinter einem anderen Server (OpenRouter, vLLM)
+  // bekommt keine Felder von Z.ai, ein Endpunkt, der unbekannte Felder ablehnt, liesse sonst nur die Analyse scheitern.
+  it.each(["mein-modell", "glm-4.5-air", "glm-5.3"])(
+    "Custom-Slot: eigene Adresse und eigenes Modell (%s), ohne die Felder von Z.ai",
+    async (model) => {
+      const fetchMock = vi.fn(async () => respond(200, OK));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const result = await analyzeComplete({
+        system: "SYS",
+        text: "Quelle",
+        override: { provider: "custom", apiKey: "ck", baseUrl: "https://api.example.test/v1/chat", model },
+      });
+
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe("https://api.example.test/v1/chat");
+      expect(init.headers).toEqual({ authorization: "Bearer ck", "content-type": "application/json" });
+      expect(JSON.parse(init.body as string)).toEqual({
+        model,
+        messages: [
+          { role: "system", content: "SYS" },
+          { role: "user", content: "Quelle" },
+        ],
+        max_tokens: 1500,
+        stream: false,
+      });
+      expect(result.model).toBe(model);
+    }
+  );
+
+  it.each([
+    ["glm-4.5-air", { thinking: { type: "disabled" } }],
+    ["glm-5.3", { reasoning_effort: "low" }],
+  ])("Custom-Slot auf api.z.ai (%s): die Adresse ist Z.ai, die Felder gehen mit", async (model, fields) => {
     const fetchMock = vi.fn(async () => respond(200, OK));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await analyzeComplete({
-      system: "SYS",
-      text: "Quelle",
-      override: { provider: "custom", apiKey: "ck", baseUrl: "https://api.example.test/v1/chat", model: "mein-modell" },
+    await analyzeComplete({
+      system: "S",
+      text: "T",
+      override: { provider: "custom", apiKey: "ck", baseUrl: "https://api.z.ai/api/paas/v4/chat/completions", model },
     });
 
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://api.example.test/v1/chat");
-    expect(init.headers).toEqual({ authorization: "Bearer ck", "content-type": "application/json" });
-    expect(JSON.parse(init.body as string)).toMatchObject({
-      model: "mein-modell",
+    expect(JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({
+      model,
+      messages: [
+        { role: "system", content: "S" },
+        { role: "user", content: "T" },
+      ],
       max_tokens: 1500,
       stream: false,
-      thinking: { type: "disabled" },
+      ...fields,
     });
-    expect(result.model).toBe("mein-modell");
+  });
+
+  it("Denktext ohne Antwort: ein fremder Endpunkt liefert ihn als Ersatz, Z.ai nie, auch nicht über den Custom-Slot", async () => {
+    const onlyReasoning = JSON.stringify({ choices: [{ message: { content: "", reasoning_content: "Ich überlege" } }] });
+    vi.stubGlobal("fetch", vi.fn(async () => respond(200, onlyReasoning)));
+    const custom = (baseUrl: string) => ({ provider: "custom" as const, apiKey: "ck", baseUrl, model: "glm-5.3" });
+
+    const foreign = await analyzeComplete({ system: "S", text: "T", override: custom("https://api.example.test/v1/chat") });
+    expect(foreign.text).toBe("Ich überlege");
+
+    const zai = await analyzeComplete({
+      system: "S",
+      text: "T",
+      override: custom("https://api.z.ai/api/paas/v4/chat/completions"),
+    }).catch((e) => e);
+    expect(zai).toBeInstanceOf(LlmEmptyReplyError);
   });
 
   it("Custom-Slot: eine Fehlerantwort nennt den Anbieter und nur die geparste Meldung, nie den rohen Body", async () => {

@@ -3,9 +3,11 @@ import {
   ANTHROPIC_DEFAULT_MODEL,
   GEMINI_DEFAULT_MODEL,
   OPENAI_DEFAULT_MODEL,
+  ZAI_ENDPOINT,
   ZAI_VISION_DEFAULT_MODEL,
   anthropicModel,
   geminiByokModel,
+  isZaiEndpoint,
   llmConfig,
   openaiModel,
   serverConfigFor,
@@ -131,6 +133,32 @@ describe("Denken bei Z.ai", () => {
   it("setzt es bei Modellen, die immer denken (glm-5.3 und neuer), auf low statt es abzuschalten (sonst 400)", () => {
     for (const model of ["glm-5.3", "glm-5.3-flash", "glm-5.3-flashx", "glm-5.10", "glm-6"]) {
       expect(zaiThinkingParams(model), model).toEqual({ reasoning_effort: "low" });
+    }
+  });
+});
+
+describe("isZaiEndpoint: wohin die Felder von Z.ai dürfen", () => {
+  it("erkennt Z.ai am Host, egal wer die Adresse eingetragen hat", () => {
+    for (const url of [
+      ZAI_ENDPOINT,
+      "https://api.z.ai/api/coding/paas/v4/chat/completions",
+      "https://API.Z.AI/api/paas/v4/chat/completions",
+      "https://api.z.ai:443/api/paas/v4",
+    ]) {
+      expect(isZaiEndpoint(url), url).toBe(true);
+    }
+  });
+
+  it("nur genau dieser Host zählt, kein ähnlicher Name, kein Pfad und keine kaputte Adresse", () => {
+    for (const url of [
+      "https://api.z.ai.example.test/v1/chat/completions",
+      "https://fake-z.ai/api/paas/v4/chat/completions",
+      "https://example.test/api.z.ai/v1/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
+      "http://localhost:11434/v1/chat/completions",
+      "kein Link",
+    ]) {
+      expect(isZaiEndpoint(url), url).toBe(false);
     }
   });
 });
