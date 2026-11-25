@@ -73,7 +73,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   und Code sind in Produktion. Entscheid #228: echte Supabase-Sitzung, kein eigener Token-Typ; `cli_sessions` macht sie sichtbar, einzeln widerrufbar und höchstens 30 Tage gültig. Verlauf: Changelog 2026-10-29 und 2026-11-02.
 - **Ladezeit-Messung:** Vercel Speed Insights, `<SiteSpeedInsights />` im Root-Layout (`src/shared/providers/site-speed-insights.tsx`),
   nur im Produktions-Build auf Vercel (`measuresSpeed`: `VERCEL` gesetzt, eine eigene Installation lädt nichts). Adressen werden vor dem Senden gekürzt (`src/shared/lib/speed-insights-event.ts`: Query und
-  Fragment weg, jede UUID wird `[id]`). Skript und Messwerte laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen
+  Fragment weg, jede UUID wird `[id]`, der Link-Code geteilter Prompts `[token]`). Skript und Messwerte laufen über `'self'`; **wer `scriptSrc` oder `endpoint` auf einen
   fremden Host stellt, zieht `src/server/security/csp.ts` mit** (`csp.test.ts`). Genannt in Datenschutz (Ziffern 2, 3, 4,
   6) und `/cookies` (Ziffern 1, 3), wer ändert, was gesendet wird, zieht beide Texte mit. Kein Env-Wert, kein
   Dashboard-Schalter. Kosten, Grenzen, Prüfung: `docs/SETUP.md`, "Geschwindigkeitsmessung", Changelog 2026-10-06.
