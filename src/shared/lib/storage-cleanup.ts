@@ -1,3 +1,7 @@
+// Diese Datei lädt auch scripts/reconcile-project-files-storage.mjs, mit Node selbst und ohne Bundler. Deshalb bleibt
+// sie ohne Importe und ohne TypeScript, das Node nicht einfach weglassen kann (enum, namespace); der Test des Skripts
+// lädt sie so, wie Node es tut.
+
 /**
  * How many storage paths go into one `storage.remove()` call.
  *
@@ -20,13 +24,11 @@ export function chunkPaths(paths: string[], size: number = STORAGE_REMOVE_BATCH)
 }
 
 /**
- * Removes every path, in batches, and keeps going if a batch fails.
+ * Entfernt jeden Pfad, in Stapeln, und macht weiter, wenn ein Stapel scheitert.
  *
- * Independent batches on purpose: storage cleanup is best-effort in both of its
- * callers (a leftover object is invisible and harmless — see migration 0029 —
- * whereas blocking an account deletion on a storage hiccup is not), so one bad
- * batch must not abort the rest. Returns how many paths were in batches that
- * failed, so the caller can log a number instead of guessing.
+ * Unabhängige Stapel mit Absicht: ein übrig gebliebenes Objekt ist unsichtbar und harmlos (Migration 0029), alle
+ * liegen zu lassen, weil ein Stapel scheiterte, nicht. Gibt zurück, wie viele Pfade in gescheiterten Stapeln standen,
+ * damit der Aufrufer eine Zahl melden kann, statt zu raten.
  */
 export async function removeAllPaths(
   remove: (paths: string[]) => Promise<{ error: unknown } | void>,
