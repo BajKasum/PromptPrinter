@@ -25,6 +25,14 @@ describe("scrubSpeedInsightsEvent", () => {
     expect(out?.url).toBe("https://promptprinter.app/chats/[id]");
   });
 
+  it("ersetzt den Link-Code eines geteilten Prompts durch [token], absolut wie relativ", () => {
+    const token = "AbCdEfGhIjKlMnOpQrStUvWx_-012345";
+    expect(scrubSpeedInsightsEvent(event(`https://promptprinter.app/geteilt/${token}`))?.url).toBe(
+      "https://promptprinter.app/geteilt/[token]"
+    );
+    expect(scrubSpeedInsightsEvent(event(`/geteilt/${token}?x=1#y`))?.url).toBe("/geteilt/[token]");
+  });
+
   it("ersetzt jede Kennung im Pfad, auch Projekt und Chat zusammen", () => {
     const out = scrubSpeedInsightsEvent(
       event(`https://promptprinter.app/projects/${PROJECT}/chats/${CHAT}?x=1`)
