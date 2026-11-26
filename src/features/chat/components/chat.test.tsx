@@ -582,7 +582,11 @@ describe("Chat", () => {
 
       await userEvent.click(screen.getByRole("button", { name: /Erneut senden/ }));
 
-      expect(await screen.findByText("Baue mir eine Todo-App")).toBeInTheDocument();
+      // Im Verlauf gesucht: vor dem Senden steht derselbe Text im Eingabefeld, und ein <textarea> trägt seinen Wert als
+      // Textknoten. Eine Suche im ganzen Dokument träfe das Feld und bliebe grün, auch wenn der Knopf nichts sendet.
+      const log = await screen.findByRole("log");
+      expect(await within(log).findByText("Baue mir eine Todo-App")).toBeInTheDocument();
+      expect(screen.getByRole("textbox")).toHaveValue("");
     });
 
     it("says how long a rate limit lasts rather than leaving the user guessing", async () => {

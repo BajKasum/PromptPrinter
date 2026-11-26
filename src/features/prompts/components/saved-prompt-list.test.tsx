@@ -359,7 +359,10 @@ describe("SavedPromptList", () => {
       await user.click(screen.getByRole("button", { name: "Als neue Version speichern" }));
 
       expect(update).toHaveBeenCalledWith({ outputs: { prompt: "Neuer Text.", title: "Alter Name" } });
-      expect(await screen.findByText("Neuer Text.")).toBeInTheDocument();
+      // Ein gesteuertes <textarea> trägt seinen Wert auch als Textknoten: ohne `selector` träfe die Suche das Feld des
+      // Editors, solange er offen ist. Gemeint ist der Text der Karte, und der Editor ist dann zu.
+      expect(await screen.findByText("Neuer Text.", { selector: "pre" })).toBeInTheDocument();
+      expect(screen.queryByLabelText("Text von „Alter Name“", { exact: true })).toBeNull();
       expect(await screen.findByRole("button", { name: "Verlauf (3 Versionen)" })).toBeInTheDocument();
     });
   });
