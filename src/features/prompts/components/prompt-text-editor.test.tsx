@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PromptTextEditor } from "./prompt-text-editor";
 import type { ShareStatus } from "@/shared/lib/prompt-share-status";
@@ -119,6 +119,7 @@ describe("PromptTextEditor", () => {
     const { onClose } = renderEditor();
     await userEvent.setup().keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -181,5 +182,103 @@ describe("PromptTextEditor", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Als neue Version speichern" }));
     expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Brief" } });
+  });
+});
+
+// #407: Escape verwirft keine Änderung ohne Rückfrage.
+describe("PromptTextEditor: Escape mit Änderungen", () => {
+  beforeEach(() => {
+    refresh.mockReset();
+    toast.mockReset();
+    update.mockReset();
+    written.mockReset().mockResolvedValue({ data: [{ id: "p1" }], error: null });
+  });
+
+  async function editAndPressEscape() {
+    const view = renderEditor();
+    const user = userEvent.setup();
+    await user.type(view.field, " Neu.");
+    await user.keyboard("{Escape}");
+    const dialog = await screen.findByRole("dialog", { name: "Änderungen verwerfen?" });
+    return { ...view, user, dialog };
+  }
+
+  it("fragt nach, statt zu schliessen", async () => {
+    const { onClose, field, dialog } = await editAndPressEscape();
+    expect(dialog).toHaveTextContent("Deine Änderungen an „Brief“ sind noch nicht gespeichert");
+    expect(onClose).not.toHaveBeenCalled();
+    expect(field).toHaveValue("Alter Text. Neu.");
+  });
+
+  it.each([
+    ["Abbrechen", async (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement) => {
+      await user.click(within(dialog).getByRole("button", { name: "Abbrechen" }));
+    }],
+    ["Escape", async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.keyboard("{Escape}");
+    }],
+  ])("behält bei %s den Entwurf und setzt den Fokus zurück ins Feld", async (_name, leave) => {
+    const { onClose, field, user, dialog } = await editAndPressEscape();
+
+    await leave(user, dialog);
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(onClose).not.toHaveBeenCalled();
+    expect(field).toHaveValue("Alter Text. Neu.");
+    await waitFor(() => expect(field).toHaveFocus());
+  });
+
+  it("verwirft erst nach der Bestätigung, ohne zu speichern", async () => {
+    const { onClose, user, dialog } = await editAndPressEscape();
+
+    await user.click(within(dialog).getByRole("button", { name: "Verwerfen" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  // Die Rückfrage hört selbst am window auf Escape: liefe das Ereignis weiter, schlösse sie sich sofort wieder.
+  it("lässt das Escape nicht weiterlaufen, wenn die Rückfrage kommt", async () => {
+    const { field } = renderEditor();
+    await userEvent.setup().type(field, " Neu.");
+    const heard = vi.fn();
+    window.addEventListener("keydown", heard);
+    try {
+      fireEvent.keyDown(field, { key: "Escape" });
+    } finally {
+      window.removeEventListener("keydown", heard);
+    }
+    expect(heard).not.toHaveBeenCalled();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("schliesst ohne Rückfrage, wenn der Text wieder wie vorher ist", async () => {
+    const { onClose, field } = renderEditor();
+    const user = userEvent.setup();
+    await user.type(field, "x{Backspace}{Escape}");
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["unverändert", ""],
+    ["geändert", " Neu."],
+  ])("lässt das Escape einer Eingabehilfe in Ruhe (Text %s)", async (_name, typed) => {
+    const { onClose, field } = renderEditor();
+    if (typed) await userEvent.setup().type(field, typed);
+    fireEvent.keyDown(field, { key: "Escape", isComposing: true });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("reagiert während des Speicherns nicht auf Escape", async () => {
+    written.mockReturnValue(new Promise(() => {}));
+    const { onClose, field } = renderEditor();
+    const user = userEvent.setup();
+    await user.type(field, " Neu.");
+    await user.click(screen.getByRole("button", { name: "Als neue Version speichern" }));
+    fireEvent.keyDown(field, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

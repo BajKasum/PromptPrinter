@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ApiKeys } from "./api-keys";
 
@@ -28,6 +28,13 @@ function deferred<T>() {
 }
 
 const custom = { label: "Z.ai", baseUrl: "https://api.z.ai", model: "glm-4.6" };
+
+// Der Papierkorb fragt nach (#407): erst die Bestätigung im Dialog entfernt.
+async function removeKey(user: ReturnType<typeof userEvent.setup>, trigger: HTMLElement) {
+  await user.click(trigger);
+  const dialog = await screen.findByRole("dialog");
+  await user.click(within(dialog).getByRole("button", { name: "Key entfernen" }));
+}
 
 beforeEach(() => {
   refresh.mockReset();
@@ -171,7 +178,7 @@ describe("ApiKeys: verbundener Anbieter, Entfernen", () => {
     render(<ApiKeys configured={["anthropic"]} active="anthropic" customProvider={null} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Anthropic-Key entfernen" }));
+    await removeKey(user, screen.getByRole("button", { name: "Anthropic-Key entfernen" }));
 
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
@@ -185,7 +192,7 @@ describe("ApiKeys: verbundener Anbieter, Entfernen", () => {
     render(<ApiKeys configured={["anthropic"]} active="anthropic" customProvider={null} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("remove-anthropic"));
+    await removeKey(user, screen.getByTestId("remove-anthropic"));
 
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
     expect(toast).toHaveBeenCalledWith({
@@ -202,7 +209,7 @@ describe("ApiKeys: verbundener Anbieter, Entfernen", () => {
     render(<ApiKeys configured={["anthropic"]} active="anthropic" customProvider={null} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("remove-anthropic"));
+    await removeKey(user, screen.getByTestId("remove-anthropic"));
 
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
     expect(toast.mock.calls[0][0]).toMatchObject({
@@ -217,7 +224,7 @@ describe("ApiKeys: verbundener Anbieter, Entfernen", () => {
     render(<ApiKeys configured={["anthropic"]} active="anthropic" customProvider={null} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("remove-anthropic"));
+    await removeKey(user, screen.getByTestId("remove-anthropic"));
     expect(screen.getByTestId("remove-anthropic")).toBeDisabled();
     await user.click(screen.getByTestId("remove-anthropic"));
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -238,12 +245,12 @@ describe("ApiKeys: verbundene Zeilen, Entfernen ohne Antwort der Route", () => {
     render(<ApiKeys configured={[provider]} active={provider} customProvider={provider === "custom" ? custom : null} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: button }));
+    await removeKey(user, screen.getByRole("button", { name: button }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
     expect(toast.mock.calls[0][0]).toMatchObject({ description: "Key konnte nicht entfernt werden." });
 
-    await waitFor(() => expect(screen.getByRole("button", { name: button })).toBeEnabled());
-    await user.click(screen.getByRole("button", { name: button }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await removeKey(user, screen.getByRole("button", { name: button }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(2));
     expect(toast.mock.calls[1][0]).toMatchObject({ description: "Netzwerkfehler, bitte versuch es erneut." });
   });
@@ -262,7 +269,7 @@ describe("ApiKeys: eigener Endpunkt, verbundene Zeile", () => {
     render(<ApiKeys configured={["custom"]} active="custom" customProvider={custom} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Custom-Key entfernen" }));
+    await removeKey(user, screen.getByRole("button", { name: "Custom-Key entfernen" }));
 
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
@@ -276,7 +283,7 @@ describe("ApiKeys: eigener Endpunkt, verbundene Zeile", () => {
     render(<ApiKeys configured={["custom"]} active="custom" customProvider={custom} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Custom-Key entfernen" }));
+    await removeKey(user, screen.getByRole("button", { name: "Custom-Key entfernen" }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
     expect(toast.mock.calls[0][0]).toEqual({
       title: "Konnte nicht entfernt werden",
@@ -285,8 +292,8 @@ describe("ApiKeys: eigener Endpunkt, verbundene Zeile", () => {
     });
 
     fetchMock.mockResolvedValueOnce(jsonResponse({}, 500));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Custom-Key entfernen" })).toBeEnabled());
-    await user.click(screen.getByRole("button", { name: "Custom-Key entfernen" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await removeKey(user, screen.getByRole("button", { name: "Custom-Key entfernen" }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(2));
     expect(toast.mock.calls[1][0]).toMatchObject({ description: "Key konnte nicht entfernt werden." });
     expect(refresh).not.toHaveBeenCalled();
@@ -298,7 +305,7 @@ describe("ApiKeys: eigener Endpunkt, verbundene Zeile", () => {
     render(<ApiKeys configured={["custom"]} active="custom" customProvider={custom} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "Custom-Key entfernen" }));
+    await removeKey(user, screen.getByRole("button", { name: "Custom-Key entfernen" }));
     expect(screen.getByRole("button", { name: "Custom-Key entfernen" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Custom-Key entfernen" }));
     expect(fetchMock).toHaveBeenCalledTimes(1);
