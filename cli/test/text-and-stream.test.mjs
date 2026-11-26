@@ -78,6 +78,19 @@ test("readChatEvent: bekannt, unbekannt, kaputt", () => {
   assert.equal(readChatEvent("status", '{"phase":"retrying","attempt":2,"maxAttempts":3}').kind, "event");
 });
 
+test("readChatEvent: status nimmt die Versuche nur als kleine ganze Zahlen, sonst ist es kaputt", () => {
+  const status = (fields) => readChatEvent("status", JSON.stringify({ phase: "retrying", ...fields })).kind;
+  assert.equal(status({ attempt: 2, maxAttempts: 3 }), "event");
+  assert.equal(status({}), "event");
+  assert.equal(status({ attempt: "\u001b]52;c;Z2VoZWlt\u0007", maxAttempts: 3 }), "invalid");
+  assert.equal(status({ attempt: 2, maxAttempts: "\u001b]0;Titel\u0007" }), "invalid");
+  for (const bad of [2.5, -1, 101, 1e21, null, true, [2], "2"]) {
+    assert.equal(status({ attempt: bad }), "invalid", JSON.stringify(bad));
+    assert.equal(status({ maxAttempts: bad }), "invalid", JSON.stringify(bad));
+  }
+  assert.equal(readChatEvent("status", '{"phase":"retrying","attempt":2,"maxAttempts":1e999}').kind, "invalid");
+});
+
 test("extractPrompt nimmt den letzten text-Block, sonst den längsten, und findet den Abschluss mitten in der Zeile", () => {
   assert.equal(extractPrompt("nur eine Frage?"), null);
   assert.equal(extractPrompt("```text\neins\n```\nund\n```text\nzwei\n```"), "zwei");
