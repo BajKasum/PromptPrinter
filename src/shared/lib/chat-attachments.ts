@@ -1,8 +1,4 @@
-import {
-  ALLOWED_FILE_EXTENSIONS,
-  extensionOf,
-  fileKind,
-} from "@/shared/lib/file-kinds";
+import { ALLOWED_FILE_EXTENSIONS, fileKind } from "@/shared/lib/file-kinds";
 import {
   MAX_ATTACHMENT_IMAGE_BYTES,
   MAX_ATTACHMENT_TEXT_BYTES,
@@ -56,25 +52,6 @@ export function attachmentKindOf(filename: string): AttachmentKind | null {
   if (kind === "image") return "image";
   if (kind === "text" || kind === "lockfile") return "text";
   return null;
-}
-
-export function isImageMediaType(value: string): value is ImageMediaType {
-  return (IMAGE_MEDIA_TYPES as readonly string[]).includes(value);
-}
-
-/** Bildtyp nach Dateiendung, für Bilder, die der Browser ohne Typ meldet. */
-export function imageMediaTypeForName(filename: string): ImageMediaType | null {
-  switch (extensionOf(filename)) {
-    case ".png":
-      return "image/png";
-    case ".jpg":
-    case ".jpeg":
-      return "image/jpeg";
-    case ".webp":
-      return "image/webp";
-    default:
-      return null;
-  }
 }
 
 export function maxBytesForAttachment(kind: AttachmentKind): number {

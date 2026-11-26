@@ -20,6 +20,7 @@ import {
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENTS_REQUEST_BYTES,
 } from "@/shared/lib/chat-limits";
+import { METADATA_MARKERS, pngOfSize, testImage } from "@tests/support/test-images";
 
 // ─── Der Service-Role-Client, durch den alles Schreibende läuft ────────────
 const upload = vi.fn();
@@ -54,11 +55,11 @@ beforeEach(() => {
 });
 
 // ─── Testbytes ─────────────────────────────────────────────────────────────
+// Echte Bilder (tests/support/images/): die Prüfung zerlegt jedes Bild ganz, eine Signatur allein reicht nicht.
 const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-const png = (extra = 8) => Buffer.from([...PNG_HEAD, ...new Array(extra).fill(1)]);
-const jpeg = () => Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
-const webp = () =>
-  Buffer.concat([Buffer.from("RIFF"), Buffer.from([1, 0, 0, 0]), Buffer.from("WEBP"), Buffer.from("VP8 ")]);
+const png = () => testImage("plain.png");
+const jpeg = () => testImage("plain.jpg");
+const webp = () => testImage("plain.webp");
 
 const b64 = (buf: Buffer | string) => Buffer.from(buf).toString("base64");
 
@@ -138,7 +139,7 @@ describe("validateUploads: Raender und Einzelheiten", () => {
 
   it("nimmt genau die Summe, die eine Anfrage tragen darf, und weist ein Byte mehr ab", () => {
     // Zwei Bilder von genau 1 MB (Einzelgrenze) sind genau die Anfragegrenze (2 MB).
-    const edge = png(MAX_ATTACHMENT_IMAGE_BYTES - PNG_HEAD.length);
+    const edge = pngOfSize(MAX_ATTACHMENT_IMAGE_BYTES);
     expect(edge.length).toBe(MAX_ATTACHMENT_IMAGE_BYTES);
     const exactly = [image("a.png", edge), image("b.png", edge)];
     expect(exactly.reduce((sum, u) => sum + Buffer.from(u.data, "base64").length, 0)).toBe(MAX_ATTACHMENTS_REQUEST_BYTES);
@@ -194,6 +195,33 @@ describe("validateUploads", () => {
     expect(out[0].mediaType).toBe("image/jpeg");
   });
 
+  it.each(["gps.jpg", "gps-progressive.jpg", "gps-rotated.jpg", "gps.png", "gps.webp", "gps-animated.webp"])(
+    "speichert ein Foto ohne Gerät und Aufnahmeort (%s)",
+    (name) => {
+      const gps = testImage(name);
+      const [out] = validateUploads([image(name, gps)]);
+      for (const marker of METADATA_MARKERS) expect(out.bytes.includes(marker), marker).toBe(false);
+      expect(out.bytes.length).toBeLessThan(gps.length);
+    }
+  );
+
+  it("speichert von einem Foto dieselben Bytes wie von seiner Fassung ohne Metadaten", () => {
+    const [out] = validateUploads([image("foto.jpg", testImage("gps.jpg"))]);
+    expect(out.mediaType).toBe("image/jpeg");
+    expect(out.bytes.equals(testImage("plain.jpg"))).toBe(true);
+  });
+
+  it("lässt ein Bild ohne Metadaten Byte für Byte, wie es ist", () => {
+    for (const bytes of [png(), jpeg(), webp()]) {
+      expect(validateUploads([image("bild.png", bytes)])[0].bytes.equals(bytes)).toBe(true);
+    }
+  });
+
+  it("weist ein Bild ab, das sich nicht vollständig zerlegen lässt, auch mit richtiger Signatur", () => {
+    expect(codeOf(() => validateUploads([image("cut.jpg", jpeg().subarray(0, 200))]))).toBe("invalid");
+    expect(codeOf(() => validateUploads([image("sig.png", Buffer.from([...PNG_HEAD, 1, 1, 1, 1]))]))).toBe("invalid");
+  });
+
   it("treats a text file as plain text whatever its extension says it is", () => {
     const out = validateUploads([textFile("page.html", "<h1>hi</h1>")]);
     expect(out[0].mediaType).toBe("text/plain");
@@ -238,7 +266,7 @@ describe("validateUploads", () => {
   });
 
   it("holds an image to the image limit and a text file to the text limit", () => {
-    const bigImage = png(MAX_ATTACHMENT_IMAGE_BYTES);
+    const bigImage = pngOfSize(MAX_ATTACHMENT_IMAGE_BYTES + 1);
     expect(codeOf(() => validateUploads([image("big.png", bigImage)]))).toBe("tooLarge");
     const bigText = "x".repeat(MAX_ATTACHMENT_TEXT_BYTES + 1);
     expect(codeOf(() => validateUploads([textFile("big.txt", bigText)]))).toBe("tooLarge");
@@ -257,7 +285,7 @@ describe("validateUploads", () => {
   it("refuses attachments that are fine one by one but too large together", () => {
     // Drei Bilder knapp unter der Einzelgrenze: zusammen über der Anfragegrenze.
     const each = Math.floor(MAX_ATTACHMENTS_REQUEST_BYTES / 2.5);
-    const files = [1, 2, 3].map((i) => image(`s${i}.png`, png(each - PNG_HEAD.length)));
+    const files = [1, 2, 3].map((i) => image(`s${i}.png`, pngOfSize(each)));
     expect(each).toBeLessThanOrEqual(MAX_ATTACHMENT_IMAGE_BYTES);
     expect(codeOf(() => validateUploads(files))).toBe("tooLargeTotal");
   });

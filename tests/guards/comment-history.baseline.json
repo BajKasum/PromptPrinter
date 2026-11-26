@@ -63,7 +63,6 @@
   "src/features/chat/hooks/run-chat-turn.ts": 1,
   "src/features/chat/hooks/use-chat-turn.ts": 11,
   "src/features/chat/hooks/use-visual-viewport-inset.ts": 1,
-  "src/features/chat/lib/attachment-validation.ts": 2,
   "src/features/chat/lib/chat-persistence.ts": 24,
   "src/features/chat/lib/chat-stub.ts": 2,
   "src/features/chat/lib/chat-variants.ts": 2,

@@ -5,6 +5,7 @@ import {
   MAX_ATTACHMENT_IMAGE_BYTES,
 } from "@/shared/lib/chat-limits";
 import { ZAI_CONSENT_VERSION } from "@/server/consent";
+import { testImage } from "@tests/support/test-images";
 
 // Ein Konto, das der Übermittlung an Z.ai zugestimmt hat (server/consent.ts): ohne sie antwortet der
 // Server-Key-Pfad mit 403 consentRequired. Das Verhalten ohne Zustimmung steht in consent.test.ts und im Abschnitt
@@ -118,7 +119,8 @@ vi.mock("@/server/llm", async (importOriginal) => {
 });
 
 // ─── Testdaten ─────────────────────────────────────────────────────────────
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+// Ein echtes PNG ohne Metadaten: die Route zerlegt jedes Bild ganz, und dieses speichert sie Byte für Byte, wie es kam.
+const PNG = testImage("plain.png");
 const b64 = (buf: Buffer | string) => Buffer.from(buf).toString("base64");
 const shot = { name: "screen.png", mediaType: "image/png", data: b64(PNG) };
 const notes = { name: "notes.md", mediaType: "text/markdown", data: b64("# Anforderungen\nLogin mit E-Mail") };

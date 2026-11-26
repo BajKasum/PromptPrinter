@@ -1,17 +1,14 @@
-import {
-  attachmentKindOf,
-  imageMediaTypeForName,
-  isImageMediaType,
-  type AttachmentKind,
-} from "@/shared/lib/chat-attachments";
+import { attachmentKindOf, type AttachmentKind } from "@/shared/lib/chat-attachments";
 import {
   MAX_ATTACHMENT_IMAGE_BYTES,
   MAX_ATTACHMENT_IMAGE_EDGE,
   MAX_ATTACHMENT_TEXT_BYTES,
 } from "@/shared/lib/chat-limits";
+import { stripImageMetadata } from "@/features/chat/lib/image-metadata";
 
 // Aus einer Datei, die der Nutzer ausgewählt hat, wird ein Anhang, den die
-// Route annimmt: Format geprüft, Bilder verkleinert, Text als UTF-8 bestätigt.
+// Route annimmt: Format geprüft, Bilder verkleinert und ohne Metadaten (etwa
+// den Aufnahmeort), Text als UTF-8 bestätigt.
 //
 // Das alles im Browser, BEVOR irgendetwas hochgeladen wird. Die Route prüft
 // dasselbe noch einmal (attachment-store.ts, sie traut dem Browser nicht),
@@ -121,23 +118,27 @@ async function prepareImage(file: File, deps: PrepareDeps): Promise<PrepareResul
     const target = fitWithin(decoded.width, decoded.height, MAX_ATTACHMENT_IMAGE_EDGE);
     const untouched = target.width === decoded.width && target.height === decoded.height;
 
-    // Klein genug und von einem Typ, den die Route nimmt: unverändert lassen.
-    // Ein Umkodieren würde ein scharfes PNG ohne Not verlustbehaftet machen.
-    const originalType = isImageMediaType(file.type) ? file.type : imageMediaTypeForName(file.name);
-    if (untouched && file.size <= MAX_ATTACHMENT_IMAGE_BYTES && originalType) {
-      const data = await deps.toBase64(file);
-      return {
-        ok: true,
-        attachment: {
-          id: newId(),
-          name: file.name,
-          kind: "image",
-          mediaType: originalType,
-          sizeBytes: file.size,
-          data,
-          previewUrl: previewOf(originalType, data),
-        },
-      };
+    // Klein genug: nicht neu kodieren, ein scharfes PNG würde sonst ohne Not
+    // verlustbehaftet. Nur die Metadaten gehen heraus (image-metadata.ts), der
+    // Typ kommt aus den Bytes. Was sich nicht vollständig zerlegen lässt, kodiert
+    // der Weg darunter neu, das lässt ohnehin nur die Pixel übrig.
+    if (untouched && file.size <= MAX_ATTACHMENT_IMAGE_BYTES) {
+      const clean = stripImageMetadata(new Uint8Array(await file.arrayBuffer()));
+      if (clean) {
+        const data = await deps.toBase64(new Blob([clean.bytes], { type: clean.mediaType }));
+        return {
+          ok: true,
+          attachment: {
+            id: newId(),
+            name: file.name,
+            kind: "image",
+            mediaType: clean.mediaType,
+            sizeBytes: clean.bytes.length,
+            data,
+            previewUrl: previewOf(clean.mediaType, data),
+          },
+        };
+      }
     }
 
     for (const step of ENCODE_STEPS) {
