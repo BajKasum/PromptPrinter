@@ -214,34 +214,10 @@ export type RateLimitScope =
   | "test-run";
 
 /**
- * The bucket a request counts against: the signed-in user, or the caller's IP
- * when there is none, always inside the counter of one `scope`.
- *
- * The IP branch used to read `x-forwarded-for.split(",")[0]`, which is the one
- * entry in that header a caller can freely choose. XFF is a *chain*, and every
- * proxy in front of us APPENDS what it saw to whatever the client already sent,
- * so the client's own value ends up first and the address the edge actually
- * observed ends up last. Reading the first entry therefore let anyone mint an
- * unlimited number of fresh rate-limit buckets by varying a header — the limit
- * was effectively absent for unauthenticated callers.
- *
- * Hosting is Vercel: narrowed to the headers its edge is documented to set
- * itself (https://vercel.com/docs/headers/request-headers), dropping the
- * earlier generic/Cloudflare-oriented guess (cf-connecting-ip is never set by
- * Vercel, so a caller could have supplied it themselves — trusting it would
- * have handed back exactly the spoofable-bucket bug this function exists to
- * close). x-vercel-forwarded-for is Vercel's own name for the same value,
- * guaranteed to survive even if a customer-added proxy in front of Vercel
- * overwrites the generic x-forwarded-for; x-real-ip is documented as
- * identical to x-forwarded-for there too. Vercel OVERWRITES x-forwarded-for
- * with the real client IP rather than appending to whatever the client sent,
- * so it is normally a single value already — the last-entry split below is
- * just defence in depth for the one Enterprise case (a Trusted Proxy in
- * front of Vercel) where it could legitimately be a chain again.
- *
- * Der IP-Zweig ist die einzige Bremse der anonymen Routen: auth, contact,
- * cli-device, cli-token, cli-refresh und cli-logout rufen ohne Nutzer auf. Ausserhalb
- * von Vercel gelten die Köpfe nur nach TRUSTED_PROXY_HOPS (siehe clientIp).
+ * Der Zähler, gegen den eine Anfrage zählt, immer innerhalb eines `scope`: das angemeldete Konto, sonst der Anschluss
+ * (clientAddressBucket). Der Zweig ohne Konto ist die einzige Bremse der anonymen Routen: auth, contact, cli-device,
+ * cli-token, cli-refresh und cli-logout rufen ohne Nutzer auf. Welche Kopfzeile die Adresse liefert und warum nur
+ * diese, steht bei clientIp.
  */
 export function rateLimitKey(
   req: Request,
@@ -249,24 +225,40 @@ export function rateLimitKey(
   userId?: string | null
 ): string {
   if (userId) return `${scope}:u:${userId}`;
-  return `${scope}:ip:${clientIp(req)}`;
+  return `${scope}:ip:${clientAddressBucket(req)}`;
 }
 
 /**
- * Der Zähler eines Kontos von einem Anschluss aus (IPv6 je /64, addressBucket). Für Grenzen, die jemand mit demselben
+ * Der Zähler eines Kontos von einem Anschluss aus (clientAddressBucket). Für Grenzen, die jemand mit demselben
  * Konto, etwa mit dem Passwort, nicht für den Besitzer aufbrauchen soll. Das Protokoll (logRateLimited) liest davon nur
  * Bereich und Konto, nie die Adresse.
  */
 export function rateLimitKeyPerAddress(req: Request, scope: RateLimitScope, userId: string): string {
-  return `${scope}:u:${userId}:ip:${addressBucket(clientIp(req))}`;
+  return `${scope}:u:${userId}:ip:${clientAddressBucket(req)}`;
 }
 
 /**
- * The caller's IP as the edge reported it. Exported since /api/auth needs the
- * bare address (not the `ip:`-prefixed bucket key) to pass to Turnstile's
- * siteverify as `remoteip`. Same header precedence, same reasoning, one
- * implementation — deriving the address a second time somewhere else is how
- * the spoofable-bucket bug above would come back.
+ * Der Anschluss einer Anfrage als Kennung eines Zählers: die Adresse aus clientIp, IPv6 als ihr /64 (addressBucket).
+ * Ein Anschluss bekommt meist ein ganzes /64, mit der einzelnen Adresse bekäme jede darin einen frischen Zähler. Jeder
+ * Zähler je IP nimmt diese Kennung: rateLimitKey ohne Konto, rateLimitKeyPerAddress und die Tagesgrenze des
+ * Gratis-Rahmens (server/free-trial.ts). Turnstile bekommt weiter die genaue Adresse aus clientIp.
+ */
+export function clientAddressBucket(req: Request): string {
+  return addressBucket(clientIp(req));
+}
+
+/**
+ * Die genaue Adresse des Aufrufers, wie der Rand sie meldet, etwa für `remoteip` bei Turnstile; ein Zähler nimmt
+ * clientAddressBucket. Es gibt nur diese eine Ableitung der Adresse: eine zweite an anderer Stelle liesse leicht wieder
+ * einen Kopf gelten, den der Aufrufer selbst wählt, und jeder neue Wert darin wäre ein frischer Zähler.
+ *
+ * Auf Vercel gelten nur die Köpfe, die der Rand laut Dokumentation selbst setzt
+ * (https://vercel.com/docs/headers/request-headers): x-vercel-forwarded-for zuerst, denn ein Proxy, den ein Kunde
+ * vor Vercel stellt, kann es nicht überschreiben, dann x-forwarded-for und x-real-ip mit demselben Wert.
+ * cf-connecting-ip setzt Vercel nie, den könnte jeder selbst schicken. x-forwarded-for ist eine Kette: jeder Proxy
+ * hängt an, was er gesehen hat, der Wert des Aufrufers steht also vorn und der vom Rand beobachtete hinten. Vercel
+ * überschreibt den Kopf mit einem einzelnen Wert; der letzte Eintrag zählt trotzdem, für den Fall eines Trusted Proxy
+ * vor Vercel, mit dem er wieder eine Kette wäre.
  *
  * Weiterleitungs-Köpfe sagen nur dann die Wahrheit, wenn ein Rand sie setzt. Auf
  * Vercel (VERCEL ist dort immer gesetzt) ist das so. Eine eigene Installation

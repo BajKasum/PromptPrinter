@@ -156,6 +156,24 @@ test("während des Wartens steht ein Hinweis, der mit dem ersten Wort verschwind
   await repl.finished;
 });
 
+test("Steuerfolgen statt Zahlen im Wartehinweis erreichen das Terminal nicht, der Zug endet als Protokollfehler", async () => {
+  stub.state.chat.push({
+    raw: [
+      sse("status", { phase: "retrying", attempt: "\u001b]52;c;Z2VoZWlt\u0007", maxAttempts: "\u001b]0;Titel\u0007" }),
+      sse("delta", { text: "da" }),
+      sse("done", {}),
+    ],
+  });
+  const repl = await start();
+  repl.input.write("hallo\r");
+  await until(() => /nicht versteht|Finn: da/.test(repl.screen()), "der Zug endet");
+  assert.equal(repl.screen().includes("\u001b]"), false);
+  assert.equal(repl.screen().includes("\u0007"), false);
+  assert.match(repl.screen(), /nicht versteht/);
+  repl.input.write("/exit\r");
+  await repl.finished;
+});
+
 const PROMPT_REPLY = ['Hier ist dein Prompt:\n\n```text\n-x Sag "Hallo" & echo | %PATH%\nzweite Zeile\n```\n'];
 
 test("/an claude gibt den letzten Prompt als eigenes Argument nach -- an den Agenten und kommt danach zurück", async () => {

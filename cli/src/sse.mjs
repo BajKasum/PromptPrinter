@@ -41,7 +41,7 @@ function parseBlock(block) {
 // ergänzen kann, ohne alte Programme zu brechen; Kaputtes ist `invalid`, ein Protokollfehler.
 const READERS = {
   meta: (d) => optionalStrings(d, ["conversationId", "userMessageId"]),
-  status: (d) => typeof d.phase === "string",
+  status: (d) => typeof d.phase === "string" && optionalCounts(d, ["attempt", "maxAttempts"]),
   delta: (d) => typeof d.text === "string",
   done: (d) => optionalStrings(d, ["conversationId", "assistantMessageId", "persistError"]),
   error: (d) => typeof d.detail === "string",
@@ -49,6 +49,19 @@ const READERS = {
 
 function optionalStrings(data, fields) {
   return fields.every((field) => data[field] === undefined || typeof data[field] === "string");
+}
+
+// Die Versuche im `status` gehen als Text ins Terminal ("neuer Versuch (2 von 3)"). Der Vertrag sagt nur
+// Zahl, hier gilt strenger eine kleine ganze Zahl: JSON kennt auch Brüche, Riesenzahlen und 1e999
+// (Infinity), und der Server zählt nur eine Handvoll Versuche.
+const MAX_COUNT = 100;
+
+function optionalCounts(data, fields) {
+  return fields.every((field) => data[field] === undefined || isCount(data[field]));
+}
+
+function isCount(value) {
+  return Number.isInteger(value) && value >= 0 && value <= MAX_COUNT;
 }
 
 export function readChatEvent(event, data) {

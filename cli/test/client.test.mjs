@@ -9,7 +9,7 @@ import { describeAccount, fetchAccount, signOut } from "../src/account.mjs";
 import { ApiError, createApi, NetworkError } from "../src/api.mjs";
 import { createConversation, MAX_USER_MESSAGE_CHARS, runTurn } from "../src/chat.mjs";
 import { describeError } from "../src/errors.mjs";
-import { runLogin } from "../src/login.mjs";
+import { LOGIN_MESSAGES, MAX_SERVER_FAILURES_IN_ROW, runLogin } from "../src/login.mjs";
 import { translator } from "../src/messages.mjs";
 import { createAuth, createSessionStore, NotLoggedInError, SessionBusyError } from "../src/session.mjs";
 import { copyToClipboard, openBrowser, savePrompt } from "../src/system.mjs";
@@ -148,6 +148,33 @@ test("login: ein Netzfehler beim Abfragen beendet die Anmeldung nicht", async ()
     },
   };
   assert.equal(await runLogin({ api: flaky, store, wait: noWait, print: silent }), "done");
+});
+
+test("login: fällt der Server kurz aus, fragt das Programm im üblichen Abstand weiter", async () => {
+  stub.state.tokenSteps = [
+    { status: 200, body: { status: "pending", interval: 5 } },
+    { status: 503, body: { kind: "unavailable", detail: "x" } },
+    { status: 504, body: {} },
+    { status: 200, body: { status: "approved", session: session("a1", "r1") } },
+  ];
+  const waits = [];
+  assert.equal(await runLogin({ api, store, print: silent, wait: async (ms) => waits.push(ms) }), "done");
+  assert.deepEqual(waits, [5000, 5000, 5000, 5000]);
+  assert.equal((await store.load()).refresh_token, "r1");
+});
+
+test("login: erst eine Reihe von Ausfällen ohne gelungene Abfrage dazwischen beendet die Anmeldung, mit eigenem Text", async () => {
+  const unavailable = { status: 503, body: { kind: "unavailable", detail: "x" } };
+  stub.state.tokenSteps = [
+    ...Array(MAX_SERVER_FAILURES_IN_ROW - 1).fill(unavailable),
+    { status: 200, body: { status: "pending", interval: 5 } },
+    unavailable,
+  ];
+  const result = await runLogin({ api, store, wait: noWait, print: silent });
+  assert.equal(result, "unavailable");
+  assert.equal(stub.requests.filter((r) => r.url === "/api/cli/token").length, 2 * MAX_SERVER_FAILURES_IN_ROW);
+  assert.equal(await store.load(), null);
+  assert.match(t(LOGIN_MESSAGES[result]), /Server hat gerade ein Problem/);
 });
 
 test("login: läuft die Zeit ab, ist es expired", async () => {
