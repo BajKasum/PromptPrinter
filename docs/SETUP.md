@@ -807,6 +807,12 @@ Deutschland braucht. Es sendet an `POST /api/contact`, die Route schickt die Nac
 - **Nicht belegt:** dass eine Mail im Postfach ankommt. Der Versand lief nie gegen den echten Dienst
   (kein Schlüssel in der Entwicklung); der erste Test ist eine eigene Nachricht über das Formular.
 
+## Grenzen je Anschluss
+
+Was nicht am Konto hängt, zählt je Anschluss: die Ratenlimits ohne angemeldetes Konto (`rateLimitKey` ohne Konto, etwa Anmelden, Kontaktformular, die Anmeldung und die Leserouten der Terminal-App und das Öffnen geteilter Prompts), die Versuche beim zweiten Faktor je Konto und Anschluss (`rateLimitKeyPerAddress`) und die Tagesgrenze des Gratis-Rahmens (`FREE_TRIAL_TURNS_PER_IP_DAY` in `src/server/free-trial.ts`, Züge je Anschluss und UTC-Tag über alle Konten). Die Kennung bildet `clientAddressBucket` in `src/server/security/rate-limit.ts`: die Adresse aus `clientIp` (auf Vercel aus den Köpfen des Rands, sonst nach `TRUSTED_PROXY_HOPS`, siehe [DOCKER.md](DOCKER.md)), IPv6 als ihr /64 (`addressBucket` in `src/server/security/url-safety.ts`), `::ffff:a.b.c.d` wie die IPv4-Adresse. Ein Anschluss bekommt meist ein ganzes /64: mit der einzelnen Adresse finge er mit jeder neuen von vorn an und leerte über neue Konten das Tagesbudget des Gratis-Rahmens für alle anderen. Wer sich ein /64 teilt, teilt sich deshalb auch den Zähler. Turnstile bekommt weiter die genaue Adresse.
+
+**Nicht geprüft:** ob Vercel bei promptprinter.app die IPv6-Adressen der Besucher weiterreicht. Die Tests (`rate-limit.test.ts`, `free-trial.test.ts`) prüfen die Schlüssel, nicht den Rand.
+
 ## Grenzen je Konto
 
 Der Browser schreibt mit dem JWT des Nutzers direkt in die Datenbank, an den API-Routen und ihrem Ratenlimit vorbei. Deshalb stehen die Grenzen in der Datenbank (Migration `*_account_ceilings.sql`, für das Ändern gespeicherter Prompts `*_saved_prompts_ceiling_on_update.sql` mit der Funktion in der Fassung aus `*_saved_prompts_ceiling_execute.sql`, für ihre Versionen `*_saved_prompt_versions.sql`), als Trigger und in der Storage-Policy. Sie gelten über jeden Weg, auch über den Service-Role-Client. Die Zahlen stehen auch in `src/shared/lib/plans.ts`, `tests/guards/account-ceilings.test.ts` hält beide gleich, `e2e/account-limits.spec.ts` prüft die Wirkung gegen den lokalen Stack.

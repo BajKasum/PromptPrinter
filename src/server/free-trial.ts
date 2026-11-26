@@ -3,7 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { redis } from "@/server/security/redis-client";
 import { reserveCounter, type CounterReservation } from "@/server/security/reserve-counter";
-import { clientIp } from "@/server/security/rate-limit";
+import { clientAddressBucket } from "@/server/security/rate-limit";
 import { logWarning } from "@/shared/lib/observability";
 import { FREE_TRIAL } from "@/shared/lib/plans";
 
@@ -36,7 +36,8 @@ function dailyCalls(): number {
 
 const promptsKey = (userId: string) => `free-trial:prompts:${userId}`;
 const turnsKey = (userId: string) => `free-trial:turns:${userId}`;
-const ipKey = (ip: string, day: string) => `free-trial:ip:${ip}:${day}`;
+/** Je Anschluss: IPv4 die Adresse, IPv6 ihr /64 (clientAddressBucket), sonst zählte jede Adresse eines /64 neu. */
+const ipKey = (req: Request, day: string) => `free-trial:ip:${clientAddressBucket(req)}:${day}`;
 const dayKey = (day: string) => `free-trial:day:${day}`;
 const utcDay = () => new Date().toISOString().slice(0, 10);
 
@@ -199,7 +200,7 @@ async function reserveAll<R extends string>(
 function sharedSteps(req: Request): Step<"budget">[] {
   const day = utcDay();
   return [
-    { key: ipKey(clientIp(req), day), limit: FREE_TRIAL_TURNS_PER_IP_DAY, ttl: DAY_TTL_SECONDS, refusal: "budget" },
+    { key: ipKey(req, day), limit: FREE_TRIAL_TURNS_PER_IP_DAY, ttl: DAY_TTL_SECONDS, refusal: "budget" },
     { key: dayKey(day), limit: dailyCalls(), ttl: DAY_TTL_SECONDS, refusal: "budget" },
   ];
 }

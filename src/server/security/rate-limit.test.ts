@@ -148,6 +148,42 @@ describe("rateLimitKey", () => {
   });
 });
 
+// #391: Ohne Konto zählt der Schlüssel je Anschluss. Mit der einzelnen IPv6-Adresse finge ein /64 mit jeder neuen
+// Adresse von vorn an, und die Grenzen der anonymen Routen (auth, cli-device, …) gälten für ihn nicht.
+describe("rateLimitKey ohne Konto, je Anschluss", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  const anonymous = (ip: string) => rateLimitKey(req({ "x-vercel-forwarded-for": ip }), "auth");
+
+  it("zählt IPv6 je /64: jede Adresse im selben Netz teilt den Zähler, ein anderes Netz hat seinen eigenen", () => {
+    vi.stubEnv("VERCEL", "1");
+    expect(anonymous("2001:db8:1:1::1")).toBe("auth:ip:2001:db8:1:1::/64");
+    expect(anonymous("2001:db8:1:1:ffff:ffff:ffff:ffff")).toBe(anonymous("2001:db8:1:1::1"));
+    expect(anonymous("2001:DB8:1:1:0:0:0:2")).toBe(anonymous("2001:db8:1:1::1"));
+    expect(anonymous("2001:db8:1:2::1")).not.toBe(anonymous("2001:db8:1:1::1"));
+  });
+
+  it("lässt IPv4 und \"unknown\", wie sie sind, und zählt ::ffff:a.b.c.d wie die IPv4-Adresse", () => {
+    vi.stubEnv("VERCEL", "1");
+    expect(anonymous("203.0.113.7")).toBe("auth:ip:203.0.113.7");
+    expect(anonymous("203.0.113.8")).not.toBe(anonymous("203.0.113.7"));
+    expect(anonymous("::ffff:203.0.113.7")).toBe(anonymous("203.0.113.7"));
+    expect(rateLimitKey(req(), "auth")).toBe("auth:ip:unknown");
+  });
+
+  it("gilt auch für eine eigene Installation hinter einem Proxy (TRUSTED_PROXY_HOPS)", () => {
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "1");
+    const behindProxy = (ip: string) => rateLimitKey(req({ "x-forwarded-for": `198.51.100.1, ${ip}` }), "auth");
+    expect(behindProxy("2001:db8:1:1::a")).toBe("auth:ip:2001:db8:1:1::/64");
+    expect(behindProxy("2001:db8:1:1::b")).toBe(behindProxy("2001:db8:1:1::a"));
+  });
+
+  it("gibt Turnstile weiter die genaue Adresse: clientIp fasst nichts zusammen", () => {
+    vi.stubEnv("VERCEL", "1");
+    expect(clientIp(req({ "x-vercel-forwarded-for": "2001:db8:1:1::1" }))).toBe("2001:db8:1:1::1");
+  });
+});
+
 // #147: Upstash zählt je Schlüssel und Fenster, die Obergrenze gehört nicht zum Schlüssel. Teilten sich
 // Chat und Datenexport einen Schlüssel, sperrten fünf Chat-Antworten den Export (Grenze 5).
 describe("rateLimitKey, ein Zähler je Aktion", () => {
