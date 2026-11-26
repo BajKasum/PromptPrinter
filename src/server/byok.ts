@@ -164,46 +164,35 @@ export async function getConfiguredProviders(
 }
 
 /**
- * The provider whose key actually runs this user's chats, or null when they
- * have none configured (Security-Audit finding M-6).
- *
- * Exists so the settings UI can state which of several connected keys is in
- * use, instead of showing all of them as equally "connected" while one silently
- * wins. Reads `is_active` through the request-scoped client — that column is in
- * `authenticated`'s SELECT allowlist (0020/0030), unlike `encrypted_key`.
+ * Alles, was die Einstellungen über die Keys eines Kontos zeigen, aus EINER Abfrage: welche Anbieter hinterlegt sind,
+ * welcher die Chats wirklich bedient (`activeProvider`, sonst stünden mehrere Keys gleich "verbunden" da, während
+ * einer stillschweigend gewinnt) und Name, Adresse und Modell des eigenen Endpunkts. Nie der Schlüssel: gelesen wird
+ * mit dem Client des Nutzers, und dessen Spaltenrechte (Migrationen 0020 und 0030) lassen `encrypted_key` nicht zu.
  */
-export async function getActiveProvider(
+export async function getByokOverview(
   supabase: SupabaseServerClient,
   userId: string
-): Promise<ByokProvider | null> {
+): Promise<{
+  configuredProviders: ByokProvider[];
+  activeProvider: ByokProvider | null;
+  customProvider: CustomProviderMeta | null;
+}> {
   const { data } = orThrow(
     await supabase
-    .from("user_api_keys")
-    .select("provider")
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .maybeSingle(),
+      .from("user_api_keys")
+      .select("provider, is_active, label, base_url, model")
+      .eq("user_id", userId),
     "user_api_keys"
   );
-  return (data?.provider as ByokProvider | undefined) ?? null;
-}
-
-export type { CustomProviderMeta } from "@/shared/lib/byok-types";
-
-/** The user's custom-endpoint BYOK config (no key), for the settings UI. */
-export async function getCustomProvider(
-  supabase: SupabaseServerClient,
-  userId: string
-): Promise<CustomProviderMeta | null> {
-  const { data } = orThrow(
-    await supabase
-    .from("user_api_keys")
-    .select("label, base_url, model")
-    .eq("user_id", userId)
-    .eq("provider", "custom")
-    .maybeSingle(),
-    "user_api_keys"
-  );
-  if (!data?.label || !data.base_url || !data.model) return null;
-  return { label: data.label as string, baseUrl: data.base_url as string, model: data.model as string };
+  const rows = data ?? [];
+  const custom = rows.find((row) => row.provider === "custom");
+  return {
+    configuredProviders: rows.map((row) => row.provider as ByokProvider),
+    activeProvider: (rows.find((row) => row.is_active)?.provider as ByokProvider | undefined) ?? null,
+    // Ein Endpunkt ohne Name, Adresse oder Modell ist keiner.
+    customProvider:
+      custom?.label && custom.base_url && custom.model
+        ? { label: custom.label, baseUrl: custom.base_url, model: custom.model }
+        : null,
+  };
 }
