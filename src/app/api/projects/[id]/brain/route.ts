@@ -12,8 +12,9 @@ import {
 } from "@/server/http/request-body";
 import { captureError, logEvent } from "@/shared/lib/observability";
 import { denied } from "@/server/security/security-log";
-import { analyzeProjectBrain, BrainAnalysisError } from "@/server/brain/analyze";
-import { GithubImportError, parseGithubRepoUrl } from "@/server/brain/github";
+import { analyzeProjectBrain } from "@/server/brain/analyze";
+import { reportAnalysisFailure } from "@/server/brain/analysis-failure";
+import { parseGithubRepoUrl } from "@/server/brain/github";
 import { collectBrainSources } from "@/features/projects/lib/brain-sources";
 import type { ProjectBrainFacts } from "@/shared/lib/project-brain";
 import { projectKind } from "@/shared/lib/project-kind";
@@ -37,15 +38,15 @@ export const maxDuration = 300;
 // Die Analyse des Projekt-Gedächtnisses.
 //
 // ─── Warum die Analyse synchron in der Route läuft ─────────────────────────
-// Die App hat kein Job-System (kein Cron auf Vercel, keine Queue, siehe das
-// Vercel-Audit vom 01.08.), und eines nur hierfür einzuführen wäre ein
-// grösserer Eingriff als das Feature selbst. Die Analyse ist ein einzelner
-// Modellaufruf und dauert typischerweise Sekunden — das ist eine Wartezeit,
-// die eine UI mit Spinner ehrlich abbilden kann. Der Preis dafür: reisst der
-// Request ab, bleibt der Status auf „analyzing" stehen, denn der Prozess, der
-// ihn aufräumen müsste, ist genau der, der weg ist. Statt dafür einen Cron zu
-// bauen, entscheidet die Leseseite über den Zeitablauf (isAnalysisRunning),
-// und „Neu analysieren" ist immer erlaubt.
+// Die App hat kein Job-System (kein Cron auf Vercel, keine Queue), und eines
+// nur hierfür einzuführen wäre ein grösserer Eingriff als das Feature selbst.
+// Die Analyse ist ein einzelner Modellaufruf und dauert typischerweise
+// Sekunden — das ist eine Wartezeit, die eine UI mit Spinner ehrlich abbilden
+// kann. Der Preis dafür: reisst der Request ab, bleibt der Status auf
+// „analyzing" stehen, denn der Prozess, der ihn aufräumen müsste, ist genau
+// der, der weg ist. Statt dafür einen Cron zu bauen, entscheidet die
+// Leseseite über den Zeitablauf (isAnalysisRunning), und „Neu analysieren"
+// ist immer erlaubt.
 //
 // ─── Warum die Schreibzugriffe über den Service-Role-Client laufen ─────────
 // project_brains hat bewusst nur ein select-Grant (migration 0037): der
@@ -193,7 +194,7 @@ export async function DELETE(req: Request, { params }: Params) {
 }
 
 async function authorizeBrainRequest(req: Request, m: Messages["api"], projectId: string) {
-  // 1. Session vor dem Body (Security-Audit H-3).
+  // 1. Session vor dem Body: ohne Anmeldung liest und parst die Route keinen Body, nur um dann 401 zu sagen.
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
     supabase = await createClient();
@@ -347,50 +348,4 @@ async function analyzeAndSave(ctx: {
     model,
     analyzedAt,
   });
-}
-
-async function reportAnalysisFailure(
-  err: unknown,
-  ctx: {
-    admin: ReturnType<typeof createAdminClient>;
-    projectId: string;
-    userId: string;
-    byok: boolean;
-    startedAt: number;
-    m: Messages["api"];
-  }
-): Promise<Response> {
-  const { admin, projectId, userId, byok, startedAt, m } = ctx;
-  const code = errorCode(err);
-  captureError("brain.analysis_failed", err, {
-    userId,
-    projectId,
-    code,
-    byok,
-    latencyMs: Date.now() - startedAt,
-  });
-
-  const { error: failedWriteError } = await admin
-    .from("project_brains")
-    .update({ status: "failed", error_code: code, updated_at: new Date().toISOString() })
-    .eq("project_id", projectId)
-    .eq("user_id", userId);
-  // Best effort: die Antwort unten meldet den Fehler so oder so; nur der Status bleibt dann auf "analyzing" stehen,
-  // den die Leseseite nach einer Frist selbst auflöst (isAnalysisRunning).
-  if (failedWriteError) captureError("brain.failed_status_write_failed", failedWriteError, { userId, projectId });
-
-  return problem(502, describeBrainFailure(code, m), { code });
-}
-
-/** Stabiler Code aus dem geworfenen Fehler, nie dessen Wortlaut (M-1). */
-function errorCode(err: unknown): string {
-  if (err instanceof GithubImportError) return err.code;
-  if (err instanceof BrainAnalysisError) return err.code;
-  return "analysis_failed";
-}
-
-/** Nicht-leckender Text zum Code in der App-Sprache (dieselbe Linie wie QA-Befund U-4). */
-function describeBrainFailure(code: string, m: Messages["api"]): string {
-  const known: Record<string, string> = m.brainErrors;
-  return known[code] ?? m.brainErrors.other;
 }

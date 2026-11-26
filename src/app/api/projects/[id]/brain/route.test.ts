@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Die Route ist die Stelle, an der Eigentuemerschaft, Zugang zum Server-Key,
-// Tagesbudget und Ratelimit ueber einem Modellaufruf sitzen — genau die
-// Schranken, die stillschweigend aufhoeren zu wirken, wenn niemand sie prueft
-// (QA-Befund C-6, derselbe Grund wie bei /api/chat und /api/projects).
+// Die Route ist die Stelle, an der Eigentümerschaft, Zugang zum Server-Key,
+// Tagesbudget und Ratelimit über einem Modellaufruf sitzen — genau die
+// Schranken, die stillschweigend aufhören zu wirken, wenn niemand sie prüft
+// (derselbe Grund wie bei /api/chat und /api/projects).
 //
 // Auf den Server-Key darf eine Analyse nur als Admin (shared/lib/plans.ts), einen Gratis-Rahmen bietet sie nicht
 // an. Das Konto der Tests ist deshalb ein Admin; was für ein Konto mit eigenem Key gilt (Stundenlimit), setzen
@@ -17,7 +17,7 @@ const llmConfig = vi.fn();
 const collectBrainSources = vi.fn();
 const analyzeProjectBrain = vi.fn();
 
-/** Was die Tabellen des RLS-gebundenen Clients zurueckgeben. */
+/** Was die Tabellen des RLS-gebundenen Clients zurückgeben. */
 const tableResults: Record<string, { data?: unknown; error?: unknown; count?: number }> = {};
 /** Was der Service-Role-Client geschrieben hat. */
 const adminWrites: { table: string; op: string; values: Record<string, unknown> }[] = [];
@@ -167,8 +167,8 @@ describe("POST /api/projects/[id]/brain", () => {
     expect(stored?.values.model).toBe("glm-4.5-air");
   });
 
-  // Damit ein Reload waehrend des Laufs den Spinner zeigt statt eines
-  // scheinbar unveraenderten Leerzustands.
+  // Damit ein Reload während des Laufs den Spinner zeigt statt eines
+  // scheinbar unveränderten Leerzustands.
   it("marks the brain as analysing before it starts", async () => {
     await POST(req(), params);
     expect(adminWrites[0]).toMatchObject({ op: "upsert", values: { status: "analyzing" } });
@@ -179,8 +179,8 @@ describe("POST /api/projects/[id]/brain", () => {
     expect((await POST(req(), params)).status).toBe(401);
   });
 
-  // Die Schreibzugriffe laufen ueber den Service-Role-Client, fuer den RLS
-  // nicht greift — diese Pruefung ist die einzige, die "gehoert dir"
+  // Die Schreibzugriffe laufen über den Service-Role-Client, für den RLS
+  // nicht greift — diese Prüfung ist die einzige, die "gehört dir"
   // feststellt.
   it("404s a project the caller does not own, and writes nothing", async () => {
     tableResults.projects = { data: null, error: null };
@@ -378,7 +378,7 @@ describe("POST /api/projects/[id]/brain", () => {
     });
 
     // Anders als der Chat gibt es hier bewusst KEINEN Stub-Modus: eine
-    // erfundene Faktenliste waere schlimmer als gar keine, weil sie danach in
+    // erfundene Faktenliste wäre schlimmer als gar keine, weil sie danach in
     // jeden Prompt dieses Projekts wandert.
     it("refuses rather than inventing facts when no provider is configured", async () => {
       llmConfig.mockReturnValue(null);
@@ -403,8 +403,8 @@ describe("POST /api/projects/[id]/brain", () => {
       expect(failed?.values.error_code).toBe("analysis_failed");
     });
 
-    // Security-Audit M-1: der Wortlaut eines Anbieter- oder Postgres-Fehlers
-    // darf weder in der Antwort noch in der Datenbank landen.
+    // Der Wortlaut eines Anbieter- oder Postgres-Fehlers darf weder in der
+    // Antwort noch in der Datenbank landen.
     it("never leaks the underlying message", async () => {
       analyzeProjectBrain.mockImplementation(() =>
         Promise.reject(new Error("Z.ai 429: rate limit for glm-4.5-air"))
