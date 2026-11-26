@@ -188,12 +188,16 @@ export async function checkAttachments(args: {
     try {
       const used = await attachmentBytesUsed(supabase);
       if (used + incoming > MAX_ATTACHMENT_STORAGE_PER_USER) {
-        return problem(
-          403,
-          fmt(m.attachmentStorageFull, {
-            limit: formatBytes(MAX_ATTACHMENT_STORAGE_PER_USER, LOCALE_TAGS[locale].intl),
-          }),
-          { kind: "attachmentStorage", limit: MAX_ATTACHMENT_STORAGE_PER_USER, current: used }
+        return denied(
+          "chat",
+          problem(
+            403,
+            fmt(m.attachmentStorageFull, {
+              limit: formatBytes(MAX_ATTACHMENT_STORAGE_PER_USER, LOCALE_TAGS[locale].intl),
+            }),
+            { kind: "attachmentStorage", limit: MAX_ATTACHMENT_STORAGE_PER_USER, current: used }
+          ),
+          { userId, reason: "attachment_storage" }
         );
       }
     } catch (err) {
