@@ -16,6 +16,12 @@ const getUserOverride = vi.fn();
 const llmConfig = vi.fn();
 const collectBrainSources = vi.fn();
 const analyzeProjectBrain = vi.fn();
+/** Das Fehlerprotokoll und die Ereignisse der Route. */
+const captureError = vi.fn();
+const logEvent = vi.fn();
+
+/** Eine Kennung, wie Postgres sie annimmt. */
+const PROJECT_ID = "6b0c3c58-2f0e-4d43-9d8a-2a6f2f1d7e10";
 
 /** Was die Tabellen des RLS-gebundenen Clients zurückgeben. */
 const tableResults: Record<string, { data?: unknown; error?: unknown; count?: number }> = {};
@@ -77,6 +83,14 @@ vi.mock("@/server/security/rate-limit", async (importOriginal) => {
     reserveServerKeyCall: (...a: unknown[]) => reserveServerKeyCall(...a),
   };
 });
+vi.mock("@/shared/lib/observability", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/shared/lib/observability")>();
+  return {
+    ...actual,
+    captureError: (...a: unknown[]) => captureError(...a),
+    logEvent: (...a: unknown[]) => logEvent(...a),
+  };
+});
 vi.mock("@/server/byok", () => ({ getUserOverride: (...a: unknown[]) => getUserOverride(...a) }));
 vi.mock("@/server/llm", () => ({ llmConfig: () => llmConfig(), selfHostedEndpointActive: () => false }));
 vi.mock("@/features/projects/lib/brain-sources", () => ({
@@ -119,14 +133,18 @@ const COLLECTED = {
 };
 
 function req(body: unknown = {}) {
-  return new Request("https://promptprinter.app/api/projects/proj-1/brain", {
+  return new Request(`https://promptprinter.app/api/projects/${PROJECT_ID}/brain`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
 
-const params = { params: Promise.resolve({ id: "proj-1" }) };
+const params = { params: Promise.resolve({ id: PROJECT_ID }) };
+
+/** Eine Kennung, die keine UUID ist, und was Postgres auf sie antwortet, wenn die Route sie weiterreicht. */
+const malformed = { params: Promise.resolve({ id: "abc" }) };
+const UUID_REJECTED = { code: "22P02", message: 'invalid input syntax for type uuid: "abc"' };
 
 /** Ein Konto ohne Adminrechte mit eigenem Key: läuft auf seinem Konto, mit Stundenlimit, ohne Tagesbudget. */
 function onOwnKey() {
@@ -190,6 +208,19 @@ describe("POST /api/projects/[id]/brain", () => {
     expect(analyzeProjectBrain).not.toHaveBeenCalled();
   });
 
+  // Weitergereicht wäre die Kennung ein Lesefehler: 503 und ein Eintrag im Fehlerprotokoll je Aufruf.
+  it("antwortet auf eine Kennung, die keine UUID ist, mit 404, vor Anmeldung und Datenbank, ohne Eintrag im Fehlerprotokoll", async () => {
+    tableResults.projects = { data: null, error: UUID_REJECTED };
+    const res = await POST(req(), malformed);
+    expect(res.status).toBe(404);
+    expect((await res.json()).detail).toBe("Projekt nicht gefunden.");
+    expect(captureError).not.toHaveBeenCalled();
+    expect(getUser).not.toHaveBeenCalled();
+    expect(adminWrites).toHaveLength(0);
+    expect(reserveServerKeyCall).not.toHaveBeenCalled();
+    expect(analyzeProjectBrain).not.toHaveBeenCalled();
+  });
+
   it("never spends a model call on a bad repo url", async () => {
     const res = await POST(req({ repoUrl: "https://evil.com/a/b" }), params);
     expect(res.status).toBe(400);
@@ -213,7 +244,7 @@ describe("POST /api/projects/[id]/brain", () => {
     expect(collectBrainSources).toHaveBeenCalledWith(
       expect.anything(),
       "user-1",
-      "proj-1",
+      PROJECT_ID,
       expect.objectContaining({ repoUrl: "https://github.com/acme/app" })
     );
   });
@@ -224,7 +255,7 @@ describe("POST /api/projects/[id]/brain", () => {
     expect(collectBrainSources).toHaveBeenCalledWith(
       expect.anything(),
       "user-1",
-      "proj-1",
+      PROJECT_ID,
       expect.objectContaining({ repoUrl: "https://github.com/acme/app" })
     );
   });
@@ -235,7 +266,7 @@ describe("POST /api/projects/[id]/brain", () => {
     expect(collectBrainSources).toHaveBeenCalledWith(
       expect.anything(),
       "user-1",
-      "proj-1",
+      PROJECT_ID,
       expect.objectContaining({ repoUrl: null })
     );
   });
@@ -422,7 +453,7 @@ describe("DELETE /api/projects/[id]/brain", () => {
     vi.clearAllMocks();
     adminWrites.length = 0;
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
-    tableResults.projects = { data: { id: "proj-1" }, error: null };
+    tableResults.projects = { data: { id: PROJECT_ID }, error: null };
   });
 
   it("deletes the brain", async () => {
@@ -442,6 +473,16 @@ describe("DELETE /api/projects/[id]/brain", () => {
     tableResults.projects = { data: null, error: null };
     const res = await DELETE(new Request("https://x/y", { method: "DELETE" }), params);
     expect(res.status).toBe(404);
+    expect(adminWrites).toHaveLength(0);
+  });
+
+  it("antwortet auf eine Kennung, die keine UUID ist, mit 404, vor Anmeldung und Datenbank, ohne Eintrag im Fehlerprotokoll", async () => {
+    tableResults.projects = { data: null, error: UUID_REJECTED };
+    const res = await DELETE(new Request("https://x/y", { method: "DELETE" }), malformed);
+    expect(res.status).toBe(404);
+    expect((await res.json()).detail).toBe("Projekt nicht gefunden.");
+    expect(captureError).not.toHaveBeenCalled();
+    expect(getUser).not.toHaveBeenCalled();
     expect(adminWrites).toHaveLength(0);
   });
 });

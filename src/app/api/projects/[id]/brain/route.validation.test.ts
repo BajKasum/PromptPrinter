@@ -2,28 +2,39 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Vertrag der Eingabeprüfung (Betriebs-Audit, Folgesitzung 2026-10-07, Teil F, zod 4): was ein Aufrufer von
-// POST /api/projects/[id]/brain für jede Eingabe zurückbekommt, Statuscode und die GANZE Antwort. Die Fälle
-// stehen in route.validation.cases.json, aufgenommen gegen zod 3.25.76
-// (`RECORD_VALIDATION=1 npx vitest run <diese Datei>`). Eine gültige Eingabe kommt bis zur Eigentümerprüfung
+// Vertrag der Eingabeprüfung: was ein Aufrufer von POST /api/projects/[id]/brain für jede Eingabe zurückbekommt,
+// Statuscode und die GANZE Antwort, damit ein Wechsel der zod-Version keine Antwort still verändert. Die Fälle
+// stehen in route.validation.cases.json (neu aufnehmen: `RECORD_VALIDATION=1 npx vitest run <diese Datei>`, danach
+// den Diff lesen). Eine gültige Eingabe kommt bis zur Eigentümerprüfung
 // und endet dort mit 404 (das Projekt gehört niemandem): so bleibt der Vertrag auf die Grenze der Prüfung
-// beschränkt, ohne Modellaufruf, Reservierung oder Speicher.
+// beschränkt, ohne Modellaufruf, Reservierung oder Speicher. Ein Fall mit `id` setzt die Kennung aus der Adresse,
+// sonst ist sie eine gültige UUID.
 
 const CASES_FILE = fileURLToPath(new URL("./route.validation.cases.json", import.meta.url));
-type Case = { name: string; body: unknown; raw?: string; status?: number; response?: unknown };
+type Case = { name: string; id?: string; body: unknown; raw?: string; status?: number; response?: unknown };
 const recorded: Case[] = JSON.parse(readFileSync(CASES_FILE, "utf8"));
+const PROJECT_ID = "6b0c3c58-2f0e-4d43-9d8a-2a6f2f1d7e10";
 
 const getUser = vi.fn();
 const tableResults: Record<string, { data?: unknown; error?: unknown }> = {};
 
+// Wie Postgres: die Spalte id ist eine uuid und lehnt jeden anderen Text mit einem Fehler ab.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REJECTED = { data: null, error: { code: "22P02", message: "invalid input syntax for type uuid" } };
+
 function builder(table: string) {
-  const result = () => tableResults[table] ?? { data: null, error: null };
+  let rejected = false;
+  const result = () => (rejected ? UUID_REJECTED : (tableResults[table] ?? { data: null, error: null }));
   const chain: Record<string, unknown> = {
     maybeSingle: async () => result(),
     single: async () => result(),
     then: (resolve: (v: unknown) => unknown) => resolve(result()),
   };
-  for (const m of ["select", "eq", "order", "limit"]) chain[m] = () => chain;
+  for (const m of ["select", "order", "limit"]) chain[m] = () => chain;
+  chain.eq = (column: string, value: unknown) => {
+    if (column === "id" && !UUID.test(String(value))) rejected = true;
+    return chain;
+  };
   return chain;
 }
 
@@ -47,10 +58,10 @@ vi.mock("@/server/brain/analyze", async () => {
 
 import { POST } from "./route";
 
-const params = { params: Promise.resolve({ id: "proj-1" }) };
+const paramsOf = (c: Case) => ({ params: Promise.resolve({ id: c.id ?? PROJECT_ID }) });
 
 function request(c: Case) {
-  return new Request("https://promptprinter.app/api/projects/proj-1/brain", {
+  return new Request(`https://promptprinter.app/api/projects/${c.id ?? PROJECT_ID}/brain`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: c.raw !== undefined ? c.raw : JSON.stringify(c.body),
@@ -70,8 +81,15 @@ describe("POST /api/projects/[id]/brain: Antworten auf Eingaben (Vertrag)", () =
       const out: Case[] = [];
       for (const c of recorded) {
         reset();
-        const res = await POST(request(c), params);
-        out.push({ name: c.name, body: c.body, ...(c.raw !== undefined ? { raw: c.raw } : {}), status: res.status, response: await res.json() });
+        const res = await POST(request(c), paramsOf(c));
+        out.push({
+          name: c.name,
+          ...(c.id !== undefined ? { id: c.id } : {}),
+          body: c.body,
+          ...(c.raw !== undefined ? { raw: c.raw } : {}),
+          status: res.status,
+          response: await res.json(),
+        });
       }
       writeFileSync(CASES_FILE, JSON.stringify(out, null, 2) + "\n");
     });
@@ -80,7 +98,7 @@ describe("POST /api/projects/[id]/brain: Antworten auf Eingaben (Vertrag)", () =
 
   for (const c of recorded) {
     it(c.name, async () => {
-      const res = await POST(request(c), params);
+      const res = await POST(request(c), paramsOf(c));
       expect(res.status).toBe(c.status);
       expect(await res.json()).toEqual(c.response);
     });

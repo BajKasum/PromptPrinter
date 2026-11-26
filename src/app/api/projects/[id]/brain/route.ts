@@ -18,6 +18,7 @@ import { parseGithubRepoUrl } from "@/server/brain/github";
 import { collectBrainSources } from "@/features/projects/lib/brain-sources";
 import type { ProjectBrainFacts } from "@/shared/lib/project-brain";
 import { projectKind } from "@/shared/lib/project-kind";
+import { isUuid } from "@/shared/lib/uuid";
 import { requestT } from "@/server/i18n";
 import type { Messages } from "@/shared/i18n/messages/de";
 import { LOCALE_ENGLISH_NAMES } from "@/shared/i18n/locales";
@@ -80,6 +81,9 @@ export async function POST(req: Request, { params }: Params) {
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
   const m = requestT(req).t.api;
   const { id: projectId } = await params;
+  // Eine vertippte Kennung ist ein 404 wie ein fremdes Projekt, noch vor Anmeldung und Datenbank: Postgres lehnte sie
+  // mit einem Fehler ab, und der zählt unten als Lesefehler (503 und ein Eintrag im Fehlerprotokoll je Aufruf).
+  if (!isUuid(projectId)) return denied("brain", problem(404, m.projectNotFound));
 
   const request = await authorizeBrainRequest(req, m, projectId);
   if (request instanceof Response) return request;
@@ -151,6 +155,8 @@ export async function DELETE(req: Request, { params }: Params) {
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
   const m = requestT(req).t.api;
   const { id: projectId } = await params;
+  // Wie in POST: eine Kennung, die keine UUID ist, ist ein 404, bevor Postgres sie ablehnt.
+  if (!isUuid(projectId)) return denied("brain", problem(404, m.projectNotFound));
 
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {

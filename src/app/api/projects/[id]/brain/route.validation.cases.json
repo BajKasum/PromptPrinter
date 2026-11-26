@@ -249,5 +249,17 @@
       "status": 404,
       "detail": "Projekt nicht gefunden."
     }
+  },
+  {
+    "name": "Kennung in der Adresse ist keine UUID",
+    "id": "abc",
+    "body": {},
+    "status": 404,
+    "response": {
+      "type": "about:blank",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "Projekt nicht gefunden."
+    }
   }
 ]
