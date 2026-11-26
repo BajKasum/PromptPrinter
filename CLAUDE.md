@@ -81,7 +81,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   Routen, Cookies, SEO, Kontrast, Node-Version, Mail-Vorlagen, Dependabot, zod-Import, Workflows),
   Browser-Smoketests `e2e/` gegen einen lokalen Supabase-Stack mit Postfach. CI: `ci.yml` (jeder PR und `main`, ein Lauf je Commit, nach dem Build `check-css-chunks.mjs`: genau ein Stylesheet),
   `e2e.yml`, `e2e-prod.yml` (Produktionsaufbau), `docker.yml`, `audit.yml` (täglich, meldet per Issue), `cli.yml` und `skill.yml` (Node 22 und 24 auf drei Systemen, die einzige erlaubte Matrix in `node-version.test.ts`); `permissions: contents: read`, Actions an
-  Commit-SHAs (`workflows.test.ts`, dazu die Repo-Einstellung `sha_pinning_required`). Dependabot wöchentlich, kein Auto-Merge. Node 24 überall (`.nvmrc`).
+  Commit-SHAs (`workflows.test.ts`, dazu die Repo-Einstellung `sha_pinning_required`). Dependabot wöchentlich, seine PRs nie per Auto-Merge. Node 24 überall (`.nvmrc`).
 - **Keine Embeddings, bewusst.** Begründung und die Bedingung, unter der sich das
   ändern würde: [docs/SETUP.md](docs/SETUP.md), Abschnitt "Projekt-Gedächtnis".
 
@@ -198,8 +198,8 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 ## Arbeitsregeln (verbindlich)
 
 - **Git-Staging immer explizit per Dateiname**, nie `git add .` / `git add -A`.
-- **Gate vor jedem Push und vor jedem Merge** (siehe oben), alles grün. Je Commit reichen
-  Typecheck und die betroffenen Tests, der volle Lauf dauert Minuten und die CI wiederholt ihn.
+- **Gate vor jedem Push** (siehe oben), alles grün. Je Commit reichen Typecheck und die
+  betroffenen Tests, der volle Lauf dauert Minuten und die CI wiederholt ihn.
 - **Commit-Trailer:** `Co-Authored-By: Claude <aktuelles Modell> <noreply@anthropic.com>`.
 - **Git-Arbeitsweise** (Kasum 2026-10-19: "schlau committen, pushen, Branches anlegen"), GitHub Flow:
   - **Nie direkt auf `main`.** Ein Branch je **Arbeitsgang oder Thema** (`fix/…`, `feat/…`,
@@ -218,10 +218,11 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
   1. Branch von aktuellem `main` (`git pull` vorher), **nie vom vorherigen Feature-Branch**
      (die Commits auf `main` haben nach dem Rebase andere IDs).
   2. Committen, Gate grün, pushen, `gh pr create --base main` mit kurzer Beschreibung.
-  3. CI auf dem PR grün, dann `gh pr merge <nr> --rebase`. **Ein grüner Lauf, der älter als
-     ein paar Stunden ist, zählt nicht:** vorher `gh run rerun <id>` und abwarten, der Merge
-     schreibt einen neuen Commit auf `main` (ein neues Advisory färbte so schon einen rot).
-  4. Lokal `git checkout main && git pull`, erst danach der nächste Branch.
+  3. Sofort `gh pr merge <nr> --rebase --auto`: GitHub mergt selbst, sobald die Pflichtprüfung
+     „Typecheck · Lint · Test · Build“ durch ist. **Nicht auf die CI warten** (Kasum 2026-11-26): kein
+     Timer, kein Nachsehen in Abständen; ein rotes Kreuz ist kein Notfall, beim nächsten Mal beheben.
+  4. `git pull` auf `main`, dann der nächste Branch; ist der vorige PR noch nicht gemergt, nicht warten:
+     von `origin/main` abzweigen, den Changelog wie immer erst nach `git merge origin/main`.
 
   Zwei offene Branches, die dieselbe Stelle ändern (etwa den Kopf von `docs/CHANGELOG-2026.md`),
   lassen sich nach dem ersten Merge nicht mehr per "Rebase and merge" mergen, auch nicht nach
