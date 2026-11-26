@@ -21,6 +21,7 @@ const mutations = [
   ["src/chat.mjs", "unbekanntes Ereignis bricht ab", 'if (parsed.kind === "unknown") continue;', 'if (parsed.kind === "unknown") return { kind: "protocol", text: reply };'],
   ["src/chat.mjs", "kaputtes Ereignis übergangen", 'if (parsed.kind === "invalid") return { kind: "protocol", text: reply };', 'if (parsed.kind === "invalid") continue;'],
   ["src/chat.mjs", "Gespräch nicht weitergeführt", "if (id) body.conversationId = id;", ""],
+  ["src/sse.mjs", "Versuche im status ungeprüft", ' && optionalCounts(d, ["attempt", "maxAttempts"])', ""],
   ["src/api.mjs", "folgt Umleitungen", 'redirect: "error",', 'redirect: "follow",'],
   ["src/api.mjs", "Servertext unbereinigt", "sanitize(body.detail)", "body.detail"],
   ["src/config.mjs", "http überall erlaubt", 'url.protocol !== "https:" && !(url.protocol === "http:" && local)', "false"],
