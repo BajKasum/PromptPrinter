@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { StreamProtocolError, type Msg } from "@/features/chat/lib/chat-wire";
 import { MAX_TRANSCRIPT_MESSAGES } from "@/shared/lib/chat-limits";
-import { buildChatBody, classifyTurnError, readHttpFailure, TurnHttpError } from "./turn-outcome";
+import { buildChatBody, classifyTurnError, readHttpFailure, TurnHttpError, TurnUnfinishedError } from "./turn-outcome";
 
 // Die Einordnung eines gescheiterten Zugs und die Anfrage, ohne DOM (#212). Dass die Oberfläche daraus das
 // Richtige zeigt, halten chat.test.tsx und chat.turn.test.tsx fest.
@@ -42,6 +42,14 @@ describe("classifyTurnError", () => {
   it("derselbe Verbindungsfehler ohne Text ist ein Fehler", () => {
     const error = new TypeError("Failed to fetch");
     expect(classifyTurnError(error, "", undefined)).toMatchObject({ kind: "failed", error });
+  });
+
+  it("ein Strom ohne Abschluss ist mit Text ein Abbruch der Verbindung, ohne Text ein Fehler (#416)", () => {
+    const error = new TurnUnfinishedError("Abgebrochen");
+    expect(classifyTurnError(error, "Halb", undefined)).toEqual({ kind: "connectionDropped" });
+    expect(classifyTurnError(error, "Halb", "alt-1")).toEqual({ kind: "connectionDropped" });
+    expect(classifyTurnError(error, "", undefined)).toEqual({ kind: "failed", failure: null, retryAfter: null, error });
+    expect(classifyTurnError(error, "", "alt-1")).toEqual({ kind: "failed", failure: null, retryAfter: null, error });
   });
 
   it("nur Leerraum zählt nicht als angekommener Text", () => {

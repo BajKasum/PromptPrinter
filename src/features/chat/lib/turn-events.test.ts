@@ -141,3 +141,27 @@ describe("done", () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 });
+
+// #416: runChatTurn liest daran ab, ob ein Strom, der zu ist, auch abgeschlossen ist.
+describe("settled", () => {
+  it("ist offen, solange nur meta, status und delta kamen", () => {
+    const { handler } = setup();
+    handler.handle(ev("meta", { conversationId: "c1" }));
+    handler.handle(ev("status", { phase: "retrying", attempt: 2, maxAttempts: 3 }));
+    handler.handle(ev("delta", { text: "Halb" }));
+    expect(handler.settled()).toBe(false);
+  });
+
+  it("ist abgeschlossen nach done", () => {
+    const { handler } = setup();
+    handler.handle(ev("delta", { text: "Fertig" }));
+    handler.handle(ev("done", { conversationId: "c1" }));
+    expect(handler.settled()).toBe(true);
+  });
+
+  it("ist abgeschlossen nach error, auch wenn der Fehler geworfen wird", () => {
+    const { handler } = setup();
+    expect(() => handler.handle(ev("error", { detail: "Anbieter offline" }))).toThrow(StreamProtocolError);
+    expect(handler.settled()).toBe(true);
+  });
+});
