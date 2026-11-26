@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bookmark, Check, ChevronDown, Loader2 } from "lucide-react";
+import { Bookmark, Check, ChevronDown, Loader2, TriangleAlert } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { derivePromptTitle } from "@/shared/lib/saved-prompts";
 import { offersNewVersion, type VersionTarget } from "@/shared/lib/prompt-versions";
+import { fetchShareStatus, mayBePublic, publicRisks, riskSummary, type ShareStatus } from "@/shared/lib/prompt-share-status";
+import type { PromptRisk } from "@/shared/lib/prompt-check";
 import { fmt } from "@/shared/i18n/format";
 import { useT } from "@/shared/i18n/provider";
 
@@ -22,6 +25,11 @@ type SaveState = "idle" | "choosing" | "saving" | "saved";
 //
 // Ein schon gespeicherter Text (`initiallySaved`) startet und bleibt im Zustand "gespeichert", damit derselbe Prompt
 // nicht doppelt in der Liste landet.
+//
+// Ist der Kandidat per Link geteilt, steht eine neue Version sofort unter dem Link. Findet die Prüfung im Text
+// Schlüssel oder persönliche Angaben, liest Speichern deshalb erst den Stand der Freigabe (shared/lib/prompt-share-status.ts)
+// und fragt bei einem geteilten oder nicht lesbaren Stand in einem Dialog nach, wie Bearbeiten an der Karte. Ein neuer
+// Prompt ist noch nirgends geteilt und fragt nicht.
 export function SavePromptButton({
   projectId,
   conversationId,
@@ -42,6 +50,10 @@ export function SavePromptButton({
   const router = useRouter();
   const { toast } = useToast();
   const [state, setState] = useState<SaveState>(initiallySaved ? "saved" : "idle");
+  // Die Rückfrage vor einer neuen Version: was gefunden wurde und welcher Stand der Freigabe galt. Der Inhalt bleibt
+  // stehen, solange der Dialog ausblendet; offen ist er nur mit `asking`.
+  const [riskCheck, setRiskCheck] = useState<{ risks: PromptRisk[]; share: ShareStatus } | null>(null);
+  const [asking, setAsking] = useState(false);
   const choicesId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -69,9 +81,23 @@ export function SavePromptButton({
     };
   }, [state]);
 
-  async function save(mode: "new" | "version") {
+  async function save(mode: "new" | "version", confirmed = false) {
     if (state === "saving" || state === "saved") return;
     setState("saving");
+    setAsking(false);
+
+    if (mode === "version" && target && !confirmed) {
+      const risks = publicRisks(prompt);
+      if (risks.length > 0) {
+        const share = await fetchShareStatus(target.id);
+        if (mayBePublic(share)) {
+          setState("idle");
+          setRiskCheck({ risks, share });
+          setAsking(true);
+          return;
+        }
+      }
+    }
 
     const supabase = createClient();
     const {
@@ -178,6 +204,29 @@ export function SavePromptButton({
           </button>
         </div>
       )}
+      <ConfirmDialog
+        open={asking}
+        title={t.chat.versionRisk.title}
+        description={
+          <>
+            <span className="block">
+              {fmt(riskCheck?.share.status === "shared" ? t.chat.versionRisk.shared : t.chat.versionRisk.unknown, {
+                title: targetTitle,
+              })}
+            </span>
+            <span className="mt-3 flex gap-2 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-foreground">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+              <span>
+                {t.share.riskIntro} {riskSummary(riskCheck?.risks ?? [], t.chat.promptCheck)}
+              </span>
+            </span>
+          </>
+        }
+        confirmLabel={t.prompts.edit.saveAnyway}
+        busyLabel={t.chat.saving}
+        onConfirm={() => void save("version", true)}
+        onCancel={() => setAsking(false)}
+      />
     </div>
   );
 }

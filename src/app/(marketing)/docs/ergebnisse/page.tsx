@@ -66,7 +66,9 @@ export default function Page() {
       <p>
         Ja, mit <strong>Text bearbeiten</strong> am aufgeklappten Prompt. Jede Änderung wird eine neue Version, der
         Titel bleibt. Ist der Prompt geteilt, steht die neue Fassung sofort unter dem Link; enthält sie dann einen
-        Schlüssel oder persönliche Angaben, fragt PromptPrinter vorher nach, wie beim Teilen.
+        Schlüssel oder persönliche Angaben, fragt PromptPrinter vorher nach, wie beim Teilen. Das gilt genauso, wenn
+        du eine alte Version wiederherstellst oder im Chat als neue Version speicherst, und auch dann, wenn sich
+        gerade nicht prüfen lässt, ob der Prompt geteilt ist.
       </p>
 
       <h2>Sehe ich frühere Fassungen?</h2>

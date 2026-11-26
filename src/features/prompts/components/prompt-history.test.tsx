@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PromptHistory } from "./prompt-history";
+import type { ShareStatus } from "@/shared/lib/prompt-share-status";
 
 const refresh = vi.fn();
 const toast = vi.fn();
@@ -42,8 +43,8 @@ vi.mock("@/shared/supabase/client", () => ({
 
 const at = "2026-11-20T10:00:00Z";
 
-function renderHistory(content = "Ton: förmlich.", onRestored = vi.fn()) {
-  render(<PromptHistory promptId="p1" userId="u1" title="Brief" content={content} onRestored={onRestored} />);
+function renderHistory(content = "Ton: förmlich.", onRestored = vi.fn(), share: ShareStatus = { status: "private" }) {
+  render(<PromptHistory promptId="p1" userId="u1" title="Brief" content={content} share={share} onRestored={onRestored} />);
   return { onRestored };
 }
 
@@ -148,6 +149,59 @@ describe("PromptHistory", () => {
     rows.push({ version: 3, content: "Ton: locker.", created_at: at });
     finish({ data: [{ id: "p1" }], error: null });
     await waitFor(() => expect(onRestored).toHaveBeenCalledWith("Ton: locker."));
+  });
+
+  // Ein geteilter Prompt steht in seiner aktuellen Fassung sofort unter dem Link: eine alte Fassung mit Schlüssel kommt
+  // erst nach der Rückfrage zurück, auch solange der Stand lädt oder sich nicht lesen liess.
+  describe("bei einem Prompt, der geteilt sein kann", () => {
+    const KEY_TEXT = "Ton: locker. Key: sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789";
+    const SHARED: ShareStatus = { status: "shared", token: "abcdefghijABCDEFGHIJ0123456789_-" };
+
+    beforeEach(() => {
+      rows[0] = { version: 1, content: KEY_TEXT, created_at: at };
+    });
+
+    it.each<[string, ShareStatus]>([
+      ["geteilt", SHARED],
+      ["noch unterwegs", { status: "loading" }],
+      ["nicht lesbar", { status: "error" }],
+    ])("stellt eine Fassung mit Schlüssel erst nach der Rückfrage wieder her (Stand: %s)", async (_case, share) => {
+      const { onRestored } = renderHistory("Ton: förmlich.", vi.fn(), share);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
+      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+
+      expect(update).not.toHaveBeenCalled();
+      expect(onRestored).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent("Bitte prüf vorher: Sieht nach einem Schlüssel oder Passwort aus");
+
+      await user.click(screen.getByRole("button", { name: "Version 1 trotzdem wiederherstellen" }));
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Brief" } });
+      await waitFor(() => expect(onRestored).toHaveBeenCalledWith(KEY_TEXT));
+    });
+
+    it("sagt bei einem geteilten Prompt, dass die alte Fassung sofort unter dem Link steht", async () => {
+      rows[0] = { version: 1, content: "Ton: locker.", created_at: at };
+      renderHistory("Ton: förmlich.", vi.fn(), SHARED);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
+
+      expect(screen.getByText("Dieser Prompt ist geteilt: die wiederhergestellte Fassung steht sofort unter dem Link.")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: "Ton: locker.", title: "Brief" } });
+    });
+
+    it("stellt bei einem privaten Prompt ohne Rückfrage wieder her", async () => {
+      renderHistory();
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
+      expect(screen.queryByText(/wiederhergestellte Fassung steht sofort unter dem Link/)).toBeNull();
+      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Brief" } });
+    });
   });
 
   it("bietet kein Wiederherstellen an, wenn die alte Fassung der aktuellen gleicht", async () => {

@@ -1,38 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Copy, Link2, Loader2, TriangleAlert } from "lucide-react";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useToast } from "@/shared/ui/toast";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
-import { checkPrompt } from "@/shared/lib/prompt-check";
+import { publicRisks, riskSummary, type ShareStatus } from "@/shared/lib/prompt-share-status";
 import { useT } from "@/shared/i18n/provider";
 
 // Teilen eines gespeicherten Prompts per Link (/geteilt/<token>, server/prompt-share.ts). Vor dem ersten Teilen
 // fragt ein Dialog nach: der Text wird öffentlich, jeder mit dem Link kann ihn lesen. Findet die Prompt-Prüfung
 // Schlüssel oder persönliche Angaben, steht das im selben Dialog. Ist er geteilt, zeigt die Leiste den Link zum
-// Kopieren und den Knopf zum Widerrufen. Die Leiste steht nur im aufgeklappten Prompt und fragt erst dann ab, ob er
-// geteilt ist.
+// Kopieren und den Knopf zum Widerrufen. Ob er geteilt ist, lädt die aufgeklappte Karte
+// (features/prompts/hooks/use-share-status.ts); die Leiste zeigt diesen Stand und meldet jede Änderung zurück, damit
+// Bearbeiten und Verlauf nach demselben Stand prüfen. Liess er sich nicht lesen, zeigt die Leiste das und einen Knopf
+// zum Neuladen, nie "privat": ein geteilter Prompt sähe sonst privat aus, und der Link bliebe offen, ohne dass die
+// Person es sieht.
 
-// "error": der Stand liess sich nicht lesen. Dann zeigt die Leiste das und einen Knopf zum Neuladen, nie "privat":
-// ein geteilter Prompt sähe sonst privat aus, und der Link bliebe offen, ohne dass die Person es sieht.
-type State =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "shared"; token: string }
-  | { status: "private" }
-  | { status: "error" };
-
-const PUBLIC_RISKS = new Set(["secret", "personal"]);
-
-export function SharePrompt({ promptId, content }: { promptId: string; content: string }) {
+export function SharePrompt({
+  promptId,
+  content,
+  share: state,
+  onShareChange,
+  onReload,
+}: {
+  promptId: string;
+  content: string;
+  share: ShareStatus;
+  onShareChange: (next: ShareStatus) => void;
+  onReload: () => void;
+}) {
   const t = useT();
   const { toast } = useToast();
   const { copied, copy } = useCopyToClipboard();
-  const [state, setState] = useState<State>({ status: "idle" });
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [attempt, setAttempt] = useState(0);
 
   const endpoint = `/api/prompts/${promptId}/share`;
 
@@ -43,22 +45,6 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
     return body.token;
   }
 
-  useEffect(() => {
-    let live = true;
-    setState({ status: "loading" });
-    fetch(endpoint)
-      .then((res) => (res.ok ? (res.json() as Promise<{ token: string | null }>) : null))
-      .catch(() => null)
-      .then((body) => {
-        if (!live) return;
-        if (!body) setState({ status: "error" });
-        else setState(body.token ? { status: "shared", token: body.token } : { status: "private" });
-      });
-    return () => {
-      live = false;
-    };
-  }, [endpoint, attempt]);
-
   async function share() {
     setBusy(true);
     const token = await call("POST").catch(() => undefined);
@@ -68,7 +54,7 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
       toast({ title: t.share.failed, variant: "error" });
       return;
     }
-    setState({ status: "shared", token });
+    onShareChange({ status: "shared", token });
     // Der Toast sagt nur "kopiert", wenn die Zwischenablage es angenommen hat (ohne Fokus oder Recht lehnt sie ab).
     const copiedLink = await copy(linkFor(token)).then(
       () => true,
@@ -85,11 +71,11 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
       toast({ title: t.share.failed, variant: "error" });
       return;
     }
-    setState({ status: "private" });
+    onShareChange({ status: "private" });
     toast({ title: t.share.revoked, variant: "success" });
   }
 
-  const risks = confirming ? checkPrompt(content).filter((r) => PUBLIC_RISKS.has(r.kind)) : [];
+  const risks = confirming ? publicRisks(content) : [];
 
   return (
     <div>
@@ -122,7 +108,7 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
           </span>
           <button
             type="button"
-            onClick={() => setAttempt((n) => n + 1)}
+            onClick={onReload}
             className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent-subtle"
           >
             {t.share.retry}
@@ -154,8 +140,7 @@ export function SharePrompt({ promptId, content }: { promptId: string; content: 
               <span className="mt-3 flex gap-2 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-foreground">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
                 <span>
-                  {t.share.riskIntro}{" "}
-                  {risks.map((r) => `${t.chat.promptCheck[r.kind]} (${r.samples.join(", ")})`).join("; ")}
+                  {t.share.riskIntro} {riskSummary(risks, t.chat.promptCheck)}
                 </span>
               </span>
             )}
