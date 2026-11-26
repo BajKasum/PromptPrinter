@@ -33,12 +33,14 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  // RLS scopes the read to the owner, a foreign or malformed id yields no row.
+  // Nur der eigene Chat: RLS und zusätzlich user_id aus der geprüften Sitzung. Eine fremde Kennung ergibt keine Zeile,
+  // auch wenn eine Policy zu weit ginge.
   const { data: convo } = orThrow(
     await supabase
     .from("conversations")
     .select("id, title, project_id")
     .eq("id", id)
+    .eq("user_id", user.id)
     .maybeSingle(),
     "conversations"
   );
@@ -48,12 +50,12 @@ export default async function ChatDetailPage({ params }: { params: Params }) {
   if (convo.project_id) redirect(`/projects/${convo.project_id}/chats/${convo.id}`);
 
   const [initialMessages, profile, savedPromptRowsResult, needsKey, freePromptsLeft, versionTarget] = await Promise.all([
-    // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
+    // Nachrichten samt Anhängen und Vorschau-Adressen. Die Abfrage (neueste
     // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
     loadConversationMessages(supabase, user.id, id),
     getSessionProfile(),
-    // QA finding N-1: saving is project-independent now, a global chat's
-    // dedup (F-7) checks against every one of this user's saved prompts.
+    // Speichern hängt an keinem Projekt: ob ein Prompt schon gespeichert ist,
+    // prüft ein Chat ohne Projekt gegen alle gespeicherten Prompts des Kontos.
     supabase
       .from("saved_prompts")
       .select("outputs")
