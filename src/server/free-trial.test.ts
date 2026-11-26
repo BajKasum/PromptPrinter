@@ -157,6 +157,17 @@ describe.each(backends)("Gratis-Rahmen $name", ({ open }) => {
     expect(typeof (await turn("noch-ein-konto", "203.0.113.10"))).toBe("object");
   });
 
+  // #391: Ein Anschluss bekommt meist ein ganzes /64. Zählte jede Adresse für sich, finge er mit jeder neuen Adresse
+  // und jedem neuen Konto von vorn an, bis das Tagesbudget für alle anderen aufgebraucht wäre.
+  it("begrenzt IPv6 je /64: eine neue Adresse im selben Netz hilft nicht, ein anderes Netz zählt für sich", async () => {
+    for (let i = 0; i < backend.ft.FREE_TRIAL_TURNS_PER_IP_DAY; i++) {
+      const slot = await turn(`v6-konto-${i}`, `2001:db8:1:1::${(i + 1).toString(16)}`);
+      if (typeof slot === "string") throw new Error(`Zug ${i}: ${slot}`);
+    }
+    expect(await turn("v6-noch-eins", "2001:db8:1:1:ffff:ffff:ffff:ffff")).toBe("budget");
+    expect(typeof (await turn("v6-noch-eins", "2001:db8:1:2::1"))).toBe("object");
+  });
+
   it("hat ein eigenes Tagesbudget über alle Konten", async () => {
     vi.stubEnv("FREE_TRIAL_DAILY_CALLS", "2");
     expect(typeof (await turn("a", "192.0.2.1"))).toBe("object");
@@ -241,6 +252,16 @@ describe("Gratis-Rahmen über Redis: Ablaufzeiten und Fehler", () => {
       "free-trial:prompts:r1": ACCOUNT_TTL,
     });
     expect(fake.commands.sadd).toHaveBeenCalledWith("free-trial:delivered:r1", ft.deliveredPromptHash("Rolle: Du bist ein Tutor."));
+  });
+
+  it("führt den Zähler je Anschluss unter dem /64, eine IPv4-Adresse in IPv6-Schreibweise unter der IPv4-Adresse", async () => {
+    await deliveredTurn("r11", "Erster Prompt", "2001:db8:1:1::7");
+    await deliveredTurn("r12", "Zweiter Prompt", "2001:db8:1:1:aaaa::8");
+    await deliveredTurn("r13", "Dritter Prompt", "::ffff:192.0.2.5");
+    expect(fake.counters.get(`free-trial:ip:2001:db8:1:1::/64:${DAY}`)).toBe(2);
+    expect(fake.counters.get(`free-trial:ip:192.0.2.5:${DAY}`)).toBe(1);
+    expect(fake.expiry.get(`free-trial:ip:2001:db8:1:1::/64:${DAY}`)).toBe(DAY_TTL);
+    expect([...fake.counters.keys()].filter((key) => key.startsWith("free-trial:ip:"))).toHaveLength(2);
   });
 
   it("ein weiterer Prompt zählt hoch, ohne den Ablauf des Zählers neu zu setzen (NX)", async () => {
