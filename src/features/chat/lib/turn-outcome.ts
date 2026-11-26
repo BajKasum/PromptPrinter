@@ -59,13 +59,20 @@ export async function readHttpFailure(res: Response, fallbackMessage: string): P
   );
 }
 
+/**
+ * Der Strom endete ohne `done` und ohne `error`: die Verbindung ging zu, bevor die Route den Zug abschliessen
+ * konnte (Zeitgrenze der Plattform, ein Proxy). Für die Einordnung dasselbe wie eine Verbindung, die von selbst
+ * reisst; die Meldung gilt dem Fall ohne Text (#416).
+ */
+export class TurnUnfinishedError extends Error {}
+
 /** Wie ein Zug endete, wenn er nicht bis `done` kam. */
 export type TurnOutcome =
   /** Der Nutzer hat gestoppt: der bisherige Text bleibt als Antwort stehen. */
   | { kind: "stopped" }
   /** Neu-Erzeugen, gestoppt bevor ein Wort kam: es gibt nichts Neues, die alte Antwort bleibt. */
   | { kind: "stoppedBeforeFirstWord" }
-  /** Die Verbindung riss mitten im Strom, nachdem schon Text da war. */
+  /** Die Verbindung riss mitten im Strom oder ging ohne Abschluss zu, nachdem schon Text da war. */
   | { kind: "connectionDropped" }
   | {
       kind: "failed";
@@ -77,9 +84,9 @@ export type TurnOutcome =
 
 /**
  * Ordnet den Fehler eines Zugs ein. Der Nutzerabbruch (AbortError) ist kein Fehler. Danach unterscheidet sich eine
- * Verbindung, die von selbst riss (nachdem Text kam: sie hat nichts verloren, die Route sichert den Teiltext selbst,
- * also wird gewarnt statt gemeldet), von einem Fehler, den die Route selbst meldet (StreamProtocolError) oder der
- * vor dem ersten Wort eintritt.
+ * Verbindung, die von selbst riss oder ohne Abschluss zuging (TurnUnfinishedError; nachdem Text kam: sie hat nichts
+ * verloren, die Route sichert den Teiltext womöglich selbst, also wird gewarnt statt gemeldet), von einem Fehler,
+ * den die Route selbst meldet (StreamProtocolError) oder der vor dem ersten Wort eintritt.
  */
 export function classifyTurnError(
   error: unknown,

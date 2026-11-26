@@ -12,6 +12,7 @@ import {
   buildChatBody,
   classifyTurnError,
   readHttpFailure,
+  TurnUnfinishedError,
   type TurnOutcome,
 } from "@/features/chat/lib/turn-outcome";
 import type { Pending, TurnAction } from "@/features/chat/lib/turn-state";
@@ -114,6 +115,11 @@ export async function runChatTurn(
       if (parsed.kind === "invalid") throw new StreamProtocolError(t.chat.streamInvalid);
       events.handle(parsed.value);
     }
+    // Der Strom ist zu, aber weder `done` noch `error` kam: die Route hat den Zug nicht abgeschlossen. Als Erfolg
+    // gälte sonst ein Text, der nie fertig wird, und `pending` hielte die Eingabe gesperrt (#416). Der Fehler läuft
+    // durch dieselbe Einordnung wie eine abgerissene Verbindung: mit Text bleibt die Antwort stehen und es wird
+    // gewarnt, ohne Text kommt die Frage zurück ins Feld.
+    if (!events.settled()) throw new TurnUnfinishedError(t.chat.streamEnded);
     return events.text();
   } catch (error) {
     const accumulated = events.text();
@@ -157,6 +163,9 @@ function settleTurn(
       // Antwort liegt womöglich schon in der Datenbank: den sichtbaren Text wegzuwerfen verlöre, was zu sehen ist,
       // ohne das Gespeicherte zurückzunehmen. Wie bei einem Stopp behalten, aber warnen statt melden: nichts ist beim
       // *Senden* gescheitert, nur "done" kam nicht mehr an.
+      // `refs.pending` folgt dem Zustand erst nach dem nächsten Render. Endet der Strom gleich nach dem letzten
+      // Wort, steht dort noch null, commitReply übersähe die Antwort, und `pending` hielte den Zug für immer offen.
+      refs.pending.current = { text: accumulated, complete: true };
       commitReply(accumulated, false);
       dispatch({ type: "persistWarned", message: t.chat.connectionDropped });
       return accumulated;
