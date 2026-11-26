@@ -1209,10 +1209,11 @@ juristisch angesehen werden.
 `spend_guard.failover_budget_exhausted` (Warnung). `chat.turn` und
 `chat.turn_failed` tragen den Anbieter, auf dem der Zug WIRKLICH lief (`provider`).
 
-**Zeitlimit.** Der Z.ai-Stream hat jetzt ein Zeitlimit bis zum ersten Textstück
-(30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm/zai.ts`). Vorher hatte er keines: ein
-hängender Anbieter blockierte den Zug bis zur `maxDuration` der Route (300
-Sekunden). Das gilt auch ohne Gemini-Key; danach läuft ein Stream beliebig lange.
+**Zeitlimit.** Jeder Antwort-Strom hat drei Grenzen, auch ohne Gemini-Key: bis zum ersten Textstück
+(Z.ai 30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm/zai.ts`; eigener Endpunkt 60; die SDK-Wege zu Anthropic,
+OpenAI und Gemini 90, `llm/chat.ts`), danach 45 Sekunden Leerlauf, mit jedem Textstück neu, und insgesamt 270
+Sekunden (`llm/http.ts`; `LLM_STREAM_IDLE_TIMEOUT_MS` und `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze
+höchstens 285). Läuft eine ab, endet der Zug mit einem Fehler, den die Route meldet und nach dem sie aufräumt.
 
 **Aktivieren.** `GEMINI_API_KEY` (bezahlte Stufe) in Vercel setzen, neu deployen.
 Ohne Key tut der Code nichts. Geprüft ist er mit simulierten Ausfällen

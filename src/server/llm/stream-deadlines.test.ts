@@ -1,27 +1,54 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { chatCompleteStream, classifyLlmFailure } from "@/server/llm";
+import { chatCompleteStream, classifyLlmFailure, ZAI_FIRST_CHUNK_TIMEOUT_MS, type LlmOverride } from "@/server/llm";
+import { SDK_FIRST_CHUNK_TIMEOUT_MS } from "@/server/llm/chat";
 import {
+  CUSTOM_FIRST_CHUNK_TIMEOUT_MS,
   STREAM_IDLE_TIMEOUT_MS,
   STREAM_TOTAL_TIMEOUT_CEILING_MS,
   STREAM_TOTAL_TIMEOUT_MS,
 } from "@/server/llm/http";
 
-// Zeitgrenzen eines Antwort-Stroms (#204): Z.ai und der Custom-Slot teilen sich eine Frist bis
-// zum ersten Textstück, eine Leerlauf-Frist, die mit jedem Textstück neu startet, und eine
-// Gesamtgrenze unter maxDuration der Route.
+// Zeitgrenzen eines Antwort-Stroms (#204, #392): jeder Weg zum Modell hat eine Frist bis zum ersten
+// Textstück, eine Leerlauf-Frist, die mit jedem Textstück neu startet, und eine Gesamtgrenze unter
+// maxDuration der Route. Die drei SDKs laufen echt, nur fetch ist ersetzt: ob sie einen Abbruch als
+// Fehler melden, entscheidet über das Aufräumen der Route.
 
 vi.mock("node:dns", () => ({
   promises: { lookup: async () => [{ address: "93.184.216.34", family: 4 }] },
 }));
 
-const custom = {
-  provider: "custom" as const,
-  apiKey: "k",
-  baseUrl: "https://example.test/v1/chat/completions",
-  model: "some-model",
-};
 const message = [{ role: "user" as const, content: "hi" }];
+
+/** Wie ein Anbieter Text und Ende auf die Leitung schreibt; `opening` kommt sofort, noch ohne Text. */
+type Wire = { opening?: string[]; text: (text: string) => string; ending: string[] };
+
+const openAiChunk = (choice: object) => `data: ${JSON.stringify({ choices: [{ index: 0, ...choice }] })}\n\n`;
+const openAiWire: Wire = {
+  text: (text) => openAiChunk({ delta: { content: text } }),
+  ending: [openAiChunk({ delta: {}, finish_reason: "stop" }), "data: [DONE]\n\n"],
+};
+
+const anthropicEvent = (type: string, data: object = {}) => `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`;
+const anthropicMessage = { id: "m", type: "message", role: "assistant", model: "m", content: [], usage: { input_tokens: 1, output_tokens: 1 } };
+const anthropicWire: Wire = {
+  opening: [
+    anthropicEvent("message_start", { message: anthropicMessage }),
+    anthropicEvent("content_block_start", { index: 0, content_block: { type: "text", text: "" } }),
+  ],
+  text: (text) => anthropicEvent("content_block_delta", { index: 0, delta: { type: "text_delta", text } }),
+  ending: [
+    anthropicEvent("content_block_stop", { index: 0 }),
+    anthropicEvent("message_delta", { delta: { stop_reason: "end_turn" }, usage: { output_tokens: 2 } }),
+    anthropicEvent("message_stop"),
+  ],
+};
+
+const geminiChunk = (candidate: object) => `data: ${JSON.stringify({ candidates: [candidate] })}\r\n\r\n`;
+const geminiWire: Wire = {
+  text: (text) => geminiChunk({ content: { role: "model", parts: [{ text }] } }),
+  ending: [geminiChunk({ content: { role: "model", parts: [] }, finishReason: "STOP" })],
+};
 
 type Frame = { afterMs: number; text: string };
 
@@ -29,22 +56,22 @@ type Frame = { afterMs: number; text: string };
  * Ein fetch, dessen Antwort Textstücke nach festen Abständen liefert und danach schweigt (`end`
  * false) oder endet. Wie echtes fetch bricht der Strom mit dem Grund des Signals ab.
  */
-function slowFetch(frames: Frame[], end: boolean) {
+function slowFetch(frames: Frame[], end: boolean, wire: Wire = openAiWire) {
   const encoder = new TextEncoder();
-  const sse = (text: string) => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
-  return vi.fn(async (_url: string, init: RequestInit) => {
+  return vi.fn(async (_url: unknown, init: RequestInit) => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
+        for (const line of wire.opening ?? []) controller.enqueue(encoder.encode(line));
         let at = 0;
         for (const frame of frames) {
           at += frame.afterMs;
-          timers.push(setTimeout(() => offer(controller, encoder.encode(sse(frame.text))), at));
+          timers.push(setTimeout(() => offer(controller, encoder.encode(wire.text(frame.text))), at));
         }
         if (end) {
           timers.push(
             setTimeout(() => {
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              for (const line of wire.ending) controller.enqueue(encoder.encode(line));
               controller.close();
             }, at + 1)
           );
@@ -55,7 +82,7 @@ function slowFetch(frames: Frame[], end: boolean) {
         for (const timer of timers) clearTimeout(timer);
       },
     });
-    return { ok: true, status: 200, statusText: "", body, text: async () => "" } as unknown as Response;
+    return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
   });
 }
 
@@ -73,9 +100,27 @@ async function collect(gen: AsyncGenerator<string>, out: string[] = []): Promise
   return out;
 }
 
-const zai = (signal?: AbortSignal) => chatCompleteStream({ system: "s", messages: message, signal });
-const byok = (signal?: AbortSignal) =>
-  chatCompleteStream({ system: "s", messages: message, override: custom, signal });
+type Start = (signal?: AbortSignal) => AsyncGenerator<string>;
+
+/** Ein Zug mit eigenem Key, ohne `override` auf dem Server-Key. */
+const turn =
+  (override?: LlmOverride): Start =>
+  (signal) =>
+    chatCompleteStream({ system: "s", messages: message, override, signal });
+
+const zai = turn();
+const byok = turn({
+  provider: "custom",
+  apiKey: "k",
+  baseUrl: "https://example.test/v1/chat/completions",
+  model: "some-model",
+});
+/** Der Server-Anbieter Gemini: nur sein Schlüssel ist gesetzt, also auch kein Failover. */
+const serverGemini: Start = (signal) => {
+  vi.stubEnv("ZAI_API_KEY", "");
+  vi.stubEnv("GEMINI_API_KEY", "gemini-key");
+  return zai(signal);
+};
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -89,11 +134,33 @@ afterEach(() => {
 });
 
 describe.each([
-  ["Z.ai", zai],
-  ["Custom-Slot", byok],
-])("%s", (_name, start) => {
+  ["Z.ai", zai, openAiWire, ZAI_FIRST_CHUNK_TIMEOUT_MS],
+  ["Custom-Slot", byok, openAiWire, CUSTOM_FIRST_CHUNK_TIMEOUT_MS],
+  ["Gemini als Server-Anbieter", serverGemini, geminiWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
+  ["Gemini mit eigenem Key", turn({ provider: "gemini", apiKey: "k" }), geminiWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
+  ["OpenAI mit eigenem Key", turn({ provider: "openai", apiKey: "k" }), openAiWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
+  ["Anthropic mit eigenem Key", turn({ provider: "anthropic", apiKey: "k" }), anthropicWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
+])("%s", (_name, start, wire, firstChunkMs) => {
+  const stub = (frames: Frame[], end: boolean) => vi.stubGlobal("fetch", slowFetch(frames, end, wire));
+
+  it("ein Strom, der nie ein Textstück schickt, endet nach der Frist für das erste mit TimeoutError", async () => {
+    stub([], false);
+    let ended = false;
+    const result = collect(start())
+      .catch((e) => e)
+      .finally(() => (ended = true));
+
+    await vi.advanceTimersByTimeAsync(firstChunkMs - 1);
+    expect(ended).toBe(false);
+    await vi.advanceTimersByTimeAsync(2);
+
+    const err = await result;
+    expect((err as DOMException).name).toBe("TimeoutError");
+    expect(String((err as DOMException).message)).toContain("no first chunk");
+  });
+
   it("ein Strom, der nach dem ersten Textstück schweigt, endet nach der Leerlauf-Frist mit TimeoutError", async () => {
-    vi.stubGlobal("fetch", slowFetch([{ afterMs: 1000, text: "Hallo" }], false));
+    stub([{ afterMs: 1000, text: "Hallo" }], false);
     const seen: string[] = [];
     const result = collect(start(), seen).catch((e) => e);
 
@@ -110,7 +177,7 @@ describe.each([
 
   it("jedes Textstück startet die Leerlauf-Frist neu: 120 Sekunden stetiger Antwort werden vollständig gelesen", async () => {
     const frames = Array.from({ length: 12 }, (_, i) => ({ afterMs: 10_000, text: `${i};` }));
-    vi.stubGlobal("fetch", slowFetch(frames, true));
+    stub(frames, true);
     const result = collect(start());
 
     await vi.advanceTimersByTimeAsync(130_000);
@@ -121,7 +188,7 @@ describe.each([
 
   it("ein stetiger Strom, der nie endet, wird an der Gesamtgrenze abgebrochen", async () => {
     const frames = Array.from({ length: 40 }, (_, i) => ({ afterMs: 10_000, text: `${i};` }));
-    vi.stubGlobal("fetch", slowFetch(frames, false));
+    stub(frames, false);
     const result = collect(start()).catch((e) => e);
 
     await vi.advanceTimersByTimeAsync(STREAM_TOTAL_TIMEOUT_MS - 1);
@@ -133,7 +200,7 @@ describe.each([
   });
 
   it("die Langsamkeit des Verbrauchers zählt nicht gegen den Anbieter", async () => {
-    vi.stubGlobal("fetch", slowFetch([{ afterMs: 100, text: "a" }, { afterMs: 100, text: "b" }], true));
+    stub([{ afterMs: 100, text: "a" }, { afterMs: 100, text: "b" }], true);
     const gen = start();
 
     const first = gen.next();
@@ -146,7 +213,7 @@ describe.each([
   });
 
   it("der Abbruch des Nutzers bleibt ein AbortError, kein Zeitlimit", async () => {
-    vi.stubGlobal("fetch", slowFetch([{ afterMs: 100, text: "a" }], false));
+    stub([{ afterMs: 100, text: "a" }], false);
     const controller = new AbortController();
     const result = collect(start(controller.signal)).catch((e) => e);
 
@@ -158,7 +225,7 @@ describe.each([
 
   it("LLM_STREAM_IDLE_TIMEOUT_MS überschreibt die Leerlauf-Frist", async () => {
     vi.stubEnv("LLM_STREAM_IDLE_TIMEOUT_MS", "5000");
-    vi.stubGlobal("fetch", slowFetch([{ afterMs: 100, text: "a" }], false));
+    stub([{ afterMs: 100, text: "a" }], false);
     const result = collect(start()).catch((e) => e);
 
     await vi.advanceTimersByTimeAsync(100 + 5000 + 1);
@@ -168,7 +235,7 @@ describe.each([
 
   it("Unsinn in LLM_STREAM_IDLE_TIMEOUT_MS fällt auf den Standard zurück", async () => {
     vi.stubEnv("LLM_STREAM_IDLE_TIMEOUT_MS", "abc");
-    vi.stubGlobal("fetch", slowFetch([{ afterMs: 100, text: "a" }, { afterMs: 20_000, text: "b" }], true));
+    stub([{ afterMs: 100, text: "a" }, { afterMs: 20_000, text: "b" }], true);
     const result = collect(start());
 
     await vi.advanceTimersByTimeAsync(30_000);
