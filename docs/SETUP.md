@@ -854,6 +854,8 @@ In der Oberfläche: Speichern im Chat fragt "Als neue Version" oder "Als neuen P
 
 Der Titel steht unter `/geteilt/<token>` als Überschrift: Umbenennen an der Karte prüft einen neuen Titel nach derselben Regel (`src/features/prompts/components/prompt-rename-field.tsx`, Enter fragt nur, erst "Trotzdem umbenennen" schreibt), und der Dialog vor dem ersten Teilen prüft Titel und Text zusammen.
 
+Der Verlauf lädt nur, was zu sehen ist: beim Aufklappen der Karte und nach jeder neuen Fassung die Zahl der Versionen (`head: true`, keine Zeilen; scheitert sie, steht eine Zeile mit "Neu laden" da), beim Öffnen Nummern und Zeiten (`VERSIONS_PAGE` je Seite) und den Text nur der beiden verglichenen Fassungen. Ein geladener Text bleibt im Speicher der Karte, denn eine Version ändert sich nie. Wiederherstellen prüft und schreibt genau diesen geladenen Text; solange er fehlt, gibt es nichts wiederherzustellen.
+
 `e2e/prompt-versions-db.spec.ts` prüft die Datenbank gegen den lokalen Stack, `e2e/prompt-versions.spec.ts` die Oberfläche; `tests/guards/migrations.test.ts` und `account-ceilings.test.ts` halten Rechte, Trigger und Zahlen fest.
 
 ## Ende-zu-Ende-Tests

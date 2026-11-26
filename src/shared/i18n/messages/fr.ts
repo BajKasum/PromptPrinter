@@ -897,6 +897,7 @@ export const fr: Messages = {
       restoreAnyway: "Restaurer quand même la version {n}",
       sharedHint: "Ce prompt est partagé : la version restaurée apparaît aussitôt sous le lien.",
       loadFailed: "Impossible de charger l’historique.",
+      retry: "Recharger",
       more: "Charger les versions plus anciennes",
     },
     export: {

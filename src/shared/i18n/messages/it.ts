@@ -893,6 +893,7 @@ export const it: Messages = {
       restoreAnyway: "Ripristina comunque la versione {n}",
       sharedHint: "Questo prompt è condiviso: la versione ripristinata compare subito sotto il link.",
       loadFailed: "Impossibile caricare la cronologia.",
+      retry: "Ricarica",
       more: "Carica versioni più vecchie",
     },
     export: {

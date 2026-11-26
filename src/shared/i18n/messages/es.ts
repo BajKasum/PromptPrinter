@@ -894,6 +894,7 @@ export const es: Messages = {
       restoreAnyway: "Restaurar la versión {n} de todos modos",
       sharedHint: "Este prompt está compartido: la versión restaurada aparece de inmediato en el enlace.",
       loadFailed: "No se pudo cargar el historial.",
+      retry: "Recargar",
       more: "Cargar versiones anteriores",
     },
     export: {
