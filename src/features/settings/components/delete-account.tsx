@@ -8,6 +8,7 @@ import { Button } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { useT } from "@/shared/i18n/provider";
 import { createClient } from "@/shared/supabase/client";
+import { failureText, readProblem } from "@/shared/lib/read-problem";
 
 export function DeleteAccount({ email }: { email: string }) {
   const t = useT();
@@ -46,13 +47,13 @@ export function DeleteAccount({ email }: { email: string }) {
     try {
       const res = await fetch("/api/account", { method: "DELETE" });
       if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { detail?: string; code?: string } | null;
-        if (res.status === 403 && body?.code === "reauth_required") {
+        const problem = await readProblem(res, t.settings.tryAgain);
+        if (res.status === 403 && problem.code === "reauth_required") {
           setDeleting(false);
           setNeedsReauth(true);
           return;
         }
-        throw new Error(body?.detail ?? t.common.unknownError);
+        throw problem;
       }
       // Account + session are gone, hard navigate to a clean public page.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- gewollt: ganzer Neuaufbau, Konto und Sitzung sind weg
@@ -61,7 +62,7 @@ export function DeleteAccount({ email }: { email: string }) {
       setDeleting(false);
       toast({
         title: t.settings.deleteAccount.failed,
-        description: err instanceof Error ? err.message : t.settings.tryAgain,
+        description: failureText(err, { network: t.common.networkError, fallback: t.settings.tryAgain }),
         variant: "error",
       });
     }

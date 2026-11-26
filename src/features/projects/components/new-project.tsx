@@ -11,6 +11,7 @@ import { Label } from "@/shared/ui/label";
 import { useToast } from "@/shared/ui/toast";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
+import { UserError, failureText, readJson, readProblem } from "@/shared/lib/read-problem";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): "Neues Projekt" ist ein
 // echter Projektstart, ein Name genügt, kein Umweg über einen Chat. Der
@@ -72,9 +73,9 @@ export function NewProjectButton({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: name.trim() }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail ?? t.projects.createFailed);
-      const projectId = json.projectId as string;
+      if (!res.ok) throw await readProblem(res, t.projects.createFailed);
+      const projectId = (await readJson<{ projectId?: unknown }>(res))?.projectId;
+      if (typeof projectId !== "string") throw new UserError(t.projects.createFailed);
       toast({
         title: t.projects.created,
         description: fmt(t.projects.createdBody, { name: name.trim() }),
@@ -85,7 +86,7 @@ export function NewProjectButton({
       router.push(`/projects/${projectId}`);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t.common.unknownError);
+      setError(failureText(e, { network: t.common.networkError, fallback: t.projects.createFailed }));
     } finally {
       setCreating(false);
     }

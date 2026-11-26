@@ -4,9 +4,9 @@ import { useId, useState } from "react";
 import { ChevronDown, ExternalLink, FlaskConical, Loader2 } from "lucide-react";
 import { MarkdownMessage } from "@/features/chat/components/chat-markdown";
 import { openTargetFor, type OpenTarget } from "@/features/chat/lib/open-in";
-import { readHttpFailure } from "@/features/chat/lib/turn-outcome";
 import { usePromptCopied } from "@/features/chat/lib/prompt-copied";
 import { useT } from "@/shared/i18n/provider";
+import { UserError, failureText, readJson, readProblem } from "@/shared/lib/read-problem";
 import { cn } from "@/shared/lib/utils";
 
 // Was man mit dem fertigen Prompt gleich tun kann: ihn in ChatGPT oder Claude öffnen, oder einmal ausprobieren
@@ -45,11 +45,15 @@ export function PromptActions({ prompt, original }: { prompt: string; original?:
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ prompt, original: original ?? prompt }),
       });
-      if (!res.ok) throw await readHttpFailure(res, t.chat.testRun.failed);
-      const json = (await res.json()) as { reply?: string };
+      if (!res.ok) throw await readProblem(res, t.chat.testRun.failed);
+      const json = await readJson<{ reply?: string }>(res);
+      if (!json) throw new UserError(t.chat.testRun.failed);
       setRun({ state: "done", reply: json.reply ?? "" });
     } catch (err) {
-      setRun({ state: "failed", message: err instanceof Error ? err.message : t.chat.testRun.failed });
+      setRun({
+        state: "failed",
+        message: failureText(err, { network: t.common.networkError, fallback: t.chat.testRun.failed }),
+      });
     }
   }
 

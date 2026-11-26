@@ -189,6 +189,20 @@ describe("ProjectFiles", () => {
     expect(screen.queryByText("notes.md")).not.toBeInTheDocument();
   });
 
+  // #408: auch ohne Netz steht nur der eigene Satz da, nie die Meldung des Browsers oder von Postgres.
+  it.each([
+    ["der Upload ohne Netz scheitert", () => storageUpload.mockRejectedValue(new TypeError("Failed to fetch"))],
+    ["Supabase den Netzfehler meldet", () => storageUpload.mockResolvedValue({ error: { message: "Failed to fetch" } })],
+    ["die Anmeldung nicht antwortet", () => getUser.mockRejectedValue(new TypeError("Failed to fetch"))],
+  ])("zeigt den eigenen Satz, wenn %s", async (_name, arrange) => {
+    arrange();
+    render(<ProjectFiles projectId="p1" userId="u1" initialFiles={[]} />);
+    await uploadFile(makeFile("notes.md", 100));
+
+    expect(await screen.findByText("Upload fehlgeschlagen. Bitte versuch es erneut.")).toBeInTheDocument();
+    expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
+  });
+
   // QA finding F-6: local `files.length` state is what gates the button, but
   // two open tabs each track that independently. A fresh server-side count
   // right before the upload closes that race a step earlier than the DB
