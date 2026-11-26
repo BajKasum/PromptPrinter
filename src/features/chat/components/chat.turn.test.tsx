@@ -529,6 +529,39 @@ describe("Sprachmodus", () => {
     await user.click(openVoice());
     expect(await screen.findByRole("dialog", { name: "Spracherkennung deines Browsers" })).toBeInTheDocument();
   });
+
+  it("verweigert der Browser das Mithören, versucht es die Leiste einmal und sagt es, statt in einer Schleife neu zu starten (#423)", async () => {
+    // Wie im Browser: nach start() kommt einen Takt später `error`, dann `end`.
+    const starts = { count: 0 };
+    class RefusingRecognition extends EventTarget {
+      continuous = false;
+      interimResults = false;
+      lang = "";
+      maxAlternatives = 1;
+      onresult = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() {
+        starts.count += 1;
+        setTimeout(() => {
+          this.onerror?.({ error: "not-allowed" });
+          this.onend?.();
+        }, 0);
+      }
+      stop() {}
+      abort() {}
+    }
+    vi.stubGlobal("SpeechRecognition", RefusingRecognition);
+    window.localStorage.setItem(KEY, VERSION);
+    render(<Chat />);
+    const user = userEvent.setup();
+
+    await user.click(openVoice());
+
+    expect(await screen.findByText(/Ich darf nicht mithören/, { selector: "p" })).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(starts.count).toBe(1);
+  });
 });
 
 describe("Stopp, wenn der Strom schon geschlossen ist und nur noch geschrieben wird", () => {

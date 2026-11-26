@@ -152,10 +152,9 @@ export function useSpeechRecognition({
     recognition.lang = lang;
     recognition.maxAlternatives = 1;
 
-    // Set when we intend to stop, so `onend` can tell a deliberate stop from
-    // the engine timing out on its own — Chrome ends the session after a stretch
-    // of silence even with `continuous = true`, and without restarting, the mic
-    // stays open while transcription has quietly died.
+    // Gesetzt, wenn die Sitzung nicht weiterlaufen soll: beim Abbau und nach einem Fehler, der beim nächsten Versuch
+    // wiederkäme. Sonst startet `onend` neu: Chrome beendet die Sitzung nach einer Weile Stille auch mit
+    // `continuous = true`, und ohne Neustart bliebe das Mikrofon offen, während die Erkennung still aufgehört hat.
     let stopping = false;
 
     recognition.onresult = (event) => {
@@ -179,6 +178,10 @@ export function useSpeechRecognition({
       // must not surface as failures — showing an error every time someone
       // thinks for two seconds is worse than showing nothing.
       if (event.error === "no-speech" || event.error === "aborted") return;
+      // Alles andere käme beim nächsten Versuch wieder (kein Recht, kein Dienst, kein Mikrofon, Sprache fehlt): ein
+      // Neustart in `onend` liefe Start, Fehler, Ende, Start ohne Pause, bis die Leiste zugeht (#423). Die Sitzung
+      // endet hier, `error` sagt warum; erst das nächste Zuhören versucht es wieder.
+      stopping = true;
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         setError("sttNotAllowed");
       } else if (event.error === "network") {
