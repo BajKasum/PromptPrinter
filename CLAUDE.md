@@ -250,7 +250,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 - **Keine rohen Hex-Farben** in Komponenten, nur semantische Token-Utilities (siehe
   [DESIGN.md](docs/DESIGN.md)).
 - **User-scoped Queries:** RLS scope + zusätzlich explizit `.eq("user_id", …)`
-  (Defense-in-depth), v. a. wo Counts Limits durchsetzen.
+  (Defense-in-depth), v. a. wo Counts Limits durchsetzen. Für die Seiten unter `src/app/(app)/` hält es `owner-scoped-reads.test.ts` je Abfrage fest.
 
 **Wenn du etwas hinzufügst, gehört dazu** (jeweils ein Test erzwingt es):
 
