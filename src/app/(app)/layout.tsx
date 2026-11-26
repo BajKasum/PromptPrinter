@@ -18,17 +18,16 @@ type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null
 // user here is both the defense-in-depth check and the source for the
 // sidebar's account menu.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  // Request-gecacht (Planpunkt B-3): dieselbe Antwort bedienen auch
-  // getProject() und die Seiten darunter, statt je einmal nachzufragen.
+  // Je Request gecacht: dieselbe Antwort bedient auch getProject() und die Seiten darunter, statt dass jede selbst
+  // nachfragt.
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const supabase = await createClient();
 
-  // Der CSP-Nonce fuer next-themes' Anti-Flash-Inline-Script. Der stand bis
-  // Planpunkt B-2 im Root-Layout und machte damit ALLE 38 Routen dynamisch,
-  // auch die unveraenderlichen Rechtstexte. Hier gelesen kostet er nichts:
-  // dieses Layout ist durch die Auth-Pruefung oben ohnehin dynamisch.
+  // Der CSP-Nonce für das Inline-Skript von next-themes, das ein Aufblitzen des falschen Themas verhindert. Er wird
+  // hier gelesen, nicht im Root-Layout: dort machte er jede Seite dynamisch, auch die Rechtstexte. Dieses Layout ist
+  // durch die Prüfung der Sitzung oben ohnehin dynamisch, hier kostet er nichts.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   // The sidebar's collapse state and user-chosen width both live in cookies
@@ -40,24 +39,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const sidebarWidth =
     Number.isFinite(sidebarWidthCookie) && sidebarWidthCookie > 0 ? sidebarWidthCookie : 264;
 
-  // Recents for the sidebar: the latest global chats (project chats live in
-  // their workspace) and pinned-then-recent projects. RLS scopes both reads.
-  // Das Profil kommt aus getSessionProfile() (B-3), damit die Seiten darunter
-  // dieselbe Zeile bekommen statt sie erneut zu holen — bis zu drei Ebenen
-  // fragten vorher unabhaengig voneinander nach display_name bzw. is_admin.
-  // Bleibt im selben Promise.all: die Abfrage laeuft dadurch weiterhin
-  // parallel zu den beiden Listen, nur eben genau einmal pro Request.
+  // Die Seitenleiste: die neuesten Chats ohne Projekt (Projekt-Chats stehen in ihrem Workspace) und die Projekte,
+  // Favoriten zuerst. Beide Listen grenzt RLS ein und zusätzlich user_id aus der geprüften Sitzung: ginge eine Policy
+  // zu weit, zeigte die Seitenleiste sonst fremde Titel. Das Profil kommt aus getSessionProfile(), dessen Zeile die
+  // Seiten darunter im selben Request wiederverwenden, und wird parallel zu den beiden Listen gelesen.
   const [profile, rawChatsResult, rawProjectsResult] = await Promise.all([
     getSessionProfile(),
     supabase
       .from("conversations")
       .select("id, title")
+      .eq("user_id", user.id)
       .is("project_id", null)
       .order("updated_at", { ascending: false })
       .limit(5),
     supabase
       .from("projects")
       .select("id, name, is_favorite")
+      .eq("user_id", user.id)
       .order("is_favorite", { ascending: false })
       .order("updated_at", { ascending: false })
       .limit(5),
@@ -69,7 +67,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const rawChats = rawChatsResult.error ? null : rawChatsResult.data;
   const rawProjects = rawProjectsResult.error ? null : rawProjectsResult.data;
 
-  // Sprache (29.09.2026): Cookie zuerst, sonst die im Profil gespeicherte
+  // Sprache: Cookie zuerst, sonst die im Profil gespeicherte
   // Wahl (neues Gerät), sonst Deutsch. Das Profil kam oben ohnehin, die
   // Entscheidung kostet also keine weitere Abfrage. Kam sie aus dem Profil,
   // schreibt der Provider den Cookie nach, damit auch die API-Routen (die nur
