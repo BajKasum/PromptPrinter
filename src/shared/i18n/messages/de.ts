@@ -20,6 +20,8 @@ export const de = {
     close: "Schliessen",
     copy: "Kopieren",
     copied: "Kopiert",
+    copyFailed: "Kopieren ging nicht",
+    copyFailedHint: "Markiere den Text und kopiere ihn selbst (Strg+C oder ⌘C).",
     rename: "Umbenennen",
     retry: "Erneut versuchen",
     back: "Zurück",

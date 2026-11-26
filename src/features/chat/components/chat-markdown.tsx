@@ -150,7 +150,9 @@ function CodeBlock({ text, typed }: { text: string; typed?: string }) {
           <button
             type="button"
             onClick={() => {
-              void copy(text).then(promptCopied, () => {});
+              void copy(text).then((ok) => {
+                if (ok) promptCopied();
+              });
             }}
             className="touch-hit-y relative inline-flex items-center gap-1 text-[12px] text-secondary transition-colors hover:text-foreground"
           >

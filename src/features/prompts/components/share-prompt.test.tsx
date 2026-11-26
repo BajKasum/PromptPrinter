@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { de } from "@/shared/i18n/messages/de";
+import { ToastContext } from "@/shared/ui/toast-context";
 
 const toast = vi.fn();
 vi.mock("@/shared/ui/toast", () => ({ useToast: () => ({ toast }) }));
@@ -79,16 +80,43 @@ describe("SharePrompt", () => {
     expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
   });
 
-  it("sagt nicht 'kopiert', wenn die Zwischenablage ablehnt", async () => {
+  // Der Hook hätte seinen eigenen Fehlschlag-Toast: nach dem Teilen sagt es die Leiste allein, genau einmal.
+  it("sagt nicht 'kopiert', wenn die Zwischenablage ablehnt, und meldet es genau einmal", async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) } });
     fetchMock.mockReturnValueOnce(answer(null));
-    render(<SharePromptCard content="x" />);
+    render(
+      <ToastContext.Provider value={{ toast }}>
+        <SharePromptCard content="x" />
+      </ToastContext.Provider>
+    );
     const button = await screen.findByRole("button", { name: de.share.action });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
     fetchMock.mockReturnValueOnce(answer(TOKEN));
     fireEvent.click(screen.getByRole("button", { name: de.share.confirm }));
     await waitFor(() => expect(toast).toHaveBeenCalledWith({ title: de.share.sharedNotCopied, variant: "success" }));
+    expect(toast).toHaveBeenCalledTimes(1);
+  });
+
+  it("meldet am Knopf 'Link kopieren', wenn es nicht geht", async () => {
+    Object.assign(navigator, { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) } });
+    fetchMock.mockReturnValueOnce(answer(TOKEN));
+    render(
+      <ToastContext.Provider value={{ toast }}>
+        <SharePromptCard content="x" />
+      </ToastContext.Provider>
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: de.share.copyLink }));
+
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith({
+        title: de.common.copyFailed,
+        description: de.common.copyFailedHint,
+        variant: "error",
+      })
+    );
+    expect(screen.queryByRole("button", { name: de.common.copied })).not.toBeInTheDocument();
   });
 
   it("zeigt einen geteilten Prompt mit Link und widerruft ihn", async () => {
