@@ -14,7 +14,7 @@ import {
 } from "@/shared/lib/byok-detect";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
-import { UserError, failureText, readJson, readProblem } from "@/shared/lib/read-problem";
+import { UserError, failureText, readProblem } from "@/shared/lib/read-problem";
 
 /**
  * Das Key-Feld ohne Anbieterwahl: Key einfügen, der Server erkennt den
@@ -66,8 +66,9 @@ export function ApiKeyField({
         if (problem.kind === "unknownProvider") onUnrecognized();
         throw problem;
       }
-      // Ein "ok" ohne JSON kommt nicht von der Route (etwa die Anmeldeseite eines WLANs): nicht als gespeichert melden.
-      if (!(await readJson(res))) throw new UserError(t.settings.keys.saveFailed);
+      // Ein "ok", dessen Rumpf kein JSON ist, kommt nicht von der Route (etwa die Anmeldeseite eines WLANs): nicht als
+      // gespeichert melden.
+      if (!(await res.json().catch(() => null))) throw new UserError(t.settings.keys.saveFailed);
       const name = detected ? NAMED_PROVIDER_META[detected].name : t.settings.keys.fallbackName;
       toast({ title: fmt(t.settings.keys.connected, { name }), variant: "success" });
       setKey("");
