@@ -100,6 +100,7 @@ export const fr: Messages = {
       "Cette réponse est là, mais elle n'a pas pu être enregistrée pour l'instant. Elle sera perdue si tu recharges la page.",
     connectionDropped:
       "La connexion a été coupée au milieu de la réponse. Recharge la page, la réponse est peut-être déjà enregistrée.",
+    streamEnded: "La connexion a été coupée avant qu'une réponse n'arrive. Réessaie.",
     statusWriting: "Finn écrit…",
     statusRevealing: "Rédaction de la réponse…",
     statusDone: "Réponse terminée.",

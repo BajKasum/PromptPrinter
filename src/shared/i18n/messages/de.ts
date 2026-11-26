@@ -106,6 +106,7 @@ export const de = {
       "Diese Antwort ist da, konnte aber gerade nicht gespeichert werden, bei einem Neuladen geht sie verloren.",
     connectionDropped:
       "Die Verbindung ist mitten in der Antwort abgebrochen. Lade die Seite neu, die Antwort ist eventuell schon gespeichert.",
+    streamEnded: "Die Verbindung ist abgebrochen, bevor eine Antwort kam. Bitte versuch es noch einmal.",
     statusWriting: "Finn schreibt…",
     statusRevealing: "Antwort wird geschrieben…",
     statusDone: "Antwort fertig.",

@@ -18,7 +18,10 @@ import { pickVoice } from "@/features/chat/lib/pick-voice";
 /** Silence after a committed phrase before the turn is sent on its own. */
 const AUTO_SEND_SILENCE_MS = 1500;
 
-/** The bar has no "paused" state (no mute control, see below), only the loop. */
+/**
+ * Die Leiste kennt keinen Pausenzustand (kein Stummschalter), nur die Schleife. „paused“ zeigt die Welle nur,
+ * wenn die Erkennung gescheitert ist.
+ */
 type SpokenMode = Extract<VoiceMode, "listening" | "thinking" | "speaking">;
 
 const MASCOT_FOR_MODE: Record<SpokenMode, MascotState> = {
@@ -79,11 +82,16 @@ export function VoiceBar({
   const keyboardInset = useVisualViewportInset();
 
   const listening = mode === "listening";
-  const mic = useMicAnalyser(true);
   const { final, interim, supported, error: sttError, reset } = useSpeechRecognition({
     active: listening,
     lang,
   });
+  // Eine gescheiterte Erkennung startet nicht neu (use-speech-recognition.ts), das Zuhören ist zu Ende: das Mikrofon
+  // geht aus (sonst leuchtet die Aufnahmeanzeige weiter), die Welle steht, Finn ist betreten, und die Meldung steht
+  // in der Leiste. Was schon gesprochen war, lässt sich noch absenden; das nächste Zuhören versucht es wieder.
+  const recognitionFailed = sttError !== null;
+  const ended = listening && recognitionFailed;
+  const mic = useMicAnalyser(!recognitionFailed);
 
   // Drive for the synthetic waveform states. Mutated from an animation frame
   // rather than React state: it changes every frame and nothing re-renders on it.
@@ -259,7 +267,7 @@ export function VoiceBar({
       {/* The accessible announcement of the state machine. Sighted users read
           the state off Finn's pose and the waveform instead (see module doc). */}
       <div aria-live="polite" className="sr-only">
-        {statusForMode[mode]}
+        {ended && blocker ? blocker : statusForMode[mode]}
       </div>
 
       {/* Live transcript, directly above the bar. Final words are solid, the
@@ -300,10 +308,10 @@ export function VoiceBar({
         </button>
 
         {/* Finn's pose is the state indicator, no text label beside it. */}
-        <AnimatedMascot state={MASCOT_FOR_MODE[mode]} size={34} alt="" className="shrink-0" />
+        <AnimatedMascot state={ended ? "sad" : MASCOT_FOR_MODE[mode]} size={34} alt="" className="shrink-0" />
 
         <VoiceWaveform
-          mode={mode}
+          mode={ended ? "paused" : mode}
           readHalf={mic.readHalf}
           energyRef={energyRef}
           reducedMotion={reducedMotion}

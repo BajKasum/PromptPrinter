@@ -14,8 +14,13 @@ import { VoiceBar } from "./voice-bar";
 
 const speech = { final: "", interim: "", supported: true, error: null as string | null, reset: vi.fn() };
 
+// Ob die Leiste das Mikrofon offen haben will: die Attrappe merkt sich das Argument.
+const mic = vi.hoisted(() => ({ active: null as boolean | null }));
 vi.mock("@/features/chat/hooks/use-mic-analyser", () => ({
-  useMicAnalyser: () => ({ status: "live", error: null, readHalf: () => 0 }),
+  useMicAnalyser: (active: boolean) => {
+    mic.active = active;
+    return { status: "live", error: null, readHalf: () => 0 };
+  },
 }));
 vi.mock("@/features/chat/hooks/use-speech-recognition", () => ({
   useSpeechRecognition: () => speech,
@@ -443,15 +448,51 @@ describe("Fehler beim Senden", () => {
   });
 
   it("zeigt Hardware- und Erkennungsfehler anstelle des Textes, und der Browser-Hinweis hat Vorrang", () => {
+    // Am Absatz gesucht: nach einem Fehler der Erkennung steht dieselbe Meldung auch im Live-Bereich.
     speech.error = "micDenied";
     const { unmount } = render(<VoiceBar onClose={vi.fn()} onSubmit={vi.fn(async () => null)} />);
-    expect(screen.getByText(/Ich brauche Zugriff auf dein Mikrofon/)).toBeInTheDocument();
+    expect(screen.getByText(/Ich brauche Zugriff auf dein Mikrofon/, { selector: "p" })).toBeInTheDocument();
     unmount();
 
     speech.supported = false;
     render(<VoiceBar onClose={vi.fn()} onSubmit={vi.fn(async () => null)} />);
-    expect(screen.getByText(/kann noch nicht mithören/)).toBeInTheDocument();
+    expect(screen.getByText(/kann noch nicht mithören/, { selector: "p" })).toBeInTheDocument();
     expect(screen.queryByText(/Ich brauche Zugriff/)).not.toBeInTheDocument();
+  });
+});
+
+// #423: eine gescheiterte Erkennung startet nicht neu (use-speech-recognition.ts). Die Leiste hört dann nicht mehr
+// zu und sagt warum, statt so zu tun, als liefe alles weiter.
+describe("Erkennung gescheitert (#423)", () => {
+  it("ohne Fehler hört die Leiste zu, mit offenem Mikrofon", () => {
+    render(<VoiceBar onClose={vi.fn()} onSubmit={vi.fn(async () => null)} />);
+    expect(mic.active).toBe(true);
+    expect(waveform.mode).toBe("listening");
+    expect(pose()).toBe("listening");
+    expect(status()).toBe("Ich höre zu.");
+  });
+
+  it("danach hört sie nicht mehr zu: Mikrofon aus, Welle steht, Finn betreten, die Meldung in der Leiste und im Live-Bereich", () => {
+    speech.error = "sttBrave";
+    render(<VoiceBar onClose={vi.fn()} onSubmit={vi.fn(async () => null)} />);
+
+    const message = /Brave blockiert Googles Spracherkennungsdienst grundsätzlich/;
+    expect(screen.getByText(message, { selector: "p" })).toBeInTheDocument();
+    expect(status()).toMatch(message);
+    expect(mic.active).toBe(false);
+    expect(waveform.mode).toBe("paused");
+    expect(pose()).toBe("sad");
+  });
+
+  it("was schon gesprochen war, geht noch hinaus, und Finns Antwort wird vorgelesen wie sonst", async () => {
+    speech.error = "sttUnavailable";
+    speech.final = "Bis hierher";
+    const { onSubmit } = await sendAndAnswer("Die Antwort.");
+
+    expect(onSubmit).toHaveBeenCalledWith("Bis hierher");
+    expect(status()).toBe("Finn spricht.");
+    expect(pose()).toBe("explaining");
+    expect(waveform.mode).toBe("speaking");
   });
 });
 
