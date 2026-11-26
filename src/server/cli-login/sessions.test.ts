@@ -5,6 +5,8 @@ let selectResult: { data: unknown; error: unknown };
 let insertResult: { error: unknown };
 let rpcResult: { data: unknown; error: unknown };
 const writes: { op: string; values: unknown; filters: [string, unknown][] }[] = [];
+/** Je Suche mit maybeSingle ihre Bedingungen. */
+const lookups: [string, unknown][][] = [];
 const rpc = vi.fn();
 
 function builder() {
@@ -17,7 +19,10 @@ function builder() {
     },
     gt: () => chain,
     order: () => chain,
-    maybeSingle: async () => selectResult,
+    maybeSingle: async () => {
+      lookups.push(filters);
+      return selectResult;
+    },
     insert: async (values: unknown) => {
       writes.push({ op: "insert", values, filters });
       return insertResult;
@@ -50,6 +55,7 @@ import {
   CLI_SESSION_MAX_AGE_MS,
   checkCliSession,
   endCliSession,
+  isCliSession,
   listCliSessions,
   registerCliSession,
 } from "@/server/cli-login/sessions";
@@ -68,6 +74,7 @@ const inPast = () => new Date(Date.now() - 60_000).toISOString();
 beforeEach(() => {
   vi.clearAllMocks();
   writes.length = 0;
+  lookups.length = 0;
   selectResult = { data: null, error: null };
   insertResult = { error: null };
   rpcResult = { data: true, error: null };
@@ -164,6 +171,38 @@ describe("checkCliSession", () => {
   it("wirft bei einem Lesefehler, ein Ausfall ist keine Absage", async () => {
     selectResult = { data: null, error: { message: "db down" } };
     await expect(checkCliSession(token())).rejects.toThrow("cli_sessions select");
+  });
+});
+
+describe("isCliSession", () => {
+  it("true für einen Eintrag, gesucht nach Sitzung UND Konto", async () => {
+    selectResult = { data: { expires_at: inFuture(), last_used_at: inPast() }, error: null };
+    expect(await isCliSession(token())).toBe(true);
+    expect(lookups).toEqual([
+      [
+        ["session_id", SESSION],
+        ["user_id", USER],
+      ],
+    ]);
+  });
+
+  it("true auch über dem Höchstalter, und es schreibt und beendet nichts", async () => {
+    selectResult = { data: { expires_at: inPast(), last_used_at: inPast() }, error: null };
+    expect(await isCliSession(token())).toBe(true);
+    expect(writes).toEqual([]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("false ohne Eintrag und ohne Suche bei etwas, das kein Token ist", async () => {
+    expect(await isCliSession(token())).toBe(false);
+    lookups.length = 0;
+    expect(await isCliSession("kein-jwt")).toBe(false);
+    expect(lookups).toEqual([]);
+  });
+
+  it("wirft bei einem Lesefehler", async () => {
+    selectResult = { data: null, error: { message: "db down" } };
+    await expect(isCliSession(token())).rejects.toThrow("cli_sessions select");
   });
 });
 

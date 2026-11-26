@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { isCliSession } from "@/server/cli-login/sessions";
 import { createAdminClient } from "@/server/supabase/admin";
 
 // Die eigene Supabase-Sitzung der Kommandozeile. Keine selbst gebaute Art von Token (Entscheid, docs/SETUP.md,
@@ -90,14 +91,20 @@ export async function refreshCliSession(refreshToken: string): Promise<CliSessio
  * Beendet genau die Sitzung, zu der dieses Access-Token gehört (scope local): die Browser-Sitzung und
  * andere Geräte bleiben. Gibt das Konto zurück, `"unauthorized"`, wenn das Token nicht (mehr) gilt, `null`,
  * wenn der Auth-Server nicht antwortet. Das Token wird vorher beim Auth-Server geprüft, nicht nur gelesen.
+ * Mit `terminalOnly` (Abmelden im Terminal) endet nur eine eingetragene Terminal-Sitzung, jede andere ist
+ * `"unauthorized"`. Die Tabelle liest erst ein geprüftes Token: ein selbst gebautes JWT erreicht sie nie.
  */
-export async function revokeCliSession(accessToken: string): Promise<{ userId: string } | "unauthorized" | null> {
+export async function revokeCliSession(
+  accessToken: string,
+  { terminalOnly = false }: { terminalOnly?: boolean } = {}
+): Promise<{ userId: string } | "unauthorized" | null> {
   const admin = createAdminClient();
   const { data, error } = await admin.auth.getUser(accessToken);
   if (!data?.user) {
     const status = error?.status;
     return typeof status === "number" && status >= 400 && status < 500 ? "unauthorized" : null;
   }
+  if (terminalOnly && !(await isCliSession(accessToken))) return "unauthorized";
   const { error: signOutError } = await admin.auth.admin.signOut(accessToken, "local");
   return signOutError ? null : { userId: data.user.id };
 }
