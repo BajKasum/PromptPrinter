@@ -16,6 +16,8 @@ vi.mock("@/server/supabase/admin", () => ({
     },
   }),
 }));
+const isCliSession = vi.fn();
+vi.mock("@/server/cli-login/sessions", () => ({ isCliSession: (...a: unknown[]) => isCliSession(...a) }));
 
 const verifyOtp = vi.fn();
 const refreshSession = vi.fn();
@@ -100,6 +102,28 @@ describe("revokeCliSession", () => {
     expect(await revokeCliSession("tok")).toEqual({ userId: "u1" });
     expect(adminGetUser).toHaveBeenCalledWith("tok");
     expect(adminSignOut).toHaveBeenCalledWith("tok", "local");
+    // Ohne terminalOnly auch eine nicht eingetragene Sitzung: api/cli/token beendet so die, deren Eintrag scheitert.
+    expect(isCliSession).not.toHaveBeenCalled();
+  });
+
+  it("mit terminalOnly endet nur eine eingetragene Sitzung, gefragt erst nach dem Auth-Server", async () => {
+    adminGetUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    adminSignOut.mockResolvedValue({ error: null });
+    isCliSession.mockResolvedValue(true);
+    expect(await revokeCliSession("tok", { terminalOnly: true })).toEqual({ userId: "u1" });
+    expect(isCliSession).toHaveBeenCalledWith("tok");
+    expect(adminGetUser.mock.invocationCallOrder[0]).toBeLessThan(isCliSession.mock.invocationCallOrder[0]);
+
+    adminSignOut.mockClear();
+    isCliSession.mockResolvedValue(false);
+    expect(await revokeCliSession("tok", { terminalOnly: true })).toBe("unauthorized");
+    expect(adminSignOut).not.toHaveBeenCalled();
+  });
+
+  it("mit terminalOnly fragt ein abgelehntes Token die Tabelle nie", async () => {
+    adminGetUser.mockResolvedValue({ data: { user: null }, error: { status: 403, message: "bad_jwt" } });
+    expect(await revokeCliSession("tok", { terminalOnly: true })).toBe("unauthorized");
+    expect(isCliSession).not.toHaveBeenCalled();
   });
 
   it("ein ungültiges oder zu einem gelöschten Konto gehörendes Token beendet nichts", async () => {

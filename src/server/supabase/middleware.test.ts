@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { updateSession } from "@/server/supabase/middleware";
+import { safeNextPath } from "@/shared/lib/site-url";
 
 // QA finding C-6. This is the gate that decides who sees the app at all, and it
 // had no test — including after /admin was added to the protected list, where a
@@ -116,6 +117,24 @@ describe("updateSession", () => {
     it("remembers where the user was headed", async () => {
       const res = await updateSession(request("/projects"), new Headers());
       expect(locationOf(res)).toContain("next=%2Fprojects");
+    });
+
+    // Die Abfrage gehört zum Ziel (#396): `?from=<id>` öffnet den Chat mit dem Ausgangs-Prompt.
+    // Das Formular liest `next` über safeNextPath, deshalb prüft der Test mit derselben Funktion.
+    it.each([
+      "/chats/new?from=6f8a1c2e-0000-4000-8000-000000000001",
+      "/projects/abc/chats/new?from=6f8a1c2e-0000-4000-8000-000000000001&tab=x",
+      "/prompts?q=a%26b%3Dc",
+      "/cli?code=ABCD-2345",
+      // Ein eigenes `next` der Zieladresse bleibt Teil des Ziels und überschreibt die Anmeldung nicht.
+      "/chats?next=https%3A%2F%2Fevil.example",
+    ])("behält %s samt Abfrage als Ziel und nimmt keinen Parameter mit nach /login", async (target) => {
+      const res = await updateSession(request(target), new Headers());
+      const location = new URL(locationOf(res)!);
+      expect(location.origin).toBe("https://promptprinter.app");
+      expect(location.pathname).toBe("/login");
+      expect([...location.searchParams.keys()]).toEqual(["next"]);
+      expect(safeNextPath(location.searchParams.get("next"))).toBe(target);
     });
 
     it.each([
