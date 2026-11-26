@@ -6,8 +6,11 @@
 /** Ein gespeicherter Prompt, von dem Speichern im Chat eine neue Version anbietet (server/prompt-version-target.ts). */
 export type VersionTarget = { id: string; title: string; prompt: string };
 
-/** Eine Zeile aus `saved_prompt_versions`, wie der Verlauf an der Karte sie liest. */
-export type PromptVersion = { version: number; content: string; createdAt: string };
+/**
+ * Nummer und Zeit einer Zeile aus `saved_prompt_versions`: so viel liest der Verlauf an der Karte für die Auswahl. Den
+ * Text holt er nur für die beiden Fassungen, die er vergleicht.
+ */
+export type PromptVersion = { version: number; createdAt: string };
 
 /** So viele Versionen zeigt der Verlauf auf einmal, die älteren auf Wunsch. */
 export const VERSIONS_PAGE = 20;

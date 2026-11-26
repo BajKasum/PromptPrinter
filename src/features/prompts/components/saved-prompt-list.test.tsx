@@ -19,14 +19,27 @@ vi.mock("@/shared/ui/toast", () => ({
   useToast: () => ({ toast }),
 }));
 
-// Die Karte liest beim Aufklappen den Verlauf (saved_prompt_versions) und den Stand der Freigabe über
-// /api/prompts/<id>/share (fetch); nach diesem Stand prüfen Bearbeiten und Wiederherstellen.
+// Die Karte liest beim Aufklappen die Zahl der Versionen (saved_prompt_versions, `head`), im offenen Verlauf eine Seite
+// (`.range()`) und die Texte der verglichenen Fassungen (`.in()`), dazu den Stand der Freigabe über
+// /api/prompts/<id>/share (fetch); nach diesem Stand prüfen Umbenennen, Bearbeiten und Wiederherstellen.
 let versionRows: { version: number; content: string; created_at: string }[] = [];
-function readChain(result: () => unknown) {
+function readChain(options?: { head?: boolean }) {
+  let versions: number[] = [];
+  const sorted = () => [...versionRows].sort((a, b) => b.version - a.version);
   const chain = {
     eq: () => chain,
     order: () => chain,
-    range: async () => result(),
+    in: (_column: string, list: number[]) => {
+      versions = list;
+      return chain;
+    },
+    range: async () => ({ data: sorted(), error: null, count: versionRows.length }),
+    then: (resolve: (value: unknown) => unknown) =>
+      Promise.resolve(
+        options?.head
+          ? { data: null, error: null, count: versionRows.length }
+          : { data: sorted().filter((r) => versions.includes(r.version)), error: null }
+      ).then(resolve),
   };
   return chain;
 }
@@ -34,14 +47,7 @@ vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({
     from: (table: string) =>
       table === "saved_prompt_versions"
-        ? {
-            select: () =>
-              readChain(() => ({
-                data: [...versionRows].sort((a, b) => b.version - a.version),
-                error: null,
-                count: versionRows.length,
-              })),
-          }
+        ? { select: (_columns: string, options?: { head?: boolean }) => readChain(options) }
         : { update, delete: del },
   }),
 }));
@@ -456,7 +462,8 @@ describe("SavedPromptList", () => {
       expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
 
       await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
-      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      // Den Text der alten Fassung lädt der Verlauf erst jetzt, erst danach gibt es etwas wiederherzustellen.
+      await user.click(await screen.findByRole("button", { name: "Version 1 wiederherstellen" }));
       expect(update).not.toHaveBeenCalled();
       expect(screen.getByRole("alert")).toHaveTextContent(KEY_FINDING);
 
@@ -475,7 +482,7 @@ describe("SavedPromptList", () => {
       await waitFor(() => expect(screen.getByRole("button", { name: "Per Link teilen" })).toBeEnabled());
 
       await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
-      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      await user.click(await screen.findByRole("button", { name: "Version 1 wiederherstellen" }));
       expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Alter Name" } });
       expect(screen.queryByRole("alert")).toBeNull();
     });
