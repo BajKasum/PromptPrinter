@@ -73,6 +73,27 @@ export async function endCliSession(
   return true;
 }
 
+/** Der Eintrag dieser Sitzung, gesucht nach Sitzung UND Konto. `null` ohne Eintrag, wirft bei einem Lesefehler. */
+async function readCliSession(admin: ReturnType<typeof createAdminClient>, claims: { sessionId: string; userId: string }) {
+  const { data, error } = await admin
+    .from(TABLE)
+    .select("expires_at, last_used_at")
+    .eq("session_id", claims.sessionId)
+    .eq("user_id", claims.userId)
+    .maybeSingle();
+  if (error) throw new Error(`cli_sessions select: ${error.message}`);
+  return data;
+}
+
+/**
+ * Ist das eine eingetragene Terminal-Sitzung, auch eine über dem Höchstalter? Für das Abmelden, nachdem der Auth-Server
+ * das Token anerkannt hat: wer sich abmeldet, beendet die Sitzung, egal wie alt sie ist. Schreibt nichts.
+ */
+export async function isCliSession(accessToken: string): Promise<boolean> {
+  const claims = claimsOfToken(accessToken);
+  return claims !== null && Boolean(await readCliSession(createAdminClient(), claims));
+}
+
 export type CliSessionVerdict = "ok" | "unknown" | "expired";
 
 /**
@@ -85,13 +106,7 @@ export async function checkCliSession(accessToken: string): Promise<CliSessionVe
   if (!claims) return "unknown";
 
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from(TABLE)
-    .select("expires_at, last_used_at")
-    .eq("session_id", claims.sessionId)
-    .eq("user_id", claims.userId)
-    .maybeSingle();
-  if (error) throw new Error(`cli_sessions select: ${error.message}`);
+  const data = await readCliSession(admin, claims);
   if (!data) return "unknown";
 
   if (new Date(data.expires_at).getTime() <= Date.now()) {
