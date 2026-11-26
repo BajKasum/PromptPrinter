@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chatCompleteStream, classifyLlmFailure, ZAI_FIRST_CHUNK_TIMEOUT_MS, type LlmOverride } from "@/server/llm";
+import { __resetServerBreakerForTests } from "@/server/llm-failover";
 import { SDK_FIRST_CHUNK_TIMEOUT_MS } from "@/server/llm/chat";
 import {
   CUSTOM_FIRST_CHUNK_TIMEOUT_MS,
@@ -9,10 +10,10 @@ import {
   STREAM_TOTAL_TIMEOUT_MS,
 } from "@/server/llm/http";
 
-// Zeitgrenzen eines Antwort-Stroms (#204, #392): jeder Weg zum Modell hat eine Frist bis zum ersten
-// Textstück, eine Leerlauf-Frist, die mit jedem Textstück neu startet, und eine Gesamtgrenze unter
-// maxDuration der Route. Die drei SDKs laufen echt, nur fetch ist ersetzt: ob sie einen Abbruch als
-// Fehler melden, entscheidet über das Aufräumen der Route.
+// Zeitgrenzen eines Antwort-Stroms (#204, #392, #404): jeder Weg zum Modell hat eine Frist bis zum
+// ersten Textstück und eine Leerlauf-Frist, die mit jedem Textstück neu startet; der ganze Zug hat
+// eine Gesamtgrenze unter maxDuration der Route. Die drei SDKs laufen echt, nur fetch ist ersetzt: ob
+// sie einen Abbruch als Fehler melden, entscheidet über das Aufräumen der Route.
 
 vi.mock("node:dns", () => ({
   promises: { lookup: async () => [{ address: "93.184.216.34", family: 4 }] },
@@ -59,6 +60,8 @@ type Frame = { afterMs: number; text: string };
 function slowFetch(frames: Frame[], end: boolean, wire: Wire = openAiWire) {
   const encoder = new TextEncoder();
   return vi.fn(async (_url: unknown, init: RequestInit) => {
+    // Wie echtes fetch: mit einem schon abgebrochenen Signal geht gar nichts mehr hinaus.
+    init.signal?.throwIfAborted();
     const timers: ReturnType<typeof setTimeout>[] = [];
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
@@ -244,15 +247,21 @@ describe.each([
   });
 });
 
-describe("Gesamtgrenze", () => {
-  it("liegt unter maxDuration der Chat-Route, auch mit Überschreibung", async () => {
-    const route = readFileSync(new URL("../../app/api/chat/route.ts", import.meta.url), "utf8");
-    const maxDuration = Number(/export const maxDuration = (\d+)/.exec(route)?.[1]) * 1000;
-    expect(maxDuration).toBeGreaterThan(0);
-    expect(STREAM_TOTAL_TIMEOUT_MS).toBeLessThan(maxDuration);
-    expect(STREAM_TOTAL_TIMEOUT_CEILING_MS).toBeLessThan(maxDuration);
+/** `maxDuration` einer Route in Millisekunden, aus ihrem Quelltext. */
+function maxDurationOf(route: "chat" | "test-run"): number {
+  const source = readFileSync(new URL(`../../app/api/${route}/route.ts`, import.meta.url), "utf8");
+  return Number(/export const maxDuration = (\d+)/.exec(source)?.[1]) * 1000;
+}
 
-    vi.stubEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", String(maxDuration * 2));
+describe("Gesamtgrenze", () => {
+  it("liegt unter maxDuration beider Routen, die streamen, auch mit Überschreibung", async () => {
+    for (const route of ["chat", "test-run"] as const) {
+      expect(maxDurationOf(route)).toBeGreaterThan(0);
+      expect(STREAM_TOTAL_TIMEOUT_MS).toBeLessThan(maxDurationOf(route));
+      expect(STREAM_TOTAL_TIMEOUT_CEILING_MS).toBeLessThan(maxDurationOf(route));
+    }
+
+    vi.stubEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", String(maxDurationOf("chat") * 2));
     vi.stubGlobal("fetch", slowFetch(Array.from({ length: 40 }, () => ({ afterMs: 10_000, text: "x" })), false));
     const result = collect(zai()).catch((e) => e);
     await vi.advanceTimersByTimeAsync(STREAM_TOTAL_TIMEOUT_CEILING_MS + 1);
@@ -265,5 +274,109 @@ describe("Gesamtgrenze", () => {
     const result = collect(zai()).catch((e) => e);
     await vi.advanceTimersByTimeAsync(30_001);
     expect(((await result) as DOMException).name).toBe("TimeoutError");
+  });
+});
+
+/** Eine Fehlerantwort, die erst nach `afterMs` kommt: spät genug, um viel Zeit zu kosten, früh genug für einen neuen Versuch. */
+function lateError(status: number, afterMs: number, headers: Record<string, string> = {}) {
+  return (_url: unknown, init: RequestInit) =>
+    new Promise<Response>((resolve, reject) => {
+      const timer = setTimeout(() => resolve(new Response("{}", { status, headers })), afterMs);
+      init.signal?.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(init.signal?.reason);
+        },
+        { once: true }
+      );
+    });
+}
+
+/** Ein stetiger Strom, der von sich aus nie endet. */
+const endless = (wire: Wire = openAiWire) =>
+  slowFetch(Array.from({ length: 60 }, () => ({ afterMs: 10_000, text: "x" })), false, wire);
+
+describe("Gesamtfrist je Zug (#404)", () => {
+  beforeEach(() => __resetServerBreakerForTests());
+
+  /** Läuft den Zug unter der künstlichen Uhr bis zum Ende und sagt, womit und nach wie vielen Millisekunden er endete. */
+  async function endOf(stream: AsyncGenerator<string>) {
+    const startedAt = Date.now();
+    const result = collect(stream).then(
+      () => ({ error: undefined, afterMs: Date.now() - startedAt }),
+      (error: unknown) => ({ error, afterMs: Date.now() - startedAt })
+    );
+    await vi.advanceTimersByTimeAsync(2 * maxDurationOf("chat"));
+    return result;
+  }
+
+  it.each([
+    // Zwei Fehler kurz vor der Frist für das erste Textstück, dann ein langsamer Strom: je Versuch gerechnet wäre
+    // erst nach rund 330 s (Z.ai) bzw. 390 s (eigener Endpunkt) Schluss.
+    ["Z.ai", zai, ZAI_FIRST_CHUNK_TIMEOUT_MS - 1000],
+    ["Custom-Slot", byok, CUSTOM_FIRST_CHUNK_TIMEOUT_MS - 5000],
+  ])("%s: zwei späte, wiederholbare Fehler und ein langer Strom enden vor maxDuration", async (_name, start, lateMs) => {
+    const fetchMock = vi
+      .fn(endless())
+      .mockImplementationOnce(lateError(502, lateMs))
+      .mockImplementationOnce(lateError(502, lateMs));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { error, afterMs } = await endOf(start());
+
+    expect((error as DOMException).name).toBe("TimeoutError");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(afterMs).toBe(STREAM_TOTAL_TIMEOUT_MS);
+    expect(afterMs).toBeLessThan(maxDurationOf("chat"));
+  });
+
+  it.each([
+    ["ohne Ausweich-Anbieter", ""],
+    ["auch nicht auf Gemini", "gemini-key"],
+  ])("läuft die Frist während der Wartezeit ab, folgt kein weiterer Versuch, %s", async (_name, geminiKey) => {
+    vi.stubEnv("GEMINI_API_KEY", geminiKey);
+    vi.stubEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", "30000");
+    const fetchMock = vi.fn(endless()).mockImplementationOnce(lateError(503, 29_000, { "retry-after": "3" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const providers: string[] = [];
+
+    const { error, afterMs } = await endOf(
+      chatCompleteStream({ system: "s", messages: message, onProvider: (p) => providers.push(p) })
+    );
+
+    expect((error as DOMException).name).toBe("TimeoutError");
+    expect(afterMs).toBe(30_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(providers).not.toContain("gemini");
+  });
+
+  it("gilt auch über den Wechsel auf Gemini hinweg", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "gemini-key");
+    const gemini = endless(geminiWire);
+    const zaiDown = lateError(503, ZAI_FIRST_CHUNK_TIMEOUT_MS - 1000);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: unknown, init: RequestInit) =>
+        String(url).includes("api.z.ai") ? zaiDown(url, init) : gemini(url, init)
+      )
+    );
+
+    const { error, afterMs } = await endOf(zai());
+
+    expect((error as DOMException).name).toBe("TimeoutError");
+    expect(gemini).toHaveBeenCalledTimes(1);
+    expect(afterMs).toBe(STREAM_TOTAL_TIMEOUT_MS);
+  });
+
+  it("zählt die Zeit seit Beginn der Anfrage: der Zug endet spätestens an der Obergrenze danach", async () => {
+    vi.stubGlobal("fetch", endless());
+
+    const { error, afterMs } = await endOf(
+      chatCompleteStream({ system: "s", messages: message, requestStartedAt: Date.now() - 40_000 })
+    );
+
+    expect((error as DOMException).name).toBe("TimeoutError");
+    expect(afterMs).toBe(STREAM_TOTAL_TIMEOUT_CEILING_MS - 40_000);
   });
 });

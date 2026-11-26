@@ -17,7 +17,8 @@ import type { LlmMessage } from "@/server/llm/types";
  * einen Fehler zu sehen. glm-4.5-air liefert das erste Textstück normalerweise in wenigen
  * Sekunden (Denken ist ausgeschaltet); 30 Sekunden sind großzügig genug für einen langen
  * Projektkontext oder ein Bild und kurz genug, dass ein toter Anbieter nicht die ganze
- * Wartezeit kostet. Danach gelten Leerlauf-Frist und Gesamtgrenze (streamDeadlines in http.ts).
+ * Wartezeit kostet. Danach gilt die Leerlauf-Frist (streamDeadlines in http.ts), die Gesamtgrenze
+ * zählt für den ganzen Zug (turnDeadline).
  */
 export const ZAI_FIRST_CHUNK_TIMEOUT_MS = 30_000;
 

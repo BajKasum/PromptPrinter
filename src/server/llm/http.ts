@@ -206,10 +206,12 @@ export const CUSTOM_FIRST_CHUNK_TIMEOUT_MS = 60_000;
 export const STREAM_IDLE_TIMEOUT_MS = 45_000;
 
 /**
- * Gesamtgrenze eines Stroms. Sie liegt deutlich unter maxDuration der Route (300 s), damit die
- * Route danach noch `error` senden, die Reservierungen zurückgeben und die Frage zurücknehmen
- * kann, statt vom Hosting hart beendet zu werden. Überschreibbar über LLM_STREAM_TOTAL_TIMEOUT_MS,
- * aber nie über STREAM_TOTAL_TIMEOUT_CEILING_MS.
+ * Gesamtgrenze eines Zugs, über alle Versuche, Wartezeiten und den Ausweich-Anbieter hinweg
+ * (turnDeadline). Sie liegt deutlich unter maxDuration der Route (300 s), damit die Route danach
+ * noch `error` senden, die Reservierungen zurückgeben und die Frage zurücknehmen kann, statt vom
+ * Hosting hart beendet zu werden. Überschreibbar über LLM_STREAM_TOTAL_TIMEOUT_MS, aber nie über
+ * STREAM_TOTAL_TIMEOUT_CEILING_MS. Gerechnet ab Beginn der Anfrage endet ein Zug spätestens nach
+ * der Obergrenze.
  */
 export const STREAM_TOTAL_TIMEOUT_MS = 270_000;
 export const STREAM_TOTAL_TIMEOUT_CEILING_MS = 285_000;
@@ -220,14 +222,35 @@ function msFromEnv(name: string, fallback: number): number {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 }
 
+const timedOut = (what: string, ms: number) => new DOMException(`${what} within ${ms} ms`, "TimeoutError");
+const joined = (signal: AbortSignal | undefined, own: AbortSignal) => (signal ? AbortSignal.any([signal, own]) : own);
+
 /**
- * Die Zeitgrenzen eines Stroms, ein Baustein für Z.ai und den Custom-Slot: eine Frist bis zum
- * ersten Textstück (`firstChunkMs`), danach eine Leerlauf-Frist, die mit jedem Textstück neu
- * startet, und eine Gesamtgrenze. Läuft eine ab, bricht `signal` mit einem TimeoutError ab, auch
- * mitten im Lesen des Bodys. Ein TimeoutError ist für llm-retry.ts kein "gleich nochmal" (jeder
- * Versuch kostete sonst wieder die ganze Frist), für llm-failover.ts aber genau der Fall, in dem
- * ein anderer Anbieter die richtige Antwort ist. Der Abbruch des Nutzers bleibt ein AbortError
- * und löst nichts davon aus.
+ * Die Gesamtfrist eines Zugs: einmal angelegt (llm/chat.ts) und an jeden Versuch weitergereicht,
+ * damit Wiederholungen die Grenze nicht jedes Mal neu bekommen. Ist sie abgelaufen, bricht `signal`
+ * mit einem TimeoutError ab, auch mitten in einer Wartezeit vor dem nächsten Versuch, und es folgt
+ * keiner mehr. `requestStartedAt` ist der Beginn der Anfrage an die Route: was davor verging, geht
+ * vom Spielraum bis zur Obergrenze ab. `stop()` räumt im `finally` ab.
+ */
+export function turnDeadline(signal: AbortSignal | undefined, requestStartedAt: number = Date.now()) {
+  const totalMs = Math.min(
+    msFromEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", STREAM_TOTAL_TIMEOUT_MS),
+    STREAM_TOTAL_TIMEOUT_CEILING_MS
+  );
+  const ms = Math.max(0, Math.min(totalMs, requestStartedAt + STREAM_TOTAL_TIMEOUT_CEILING_MS - Date.now()));
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(timedOut("stream not finished", ms)), ms);
+  return { signal: joined(signal, controller.signal), stop: () => clearTimeout(timer) };
+}
+
+/**
+ * Die Zeitgrenzen eines Versuchs, ein Baustein für alle Wege: eine Frist bis zum ersten
+ * Textstück (`firstChunkMs`), danach eine Leerlauf-Frist, die mit jedem Textstück neu startet.
+ * Die Gesamtgrenze kommt mit `signal` (turnDeadline). Läuft eine ab, bricht `signal` mit einem
+ * TimeoutError ab, auch mitten im Lesen des Bodys. Ein TimeoutError ist für llm-retry.ts kein
+ * "gleich nochmal" (jeder Versuch kostete sonst wieder die ganze Frist), für llm-failover.ts aber
+ * genau der Fall, in dem ein anderer Anbieter die richtige Antwort ist. Der Abbruch des Nutzers
+ * bleibt ein AbortError und löst nichts davon aus.
  *
  * Die Frist bis zum ersten Textstück läuft ab dem Aufruf. `received()` pausiert die Anbieter-Frist,
  * solange der Verbraucher ein Stück verarbeitet (sonst zählte seine Langsamkeit gegen den
@@ -236,29 +259,19 @@ function msFromEnv(name: string, fallback: number): number {
 export function streamDeadlines(signal: AbortSignal | undefined, firstChunkMs: number) {
   const controller = new AbortController();
   const idleMs = msFromEnv("LLM_STREAM_IDLE_TIMEOUT_MS", STREAM_IDLE_TIMEOUT_MS);
-  const totalMs = Math.min(
-    msFromEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", STREAM_TOTAL_TIMEOUT_MS),
-    STREAM_TOTAL_TIMEOUT_CEILING_MS
-  );
-  const expire = (what: string, ms: number) =>
-    controller.abort(new DOMException(`${what} within ${ms} ms`, "TimeoutError"));
 
   let phase: ReturnType<typeof setTimeout> | undefined;
   const arm = (what: string, ms: number) => {
     clearTimeout(phase);
-    phase = setTimeout(() => expire(what, ms), ms);
+    phase = setTimeout(() => controller.abort(timedOut(what, ms)), ms);
   };
   arm("no first chunk", firstChunkMs);
-  const total = setTimeout(() => expire("stream not finished", totalMs), totalMs);
 
   return {
-    signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
+    signal: joined(signal, controller.signal),
     received: () => clearTimeout(phase),
     awaiting: () => arm("no chunk", idleMs),
-    stop: () => {
-      clearTimeout(phase);
-      clearTimeout(total);
-    },
+    stop: () => clearTimeout(phase),
   };
 }
 

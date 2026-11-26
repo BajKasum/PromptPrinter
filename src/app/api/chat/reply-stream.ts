@@ -79,6 +79,8 @@ async function dropOldVersion(args: {
 
 type ReplyStreamArgs = {
   req: Request;
+  /** Beginn der Anfrage (Date.now()), für die Gesamtfrist des Zugs. */
+  requestStartedAt: number;
   supabase: SupabaseClient;
   userId: string;
   m: Messages["api"];
@@ -125,6 +127,7 @@ async function streamReply(args: ReplyStreamArgs, send: SseWriter["send"], progr
     messages: modelMessages,
     override: override ?? undefined,
     signal: req.signal,
+    requestStartedAt: args.requestStartedAt,
     onRetry: ({ failedAttempt, maxAttempts }) =>
       send("status", { phase: "retrying", attempt: failedAttempt + 1, maxAttempts }),
     onProvider: (provider) => {
