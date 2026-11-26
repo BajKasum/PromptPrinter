@@ -102,10 +102,14 @@ async function enforceProjectLimits(
   const { plan, isAdmin, limits } = resolvePlan(profileResult.data);
   const projectCount = countResult.count;
   if ((projectCount ?? 0) >= limits.projects) {
-    return problem(
-      403,
-      fmt(m.projectLimit, { plan, limit: limits.projects }),
-      { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
+    return denied(
+      "projects",
+      problem(
+        403,
+        fmt(m.projectLimit, { plan, limit: limits.projects }),
+        { kind: "projects", limit: limits.projects, current: projectCount ?? 0, plan }
+      ),
+      { userId, reason: "project_limit" }
     );
   }
 
