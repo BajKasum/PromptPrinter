@@ -53,7 +53,7 @@ Zielmodell des Workspace-Umbaus bleibt [REDESIGN.md](docs/REDESIGN.md).
   weicht bei einem Ausfall von Z.ai auf Gemini aus (nur mit beiden Server-Keys,
   Leistungsschalter in Redis, eigenes Tagesbudget; **bewusst aus**: es gibt keinen
   `GEMINI_API_KEY`, Entscheid 2026-10-15). Jeder Anbieter-Aufruf geht
-  durch diese Hüllen.
+  durch diese Hüllen. Jeder Zug hat eine Gesamtfrist über alle Versuche und den Failover (`turnDeadline`, 270 s, spätestens 285 s nach Beginn der Anfrage). Jeder Weg wertet den Abschlussgrund aus (`llm/finish.ts`): nicht zu Ende → `done.truncated` und „Gekürzt“ an der Antwort (nur in der laufenden Ansicht), Inhaltsfilter und gemeldete Fehler → wie ein Fehler.
 - **Auth:** Supabase. Die anonymen Aktionen (Anmelden, Registrieren, Reset) laufen
   über `/api/auth` mit serverseitiger Turnstile-Prüfung. **Supabases eigenes CAPTCHA bleibt aus** (ein Token ist
   einmal einlösbar), bis Kasum umschaltet: Schalter `AUTH_CAPTCHA_VIA_SUPABASE`, gebaut und aus (`docs/SETUP.md`, "Umschalten"). Reset und Bestätigung laufen über `/auth/callback` (`token_hash` + `type`,
@@ -251,7 +251,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 - **Keine rohen Hex-Farben** in Komponenten, nur semantische Token-Utilities (siehe
   [DESIGN.md](docs/DESIGN.md)).
 - **User-scoped Queries:** RLS scope + zusätzlich explizit `.eq("user_id", …)`
-  (Defense-in-depth), v. a. wo Counts Limits durchsetzen. Für die Seiten unter `src/app/(app)/` hält es `owner-scoped-reads.test.ts` je Abfrage fest.
+  (Defense-in-depth), v. a. wo Counts Limits durchsetzen. Für die Seiten unter `src/app/(app)/` hält es `owner-scoped-reads.test.ts` je Abfrage fest. **Nutzer auf App-Seiten:** `getSessionUser()` (`server/session.ts`), nie `auth.getUser()` (`app-pages-session.test.ts`).
 
 **Wenn du etwas hinzufügst, gehört dazu** (jeweils ein Test erzwingt es):
 
@@ -265,6 +265,7 @@ npm run audit:gate && npm run typecheck && npm run lint && npm run test && npm r
 | UI-Text | Wörterbuch `shared/i18n/messages/`, alle fünf Sprachen (fr/it/es sind nie von Muttersprachlern geprüft: im PR kennzeichnen) |
 | Migration | Policy und Grant mitliefern; jede an `authenticated` vergebene Funktion von `PUBLIC` entziehen (`migrations.test.ts`). Auf Produktion nur mit Kasums Ja; braucht der Code die Migration, erst sie, dann den Code |
 | Aufruf eines Modell-Anbieters | durch `src/server/llm/` (und damit Retry und Failover), nie ein SDK direkt |
+| Fehlermeldung zu einer Anfrage im Browser | `readProblem` und `failureText` aus `shared/lib/read-problem.ts`, nie `error.message` zeigen; Kopieren über `useCopyToClipboard` |
 | Zeile einer langen Liste (Chats, Projekte) mit Link | `HoverPrefetchLink` aus `shared/ui`, kein bloßes `<Link>` (`list-prefetch.test.ts`) |
 | Kommentar im Code, auch in Konfigurations- und Build-Dateien | sagt, was gilt und warum, **kein Verlauf** (der steht im Changelog, Ratsche `comment-history.test.ts`); Deutsch mit richtigen Umlauten; Pfade relativ zu `src/` (`comment-paths.test.ts`); beim Anfassen einer Datei angleichen, kein Großumbau (#139) |
 | Server-Key eines Anbieters (`GEMINI_API_KEY`) | vorher Datenschutz Ziffer 4 und 5 um ihn ergänzen (seit 2026-10-17 nennt der Text Google nicht mehr) |

@@ -711,6 +711,8 @@ Stattdessen ist die Sitzung beherrschbar:
 | Bearer nur für eingetragene Terminals | `api/chat/gate.ts` | Das Access-Token einer Browser-Sitzung gilt am Chat nicht als Terminal |
 | Protokoll | `security_events` | `cli.login_approved`, `cli.login_denied`, `cli.session_issued`, `cli.session_revoked` (`via`: `terminal`, `settings`, `max_age`) |
 
+Das Abmelden (`/api/cli/logout`) prüft das Token zuerst beim Auth-Server und liest `cli_sessions` erst danach; auch eine Sitzung über dem Höchstalter meldet sich so ab.
+
 Was das nicht leistet:
 
 - **Ein schon ausgestelltes Access-Token gilt an der Data API bis zu seinem Ablauf weiter, höchstens eine Stunde** (Access token expiry der Produktion, siehe "Sitzungs-Cookie"). Am Chat ist es sofort tot, denn `getUser()` fragt den Auth-Server. Ein signiertes Token lässt sich nicht zurückholen.
