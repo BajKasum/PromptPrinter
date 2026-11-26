@@ -1033,6 +1033,9 @@ Die CLI-Version ist dieselbe wie in `e2e.yml`, dort vergleicht ein Schritt die D
 `tests/guards/supabase-types.test.ts` verbietet `.maybeSingle<T>()` und Verwandte, weil sie den erkannten Zeilentyp ersetzen.
 Nicht geprüft sind zwei Stellen, die Tabelle und Spalten als Daten führen: `server/account-export.ts` und
 `accountsWithRows` in `server/activation-funnel.ts`; dort prüft der Typ nur den Tabellennamen.
+Eine neue Tabelle mit `user_id` braucht nach dem Neuschreiben einen Abschnitt im Datenexport oder einen Grund in
+`EXPORT_EXCLUDED_TABLES` (`server/account-export.ts`): `tests/guards/account-export-coverage.test.ts` liest die Tabellen
+aus dieser Datei und schlägt sonst an.
 
 ## Testabdeckung
 

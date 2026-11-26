@@ -3,36 +3,41 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/shared/supabase/database.types";
 import type { createClient } from "@/server/supabase/server";
+import type { CliSessionRow } from "@/server/cli-login/sessions";
 import { captureError } from "@/shared/lib/observability";
 import { zaiConsentOf } from "@/server/consent";
 
 // Der Datenexport des Kontos: alles, was zu einem Nutzer gehört, als eine
-// JSON-Datei (Betriebs-Audit 04.10.2026, Punkt "kein Datenexport zum
-// Selbstbedienen").
-//
-// Bis dahin ging "Herausgabe" der Daten nur per Mail an den Betreiber, mit bis
-// zu 30 Tagen Frist (Datenschutzerklärung). Das ist zulässig, aber ein Recht,
-// das man nur per Mail ausüben kann, übt kaum jemand aus, und der Betreiber
-// müsste jedes Mal von Hand exportieren.
+// JSON-Datei zum Selbstbedienen. Ein Recht, das man nur per Mail ausüben kann,
+// übt kaum jemand aus, und der Betreiber müsste jedes Mal von Hand exportieren.
 //
 // ─── Was drin ist, was nicht ──────────────────────────────────────────────
 // Drin: Konto, Projekte, Projektgedächtnis, Chats samt Nachrichten, gespeicherte
-// Prompts, Namen und Typen hochgeladener Dateien, Anbieter-Einträge der eigenen
-// API-Keys.
+// Prompts samt Verlauf und Freigaben per Link, Namen und Typen hochgeladener
+// Dateien, Anbieter-Einträge der eigenen API-Keys, angemeldete Terminals.
 // NICHT drin, mit Absicht:
 //   - API-Keys und Secrets. Weder im Klartext noch verschlüsselt: der Export
-//     soll gefahrlos aus dem Download-Ordner in eine Mail wandern können.
+//     soll gefahrlos aus dem Download-Ordner in eine Mail wandern können. Aus
+//     demselben Grund fehlen der Link-Code einer Freigabe (wer ihn hat, liest
+//     den Prompt) und die Kennung einer Terminal-Sitzung.
 //   - Die Inhalte hochgeladener Dateien (Projektdateien, Chat-Anhänge, Bilder).
 //     Sie liegen im Storage, nicht in der Datenbank; ein Export, der sie
 //     einbettete, würde zum 100-MB-Download. Die Datei trägt Namen, Typ und
 //     Grösse, der Nutzer hat die Originale selbst.
 //   - Interna des Betriebs: Admin-Kennzeichen, Kundennummern und Portal-Links
-//     des Zahlungsanbieters, Zähler, Ratenlimits, Protokolle.
+//     des Zahlungsanbieters, Zähler, Ratenlimits, Protokolle. Welche Tabelle mit
+//     user_id aus welchem Grund fehlt, steht in EXPORT_EXCLUDED_TABLES, und
+//     tests/guards/account-export-coverage.test.ts gleicht das mit den Tabellen
+//     in database.types.ts ab: eine neue Tabelle fällt auf, statt still zu fehlen.
 //
 // ─── Wie es abgesichert ist ───────────────────────────────────────────────
 // 1. Alles läuft mit dem Client des angemeldeten Nutzers (RLS) UND mit einem
 //    ausdrücklichen `.eq("user_id", …)`. Kein Service-Role-Zugriff: der Export
-//    kann nicht mehr sehen, als der Nutzer selbst sehen darf.
+//    kann nicht mehr sehen, als der Nutzer selbst sehen darf. Die eine Ausnahme
+//    sind die Terminals: cli_sessions liest nur der Server (Migration 0054), die
+//    Route holt sie deshalb über dieselbe Funktion wie die Einstellungen
+//    (server/cli-login/sessions.ts) und reicht sie herein, mit der Kennung aus
+//    der geprüften Sitzung.
 // 2. Jeder Abschnitt hat eine feste Positivliste von Spalten und eine ebenso
 //    feste Zuordnung auf Feldnamen. Es gibt kein `select *` und kein Durchreichen
 //    unbekannter Felder: kommt in einer Migration eine sensible Spalte dazu,
@@ -43,6 +48,7 @@ import { zaiConsentOf } from "@/server/consent";
 
 type UserClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 type Row = Record<string, unknown>;
+type TableName = keyof Database["public"]["Tables"];
 
 export const EXPORT_VERSION = 1;
 /** PostgREST kappt eine Antwort bei 1000 Zeilen (max-rows), also seitenweise. */
@@ -51,7 +57,7 @@ export const EXPORT_PAGE_SIZE = 1000;
 type Section = {
   /** Schlüssel in der JSON-Datei. */
   key: string;
-  table: keyof Database["public"]["Tables"];
+  table: TableName;
   /** Positivliste der Spalten, genau diese und nie `*`. */
   columns: string;
   /** Feste Gesamtordnung, sonst verschieben sich Seiten zwischen zwei Abfragen. */
@@ -182,6 +188,18 @@ export const EXPORT_SECTIONS: readonly Section[] = [
     }),
   },
   {
+    // Welche gespeicherten Prompts unter /geteilt/<token> öffentlich stehen, und seit wann. Ohne das Token: es ist der
+    // Schlüssel zum Link, eine weitergeleitete Datei gäbe sonst den Prompt frei. Den Link zeigt die App am Prompt.
+    key: "promptShares",
+    table: "prompt_shares",
+    columns: "prompt_id, created_at",
+    orderBy: ["created_at", "prompt_id"],
+    map: (r) => ({
+      promptId: r.prompt_id,
+      createdAt: r.created_at,
+    }),
+  },
+  {
     key: "apiKeys",
     table: "user_api_keys",
     // encrypted_key steht nicht in der Liste und der Nutzer-Client darf die
@@ -199,6 +217,35 @@ export const EXPORT_SECTIONS: readonly Section[] = [
     }),
   },
 ];
+
+/**
+ * Die angemeldeten Terminals (Tabelle cli_sessions). Die Route liest sie über listCliSessions, dieselbe Liste, die die
+ * Einstellungen zeigen; hier wird nur abgebildet, ohne die Kennung der Sitzung. Abgemeldete und abgelaufene Terminals
+ * stehen nicht darin: mit der Sitzung verschwindet ihr Eintrag.
+ */
+export const TERMINAL_SESSIONS_SECTION = {
+  key: "terminalSessions",
+  table: "cli_sessions",
+  map: (row: CliSessionRow): Row => ({
+    clientName: row.clientName,
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt,
+    expiresAt: row.expiresAt,
+  }),
+} as const satisfies { key: string; table: TableName; map: (row: CliSessionRow) => Row };
+
+/**
+ * Die Tabellen mit user_id, die der Export mit Absicht auslässt, je mit Grund. Jede andere ist ein Abschnitt des
+ * Exports; tests/guards/account-export-coverage.test.ts hält beides gegen database.types.ts vollständig.
+ */
+export const EXPORT_EXCLUDED_TABLES: Readonly<Partial<Record<TableName, string>>> = {
+  billing_events: "Was der frühere Zahlungsanbieter per Webhook gemeldet hat: ein Protokoll des Betriebs.",
+  cli_device_requests:
+    "Anmeldeanfragen von Terminals: sie leben höchstens einen Tag über ihren Ablauf hinaus und tragen den Hash des Gerätecodes.",
+  mfa_recovery_codes: "Die Wiederherstellungscodes des zweiten Faktors: ein Geheimnis, auch als Hash.",
+  security_events:
+    "Das Sicherheitsprotokoll (Datenschutz, Ziffer 2): ein Protokoll des Betriebs, nur mit der Kennung des Kontos.",
+};
 
 type AuthUser = { id: string; email?: string | null; created_at?: string | null; app_metadata?: unknown };
 
@@ -264,21 +311,27 @@ async function* rowsOf(
   }
 }
 
+/** Ein Abschnitt als JSON-Array, eine Zeile je Eintrag. */
+async function* arrayChunks(key: string, rows: AsyncIterable<Row> | Iterable<Row>): AsyncGenerator<string> {
+  yield `,\n${JSON.stringify(key)}:[`;
+  let first = true;
+  for await (const row of rows) {
+    yield `${first ? "\n" : ",\n"}${JSON.stringify(row)}`;
+    first = false;
+  }
+  yield first ? "]" : "\n]";
+}
+
 async function* exportChunks(options: ExportOptions): AsyncGenerator<string> {
-  const { supabase, userId, account, note, now = new Date(), pageSize = EXPORT_PAGE_SIZE } = options;
+  const { supabase, userId, account, note, terminalSessions, now = new Date(), pageSize = EXPORT_PAGE_SIZE } = options;
 
   yield `{"exportVersion":${EXPORT_VERSION},"exportedAt":${JSON.stringify(now.toISOString())},`;
   yield `\n"note":${JSON.stringify(note)},\n"account":${JSON.stringify(account)}`;
 
   for (const section of EXPORT_SECTIONS) {
-    yield `,\n${JSON.stringify(section.key)}:[`;
-    let first = true;
-    for await (const row of rowsOf(supabase, userId, section, pageSize)) {
-      yield `${first ? "\n" : ",\n"}${JSON.stringify(row)}`;
-      first = false;
-    }
-    yield first ? "]" : "\n]";
+    yield* arrayChunks(section.key, rowsOf(supabase, userId, section, pageSize));
   }
+  yield* arrayChunks(TERMINAL_SESSIONS_SECTION.key, terminalSessions.map(TERMINAL_SESSIONS_SECTION.map));
 
   yield "\n}\n";
 }
@@ -288,6 +341,8 @@ export type ExportOptions = {
   supabase: UserClient;
   userId: string;
   account: Row;
+  /** Die Terminals dieses Kontos, wie listCliSessions sie liefert (die Tabelle liest nur der Server). */
+  terminalSessions: readonly CliSessionRow[];
   /** Der erklärende Satz in der Datei, in der Sprache der App. */
   note: string;
   now?: Date;

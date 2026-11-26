@@ -70,6 +70,7 @@ function options(client: never, extra: Record<string, unknown> = {}) {
     userId: USER,
     account,
     note: "Hinweis",
+    terminalSessions: [],
     now: new Date("2026-10-04T12:00:00Z"),
     ...extra,
   };
@@ -89,6 +90,47 @@ describe("accountExportStream", () => {
     expect(json.note).toBe("Hinweis");
     expect(json.account).toEqual(account);
     for (const section of EXPORT_SECTIONS) expect(json[section.key]).toEqual([]);
+    expect(json.terminalSessions).toEqual([]);
+  });
+
+  it("nennt die Freigaben per Link mit Prompt und Zeitpunkt, ohne den Link-Code", async () => {
+    const TOKEN = "AbCdEfGhIjKlMnOpQrStUvWxYz012345";
+    const { client, queries } = fakeClient({
+      prompt_shares: [
+        { token: TOKEN, prompt_id: "g1", user_id: USER, created_at: "2026-11-20T08:00:00Z" },
+        { token: "FremdFremdFremdFremdFremdFremd12", prompt_id: "g9", user_id: OTHER, created_at: "t9" },
+      ],
+    });
+    const text = await readAll(accountExportStream(options(client)));
+
+    expect(JSON.parse(text).promptShares).toEqual([{ promptId: "g1", createdAt: "2026-11-20T08:00:00Z" }]);
+    expect(text).not.toContain(TOKEN);
+    expect(text).not.toContain("g9");
+    expect(queries.find((q) => q.table === "prompt_shares")?.orders).toEqual(["created_at", "prompt_id"]);
+  });
+
+  it("nennt die angemeldeten Terminals mit Namen und Zeiten, ohne die Kennung ihrer Sitzung", async () => {
+    const { client } = fakeClient({});
+    const terminalSessions = [
+      {
+        id: "sitzung-GEHEIM",
+        clientName: "pp auf laptop",
+        createdAt: "2026-11-01T10:00:00Z",
+        lastUsedAt: "2026-11-25T18:00:00Z",
+        expiresAt: "2026-12-01T10:00:00Z",
+      },
+    ];
+    const text = await readAll(accountExportStream(options(client, { terminalSessions })));
+
+    expect(JSON.parse(text).terminalSessions).toEqual([
+      {
+        clientName: "pp auf laptop",
+        createdAt: "2026-11-01T10:00:00Z",
+        lastUsedAt: "2026-11-25T18:00:00Z",
+        expiresAt: "2026-12-01T10:00:00Z",
+      },
+    ]);
+    expect(text).not.toContain("sitzung-GEHEIM");
   });
 
   it("nimmt die Zeilen des Nutzers auf und ordnet sie den Abschnitten zu", async () => {
@@ -145,13 +187,13 @@ describe("accountExportStream", () => {
     }
   });
 
-  it("fragt nur die Positivliste der Spalten, nie `*`, und nie encrypted_key", async () => {
+  it("fragt nur die Positivliste der Spalten, nie `*`, und nie Schlüssel, Speicherpfade oder Link-Codes", async () => {
     const { client, queries } = fakeClient({});
     await readAll(accountExportStream(options(client)));
 
     for (const query of queries) {
       expect(query.columns, query.table).not.toContain("*");
-      expect(query.columns, query.table).not.toMatch(/encrypted_key|storage_path/);
+      expect(query.columns, query.table).not.toMatch(/encrypted_key|storage_path|token|session_id|hash/);
     }
   });
 

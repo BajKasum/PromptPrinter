@@ -9,6 +9,7 @@ import {
   exportFilename,
 } from "@/server/account-export";
 import { requestT } from "@/server/i18n";
+import { listCliSessions, type CliSessionRow } from "@/server/cli-login/sessions";
 import { captureError, logEvent } from "@/shared/lib/observability";
 
 export const runtime = "nodejs";
@@ -17,9 +18,8 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 /**
- * Alle Daten des angemeldeten Kontos als JSON-Download (Betriebs-Audit
- * 04.10.2026). Was drin ist und warum nicht mehr, steht in
- * src/server/account-export.ts.
+ * Alle Daten des angemeldeten Kontos als JSON-Download. Was drin ist und warum
+ * nicht mehr, steht in server/account-export.ts.
  *
  * GET statt POST, mit Absicht: der Knopf in den Einstellungen ist ein
  * gewöhnlicher Link mit `download`, den der Browser selbst als Datei ablegt
@@ -69,6 +69,18 @@ export async function GET(req: Request) {
     }
   }
 
+  // Die Terminals liest nur der Server (cli_sessions hat kein Recht für den
+  // Nutzer-Client). Dieselbe Funktion wie in den Einstellungen, mit der Kennung
+  // aus der geprüften Sitzung: der Export sieht nicht mehr, als die Person dort
+  // sieht. Wenige Zeilen, deshalb vorab, und scheitert es, gibt es keine Datei.
+  let terminalSessions: CliSessionRow[];
+  try {
+    terminalSessions = await listCliSessions(user.id);
+  } catch (error) {
+    captureError("account.export_terminals_failed", error, { userId: user.id });
+    return problem(503, m.accountExportFailed);
+  }
+
   const now = new Date();
   logEvent("account.export", { userId: user.id });
 
@@ -77,6 +89,7 @@ export async function GET(req: Request) {
     userId: user.id,
     account: buildAccountSection(user, profile),
     note: m.accountExportNote,
+    terminalSessions,
     now,
   });
 
