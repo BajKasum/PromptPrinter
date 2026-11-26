@@ -593,6 +593,117 @@ describe("Stopp, wenn der Strom schon geschlossen ist und nur noch geschrieben w
 
 // #416: die Route kam nicht dazu, den Zug mit `done` oder `error` abzuschliessen (Zeitgrenze der Plattform, ein
 // Proxy schliesst die Verbindung sauber). Der Strom ist danach einfach zu; der Zug darf so nicht hängen bleiben.
+describe("abgeschnittene Antwort (done.truncated, #403)", () => {
+  const FINISHED = "Fertig, dein Prompt ist startklar.";
+  const ADVICE = "Erzeuge sie neu oder bitte mich um eine kürzere Fassung.";
+  const reply = (text: string, done: Record<string, unknown>) => ({
+    ok: true,
+    body: streamOf([frame("delta", { text }), frame("done", done)]),
+    json: async () => ({}),
+  });
+  const live = (container: HTMLElement) => container.querySelector("[aria-live='polite']");
+
+  async function ask(user: ReturnType<typeof userEvent.setup>, text: string) {
+    await user.type(screen.getByRole("textbox"), text);
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+  }
+
+  it("zeigt den Hinweis an der Antwort, sagt ihn an und feiert nicht; nach einer weiteren Frage bleibt er ohne Rat", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(reply("Ein halber Prompt", { conversationId: "c", assistantMessageId: "t-1", truncated: true }))
+        .mockResolvedValueOnce(reply("Die ganze Antwort", { conversationId: "c", assistantMessageId: "t-2" }))
+    );
+    const { container } = render(<Chat initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await ask(user, "Lang bitte");
+    const note = await screen.findByTestId("truncated-note");
+    expect(note).toHaveTextContent("Gekürzt: Diese Antwort ist nicht zu Ende geschrieben.");
+    expect(note).toHaveTextContent(ADVICE);
+    expect(screen.queryByText(FINISHED)).not.toBeInTheDocument();
+    expect(live(container)).toHaveTextContent("Gekürzt: Diese Antwort ist nicht zu Ende geschrieben.");
+
+    await ask(user, "Kürzer");
+    await waitFor(() => expect(screen.getByText(FINISHED)).toBeInTheDocument());
+    // Die ältere Antwort behält den Hinweis, ohne "Neu erzeugen": das gilt nur für die neueste.
+    expect(screen.getByTestId("truncated-note")).toHaveTextContent("Gekürzt");
+    expect(screen.getByTestId("truncated-note")).not.toHaveTextContent(ADVICE);
+    // Über die Leitung geht die Markierung nicht.
+    for (const message of sentBody(1).messages) expect(message).not.toHaveProperty("truncated");
+  });
+
+  it("Neu erzeugen ersetzt die gekürzte Antwort, der Hinweis ist weg", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(reply("Halb", { conversationId: "c", assistantMessageId: "r-1", truncated: true }))
+        .mockResolvedValueOnce(reply("Ganz", { conversationId: "c", assistantMessageId: "r-2" }))
+    );
+    render(<Chat initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await ask(user, "Hi");
+    await screen.findByTestId("truncated-note");
+    await user.click(screen.getByRole("button", { name: /Neu erzeugen/ }));
+
+    await waitFor(() => expect(screen.getByText(FINISHED)).toBeInTheDocument());
+    expect(screen.queryByTestId("truncated-note")).not.toBeInTheDocument();
+  });
+
+  it("bleibt, wenn der erste Zug eines neuen Chats auf seine Adresse wechselt und den Chat neu aufbaut", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(reply("Halber Plan", { conversationId: "conv-t", assistantMessageId: A2, truncated: true }))
+    );
+    const first = render(<Chat />);
+    const user = userEvent.setup();
+    await ask(user, "Plan");
+    expect(replace).toHaveBeenCalledWith("/chats/conv-t", { scroll: false });
+    first.unmount();
+
+    // So baut /chats/[id] den Chat neu auf: mit dem Verlauf aus der Datenbank, ohne Spalte für den Hinweis.
+    render(
+      <Chat
+        initialConversationId="conv-t"
+        initialMessages={[
+          { id: U2, role: "user", content: "Plan" },
+          { id: A2, role: "assistant", content: "Halber Plan" },
+        ]}
+      />
+    );
+
+    expect(screen.getByTestId("truncated-note")).toHaveTextContent(ADVICE);
+  });
+
+  it("steht auch da, wenn die Antwort nicht gespeichert werden konnte", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(reply("Halb", { conversationId: "c", persistError: "persist_failed", truncated: true }))
+    );
+    render(<Chat initialConversationId="c" />);
+
+    await ask(userEvent.setup(), "Hi");
+
+    expect(await screen.findByTestId("truncated-note")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("nicht gespeichert");
+  });
+
+  it("ohne truncated gibt es keinen Hinweis", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply("Fertig", { conversationId: "c", assistantMessageId: "ok-1" })));
+    render(<Chat initialConversationId="c" />);
+
+    await ask(userEvent.setup(), "Hi");
+
+    await waitFor(() => expect(screen.getByText(FINISHED)).toBeInTheDocument());
+    expect(screen.queryByTestId("truncated-note")).not.toBeInTheDocument();
+  });
+});
+
 describe("Strom, der ohne done und ohne error endet (#416)", () => {
   const cutOff = (frames: string[]) => ({ ok: true, body: streamOf(frames), json: async () => ({}) });
 

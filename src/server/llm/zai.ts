@@ -17,7 +17,8 @@ import type { LlmMessage } from "@/server/llm/types";
  * einen Fehler zu sehen. glm-4.5-air liefert das erste Textstück normalerweise in wenigen
  * Sekunden (Denken ist ausgeschaltet); 30 Sekunden sind großzügig genug für einen langen
  * Projektkontext oder ein Bild und kurz genug, dass ein toter Anbieter nicht die ganze
- * Wartezeit kostet. Danach gelten Leerlauf-Frist und Gesamtgrenze (streamDeadlines in http.ts).
+ * Wartezeit kostet. Danach gilt die Leerlauf-Frist (streamDeadlines in http.ts), die Gesamtgrenze
+ * zählt für den ganzen Zug (turnDeadline).
  */
 export const ZAI_FIRST_CHUNK_TIMEOUT_MS = 30_000;
 
@@ -26,7 +27,8 @@ export async function* zaiCompleteStream(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onTruncated?: () => void
 ): AsyncGenerator<string> {
   const guard = streamDeadlines(signal, ZAI_FIRST_CHUNK_TIMEOUT_MS);
   try {
@@ -53,7 +55,13 @@ export async function* zaiCompleteStream(
     if (!res.ok) await throwProviderError("Z.ai", res, { rawFallbackChars: 300 });
     if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
 
-    for await (const chunk of readOpenAiCompatibleSse(res.body, undefined, { reasoning: "drop" })) {
+    const events = readOpenAiCompatibleSse(res.body, undefined, {
+      reasoning: "drop",
+      label: "Z.ai",
+      requireFinishReason: true,
+      onTruncated,
+    });
+    for await (const chunk of events) {
       guard.received();
       yield chunk;
       guard.awaiting();

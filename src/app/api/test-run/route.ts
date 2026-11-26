@@ -34,6 +34,8 @@ export const maxDuration = 300;
  * Gratis-Tagesbudget. Nur mit Sitzung im Browser (Cookie), kein Bearer.
  */
 export async function POST(req: Request): Promise<Response> {
+  // Für die Gesamtfrist des Zugs (server/llm/http.ts, turnDeadline).
+  const requestStartedAt = Date.now();
   const m = requestT(req).t.api;
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
@@ -92,6 +94,7 @@ export async function POST(req: Request): Promise<Response> {
       maxOutputTokens: override ? TEST_RUN_MAX_OUTPUT_TOKENS_BYOK : TEST_RUN_MAX_OUTPUT_TOKENS,
       override: override ?? undefined,
       signal: req.signal,
+      requestStartedAt,
     })) {
       reply += chunk;
     }

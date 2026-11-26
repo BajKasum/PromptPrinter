@@ -1,5 +1,6 @@
 import type { Dispatch } from "react";
 import { StreamProtocolError } from "@/features/chat/lib/chat-wire";
+import { rememberTruncated } from "@/features/chat/lib/truncated-replies";
 import type { TurnAction } from "@/features/chat/lib/turn-state";
 import type { ChatStreamEvent } from "@/shared/lib/chat-stream";
 
@@ -16,6 +17,8 @@ export type TurnEventDeps = {
   mounted: Ref<boolean>;
   /** Die echte Zeilen-ID der Antwort, sobald `done` sie nennt; commitReply liest sie ab (K-2). */
   pendingAssistantId: Ref<string | null>;
+  /** `done` meldet die Antwort als nicht zu Ende; commitReply liest es ab. */
+  pendingTruncated: Ref<boolean>;
   /** Die Konversation bei Beginn dieses Zugs, `initialConversationId` des Chats und sein Projekt. */
   conversationId: string | undefined;
   initialConversationId: string | undefined;
@@ -67,11 +70,16 @@ export function createTurnEventHandler(deps: TurnEventDeps) {
   }
 
   function onDone(data: Extract<ChatStreamEvent, { event: "done" }>["data"]) {
-    const { conversationId: newId, assistantMessageId, persistError, freePromptsLeft } = data;
+    const { conversationId: newId, assistantMessageId, persistError, freePromptsLeft, truncated } = data;
     if (freePromptsLeft !== undefined) dispatch({ type: "freePromptsUpdated", left: freePromptsLeft });
     // K-2: commitReply liest diese ID ab statt eine eigene zu erfinden. Nur gesetzt, wenn die Antwort auch in der
     // Datenbank steht, sonst gäbe es eine ID, die dropReplacedReply nie fände.
     if (assistantMessageId && !persistError) deps.pendingAssistantId.current = assistantMessageId;
+    if (truncated) {
+      deps.pendingTruncated.current = true;
+      // Vor der Navigation unten: der neu aufgebaute Chat zeigt den Hinweis wieder.
+      if (assistantMessageId) rememberTruncated(assistantMessageId);
+    }
     // Es kommt kein Text mehr; das Schreiben holt auf und committet die Nachricht aus seinem eigenen Rückruf.
     dispatch({ type: "completed", text: accumulated });
     // Normalerweise schon durch `meta` erledigt, bleibt als Rückfall für ein verpasstes Ereignis.

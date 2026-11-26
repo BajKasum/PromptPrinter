@@ -2,6 +2,7 @@ import "server-only";
 
 import OpenAI from "openai";
 import { SDK_NO_RETRY } from "@/server/llm/config";
+import { cutOffByReason, openAiFinish } from "@/server/llm/finish";
 import { toOpenAiSdkMessages } from "@/server/llm/messages";
 import {
   LlmEmptyReplyError,
@@ -14,6 +15,11 @@ import {
 // OpenAI: nur BYOK. (Teil von src/server/llm/, siehe index.ts)
 
 // ─── OpenAI (BYOK only, never the server's own provider) ───────────────────
+
+/** Wirft bei Inhaltsfilter und Fehler (finish.ts); eine abgeschnittene Antwort bleibt. */
+function ensureNotStopped(reason: string | null | undefined): void {
+  if (reason) cutOffByReason(openAiFinish(reason), "OpenAI", reason);
+}
 
 export async function openaiComplete(
   model: string,
@@ -28,6 +34,7 @@ export async function openaiComplete(
     messages: toOpenAiSdkMessages(system, messages),
     max_completion_tokens: maxOutputTokens,
   });
+  ensureNotStopped(res.choices[0]?.finish_reason);
 
   const text = res.choices[0]?.message?.content?.trim() ?? "";
   if (!text) throw new LlmEmptyReplyError("OpenAI");
@@ -45,7 +52,8 @@ export async function* openaiCompleteStream(
   messages: LlmMessage[],
   maxOutputTokens: number,
   apiKey: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onTruncated?: () => void
 ): AsyncGenerator<string> {
   const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const stream = await client.chat.completions.create(
@@ -57,10 +65,16 @@ export async function* openaiCompleteStream(
     },
     { signal }
   );
+  // Endet der Strom ohne Abschlussgrund, ist die Antwort nicht zu Ende.
+  let cutOff = true;
   for await (const chunk of stream) {
-    const text = chunk.choices[0]?.delta?.content;
+    const choice = chunk.choices[0];
+    const text = choice?.delta?.content;
     if (text) yield text;
+    const reason = choice?.finish_reason;
+    if (reason) cutOff = cutOffByReason(openAiFinish(reason), "OpenAI", reason);
   }
+  if (cutOff) onTruncated?.();
 }
 
 export async function openaiAnalyze(
@@ -96,6 +110,7 @@ export async function openaiAnalyze(
     },
     { signal }
   );
+  ensureNotStopped(res.choices[0]?.finish_reason);
 
   const reply = res.choices[0]?.message?.content?.trim() ?? "";
   if (!reply) throw new LlmEmptyReplyError("OpenAI");

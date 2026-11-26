@@ -103,6 +103,8 @@ export const fr: Messages = {
     connectionDropped:
       "La connexion a été coupée au milieu de la réponse. Recharge la page, la réponse est peut-être déjà enregistrée.",
     streamEnded: "La connexion a été coupée avant qu'une réponse n'arrive. Réessaie.",
+    truncated: "Réponse tronquée : elle n'est pas terminée.",
+    truncatedAdvice: "Régénère-la ou demande-moi une version plus courte.",
     statusWriting: "Finn écrit…",
     statusRevealing: "Rédaction de la réponse…",
     statusDone: "Réponse terminée.",

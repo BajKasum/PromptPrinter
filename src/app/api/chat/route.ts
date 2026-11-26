@@ -19,6 +19,8 @@ export const maxDuration = 300;
 // Die Reihenfolge ist Vertrag, und jeder Ausstieg nach der ersten Reservierung gibt sie zurueck:
 // route.exits.test.ts haelt beides fest.
 export async function POST(req: Request) {
+  // Für die Gesamtfrist des Zugs: was die Schritte vor dem Modell dauern, zählt gegen maxDuration mit.
+  const requestStartedAt = Date.now();
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
   const { t, locale } = requestT(req);
   const m = t.api;
@@ -63,6 +65,7 @@ export async function POST(req: Request) {
 
   const stream = replyStream({
     req,
+    requestStartedAt,
     supabase,
     userId,
     m,

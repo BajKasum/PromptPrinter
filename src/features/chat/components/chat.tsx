@@ -126,13 +126,16 @@ export function Chat({
   // it finished — two discrete events, not the reply streaming in character by
   // character. The text itself stays readable at the user's own pace in the log
   // above (QA finding A-1).
+  // Eine abgeschnittene Antwort meldet sich mit ihrem Hinweis statt mit "fertig".
   const liveStatus = loading
     ? t.chat.statusWriting
     : pending !== null
       ? t.chat.statusRevealing
       : justFinished
         ? t.chat.statusDone
-        : "";
+        : messages.at(-1)?.truncated
+          ? t.chat.truncated
+          : "";
 
   return (
     <div className="flex flex-col gap-5">

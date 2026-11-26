@@ -102,6 +102,8 @@ export const it: Messages = {
     connectionDropped:
       "La connessione si è interrotta a metà della risposta. Ricarica la pagina, la risposta potrebbe essere già salvata.",
     streamEnded: "La connessione si è interrotta prima che arrivasse una risposta. Riprova.",
+    truncated: "Risposta troncata: non è completa.",
+    truncatedAdvice: "Rigenerala o chiedimi una versione più breve.",
     statusWriting: "Finn sta scrivendo…",
     statusRevealing: "Sto scrivendo la risposta…",
     statusDone: "Risposta completata.",

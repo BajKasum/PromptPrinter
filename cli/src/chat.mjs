@@ -74,7 +74,10 @@ export async function runTurn({ auth, api, conversation, text, onDelta, onStatus
       } else if (parsed.event === "done") {
         if (parsed.data.conversationId) conversation.id = parsed.data.conversationId;
         conversation.commit(text, reply);
-        return { kind: "done", text: reply, persistError: parsed.data.persistError ?? null };
+        // Die Antwort ist nicht zu Ende (Ausgabegrenze oder ohne Abschluss des Anbieters): der Aufrufer sagt es.
+        const truncated = parsed.data.truncated === true;
+        const persistError = parsed.data.persistError ?? null;
+        return { kind: "done", text: reply, persistError, ...(truncated ? { truncated } : {}) };
       }
     }
     return { kind: "dropped", text: reply };

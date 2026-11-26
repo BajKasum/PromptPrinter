@@ -52,6 +52,31 @@ export class LlmEmptyReplyError extends Error {
 }
 
 /**
+ * Der Inhaltsfilter des Anbieters hat die Anfrage abgelehnt oder die Antwort gestoppt (finish.ts). Geht wie jeder
+ * Fehler: nichts wird gespeichert oder berechnet. Nie wiederholt und kein Fall für den Ausweich-Anbieter.
+ */
+export class LlmBlockedError extends Error {
+  constructor(provider: string, reason: string) {
+    super(`${provider} blocked the reply (${reason})`);
+    this.name = "LlmBlockedError";
+  }
+}
+
+/**
+ * Der Anbieter meldet in einer Antwort mit Status 200 selbst einen Fehler: ein `error` im Strom oder ein
+ * Abschlussgrund, der einen Abbruch nennt. Ein `status` (wenn der Anbieter einen nennt) entscheidet wie bei einer
+ * HTTP-Antwort über Wiederholung, Failover und die Meldung an den Nutzer.
+ */
+export class LlmReportedError extends Error {
+  readonly status?: number;
+  constructor(provider: string, detail: string, status?: number) {
+    super(`${provider} reported an error: ${detail}`);
+    this.name = "LlmReportedError";
+    this.status = status;
+  }
+}
+
+/**
  * A small, user-facing bucket for whatever chatComplete/chatCompleteStream
  * threw. QA finding U-4: /api/chat used to embed `err.message` straight into
  * the client-visible detail — raw English provider text carrying the model
@@ -63,7 +88,8 @@ export class LlmEmptyReplyError extends Error {
 export type LlmFailure = "rate_limited" | "auth" | "unavailable" | "empty" | "unknown";
 
 export function classifyLlmFailure(err: unknown): LlmFailure {
-  if (err instanceof LlmEmptyReplyError) return "empty";
+  // Gefiltert heisst für den Nutzer dasselbe wie leer: keine Antwort, anders formuliert klappt es womöglich.
+  if (err instanceof LlmEmptyReplyError || err instanceof LlmBlockedError) return "empty";
   const status = extractStatusCode(err);
   if (status === 429) return "rate_limited";
   if (status === 401 || status === 403) return "auth";

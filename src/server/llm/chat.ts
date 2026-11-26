@@ -21,15 +21,19 @@ import { geminiComplete, geminiCompleteStream } from "@/server/llm/gemini";
 import { openaiComplete, openaiCompleteStream } from "@/server/llm/openai";
 import type { LlmMessage, LlmOverride, LlmResult } from "@/server/llm/types";
 import { zaiCompleteStream } from "@/server/llm/zai";
-import { streamDeadlines } from "@/server/llm/http";
+import { streamDeadlines, turnDeadline } from "@/server/llm/http";
 
 /**
- * Die Ströme der SDKs (Anthropic, OpenAI, Gemini per BYOK) bekommen dieselben Fristen wie Z.ai und Custom: erstes Stück,
- * Leerlauf und Gesamtdauer (streamDeadlines). Sonst hinge ein Anbieter, der nichts mehr schickt, bis Vercel abbricht,
- * und kein catch gäbe die Reservierungen zurück. Die Frist bis zum ersten Stück ist grosszügig, denkende Modelle
- * schweigen anfangs länger.
+ * Die Ströme der SDKs (Anthropic, OpenAI, Gemini, ob per eigenem Key oder auf dem Server-Key) bekommen dieselben Fristen
+ * wie Z.ai und Custom: erstes Stück und Leerlauf (streamDeadlines), dazu die Gesamtfrist des Zugs (turnDeadline). Sonst
+ * hinge ein Anbieter, der nichts mehr schickt, bis Vercel abbricht, und kein catch gäbe die Reservierungen zurück. Die
+ * Frist bis zum ersten Stück ist grosszügig, denkende Modelle schweigen anfangs länger.
+ *
+ * Ein Abbruch kommt immer mit dem Grund des Signals an (TimeoutError der Frist, AbortError des Nutzers), nicht mit dem,
+ * was der SDK daraus macht: Gemini wirft einen AbortError, Anthropic und OpenAI beenden den Strom sogar ohne Fehler, und
+ * der halbe Text gälte als fertige Antwort.
  */
-const SDK_FIRST_CHUNK_TIMEOUT_MS = 90_000;
+export const SDK_FIRST_CHUNK_TIMEOUT_MS = 90_000;
 
 async function* withDeadlines(
   signal: AbortSignal | undefined,
@@ -42,6 +46,10 @@ async function* withDeadlines(
       yield chunk;
       guard.awaiting();
     }
+    guard.signal.throwIfAborted();
+  } catch (err) {
+    guard.signal.throwIfAborted();
+    throw err;
   } finally {
     guard.stop();
   }
@@ -117,6 +125,10 @@ async function chatCompleteOnce(opts: {
  * stopping generation client-side stops the upstream provider call too, not
  * just the delivery to the browser, /api/chat passes its own Request's
  * signal straight through.
+ *
+ * Ein Zug hat eine einzige Gesamtfrist (turnDeadline in http.ts): sie gilt
+ * für alle Versuche, die Wartezeiten dazwischen und den Ausweich-Anbieter,
+ * damit nichts davon maxDuration der Route erreicht.
  */
 export async function* chatCompleteStream(opts: {
   system: string;
@@ -136,24 +148,41 @@ export async function* chatCompleteStream(opts: {
    * der Zug wirklich lief, fuer das Log. Nie bei einem BYOK-Aufruf.
    */
   onProvider?: (provider: ServerProvider) => void;
+  /**
+   * Wann die Anfrage an die Route begann (Date.now()): die Gesamtfrist zählt
+   * dann nur noch, was bis zur Obergrenze übrig ist. Ohne Angabe jetzt.
+   */
+  requestStartedAt?: number;
+  /**
+   * Wird am Ende eines Stroms gerufen, dessen Antwort nicht zu Ende ist: an
+   * der Ausgabegrenze abgeschnitten oder ohne Abschluss des Anbieters beendet
+   * (finish.ts). Ein Inhaltsfilter oder ein gemeldeter Fehler wirft.
+   */
+  onTruncated?: () => void;
 }): AsyncGenerator<string> {
-  if (!opts.override && failoverEnabled()) {
-    yield* streamWithFailover(
-      (serverProvider) =>
-        retryStream(() => chatCompleteStreamOnce({ ...opts, serverProvider }), {
-          signal: opts.signal,
-          onRetry: opts.onRetry,
-          label: providerLabel(undefined, serverProvider),
-        }),
-      { signal: opts.signal, onProvider: opts.onProvider }
-    );
-    return;
+  const deadline = turnDeadline(opts.signal, opts.requestStartedAt);
+  const attempt = { ...opts, signal: deadline.signal };
+  try {
+    if (!opts.override && failoverEnabled()) {
+      yield* streamWithFailover(
+        (serverProvider) =>
+          retryStream(() => chatCompleteStreamOnce({ ...attempt, serverProvider }), {
+            signal: deadline.signal,
+            onRetry: opts.onRetry,
+            label: providerLabel(undefined, serverProvider),
+          }),
+        { signal: deadline.signal, onProvider: opts.onProvider }
+      );
+      return;
+    }
+    yield* retryStream(() => chatCompleteStreamOnce(attempt), {
+      signal: deadline.signal,
+      onRetry: opts.onRetry,
+      label: providerLabel(opts.override),
+    });
+  } finally {
+    deadline.stop();
   }
-  yield* retryStream(() => chatCompleteStreamOnce(opts), {
-    signal: opts.signal,
-    onRetry: opts.onRetry,
-    label: providerLabel(opts.override),
-  });
 }
 
 async function* chatCompleteStreamOnce(opts: {
@@ -163,6 +192,7 @@ async function* chatCompleteStreamOnce(opts: {
   override?: LlmOverride;
   signal?: AbortSignal;
   serverProvider?: ServerProvider;
+  onTruncated?: () => void;
 }): AsyncGenerator<string> {
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
 
@@ -170,13 +200,29 @@ async function* chatCompleteStreamOnce(opts: {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
       yield* withDeadlines(opts.signal, (signal) =>
-        anthropicCompleteStream(anthropicModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
+        anthropicCompleteStream(
+          anthropicModel(),
+          opts.system,
+          opts.messages,
+          maxOutputTokens,
+          apiKey,
+          signal,
+          opts.onTruncated
+        )
       );
       return;
     }
     if (provider === "openai") {
       yield* withDeadlines(opts.signal, (signal) =>
-        openaiCompleteStream(openaiModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
+        openaiCompleteStream(
+          openaiModel(),
+          opts.system,
+          opts.messages,
+          maxOutputTokens,
+          apiKey,
+          signal,
+          opts.onTruncated
+        )
       );
       return;
     }
@@ -188,12 +234,22 @@ async function* chatCompleteStreamOnce(opts: {
         opts.messages,
         maxOutputTokens,
         apiKey,
-        opts.signal
+        opts.signal,
+        "byok",
+        opts.onTruncated
       );
       return;
     }
     yield* withDeadlines(opts.signal, (signal) =>
-      geminiCompleteStream(geminiByokModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
+      geminiCompleteStream(
+        geminiByokModel(),
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey,
+        signal,
+        opts.onTruncated
+      )
     );
     return;
   }
@@ -207,7 +263,8 @@ async function* chatCompleteStreamOnce(opts: {
       opts.system,
       opts.messages,
       maxOutputTokens,
-      opts.signal
+      opts.signal,
+      opts.onTruncated
     );
     return;
   }
@@ -220,16 +277,20 @@ async function* chatCompleteStreamOnce(opts: {
       maxOutputTokens,
       endpointApiKey(),
       opts.signal,
-      "server"
+      "server",
+      opts.onTruncated
     );
     return;
   }
-  yield* geminiCompleteStream(
-    config.model,
-    opts.system,
-    opts.messages,
-    maxOutputTokens,
-    geminiApiKey() ?? "",
-    opts.signal
+  yield* withDeadlines(opts.signal, (signal) =>
+    geminiCompleteStream(
+      config.model,
+      opts.system,
+      opts.messages,
+      maxOutputTokens,
+      geminiApiKey() ?? "",
+      signal,
+      opts.onTruncated
+    )
   );
 }

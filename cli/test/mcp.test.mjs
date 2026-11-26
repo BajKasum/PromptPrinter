@@ -116,6 +116,24 @@ test("create_prompt: Rückfrage mit conversation_id, Antwort darauf mit Verlauf,
   assert.equal(chats().length, 2);
 });
 
+test("create_prompt: eine abgeschnittene Antwort sagt das in Text und Daten", async () => {
+  stub.state.chat.push({ raw: [sse("delta", { text: "```text\nHalber Prompt\n```" }), sse("done", { truncated: true })] });
+  stub.state.chat.push({ raw: [sse("delta", { text: "Wer liest" }), sse("done", { truncated: true })] });
+  stub.state.chat.push(turn(["Ganz?"]));
+  const { legacy, call } = await server();
+  await legacy();
+
+  for (const status of ["prompt", "question"]) {
+    const cut = await call("create_prompt", { idea: "x" });
+    assert.equal(cut.result.structuredContent.status, status);
+    assert.equal(cut.result.structuredContent.truncated, true);
+    assert.match(cut.result.content[0].text, /Die Antwort ist gekürzt/);
+  }
+  const whole = await call("create_prompt", { idea: "x" });
+  assert.equal(whole.result.structuredContent.truncated, undefined);
+  assert.doesNotMatch(whole.result.content[0].text, /gekürzt/);
+});
+
 test("Werkzeuge ohne Anmeldung: klarer Werkzeugfehler, keine Anfrage, keine Anmeldung im MCP-Modus", async () => {
   const { legacy, call } = await server({ signedIn: false });
   await legacy();

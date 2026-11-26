@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { StreamProtocolError } from "@/features/chat/lib/chat-wire";
 import type { ChatStreamEvent } from "@/shared/lib/chat-stream";
 import { createTurnEventHandler, type TurnEventDeps } from "./turn-events";
+import { withTruncatedMarks } from "./truncated-replies";
 import type { TurnAction } from "./turn-state";
 
 // Was die Ereignisse des Stroms im Zustand eines Zugs bewirken, ohne DOM (#212). Die Oberfläche darüber
@@ -15,6 +16,7 @@ function setup(overrides: Partial<TurnEventDeps> = {}) {
     router,
     mounted: { current: true },
     pendingAssistantId: { current: null },
+    pendingTruncated: { current: false },
     conversationId: undefined,
     initialConversationId: undefined,
     projectId: undefined,
@@ -139,6 +141,26 @@ describe("done", () => {
     handler.handle(ev("done", {}));
     expect(actions).toEqual([{ type: "completed", text: "" }]);
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("truncated merkt sich die Antwort vor der Navigation, auch für den neu aufgebauten Chat (#403)", () => {
+    const { handler, router, deps } = setup();
+    let markedAtNavigation: unknown;
+    router.replace.mockImplementation(() => {
+      markedAtNavigation = withTruncatedMarks([{ id: "a-trunc", role: "assistant", content: "x" }]);
+    });
+    handler.handle(ev("done", { ...done, assistantMessageId: "a-trunc", truncated: true }));
+    expect(deps.pendingTruncated.current).toBe(true);
+    expect(markedAtNavigation).toEqual([{ id: "a-trunc", role: "assistant", content: "x", truncated: true }]);
+  });
+
+  it("ohne truncated bleibt die Antwort unmarkiert", () => {
+    const { handler, deps } = setup();
+    handler.handle(ev("done", { ...done, assistantMessageId: "a-full", truncated: false }));
+    expect(deps.pendingTruncated.current).toBe(false);
+    expect(withTruncatedMarks([{ id: "a-full", role: "assistant", content: "x" }])).toEqual([
+      { id: "a-full", role: "assistant", content: "x" },
+    ]);
   });
 });
 

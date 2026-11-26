@@ -2,7 +2,8 @@ import "server-only";
 
 import { optionalEnv } from "@/server/env-value";
 import { parseRetryAfter } from "@/server/llm-retry";
-import { LlmEmptyReplyError, type LlmResult } from "@/server/llm/types";
+import { cutOffByReason, openAiFinish } from "@/server/llm/finish";
+import { LlmEmptyReplyError, LlmReportedError, type LlmResult } from "@/server/llm/types";
 import { captureError } from "@/shared/lib/observability";
 
 // Geteilt von den fetch-Wegen (Z.ai, Custom-Slot, Analyse): Fehler, Zeitlimit, Größengrenze,
@@ -25,10 +26,38 @@ export function providerHttpError(label: string, res: Response, detail: string):
 export type OpenAiCompatibleResponse = {
   choices?: {
     message?: { content?: string; reasoning_content?: string };
+    finish_reason?: string | null;
   }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number };
   error?: { message?: string };
 };
+
+/** Ein `finish_reason`, den ein fremder Server als etwas anderes als Text schickt, zählt wie keiner. */
+const textReason = (reason: unknown): string | undefined => (typeof reason === "string" && reason ? reason : undefined);
+
+/** Länger geht keine Fehlermeldung eines Anbieters in einen Fehler (und damit ins Log). */
+const MAX_REPORTED_ERROR_CHARS = 300;
+
+/** Ein Status wie bei HTTP, als Zahl oder Ziffernfolge; die Fehlercodes mancher Anbieter ("1305") sind keiner. */
+function httpStatus(value: unknown): number | undefined {
+  const status = typeof value === "number" || typeof value === "string" ? Number(value) : NaN;
+  return Number.isInteger(status) && status >= 400 && status < 600 ? status : undefined;
+}
+
+/**
+ * Der Fehler, den ein Anbieter in einer Antwort mit Status 200 selbst meldet (`error` oder `object: "error"`). Wie bei
+ * einer HTTP-Fehlerantwort geht nur die geparste Meldung weiter, nie der rohe Rahmen.
+ */
+function reportedError(label: string, error: unknown): LlmReportedError {
+  const info = (typeof error === "string" ? { message: error } : (error ?? {})) as {
+    message?: unknown;
+    code?: unknown;
+    status?: unknown;
+  };
+  const message =
+    typeof info.message === "string" ? info.message.slice(0, MAX_REPORTED_ERROR_CHARS) : "ohne lesbare Meldung";
+  return new LlmReportedError(label, message, httpStatus(info.code) ?? httpStatus(info.status));
+}
 
 /**
  * Liest eine nicht erfolgreiche Antwort eines fetch-Wegs und wirft den Fehler dazu. Nur eine
@@ -70,13 +99,18 @@ export type ReasoningUse = "fallback" | "drop";
 /**
  * Text und Verbrauch aus einer erfolgreichen, nicht gestreamten Antwort. `content` ist die
  * eigentliche Antwort, `reasoning_content` springt nur ein, wenn sonst nichts da ist. Verbrauch
- * gibt es nur, wenn der Anbieter beide Zahlen liefert.
+ * gibt es nur, wenn der Anbieter beide Zahlen liefert. Ein gemeldeter Fehler oder ein
+ * Abschlussgrund, mit dem der Anbieter die Antwort gestoppt hat, wirft (finish.ts); eine
+ * abgeschnittene Antwort bleibt, wie sie ist.
  */
 export function readCompletion(
   json: OpenAiCompatibleResponse,
   label: string,
   opts: { reasoning?: ReasoningUse } = {}
 ): LlmResult {
+  if (json.error) throw reportedError(label, json.error);
+  const reason = textReason(json.choices?.[0]?.finish_reason);
+  if (reason) cutOffByReason(openAiFinish(reason), label, reason);
   const message = json.choices?.[0]?.message;
   const reasoning = opts.reasoning === "drop" ? "" : message?.reasoning_content?.trim();
   const text = (message?.content?.trim() || reasoning) ?? "";
@@ -93,7 +127,19 @@ export function readCompletion(
 }
 
 type OpenAiStreamChunk = {
-  choices?: { delta?: { content?: string; reasoning_content?: string } }[];
+  choices?: { delta?: { content?: string; reasoning_content?: string }; finish_reason?: string | null }[];
+  error?: unknown;
+  object?: unknown;
+};
+
+export type SseOptions = {
+  reasoning?: ReasoningUse;
+  /** Der Anbieter in Fehlermeldungen. */
+  label?: string;
+  /** Auch nach `[DONE]` gilt die Antwort ohne Abschlussgrund als nicht zu Ende (Z.ai nennt immer einen). */
+  requireFinishReason?: boolean;
+  /** Der Strom endete, die Antwort ist aber nicht zu Ende: an einer Grenze abgeschnitten oder ohne Abschluss. */
+  onTruncated?: () => void;
 };
 
 /**
@@ -109,16 +155,26 @@ type OpenAiStreamChunk = {
  * actually called, well after module init), harmless for zaiCompleteStream
  * (Z.ai's own max_tokens already keeps it far under this in practice), a real
  * bound for customCompleteStream's user-supplied endpoint.
+ *
+ * Ein gemeldeter Fehler (`error`, `object: "error"`, ein Rahmen `event: error`) und ein Abschlussgrund, mit dem der
+ * Anbieter die Antwort gestoppt hat (finish.ts), werfen. Fertig ist eine Antwort mit Abschlussgrund oder, ohne ihn,
+ * mit `[DONE]`: manche eigene Server nennen keinen. Schliesst die Verbindung ohne beides, ist sie nicht zu Ende.
  */
 export async function* readOpenAiCompatibleSse(
   body: ReadableStream<Uint8Array>,
   maxBytes: number = MAX_RESPONSE_BYTES,
-  opts: { reasoning?: ReasoningUse } = {}
+  opts: SseOptions = {}
 ): AsyncGenerator<string> {
+  const label = opts.label ?? "Anbieter";
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let total = 0;
+  /** Der Abschlussgrund, sobald einer kam: abgeschnitten (true) oder fertig (false). */
+  let cutOff: boolean | undefined;
+  const settle = (sawDone: boolean) => {
+    if (cutOff ?? (!sawDone || opts.requireFinishReason)) opts.onTruncated?.();
+  };
   try {
     while (true) {
       const { done, value } = await reader.read();
@@ -140,29 +196,40 @@ export async function* readOpenAiCompatibleSse(
       while ((sep = buffer.indexOf("\n\n")) !== -1) {
         const frame = buffer.slice(0, sep);
         buffer = buffer.slice(sep + 2);
+        const errorEvent = /^event:[ \t]*error[ \t]*$/m.test(frame);
         for (const line of frame.split("\n")) {
           const trimmed = line.trim();
           if (!trimmed.startsWith("data:")) continue;
           const data = trimmed.slice(5).trim();
-          if (data === "[DONE]") return;
-          let parsed: OpenAiStreamChunk;
+          if (data === "[DONE]") {
+            settle(true);
+            return;
+          }
+          let parsed: unknown;
           try {
             parsed = JSON.parse(data);
           } catch {
+            if (errorEvent) throw reportedError(label, undefined);
             continue;
           }
-          const delta = parsed.choices?.[0]?.delta;
+          const chunk = (parsed ?? {}) as OpenAiStreamChunk;
+          if (errorEvent || chunk.error || chunk.object === "error") throw reportedError(label, chunk.error ?? chunk);
+          const choice = chunk.choices?.[0];
           // Same last-resort fallback as the non-streaming reply: content is
           // the real answer, reasoning_content only stands in when a chunk
           // carries nothing else (thinking is off for Z.ai, so this should
           // rarely fire there; a BYOK custom endpoint controls its own
           // thinking flag, so it's kept here too for parity).
-          const text = delta?.content || (opts.reasoning === "drop" ? "" : delta?.reasoning_content) || "";
+          const text =
+            choice?.delta?.content || (opts.reasoning === "drop" ? "" : choice?.delta?.reasoning_content) || "";
           if (text) yield text;
+          const reason = textReason(choice?.finish_reason);
+          if (reason) cutOff = cutOffByReason(openAiFinish(reason), label, reason);
         }
       }
       if (done) break;
     }
+    settle(false);
   } finally {
     await reader.cancel().catch(() => {});
     reader.releaseLock();
@@ -206,10 +273,12 @@ export const CUSTOM_FIRST_CHUNK_TIMEOUT_MS = 60_000;
 export const STREAM_IDLE_TIMEOUT_MS = 45_000;
 
 /**
- * Gesamtgrenze eines Stroms. Sie liegt deutlich unter maxDuration der Route (300 s), damit die
- * Route danach noch `error` senden, die Reservierungen zurückgeben und die Frage zurücknehmen
- * kann, statt vom Hosting hart beendet zu werden. Überschreibbar über LLM_STREAM_TOTAL_TIMEOUT_MS,
- * aber nie über STREAM_TOTAL_TIMEOUT_CEILING_MS.
+ * Gesamtgrenze eines Zugs, über alle Versuche, Wartezeiten und den Ausweich-Anbieter hinweg
+ * (turnDeadline). Sie liegt deutlich unter maxDuration der Route (300 s), damit die Route danach
+ * noch `error` senden, die Reservierungen zurückgeben und die Frage zurücknehmen kann, statt vom
+ * Hosting hart beendet zu werden. Überschreibbar über LLM_STREAM_TOTAL_TIMEOUT_MS, aber nie über
+ * STREAM_TOTAL_TIMEOUT_CEILING_MS. Gerechnet ab Beginn der Anfrage endet ein Zug spätestens nach
+ * der Obergrenze.
  */
 export const STREAM_TOTAL_TIMEOUT_MS = 270_000;
 export const STREAM_TOTAL_TIMEOUT_CEILING_MS = 285_000;
@@ -220,14 +289,35 @@ function msFromEnv(name: string, fallback: number): number {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 }
 
+const timedOut = (what: string, ms: number) => new DOMException(`${what} within ${ms} ms`, "TimeoutError");
+const joined = (signal: AbortSignal | undefined, own: AbortSignal) => (signal ? AbortSignal.any([signal, own]) : own);
+
 /**
- * Die Zeitgrenzen eines Stroms, ein Baustein für Z.ai und den Custom-Slot: eine Frist bis zum
- * ersten Textstück (`firstChunkMs`), danach eine Leerlauf-Frist, die mit jedem Textstück neu
- * startet, und eine Gesamtgrenze. Läuft eine ab, bricht `signal` mit einem TimeoutError ab, auch
- * mitten im Lesen des Bodys. Ein TimeoutError ist für llm-retry.ts kein "gleich nochmal" (jeder
- * Versuch kostete sonst wieder die ganze Frist), für llm-failover.ts aber genau der Fall, in dem
- * ein anderer Anbieter die richtige Antwort ist. Der Abbruch des Nutzers bleibt ein AbortError
- * und löst nichts davon aus.
+ * Die Gesamtfrist eines Zugs: einmal angelegt (llm/chat.ts) und an jeden Versuch weitergereicht,
+ * damit Wiederholungen die Grenze nicht jedes Mal neu bekommen. Ist sie abgelaufen, bricht `signal`
+ * mit einem TimeoutError ab, auch mitten in einer Wartezeit vor dem nächsten Versuch, und es folgt
+ * keiner mehr. `requestStartedAt` ist der Beginn der Anfrage an die Route: was davor verging, geht
+ * vom Spielraum bis zur Obergrenze ab. `stop()` räumt im `finally` ab.
+ */
+export function turnDeadline(signal: AbortSignal | undefined, requestStartedAt: number = Date.now()) {
+  const totalMs = Math.min(
+    msFromEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", STREAM_TOTAL_TIMEOUT_MS),
+    STREAM_TOTAL_TIMEOUT_CEILING_MS
+  );
+  const ms = Math.max(0, Math.min(totalMs, requestStartedAt + STREAM_TOTAL_TIMEOUT_CEILING_MS - Date.now()));
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(timedOut("stream not finished", ms)), ms);
+  return { signal: joined(signal, controller.signal), stop: () => clearTimeout(timer) };
+}
+
+/**
+ * Die Zeitgrenzen eines Versuchs, ein Baustein für alle Wege: eine Frist bis zum ersten
+ * Textstück (`firstChunkMs`), danach eine Leerlauf-Frist, die mit jedem Textstück neu startet.
+ * Die Gesamtgrenze kommt mit `signal` (turnDeadline). Läuft eine ab, bricht `signal` mit einem
+ * TimeoutError ab, auch mitten im Lesen des Bodys. Ein TimeoutError ist für llm-retry.ts kein
+ * "gleich nochmal" (jeder Versuch kostete sonst wieder die ganze Frist), für llm-failover.ts aber
+ * genau der Fall, in dem ein anderer Anbieter die richtige Antwort ist. Der Abbruch des Nutzers
+ * bleibt ein AbortError und löst nichts davon aus.
  *
  * Die Frist bis zum ersten Textstück läuft ab dem Aufruf. `received()` pausiert die Anbieter-Frist,
  * solange der Verbraucher ein Stück verarbeitet (sonst zählte seine Langsamkeit gegen den
@@ -236,29 +326,19 @@ function msFromEnv(name: string, fallback: number): number {
 export function streamDeadlines(signal: AbortSignal | undefined, firstChunkMs: number) {
   const controller = new AbortController();
   const idleMs = msFromEnv("LLM_STREAM_IDLE_TIMEOUT_MS", STREAM_IDLE_TIMEOUT_MS);
-  const totalMs = Math.min(
-    msFromEnv("LLM_STREAM_TOTAL_TIMEOUT_MS", STREAM_TOTAL_TIMEOUT_MS),
-    STREAM_TOTAL_TIMEOUT_CEILING_MS
-  );
-  const expire = (what: string, ms: number) =>
-    controller.abort(new DOMException(`${what} within ${ms} ms`, "TimeoutError"));
 
   let phase: ReturnType<typeof setTimeout> | undefined;
   const arm = (what: string, ms: number) => {
     clearTimeout(phase);
-    phase = setTimeout(() => expire(what, ms), ms);
+    phase = setTimeout(() => controller.abort(timedOut(what, ms)), ms);
   };
   arm("no first chunk", firstChunkMs);
-  const total = setTimeout(() => expire("stream not finished", totalMs), totalMs);
 
   return {
-    signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
+    signal: joined(signal, controller.signal),
     received: () => clearTimeout(phase),
     awaiting: () => arm("no chunk", idleMs),
-    stop: () => {
-      clearTimeout(phase);
-      clearTimeout(total);
-    },
+    stop: () => clearTimeout(phase),
   };
 }
 
