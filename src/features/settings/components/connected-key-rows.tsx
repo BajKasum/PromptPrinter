@@ -10,6 +10,7 @@ import type { CustomProviderMeta } from "@/shared/lib/byok-types";
 import { NAMED_PROVIDER_META, type NamedByokProvider } from "@/shared/lib/byok-detect";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
+import { failureText, readProblem } from "@/shared/lib/read-problem";
 
 // Die Zeilen der schon verbundenen Anbieter aus api-keys.tsx (Dateigröße, Betriebs-Audit
 // Folgesitzung 2026-10-07): unverändert verschoben, nur exportiert.
@@ -42,16 +43,13 @@ export function ConnectedProviderRow({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ provider }),
       });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.detail ?? t.settings.keys.activateFailed);
-      }
+      if (!res.ok) throw await readProblem(res, t.settings.keys.activateFailed);
       toast({ title: fmt(t.settings.keys.activated, { name: meta.name }), variant: "success" });
       router.refresh();
     } catch (err) {
       toast({
         title: t.settings.keys.activateFailedTitle,
-        description: err instanceof Error ? err.message : t.common.unknownError,
+        description: failureText(err, { network: t.common.networkError, fallback: t.settings.keys.activateFailed }),
         variant: "error",
       });
     } finally {
@@ -66,16 +64,13 @@ export function ConnectedProviderRow({
       const res = await fetch(`/api/settings/api-key?provider=${provider}`, {
         method: "DELETE",
       });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.detail ?? t.settings.keys.removeFailed);
-      }
+      if (!res.ok) throw await readProblem(res, t.settings.keys.removeFailed);
       toast({ title: fmt(t.settings.keys.removed, { name: meta.name }), variant: "success" });
       router.refresh();
     } catch (err) {
       toast({
         title: t.settings.keys.removeFailedTitle,
-        description: err instanceof Error ? err.message : t.common.unknownError,
+        description: failureText(err, { network: t.common.networkError, fallback: t.settings.keys.removeFailed }),
         variant: "error",
       });
     } finally {
@@ -144,16 +139,13 @@ export function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
     setBusy(true);
     try {
       const res = await fetch("/api/settings/api-key?provider=custom", { method: "DELETE" });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.detail ?? t.settings.keys.removeFailed);
-      }
+      if (!res.ok) throw await readProblem(res, t.settings.keys.removeFailed);
       toast({ title: t.settings.keys.removedPlain, variant: "success" });
       router.refresh();
     } catch (err) {
       toast({
         title: t.settings.keys.removeFailedTitle,
-        description: err instanceof Error ? err.message : t.common.unknownError,
+        description: failureText(err, { network: t.common.networkError, fallback: t.settings.keys.removeFailed }),
         variant: "error",
       });
     } finally {

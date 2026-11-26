@@ -19,7 +19,8 @@ const EMAIL = "anna@example.test";
 const originalLocation = window.location;
 
 function response(status: number, body: unknown) {
-  return { ok: status < 400, status, json: async () => body } as Response;
+  const type = status < 400 ? "application/json" : "application/problem+json";
+  return { ok: status < 400, status, headers: new Headers({ "content-type": type }), json: async () => body } as Response;
 }
 
 async function openAndConfirm() {
@@ -103,6 +104,21 @@ describe("DeleteAccount: andere Antworten", () => {
     await waitFor(() => expect(toast).toHaveBeenCalled());
     expect(toast.mock.calls[0][0]).toMatchObject({ variant: "error", description: "Verboten." });
     expect(within(dialog).queryByRole("alert")).not.toBeInTheDocument();
+    expect(within(dialog).getByPlaceholderText(EMAIL)).toBeInTheDocument();
+  });
+
+  const gatewayTimeout = () =>
+    Promise.resolve(new Response("<!DOCTYPE html><h1>504</h1>", { status: 504, headers: { "content-type": "text/html" } }));
+
+  it.each([
+    ["ein 504 mit HTML-Seite", gatewayTimeout, de.settings.tryAgain],
+    ["kein Netz", () => Promise.reject(new TypeError("Failed to fetch")), de.common.networkError],
+  ])("bei %s zeigt der Toast einen Satz aus dem Wörterbuch, nicht die Meldung des Browsers", async (_name, answer, text) => {
+    fetchMock.mockImplementation(answer);
+    const { dialog } = await openAndConfirm();
+
+    await waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(toast).toHaveBeenCalledWith({ title: de.settings.deleteAccount.failed, description: text, variant: "error" });
     expect(within(dialog).getByPlaceholderText(EMAIL)).toBeInTheDocument();
   });
 

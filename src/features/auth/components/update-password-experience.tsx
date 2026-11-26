@@ -14,17 +14,27 @@ import {
   weakPasswordMessage,
   weakPasswordReason,
 } from "@/shared/lib/password";
+import { UNKNOWN_AUTH_ERROR } from "@/shared/lib/auth-errors";
+import { failureText } from "@/shared/lib/read-problem";
 
-function translatePasswordError(message: string): string {
-  const m = message.toLowerCase();
+const NETWORK_ERROR = "Keine Verbindung zum Server. Bitte prüf deine Verbindung und versuch es erneut.";
+
+// Nur bekannte Fehler bekommen ihren eigenen Satz. Alles andere ist Wortlaut von Supabase oder des Browsers: englisch
+// und nicht für Menschen geschrieben, deshalb steht dort der allgemeine Satz.
+function translatePasswordError(error: { message: string; status?: number }): string {
+  // Ohne Verbindung meldet Supabase Status 0 und den Satz des Browsers ("Failed to fetch").
+  if (error.status === 0) return NETWORK_ERROR;
+  const m = error.message.toLowerCase();
   if (m.includes("different from the old") || m.includes("should be different"))
     return "Das neue Passwort muss sich vom alten unterscheiden.";
   if (m.includes("password should be"))
     return `Passwort zu schwach (mindestens ${MIN_PASSWORD_LENGTH} Zeichen).`;
+  if (m.includes("known to be weak")) return "Dieses Passwort ist zu schwach. Bitte wähle ein anderes.";
+  if (m.includes("longer than 72")) return "Das Passwort ist zu lang, höchstens 72 Zeichen.";
   if (m.includes("rate limit")) return "Zu viele Versuche, bitte kurz warten.";
   if (m.includes("session") || m.includes("expired") || m.includes("jwt"))
     return "Die Sitzung ist abgelaufen. Fordere den Link bitte erneut an.";
-  return message;
+  return UNKNOWN_AUTH_ERROR;
 }
 
 /**
@@ -76,12 +86,12 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
       const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({ password: next });
       if (updateError) {
-        setError(translatePasswordError(updateError.message));
+        setError(translatePasswordError(updateError));
         return;
       }
       setCelebrate(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler.");
+      setError(failureText(err, { network: NETWORK_ERROR, fallback: UNKNOWN_AUTH_ERROR }));
     } finally {
       setLoading(false);
     }

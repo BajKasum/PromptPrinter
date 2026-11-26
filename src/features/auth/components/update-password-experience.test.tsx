@@ -105,6 +105,45 @@ describe("UpdatePasswordExperience", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("muss sich vom alten unterscheiden");
   });
 
+  // #408: nur bekannte Fehler bekommen ihren Satz, der Wortlaut von Supabase und Browser erscheint nie.
+  const HTML_PARSE_ERROR = 'Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON';
+
+  it.each([
+    [
+      "ohne Verbindung (Status 0, so meldet es Supabase)",
+      { message: "Failed to fetch", name: "AuthRetryableFetchError", status: 0 },
+      "Keine Verbindung zum Server",
+    ],
+    ["bei einem 504", { message: "Gateway Timeout", name: "AuthRetryableFetchError", status: 504 }, "Das hat gerade nicht geklappt"],
+    ["bei einer HTML-Antwort", { message: HTML_PARSE_ERROR, name: "AuthUnknownError" }, "Das hat gerade nicht geklappt"],
+    ["bei einem unbekannten Fehler", { message: "Database error querying schema", status: 500 }, "Das hat gerade nicht geklappt"],
+    [
+      "bei einem als schwach bekannten Passwort",
+      { message: "Password is known to be weak and easy to guess, please choose a different one.", status: 422 },
+      "Dieses Passwort ist zu schwach",
+    ],
+    ["bei einem zu langen Passwort", { message: "Password cannot be longer than 72 characters", status: 400 }, "höchstens 72 Zeichen"],
+  ])("zeigt %s einen deutschen Satz", async (_name, updateError, expected) => {
+    updateUser.mockResolvedValue({ error: updateError });
+    render(<UpdatePasswordExperience email="user@example.com" />);
+    await fillAndSubmit("Fensterbank-77x", "Fensterbank-77x");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(expected);
+    expect(screen.getByRole("alert")).not.toHaveTextContent(updateError.message);
+  });
+
+  it.each([
+    ["einem TypeError", new TypeError("Failed to fetch"), "Keine Verbindung zum Server"],
+    ["etwas anderem", new Error("boom"), "Das hat gerade nicht geklappt"],
+  ])("zeigt auch bei %s, das geworfen wird, nur den deutschen Satz", async (_name, thrown, expected) => {
+    updateUser.mockRejectedValue(thrown);
+    render(<UpdatePasswordExperience email="user@example.com" />);
+    await fillAndSubmit("Fensterbank-77x", "Fensterbank-77x");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(expected);
+    expect(screen.getByRole("alert")).not.toHaveTextContent(thrown.message);
+  });
+
   it("celebrates and redirects to /chats/new on success", async () => {
     updateUser.mockResolvedValue({ error: null });
     render(<UpdatePasswordExperience email="user@example.com" />);

@@ -11,7 +11,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/shared/ui/toast", () => ({ useToast: () => ({ toast }) }));
 
 function jsonResponse(body: unknown, status = 200) {
-  return { ok: status < 400, status, json: async () => body } as Response;
+  const type = status < 400 ? "application/json" : "application/problem+json";
+  return { ok: status < 400, status, headers: new Headers({ "content-type": type }), json: async () => body } as Response;
 }
 
 // Nutzerwunsch (2026-09-06): kein Anbieter-Dropdown mehr, nur ein Feld — der
@@ -127,6 +128,35 @@ describe("ApiKeys", () => {
     );
     expect(screen.getByText("Z.ai")).toBeInTheDocument();
     expect(screen.queryByText(/Anderer Anbieter/)).not.toBeInTheDocument();
+  });
+
+  const html = (status: number) => () =>
+    Promise.resolve(new Response("<!DOCTYPE html>", { status, headers: { "content-type": "text/html" } }));
+
+  it.each([
+    ["ein 504 mit HTML-Seite", html(504), "Key konnte nicht gespeichert werden."],
+    ["ein 200 mit HTML-Seite", html(200), "Key konnte nicht gespeichert werden."],
+    ["kein Netz", () => Promise.reject(new TypeError("Failed to fetch")), "Netzwerkfehler, bitte versuch es erneut."],
+  ])("eigener Endpunkt: bei %s steht im Toast ein Satz aus dem Wörterbuch, das Formular bleibt", async (_name, answer, text) => {
+    fetchMock.mockImplementation(answer);
+    render(<ApiKeys configured={[]} active={null} customProvider={null} />);
+    const user = userEvent.setup();
+    const fill = async (field: HTMLElement, value: string) => {
+      await user.click(field);
+      await user.paste(value);
+    };
+
+    await user.click(screen.getByText(/Anderer Anbieter/));
+    await fill(screen.getByPlaceholderText("Name (z. B. Z.ai)"), "Z.ai");
+    await fill(screen.getByPlaceholderText("Modell (z. B. glm-4.6)"), "glm-4.6");
+    await fill(screen.getByPlaceholderText(/API-Endpoint/), "https://api.z.ai/v4");
+    await fill(screen.getByPlaceholderText("API-Key"), "custom-key");
+    await user.click(screen.getByRole("button", { name: "Speichern" }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalled());
+    expect(toast).toHaveBeenCalledWith({ title: "Konnte nicht gespeichert werden", description: text, variant: "error" });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(screen.getByPlaceholderText("API-Key")).toHaveValue("custom-key");
   });
 
   it("oeffnet das erweiterte Formular ueber den Anderer-Anbieter-Link und speichert vier Felder", async () => {

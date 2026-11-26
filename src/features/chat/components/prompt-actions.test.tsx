@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PromptActions } from "./prompt-actions";
+import { de } from "@/shared/i18n/messages/de";
 
 const open = vi.fn();
 const fetchMock = vi.fn();
@@ -39,7 +40,12 @@ describe("PromptActions", () => {
 
   it("Probelauf: zeigt die Antwort in einem beschrifteten, einklappbaren Bereich", async () => {
     const user = userEvent.setup();
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ reply: "Sehr geehrte Frau Muster" }), { status: 200 }));
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ reply: "Sehr geehrte Frau Muster" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     render(<PromptActions prompt="Ein Prompt" />);
 
     await user.click(screen.getByRole("button", { name: /Probelauf/ }));
@@ -58,12 +64,35 @@ describe("PromptActions", () => {
   it("Probelauf abgelehnt: die Meldung des Servers steht da", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Diesen Prompt hast du schon einmal ausprobiert.", kind: "testRunUsed" }), { status: 403 })
+      new Response(JSON.stringify({ detail: "Diesen Prompt hast du schon einmal ausprobiert.", kind: "testRunUsed" }), {
+        status: 403,
+        headers: { "content-type": "application/problem+json" },
+      })
     );
     render(<PromptActions prompt="Ein Prompt" />);
 
     await user.click(screen.getByRole("button", { name: /Probelauf/ }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("schon einmal ausprobiert");
+  });
+
+  const html = (status: number) => () =>
+    Promise.resolve(new Response("<!DOCTYPE html><h1>Seite</h1>", { status, headers: { "content-type": "text/html" } }));
+
+  it.each([
+    ["ein 504 mit HTML-Seite", html(504), de.chat.testRun.failed],
+    ["ein 200 mit HTML-Seite", html(200), de.chat.testRun.failed],
+    ["kein Netz", () => Promise.reject(new TypeError("Failed to fetch")), de.common.networkError],
+  ])("Probelauf bei %s: ein Satz aus dem Wörterbuch, nicht die Meldung des Browsers", async (_name, answer, text) => {
+    const user = userEvent.setup();
+    fetchMock.mockImplementation(answer);
+    render(<PromptActions prompt="Ein Prompt" />);
+
+    await user.click(screen.getByRole("button", { name: /Probelauf/ }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(text);
+    expect(alert).not.toHaveTextContent(/DOCTYPE|JSON|Failed to fetch/);
+    expect(screen.queryByText("So antwortet eine KI auf deinen Prompt")).toBeNull();
   });
 });

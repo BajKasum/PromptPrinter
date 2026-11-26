@@ -15,7 +15,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/shared/ui/toast", () => ({ useToast: () => ({ toast }) }));
 
 function jsonResponse(body: unknown, status = 200) {
-  return { ok: status < 400, status, json: async () => body } as Response;
+  const type = status < 400 ? "application/json" : "application/problem+json";
+  return { ok: status < 400, status, headers: new Headers({ "content-type": type }), json: async () => body } as Response;
 }
 
 function deferred<T>() {
@@ -84,23 +85,39 @@ describe("ApiKeys: verbundener Anbieter, Aktivieren", () => {
     });
   });
 
-  it("zeigt bei einem Netzfehler dessen Meldung, bei etwas anderem als einem Error 'Unbekannter Fehler'", async () => {
-    fetchMock.mockRejectedValueOnce(new Error("offline"));
+  it("zeigt ohne Netz den Netzwerk-Satz, bei etwas anderem den Satz der Aktion, nie die Meldung selbst", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     render(<ApiKeys configured={["anthropic", "openai"]} active="anthropic" customProvider={null} />);
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Aktivieren" }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
-    expect(toast.mock.calls[0][0]).toMatchObject({ description: "offline", variant: "error" });
+    expect(toast.mock.calls[0][0]).toMatchObject({
+      description: "Netzwerkfehler, bitte versuch es erneut.",
+      variant: "error",
+    });
 
-    fetchMock.mockRejectedValueOnce("kaputt");
+    fetchMock.mockRejectedValueOnce(new Error("kaputt"));
     await waitFor(() => expect(screen.getByRole("button", { name: "Aktivieren" })).toBeEnabled());
     await user.click(screen.getByRole("button", { name: "Aktivieren" }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(2));
     expect(toast.mock.calls[1][0]).toMatchObject({
-      description: "Unbekannter Fehler",
+      description: "Key konnte nicht aktiviert werden.",
       variant: "error",
     });
+  });
+
+  it("nimmt bei einem 504 mit HTML-Seite den Satz der Aktion", async () => {
+    fetchMock.mockResolvedValue(
+      new Response("<!DOCTYPE html><h1>504</h1>", { status: 504, headers: { "content-type": "text/html" } })
+    );
+    render(<ApiKeys configured={["anthropic", "openai"]} active="anthropic" customProvider={null} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Aktivieren" }));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+    expect(toast.mock.calls[0][0]).toMatchObject({ description: "Key konnte nicht aktiviert werden." });
   });
 
   it("sperrt die Zeile, solange die Anfrage läuft: Aktivieren und Entfernen gesperrt, nur eine Anfrage", async () => {
@@ -207,6 +224,28 @@ describe("ApiKeys: verbundener Anbieter, Entfernen", () => {
 
     pending.resolve(jsonResponse({ ok: true }));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe("ApiKeys: verbundene Zeilen, Entfernen ohne Antwort der Route", () => {
+  it.each([
+    ["Anbieter", "OpenAI-Key entfernen", "openai" as const],
+    ["eigener Endpunkt", "Custom-Key entfernen", "custom" as const],
+  ])("%s: ein 504 mit HTML-Seite und ein Netzfehler zeigen Sätze aus dem Wörterbuch", async (_name, button, provider) => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("<!DOCTYPE html>", { status: 504, headers: { "content-type": "text/html" } }))
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    render(<ApiKeys configured={[provider]} active={provider} customProvider={provider === "custom" ? custom : null} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: button }));
+    await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+    expect(toast.mock.calls[0][0]).toMatchObject({ description: "Key konnte nicht entfernt werden." });
+
+    await waitFor(() => expect(screen.getByRole("button", { name: button })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: button }));
+    await waitFor(() => expect(toast).toHaveBeenCalledTimes(2));
+    expect(toast.mock.calls[1][0]).toMatchObject({ description: "Netzwerkfehler, bitte versuch es erneut." });
   });
 });
 

@@ -14,6 +14,7 @@ import {
 } from "@/shared/lib/byok-detect";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
+import { UserError, failureText, readJson, readProblem } from "@/shared/lib/read-problem";
 
 /**
  * Das Key-Feld ohne Anbieterwahl: Key einfügen, der Server erkennt den
@@ -60,11 +61,13 @@ export function ApiKeyField({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ apiKey: trimmed }),
       });
-      const json = await res.json();
       if (!res.ok) {
-        if (json.kind === "unknownProvider") onUnrecognized();
-        throw new Error(json.detail ?? t.settings.keys.saveFailed);
+        const problem = await readProblem(res, t.settings.keys.saveFailed);
+        if (problem.kind === "unknownProvider") onUnrecognized();
+        throw problem;
       }
+      // Ein "ok" ohne JSON kommt nicht von der Route (etwa die Anmeldeseite eines WLANs): nicht als gespeichert melden.
+      if (!(await readJson(res))) throw new UserError(t.settings.keys.saveFailed);
       const name = detected ? NAMED_PROVIDER_META[detected].name : t.settings.keys.fallbackName;
       toast({ title: fmt(t.settings.keys.connected, { name }), variant: "success" });
       setKey("");
@@ -73,7 +76,7 @@ export function ApiKeyField({
     } catch (err) {
       toast({
         title: t.settings.saveFailed,
-        description: err instanceof Error ? err.message : t.common.unknownError,
+        description: failureText(err, { network: t.common.networkError, fallback: t.settings.keys.saveFailed }),
         variant: "error",
       });
     } finally {
