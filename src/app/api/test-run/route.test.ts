@@ -147,6 +147,21 @@ describe("POST /api/test-run", () => {
     expect(release).toHaveBeenCalledTimes(1);
   });
 
+  it("nennt dem Modellaufruf den Beginn der Anfrage, nicht seinen eigenen (Gesamtfrist des Zugs, #404)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const startedAt = Date.now();
+      getUser.mockImplementation(async () => {
+        vi.setSystemTime(startedAt + 5000);
+        return { data: { user: { id: "u1", app_metadata: {} } } };
+      });
+      await POST(req({ prompt: "x" }));
+      expect(chatCompleteStream.mock.calls[0][0].requestStartedAt).toBe(startedAt);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("eine leere Antwort zählt als gescheitert", async () => {
     chatCompleteStream.mockImplementation(async function* () {
       yield "  ";

@@ -484,6 +484,22 @@ describe("Vertrag des Antwort-Stroms", () => {
     expect(list.at(-1)?.data).toMatchObject({ mode: "generated", conversationId: "conv-1" });
   });
 
+  it("die Gesamtfrist zählt ab Beginn der Anfrage, nicht ab dem Modellaufruf (#404)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const startedAt = Date.now();
+      // Die Schritte vor dem Modell kosten Zeit: die Frist muss sie mitzählen.
+      getUser.mockImplementation(async () => {
+        vi.setSystemTime(startedAt + 5000);
+        return { data: { user: { id: "user-1", app_metadata: consented } } };
+      });
+      await text(await POST(req()));
+      expect(chatCompleteStream.mock.calls[0][0]).toMatchObject({ requestStartedAt: startedAt });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("Wiederholung vor dem ersten Wort: status zwischen meta und delta", async () => {
     chatCompleteStream.mockImplementation(async function* (opts: { onRetry: (e: unknown) => void }) {
       opts.onRetry({ failedAttempt: 1, maxAttempts: 3 });

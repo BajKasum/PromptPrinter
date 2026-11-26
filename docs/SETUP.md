@@ -197,9 +197,9 @@ leitet dorthin weiter, unter Linux braucht Ollama `OLLAMA_HOST=0.0.0.0` (und ein
   lädt trotzdem). Für den Betrieb gehört TLS davor.
 - **Speed Insights** misst nur auf Vercel (`VERCEL` gesetzt) und lädt auf einer eigenen Installation nichts
   ([Geschwindigkeitsmessung](#geschwindigkeitsmessung-vercel-speed-insights)).
-- **Zeitgrenzen.** Bis zum ersten Textstück hat der Endpunkt 60 Sekunden, danach 45 Sekunden Leerlauf und 270
-  Sekunden je Antwort (`LLM_STREAM_IDLE_TIMEOUT_MS`, `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze höchstens 285).
-  Die Analyse des Projekt-Gedächtnisses hat 60 Sekunden. Ein grosses Modell auf einer CPU kann das überschreiten;
+- **Zeitgrenzen.** Bis zum ersten Textstück hat der Endpunkt 60 Sekunden, danach 45 Sekunden Leerlauf, und 270
+  Sekunden je Zug, Wiederholungen eingeschlossen (`LLM_STREAM_IDLE_TIMEOUT_MS`, `LLM_STREAM_TOTAL_TIMEOUT_MS`, die
+  Gesamtgrenze höchstens 285). Die Analyse des Projekt-Gedächtnisses hat 60 Sekunden. Ein grosses Modell auf einer CPU kann das überschreiten;
   dann ein kleineres Modell nehmen.
 - **Bilder** gehen als `image_url` an den Endpunkt. Ein Modell ohne Bildverständnis lehnt sie ab oder übergeht
   sie.
@@ -1209,11 +1209,14 @@ juristisch angesehen werden.
 `spend_guard.failover_budget_exhausted` (Warnung). `chat.turn` und
 `chat.turn_failed` tragen den Anbieter, auf dem der Zug WIRKLICH lief (`provider`).
 
-**Zeitlimit.** Jeder Antwort-Strom hat drei Grenzen, auch ohne Gemini-Key: bis zum ersten Textstück
-(Z.ai 30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm/zai.ts`; eigener Endpunkt 60; die SDK-Wege zu Anthropic,
-OpenAI und Gemini 90, `llm/chat.ts`), danach 45 Sekunden Leerlauf, mit jedem Textstück neu, und insgesamt 270
-Sekunden (`llm/http.ts`; `LLM_STREAM_IDLE_TIMEOUT_MS` und `LLM_STREAM_TOTAL_TIMEOUT_MS`, die Gesamtgrenze
-höchstens 285). Läuft eine ab, endet der Zug mit einem Fehler, den die Route meldet und nach dem sie aufräumt.
+**Zeitlimit.** Jeder Antwort-Strom hat drei Grenzen, auch ohne Gemini-Key. Je Versuch: bis zum ersten
+Textstück (Z.ai 30 Sekunden, `ZAI_FIRST_CHUNK_TIMEOUT_MS` in `llm/zai.ts`; eigener Endpunkt 60; die SDK-Wege zu
+Anthropic, OpenAI und Gemini 90, `llm/chat.ts`), danach 45 Sekunden Leerlauf, mit jedem Textstück neu. Je Zug,
+über Wiederholungen, Wartezeiten und den Wechsel auf Gemini hinweg: 270 Sekunden (`turnDeadline` in
+`llm/http.ts`), und spätestens 285 Sekunden nach Beginn der Anfrage, vor `maxDuration` der Route (300 Sekunden).
+`LLM_STREAM_IDLE_TIMEOUT_MS` und `LLM_STREAM_TOTAL_TIMEOUT_MS` ändern Leerlauf und Gesamtgrenze, die
+Gesamtgrenze nur bis 285 Sekunden. Läuft eine Frist ab, endet der Zug mit einem Fehler, den die Route meldet und
+nach dem sie aufräumt.
 
 **Aktivieren.** `GEMINI_API_KEY` (bezahlte Stufe) in Vercel setzen, neu deployen.
 Ohne Key tut der Code nichts. Geprüft ist er mit simulierten Ausfällen
