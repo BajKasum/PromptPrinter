@@ -31,8 +31,31 @@ vi.mock("@/server/supabase/server", () => ({
   })),
 }));
 
-// Der Export darf NIE mit Service-Role-Rechten laufen: wird er je geladen,
-// scheitert der Test unten.
+// Der Service-Role-Client liest genau eine Tabelle, cli_sessions (die Terminals
+// sieht der Nutzer-Client nicht), und nur für dieses Konto. Jede andere Abfrage
+// über ihn hält adminQueries fest, und der Test unten scheitert.
+type AdminQuery = { table: string; filters: [string, string, unknown][] };
+const adminQueries: AdminQuery[] = [];
+let terminalResult: { data: unknown; error: unknown } = { data: [], error: null };
+const adminFake = {
+  from(table: string) {
+    const query: AdminQuery = { table, filters: [] };
+    adminQueries.push(query);
+    const builder = {
+      select: () => builder,
+      eq: (column: string, value: unknown) => {
+        query.filters.push(["eq", column, value]);
+        return builder;
+      },
+      gt: (column: string, value: unknown) => {
+        query.filters.push(["gt", column, value]);
+        return builder;
+      },
+      order: () => Promise.resolve(terminalResult),
+    };
+    return builder;
+  },
+};
 vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: (...args: unknown[]) => adminClient(...args),
 }));
@@ -62,6 +85,9 @@ describe("GET /api/account/export", () => {
     captureError.mockReset();
     logEvent.mockReset();
     adminClient.mockReset();
+    adminClient.mockImplementation(() => adminFake);
+    adminQueries.length = 0;
+    terminalResult = { data: [], error: null };
     profileColumns = "";
     getUser.mockResolvedValue({ data: { user: USER } });
     profileSelect.mockResolvedValue({
@@ -86,6 +112,8 @@ describe("GET /api/account/export", () => {
     const json = JSON.parse(await (await GET(req())).text());
     expect(json.account).toMatchObject({ id: "user-1", email: "du@example.com", displayName: "Du" });
     expect(json.projects).toEqual([]);
+    expect(json.promptShares).toEqual([]);
+    expect(json.terminalSessions).toEqual([]);
     expect(typeof json.note).toBe("string");
     expect(json.note.length).toBeGreaterThan(20);
   });
@@ -96,6 +124,7 @@ describe("GET /api/account/export", () => {
     expect(res.status).toBe(401);
     expect(profileSelect).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
+    expect(adminQueries).toEqual([]);
   });
 
   it("lehnt eine seitenübergreifende Anfrage ab, bevor irgendetwas gelesen wird", async () => {
@@ -119,6 +148,7 @@ describe("GET /api/account/export", () => {
     expect(res.status).toBe(429);
     expect((await res.json()).retryAfter).toBeGreaterThan(0);
     expect(rateLimit).toHaveBeenCalledWith("u:user-1", { limit: 5, windowMs: 60 * 60 * 1000 });
+    expect(adminQueries).toEqual([]);
   });
 
   it("nimmt den Betreiber von der Begrenzung aus, wie die übrigen Routen", async () => {
@@ -142,9 +172,36 @@ describe("GET /api/account/export", () => {
     );
   });
 
-  it("läuft nie mit dem Service-Role-Client", async () => {
+  it("liest mit dem Service-Role-Client nur die Terminals, und nur die dieses Kontos", async () => {
     await (await GET(req())).text();
-    expect(adminClient).not.toHaveBeenCalled();
+    expect(adminQueries.map((q) => q.table)).toEqual(["cli_sessions"]);
+    expect(adminQueries[0].filters).toContainEqual(["eq", "user_id", "user-1"]);
+  });
+
+  it("nimmt die Terminals ohne die Kennung ihrer Sitzung in die Datei auf", async () => {
+    terminalResult = {
+      data: [
+        { session_id: "sitzung-GEHEIM", client_name: "laptop", created_at: "t1", last_used_at: "t2", expires_at: "t3" },
+      ],
+      error: null,
+    };
+    const text = await (await GET(req())).text();
+    expect(JSON.parse(text).terminalSessions).toEqual([
+      { clientName: "laptop", createdAt: "t1", lastUsedAt: "t2", expiresAt: "t3" },
+    ]);
+    expect(text).not.toContain("sitzung-GEHEIM");
+  });
+
+  it("antwortet mit 503 statt mit einer Datei ohne Terminals, wenn sie nicht lesbar sind", async () => {
+    terminalResult = { data: null, error: { message: "db down" } };
+    const res = await GET(req());
+    expect(res.status).toBe(503);
+    expect(captureError).toHaveBeenCalledWith(
+      "account.export_terminals_failed",
+      expect.any(Error),
+      expect.objectContaining({ userId: "user-1" })
+    );
+    expect(logEvent).not.toHaveBeenCalled();
   });
 
   it("liest vom Profil nur die Positivliste, nie die Kundennummer des Zahlungsanbieters", async () => {

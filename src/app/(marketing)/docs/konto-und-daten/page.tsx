@@ -108,6 +108,9 @@ export default function Page() {
           falls eingerichtet, dein zweiter Faktor und Prüfwerte deiner Wiederherstellungscodes, nie die Codes selbst
         </li>
         <li>
+          falls du ein Terminal angemeldet hast, seinen Gerätenamen und wann es angemeldet und zuletzt benutzt wurde
+        </li>
+        <li>
           ein Protokoll sicherheitsrelevanter Vorgänge (etwa: Key geändert, Terminal angemeldet), mit der Kennung deines
           Kontos, ohne Inhalte
         </li>
@@ -143,14 +146,17 @@ export default function Page() {
         <strong>Deine Daten</strong> mit einem Klick auf{" "}
         <strong>Daten herunterladen</strong>. Du bekommst eine JSON-Datei mit
         deinem Konto, deinen Projekten samt Gedächtnis, deinen Chats mit allen
-        Nachrichten, deinen gespeicherten Prompts und den Einstellungen.
+        Nachrichten, deinen gespeicherten Prompts samt früheren Fassungen und
+        der Angabe, welche du per Link teilst, deinen angemeldeten Terminals und
+        den Einstellungen.
       </p>
       <p>
         Nicht dabei sind deine API-Keys, weder im Klartext noch verschlüsselt:
-        die Datei darf gefahrlos in einer Mail landen. Hochgeladene Dateien und
-        Chat-Bilder stehen nur mit Name, Typ und Größe darin, nicht mit ihrem
-        Inhalt; die Originale hast du ohnehin selbst. Pro Stunde sind es
-        höchstens fünf Downloads.
+        die Datei darf gefahrlos in einer Mail landen. Aus demselben Grund fehlt
+        der Link eines geteilten Prompts, den zeigt dir die App am Prompt.
+        Hochgeladene Dateien und Chat-Bilder stehen nur mit Name, Typ und Größe
+        darin, nicht mit ihrem Inhalt; die Originale hast du ohnehin selbst. Pro
+        Stunde sind es höchstens fünf Downloads.
       </p>
 
       <h2>Wie lösche ich mein Konto?</h2>
