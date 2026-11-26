@@ -670,7 +670,7 @@ Zwei Stufen, beide nur mit der Kennung des Kontos: nie eine Adresse, ein Key ode
 | Anmelden | `auth.sign_in_succeeded`, `auth.sign_in_failed` (Grund: `invalid_credentials`, `throttled`, `other`) | Log |
 | Registrieren | `auth.sign_up_succeeded`, `auth.sign_up_failed` (Grund: `rejected`, `weak_password`) | Log |
 | Passwort-Reset, Bestätigung erneut senden | `auth.password_reset_requested`, `auth.confirmation_resent` | Log |
-| Abgelehnter Zugriff (401, 403, 404 auf eine fremde Kennung) | `access.denied`, mit Route und Status, jede zehnte Absage | Log |
+| Abgelehnter Zugriff (401, 403, 404 auf eine fremde Kennung, 403 an einer Grenze) | `access.denied`, mit Route und Status, an einer Grenze mit `reason` (`attachment_storage`, `project_limit`), jede zehnte Absage | Log |
 | Absage des Ratenlimits | `rate_limit.rejected`, mit Bereich und Konto, jede zehnte, nie die Adresse | Log |
 | Eigener Key gespeichert, ersetzt, aktiviert, entfernt | `api_key.saved`, `api_key.activated`, `api_key.removed` | Log und Tabelle |
 | Einwilligung in Z.ai erteilt, widerrufen | `consent.zai_granted`, `consent.zai_withdrawn` | Log und Tabelle |
