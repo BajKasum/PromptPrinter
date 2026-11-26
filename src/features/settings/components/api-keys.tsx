@@ -17,7 +17,7 @@ import {
 } from "@/features/settings/components/connected-key-rows";
 import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
-import { UserError, failureText, readJson, readProblem } from "@/shared/lib/read-problem";
+import { UserError, failureText, readProblem } from "@/shared/lib/read-problem";
 
 type AnyProvider = NamedByokProvider | "custom";
 
@@ -151,8 +151,9 @@ function CustomProviderForm({ onCancel }: { onCancel: () => void }) {
         }),
       });
       if (!res.ok) throw await readProblem(res, t.settings.keys.saveFailed);
-      // Ein "ok" ohne JSON kommt nicht von der Route (etwa die Anmeldeseite eines WLANs): nicht als gespeichert melden.
-      if (!(await readJson(res))) throw new UserError(t.settings.keys.saveFailed);
+      // Ein "ok", dessen Rumpf kein JSON ist, kommt nicht von der Route (etwa die Anmeldeseite eines WLANs): nicht als
+      // gespeichert melden.
+      if (!(await res.json().catch(() => null))) throw new UserError(t.settings.keys.saveFailed);
       toast({ title: fmt(t.settings.keys.connected, { name: label.trim() }), variant: "success" });
       reset();
       onCancel();
