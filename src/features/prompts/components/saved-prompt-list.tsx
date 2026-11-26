@@ -18,6 +18,7 @@ import { SharePrompt } from "@/features/prompts/components/share-prompt";
 import { PromptReuseBar } from "@/features/prompts/components/prompt-reuse-bar";
 import { PromptTextEditor } from "@/features/prompts/components/prompt-text-editor";
 import { PromptHistory } from "@/features/prompts/components/prompt-history";
+import { useShareStatus } from "@/features/prompts/hooks/use-share-status";
 
 /** Ein gespeicherter Prompt in der Liste, mit dem Projekt, in dem ein neuer Chat ihn als Ausgangspunkt nimmt. */
 export type ListedPrompt = SavedPrompt & { projectId?: string | null };
@@ -123,6 +124,8 @@ function SavedPromptCard({
   const [fill, setFill] = useState<PlaceholderFill>();
   // Löschen fragt nach, wie bei Projekt, Datei und Gedächtnis.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Ob der Prompt geteilt ist: einmal je Aufklappen geladen, für Teilen, Bearbeiten und Verlauf derselbe Stand.
+  const { share, setShare, reload: reloadShare } = useShareStatus(prompt.id, open);
 
   async function exportPdf() {
     const { downloadMarkdownAsPdf } = await import("@/features/prompts/lib/pdf-export");
@@ -271,6 +274,7 @@ function SavedPromptCard({
               userId={userId}
               title={prompt.title}
               content={prompt.content}
+              share={share}
               onSaved={onTextChange}
               onClose={() => setEditing(false)}
             />
@@ -357,10 +361,17 @@ function SavedPromptCard({
             userId={userId}
             title={prompt.title}
             content={prompt.content}
+            share={share}
             onRestored={onTextChange}
           />
           {/* Teilen per Link (Migration 0057): erst nach einer Rückfrage, widerrufbar. */}
-          <SharePrompt promptId={prompt.id} content={prompt.content} />
+          <SharePrompt
+            promptId={prompt.id}
+            content={prompt.content}
+            share={share}
+            onShareChange={setShare}
+            onReload={reloadShare}
+          />
         </div>
       )}
 

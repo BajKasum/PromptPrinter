@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { okWrite, failedWrite } from "@tests/support/supabase-query";
@@ -19,14 +19,14 @@ vi.mock("@/shared/ui/toast", () => ({
   useToast: () => ({ toast }),
 }));
 
-// Die Karte liest beim Aufklappen den Verlauf (saved_prompt_versions) und beim Bearbeiten die Freigabe (prompt_shares).
+// Die Karte liest beim Aufklappen den Verlauf (saved_prompt_versions) und den Stand der Freigabe über
+// /api/prompts/<id>/share (fetch); nach diesem Stand prüfen Bearbeiten und Wiederherstellen.
 let versionRows: { version: number; content: string; created_at: string }[] = [];
 function readChain(result: () => unknown) {
   const chain = {
     eq: () => chain,
     order: () => chain,
     range: async () => result(),
-    maybeSingle: async () => result(),
   };
   return chain;
 }
@@ -42,11 +42,20 @@ vi.mock("@/shared/supabase/client", () => ({
                 count: versionRows.length,
               })),
           }
-        : table === "prompt_shares"
-          ? { select: () => readChain(() => ({ data: null, error: null })) }
-          : { update, delete: del },
+        : { update, delete: del },
   }),
 }));
+
+const TOKEN = "abcdefghijABCDEFGHIJ0123456789_-";
+const fetchMock = vi.fn();
+const shareAnswer = (token: string | null, ok = true) =>
+  Promise.resolve({ ok, json: async () => ({ token }) } as Response);
+
+/** update().eq().eq().select("id"): die Zeile ist geschrieben. */
+function writtenRow() {
+  const chain = { eq: () => chain, select: async () => ({ data: [{ id: "p1" }], error: null }) };
+  return chain;
+}
 
 const prompt: SavedPrompt = {
   id: "p1",
@@ -71,12 +80,16 @@ describe("SavedPromptList", () => {
     update.mockReturnValue(okWrite());
     del.mockReturnValue(okWrite());
     versionRows = [{ version: 1, content: prompt.content, created_at: prompt.createdAt }];
+    // Vorgabe: nicht geteilt.
+    fetchMock.mockReset().mockImplementation(() => shareAnswer(null));
+    vi.stubGlobal("fetch", fetchMock);
     // Deliberately not defining navigator.clipboard here: user-event's
     // clipboard interception is wired up at setup() time, so it must run
     // before navigator.clipboard is ever (re)defined, or its click
     // simulation never reaches a test's writeText mock. The one test that
     // needs it (below) does both in the right order itself.
   });
+  afterEach(() => vi.unstubAllGlobals());
 
   describe("list of titles", () => {
     it("shows only the title while closed", () => {
@@ -364,6 +377,107 @@ describe("SavedPromptList", () => {
       expect(await screen.findByText("Neuer Text.", { selector: "pre" })).toBeInTheDocument();
       expect(screen.queryByLabelText("Text von „Alter Name“", { exact: true })).toBeNull();
       expect(await screen.findByRole("button", { name: "Verlauf (3 Versionen)" })).toBeInTheDocument();
+    });
+  });
+
+  // Ein geteilter Prompt steht in seiner aktuellen Fassung sofort unter dem Link. Bearbeiten und Wiederherstellen fragen
+  // vor Schlüsseln und persönlichen Angaben nach, auch solange der Stand noch lädt oder sich nicht lesen liess.
+  describe("geteilter Prompt", () => {
+    const KEY_TEXT = "Nutze den Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789";
+    const KEY_FINDING = "Sieht nach einem Schlüssel oder Passwort aus";
+
+    async function startEditing(user: ReturnType<typeof userEvent.setup>, text: string) {
+      await user.click(screen.getByRole("button", { name: "Text von „Alter Name“ bearbeiten" }));
+      const field = screen.getByLabelText("Text von „Alter Name“", { exact: true });
+      await user.clear(field);
+      await user.type(field, text);
+    }
+    const saveButton = () => screen.getByRole("button", { name: "Als neue Version speichern" });
+    beforeEach(() => {
+      update.mockReturnValue(writtenRow());
+    });
+
+    it("fragt nach, wenn sich der Stand der Freigabe nicht lesen liess", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(null, false));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      expect(await screen.findByText("Ob dieser Prompt geteilt ist, konnte ich gerade nicht prüfen.")).toBeInTheDocument();
+
+      await startEditing(user, KEY_TEXT);
+      await user.click(saveButton());
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent(KEY_FINDING);
+
+      await user.click(screen.getByRole("button", { name: "Trotzdem speichern" }));
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Alter Name" } });
+    });
+
+    it("fragt nach, wenn Speichern vor der Antwort kommt", async () => {
+      fetchMock.mockImplementation(() => new Promise(() => {}));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+
+      await startEditing(user, KEY_TEXT);
+      await user.click(saveButton());
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent(KEY_FINDING);
+    });
+
+    it("weiss nach dem Teilen in derselben Karte, dass Bearbeiten öffentlich wird", async () => {
+      fetchMock.mockImplementation((_url: string, init?: RequestInit) => shareAnswer(init?.method === "POST" ? TOKEN : null));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      const share = screen.getByRole("button", { name: "Per Link teilen" });
+      await waitFor(() => expect(share).toBeEnabled());
+
+      await startEditing(user, KEY_TEXT);
+      await user.click(share);
+      await user.click(screen.getByRole("button", { name: "Link erstellen" }));
+      expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
+      expect(screen.getByText("Dieser Prompt ist geteilt: die neue Fassung steht sofort unter dem Link.")).toBeInTheDocument();
+
+      await user.click(saveButton());
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent(KEY_FINDING);
+    });
+
+    it("stellt eine Fassung mit Schlüssel erst nach der Rückfrage wieder her", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(TOKEN));
+      versionRows = [
+        { version: 1, content: KEY_TEXT, created_at: prompt.createdAt },
+        { version: 2, content: prompt.content, created_at: prompt.createdAt },
+      ];
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
+
+      await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
+      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent(KEY_FINDING);
+
+      await user.click(screen.getByRole("button", { name: "Version 1 trotzdem wiederherstellen" }));
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Alter Name" } });
+    });
+
+    it("stellt bei einem nicht geteilten Prompt ohne Rückfrage wieder her", async () => {
+      versionRows = [
+        { version: 1, content: KEY_TEXT, created_at: prompt.createdAt },
+        { version: 2, content: prompt.content, created_at: prompt.createdAt },
+      ];
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Per Link teilen" })).toBeEnabled());
+
+      await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
+      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Alter Name" } });
+      expect(screen.queryByRole("alert")).toBeNull();
     });
   });
 });

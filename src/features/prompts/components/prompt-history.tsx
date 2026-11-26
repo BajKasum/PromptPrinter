@@ -8,21 +8,26 @@ import { useToast } from "@/shared/ui/toast";
 import { cn, relativeTime } from "@/shared/lib/utils";
 import { diffWords, hasChanges } from "@/shared/lib/word-diff";
 import { VERSIONS_PAGE, type PromptVersion } from "@/shared/lib/prompt-versions";
+import { risksBeforeWriting, type ShareStatus } from "@/shared/lib/prompt-share-status";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
+import { PublicRiskAlert } from "@/features/prompts/components/public-risk-alert";
 
 /**
  * Der Verlauf eines gespeicherten Prompts an der Karte: erscheint erst ab zwei Versionen, lädt die Versionen beim
  * Aufklappen (die neuesten zuerst, seitenweise), vergleicht zwei davon Wort für Wort und stellt eine alte wieder her.
  * Wiederherstellen schreibt den alten Text als aktuelle Fassung zurück, die Datenbank legt ihn als neueste Version an
- * (Migration 0061): nichts geht verloren. Gelesen wird mit RLS und zusätzlich `user_id`.
+ * (Migration 0061): nichts geht verloren. Gelesen wird mit RLS und zusätzlich `user_id`. Bei einem Prompt, der geteilt
+ * sein kann, steht der alte Text sofort unter dem Link; deshalb fragt Wiederherstellen vor Schlüsseln und persönlichen
+ * Angaben nach wie Bearbeiten.
  */
 export function PromptHistory({
   promptId,
   userId,
   title,
   content,
+  share,
   onRestored,
 }: {
   promptId: string;
@@ -30,6 +35,8 @@ export function PromptHistory({
   title: string;
   /** Die aktuelle Fassung; ändert sie sich (Bearbeiten, Wiederherstellen), lädt der Verlauf neu. */
   content: string;
+  /** Der Stand der Freigabe aus der Karte (features/prompts/hooks/use-share-status.ts). */
+  share: ShareStatus;
   /** Setzt den wiederhergestellten Text in der Liste, erst wenn er geschrieben ist (sonst lüde der Verlauf zu früh nach). */
   onRestored: (content: string) => void;
 }) {
@@ -45,6 +52,8 @@ export function PromptHistory({
   const [from, setFrom] = useState<number | null>(null);
   const [to, setTo] = useState<number | null>(null);
   const [restoring, setRestoring] = useState(false);
+  // Die Version, deren Wiederherstellen gerade nachfragt.
+  const [confirming, setConfirming] = useState<number | null>(null);
   // Nur die zuletzt gestartete Abfrage zählt: ein Nachladen von vor dem Wiederherstellen kommt sonst später an und
   // zeigte den alten Stand.
   const latestRequest = useRef(0);
@@ -90,6 +99,8 @@ export function PromptHistory({
   const older = from !== null ? byNumber.get(from) : undefined;
   const newer = to !== null ? byNumber.get(to) : undefined;
   const parts = useMemo(() => (older && newer ? diffWords(older.content, newer.content) : []), [older, newer]);
+  // Wie beim Bearbeiten gilt "trotzdem" nur für das, was die Rückfrage zeigt.
+  const risks = older && confirming === older.version ? risksBeforeWriting(share, older.content) : [];
 
   if (!count || count < 2) return null;
 
@@ -102,8 +113,13 @@ export function PromptHistory({
     if (page) setVersions((list) => [...list, ...page.filter((v) => !list.some((o) => o.version === v.version))]);
   }
 
-  async function restore(version: PromptVersion) {
+  async function restore(version: PromptVersion, confirmed: boolean) {
     if (restoring) return;
+    if (!confirmed && risksBeforeWriting(share, version.content).length > 0) {
+      setConfirming(version.version);
+      return;
+    }
+    setConfirming(null);
     setRestoring(true);
     const { data, error } = await createClient()
       .from("saved_prompts")
@@ -185,14 +201,18 @@ export function PromptHistory({
           )}
           {/* Eine Fassung mit demselben Text wie die aktuelle legte die Datenbank nicht neu an: nichts anzubieten. */}
           {older && older.version !== latest && older.content !== content && (
-            <button
-              type="button"
-              onClick={() => void restore(older)}
-              disabled={restoring}
-              className="rounded-md bg-accent-subtle px-2.5 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent/15 disabled:opacity-60"
-            >
-              {fmt(t.prompts.history.restore, { n: older.version })}
-            </button>
+            <div className="space-y-2">
+              {share.status === "shared" && <p className="text-[12.5px] text-secondary">{t.prompts.history.sharedHint}</p>}
+              <PublicRiskAlert risks={risks} />
+              <button
+                type="button"
+                onClick={() => void restore(older, risks.length > 0)}
+                disabled={restoring}
+                className="rounded-md bg-accent-subtle px-2.5 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent/15 disabled:opacity-60"
+              >
+                {fmt(risks.length > 0 ? t.prompts.history.restoreAnyway : t.prompts.history.restore, { n: older.version })}
+              </button>
+            </div>
           )}
         </div>
       )}
