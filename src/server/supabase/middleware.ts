@@ -69,6 +69,20 @@ function needsSessionLookup(pathname: string): boolean {
   );
 }
 
+/**
+ * Weiterleitung auf eine Seite der Anmeldung. Das Ziel samt Abfrage steht in `next`
+ * (`/chats/new?from=<id>` öffnet nach der Anmeldung denselben Ausgangs-Prompt), die
+ * Parameter der alten Adresse bleiben nicht an der neuen hängen. Das Formular liest
+ * `next` nur über `safeNextPath`.
+ */
+function redirectWithNext(request: NextRequest, pathname: string) {
+  const redirect = request.nextUrl.clone();
+  redirect.pathname = pathname;
+  redirect.search = "";
+  redirect.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  return NextResponse.redirect(redirect);
+}
+
 export async function updateSession(request: NextRequest, requestHeaders: Headers) {
   let response = NextResponse.next({ request: { headers: requestHeaders } });
 
@@ -112,20 +126,13 @@ export async function updateSession(request: NextRequest, requestHeaders: Header
       return NextResponse.rewrite(notFound, { request: { headers: requestHeaders } });
     }
 
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = "/login";
-    redirect.searchParams.set("next", pathname);
-    return NextResponse.redirect(redirect);
+    return redirectWithNext(request, "/login");
   }
 
   // Wer einen zweiten Faktor eingerichtet hat, sieht die App erst nach dem Nachweis. Eine Weiterleitung statt einer Absage: die
   // Sitzung ist nicht falsch, ihr fehlt nur noch ein Schritt. Die Routen unter /api prüfen selbst, wo es zählt.
   if (user && isAppPath(pathname) && (await lacksSecondFactor(supabase, user))) {
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = "/login/zweiter-faktor";
-    redirect.search = "";
-    redirect.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(redirect);
+    return redirectWithNext(request, "/login/zweiter-faktor");
   }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
