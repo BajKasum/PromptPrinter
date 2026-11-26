@@ -84,7 +84,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Prompts speichern",
         summary:
           "Gute Prompts landen per Klick unter Gespeicherte Prompts: wiederfinden, ausfüllen, als Version weiterentwickeln, exportieren.",
-        updated: "2026-11-21",
+        updated: "2026-11-26",
       },
     ],
   },

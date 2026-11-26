@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SavePromptButton } from "./save-prompt-button";
 
@@ -45,6 +45,11 @@ vi.mock("@/shared/supabase/client", () => ({
 
 const target = { id: "prompt-7", title: "Brief an Anna", prompt: "Alte Fassung." };
 
+// Der Stand der Freigabe kommt von /api/prompts/<id>/share.
+const fetchMock = vi.fn();
+const shareAnswer = (token: string | null, ok = true) =>
+  Promise.resolve({ ok, json: async () => ({ token }) } as Response);
+
 describe("SavePromptButton", () => {
   beforeEach(() => {
     refresh.mockReset();
@@ -54,7 +59,10 @@ describe("SavePromptButton", () => {
     updateFilters.mockReset();
     written.mockReset().mockResolvedValue({ data: [{ id: "neu" }], error: null });
     toast.mockReset();
+    fetchMock.mockReset().mockImplementation(() => shareAnswer(null));
+    vi.stubGlobal("fetch", fetchMock);
   });
+  afterEach(() => vi.unstubAllGlobals());
 
   it("saves the prompt and switches to the saved state", async () => {
     render(<SavePromptButton projectId="p1" conversationId="c1" prompt="Du bist ein Tutor." />);
@@ -178,6 +186,88 @@ describe("SavePromptButton", () => {
 
       expect(await screen.findByRole("button", { name: "Speichern" })).not.toBeDisabled();
       expect(toast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
+    });
+  });
+
+  // Ein geteilter Prompt steht in seiner aktuellen Fassung sofort unter dem Link: eine neue Version mit Schlüssel oder
+  // persönlichen Angaben fragt vorher nach, wie Bearbeiten und Wiederherstellen an der Karte.
+  describe("neue Version eines geteilten Prompts", () => {
+    const TOKEN = "abcdefghijABCDEFGHIJ0123456789_-";
+    const risky = "Nutze den Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789";
+    const title = "Vor dem Speichern kurz prüfen";
+
+    async function chooseVersion() {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Speichern" }));
+      await user.click(screen.getByRole("button", { name: /Als neue Version/ }));
+      return user;
+    }
+
+    it("fragt vor einem Schlüssel nach und schreibt erst nach dem Ja", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(TOKEN));
+      render(<SavePromptButton prompt={risky} versionTarget={target} />);
+      const user = await chooseVersion();
+
+      const dialog = await screen.findByRole("dialog", { name: title });
+      expect(dialog).toHaveTextContent("„Brief an Anna“ ist geteilt: die neue Version steht sofort unter dem Link.");
+      expect(dialog).toHaveTextContent("Sieht nach einem Schlüssel oder Passwort aus");
+      expect(fetchMock).toHaveBeenCalledWith("/api/prompts/prompt-7/share");
+      expect(update).not.toHaveBeenCalled();
+
+      await user.click(within(dialog).getByRole("button", { name: "Trotzdem speichern" }));
+      expect(await screen.findByRole("button", { name: "Gespeichert" })).toBeDisabled();
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: risky, title: "Brief an Anna" } });
+      expect(updateFilters).toHaveBeenCalledWith("id", "prompt-7");
+    });
+
+    it("fragt auch nach, wenn sich der Stand nicht lesen lässt", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(null, false));
+      render(<SavePromptButton prompt={risky} versionTarget={target} />);
+      await chooseVersion();
+
+      const dialog = await screen.findByRole("dialog", { name: title });
+      expect(dialog).toHaveTextContent("Ob „Brief an Anna“ geteilt ist, konnte ich gerade nicht prüfen.");
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it("schreibt nach Abbrechen nichts und lässt Speichern offen", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(TOKEN));
+      render(<SavePromptButton prompt={risky} versionTarget={target} />);
+      const user = await chooseVersion();
+
+      await user.click(within(await screen.findByRole("dialog", { name: title })).getByRole("button", { name: "Abbrechen" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Speichern" })).toBeEnabled();
+    });
+
+    it("schreibt ohne Rückfrage, wenn der Prompt nicht geteilt ist", async () => {
+      render(<SavePromptButton prompt={risky} versionTarget={target} />);
+      await chooseVersion();
+
+      expect(await screen.findByRole("button", { name: "Gespeichert" })).toBeDisabled();
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: risky, title: "Brief an Anna" } });
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("liest den Stand nur, wenn der Text etwas enthält, das nicht öffentlich sein sollte", async () => {
+      render(<SavePromptButton prompt="Neue Fassung." versionTarget={target} />);
+      await chooseVersion();
+
+      await screen.findByRole("button", { name: "Gespeichert" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("fragt bei einem neuen Prompt nicht nach: der ist noch nirgends geteilt", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(TOKEN));
+      render(<SavePromptButton prompt={risky} versionTarget={target} />);
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Speichern" }));
+      await user.click(screen.getByRole("button", { name: /Als neuen Prompt/ }));
+
+      await screen.findByRole("button", { name: "Gespeichert" });
+      expect(insert).toHaveBeenCalledTimes(1);
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 });

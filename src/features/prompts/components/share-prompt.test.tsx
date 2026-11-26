@@ -6,8 +6,15 @@ const toast = vi.fn();
 vi.mock("@/shared/ui/toast", () => ({ useToast: () => ({ toast }) }));
 
 import { SharePrompt } from "./share-prompt";
+import { useShareStatus } from "@/features/prompts/hooks/use-share-status";
 
 const TOKEN = "abcdefghijABCDEFGHIJ0123456789_-";
+
+// Wie in der Karte: den Stand lädt useShareStatus, die Leiste zeigt ihn und meldet Teilen und Widerrufen zurück.
+function SharePromptCard({ content }: { content: string }) {
+  const { share, setShare, reload } = useShareStatus("p1", true);
+  return <SharePrompt promptId="p1" content={content} share={share} onShareChange={setShare} onReload={reload} />;
+}
 const fetchMock = vi.fn();
 
 function answer(token: string | null, ok = true) {
@@ -25,7 +32,7 @@ describe("SharePrompt", () => {
 
   it("fragt vor dem Teilen nach und sagt, dass der Text öffentlich wird", async () => {
     fetchMock.mockReturnValueOnce(answer(null));
-    render(<SharePrompt promptId="p1" content="Schreibe eine Einladung" />);
+    render(<SharePromptCard content="Schreibe eine Einladung" />);
     const button = await screen.findByRole("button", { name: de.share.action });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
@@ -41,7 +48,7 @@ describe("SharePrompt", () => {
 
   it("warnt im Dialog, wenn der Prompt wie ein Schlüssel aussieht", async () => {
     fetchMock.mockReturnValueOnce(answer(null));
-    render(<SharePrompt promptId="p1" content="Nutze den Key sk-ant-abcdefghijklmnopqrstuvwxyz0123" />);
+    render(<SharePromptCard content="Nutze den Key sk-ant-abcdefghijklmnopqrstuvwxyz0123" />);
     const button = await screen.findByRole("button", { name: de.share.action });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
@@ -50,7 +57,7 @@ describe("SharePrompt", () => {
 
   it("zeigt einen Fehler beim Nachsehen nicht als privat und lädt auf Knopfdruck neu", async () => {
     fetchMock.mockReturnValueOnce(answer(null, false));
-    render(<SharePrompt promptId="p1" content="x" />);
+    render(<SharePromptCard content="x" />);
     expect(await screen.findByText(de.share.statusFailed)).toBeInTheDocument();
     expect(screen.queryByText(de.share.privateHint)).not.toBeInTheDocument();
 
@@ -62,7 +69,7 @@ describe("SharePrompt", () => {
   it("sagt nicht 'kopiert', wenn die Zwischenablage ablehnt", async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) } });
     fetchMock.mockReturnValueOnce(answer(null));
-    render(<SharePrompt promptId="p1" content="x" />);
+    render(<SharePromptCard content="x" />);
     const button = await screen.findByRole("button", { name: de.share.action });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
@@ -73,7 +80,7 @@ describe("SharePrompt", () => {
 
   it("zeigt einen geteilten Prompt mit Link und widerruft ihn", async () => {
     fetchMock.mockReturnValueOnce(answer(TOKEN));
-    render(<SharePrompt promptId="p1" content="x" />);
+    render(<SharePromptCard content="x" />);
     await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`);
 
     fetchMock.mockReturnValueOnce(answer(null));
