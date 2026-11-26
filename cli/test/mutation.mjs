@@ -54,6 +54,7 @@ const mutations = [
   ["src/login.mjs", "fremde Adresse geöffnet", "if (url.origin === api.server) return url.href;", "return url.href;"],
   ["src/login.mjs", "Abfragepause nicht verlängert", "interval = Math.max(interval + 5, err.interval ?? 0);", ""],
   ["src/login.mjs", "Netzfehler beendet die Anmeldung", "if (err instanceof NetworkError) continue;", ""],
+  ["src/login.mjs", "Ausfall des Servers beendet die Anmeldung", "if (isServerFailure(err)) {", "if (false) {"],
   ["src/login.mjs", "Sitzung nicht gespeichert", "await store.save(answer.session);", ""],
   ["src/login.mjs", "Warnung fehlt", 'print.step("loginWarning");', ""],
   ["src/system.mjs", "Speichern überschreibt", '{ flag: "wx" });\n      return { kind: "saved", path };', '{ flag: "w" });\n      return { kind: "saved", path };'],

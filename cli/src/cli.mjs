@@ -5,7 +5,7 @@ import { banner } from "./banner.mjs";
 import { ConfigError, configDir, serverUrl } from "./config.mjs";
 import { describeError } from "./errors.mjs";
 import { chooseModel, createLocalModel, describeLocalError, localSettings, parseLocalArgs } from "./local.mjs";
-import { runLogin } from "./login.mjs";
+import { LOGIN_MESSAGES, runLogin } from "./login.mjs";
 import { createMcpServer, serveStdio } from "./mcp.mjs";
 import { detectLang, translator } from "./messages.mjs";
 import { runRepl } from "./repl.mjs";
@@ -70,15 +70,7 @@ export async function main(
         print: { step: (key, vars) => say(t(key, vars)) },
         open: term.isTTY && !env.PROMPTPRINTER_NO_BROWSER ? (url) => openBrowser(url) : undefined,
       });
-      const outcome = {
-        done: "loginDone",
-        denied: "loginDenied",
-        expired: "loginExpired",
-        invalid: "loginInvalid",
-        failed: "loginFailed",
-        cancelled: "loginCancelled",
-      };
-      say(t(outcome[result]));
+      say(t(LOGIN_MESSAGES[result]));
       return result === "done";
     } catch (err) {
       say(describeError(err, { t, server }));
