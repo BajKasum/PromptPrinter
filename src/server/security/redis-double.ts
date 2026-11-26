@@ -4,9 +4,12 @@ type Fn = (...args: never[]) => unknown;
 
 /**
  * Nur für Tests: legt `multi()` und das Rückgabe-Skript von reserve-counter.ts über einfache Attrappen für
- * `incr`, `expire` und `decr`, damit ein Test die einzelnen Schritte prüfen kann. `exec` scheitert als Ganzes.
+ * `incr`, `expire`, `decr` und `sadd`, damit ein Test die einzelnen Schritte prüfen kann. `exec` scheitert als Ganzes.
+ * Jeder Schritt bekommt genau die Argumente des Aufrufs, ein `expire` ohne Modus also zwei.
  */
-export function counterRedisDouble<T extends { incr?: unknown; expire?: unknown; decr?: unknown }>(double: T) {
+export function counterRedisDouble<T extends { incr?: unknown; expire?: unknown; decr?: unknown; sadd?: unknown }>(
+  double: T
+) {
   return {
     ...double,
     multi() {
@@ -16,8 +19,12 @@ export function counterRedisDouble<T extends { incr?: unknown; expire?: unknown;
           steps.push(() => (double.incr as (key: string) => unknown)(key));
           return chain;
         },
-        expire(key: string, seconds: number, mode: string) {
-          steps.push(() => (double.expire as Fn as (k: string, s: number, m: string) => unknown)?.(key, seconds, mode));
+        expire(key: string, seconds: number, ...mode: string[]) {
+          steps.push(() => (double.expire as Fn as (k: string, s: number, ...m: string[]) => unknown)?.(key, seconds, ...mode));
+          return chain;
+        },
+        sadd(key: string, ...members: string[]) {
+          steps.push(() => (double.sadd as (key: string, ...members: string[]) => unknown)(key, ...members));
           return chain;
         },
         async exec() {
