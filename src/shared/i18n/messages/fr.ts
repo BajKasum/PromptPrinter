@@ -859,6 +859,7 @@ export const fr: Messages = {
     newNameLabel: "Nouveau nom du prompt",
     saveName: "Enregistrer le nom",
     cancelRename: "Annuler le renommage",
+    renameAnyway: "Renommer quand même",
     savedAgo: "Enregistré {time}",
     renameLabel: "Renommer « {title} »",
     exportPdf: "Exporter en PDF",

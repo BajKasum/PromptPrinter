@@ -11,9 +11,9 @@ import { useShareStatus } from "@/features/prompts/hooks/use-share-status";
 const TOKEN = "abcdefghijABCDEFGHIJ0123456789_-";
 
 // Wie in der Karte: den Stand lädt useShareStatus, die Leiste zeigt ihn und meldet Teilen und Widerrufen zurück.
-function SharePromptCard({ content }: { content: string }) {
+function SharePromptCard({ title = "Einladung", content }: { title?: string; content: string }) {
   const { share, setShare, reload } = useShareStatus("p1", true);
-  return <SharePrompt promptId="p1" content={content} share={share} onShareChange={setShare} onReload={reload} />;
+  return <SharePrompt promptId="p1" title={title} content={content} share={share} onShareChange={setShare} onReload={reload} />;
 }
 const fetchMock = vi.fn();
 
@@ -38,6 +38,7 @@ describe("SharePrompt", () => {
     fireEvent.click(button);
 
     expect(screen.getByText(de.share.confirmBody)).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(de.share.riskIntro))).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1); // nur der Stand, noch nichts geteilt
 
     fetchMock.mockReturnValueOnce(answer(TOKEN));
@@ -53,6 +54,18 @@ describe("SharePrompt", () => {
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
     expect(screen.getByText(new RegExp(de.share.riskIntro))).toBeInTheDocument();
+  });
+
+  // Die Seite unter dem Link zeigt den Titel als Überschrift über dem Text: der Dialog prüft beides.
+  it("warnt im Dialog auch, wenn nur der Titel persönliche Angaben enthält", async () => {
+    fetchMock.mockReturnValueOnce(answer(null));
+    render(<SharePromptCard title="Angebot für Anna Muster, anna.muster@beispiel.ch" content="Schreibe ein freundliches Angebot." />);
+    const button = await screen.findByRole("button", { name: de.share.action });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+    expect(screen.getByText(new RegExp(de.share.riskIntro))).toHaveTextContent(
+      `${de.chat.promptCheck.personal} (an…@beispiel.ch)`
+    );
   });
 
   it("zeigt einen Fehler beim Nachsehen nicht als privat und lädt auf Knopfdruck neu", async () => {

@@ -10,21 +10,24 @@ import { useT } from "@/shared/i18n/provider";
 
 // Teilen eines gespeicherten Prompts per Link (/geteilt/<token>, server/prompt-share.ts). Vor dem ersten Teilen
 // fragt ein Dialog nach: der Text wird öffentlich, jeder mit dem Link kann ihn lesen. Findet die Prompt-Prüfung
-// Schlüssel oder persönliche Angaben, steht das im selben Dialog. Ist er geteilt, zeigt die Leiste den Link zum
+// Schlüssel oder persönliche Angaben, steht das im selben Dialog; geprüft werden Titel und Text, denn die Seite unter
+// dem Link zeigt den Titel als Überschrift über dem Text. Ist er geteilt, zeigt die Leiste den Link zum
 // Kopieren und den Knopf zum Widerrufen. Ob er geteilt ist, lädt die aufgeklappte Karte
 // (features/prompts/hooks/use-share-status.ts); die Leiste zeigt diesen Stand und meldet jede Änderung zurück, damit
-// Bearbeiten und Verlauf nach demselben Stand prüfen. Liess er sich nicht lesen, zeigt die Leiste das und einen Knopf
+// Umbenennen, Bearbeiten und Verlauf nach demselben Stand prüfen. Liess er sich nicht lesen, zeigt die Leiste das und einen Knopf
 // zum Neuladen, nie "privat": ein geteilter Prompt sähe sonst privat aus, und der Link bliebe offen, ohne dass die
 // Person es sieht.
 
 export function SharePrompt({
   promptId,
+  title,
   content,
   share: state,
   onShareChange,
   onReload,
 }: {
   promptId: string;
+  title: string;
   content: string;
   share: ShareStatus;
   onShareChange: (next: ShareStatus) => void;
@@ -75,7 +78,8 @@ export function SharePrompt({
     toast({ title: t.share.revoked, variant: "success" });
   }
 
-  const risks = confirming ? publicRisks(content) : [];
+  // Geprüft wird, was unter dem Link steht: der Titel als Überschrift, darunter der Text.
+  const risks = confirming ? publicRisks(`${title}\n${content}`) : [];
 
   return (
     <div>
