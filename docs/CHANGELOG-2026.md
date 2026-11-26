@@ -16,7 +16,7 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 - **Ziel:** Kasum am 2026-11-26: nicht mehr warten, bis alles grün ist, keine Timer. Was zählt: gepusht, auf GitHub, korrekt deployed, keine Fehler. Ein rotes Kreuz ist kein Notfall.
 - **Jetzt:** nach dem PR sofort `gh pr merge <nr> --rebase --auto` (`CLAUDE.md`, Ablauf Schritt 3). GitHub mergt, sobald die Pflichtprüfung des Rulesets auf `main` („Typecheck · Lint · Test · Build“) durch ist; E2E, CodeQL und Docker laufen weiter, niemand wartet auf sie. Entfallen sind das Warten auf die ganze CI, das Erneuern eines Laufs, der älter als ein paar Stunden ist, und das zeitversetzte Nachsehen der Sitzungen.
 - **Bleibt:** das lokale Gate vor dem Push, Rebase-Merge, keine Branches löschen, kein Auto-Merge für Dependabot.
-- **Voraussetzung:** „Allow auto-merge“ in den Einstellungen des Repos, am 2026-11-26 aus; einschalten nur mit Kasums Ja.
+- **Voraussetzung:** „Allow auto-merge“ in den Einstellungen des Repos, auf Kasums Ja am 2026-11-26 eingeschaltet (nachgelesen: `allow_auto_merge: true`).
 
 ## 2026-11-26: Die Gedächtnis-Route antwortet auf eine Kennung, die keine UUID ist, mit 404 und meldet kein fertiges Gedächtnis mehr, das während der Analyse gelöscht wurde (Branch `fix/gedaechtnis-route-397-406`, #397 und #406)
 
