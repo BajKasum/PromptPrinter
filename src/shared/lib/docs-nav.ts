@@ -51,7 +51,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Chat mit Finn",
         summary:
           "Warum Finn erst nachfragt statt sofort zu liefern, und wie du seine Rückfrage am schnellsten beantwortest.",
-        updated: "2026-11-19",
+        updated: "2026-11-26",
       },
       {
         slug: "der-fertige-prompt",

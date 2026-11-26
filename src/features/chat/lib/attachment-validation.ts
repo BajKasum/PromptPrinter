@@ -9,14 +9,16 @@ import {
   sanitizeAttachmentName,
   type AttachmentKind,
   type AttachmentUpload,
-  type ImageMediaType,
 } from "@/shared/lib/chat-attachments";
 import { MAX_ATTACHMENTS_PER_MESSAGE, MAX_ATTACHMENTS_REQUEST_BYTES } from "@/shared/lib/chat-limits";
+import { stripImageMetadata } from "@/features/chat/lib/image-metadata";
 
-// Anhänge prüfen, ausgelagert aus attachment-store.ts (Betriebs-Audit, Folgesitzung 2026-10-07, Dateigröße):
-// reine Funktionen, kein Netz und keine Datenbank. Was der Browser hochladen WILL, sagt er der Route; was es
-// WIRKLICH ist (Magic Bytes, UTF-8, Größen), entscheidet dieser Code, bevor irgendetwas abgelegt wird.
-// attachment-store.ts führt die Namen weiter aus, kein Aufrufer ändert sich.
+// Anhänge prüfen: reine Funktionen, kein Netz und keine Datenbank. Was der Browser hochladen WILL, sagt er der
+// Route; was es WIRKLICH ist (Magic Bytes, UTF-8, Größen), entscheidet dieser Code, bevor irgendetwas abgelegt
+// wird, und ein Foto verliert hier seine Metadaten, bevor es gespeichert wird und an den Modellanbieter geht.
+// attachment-store.ts führt die Namen weiter aus.
+
+export { sniffImageType } from "@/features/chat/lib/image-metadata";
 
 export type AttachmentErrorCode =
   | "unsupported" // Format nicht erlaubt
@@ -44,30 +46,6 @@ export type ValidatedAttachment = {
   mediaType: string;
   bytes: Buffer;
 };
-
-const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-
-/**
- * Welches Bild ist das, den Bytes nach?
- *
- * Der Typ, den der Browser angibt, zählt nicht: er geht an den KI-Anbieter und
- * bestimmt, mit welchem Content-Type das Objekt ausgeliefert wird. Eine Datei,
- * die sich als PNG ausgibt und keines ist, wird abgelehnt statt weitergereicht.
- */
-export function sniffImageType(bytes: Buffer): ImageMediaType | null {
-  if (bytes.length >= 8 && bytes.subarray(0, 8).equals(PNG_SIGNATURE)) return "image/png";
-  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return "image/jpeg";
-  }
-  if (
-    bytes.length >= 12 &&
-    bytes.subarray(0, 4).toString("latin1") === "RIFF" &&
-    bytes.subarray(8, 12).toString("latin1") === "WEBP"
-  ) {
-    return "image/webp";
-  }
-  return null;
-}
 
 // Strenges UTF-8: eine Datei in einer anderen Kodierung (Latin-1, UTF-16) oder
 // mit Binärinhalt soll hier scheitern, nicht als Zeichensalat beim Modell landen.
@@ -113,10 +91,14 @@ export function validateUploads(uploads: readonly AttachmentUpload[]): Validated
     if (bytes.length > maxBytesForAttachment(kind)) throw new AttachmentError("tooLarge", name);
 
     let mediaType: string;
+    let stored = bytes;
     if (kind === "image") {
-      const sniffed = sniffImageType(bytes);
-      if (!sniffed) throw new AttachmentError("invalid", name);
-      mediaType = sniffed;
+      // Ein PNG, JPEG oder WebP, das sich vollständig zerlegen lässt, und gespeichert ohne seine Metadaten. Der
+      // Browser hat sie schon herausgenommen; hier noch einmal, weil die Route ihm nicht traut.
+      const clean = stripImageMetadata(bytes);
+      if (!clean) throw new AttachmentError("invalid", name);
+      mediaType = clean.mediaType;
+      stored = Buffer.from(clean.bytes.buffer, clean.bytes.byteOffset, clean.bytes.byteLength);
     } else {
       if (!isUtf8Text(bytes)) throw new AttachmentError("invalid", name);
       mediaType = TEXT_MEDIA_TYPE;
@@ -124,7 +106,7 @@ export function validateUploads(uploads: readonly AttachmentUpload[]): Validated
 
     total += bytes.length;
     if (total > MAX_ATTACHMENTS_REQUEST_BYTES) throw new AttachmentError("tooLargeTotal");
-    out.push({ id: randomUUID(), name, kind, mediaType, bytes });
+    out.push({ id: randomUUID(), name, kind, mediaType, bytes: stored });
   }
   return out;
 }

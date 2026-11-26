@@ -99,7 +99,8 @@ export default function Page() {
         <li>
           <strong>Fotos:</strong> <code>.png</code>, <code>.jpg</code> und{" "}
           <code>.webp</code>. Grosse Bilder verkleinert dein Browser vor dem
-          Senden, das Original bleibt bei dir.
+          Senden, und aus jedem Foto nimmt er Angaben wie Aufnahmeort, Gerät und
+          Uhrzeit heraus. Das Original bleibt bei dir.
         </li>
         <li>
           <strong>Dateien:</strong> Text, Code und Konfiguration, bis{" "}

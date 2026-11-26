@@ -1217,6 +1217,13 @@ und gehen bei späteren Antworten erneut mit, soweit sie ins Modell-Budget passe
 
 - Grenzen an einer Stelle: [`src/shared/lib/chat-limits.ts`](../src/shared/lib/chat-limits.ts)
 - Prüfen, ablegen, nachschlagen: [`src/features/chat/lib/attachment-store.ts`](../src/features/chat/lib/attachment-store.ts)
+- Fotos ohne Metadaten: [`image-metadata.ts`](../src/features/chat/lib/image-metadata.ts) nimmt Exif (Aufnahmeort,
+  Gerät, Zeit), XMP, IPTC, Kommentare und alles hinter dem Ende des Bildes heraus, ohne neu zu kodieren: im Browser
+  vor dem Hochladen (`prepare-attachment.ts`) und im Server vor dem Speichern (`attachment-validation.ts`). Was
+  bleibt, steht in einer Positivliste (Farbprofil, Transparenz, Animation, Pixeldichte), aus Exif bei JPEG nur die
+  Drehung. Was sich nicht vollständig zerlegen lässt, kodiert der Browser über das Canvas neu, der Server weist es
+  ab. Fotos, die vorher gespeichert wurden, tragen ihre Metadaten weiter (Changelog 2026-11-26). Testbilder mit
+  GPS-Daten: `tests/support/images/`, erzeugt mit dem `sharp`, das Next mitbringt.
 - Was beim Modell ankommt (Budget, Kürzen): [`attachment-model.ts`](../src/features/chat/lib/attachment-model.ts), [`model-history.ts`](../src/features/chat/lib/model-history.ts)
 - Tabelle `message_attachments` und privater Bucket `chat-attachments`: **Migration 0045**.
   Der Bucket hat bewusst **keine insert-Policy**, geschrieben wird nur in `/api/chat`

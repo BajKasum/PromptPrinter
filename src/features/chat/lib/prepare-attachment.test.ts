@@ -12,9 +12,11 @@ import {
   MAX_ATTACHMENT_IMAGE_EDGE,
   MAX_ATTACHMENT_TEXT_BYTES,
 } from "@/shared/lib/chat-limits";
+import { METADATA_MARKERS, testImage } from "@tests/support/test-images";
 
-// jsdom hat weder Canvas noch createImageBitmap: die Bild-Fähigkeiten kommen
-// als Ersatz herein (PrepareDeps), alles andere läuft echt, auch File.
+// Node hat weder Canvas noch createImageBitmap: die Bild-Fähigkeiten kommen
+// als Ersatz herein (PrepareDeps), alles andere läuft echt, auch File und die
+// Bytes der Testbilder (tests/support/images/).
 
 const toBase64 = vi.fn(async (blob: Blob) => Buffer.from(await blob.arrayBuffer()).toString("base64"));
 
@@ -94,9 +96,10 @@ describe("prepareAttachment: what is refused", () => {
 });
 
 describe("prepareAttachment: images", () => {
-  it("keeps a small image as it is: same bytes, same type, no re-encoding", async () => {
-    const { deps, encodeJpeg, decoded } = image(800, 600);
-    const png = file("screen.png", "PNGDATA", "image/png");
+  it("keeps a small image without metadata as it is: same bytes, same type, no re-encoding", async () => {
+    const { deps, encodeJpeg, decoded } = image(16, 12);
+    const bytes = testImage("plain.png");
+    const png = file("screen.png", bytes, "image/png");
 
     const out = await prepareAttachment(png, deps);
 
@@ -107,16 +110,52 @@ describe("prepareAttachment: images", () => {
       kind: "image",
       mediaType: "image/png",
       sizeBytes: png.size,
-      data: Buffer.from("PNGDATA").toString("base64"),
-      previewUrl: `data:image/png;base64,${Buffer.from("PNGDATA").toString("base64")}`,
+      data: bytes.toString("base64"),
+      previewUrl: `data:image/png;base64,${bytes.toString("base64")}`,
     });
     expect(encodeJpeg).not.toHaveBeenCalled();
     expect(decoded.close).toHaveBeenCalled();
   });
 
-  it("takes the type from the extension when the browser reports none", async () => {
-    const out = await prepareAttachment(file("bild.webp", "W"), image(10, 10).deps);
-    expect(out.ok && out.attachment.mediaType).toBe("image/webp");
+  it.each(["gps.jpg", "gps.png", "gps.webp", "gps-progressive.jpg"])(
+    "nimmt einem kleinen Foto Gerät und Aufnahmeort, bevor es hochgeht (%s)",
+    async (name) => {
+      const { deps, encodeJpeg } = image(16, 12);
+      const gps = testImage(name);
+
+      const out = await prepareAttachment(file(name, gps, ""), deps);
+
+      expect(out.ok).toBe(true);
+      if (!out.ok) return;
+      const sent = Buffer.from(out.attachment.data, "base64");
+      for (const marker of METADATA_MARKERS) expect(sent.includes(marker), marker).toBe(false);
+      expect(sent.length).toBeLessThan(gps.length);
+      expect(out.attachment.sizeBytes).toBe(sent.length);
+      expect(out.attachment.previewUrl).toBe(`data:${out.attachment.mediaType};base64,${out.attachment.data}`);
+      expect(encodeJpeg).not.toHaveBeenCalled();
+    }
+  );
+
+  it("schickt vom Foto dieselben Bilddaten wie von seiner Fassung ohne Metadaten", async () => {
+    const out = await prepareAttachment(file("foto.jpg", testImage("gps.jpg"), "image/jpeg"), image(16, 12).deps);
+    expect(out.ok && Buffer.from(out.attachment.data, "base64").equals(testImage("plain.jpg"))).toBe(true);
+  });
+
+  it("takes the type from the bytes, not from the name or what the browser reports", async () => {
+    const webp = await prepareAttachment(file("bild.webp", testImage("plain.webp")), image(16, 12).deps);
+    expect(webp.ok && webp.attachment.mediaType).toBe("image/webp");
+    const jpeg = await prepareAttachment(file("foto.png", testImage("plain.jpg"), "image/png"), image(16, 12).deps);
+    expect(jpeg.ok && jpeg.attachment.mediaType).toBe("image/jpeg");
+  });
+
+  it("re-encodes a small image whose file it cannot take apart completely", async () => {
+    const { deps, encodeJpeg } = image(800, 600, [5_000]);
+
+    const out = await prepareAttachment(file("screen.png", "PNGDATA", "image/png"), deps);
+
+    expect(encodeJpeg).toHaveBeenCalledTimes(1);
+    expect(encodeJpeg.mock.calls[0]).toEqual([800, 600, 0.85]);
+    expect(out.ok && out.attachment).toMatchObject({ name: "screen.jpg", mediaType: "image/jpeg", sizeBytes: 5_000 });
   });
 
   it("scales a large image down to the edge limit and re-encodes it as JPEG", async () => {

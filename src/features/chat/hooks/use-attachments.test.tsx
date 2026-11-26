@@ -6,6 +6,7 @@ import {
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENTS_REQUEST_BYTES,
 } from "@/shared/lib/chat-limits";
+import { testImage } from "@tests/support/test-images";
 
 // Die Bild-Fähigkeiten des Browsers gibt es in jsdom nicht, hier reichen
 // Textdateien: sie laufen durch dieselbe Aufbereitung, nur ohne Canvas. Wo ein
@@ -51,7 +52,8 @@ describe("useAttachments", () => {
 
     let done!: Promise<void>;
     act(() => {
-      done = result.current.add([new File(["x"], "slow.png", { type: "image/png" })]);
+      // Ein echtes Bild: eines, das sich nicht zerlegen lässt, ginge über das Canvas, und das gibt es hier nicht.
+      done = result.current.add([new File([testImage("plain.png")], "slow.png", { type: "image/png" })]);
     });
     expect(result.current.pending).toBe(1);
 

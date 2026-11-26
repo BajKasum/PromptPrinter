@@ -4,8 +4,6 @@ import {
   attachmentKindOf,
   base64DecodedLength,
   formatBytes,
-  imageMediaTypeForName,
-  isImageMediaType,
   maxBytesForAttachment,
   sanitizeAttachmentName,
 } from "@/shared/lib/chat-attachments";
@@ -44,25 +42,6 @@ describe("attachmentKindOf", () => {
 
   it("looks at the real suffix, not at a suffix hidden earlier in the name", () => {
     expect(attachmentKindOf("notes.md.exe")).toBeNull();
-  });
-});
-
-describe("imageMediaTypeForName / isImageMediaType", () => {
-  it("maps the three accepted image extensions", () => {
-    expect(imageMediaTypeForName("a.png")).toBe("image/png");
-    expect(imageMediaTypeForName("a.jpg")).toBe("image/jpeg");
-    expect(imageMediaTypeForName("a.JPEG")).toBe("image/jpeg");
-    expect(imageMediaTypeForName("a.webp")).toBe("image/webp");
-    expect(imageMediaTypeForName("a.gif")).toBeNull();
-  });
-
-  it("accepts exactly the three image types", () => {
-    expect(isImageMediaType("image/png")).toBe(true);
-    expect(isImageMediaType("image/jpeg")).toBe(true);
-    expect(isImageMediaType("image/webp")).toBe(true);
-    expect(isImageMediaType("image/svg+xml")).toBe(false);
-    expect(isImageMediaType("image/gif")).toBe(false);
-    expect(isImageMediaType("text/html")).toBe(false);
   });
 });
 
