@@ -14,13 +14,18 @@ import { fmt } from "@/shared/i18n/format";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
 import { PublicRiskAlert } from "@/features/prompts/components/public-risk-alert";
 
+/** Zwei verglichene Fassungen samt Text: `from` ist die gewählte ältere, `to` die neuere. */
+type Pair = { from: number; to: number; older: string; newer: string };
+
 /**
- * Der Verlauf eines gespeicherten Prompts an der Karte: erscheint erst ab zwei Versionen, lädt die Versionen beim
- * Aufklappen (die neuesten zuerst, seitenweise), vergleicht zwei davon Wort für Wort und stellt eine alte wieder her.
- * Wiederherstellen schreibt den alten Text als aktuelle Fassung zurück, die Datenbank legt ihn als neueste Version an
- * (Migration 0061): nichts geht verloren. Gelesen wird mit RLS und zusätzlich `user_id`. Bei einem Prompt, der geteilt
- * sein kann, steht der alte Text sofort unter dem Link; deshalb fragt Wiederherstellen vor Schlüsseln und persönlichen
- * Angaben nach wie Bearbeiten.
+ * Der Verlauf eines gespeicherten Prompts an der Karte: erscheint erst ab zwei Versionen, vergleicht zwei davon Wort
+ * für Wort und stellt eine alte wieder her. Geladen wird, was gerade zu sehen ist: beim Aufklappen der Karte und nach
+ * jeder neuen Fassung nur die Zahl der Versionen (eine Anfrage ohne Zeilen), beim Öffnen des Verlaufs Nummern und
+ * Zeiten (die neuesten zuerst, seitenweise), den Text nur der beiden verglichenen Fassungen. Wiederherstellen schreibt
+ * den alten Text als aktuelle Fassung zurück, die Datenbank legt ihn als neueste Version an (Migration 0061): nichts
+ * geht verloren. Gelesen wird mit RLS und zusätzlich `user_id`. Bei einem Prompt, der geteilt sein kann, steht der
+ * alte Text sofort unter dem Link; deshalb fragt Wiederherstellen vor Schlüsseln und persönlichen Angaben nach wie
+ * Bearbeiten, nach genau dem Text, den es schreibt. Ohne geladenen Text gibt es nichts wiederherzustellen.
  */
 export function PromptHistory({
   promptId,
@@ -46,24 +51,49 @@ export function PromptHistory({
   const { toast } = useToast();
   const panelId = useId();
   const [count, setCount] = useState<number | null>(null);
+  const [countFailed, setCountFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
+  const [pair, setPair] = useState<Pair | null>(null);
   const [failed, setFailed] = useState(false);
   const [from, setFrom] = useState<number | null>(null);
   const [to, setTo] = useState<number | null>(null);
   const [restoring, setRestoring] = useState(false);
   // Die Version, deren Wiederherstellen gerade nachfragt.
   const [confirming, setConfirming] = useState<number | null>(null);
-  // Nur die zuletzt gestartete Abfrage zählt: ein Nachladen von vor dem Wiederherstellen kommt sonst später an und
-  // zeigte den alten Stand.
+  // "Neu laden", nachdem sich die Zahl nicht lesen liess.
+  const [countAttempt, setCountAttempt] = useState(0);
+  // Nur die zuletzt gestartete Abfrage einer Seite zählt: ein Nachladen von vor dem Wiederherstellen kommt sonst später
+  // an und zeigte den alten Stand.
   const latestRequest = useRef(0);
+  // Eine Version ändert sich nie (Migration 0061: niemand darf sie ändern oder löschen, nur mit dem Prompt): ein
+  // geladener Text bleibt gültig und wird nicht noch einmal geholt.
+  const texts = useRef(new Map<string, string>());
 
-  const load = useCallback(
+  // Beim Aufklappen der Karte und nach jeder neuen Fassung nur die Zahl, für den Knopf: eine Anfrage ohne Zeilen.
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const { count: total, error } = await createClient()
+        .from("saved_prompt_versions")
+        .select("version", { count: "exact", head: true })
+        .eq("prompt_id", promptId)
+        .eq("user_id", userId);
+      if (!live) return;
+      setCountFailed(Boolean(error));
+      if (!error) setCount(total ?? null);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [promptId, userId, content, countAttempt]);
+
+  const loadPage = useCallback(
     async (offset: number) => {
       const request = ++latestRequest.current;
       const { data, error, count: total } = await createClient()
         .from("saved_prompt_versions")
-        .select("version, content, created_at", { count: "exact" })
+        .select("version, created_at", { count: "exact" })
         .eq("prompt_id", promptId)
         .eq("user_id", userId)
         .order("version", { ascending: false })
@@ -75,15 +105,16 @@ export function PromptHistory({
       }
       setFailed(false);
       setCount(total ?? null);
-      return (data ?? []).map((r) => ({ version: r.version, content: r.content, createdAt: r.created_at }));
+      return (data ?? []).map((r) => ({ version: r.version, createdAt: r.created_at }));
     },
     [promptId, userId]
   );
 
-  // Die Zahl beim Aufklappen der Karte und nach jeder neuen Fassung; die Versionen selbst erst, wenn der Verlauf offen ist.
+  // Nummern und Zeiten erst, wenn der Verlauf offen ist, und nach jeder neuen Fassung neu.
   useEffect(() => {
+    if (!open) return;
     let live = true;
-    void load(0).then((page) => {
+    void loadPage(0).then((page) => {
       if (!live || !page) return;
       setVersions(page);
       setTo(page[0]?.version ?? null);
@@ -92,16 +123,68 @@ export function PromptHistory({
     return () => {
       live = false;
     };
-  }, [load, content]);
+  }, [open, loadPage, content]);
 
-  const byNumber = useMemo(() => new Map(versions.map((v) => [v.version, v])), [versions]);
+  // Der Text der gewählten Fassungen; was schon geladen ist, kommt aus dem Speicher der Karte.
+  const loadTexts = useCallback(
+    async (wanted: number[]) => {
+      const key = (version: number) => `${promptId}:${version}`;
+      const missing = wanted.filter((version) => !texts.current.has(key(version)));
+      if (missing.length > 0) {
+        const { data, error } = await createClient()
+          .from("saved_prompt_versions")
+          .select("version, content")
+          .eq("prompt_id", promptId)
+          .eq("user_id", userId)
+          .in("version", missing);
+        if (error) return null;
+        for (const r of data ?? []) texts.current.set(key(r.version), r.content);
+      }
+      return (version: number) => texts.current.get(key(version));
+    },
+    [promptId, userId]
+  );
+
+  // Kam ein Text nicht, steht die Meldung im Verlauf; wer die Fassung wieder wählt, lädt ihn neu.
+  useEffect(() => {
+    if (!open || from === null || to === null) return;
+    let live = true;
+    void loadTexts([from, to]).then((textOf) => {
+      if (!live) return;
+      setFailed(!textOf);
+      const older = textOf?.(from);
+      const newer = textOf?.(to);
+      if (older !== undefined && newer !== undefined) setPair({ from, to, older, newer });
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, from, to, loadTexts]);
+
   const latest = versions[0]?.version ?? null;
-  const older = from !== null ? byNumber.get(from) : undefined;
-  const newer = to !== null ? byNumber.get(to) : undefined;
-  const parts = useMemo(() => (older && newer ? diffWords(older.content, newer.content) : []), [older, newer]);
+  // Verglichen wird nur, was gewählt ist: bis der Text der gewählten Fassungen da ist, steht kein Vergleich.
+  const shown = pair && pair.from === from && pair.to === to ? pair : null;
+  const parts = useMemo(() => (shown ? diffWords(shown.older, shown.newer) : []), [shown]);
   // Wie beim Bearbeiten gilt "trotzdem" nur für das, was die Rückfrage zeigt.
-  const risks = older && confirming === older.version ? risksBeforeWriting(share, older.content) : [];
+  const risks = shown && confirming === shown.from ? risksBeforeWriting(share, shown.older) : [];
 
+  // Ohne Zahl kein Knopf; liess sie sich nicht lesen, sagt das eine eigene Zeile, statt dass der Verlauf still fehlt.
+  if (countFailed && (count === null || count < 2)) {
+    return (
+      <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2">
+        <span role="status" className="text-[12.5px] text-secondary">
+          {t.prompts.history.loadFailed}
+        </span>
+        <button
+          type="button"
+          onClick={() => setCountAttempt((n) => n + 1)}
+          className="rounded-md px-2 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent-subtle"
+        >
+          {t.prompts.history.retry}
+        </button>
+      </div>
+    );
+  }
   if (!count || count < 2) return null;
 
   const label = (v: PromptVersion) =>
@@ -109,21 +192,22 @@ export function PromptHistory({
     (v.version === latest ? ` (${t.prompts.history.current})` : "");
 
   async function loadMore() {
-    const page = await load(versions.length);
+    const page = await loadPage(versions.length);
     if (page) setVersions((list) => [...list, ...page.filter((v) => !list.some((o) => o.version === v.version))]);
   }
 
-  async function restore(version: PromptVersion, confirmed: boolean) {
+  // Schreibt `text` und prüft vorher genau diesen Text: kein Weg führt am Prüfen vorbei zum Schreiben.
+  async function restore(version: number, text: string, confirmed: boolean) {
     if (restoring) return;
-    if (!confirmed && risksBeforeWriting(share, version.content).length > 0) {
-      setConfirming(version.version);
+    if (!confirmed && risksBeforeWriting(share, text).length > 0) {
+      setConfirming(version);
       return;
     }
     setConfirming(null);
     setRestoring(true);
     const { data, error } = await createClient()
       .from("saved_prompts")
-      .update({ outputs: { prompt: version.content, title } })
+      .update({ outputs: { prompt: text, title } })
       .eq("id", promptId)
       .eq("user_id", userId)
       .select("id");
@@ -132,12 +216,12 @@ export function PromptHistory({
       toast({ title: t.prompts.history.restoreFailed, description: t.prompts.tryAgain, variant: "error" });
       return;
     }
-    // Die neue Nummer für die Meldung; den Verlauf selbst lädt der neue Text nach (Effekt oben).
-    const page = await load(0);
+    // Die neue Nummer für die Meldung; den Verlauf selbst lädt der neue Text nach (Effekte oben).
+    const page = await loadPage(0);
     setRestoring(false);
-    onRestored(version.content);
+    onRestored(text);
     toast({
-      title: fmt(t.prompts.history.restored, { old: version.version, new: page?.[0]?.version ?? "" }),
+      title: fmt(t.prompts.history.restored, { old: version, new: page?.[0]?.version ?? "" }),
       variant: "success",
     });
     router.refresh();
@@ -164,7 +248,8 @@ export function PromptHistory({
           <div className="flex flex-wrap items-end gap-2">
             <VersionSelect label={t.prompts.history.from} value={from} versions={versions} format={label} onChange={setFrom} />
             <VersionSelect label={t.prompts.history.to} value={to} versions={versions} format={label} onChange={setTo} />
-            {versions.length < count && (
+            {/* Erst mit der ersten Seite: ohne sie hätte die Auswahl noch keine Vorgabe. */}
+            {versions.length > 0 && versions.length < count && (
               <button
                 type="button"
                 onClick={() => void loadMore()}
@@ -174,10 +259,10 @@ export function PromptHistory({
               </button>
             )}
           </div>
-          {older && newer && (
+          {shown && (
             <div
               role="group"
-              aria-label={fmt(t.prompts.history.compareLabel, { from: older.version, to: newer.version })}
+              aria-label={fmt(t.prompts.history.compareLabel, { from: shown.from, to: shown.to })}
               className="max-h-[360px] overflow-auto whitespace-pre-wrap rounded-md border border-border bg-background px-3 py-2 font-mono text-[12.5px] leading-relaxed text-foreground/85"
             >
               {!hasChanges(parts)
@@ -200,17 +285,17 @@ export function PromptHistory({
             </div>
           )}
           {/* Eine Fassung mit demselben Text wie die aktuelle legte die Datenbank nicht neu an: nichts anzubieten. */}
-          {older && older.version !== latest && older.content !== content && (
+          {shown && shown.from !== latest && shown.older !== content && (
             <div className="space-y-2">
               {share.status === "shared" && <p className="text-[12.5px] text-secondary">{t.prompts.history.sharedHint}</p>}
               <PublicRiskAlert risks={risks} />
               <button
                 type="button"
-                onClick={() => void restore(older, risks.length > 0)}
+                onClick={() => void restore(shown.from, shown.older, risks.length > 0)}
                 disabled={restoring}
                 className="rounded-md bg-accent-subtle px-2.5 py-1 text-[12.5px] font-medium text-accent-text transition-colors hover:bg-accent/15 disabled:opacity-60"
               >
-                {fmt(risks.length > 0 ? t.prompts.history.restoreAnyway : t.prompts.history.restore, { n: older.version })}
+                {fmt(risks.length > 0 ? t.prompts.history.restoreAnyway : t.prompts.history.restore, { n: shown.from })}
               </button>
             </div>
           )}

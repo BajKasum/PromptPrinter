@@ -873,6 +873,7 @@ export const de = {
     newNameLabel: "Neuer Name für den Prompt",
     saveName: "Namen speichern",
     cancelRename: "Umbenennen abbrechen",
+    renameAnyway: "Trotzdem umbenennen",
     savedAgo: "Gespeichert {time}",
     renameLabel: "„{title}“ umbenennen",
     exportPdf: "Als PDF exportieren",
@@ -911,6 +912,7 @@ export const de = {
       restoreAnyway: "Version {n} trotzdem wiederherstellen",
       sharedHint: "Dieser Prompt ist geteilt: die wiederhergestellte Fassung steht sofort unter dem Link.",
       loadFailed: "Der Verlauf liess sich nicht laden.",
+      retry: "Neu laden",
       more: "Ältere Versionen laden",
     },
     export: {

@@ -856,6 +856,7 @@ export const es: Messages = {
     newNameLabel: "Nuevo nombre del prompt",
     saveName: "Guardar el nombre",
     cancelRename: "Cancelar el cambio de nombre",
+    renameAnyway: "Cambiar el nombre de todos modos",
     savedAgo: "Guardado {time}",
     renameLabel: "Cambiar el nombre de «{title}»",
     exportPdf: "Exportar como PDF",
@@ -894,6 +895,7 @@ export const es: Messages = {
       restoreAnyway: "Restaurar la versión {n} de todos modos",
       sharedHint: "Este prompt está compartido: la versión restaurada aparece de inmediato en el enlace.",
       loadFailed: "No se pudo cargar el historial.",
+      retry: "Recargar",
       more: "Cargar versiones anteriores",
     },
     export: {

@@ -854,6 +854,7 @@ export const en: Messages = {
     newNameLabel: "New name for the prompt",
     saveName: "Save name",
     cancelRename: "Cancel renaming",
+    renameAnyway: "Rename anyway",
     savedAgo: "Saved {time}",
     renameLabel: "Rename “{title}”",
     exportPdf: "Export as PDF",
@@ -892,6 +893,7 @@ export const en: Messages = {
       restoreAnyway: "Restore version {n} anyway",
       sharedHint: "This prompt is shared: the restored version shows up under the link right away.",
       loadFailed: "The history could not be loaded.",
+      retry: "Reload",
       more: "Load older versions",
     },
     export: {

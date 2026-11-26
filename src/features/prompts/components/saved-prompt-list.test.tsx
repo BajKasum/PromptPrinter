@@ -19,14 +19,27 @@ vi.mock("@/shared/ui/toast", () => ({
   useToast: () => ({ toast }),
 }));
 
-// Die Karte liest beim Aufklappen den Verlauf (saved_prompt_versions) und den Stand der Freigabe über
-// /api/prompts/<id>/share (fetch); nach diesem Stand prüfen Bearbeiten und Wiederherstellen.
+// Die Karte liest beim Aufklappen die Zahl der Versionen (saved_prompt_versions, `head`), im offenen Verlauf eine Seite
+// (`.range()`) und die Texte der verglichenen Fassungen (`.in()`), dazu den Stand der Freigabe über
+// /api/prompts/<id>/share (fetch); nach diesem Stand prüfen Umbenennen, Bearbeiten und Wiederherstellen.
 let versionRows: { version: number; content: string; created_at: string }[] = [];
-function readChain(result: () => unknown) {
+function readChain(options?: { head?: boolean }) {
+  let versions: number[] = [];
+  const sorted = () => [...versionRows].sort((a, b) => b.version - a.version);
   const chain = {
     eq: () => chain,
     order: () => chain,
-    range: async () => result(),
+    in: (_column: string, list: number[]) => {
+      versions = list;
+      return chain;
+    },
+    range: async () => ({ data: sorted(), error: null, count: versionRows.length }),
+    then: (resolve: (value: unknown) => unknown) =>
+      Promise.resolve(
+        options?.head
+          ? { data: null, error: null, count: versionRows.length }
+          : { data: sorted().filter((r) => versions.includes(r.version)), error: null }
+      ).then(resolve),
   };
   return chain;
 }
@@ -34,14 +47,7 @@ vi.mock("@/shared/supabase/client", () => ({
   createClient: () => ({
     from: (table: string) =>
       table === "saved_prompt_versions"
-        ? {
-            select: () =>
-              readChain(() => ({
-                data: [...versionRows].sort((a, b) => b.version - a.version),
-                error: null,
-                count: versionRows.length,
-              })),
-          }
+        ? { select: (_columns: string, options?: { head?: boolean }) => readChain(options) }
         : { update, delete: del },
   }),
 }));
@@ -456,7 +462,8 @@ describe("SavedPromptList", () => {
       expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
 
       await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
-      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      // Den Text der alten Fassung lädt der Verlauf erst jetzt, erst danach gibt es etwas wiederherzustellen.
+      await user.click(await screen.findByRole("button", { name: "Version 1 wiederherstellen" }));
       expect(update).not.toHaveBeenCalled();
       expect(screen.getByRole("alert")).toHaveTextContent(KEY_FINDING);
 
@@ -475,9 +482,97 @@ describe("SavedPromptList", () => {
       await waitFor(() => expect(screen.getByRole("button", { name: "Per Link teilen" })).toBeEnabled());
 
       await user.click(await screen.findByRole("button", { name: "Verlauf (2 Versionen)" }));
-      await user.click(screen.getByRole("button", { name: "Version 1 wiederherstellen" }));
+      await user.click(await screen.findByRole("button", { name: "Version 1 wiederherstellen" }));
       expect(update).toHaveBeenCalledWith({ outputs: { prompt: KEY_TEXT, title: "Alter Name" } });
       expect(screen.queryByRole("alert")).toBeNull();
+    });
+  });
+
+  // Die Seite unter dem Link zeigt den Titel als Überschrift: ein neuer Titel mit Schlüssel oder persönlichen Angaben
+  // fragt vorher nach, solange der Prompt geteilt sein kann. Enter fragt nur, erst "Trotzdem umbenennen" schreibt.
+  describe("Umbenennen, solange der Prompt geteilt sein kann", () => {
+    const KEY_TITLE = "Key sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789";
+    const PERSONAL_TITLE = "Angebot für Anna Muster, anna.muster@beispiel.ch";
+    const nameField = () => screen.getByLabelText("Neuer Name für den Prompt");
+
+    async function typeTitle(user: ReturnType<typeof userEvent.setup>, title: string) {
+      await user.click(screen.getByRole("button", { name: "„Alter Name“ umbenennen" }));
+      await user.clear(nameField());
+      await user.type(nameField(), `${title}{Enter}`);
+    }
+
+    it("fragt bei einem geteilten Prompt vor einem Schlüssel im Titel nach, Enter bestätigt nicht", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(TOKEN));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
+
+      await typeTitle(user, KEY_TITLE);
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent("Bitte prüf vorher: Sieht nach einem Schlüssel oder Passwort aus");
+      expect(screen.queryByRole("button", { name: "Namen speichern" })).toBeNull();
+      await user.keyboard("{Enter}");
+      expect(update).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole("button", { name: "Trotzdem umbenennen" }));
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: prompt.content, title: KEY_TITLE } });
+      expect(await screen.findByRole("button", { name: KEY_TITLE })).toBeInTheDocument();
+    });
+
+    it("fragt nach, wenn sich der Stand der Freigabe nicht lesen liess", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(null, false));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      expect(await screen.findByText("Ob dieser Prompt geteilt ist, konnte ich gerade nicht prüfen.")).toBeInTheDocument();
+
+      await typeTitle(user, PERSONAL_TITLE);
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent("Persönliche Angaben (an…@beispiel.ch)");
+
+      await user.click(screen.getByRole("button", { name: "Trotzdem umbenennen" }));
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: prompt.content, title: PERSONAL_TITLE } });
+    });
+
+    it("fragt nach, wenn Umbenennen vor der Antwort kommt", async () => {
+      fetchMock.mockImplementation(() => new Promise(() => {}));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+
+      await typeTitle(user, PERSONAL_TITLE);
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent("Persönliche Angaben (an…@beispiel.ch)");
+    });
+
+    it("benennt einen privaten Prompt ohne Rückfrage um, auch mit Schlüssel im Titel", async () => {
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Per Link teilen" })).toBeEnabled());
+
+      await typeTitle(user, KEY_TITLE);
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(update).toHaveBeenCalledWith({ outputs: { prompt: prompt.content, title: KEY_TITLE } });
+    });
+
+    it("nimmt die Rückfrage beim Weitertippen zurück und fragt beim nächsten Enter neu", async () => {
+      fetchMock.mockImplementation(() => shareAnswer(TOKEN));
+      render(<SavedPromptList userId="u1" prompts={[prompt]} />);
+      const user = userEvent.setup();
+      await openPrompt(user);
+      expect(await screen.findByText(`${window.location.origin}/geteilt/${TOKEN}`)).toBeInTheDocument();
+
+      await typeTitle(user, PERSONAL_TITLE);
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      await user.type(nameField(), "!");
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.getByRole("button", { name: "Namen speichern" })).toBeInTheDocument();
+
+      await user.keyboard("{Enter}");
+      expect(update).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent("Persönliche Angaben");
     });
   });
 });
