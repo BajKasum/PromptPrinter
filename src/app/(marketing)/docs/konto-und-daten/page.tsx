@@ -131,7 +131,7 @@ export default function Page() {
       <p>
         Das geht am aufgeklappten Prompt mit <strong>Per Link teilen</strong>.
         Vorher fragt PromptPrinter nach und weist dich auf Schlüssel oder
-        persönliche Angaben hin, die es im Text findet. Den Prompt kann dann
+        persönliche Angaben hin, die es im Titel oder Text findet. Den Prompt kann dann
         jeder lesen, der den Link hat: Titel und Text, ohne deinen Namen und
         deine E-Mail-Adresse. Änderst du den Text, steht die neue Fassung sofort
         unter dem Link. Mit <strong>Widerrufen</strong> ziehst du den Link
