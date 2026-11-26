@@ -24,12 +24,16 @@ import { zaiCompleteStream } from "@/server/llm/zai";
 import { streamDeadlines } from "@/server/llm/http";
 
 /**
- * Die Ströme der SDKs (Anthropic, OpenAI, Gemini per BYOK) bekommen dieselben Fristen wie Z.ai und Custom: erstes Stück,
- * Leerlauf und Gesamtdauer (streamDeadlines). Sonst hinge ein Anbieter, der nichts mehr schickt, bis Vercel abbricht,
- * und kein catch gäbe die Reservierungen zurück. Die Frist bis zum ersten Stück ist grosszügig, denkende Modelle
- * schweigen anfangs länger.
+ * Die Ströme der SDKs (Anthropic, OpenAI, Gemini, ob per eigenem Key oder auf dem Server-Key) bekommen dieselben Fristen
+ * wie Z.ai und Custom: erstes Stück, Leerlauf und Gesamtdauer (streamDeadlines). Sonst hinge ein Anbieter, der nichts
+ * mehr schickt, bis Vercel abbricht, und kein catch gäbe die Reservierungen zurück. Die Frist bis zum ersten Stück ist
+ * grosszügig, denkende Modelle schweigen anfangs länger.
+ *
+ * Ein Abbruch kommt immer mit dem Grund des Signals an (TimeoutError der Frist, AbortError des Nutzers), nicht mit dem,
+ * was der SDK daraus macht: Gemini wirft einen AbortError, Anthropic und OpenAI beenden den Strom sogar ohne Fehler, und
+ * der halbe Text gälte als fertige Antwort.
  */
-const SDK_FIRST_CHUNK_TIMEOUT_MS = 90_000;
+export const SDK_FIRST_CHUNK_TIMEOUT_MS = 90_000;
 
 async function* withDeadlines(
   signal: AbortSignal | undefined,
@@ -42,6 +46,10 @@ async function* withDeadlines(
       yield chunk;
       guard.awaiting();
     }
+    guard.signal.throwIfAborted();
+  } catch (err) {
+    guard.signal.throwIfAborted();
+    throw err;
   } finally {
     guard.stop();
   }
@@ -224,12 +232,7 @@ async function* chatCompleteStreamOnce(opts: {
     );
     return;
   }
-  yield* geminiCompleteStream(
-    config.model,
-    opts.system,
-    opts.messages,
-    maxOutputTokens,
-    geminiApiKey() ?? "",
-    opts.signal
+  yield* withDeadlines(opts.signal, (signal) =>
+    geminiCompleteStream(config.model, opts.system, opts.messages, maxOutputTokens, geminiApiKey() ?? "", signal)
   );
 }
