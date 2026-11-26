@@ -6,6 +6,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { FadeIn } from "@/shared/motion/fade-in";
 import { SavedPromptList } from "@/features/prompts/components/saved-prompt-list";
 import { createClient } from "@/server/supabase/server";
+import { getSessionUser } from "@/server/session";
 import { mapSavedPromptRows } from "@/shared/lib/saved-prompts";
 import { SAVED_PROMPTS_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getLocale, getT } from "@/server/i18n";
@@ -27,11 +28,9 @@ export async function generateMetadata() {
 // here or on that page (saved-prompt-list.tsx's inline rename), never at
 // save time in the chat itself, saving stays a single zero-friction click.
 export default async function SavedPromptsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+  const supabase = await createClient();
 
   // Explicit user_id on top of RLS (defense in depth, same as every other
   // user-scoped query here), not project-scoped at all — that's the point.

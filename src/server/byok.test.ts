@@ -37,7 +37,7 @@ vi.mock("@/server/supabase/admin", () => ({
   createAdminClient: () => supabaseWith(adminResult),
 }));
 
-const { getConfiguredProviders, getCustomProvider, getUserOverride } = await import("@/server/byok");
+const { getByokOverview, getConfiguredProviders, getUserOverride } = await import("@/server/byok");
 
 describe("getUserOverride", () => {
   beforeEach(() => {
@@ -155,27 +155,78 @@ describe("getConfiguredProviders", () => {
   });
 });
 
-describe("getCustomProvider", () => {
-  it("returns the endpoint metadata for the settings UI, never the key", async () => {
-    const meta = await getCustomProvider(
-      supabaseWith({
-        data: { label: "Mein Gateway", base_url: "https://api.example.com", model: "m" },
-      }),
-      "user-1"
-    );
-    expect(meta).toEqual({
-      label: "Mein Gateway",
-      baseUrl: "https://api.example.com",
-      model: "m",
+describe("getByokOverview", () => {
+  const row = (provider: string, extra: Record<string, unknown> = {}) => ({
+    provider,
+    is_active: false,
+    label: null,
+    base_url: null,
+    model: null,
+    ...extra,
+  });
+  const custom = { label: "Mein Gateway", base_url: "https://api.example.com", model: "m" };
+
+  /** Zählt die Abfragen und hält Spalten und Bedingungen fest. */
+  function counting(result: { data: Row[] | null; error?: { message: string } }) {
+    const calls = { from: [] as string[], select: [] as string[], eq: [] as [string, unknown][] };
+    const chain: Record<string, unknown> = {
+      select: (columns: string) => {
+        calls.select.push(columns);
+        return chain;
+      },
+      eq: (column: string, value: unknown) => {
+        calls.eq.push([column, value]);
+        return chain;
+      },
+      then: (resolve: (v: unknown) => unknown) => resolve(result),
+    };
+    const client = {
+      from: (table: string) => {
+        calls.from.push(table);
+        return chain;
+      },
+    } as never;
+    return { client, calls };
+  }
+
+  it("liefert Anbieter, aktiven Key und Endpunkt aus EINER Abfrage, auf das Konto eingegrenzt, ohne Schlüssel", async () => {
+    const { client, calls } = counting({ data: [row("openai"), row("custom", { ...custom, is_active: true })] });
+    expect(await getByokOverview(client, "user-1")).toEqual({
+      configuredProviders: ["openai", "custom"],
+      activeProvider: "custom",
+      customProvider: { label: "Mein Gateway", baseUrl: "https://api.example.com", model: "m" },
     });
-    expect(JSON.stringify(meta)).not.toContain("encrypted");
+    expect(calls.from).toEqual(["user_api_keys"]);
+    expect(calls.eq).toEqual([["user_id", "user-1"]]);
+    expect(calls.select).toEqual(["provider, is_active, label, base_url, model"]);
+    expect(calls.select.join()).not.toContain("encrypted_key");
   });
 
-  it("returns null when the row is incomplete", async () => {
-    const meta = await getCustomProvider(
-      supabaseWith({ data: { label: "X", base_url: null, model: "m" } }),
-      "user-1"
-    );
-    expect(meta).toBeNull();
+  it("meldet ohne Zeilen nichts eingerichtet, ohne aktiven Key und ohne Endpunkt", async () => {
+    expect(await getByokOverview(counting({ data: [] }).client, "user-1")).toEqual({
+      configuredProviders: [],
+      activeProvider: null,
+      customProvider: null,
+    });
+  });
+
+  it("nennt als aktiv nur den Key mit is_active", async () => {
+    const { client } = counting({ data: [row("openai"), row("anthropic", { is_active: true })] });
+    expect(await getByokOverview(client, "user-1")).toMatchObject({ activeProvider: "anthropic", customProvider: null });
+    const none = counting({ data: [row("openai")] });
+    expect(await getByokOverview(none.client, "user-1")).toMatchObject({ activeProvider: null });
+  });
+
+  it.each(["label", "base_url", "model"])("zeigt einen Endpunkt ohne %s nicht als eingerichtet", async (missing) => {
+    const { client } = counting({ data: [row("custom", { ...custom, [missing]: null })] });
+    expect(await getByokOverview(client, "user-1")).toMatchObject({
+      configuredProviders: ["custom"],
+      customProvider: null,
+    });
+  });
+
+  it("wirft bei einem Lesefehler, statt \"nichts eingerichtet\" zu melden", async () => {
+    const { client } = counting({ data: null, error: { message: "db down" } });
+    await expect(getByokOverview(client, "user-1")).rejects.toThrow("database read failed: user_api_keys");
   });
 });
