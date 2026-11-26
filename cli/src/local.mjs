@@ -140,16 +140,24 @@ export async function chooseModel(endpoint, settings) {
   return models.length === 0 ? { kind: "none" } : { kind: "many", models };
 }
 
+// `finish_reason`, wie im Haupt-Repo (server/llm/finish.ts): abgeschnitten, oder vom Server gestoppt (Inhaltsfilter,
+// Fehler). Alles andere ist ein normales Ende.
+const CUT_OFF = new Set(["length", "max_tokens", "model_length", "model_context_window_exceeded"]);
+const STOPPED = new Set(["content_filter", "sensitive", "error", "network_error", "insufficient_system_resource"]);
+
+const ending = (reason) => (reason && CUT_OFF.has(reason) ? { kind: "done", truncated: true } : { kind: "done" });
+
 /**
  * Liest den Strom von `/chat/completions`: je Stück `data: {json}`, am Ende `data: [DONE]`. Nur `content` ist
  * Antwort; Denken, das ein Server getrennt schickt (`reasoning`), bleibt weg. Fehlt `[DONE]`, zählt ein
- * gemeldetes `finish_reason` als Ende, sonst ist die Verbindung abgerissen.
+ * gemeldetes `finish_reason` als Ende, sonst ist die Verbindung abgerissen. Ein Grund aus `CUT_OFF` meldet
+ * `truncated`, einer aus `STOPPED` ist ein Fehler.
  */
 export async function* readCompletion(stream) {
-  let finished = false;
+  let reason = null;
   for await (const { data } of parseSse(stream)) {
     if (data.trim() === "[DONE]") {
-      yield { kind: "done" };
+      yield ending(reason);
       return;
     }
     let json;
@@ -168,9 +176,15 @@ export async function* readCompletion(stream) {
     if (!choice) continue;
     const content = choice.delta?.content;
     if (typeof content === "string" && content !== "") yield { kind: "text", text: content };
-    if (choice.finish_reason) finished = true;
+    if (choice.finish_reason) {
+      reason = String(choice.finish_reason).toLowerCase();
+      if (STOPPED.has(reason)) {
+        yield { kind: "error", detail: `finish_reason: ${reason}` };
+        return;
+      }
+    }
   }
-  yield { kind: finished ? "done" : "dropped" };
+  yield reason ? ending(reason) : { kind: "dropped" };
 }
 
 /**
@@ -260,7 +274,7 @@ export async function runLocalTurn({ endpoint, conversation, text, onDelta, sign
         emit(filter.flush());
         if (!reply.trim()) return { kind: "empty", text: reply };
         conversation.commit(text, reply);
-        return { kind: "done", text: reply, persistError: null };
+        return { kind: "done", text: reply, persistError: null, ...(part.truncated ? { truncated: true } : {}) };
       }
     }
     return { kind: "dropped", text: reply };

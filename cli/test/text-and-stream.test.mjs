@@ -75,6 +75,8 @@ test("readChatEvent: bekannt, unbekannt, kaputt", () => {
   assert.equal(readChatEvent("error", "{}").kind, "invalid");
   assert.equal(readChatEvent("meta", '{"conversationId":7}').kind, "invalid");
   assert.equal(readChatEvent("done", "{}").kind, "event");
+  assert.equal(readChatEvent("done", '{"truncated":true}').kind, "event");
+  assert.equal(readChatEvent("done", '{"truncated":"ja"}').kind, "invalid");
   assert.equal(readChatEvent("status", '{"phase":"retrying","attempt":2,"maxAttempts":3}').kind, "event");
 });
 

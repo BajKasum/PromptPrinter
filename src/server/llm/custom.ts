@@ -13,6 +13,7 @@ import {
   withProviderTimeout,
   type OpenAiCompatibleResponse,
 } from "@/server/llm/http";
+import { isZaiEndpoint } from "@/server/llm/config";
 import { toOpenAiMessages } from "@/server/llm/messages";
 import type { LlmMessage, LlmResult } from "@/server/llm/types";
 
@@ -97,7 +98,8 @@ export async function* customCompleteStream(
   maxOutputTokens: number,
   apiKey: string,
   signal?: AbortSignal,
-  source: EndpointSource = "byok"
+  source: EndpointSource = "byok",
+  onTruncated?: () => void
 ): AsyncGenerator<string> {
   const guard = streamDeadlines(signal, CUSTOM_FIRST_CHUNK_TIMEOUT_MS);
   try {
@@ -110,7 +112,12 @@ export async function* customCompleteStream(
     });
     if (!res.body) throw new Error(`${LABELS[source]} hat keinen Antwort-Stream geliefert.`);
 
-    for await (const chunk of readOpenAiCompatibleSse(res.body)) {
+    const events = readOpenAiCompatibleSse(res.body, undefined, {
+      label: LABELS[source],
+      requireFinishReason: isZaiEndpoint(endpoint),
+      onTruncated,
+    });
+    for await (const chunk of events) {
       guard.received();
       yield chunk;
       guard.awaiting();

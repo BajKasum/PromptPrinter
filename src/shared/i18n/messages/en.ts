@@ -100,6 +100,8 @@ export const en: Messages = {
     connectionDropped:
       "The connection dropped in the middle of the reply. Reload the page, the reply may already be saved.",
     streamEnded: "The connection dropped before a reply arrived. Please try again.",
+    truncated: "Cut off: this reply isn't finished.",
+    truncatedAdvice: "Regenerate it, or ask me for a shorter version.",
     statusWriting: "Finn is writing…",
     statusRevealing: "Writing the reply…",
     statusDone: "Reply finished.",

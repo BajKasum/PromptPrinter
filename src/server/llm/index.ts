@@ -46,6 +46,7 @@ import "server-only";
 //   openai.ts     OpenAI (SDK, BYOK)
 //   messages.ts   Verlauf und Bilder in der Form jedes Anbieters
 //   http.ts       Geteiltes der fetch-Wege: Fehler, Zeitlimit, Größengrenze, SSE-Leser
+//   finish.ts     Abschlussgrund jedes Anbieters: fertig, abgeschnitten, gefiltert oder gescheitert
 //
 // llm-retry.ts und llm-failover.ts liegen daneben (src/server/): jeder Aufruf geht durch sie.
 

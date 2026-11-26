@@ -22,8 +22,12 @@ import * as z from "@/shared/lib/zod";
 //           Antwort (K-2) und fehlt bei `persistError`, weil dann nichts gespeichert wurde.
 //           `persistError` ist ein stabiler CODE ("persist_failed"), nie eine Meldung (Security-
 //           Audit M-1): sie würde sonst Schema-Text der Datenbank an den Browser tragen.
+//           `truncated` steht nur bei einer Antwort, die nicht zu Ende ist (server/llm/finish.ts):
+//           an der Ausgabegrenze abgeschnitten oder ohne Abschluss des Anbieters beendet. Sie ist
+//           gespeichert wie jede andere, der Client sagt es an der Antwort.
 //   error   genau eines, bei einem Fehler, statt done. `detail` ist ein fertiger, nichts
-//           verratender Text in der Sprache der App.
+//           verratender Text in der Sprache der App. Auch ein Inhaltsfilter und ein Fehler des
+//           Anbieters mitten im Strom enden so.
 //
 // Ältere Clients ignorieren Ereignisse, die sie nicht kennen, und unbekannte Felder (zod entfernt
 // sie beim Lesen): neue Ereignisse und Felder sind abwärtskompatibel, ein umbenanntes oder
@@ -49,6 +53,8 @@ export const chatStreamSchemas = {
     persistError: z.string().optional(),
     /** Nur im Gratis-Rahmen (server/free-trial.ts): wie viele Gratis-Prompts nach diesem Zug noch bleiben. */
     freePromptsLeft: z.number().int().min(0).optional(),
+    /** Nur wenn die Antwort nicht zu Ende ist (siehe oben). */
+    truncated: z.boolean().optional(),
   }),
   error: z.object({ detail: z.string() }),
 };

@@ -9,6 +9,7 @@ import { RefineChips } from "@/features/chat/components/refine-chips";
 import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { PromptActions } from "@/features/chat/components/prompt-actions";
+import { TruncatedNote } from "@/features/chat/components/truncated-note";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
 import { useT } from "@/shared/i18n/provider";
@@ -34,6 +35,7 @@ export function ChatResultPanel({
   index = 0,
   typed,
   busy = false,
+  truncated = false,
   onRefine,
   onRefineOther,
 }: {
@@ -52,6 +54,8 @@ export function ChatResultPanel({
   typed?: string;
   /** Während ein Zug läuft, bietet das Panel kein Verfeinern an. */
   busy?: boolean;
+  /** Die Antwort ist nicht zu Ende: ein Hinweis steht über ihr, bevor man sie kopiert. */
+  truncated?: boolean;
   /** Ein Tipp auf "Kürzer", "Förmlicher" ...: schickt die vorformulierte Nachricht (#245). */
   onRefine?: (message: string) => void;
   /** "Anderes": setzt nur den Cursor ins Eingabefeld. */
@@ -101,14 +105,26 @@ export function ChatResultPanel({
         )}
       </header>
 
+      {truncated && <TruncatedNote advice className="border-b px-4 py-2.5 md:px-7" />}
+
       {/* Larger, looser type than a chat bubble, this is meant to be read. */}
       <div className="px-3 py-4 text-[14px] leading-[1.7] text-foreground/90 md:px-7 md:py-6">
         <MarkdownMessage content={content} typed={typed} />
       </div>
 
-      {savablePrompt && <PlaceholderForm key={savablePrompt} prompt={savablePrompt} onFilledChange={setFilled} />}
+      {/* Zwei Geschwister, zwei Schlüsselräume: ohne ausgefüllte Platzhalter wäre der Text für beide derselbe, und
+          React ordnet Kinder mit gleichem Schlüssel falsch zu (das Formular verlöre beim Tippen seinen Stand). */}
+      {savablePrompt && (
+        <PlaceholderForm key={`platzhalter:${savablePrompt}`} prompt={savablePrompt} onFilledChange={setFilled} />
+      )}
 
-      {savablePrompt && <PromptActions key={filled ?? savablePrompt} prompt={filled ?? savablePrompt} original={savablePrompt} />}
+      {savablePrompt && (
+        <PromptActions
+          key={`aktionen:${filled ?? savablePrompt}`}
+          prompt={filled ?? savablePrompt}
+          original={savablePrompt}
+        />
+      )}
 
       {/* Same actions as under an older reply (#150): the prompt that just got
           finished is the moment you most want to export it. */}

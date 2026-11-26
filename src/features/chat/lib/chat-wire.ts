@@ -23,6 +23,8 @@ export type Msg = {
   content: string;
   /** Fotos und Dateien, die eine Nutzer-Nachricht mitgebracht hat. */
   attachments?: AttachmentView[];
+  /** Eine Antwort, die nicht zu Ende ist (`done.truncated`). Nur in der laufenden Ansicht (truncated-replies.ts). */
+  truncated?: boolean;
 };
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

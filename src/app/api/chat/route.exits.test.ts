@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 import { ZAI_CONSENT_VERSION } from "@/server/consent";
+import { LlmBlockedError } from "@/server/llm/types";
 import { chatStreamSchemas, type ChatStreamEventName } from "@/shared/lib/chat-stream";
 
 // Ein Konto, das der Übermittlung an Z.ai zugestimmt hat (server/consent.ts): ohne sie antwortet der
@@ -379,6 +380,21 @@ describe("jeder Ausstieg nach der Reservierung gibt sie zurück, wenn der Zug ni
     expect(insertCalls.messages?.some((r) => (r as { role?: string }).role === "assistant") ?? false).toBe(false);
   });
 
+  it("Inhaltsfilter mitten in der Antwort: wie ein Fehler, beide gehen zurück, die Frage wird zurückgenommen (#403)", async () => {
+    chatCompleteStream.mockImplementation(async function* () {
+      yield "halbe ";
+      throw new LlmBlockedError("Z.ai", "sensitive");
+    });
+    const body = await text(await POST(req()));
+    expect(body).toContain("event: error");
+    expect(body).toContain("keine Antwort geliefert");
+    expect(body).not.toContain("sensitive");
+    expect(calls(trialRelease)).toBe(1);
+    expect(calls(budgetRelease)).toBe(1);
+    expect(deleteCalls.conversations ?? 0).toBe(1);
+    expect(insertCalls.messages?.some((r) => (r as { role?: string }).role === "assistant") ?? false).toBe(false);
+  });
+
   it("leere Antwort des Anbieters: wie ein Fehler, beide gehen zurück", async () => {
     chatCompleteStream.mockImplementation(async function* () {
       yield "   ";
@@ -482,6 +498,19 @@ describe("Vertrag des Antwort-Stroms", () => {
     const list = await sent();
     expect(list.map((f) => f.event)).toEqual(["meta", "delta", "done"]);
     expect(list.at(-1)?.data).toMatchObject({ mode: "generated", conversationId: "conv-1" });
+    expect(list.at(-1)?.data).not.toHaveProperty("truncated");
+  });
+
+  it("abgeschnittene Antwort: gespeichert und berechnet wie jede andere, done sagt truncated (#403)", async () => {
+    chatCompleteStream.mockImplementation(async function* (opts: { onTruncated: () => void }) {
+      yield "Halbe Antwort";
+      opts.onTruncated();
+    });
+    const list = await sent();
+    expect(list.at(-1)?.data).toMatchObject({ truncated: true });
+    expect(insertCalls.messages?.some((r) => (r as { role?: string }).role === "assistant")).toBe(true);
+    expect(calls(trialRelease)).toBe(0);
+    expect(calls(budgetRelease)).toBe(0);
   });
 
   it("die Gesamtfrist zählt ab Beginn der Anfrage, nicht ab dem Modellaufruf (#404)", async () => {

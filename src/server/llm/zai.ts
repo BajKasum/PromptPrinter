@@ -27,7 +27,8 @@ export async function* zaiCompleteStream(
   system: string,
   messages: LlmMessage[],
   maxOutputTokens: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onTruncated?: () => void
 ): AsyncGenerator<string> {
   const guard = streamDeadlines(signal, ZAI_FIRST_CHUNK_TIMEOUT_MS);
   try {
@@ -54,7 +55,13 @@ export async function* zaiCompleteStream(
     if (!res.ok) await throwProviderError("Z.ai", res, { rawFallbackChars: 300 });
     if (!res.body) throw new Error("Z.ai hat keinen Antwort-Stream geliefert.");
 
-    for await (const chunk of readOpenAiCompatibleSse(res.body, undefined, { reasoning: "drop" })) {
+    const events = readOpenAiCompatibleSse(res.body, undefined, {
+      reasoning: "drop",
+      label: "Z.ai",
+      requireFinishReason: true,
+      onTruncated,
+    });
+    for await (const chunk of events) {
       guard.received();
       yield chunk;
       guard.awaiting();

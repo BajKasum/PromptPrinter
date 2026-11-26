@@ -174,6 +174,21 @@ test("Steuerfolgen statt Zahlen im Wartehinweis erreichen das Terminal nicht, de
   await repl.finished;
 });
 
+test("eine abgeschnittene Antwort steht da mit dem Hinweis, eine ganze ohne", async () => {
+  stub.state.chat.push({ raw: [sse("delta", { text: "halb" }), sse("done", { truncated: true })] });
+  stub.state.chat.push(turn(["ganz"]));
+  const repl = await start();
+  repl.input.write("hallo\r");
+  await until(() => repl.screen().includes("Gekürzt:"), "Hinweis");
+  assert.match(repl.screen(), /Finn: halb/);
+  const before = repl.screen().length;
+  repl.input.write("noch einmal\r");
+  await until(() => repl.screen().includes("Finn: ganz"), "zweite Antwort");
+  repl.input.write("/exit\r");
+  await repl.finished;
+  assert.equal(repl.screen().slice(before).includes("Gekürzt:"), false);
+});
+
 const PROMPT_REPLY = ['Hier ist dein Prompt:\n\n```text\n-x Sag "Hallo" & echo | %PATH%\nzweite Zeile\n```\n'];
 
 test("/an claude gibt den letzten Prompt als eigenes Argument nach -- an den Agenten und kommt danach zurück", async () => {

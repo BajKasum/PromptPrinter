@@ -153,6 +153,12 @@ export async function* chatCompleteStream(opts: {
    * dann nur noch, was bis zur Obergrenze übrig ist. Ohne Angabe jetzt.
    */
   requestStartedAt?: number;
+  /**
+   * Wird am Ende eines Stroms gerufen, dessen Antwort nicht zu Ende ist: an
+   * der Ausgabegrenze abgeschnitten oder ohne Abschluss des Anbieters beendet
+   * (finish.ts). Ein Inhaltsfilter oder ein gemeldeter Fehler wirft.
+   */
+  onTruncated?: () => void;
 }): AsyncGenerator<string> {
   const deadline = turnDeadline(opts.signal, opts.requestStartedAt);
   const attempt = { ...opts, signal: deadline.signal };
@@ -186,6 +192,7 @@ async function* chatCompleteStreamOnce(opts: {
   override?: LlmOverride;
   signal?: AbortSignal;
   serverProvider?: ServerProvider;
+  onTruncated?: () => void;
 }): AsyncGenerator<string> {
   const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
 
@@ -193,13 +200,29 @@ async function* chatCompleteStreamOnce(opts: {
     const { provider, apiKey } = opts.override;
     if (provider === "anthropic") {
       yield* withDeadlines(opts.signal, (signal) =>
-        anthropicCompleteStream(anthropicModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
+        anthropicCompleteStream(
+          anthropicModel(),
+          opts.system,
+          opts.messages,
+          maxOutputTokens,
+          apiKey,
+          signal,
+          opts.onTruncated
+        )
       );
       return;
     }
     if (provider === "openai") {
       yield* withDeadlines(opts.signal, (signal) =>
-        openaiCompleteStream(openaiModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
+        openaiCompleteStream(
+          openaiModel(),
+          opts.system,
+          opts.messages,
+          maxOutputTokens,
+          apiKey,
+          signal,
+          opts.onTruncated
+        )
       );
       return;
     }
@@ -211,12 +234,22 @@ async function* chatCompleteStreamOnce(opts: {
         opts.messages,
         maxOutputTokens,
         apiKey,
-        opts.signal
+        opts.signal,
+        "byok",
+        opts.onTruncated
       );
       return;
     }
     yield* withDeadlines(opts.signal, (signal) =>
-      geminiCompleteStream(geminiByokModel(), opts.system, opts.messages, maxOutputTokens, apiKey, signal)
+      geminiCompleteStream(
+        geminiByokModel(),
+        opts.system,
+        opts.messages,
+        maxOutputTokens,
+        apiKey,
+        signal,
+        opts.onTruncated
+      )
     );
     return;
   }
@@ -230,7 +263,8 @@ async function* chatCompleteStreamOnce(opts: {
       opts.system,
       opts.messages,
       maxOutputTokens,
-      opts.signal
+      opts.signal,
+      opts.onTruncated
     );
     return;
   }
@@ -243,11 +277,20 @@ async function* chatCompleteStreamOnce(opts: {
       maxOutputTokens,
       endpointApiKey(),
       opts.signal,
-      "server"
+      "server",
+      opts.onTruncated
     );
     return;
   }
   yield* withDeadlines(opts.signal, (signal) =>
-    geminiCompleteStream(config.model, opts.system, opts.messages, maxOutputTokens, geminiApiKey() ?? "", signal)
+    geminiCompleteStream(
+      config.model,
+      opts.system,
+      opts.messages,
+      maxOutputTokens,
+      geminiApiKey() ?? "",
+      signal,
+      opts.onTruncated
+    )
   );
 }

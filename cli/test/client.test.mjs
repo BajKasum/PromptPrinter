@@ -256,6 +256,13 @@ test("chat: ein error-Ereignis, ein kaputtes Ereignis, ein abgerissener Strom", 
   assert.deepEqual([dropped.result.kind, dropped.result.text], ["dropped", "halb"]);
 });
 
+test("chat: done mit truncated sagt es, ohne bleibt das Ergebnis wie immer", async () => {
+  stub.state.chat.push({ raw: [sse("delta", { text: "halb" }), sse("done", { truncated: true })] });
+  assert.deepEqual((await chatTurn("a")).result, { kind: "done", text: "halb", persistError: null, truncated: true });
+  stub.state.chat.push({ raw: [sse("delta", { text: "ganz" }), sse("done", { truncated: false })] });
+  assert.deepEqual((await chatTurn("b")).result, { kind: "done", text: "ganz", persistError: null });
+});
+
 test("chat: Abbrechen stoppt den Strom", async () => {
   stub.state.chat.push({ raw: [sse("delta", { text: "halb" })], hang: true });
   const controller = new AbortController();

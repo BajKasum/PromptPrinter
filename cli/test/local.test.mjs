@@ -200,6 +200,24 @@ describe("Ein Zug", () => {
     assert.equal((await turnWith({ raw: [chunk({ content: "halb" })] })).result.kind, "dropped");
   });
 
+  test("an der Grenze abgeschnitten: fertig, aber mit truncated, mit und ohne [DONE]", async () => {
+    for (const reason of ["length", "max_tokens", "model_length", "model_context_window_exceeded", "LENGTH"]) {
+      const raw = [chunk({ content: "halb" }), chunk({}, reason)];
+      const withDone = await turnWith({ raw: [...raw, "data: [DONE]\n\n"] });
+      assert.deepEqual(withDone.result, { kind: "done", text: "halb", persistError: null, truncated: true }, reason);
+      assert.equal((await turnWith({ raw })).result.truncated, true, reason);
+    }
+    assert.equal((await turnWith(completion(["ganz"]))).result.truncated, undefined);
+  });
+
+  test("vom Server gestoppt (Inhaltsfilter, Fehler): ein Fehler, nichts im Verlauf", async () => {
+    for (const reason of ["content_filter", "sensitive", "error", "network_error", "insufficient_system_resource"]) {
+      const { result, conversation } = await turnWith({ raw: [chunk({ content: "a" }), chunk({}, reason), "data: [DONE]\n\n"] });
+      assert.deepEqual(result, { kind: "error", text: "a", detail: `finish_reason: ${reason}` }, reason);
+      assert.equal(conversation.request("x").messages.length, 1);
+    }
+  });
+
   test("Fehler im Strom und kaputtes JSON", async () => {
     const error = await turnWith({ raw: [chunk({ content: "a" }), `data: ${JSON.stringify({ error: { message: "kaputt\u001b[2J" } })}\n\n`] });
     assert.deepEqual(error.result, { kind: "error", text: "a", detail: "kaputt" });
