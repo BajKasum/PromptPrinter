@@ -46,7 +46,8 @@ function logSampled(event: string, context: LogContext, random: () => number): v
 }
 
 /**
- * Hält eine abgelehnte Anfrage fest (401, 403, 404 auf eine fremde Kennung) und gibt die Antwort unverändert zurück:
+ * Hält eine abgelehnte Anfrage fest (401, 403, 404 auf eine fremde Kennung, 403 an einer Grenze mit `reason`, etwa
+ * `attachment_storage` oder `project_limit`) und gibt die Antwort unverändert zurück:
  * `return denied("projects", problem(401, …))`. `context` trägt, was die Route schon weiss, etwa die Kennung des Kontos.
  */
 export function denied<T extends Response>(
