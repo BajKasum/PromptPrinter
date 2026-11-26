@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Plug, Trash2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useToast } from "@/shared/ui/toast";
 import { ToolLogo } from "@/shared/brand/tool-logos";
 import type { CustomProviderMeta } from "@/shared/lib/byok-types";
@@ -12,8 +13,55 @@ import { useT } from "@/shared/i18n/provider";
 import { fmt } from "@/shared/i18n/format";
 import { failureText, readProblem } from "@/shared/lib/read-problem";
 
-// Die Zeilen der schon verbundenen Anbieter aus api-keys.tsx (Dateigröße, Betriebs-Audit
-// Folgesitzung 2026-10-07): unverändert verschoben, nur exportiert.
+// Die Zeilen der schon verbundenen Anbieter zu api-keys.tsx. Entfernen fragt nach: der Key ist verschlüsselt
+// gespeichert und wird nie wieder angezeigt, wer ihn nicht mehr hat, braucht beim Anbieter einen neuen.
+
+/** Der Papierkorb einer Zeile. Erst die Rückfrage ruft `onRemove`; der Dialog schliesst sich, wenn es durch ist. */
+function RemoveKeyButton({
+  label,
+  testId,
+  title,
+  description,
+  busy,
+  onRemove,
+}: {
+  label: string;
+  testId?: string;
+  title: string;
+  description: string;
+  /** Die Zeile arbeitet gerade (auch am Aktivieren): Knopf und Dialog sind gesperrt. */
+  busy: boolean;
+  onRemove: () => Promise<void>;
+}) {
+  const t = useT();
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-tertiary hover:text-destructive"
+        onClick={() => setConfirming(true)}
+        disabled={busy}
+        aria-label={label}
+        data-testid={testId}
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        title={title}
+        description={description}
+        confirmLabel={t.settings.keys.removeConfirm}
+        busyLabel={t.settings.keys.removing}
+        busy={busy}
+        onConfirm={() => void onRemove().finally(() => setConfirming(false))}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
+  );
+}
 
 /** One row per already-connected named provider (Anthropic/OpenAI/Gemini). */
 export function ConnectedProviderRow({
@@ -31,9 +79,8 @@ export function ConnectedProviderRow({
   const [busy, setBusy] = useState(false);
   const meta = NAMED_PROVIDER_META[provider];
 
-  // Switching which stored key is billed (Security-Audit finding M-6). The
-  // server does the swap in one statement (set_active_byok_provider_for), so
-  // there is never a moment with two active keys or none.
+  // Schaltet um, welcher gespeicherte Key abgerechnet wird. Der Server tauscht in einem Schritt
+  // (set_active_byok_provider_for), es gibt nie zwei aktive Keys oder keinen.
   async function activate() {
     if (busy) return;
     setBusy(true);
@@ -88,9 +135,7 @@ export function ConnectedProviderRow({
         <div className="truncate text-[12px] text-tertiary">{meta.sub}</div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {/* Security-Audit finding M-6: every connected provider used to read
-            "Verbunden" while exactly one of them was actually in use. Which
-            one is the thing worth saying. */}
+        {/* Von den verbundenen Anbietern läuft genau einer, das steht an der Zeile ("Aktiv"). */}
         {isActive ? (
           <span className="flex items-center gap-1 text-[12px] font-medium text-success">
             <Check className="h-3 w-3" />
@@ -111,17 +156,14 @@ export function ConnectedProviderRow({
             {t.settings.keys.connectedState}
           </span>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-tertiary hover:text-destructive"
-          onClick={() => void remove()}
-          disabled={busy}
-          aria-label={fmt(t.settings.keys.removeLabel, { name: meta.name })}
-          data-testid={`remove-${provider}`}
-        >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-        </Button>
+        <RemoveKeyButton
+          label={fmt(t.settings.keys.removeLabel, { name: meta.name })}
+          testId={`remove-${provider}`}
+          title={fmt(t.settings.keys.removeConfirmTitle, { name: meta.name })}
+          description={t.settings.keys.removeConfirmBody}
+          busy={busy}
+          onRemove={remove}
+        />
       </div>
     </div>
   );
@@ -167,16 +209,13 @@ export function ConnectedCustomRow({ meta }: { meta: CustomProviderMeta }) {
           <Check className="h-3 w-3" />
           {t.settings.keys.connectedState}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-tertiary hover:text-destructive"
-          onClick={() => void remove()}
-          disabled={busy}
-          aria-label={t.settings.keys.removeCustomLabel}
-        >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-        </Button>
+        <RemoveKeyButton
+          label={t.settings.keys.removeCustomLabel}
+          title={fmt(t.settings.keys.removeCustomConfirmTitle, { name: meta.label })}
+          description={t.settings.keys.removeCustomConfirmBody}
+          busy={busy}
+          onRemove={remove}
+        />
       </div>
     </div>
   );

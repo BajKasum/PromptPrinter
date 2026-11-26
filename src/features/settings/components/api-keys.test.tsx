@@ -106,11 +106,12 @@ describe("ApiKeys", () => {
     expect(screen.getByRole("button", { name: "Aktivieren" })).toBeInTheDocument();
   });
 
-  it("entfernt einen verbundenen Anbieter", async () => {
+  it("entfernt einen verbundenen Anbieter nach der Rückfrage", async () => {
     render(<ApiKeys configured={["anthropic"]} active="anthropic" customProvider={null} />);
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId("remove-anthropic"));
+    await user.click(await screen.findByRole("button", { name: "Key entfernen" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0];

@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/shared/supabase/client";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { useToast } from "@/shared/ui/toast";
 import { MAX_ASSISTANT_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
 import { risksBeforeWriting, type ShareStatus } from "@/shared/lib/prompt-share-status";
@@ -15,7 +16,8 @@ import { PublicRiskAlert } from "@/features/prompts/components/public-risk-alert
  * `outputs`, der Titel bleibt; die Datenbank legt daraus die nächste Version an (Migration 0061). Die Grenze im Feld
  * ist die einer Antwort im Chat, so viel kann Speichern aus dem Chat ohnehin übernehmen. Ist der Prompt geteilt, sagt
  * ein Hinweis, dass die Änderung sofort unter dem Link steht. Kann er geteilt sein (geteilt, Stand unbekannt oder noch
- * unterwegs), fragt die Prüfung auf Schlüssel und persönliche Angaben vor dem Speichern nach.
+ * unterwegs), fragt die Prüfung auf Schlüssel und persönliche Angaben vor dem Speichern nach. Escape schliesst ohne
+ * Änderung sofort und fragt sonst, ob die Änderungen verworfen werden sollen.
  */
 export function PromptTextEditor({
   promptId,
@@ -43,8 +45,10 @@ export function PromptTextEditor({
   const router = useRouter();
   const { toast } = useToast();
   const fieldId = useId();
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState(content);
   const [confirmingRisks, setConfirmingRisks] = useState(false);
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const next = text.trim() ? text : "";
@@ -77,6 +81,18 @@ export function PromptTextEditor({
     router.refresh();
   }
 
+  function handleEscape(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Während einer Eingabehilfe (IME) bricht Escape nur die Zusammensetzung ab. Beim Speichern wartet der Editor.
+    if (e.key !== "Escape" || e.nativeEvent.isComposing || saving) return;
+    if (text === content) {
+      onClose();
+      return;
+    }
+    // Das Ereignis endet hier: die Rückfrage hört selbst auf Escape und schlösse sich sonst sofort wieder.
+    e.stopPropagation();
+    setConfirmingDiscard(true);
+  }
+
   return (
     <div className="border-b border-border px-4 py-3">
       <label htmlFor={fieldId} className="mb-1.5 block text-[12.5px] font-medium text-foreground/80">
@@ -84,6 +100,7 @@ export function PromptTextEditor({
       </label>
       <textarea
         id={fieldId}
+        ref={fieldRef}
         autoFocus
         value={text}
         maxLength={MAX_ASSISTANT_MESSAGE_CHARS}
@@ -91,9 +108,7 @@ export function PromptTextEditor({
           setText(e.target.value);
           setConfirmingRisks(false);
         }}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
+        onKeyDown={handleEscape}
         rows={12}
         className="block w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-[13px] leading-relaxed text-foreground focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
       />
@@ -120,6 +135,18 @@ export function PromptTextEditor({
           {risks.length > 0 ? t.prompts.edit.saveAnyway : t.prompts.edit.save}
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmingDiscard}
+        title={t.prompts.edit.discardTitle}
+        description={fmt(t.prompts.edit.discardBody, { title })}
+        confirmLabel={t.prompts.edit.discard}
+        busyLabel={t.prompts.edit.discard}
+        onConfirm={onClose}
+        onCancel={() => {
+          setConfirmingDiscard(false);
+          fieldRef.current?.focus();
+        }}
+      />
     </div>
   );
 }
