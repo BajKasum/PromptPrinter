@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MarkdownMessage } from "./chat-markdown";
+import { PromptCopiedContext } from "@/features/chat/lib/prompt-copied";
+import { ToastContext } from "@/shared/ui/toast-context";
 
 const writeText = vi.fn().mockResolvedValue(undefined);
 
@@ -80,6 +82,36 @@ describe("MarkdownMessage", () => {
     await user.click(screen.getByRole("button", { name: /Prompt kopieren/ }));
     expect(writeText).toHaveBeenCalledWith("hello world");
     expect(await screen.findByRole("button", { name: /Kopiert/ })).toBeInTheDocument();
+  });
+
+  // #421: nur ein gelungenes Kopieren gilt als "Prompt kopiert" (Finn feiert), ein Fehlschlag wird gemeldet.
+  it.each([
+    ["gelungen", true],
+    ["abgelehnt", false],
+  ])("meldet 'Prompt kopiert' nur, wenn das Kopieren gelungen ist (%s)", async (_name, works) => {
+    const user = setupWithClipboardMock();
+    if (!works) writeText.mockRejectedValueOnce(new Error("denied"));
+    const notify = vi.fn();
+    const toast = vi.fn();
+    render(
+      <ToastContext.Provider value={{ toast }}>
+        <PromptCopiedContext.Provider value={notify}>
+          <MarkdownMessage content={"```\nhello world\n```"} />
+        </PromptCopiedContext.Provider>
+      </ToastContext.Provider>
+    );
+
+    await user.click(screen.getByRole("button", { name: /Prompt kopieren/ }));
+
+    if (works) {
+      await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
+      expect(toast).not.toHaveBeenCalled();
+    } else {
+      await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+      expect(toast.mock.calls[0][0]).toMatchObject({ title: "Kopieren ging nicht", variant: "error" });
+      expect(notify).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: /Prompt kopieren/ })).toBeInTheDocument();
+    }
   });
 
   // Audit 23.09.2026, F-3: the model closed the block on the content line,

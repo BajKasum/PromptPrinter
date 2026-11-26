@@ -59,10 +59,7 @@ export function SharePrompt({
     }
     onShareChange({ status: "shared", token });
     // Der Toast sagt nur "kopiert", wenn die Zwischenablage es angenommen hat (ohne Fokus oder Recht lehnt sie ab).
-    const copiedLink = await copy(linkFor(token)).then(
-      () => true,
-      () => false
-    );
+    const copiedLink = await copy(linkFor(token), { quiet: true });
     toast({ title: copiedLink ? t.share.shared : t.share.sharedNotCopied, variant: "success" });
   }
 

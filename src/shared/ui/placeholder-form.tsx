@@ -38,7 +38,7 @@ export function PlaceholderForm({
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(new Set());
-  const { copied, copy } = useCopyToClipboard();
+  const { copied, failed, copy } = useCopyToClipboard();
   const filled = useMemo(() => fillPlaceholders(prompt, values, skipped), [prompt, values, skipped]);
   const anythingTyped = placeholders.some((p) => !skipped.has(p.key) && (Object.hasOwn(values, p.key) ? values[p.key] : "").trim() !== "");
   useEffect(() => {
@@ -116,12 +116,16 @@ export function PlaceholderForm({
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Button variant="accent" onClick={() => void copy(filled)}>
+            <Button variant="accent" onClick={() => void copy(filled, { quiet: true })}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? t.common.copied : t.chat.fill.copy}
             </Button>
             <span className="text-[12px] text-secondary">{t.chat.fill.leftEmpty}</span>
           </div>
+          {/* Hier statt im Toast: das Formular steht auch auf /geteilt/<token>, ohne ToastProvider. */}
+          <p role="status" className={failed ? "mt-2 text-[12px] text-destructive" : "sr-only"}>
+            {failed ? `${t.common.copyFailed}. ${t.common.copyFailedHint}` : ""}
+          </p>
         </div>
       )}
     </div>

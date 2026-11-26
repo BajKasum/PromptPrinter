@@ -14,6 +14,8 @@ export const fr: Messages = {
     close: "Fermer",
     copy: "Copier",
     copied: "Copié",
+    copyFailed: "La copie a échoué",
+    copyFailedHint: "Sélectionne le texte et copie-le toi-même (Ctrl+C ou ⌘C).",
     rename: "Renommer",
     retry: "Réessayer",
     back: "Retour",

@@ -1,12 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { useCallback, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
 import { Info, X } from "lucide-react";
 import { Mascot } from "@/shared/brand/mascot";
 import { useT } from "@/shared/i18n/provider";
+import { ToastContext, type ToastInput, type ToastVariant } from "@/shared/ui/toast-context";
 
-type ToastVariant = "default" | "success" | "error";
+export { useToast } from "@/shared/ui/toast-context";
 
 type ToastItem = {
   id: number;
@@ -14,18 +15,6 @@ type ToastItem = {
   description?: string;
   variant: ToastVariant;
 };
-
-type ToastInput = { title: string; description?: string; variant?: ToastVariant };
-
-type ToastContextValue = { toast: (t: ToastInput) => void };
-
-const ToastContext = createContext<ToastContextValue | null>(null);
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within <ToastProvider>");
-  return ctx;
-}
 
 const AUTO_DISMISS_MS = 4000;
 
