@@ -853,6 +853,7 @@ export const en: Messages = {
     newNameLabel: "New name for the prompt",
     saveName: "Save name",
     cancelRename: "Cancel renaming",
+    renameAnyway: "Rename anyway",
     savedAgo: "Saved {time}",
     renameLabel: "Rename “{title}”",
     exportPdf: "Export as PDF",

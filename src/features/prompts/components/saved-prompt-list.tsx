@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Copy, Check, X, Trash2, FileDown, Pencil, SquarePen } from "lucide-react";
+import { ChevronRight, Copy, Check, Trash2, FileDown, Pencil, SquarePen } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { useToast } from "@/shared/ui/toast";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
@@ -18,6 +18,7 @@ import { SharePrompt } from "@/features/prompts/components/share-prompt";
 import { PromptReuseBar } from "@/features/prompts/components/prompt-reuse-bar";
 import { PromptTextEditor } from "@/features/prompts/components/prompt-text-editor";
 import { PromptHistory } from "@/features/prompts/components/prompt-history";
+import { PromptRenameField } from "@/features/prompts/components/prompt-rename-field";
 import { useShareStatus } from "@/features/prompts/hooks/use-share-status";
 
 /** Ein gespeicherter Prompt in der Liste, mit dem Projekt, in dem ein neuer Chat ihn als Ausgangspunkt nimmt. */
@@ -32,7 +33,7 @@ export function SavedPromptList({
   userId,
 }: {
   prompts: ListedPrompt[];
-  /** Owner, fuer das explizite user_id neben RLS (Defense-in-depth). */
+  /** Eigentümer, für das ausdrückliche user_id neben RLS (Defense-in-depth). */
   userId: string;
 }) {
   const [items, setItems] = useState(prompts);
@@ -124,7 +125,7 @@ function SavedPromptCard({
   const [fill, setFill] = useState<PlaceholderFill>();
   // Löschen fragt nach, wie bei Projekt, Datei und Gedächtnis.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  // Ob der Prompt geteilt ist: einmal je Aufklappen geladen, für Teilen, Bearbeiten und Verlauf derselbe Stand.
+  // Ob der Prompt geteilt ist: einmal je Aufklappen geladen, für Teilen, Umbenennen, Bearbeiten und Verlauf derselbe Stand.
   const { share, setShare, reload: reloadShare } = useShareStatus(prompt.id, open);
 
   async function exportPdf() {
@@ -138,12 +139,8 @@ function SavedPromptCard({
   }
 
   // Umbenennen und Löschen sind optimistisch: die Liste ändert sich sofort, ein Fehler nimmt es zurück und sagt es.
-  async function rename() {
-    const next = title.trim().slice(0, 80);
-    if (!next || next === prompt.title) {
-      cancelRename();
-      return;
-    }
+  // Den Titel hat das Feld schon gekürzt und, falls der Prompt geteilt sein kann, geprüft (prompt-rename-field.tsx).
+  async function rename(next: string) {
     setRenaming(false);
     const undo = onRename(next);
 
@@ -203,43 +200,14 @@ function SavedPromptCard({
       )}
     >
       {renaming ? (
-        <div className="flex items-center gap-1.5 px-3 py-2.5">
-          <input
-            autoFocus
-            value={title}
-            maxLength={80}
-            aria-label={t.prompts.newNameLabel}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void rename();
-              } else if (e.key === "Escape") {
-                cancelRename();
-              }
-            }}
-            className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[13.5px] text-foreground transition-colors focus:border-ring focus:outline-hidden focus:ring-2 focus:ring-ring/20"
-          />
-          {/* No pending/disabled state on either button: the rename closes
-              the editor and updates the title on click, there is no in-flight
-              window left to guard. */}
-          <button
-            type="button"
-            onClick={() => void rename()}
-            aria-label={t.prompts.saveName}
-            className="touch-hit-y relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-          >
-            <Check className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={cancelRename}
-            aria-label={t.prompts.cancelRename}
-            className="touch-hit-y relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <PromptRenameField
+          current={prompt.title}
+          value={title}
+          share={share}
+          onChange={setTitle}
+          onRename={(next) => void rename(next)}
+          onCancel={cancelRename}
+        />
       ) : (
         // Heading wraps the button (the WAI accordion pattern), not the other
         // way round: a heading inside a <button> is invalid HTML and loses
@@ -367,6 +335,7 @@ function SavedPromptCard({
           {/* Teilen per Link (Migration 0057): erst nach einer Rückfrage, widerrufbar. */}
           <SharePrompt
             promptId={prompt.id}
+            title={prompt.title}
             content={prompt.content}
             share={share}
             onShareChange={setShare}
@@ -375,8 +344,8 @@ function SavedPromptCard({
         </div>
       )}
 
-      {/* Kein Spinner: nach der Bestaetigung verschwindet die Karte sofort aus
-          der Liste, es bleibt also nichts uebrig, das drehen koennte. */}
+      {/* Kein Spinner: nach der Bestätigung verschwindet die Karte sofort aus
+          der Liste, es bleibt also nichts übrig, das drehen könnte. */}
       <ConfirmDialog
         open={confirmingDelete}
         title={t.prompts.deleteConfirmTitle}

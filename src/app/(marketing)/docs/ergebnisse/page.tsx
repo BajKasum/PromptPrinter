@@ -41,7 +41,10 @@ export default function Page() {
       </p>
       <p>
         Den Titel musst du beim Speichern nicht vergeben: er entsteht aus der
-        ersten Zeile des Prompts. Passt er nicht, änderst du ihn jederzeit.
+        ersten Zeile des Prompts. Passt er nicht, änderst du ihn jederzeit. Bei
+        einem geteilten Prompt steht der Titel als Überschrift unter dem Link:
+        enthält ein neuer Titel einen Schlüssel oder persönliche Angaben, fragt
+        PromptPrinter vorher nach, so wie das Teilen selbst Titel und Text prüft.
       </p>
 
       <h2>Kann ich die Platzhalter eines gespeicherten Prompts ausfüllen?</h2>

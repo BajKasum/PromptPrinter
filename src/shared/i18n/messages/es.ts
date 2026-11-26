@@ -855,6 +855,7 @@ export const es: Messages = {
     newNameLabel: "Nuevo nombre del prompt",
     saveName: "Guardar el nombre",
     cancelRename: "Cancelar el cambio de nombre",
+    renameAnyway: "Cambiar el nombre de todos modos",
     savedAgo: "Guardado {time}",
     renameLabel: "Cambiar el nombre de «{title}»",
     exportPdf: "Exportar como PDF",
