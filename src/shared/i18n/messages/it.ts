@@ -99,6 +99,7 @@ export const it: Messages = {
       "Questa risposta è qui, ma al momento non è stato possibile salvarla. Se ricarichi la pagina andrà persa.",
     connectionDropped:
       "La connessione si è interrotta a metà della risposta. Ricarica la pagina, la risposta potrebbe essere già salvata.",
+    streamEnded: "La connessione si è interrotta prima che arrivasse una risposta. Riprova.",
     statusWriting: "Finn sta scrivendo…",
     statusRevealing: "Sto scrivendo la risposta…",
     statusDone: "Risposta completata.",

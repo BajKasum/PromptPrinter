@@ -29,11 +29,14 @@ export type TurnEventDeps = {
 /**
  * Der Handler eines Zugs. `handle` wendet ein Ereignis an, `text` ist der bisher angekommene Antworttext (auch
  * für den Abbruch-Zweig, der ihn braucht). Eine lokale Zeichenkette statt `pending` zurückzulesen: ein
- * setState wirkt nicht sofort, die Schleife braucht auf jedem Durchgang den genauen Stand.
+ * setState wirkt nicht sofort, die Schleife braucht auf jedem Durchgang den genauen Stand. `settled` sagt, ob
+ * die Route den Zug abgeschlossen hat (`done` oder `error`); ein Strom, der ohne beides endet, ist kein fertiger
+ * Zug (#416).
  */
 export function createTurnEventHandler(deps: TurnEventDeps) {
   const { dispatch } = deps;
   let accumulated = "";
+  let settled = false;
   // Eigene Variable statt des conversationId-States als Wache: ein setState wirkt nicht sofort, `done` sähe sonst
   // weiter den alten Wert und löste router.refresh() ein zweites Mal aus.
   let adoptedId: string | null = null;
@@ -96,11 +99,13 @@ export function createTurnEventHandler(deps: TurnEventDeps) {
         accumulated += event.data.text;
         return dispatch({ type: "delta", text: accumulated });
       case "error":
+        settled = true;
         throw new StreamProtocolError(event.data.detail);
       case "done":
+        settled = true;
         return onDone(event.data);
     }
   }
 
-  return { handle, text: () => accumulated };
+  return { handle, text: () => accumulated, settled: () => settled };
 }

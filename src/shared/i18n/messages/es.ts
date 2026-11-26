@@ -99,6 +99,7 @@ export const es: Messages = {
       "Esta respuesta está aquí, pero ahora mismo no se ha podido guardar. Si recargas la página, se perderá.",
     connectionDropped:
       "La conexión se cortó en mitad de la respuesta. Recarga la página, puede que la respuesta ya esté guardada.",
+    streamEnded: "La conexión se cortó antes de que llegara una respuesta. Inténtalo de nuevo.",
     statusWriting: "Finn está escribiendo…",
     statusRevealing: "Escribiendo la respuesta…",
     statusDone: "Respuesta terminada.",

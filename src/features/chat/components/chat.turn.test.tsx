@@ -558,6 +558,85 @@ describe("Stopp, wenn der Strom schon geschlossen ist und nur noch geschrieben w
   });
 });
 
+// #416: die Route kam nicht dazu, den Zug mit `done` oder `error` abzuschliessen (Zeitgrenze der Plattform, ein
+// Proxy schliesst die Verbindung sauber). Der Strom ist danach einfach zu; der Zug darf so nicht hängen bleiben.
+describe("Strom, der ohne done und ohne error endet (#416)", () => {
+  const cutOff = (frames: string[]) => ({ ok: true, body: streamOf(frames), json: async () => ({}) });
+
+  it("mit Text: die Antwort bleibt stehen, eine Warnung sagt, was war, und die Eingabe ist wieder frei", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          cutOff([frame("meta", { conversationId: "c" }), frame("delta", { text: "Halb " }), frame("delta", { text: "fertig" })])
+        )
+        .mockResolvedValueOnce(cutOff([frame("delta", { text: "Weiter geht es" }), frame("done", { conversationId: "c" })]))
+    );
+    render(<Chat initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /stoppen/ })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("log")).getByText("Halb fertig")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Verbindung ist mitten in der Antwort abgebrochen");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // Keine Feier für eine Antwort, die nicht fertig wurde.
+    expect(screen.queryByText("Fertig, dein Prompt ist startklar.")).not.toBeInTheDocument();
+
+    // Der nächste Zug läuft wie jeder andere. Erst auf sein Ende warten: die Antwort wandert aus der Vorschau in
+    // das Ergebnis, ein früher gefundener Knoten wäre danach nicht mehr im Dokument.
+    await user.type(screen.getByRole("textbox"), "Und jetzt?");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("log")).getByText("Weiter geht es")).toBeInTheDocument();
+  });
+
+  it("ohne Text: die Frage kommt zurück ins Feld, die Meldung steht da, und Erneut senden schickt sie noch einmal", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(cutOff([frame("meta", { conversationId: "c", userMessageId: U1 })]))
+      .mockResolvedValueOnce(cutOff([frame("delta", { text: "Jetzt klappt es" }), frame("done", { conversationId: "c" })]));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Chat initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Meine Frage");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Die Verbindung ist abgebrochen, bevor eine Antwort kam. Bitte versuch es noch einmal."
+    );
+    expect(screen.getByRole("textbox")).toHaveValue("Meine Frage");
+    expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Senden/ })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Erneut senden/ }));
+
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("log")).getByText("Jetzt klappt es")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sentBody(1).messages.at(-1)).toMatchObject({ role: "user", content: "Meine Frage" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("ein Rahmen, den die Verbindung mittendrin abschneidet, zählt nicht als Abschluss", async () => {
+    // Ohne die zwei Zeilenumbrüche am Ende ist das `done` nie vollständig angekommen.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(cutOff([frame("delta", { text: "Teil" }), 'event: done\ndata: {"conv'])));
+    render(<Chat initialConversationId="c" />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole("textbox"), "Hi");
+    await user.click(screen.getByRole("button", { name: /Senden/ }));
+
+    expect(await screen.findByRole("button", { name: /Senden/ })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Verbindung ist mitten in der Antwort abgebrochen");
+  });
+});
+
 describe("Antwort, die schon im Gang ist", () => {
   it("ein zweites Senden während des Zugs wird ignoriert (kein zweiter Request)", async () => {
     const { fetchMock, handle } = hangingFetch();

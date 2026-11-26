@@ -99,6 +99,7 @@ export const en: Messages = {
       "This reply is here, but it couldn't be saved just now. It will be lost if you reload.",
     connectionDropped:
       "The connection dropped in the middle of the reply. Reload the page, the reply may already be saved.",
+    streamEnded: "The connection dropped before a reply arrived. Please try again.",
     statusWriting: "Finn is writing…",
     statusRevealing: "Writing the reply…",
     statusDone: "Reply finished.",
