@@ -200,6 +200,9 @@ describe("PromptTextEditor: Escape mit Änderungen", () => {
     await user.type(view.field, " Neu.");
     await user.keyboard("{Escape}");
     const dialog = await screen.findByRole("dialog", { name: "Änderungen verwerfen?" });
+    // Die Rückfrage holt sich den Fokus erst einen Moment später (ConfirmDialog). Ein Escape davor ginge noch ins
+    // Textfeld, das es nicht weitergibt, und die Rückfrage bliebe stehen.
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Abbrechen" })).toHaveFocus());
     return { ...view, user, dialog };
   }
 
