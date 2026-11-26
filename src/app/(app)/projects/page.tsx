@@ -6,6 +6,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { LibraryBrowser, type LibraryItem } from "@/features/prompts/components/library-browser";
 import { NewProjectButton } from "@/features/projects/components/new-project";
 import { createClient } from "@/server/supabase/server";
+import { getSessionUser } from "@/server/session";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import type { ProjectTools } from "@/features/projects/types";
 import { getT } from "@/server/i18n";
@@ -50,11 +51,9 @@ function toolListOf(tools: ProjectTools | null): string[] {
 // favorites/recency, saved-prompt + chat counts) since the two were always the
 // same underlying rows viewed two ways. See DESIGN.md-adjacent IA notes.
 export default async function ProjectsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+  const supabase = await createClient();
 
   const t = await getT();
   const [rawProjectsResult, rawSummariesResult] = await Promise.all([

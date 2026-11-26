@@ -3,7 +3,8 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { SettingsWorkspace } from "@/features/settings/components/settings-workspace";
 import { createClient } from "@/server/supabase/server";
 import { resolvePlan } from "@/shared/lib/plans";
-import { getActiveProvider, getConfiguredProviders, getCustomProvider } from "@/server/byok";
+import { getByokOverview } from "@/server/byok";
+import { getSessionUser } from "@/server/session";
 import { getT } from "@/server/i18n";
 import { zaiConsentOf } from "@/server/consent";
 import { orThrow } from "@/server/supabase/query";
@@ -16,23 +17,18 @@ export async function generateMetadata() {
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+  const supabase = await createClient();
 
-  const [profileResult, configuredProviders, customProvider, activeProvider] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("display_name, plan, is_admin, about_me")
-        .eq("id", user.id)
-        .maybeSingle(),
-      getConfiguredProviders(supabase, user.id),
-      getCustomProvider(supabase, user.id),
-      getActiveProvider(supabase, user.id),
-    ]);
+  const [profileResult, { configuredProviders, activeProvider, customProvider }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, plan, is_admin, about_me")
+      .eq("id", user.id)
+      .maybeSingle(),
+    getByokOverview(supabase, user.id),
+  ]);
   const { data: profile } = orThrow(profileResult, "profiles");
 
   const t = await getT();

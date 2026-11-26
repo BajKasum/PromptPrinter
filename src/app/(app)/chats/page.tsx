@@ -7,6 +7,7 @@ import { AppHeader } from "@/shell/components/app-header";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { ChatList, type ChatListItem } from "@/features/chat/components/chat-list";
 import { createClient } from "@/server/supabase/server";
+import { getSessionUser } from "@/server/session";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
@@ -30,11 +31,9 @@ type ConversationQueryRow = {
 // deliberately not shown here; the sidebar carries resume, so this page needs
 // no featured hero, just the work.
 export default async function ChatsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+  const supabase = await createClient();
   const t = await getT();
 
   // Capped, and over-fetched by one so the note below can be truthful about

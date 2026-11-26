@@ -94,7 +94,7 @@
   "src/server/brain/analyze.ts": 2,
   "src/server/brain/github-select.ts": 2,
   "src/server/brain/github.ts": 18,
-  "src/server/byok.ts": 5,
+  "src/server/byok.ts": 3,
   "src/server/consent.ts": 3,
   "src/server/env-value.ts": 1,
   "src/server/env.ts": 4,

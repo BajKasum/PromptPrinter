@@ -5,7 +5,6 @@ import { bearerToken } from "@/server/supabase/bearer";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { revokeCliSession } from "@/server/cli-login/session";
-import { checkCliSession } from "@/server/cli-login/sessions";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
 import { captureError } from "@/shared/lib/observability";
 import { recordSecurityEvent } from "@/server/security/security-events";
@@ -13,10 +12,11 @@ import { recordSecurityEvent } from "@/server/security/security-events";
 export const runtime = "nodejs";
 
 // Das Terminal meldet sich ab: beendet genau die Sitzung, deren Access-Token im Kopf steht (scope local).
-// Die Browser-Sitzung und andere Geräte bleiben. Das Token wird vorher beim Auth-Server geprüft, nicht
-// nur gelesen (revokeCliSession). Ohne Body: das Token im Kopf ist die ganze Anfrage. Das Ratenlimit
-// je Adresse bremst nur Missbrauch. Nur eine Terminal-Sitzung (cli_sessions) meldet sich hier ab: das Token einer
-// Browser-Sitzung bekommt 401 wie in me, prompts und refresh, und das Protokoll nennt kein Terminal, das es nie gab.
+// Die Browser-Sitzung und andere Geräte bleiben. Zuerst prüft der Auth-Server das Token, erst danach liest
+// der Server cli_sessions (revokeCliSession): ein selbst gebautes JWT erreicht die Tabelle nie. Ohne Body:
+// das Token im Kopf ist die ganze Anfrage. Das Ratenlimit je Adresse bremst nur Missbrauch. Nur eine
+// Terminal-Sitzung meldet sich hier ab, auch eine über dem Höchstalter: das Token einer Browser-Sitzung bekommt
+// 401 wie in me, prompts und refresh, und das Protokoll nennt kein Terminal, das es nie gab.
 const RATE_LIMIT = { limit: 30, windowMs: 10 * 60 * 1000 };
 
 export async function POST(req: Request) {
@@ -34,10 +34,7 @@ export async function POST(req: Request) {
   if (!token) return denied("cli-logout", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
   try {
-    if ((await checkCliSession(token)) === "unknown") {
-      return denied("cli-logout", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
-    }
-    const result = await revokeCliSession(token);
+    const result = await revokeCliSession(token, { terminalOnly: true });
     if (result === "unauthorized") return denied("cli-logout", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
     if (result === null) return problem(503, CLI_PROBLEMS.unavailable, { kind: "unavailable" });
     await recordSecurityEvent("cli.session_revoked", result.userId, { via: "terminal" });

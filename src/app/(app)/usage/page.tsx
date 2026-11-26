@@ -8,6 +8,7 @@ import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { FREE_TRIAL, requiresOwnKey, resolvePlan } from "@/shared/lib/plans";
 import { getConfiguredProviders } from "@/server/byok";
+import { getSessionUser } from "@/server/session";
 import { freePromptsLeft } from "@/server/free-trial";
 import { readDailyServerKeyUsage } from "@/server/security/rate-limit";
 import { alertingConfigured } from "@/server/observability/alerting";
@@ -31,11 +32,9 @@ export const dynamic = "force-dynamic";
 // ablöst. Für Admins hängen die Betriebszahlen darunter. /admin, /billing und /plans leiten hierher um
 // (next.config.ts).
 export default async function UsagePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
+  const supabase = await createClient();
 
   const [profileResult, projectsCountResult, configuredProviders] = await Promise.all([
     supabase.from("profiles").select("plan, is_admin").eq("id", user.id).maybeSingle(),
