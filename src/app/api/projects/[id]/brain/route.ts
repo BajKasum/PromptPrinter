@@ -132,8 +132,8 @@ export async function POST(req: Request, { params }: Params) {
     },
     { onConflict: "project_id" }
   );
-  // Scheitert das Anlegen der Zeile, würde die bezahlte Analyse trotzdem laufen, das abschließende update träfe keine
-  // Zeile, und der Nutzer sähe ein Ergebnis, das nach dem Neuladen fehlt. Also gar nicht erst starten.
+  // Scheitert das Anlegen der Zeile, liefe die bezahlte Analyse ins Leere: das abschließende update fände keine Zeile,
+  // in der es das Ergebnis speichern könnte. Also gar nicht erst starten.
   if (startError) {
     await releaseReservations();
     captureError("brain.start_failed", startError, { userId, projectId });
@@ -141,7 +141,7 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   try {
-    return await analyzeAndSave({ req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt });
+    return await analyzeAndSave({ req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt, m });
   } catch (err) {
     // Der Aufruf hat nichts Verwertbares geliefert, also auch nichts gekostet, was jemandem angerechnet werden sollte,
     // dieselbe Logik wie im Chat. Ausnahme: das Modell hat geliefert und nur das Speichern scheiterte.
@@ -294,8 +294,9 @@ async function analyzeAndSave(ctx: {
   repoUrl: string | null;
   override: ModelCallAllowance["override"];
   startedAt: number;
+  m: Messages["api"];
 }): Promise<Response> {
-  const { req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt } = ctx;
+  const { req, supabase, admin, userId, projectId, project, repoUrl, override, startedAt, m } = ctx;
   const collected = await collectBrainSources(supabase, userId, projectId, {
     projectName: project.name,
     repoUrl,
@@ -312,7 +313,7 @@ async function analyzeAndSave(ctx: {
   });
 
   const analyzedAt = new Date().toISOString();
-  const { error: saveError } = await admin
+  const { data: saved, error: saveError } = await admin
     .from("project_brains")
     .update({
       status: "ready",
@@ -327,10 +328,24 @@ async function analyzeAndSave(ctx: {
       updated_at: analyzedAt,
     })
     .eq("project_id", projectId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("project_id");
   // Nicht gespeichert heißt nicht fertig, aber das Modell hat gearbeitet: die Reservierungen bleiben (wie der Chat bei
   // persist_failed), der catch unten meldet den Fehler und setzt den Status.
   if (saveError) throw new BrainSaveError("project_brains update failed", { cause: saveError });
+  // Keine Zeile getroffen: das Gedächtnis oder das ganze Projekt wurde während der Analyse gelöscht, die Analyse darf
+  // bis zu maxDuration laufen. Kein "ready" für ein Ergebnis, das nach dem Neuladen fehlt, sondern dieselbe Antwort wie
+  // für ein Projekt, das es nicht gibt. Die Reservierungen bleiben auch hier, das Modell hat gearbeitet.
+  if (!saved?.length) {
+    logEvent("brain.analysis_discarded", {
+      userId,
+      projectId,
+      byok: Boolean(override),
+      model,
+      latencyMs: Date.now() - startedAt,
+    });
+    return denied("brain", problem(404, m.projectNotFound), { userId, projectId });
+  }
   await rememberRepoHead(collected.repoUrl, collected.repoRef);
 
   logEvent("brain.analyzed", {

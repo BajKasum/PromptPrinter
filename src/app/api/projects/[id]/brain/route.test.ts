@@ -30,6 +30,8 @@ const adminWrites: { table: string; op: string; values: Record<string, unknown> 
 const adminReads: Record<string, { data?: unknown; error?: unknown }> = {};
 /** Schreibfehler des Service-Role-Clients je Vorgang ("upsert", "update"). */
 const adminWriteErrors: Record<string, unknown> = {};
+/** Zeilen, die ein Schreibzugriff mit select() zurückgibt, je Vorgang; ohne Eintrag trifft er die Zeile des Projekts. */
+const adminReturnedRows: Record<string, unknown[]> = {};
 
 function builder(table: string) {
   const result = () => tableResults[table] ?? { data: null, error: null };
@@ -43,13 +45,22 @@ function builder(table: string) {
 }
 
 function adminBuilder(table: string) {
+  let lastOp = "";
+  // Wie supabase-js: ein Schreibzugriff liefert seine Zeilen nur mit select(), sonst data: null.
+  let returning = false;
+  const written = () => {
+    const error = adminWriteErrors[lastOp] ?? null;
+    const rows = adminReturnedRows[lastOp] ?? [{ project_id: PROJECT_ID }];
+    return { data: error || !returning ? null : rows, error };
+  };
   const chain: Record<string, unknown> = {
     maybeSingle: async () => adminReads[table] ?? { data: null, error: null },
-    then: (resolve: (v: unknown) => unknown) =>
-      resolve({ data: null, error: adminWriteErrors[lastOp] ?? null }),
+    then: (resolve: (v: unknown) => unknown) => resolve(written()),
   };
-  let lastOp = "";
-  chain.select = () => chain;
+  chain.select = () => {
+    returning = true;
+    return chain;
+  };
   chain.eq = () => chain;
   chain.upsert = (values: Record<string, unknown>) => {
     lastOp = "upsert";
@@ -158,6 +169,7 @@ describe("POST /api/projects/[id]/brain", () => {
     adminWrites.length = 0;
     for (const key of Object.keys(adminReads)) delete adminReads[key];
     for (const key of Object.keys(adminWriteErrors)) delete adminWriteErrors[key];
+    for (const key of Object.keys(adminReturnedRows)) delete adminReturnedRows[key];
 
     getUser.mockResolvedValue({ data: { user: { id: "user-1", app_metadata: consented } } });
     rateLimit.mockResolvedValue({ allowed: true, remaining: 4, resetAt: Date.now() + 1000 });
@@ -375,6 +387,32 @@ describe("POST /api/projects/[id]/brain", () => {
       // Das Modell hat gearbeitet: die Reservierung bleibt, wie im Chat bei persist_failed.
       expect(release).not.toHaveBeenCalled();
       expect(adminWrites.some((w) => w.op === "update" && w.values.status === "failed")).toBe(true);
+    });
+
+    // "Gedächtnis löschen" in einem zweiten Tab oder das Löschen des Projekts (Kaskade), während das Modell arbeitet.
+    it("meldet kein fertiges Gedächtnis, wenn die Zeile während der Analyse gelöscht wurde", async () => {
+      const release = vi.fn();
+      reserveServerKeyCall.mockResolvedValue({ allowed: true, release });
+      analyzeProjectBrain.mockImplementation(async () => {
+        adminReturnedRows.update = [];
+        return { facts: FACTS, model: "glm-4.5-air" };
+      });
+
+      const res = await POST(req(), params);
+
+      // Dieselbe Antwort wie für ein Projekt, das es nicht gibt, und kein "ready".
+      expect(res.status).toBe(404);
+      expect(await res.json()).toMatchObject({ status: 404, detail: "Projekt nicht gefunden." });
+      // Das Modell hat gearbeitet: die Reservierung bleibt verbraucht, wie bei einem gescheiterten Speichern.
+      expect(release).not.toHaveBeenCalled();
+      // Kein Fehler der App: kein Eintrag im Fehlerprotokoll, kein Status "failed" für eine Zeile, die es nicht gibt.
+      expect(captureError).not.toHaveBeenCalled();
+      expect(adminWrites.some((w) => w.values.status === "failed")).toBe(false);
+      expect(logEvent).toHaveBeenCalledWith(
+        "brain.analysis_discarded",
+        expect.objectContaining({ userId: "user-1", projectId: PROJECT_ID, model: "glm-4.5-air" })
+      );
+      expect(logEvent).not.toHaveBeenCalledWith("brain.analyzed", expect.anything());
     });
 
     // Eine Analyse liest ein ganzes Repo — die teuerste Einzelaktion der App,
