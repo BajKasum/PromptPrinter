@@ -199,8 +199,12 @@ leitet dorthin weiter, unter Linux braucht Ollama `OLLAMA_HOST=0.0.0.0` (und ein
   ([Geschwindigkeitsmessung](#geschwindigkeitsmessung-vercel-speed-insights)).
 - **Zeitgrenzen.** Bis zum ersten Textstück hat der Endpunkt 60 Sekunden, danach 45 Sekunden Leerlauf, und 270
   Sekunden je Zug, Wiederholungen eingeschlossen (`LLM_STREAM_IDLE_TIMEOUT_MS`, `LLM_STREAM_TOTAL_TIMEOUT_MS`, die
-  Gesamtgrenze höchstens 285). Die Analyse des Projekt-Gedächtnisses hat 60 Sekunden. Ein grosses Modell auf einer CPU kann das überschreiten;
-  dann ein kleineres Modell nehmen.
+  Gesamtgrenze höchstens 285). Die Analyse des Projekt-Gedächtnisses hat 60 Sekunden. Ein grosses Modell auf einer
+  CPU kann das überschreiten; dann ein kleineres Modell nehmen.
+- **Abschlussgrund.** Meldet der Endpunkt `finish_reason` `length` (auch `max_tokens`, `model_length`,
+  `model_context_window_exceeded`), steht an der Antwort „Gekürzt“, ebenso wenn der Strom ohne `finish_reason` und
+  ohne `data: [DONE]` endet. `[DONE]` ohne Grund gilt als fertig. Ein `error` im Strom und `content_filter` enden
+  wie ein Fehler.
 - **Bilder** gehen als `image_url` an den Endpunkt. Ein Modell ohne Bildverständnis lehnt sie ab oder übergeht
   sie.
 - **Denkende Modelle** (etwa qwen3): schickt der Server den Denktext als `reasoning_content` oder als
@@ -1217,6 +1221,13 @@ Anthropic, OpenAI und Gemini 90, `llm/chat.ts`), danach 45 Sekunden Leerlauf, mi
 `LLM_STREAM_IDLE_TIMEOUT_MS` und `LLM_STREAM_TOTAL_TIMEOUT_MS` ändern Leerlauf und Gesamtgrenze, die
 Gesamtgrenze nur bis 285 Sekunden. Läuft eine Frist ab, endet der Zug mit einem Fehler, den die Route meldet und
 nach dem sie aufräumt.
+
+**Abschlussgrund.** Jeder Weg wertet aus, warum ein Strom endet (`llm/finish.ts`). Ist die Antwort an der
+Ausgabegrenze abgeschnitten oder ohne Abschluss beendet (bei Z.ai und den SDKs ohne Abschlussgrund, bei fremden
+Endpunkten ohne `finish_reason` und ohne `[DONE]`), bleibt sie, `done` trägt `truncated`, und der Chat zeigt an ihr
+„Gekürzt“, bis die Seite neu geladen wird. Ein Inhaltsfilter oder ein Fehler, den der Anbieter im Strom meldet,
+endet wie jeder Fehler: nichts wird gespeichert, Gratis-Zug und Tagesbudget gehen zurück. Ein `network_error` von
+Z.ai vor dem ersten Wort zählt als Ausfall (neuer Versuch, dann Failover).
 
 **Aktivieren.** `GEMINI_API_KEY` (bezahlte Stufe) in Vercel setzen, neu deployen.
 Ohne Key tut der Code nichts. Geprüft ist er mit simulierten Ausfällen

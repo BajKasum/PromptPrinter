@@ -9,6 +9,7 @@ import type { DraftAttachment } from "@/features/chat/lib/prepare-attachment";
 import { viewOf, type Msg } from "@/features/chat/lib/chat-wire";
 import { runChatTurn } from "@/features/chat/hooks/run-chat-turn";
 import { initialTurnState, turnReducer, type Pending } from "@/features/chat/lib/turn-state";
+import { withTruncatedMarks } from "@/features/chat/lib/truncated-replies";
 import { randomId } from "@/shared/lib/utils";
 import { useT } from "@/shared/i18n/provider";
 
@@ -42,7 +43,7 @@ export function useChatTurn({
   // Der Zustand des Zugs steht in turn-state.ts (Felder und ihre Bedeutung), runChatTurn meldet ihm Ereignisse.
   const [state, dispatch] = useReducer(turnReducer, undefined, () =>
     initialTurnState({
-      messages: initialMessages,
+      messages: withTruncatedMarks(initialMessages),
       input: initialInput,
       conversationId: initialConversationId,
       needsKey,
@@ -109,6 +110,8 @@ export function useChatTurn({
   // `done` ankam (Abbruch, abgerissene Verbindung) — dort gibt es ohnehin
   // keine echte ID zu lernen.
   const pendingAssistantIdRef = useRef<string | null>(null);
+  // `done` meldet die Antwort als nicht zu Ende: wie die ID bei `done` gesetzt, beim Commit gelesen.
+  const pendingTruncatedRef = useRef(false);
 
   // Turn the in-flight reply into a real message. Idempotent via pendingRef:
   // the reveal's own callback and a stop() click can both reach here for the
@@ -122,7 +125,14 @@ export function useChatTurn({
     if (!text.trim()) return;
     const id = pendingAssistantIdRef.current ?? randomId();
     pendingAssistantIdRef.current = null;
-    dispatch({ type: "replyCommitted", message: { id, role: "assistant", content: text }, celebrate });
+    const truncated = pendingTruncatedRef.current;
+    pendingTruncatedRef.current = false;
+    dispatch({
+      type: "replyCommitted",
+      message: { id, role: "assistant", content: text, ...(truncated ? { truncated } : {}) },
+      // Eine abgeschnittene Antwort ist nicht „fertig, startklar“.
+      celebrate: celebrate && !truncated,
+    });
   }, []);
 
   function stop() {
@@ -235,6 +245,7 @@ export function useChatTurn({
           mounted: mountedRef,
           pending: pendingRef,
           pendingAssistantId: pendingAssistantIdRef,
+          pendingTruncated: pendingTruncatedRef,
           abortController: abortControllerRef,
         },
         dispatch,

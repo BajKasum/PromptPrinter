@@ -1,9 +1,11 @@
 import "server-only";
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 import { GEMINI_API_VERSION, GEMINI_NO_RETRY } from "@/server/llm/config";
+import { cutOffByReason, geminiFinish } from "@/server/llm/finish";
 import { toGeminiContents } from "@/server/llm/messages";
 import {
+  LlmBlockedError,
   LlmEmptyReplyError,
   type AnalysisImage,
   type AnalysisResult,
@@ -20,6 +22,18 @@ function geminiClient(apiKey: string): GoogleGenAI {
   return new GoogleGenAI({ apiKey, apiVersion: GEMINI_API_VERSION, ...GEMINI_NO_RETRY });
 }
 
+/**
+ * Was eine Antwort (oder ein Stück davon) über ihr Ende sagt: eine abgelehnte Anfrage oder ein Filter werfen
+ * (finish.ts). Sonst ob sie abgeschnitten ist, oder undefined, solange noch kein Abschlussgrund da ist.
+ */
+function geminiEnd(res: Pick<GenerateContentResponse, "promptFeedback" | "candidates">): boolean | undefined {
+  const blocked = res.promptFeedback?.blockReason;
+  if (blocked && blocked !== "BLOCKED_REASON_UNSPECIFIED") throw new LlmBlockedError("Gemini", blocked);
+  const reason = res.candidates?.[0]?.finishReason;
+  if (!reason || reason === "FINISH_REASON_UNSPECIFIED") return undefined;
+  return cutOffByReason(geminiFinish(reason), "Gemini", reason);
+}
+
 export async function geminiComplete(
   model: string,
   system: string,
@@ -33,6 +47,7 @@ export async function geminiComplete(
     contents: toGeminiContents(messages),
     config: { systemInstruction: system, maxOutputTokens },
   });
+  geminiEnd(res);
 
   // `text` is undefined when the response was blocked or fully consumed by
   // thinking, treat as empty and let the caller degrade.
@@ -54,7 +69,8 @@ export async function* geminiCompleteStream(
   messages: LlmMessage[],
   maxOutputTokens: number,
   apiKey: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onTruncated?: () => void
 ): AsyncGenerator<string> {
   const ai = geminiClient(apiKey);
   const stream = await ai.models.generateContentStream({
@@ -62,9 +78,13 @@ export async function* geminiCompleteStream(
     contents: toGeminiContents(messages),
     config: { systemInstruction: system, maxOutputTokens, abortSignal: signal },
   });
+  // Endet der Strom ohne Abschlussgrund, ist die Antwort nicht zu Ende.
+  let cutOff = true;
   for await (const chunk of stream) {
     if (chunk.text) yield chunk.text;
+    cutOff = geminiEnd(chunk) ?? cutOff;
   }
+  if (cutOff) onTruncated?.();
 }
 
 export async function geminiAnalyze(
@@ -92,6 +112,7 @@ export async function geminiAnalyze(
     ],
     config: { systemInstruction: system, maxOutputTokens, abortSignal: signal },
   });
+  geminiEnd(res);
 
   const reply = res.text?.trim() ?? "";
   if (!reply) throw new LlmEmptyReplyError("Gemini");

@@ -2,6 +2,7 @@ import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
 import { SDK_NO_RETRY } from "@/server/llm/config";
+import { anthropicFinish, cutOffByReason } from "@/server/llm/finish";
 import { toAnthropicMessages } from "@/server/llm/messages";
 import {
   LlmEmptyReplyError,
@@ -38,6 +39,11 @@ function anthropicSystemBlocks(system: string): Anthropic.TextBlockParam[] {
   return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
 }
 
+/** Wirft, wenn Anthropic die Antwort gestoppt hat (finish.ts); eine abgeschnittene Antwort bleibt. */
+function ensureNotStopped(reason: string | null | undefined): void {
+  if (reason) cutOffByReason(anthropicFinish(reason), "Anthropic", reason);
+}
+
 export async function anthropicComplete(
   model: string,
   system: string,
@@ -52,6 +58,7 @@ export async function anthropicComplete(
     max_tokens: maxOutputTokens,
     messages: toAnthropicMessages(messages),
   });
+  ensureNotStopped(res.stop_reason);
 
   const text = res.content
     .filter((block): block is Anthropic.TextBlock => block.type === "text")
@@ -73,7 +80,8 @@ export async function* anthropicCompleteStream(
   messages: LlmMessage[],
   maxOutputTokens: number,
   apiKey: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onTruncated?: () => void
 ): AsyncGenerator<string> {
   const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const stream = await anthropic.messages.create(
@@ -86,11 +94,17 @@ export async function* anthropicCompleteStream(
     },
     { signal }
   );
+  // Endet der Strom ohne `stop_reason`, ist die Antwort nicht zu Ende. Fehler im Strom wirft der SDK selbst.
+  let cutOff = true;
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       yield event.delta.text;
     }
+    if (event.type === "message_delta" && event.delta.stop_reason) {
+      cutOff = cutOffByReason(anthropicFinish(event.delta.stop_reason), "Anthropic", event.delta.stop_reason);
+    }
   }
+  if (cutOff) onTruncated?.();
 }
 
 export async function anthropicAnalyze(
@@ -129,6 +143,7 @@ export async function anthropicAnalyze(
     },
     { signal }
   );
+  ensureNotStopped(res.stop_reason);
 
   const reply = res.content
     .filter((block): block is Anthropic.TextBlock => block.type === "text")

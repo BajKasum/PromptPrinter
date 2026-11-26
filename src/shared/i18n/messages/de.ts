@@ -107,6 +107,8 @@ export const de = {
     connectionDropped:
       "Die Verbindung ist mitten in der Antwort abgebrochen. Lade die Seite neu, die Antwort ist eventuell schon gespeichert.",
     streamEnded: "Die Verbindung ist abgebrochen, bevor eine Antwort kam. Bitte versuch es noch einmal.",
+    truncated: "Gekürzt: Diese Antwort ist nicht zu Ende geschrieben.",
+    truncatedAdvice: "Erzeuge sie neu oder bitte mich um eine kürzere Fassung.",
     statusWriting: "Finn schreibt…",
     statusRevealing: "Antwort wird geschrieben…",
     statusDone: "Antwort fertig.",

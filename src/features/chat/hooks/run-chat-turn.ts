@@ -27,6 +27,7 @@ export type TurnRefs = {
   mounted: MutableRefObject<boolean>;
   pending: MutableRefObject<Pending>;
   pendingAssistantId: MutableRefObject<string | null>;
+  pendingTruncated: MutableRefObject<boolean>;
   abortController: MutableRefObject<AbortController | null>;
 };
 
@@ -68,6 +69,7 @@ export async function runChatTurn(
   dispatch({ type: "started", next });
   refs.pending.current = null;
   refs.pendingAssistantId.current = null;
+  refs.pendingTruncated.current = false;
   const controller = new AbortController();
   refs.abortController.current = controller;
 
@@ -76,6 +78,7 @@ export async function runChatTurn(
     router: ctx.router,
     mounted: refs.mounted,
     pendingAssistantId: refs.pendingAssistantId,
+    pendingTruncated: refs.pendingTruncated,
     conversationId: snapshot.conversationId,
     initialConversationId: snapshot.initialConversationId,
     projectId: snapshot.projectId,

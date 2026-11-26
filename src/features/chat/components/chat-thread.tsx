@@ -1,10 +1,11 @@
 "use client";
 
 import type { VersionTarget } from "@/shared/lib/prompt-versions";
-import { useMemo, type RefObject } from "react";
+import { Fragment, useMemo, type RefObject } from "react";
 import { RotateCcw } from "lucide-react";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatResultPanel } from "@/features/chat/components/chat-result-panel";
+import { TruncatedNote } from "@/features/chat/components/truncated-note";
 import {
   ChatUserBubble,
   ChatAssistantBubble,
@@ -125,12 +126,17 @@ export function ChatThread({
                       index={i}
                       typed={typed}
                       busy={busy || pending !== null}
+                      truncated={m.truncated}
                       onRefine={onRefine}
                       onRefineOther={onRefineOther}
                     />
                   </div>
                 ) : (
-                  <ChatAssistantBubble key={m.id} content={m.content} index={i} typed={typed} />
+                  <Fragment key={m.id}>
+                    <ChatAssistantBubble content={m.content} index={i} typed={typed} />
+                    {/* Der Abstand der Liste (gap-6) zählt hier nicht: der Hinweis gehört zur Antwort darüber. */}
+                    {m.truncated && <TruncatedNote className="-mt-4 self-start rounded-md border px-3 py-2" />}
+                  </Fragment>
                 )
               )}
               {loading && pending === null && <ChatTyping retrying={retrying} />}

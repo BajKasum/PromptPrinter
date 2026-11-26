@@ -93,6 +93,7 @@ export function runRepl(ctx) {
     else if (result.kind === "protocol") say(t("protocol"));
     else if (result.kind === "error") say(t("generic", { detail: result.detail }));
     else if (result.kind === "done") {
+      if (result.truncated) say(t("truncated"));
       if (result.persistError) say(term.dim(t("persistFailed")));
       const prompt = extractPrompt(result.text);
       if (prompt) {

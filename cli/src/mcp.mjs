@@ -152,15 +152,18 @@ export function createMcpServer({ api, auth, t, version, log = () => {} }) {
     const reply = result.text.trim();
     const prompt = extractPrompt(reply);
     const id = conversation.id ?? null;
+    // Eine abgeschnittene Antwort sagt das dem Client in Text und Daten.
+    const cut = result.truncated ? `\n${t("mcpTruncated")}` : "";
+    const flag = result.truncated ? { truncated: true } : {};
     if (prompt) {
       return {
-        content: [{ type: "text", text: `${prompt}\n\n---\n${t("mcpPromptNote", { id: id ?? "-" })}` }],
-        structuredContent: { status: "prompt", prompt, reply, conversation_id: id },
+        content: [{ type: "text", text: `${prompt}\n\n---\n${t("mcpPromptNote", { id: id ?? "-" })}${cut}` }],
+        structuredContent: { status: "prompt", prompt, reply, conversation_id: id, ...flag },
       };
     }
     return {
-      content: [{ type: "text", text: `${reply}\n\n---\n${t("mcpQuestionNote", { id: id ?? "-" })}` }],
-      structuredContent: { status: "question", question: reply, conversation_id: id },
+      content: [{ type: "text", text: `${reply}\n\n---\n${t("mcpQuestionNote", { id: id ?? "-" })}${cut}` }],
+      structuredContent: { status: "question", question: reply, conversation_id: id, ...flag },
     };
   }
 

@@ -109,6 +109,8 @@ type ReplyProgress = {
   // auf Gemini (llm-failover.ts) ist das nicht der, den llmConfig() nennt, und
   // fuer eine Kostenauswertung im Log ist genau das der Unterschied.
   usedProvider: string | undefined;
+  /** Die Antwort ist nicht zu Ende (an der Ausgabegrenze abgeschnitten oder ohne Abschluss). */
+  truncated: boolean;
 };
 
 /** Erzeugt die Antwort und sendet sie Stück für Stück; `progress` hält den Stand. Wirft bei Fehler oder Abbruch. */
@@ -132,6 +134,9 @@ async function streamReply(args: ReplyStreamArgs, send: SseWriter["send"], progr
       send("status", { phase: "retrying", attempt: failedAttempt + 1, maxAttempts }),
     onProvider: (provider) => {
       progress.usedProvider = provider;
+    },
+    onTruncated: () => {
+      progress.truncated = true;
     },
   })) {
     progress.reply += chunk;
@@ -300,6 +305,7 @@ async function finishCompleted(
     replyChars: reply.length,
     latencyMs: Date.now() - telemetry.startedAt,
     persisted: !persistError,
+    truncated: progress.truncated,
   });
 
   send("done", {
@@ -308,6 +314,7 @@ async function finishCompleted(
     ...(assistantMessageId ? { assistantMessageId } : {}),
     ...(persistError ? { persistError } : {}),
     ...(freePromptsLeft === undefined ? {} : { freePromptsLeft }),
+    ...(progress.truncated ? { truncated: true } : {}),
   });
 }
 
@@ -348,6 +355,7 @@ export function replyStream(args: ReplyStreamArgs): ReadableStream<Uint8Array> {
         reply: "",
         mode: "generated",
         usedProvider: override?.provider ?? llmConfig()?.provider,
+        truncated: false,
       };
       try {
         await streamReply(args, send, progress);

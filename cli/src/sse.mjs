@@ -43,12 +43,17 @@ const READERS = {
   meta: (d) => optionalStrings(d, ["conversationId", "userMessageId"]),
   status: (d) => typeof d.phase === "string" && optionalCounts(d, ["attempt", "maxAttempts"]),
   delta: (d) => typeof d.text === "string",
-  done: (d) => optionalStrings(d, ["conversationId", "assistantMessageId", "persistError"]),
+  done: (d) =>
+    optionalStrings(d, ["conversationId", "assistantMessageId", "persistError"]) && optionalBooleans(d, ["truncated"]),
   error: (d) => typeof d.detail === "string",
 };
 
 function optionalStrings(data, fields) {
   return fields.every((field) => data[field] === undefined || typeof data[field] === "string");
+}
+
+function optionalBooleans(data, fields) {
+  return fields.every((field) => data[field] === undefined || typeof data[field] === "boolean");
 }
 
 // Die Versuche im `status` gehen als Text ins Terminal ("neuer Versuch (2 von 3)"). Der Vertrag sagt nur
