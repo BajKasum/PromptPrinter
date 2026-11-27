@@ -12,8 +12,9 @@ import { describe, expect, it } from "vitest";
  *
  * Die Listen von Sidebar und Mobile-Navigation stehen in `nav-lists.tsx`. Diese Datei rendert nur Zeilen und
  * darf `next/link` deshalb gar nicht kennen: so fällt auch eine Zeile auf, deren `href` aus einer Variablen
- * oder Prop kommt. Die beiden Ansichten haben andere Links (Logo, "Neuer Chat"), für sie bleibt das Verbot
- * der bloßen Zeilen.
+ * oder Prop kommt. Sidebar und Mobile-Navigation müssen beide Listen von dort nehmen, sonst könnte eine Ansicht
+ * wieder eigene Zeilen schreiben. Sie haben auch andere Links (Logo, "Neuer Chat"), für sie bleibt zudem das
+ * Verbot der bloßen Zeilen.
  */
 const NAV_ROWS = "src/shell/components/nav-lists.tsx";
 
@@ -45,8 +46,11 @@ describe("Listenzeilen prefetchen erst bei Hover", () => {
     expect(source).not.toMatch(/<(?:Link|a)\b/);
   });
 
-  it.each(NAV_VIEWS)("%s: keine eigene Zeile als bloßes <Link", (file) => {
-    expect(read(file)).not.toMatch(BARE_ROW_LINK);
+  it.each(NAV_VIEWS)("%s: nimmt beide Listen aus nav-lists, keine eigene Zeile als bloßes <Link", (file) => {
+    const source = read(file);
+    expect(source).toContain("<ChatNavList");
+    expect(source).toContain("<ProjectNavList");
+    expect(source).not.toMatch(BARE_ROW_LINK);
   });
 
   it("die Hülle schaltet `prefetch` aus und bei Ansteuern wieder auf Standard", () => {
