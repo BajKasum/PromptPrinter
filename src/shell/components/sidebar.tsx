@@ -13,6 +13,7 @@ import { AccountMenu, type AccountProps } from "@/shell/components/account-menu"
 import { Rail } from "@/shell/components/sidebar-rail";
 import { TabSwitcher } from "@/shell/components/tab-switcher";
 import { cn } from "@/shared/lib/utils";
+import { isModalOpen } from "@/shared/ui/dialog";
 import { useSidebarCollapse, SIDEBAR_COOKIE } from "@/shell/hooks/use-sidebar-collapse";
 import { useNavShortcuts } from "@/shell/hooks/use-nav-shortcuts";
 import { matchesShortcut } from "@/shell/lib/shortcuts";
@@ -110,7 +111,8 @@ export function Sidebar({
     function onKey(e: KeyboardEvent) {
       if (matchesShortcut(e, { key: "k", shift: false })) {
         e.preventDefault();
-        setCmdOpen(true);
+        // Unter einem offenen Dialog ginge die Palette verdeckt auf und nähme ihm die Tastatur.
+        if (!isModalOpen()) setCmdOpen(true);
       }
     }
     window.addEventListener("keydown", onKey);

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Dialog } from "@/shared/ui/dialog";
 import {
   ACTIVE_ROW,
   DEFAULT_SIDEBAR_WIDTH,
@@ -194,6 +195,22 @@ describe("Befehlspalette (Strg/⌘ + K)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "schliessen" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("öffnet sich nicht unter einem offenen Dialog, hält aber die Browser-Aktion weiter auf (#368)", () => {
+    render(
+      <Dialog open label="Rückfrage" onClose={() => {}}>
+        <button>Drin</button>
+      </Dialog>
+    );
+    renderSidebar();
+
+    let proceeded = true;
+    act(() => {
+      proceeded = fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    });
+    expect(proceeded).toBe(false);
+    expect(screen.queryByRole("dialog", { name: "Befehlspalette" })).not.toBeInTheDocument();
   });
 
   it("gibt seinen Tastatur-Lauscher beim Abbau wieder frei", () => {

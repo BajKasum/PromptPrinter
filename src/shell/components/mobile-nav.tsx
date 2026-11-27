@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
@@ -31,6 +31,7 @@ import {
 import { learnMoreLinks, secondaryNav } from "@/shell/lib/nav";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
+import { useModal } from "@/shared/ui/dialog";
 import { useLocale, useT } from "@/shared/i18n/provider";
 import { LOCALES, LOCALE_NAMES } from "@/shared/i18n/locales";
 import { useChangeLocale } from "@/shared/i18n/use-change-locale";
@@ -69,6 +70,10 @@ export function MobileNav({
   // an `document.body`, wie die anderen Dialoge (confirm-dialog.tsx).
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Der Drawer ist ein modales Fenster: der Fokus geht auf den Schliessen-Knopf, Tab bleibt darin, Escape schliesst.
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useModal({ open, containerRef: drawerRef, initialFocusRef: closeRef, onClose: () => setOpen(false) });
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -92,13 +97,9 @@ export function MobileNav({
     setOpen(false);
   }, [pathname]);
 
-  // While open: lock body scroll and let Escape close the drawer.
+  // Solange er offen ist, scrollt die Seite dahinter nicht.
   useEffect(() => {
     if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", onKey);
     // Wird das Fenster mit offenem Drawer breit, verschwindet er nur per CSS.
     // Er muss dann zugehen, sonst bleibt die Seite für das Scrollen gesperrt.
     const desktop = window.matchMedia(DESKTOP_QUERY);
@@ -109,7 +110,6 @@ export function MobileNav({
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKey);
       desktop.removeEventListener("change", onWidth);
       document.body.style.overflow = prevOverflow;
     };
@@ -131,8 +131,17 @@ export function MobileNav({
         createPortal(
       <AnimatePresence>
         {open && (
-          <div className="md:hidden fixed inset-0 z-60">
+          <div
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.shell.menuDialog}
+            tabIndex={-1}
+            className="md:hidden fixed inset-0 z-60 focus:outline-hidden"
+          >
             <m.button
+              // Für die Maus; mit der Tastatur schliessen Escape und der Knopf im Kopf.
+              tabIndex={-1}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -153,6 +162,7 @@ export function MobileNav({
                   <Logo />
                 </Link>
                 <button
+                  ref={closeRef}
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label={t.shell.closeMenu}

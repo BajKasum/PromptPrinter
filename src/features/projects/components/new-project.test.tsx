@@ -92,3 +92,53 @@ describe("NewProjectButton", () => {
     expect(toast).not.toHaveBeenCalled();
   });
 });
+
+// #368: Fokus, Tab und Escape wie bei jedem Dialog.
+describe("NewProjectButton: Tastatur", () => {
+  const trigger = () => screen.getByRole("button", { name: de.projects.newProject });
+
+  async function openDialog() {
+    const user = userEvent.setup();
+    render(<NewProjectButton />);
+    await user.click(trigger());
+    const dialog = await screen.findByRole("dialog", { name: de.projects.newProjectDialog });
+    const field = within(dialog).getByLabelText(de.projects.nameLabel);
+    await waitFor(() => expect(field).toHaveFocus());
+    return { user, dialog, field };
+  }
+
+  it("beginnt im Namensfeld, hält Tab im Dialog und gibt den Fokus nach Escape zurück", async () => {
+    const { user, dialog, field } = await openDialog();
+
+    await user.tab({ shift: true });
+    expect(within(dialog).getByRole("button", { name: de.common.cancel })).toHaveFocus();
+    await user.tab();
+    expect(field).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger()).toHaveFocus();
+  });
+
+  it("bleibt offen, solange angelegt wird", async () => {
+    fetchMock.mockReturnValue(new Promise<Response>(() => {}));
+    const { user, dialog } = await openDialog();
+    await user.keyboard("Bewerbung{Enter}");
+
+    await user.keyboard("{Escape}");
+    await user.click(dialog.parentElement as HTMLElement);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("vergisst den Fehler, wenn Escape schliesst", async () => {
+    fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+    const { user, dialog } = await openDialog();
+    await user.keyboard("Bewerbung{Enter}");
+    await within(dialog).findByRole("alert");
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await user.click(trigger());
+    expect(within(await screen.findByRole("dialog")).queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
