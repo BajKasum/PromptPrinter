@@ -4,6 +4,9 @@ import {
   MAX_ATTACHMENT_TEXT_BYTES,
 } from "@/shared/lib/chat-limits";
 
+// Grössenangaben der Anhänge: dieselbe Funktion wie überall in der App.
+export { formatBytes } from "@/shared/lib/utils";
+
 // Anhänge einer Chat-Nachricht: was Browser und Server über sie teilen.
 //
 // Zwei Arten, mehr nicht ("Fotos oder Dateien hinzufügen"):
@@ -79,15 +82,4 @@ export function base64DecodedLength(base64: string): number {
   if (base64.endsWith("==")) padding = 2;
   else if (base64.endsWith("=")) padding = 1;
   return Math.floor((len * 3) / 4) - padding;
-}
-
-/**
- * "1,4 MB", "820 KB". `intlTag` ist der BCP-47-Tag der App-Sprache
- * (LOCALE_TAGS[locale].intl), damit das Dezimalzeichen zur Sprache passt.
- */
-export function formatBytes(bytes: number, intlTag = "en"): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  const mb = bytes / (1024 * 1024);
-  return `${mb.toLocaleString(intlTag, { maximumFractionDigits: mb >= 10 ? 0 : 1 })} MB`;
 }

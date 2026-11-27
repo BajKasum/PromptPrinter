@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatDate, randomId, relativeTime, slugify } from "@/shared/lib/utils";
+import { formatBytes, formatDate, randomId, relativeTime, slugify } from "@/shared/lib/utils";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 
 describe("slugify", () => {
   it("lowercases and hyphenates words", () => {
@@ -22,6 +23,39 @@ describe("slugify", () => {
     expect(slugify("!!!")).toBe("");
     expect(slugify("---")).toBe("");
     expect(slugify("")).toBe("");
+  });
+});
+
+describe("formatBytes", () => {
+  describe.each(["de", "en"] as const)("in der Sprache %s", (locale) => {
+    const tag = LOCALE_TAGS[locale].intl;
+
+    it.each([
+      [25 * 1024 * 1024, "25 MB"],
+      [2 * 1024 * 1024, "2 MB"],
+      [900, "900 B"],
+    ])("zeigt %i Byte als %s", (bytes, text) => {
+      expect(formatBytes(bytes, tag)).toBe(text);
+    });
+  });
+
+  it("wechselt bei 1024 die Einheit", () => {
+    expect(formatBytes(1023, "en-GB")).toBe("1023 B");
+    expect(formatBytes(1024, "en-GB")).toBe("1 KB");
+    expect(formatBytes(200 * 1024, "en-GB")).toBe("200 KB");
+    expect(formatBytes(1024 * 1024, "en-GB")).toBe("1 MB");
+  });
+
+  // Unter 10 MB mit einer Nachkommastelle, ab 10 MB ohne; das Zeichen gehört zur Sprache.
+  it.each([
+    ["de-CH", "1.5 MB"],
+    ["en-GB", "1.5 MB"],
+    ["fr-FR", "1,5 MB"],
+    ["it-IT", "1,5 MB"],
+    ["es-ES", "1,5 MB"],
+  ])("setzt in %s das Dezimalzeichen der Sprache", (tag, text) => {
+    expect(formatBytes(1.5 * 1024 * 1024, tag)).toBe(text);
+    expect(formatBytes(12.4 * 1024 * 1024, tag)).toBe("12 MB");
   });
 });
 
