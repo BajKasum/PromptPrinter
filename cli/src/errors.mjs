@@ -14,7 +14,6 @@ export function describeError(err, { t, server }) {
     if (err.status === 401) return t("loginAgain");
     if (err.kind === "byokRequired") return t("needKey", { url: settings });
     if (err.kind === "consentRequired") return t("needConsent", { url: `${server}/chats/new` });
-    if (err.kind === "chatMessages") return t("quota", { limit: err.limit ?? "?", url: settings });
     if (err.kind === "byokUnreadable") return t("keyUnreadable", { url: settings });
     if (err.status === 429) return t("rateLimited", { seconds: err.retryAfter ?? 60 });
     return t("generic", { detail: err.message });

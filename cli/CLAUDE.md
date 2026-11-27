@@ -69,7 +69,7 @@ Ein Repo, getrennte Pakete: das Programm importiert nie Code der Web-App, denn e
 | `src/shared/lib/ai-marker.ts` | `src/system.mjs` |
 | `CHAT_SYSTEM_PROMPT` in `src/server/system-prompt.ts` | `src/finn-prompt.mjs` (wörtlich; bei Änderung neu kopieren, Kopf behalten) |
 
-`npm run contract` vergleicht die Dateien der Liste `contract/pins.json` mit dem Stand im selben Checkout. Dasselbe prüft jeder `npm run test` im Wurzelordner, dazu Finns Regeln Zeichen für Zeichen gegen den Server (`tests/guards/cli-contract.test.ts`). Wird er rot, hat sich der Vertrag oder ein Kommentar dort geändert: lesen, hier nachziehen, dann `node cli/scripts/check-contract.mjs --update`, im selben Pull Request.
+`npm run contract` vergleicht die Dateien der Liste `contract/pins.json` mit dem Stand im selben Checkout. Dasselbe prüft jeder `npm run test` im Wurzelordner, dazu Finns Regeln Zeichen für Zeichen gegen den Server und dass jede Fehlerart, die das Programm unterscheidet (`err.kind` in `src/`), von einer Route gesendet wird, mit der es spricht (`tests/guards/cli-contract.test.ts`). Wird er rot, hat sich der Vertrag oder ein Kommentar dort geändert: lesen, hier nachziehen, dann `node cli/scripts/check-contract.mjs --update`, im selben Pull Request.
 
 ## Arbeitsregeln (die `CLAUDE.md` des Haupt-Repos gilt)
 

@@ -145,13 +145,12 @@ test("Werkzeuge ohne Anmeldung: klarer Werkzeugfehler, keine Anfrage, keine Anme
   assert.equal(stub.requests.length, 0);
 });
 
-test("Fehler des Servers werden verständliche Werkzeugfehler: Key, Zustimmung, Kontingent, 429, Sitzung weg", async () => {
+test("Fehler des Servers werden verständliche Werkzeugfehler: Key, Zustimmung, 429, Sitzung weg", async () => {
   const { legacy, call } = await server();
   await legacy();
   const cases = [
     [{ status: 403, body: { kind: "byokRequired", detail: "x" } }, /eigenen KI-Key/],
     [{ status: 403, body: { kind: "consentRequired", detail: "x" } }, /stimme bitte im Browser zu/],
-    [{ status: 429, body: { kind: "chatMessages", limit: 30, detail: "x" } }, /Kontingent.*30 Antworten/],
     [{ status: 429, body: { kind: "rate_limited", retryAfter: 12, detail: "x" } }, /in 12 Sekunden/],
   ];
   for (const [step, pattern] of cases) {
