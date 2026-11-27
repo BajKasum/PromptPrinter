@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { counterRedisDouble } from "@tests/support/redis-double";
 
 const mocks = vi.hoisted(() => ({
   reserveFailoverCall: vi.fn(),
@@ -192,6 +193,99 @@ describe("Leistungsschalter", () => {
 
     expect(await breaker.pick()).toEqual({ provider: "zai", probe: false });
     await expect(breaker.recordFailure()).resolves.toBeUndefined();
+  });
+});
+
+describe("Leistungsschalter über den gemeinsamen Redis-Client", () => {
+  const FAILS = "llm-breaker:zai:fails";
+
+  /** Redis im Speicher, so weit der Schalter es nutzt: Werte, Ablaufzeiten, `NX` lässt einen gesetzten Ablauf stehen. */
+  function fakeRedis() {
+    const values = new Map<string, number>();
+    const expiry = new Map<string, number>();
+    const queued = {
+      incr: vi.fn(async (key: string) => {
+        const next = (values.get(key) ?? 0) + 1;
+        values.set(key, next);
+        return next;
+      }),
+      expire: vi.fn(async (key: string, seconds: number, mode?: string) => {
+        if (mode === "NX" && expiry.has(key)) return 0;
+        expiry.set(key, seconds);
+        return 1;
+      }),
+    };
+    // `incr` und `expire` am Client selbst sind eigene Attrappen: ein Einzelbefehl an der Transaktion vorbei fällt auf.
+    const client = {
+      multi: counterRedisDouble(queued).multi,
+      incr: vi.fn(),
+      expire: vi.fn(),
+      mget: vi.fn(async (...keys: string[]) => keys.map((key) => values.get(key) ?? null)),
+      set: vi.fn(async (key: string, value: string, { ex }: { ex: number }) => {
+        values.set(key, Number(value));
+        expiry.set(key, ex);
+        return "OK";
+      }),
+      del: vi.fn(async (...keys: string[]) => {
+        for (const key of keys) {
+          values.delete(key);
+          expiry.delete(key);
+        }
+        return keys.length;
+      }),
+    };
+    return { client, queued, values, expiry };
+  }
+
+  /** Der Schalter dieses Prozesses, frisch geladen mit diesem gemeinsamen Client. */
+  async function serverBreakerWith(redis: unknown) {
+    vi.resetModules();
+    vi.doMock("@/server/security/redis-client", () => ({ redis }));
+    return (await import("./llm-failover")).serverBreaker();
+  }
+
+  afterEach(() => {
+    vi.doUnmock("@/server/security/redis-client");
+    vi.resetModules();
+  });
+
+  it("zählt einen Fehlschlag und setzt seinen Ablauf in einer Transaktion, nie als zwei Einzelbefehle", async () => {
+    const fake = fakeRedis();
+    await (await serverBreakerWith(fake.client)).recordFailure();
+
+    expect(fake.queued.incr).toHaveBeenCalledWith(FAILS);
+    expect(fake.queued.expire).toHaveBeenCalledWith(FAILS, BREAKER_CONFIG.failureWindowSeconds, "NX");
+    expect(fake.client.incr).not.toHaveBeenCalled();
+    expect(fake.client.expire).not.toHaveBeenCalled();
+  });
+
+  it("gibt einem Zähler, der ohne Ablauf liegen blieb, beim nächsten Fehlschlag einen", async () => {
+    const fake = fakeRedis();
+    fake.values.set(FAILS, 1);
+
+    await (await serverBreakerWith(fake.client)).recordFailure();
+
+    expect(fake.values.get(FAILS)).toBe(2);
+    expect(fake.expiry.get(FAILS)).toBe(BREAKER_CONFIG.failureWindowSeconds);
+  });
+
+  it("öffnet nach drei Fehlschlägen und legt Pause und Bewährung mit ihrem Ablauf an", async () => {
+    const fake = fakeRedis();
+    const breaker = await serverBreakerWith(fake.client);
+    for (let i = 0; i < BREAKER_CONFIG.failuresToOpen; i++) await breaker.recordFailure();
+
+    expect(await breaker.pick()).toEqual({ provider: "gemini", probe: false });
+    expect(Object.fromEntries(fake.expiry)).toEqual({
+      "llm-breaker:zai:open": BREAKER_CONFIG.openSeconds,
+      "llm-breaker:zai:probation": BREAKER_CONFIG.probationSeconds,
+    });
+  });
+
+  it("zählt ohne Redis im Speicher des Prozesses", async () => {
+    const breaker = await serverBreakerWith(null);
+    for (let i = 0; i < BREAKER_CONFIG.failuresToOpen; i++) await breaker.recordFailure();
+
+    expect((await breaker.pick()).provider).toBe("gemini");
   });
 });
 
