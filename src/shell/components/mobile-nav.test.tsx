@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MobileNav } from "./mobile-nav";
 
@@ -22,11 +22,54 @@ const chats = [
 ];
 const projects = [{ id: "p1", name: "Alpha", isFavorite: true }];
 
+// jsdom kennt matchMedia nicht. Diese Attrappe wertet `(min-width: Npx)` gegen eine steuerbare Fensterbreite aus
+// und meldet wie der Browser nur, wenn sich das Ergebnis einer Abfrage ändert.
+let width = 390;
+const watchers = new Set<() => void>();
+
+function fakeMatchMedia(query: string) {
+  const min = Number(/\(min-width: (\d+)px\)/.exec(query)?.[1]);
+  const matches = () => width >= min;
+  const own = new Map<(e: MediaQueryListEvent) => void, () => void>();
+  return {
+    media: query,
+    get matches() {
+      return matches();
+    },
+    addEventListener: (_type: "change", listener: (e: MediaQueryListEvent) => void) => {
+      let last = matches();
+      const watch = () => {
+        if (matches() === last) return;
+        last = matches();
+        listener({ matches: last, media: query } as MediaQueryListEvent);
+      };
+      own.set(listener, watch);
+      watchers.add(watch);
+    },
+    removeEventListener: (_type: "change", listener: (e: MediaQueryListEvent) => void) => {
+      const watch = own.get(listener);
+      if (watch) watchers.delete(watch);
+    },
+  };
+}
+
+function resizeTo(next: number) {
+  act(() => {
+    width = next;
+    watchers.forEach((watch) => watch());
+  });
+}
+
 describe("MobileNav", () => {
   beforeEach(() => {
     pathname = "/chats";
     document.body.style.overflow = "";
+    width = 390;
+    watchers.clear();
+    vi.stubGlobal("matchMedia", fakeMatchMedia);
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   it("is closed by default", () => {
     render(<MobileNav chats={chats} projects={[]} />);
@@ -84,6 +127,23 @@ describe("MobileNav", () => {
 
     await waitFor(() => expect(screen.queryByText("Erste Idee")).not.toBeInTheDocument());
     expect(document.body.style.overflow).toBe("");
+  });
+
+  it("schliesst den Drawer ab 768 px und gibt das Scrollen wieder frei", async () => {
+    const user = userEvent.setup();
+    render(<MobileNav chats={chats} projects={[]} />);
+    await user.click(screen.getByRole("button", { name: "Menü öffnen" }));
+
+    resizeTo(767);
+    expect(screen.getByRole("button", { name: "Menü öffnen" })).toHaveAttribute("aria-expanded", "true");
+    expect(document.body.style.overflow).toBe("hidden");
+
+    resizeTo(768);
+    expect(screen.getByRole("button", { name: "Menü öffnen" })).toHaveAttribute("aria-expanded", "false");
+    expect(document.body.style.overflow).toBe("");
+    await waitFor(() => expect(screen.queryByText("Erste Idee")).not.toBeInTheDocument());
+    // Zu heisst auch: niemand beobachtet die Breite weiter.
+    expect(watchers.size).toBe(0);
   });
 
   it("closes when the backdrop is clicked", async () => {
