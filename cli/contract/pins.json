@@ -8,7 +8,7 @@
   "src/app/api/cli/token/route.ts": "fb6fe9e4f6ddc1e25267db6e3f5d1dd2b998f790ae5c93e3d6c0cc7323ccf595",
   "src/app/api/cli/refresh/route.ts": "d0a8d235435aa2d623c5b7a82776b2c16dda47acc88d14c3a1a439f06ed6b31c",
   "src/app/api/cli/logout/route.ts": "f92137f104f3bd76c50e6ad8a2c63b9e983d17a66626e6b3e4d91aebfb4b4629",
-  "src/app/api/cli/me/route.ts": "cc75502259631599303ffb4fd08603189a67320ce4c378bc1c2b642059aea669",
+  "src/app/api/cli/me/route.ts": "3daa3854f7c5d7d15c44080bcbc3e2981a2b39fddcab097067408431019f606b",
   "src/app/api/cli/prompts/route.ts": "652b28e65bfacb7bc9c9375e5d364443f0cac8857ac98afc55e5cde102a4ebb3",
   "src/app/api/cli/prompts/[id]/route.ts": "449fd1f14ee4379f8b8dba466a385c73ae8ffa3c9e60737758937823b8099e45",
   "src/server/cli-login/saved-prompts.ts": "cf84e5033c199c0b7633e0f45b951a81ca7e31e189e06c3318d1ad564a7f582b",

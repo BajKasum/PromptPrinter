@@ -63,6 +63,10 @@ function signedIn(appMetadata: unknown = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
+  // Die Server-Keys der Umgebung zählen für die Ausweich-Prüfung (server/llm-failover.ts), jeder Test setzt sie selbst.
+  vi.stubEnv("ZAI_API_KEY", "");
+  vi.stubEnv("GEMINI_API_KEY", "");
   rateLimit.mockResolvedValue({ allowed: true, resetAt: Date.now() + 1000 });
   createClientForRequest.mockResolvedValue(client());
   checkCliSession.mockResolvedValue("ok");
@@ -95,6 +99,7 @@ describe("GET /api/cli/me", () => {
       needsOwnKey: true,
       freePromptsLeft: 0,
       needsConsent: false,
+      serverModel: "zai",
     });
   });
 
@@ -115,6 +120,7 @@ describe("GET /api/cli/me", () => {
       hasOwnKey: false,
       needsOwnKey: false,
       needsConsent: true,
+      serverModel: "zai",
     });
     expect(freePromptsLeft).not.toHaveBeenCalled();
     signedIn(CONSENT);
@@ -161,6 +167,35 @@ describe("GET /api/cli/me", () => {
   it("ein Admin auf Free braucht keinen eigenen Key", async () => {
     tables.profiles = { data: { plan: "free", is_admin: true }, error: null };
     expect((await (await GET(get("Bearer tok"))).json()).needsOwnKey).toBe(false);
+  });
+
+  // Der Empfänger, den die Terminal-App vor `/pp --kontext` nennt (cli/src/repl.mjs): nur eine Kennung, und nur, wenn
+  // der Server-Weg wirklich allein an Z.ai geht. Sonst fehlt das Feld, und das Terminal nennt ihn neutral.
+  it("nennt Z.ai als Empfänger des Server-Wegs nur, wenn der Text dorthin und nirgends sonst geht", async () => {
+    expect((await (await GET(get("Bearer tok"))).json()).serverModel).toBe("zai");
+
+    for (const config of [{ provider: "gemini" }, { provider: "endpoint", model: "qwen3" }, null]) {
+      llmConfig.mockReturnValue(config);
+      expect(await (await GET(get("Bearer tok"))).json(), JSON.stringify(config)).not.toHaveProperty("serverModel");
+    }
+  });
+
+  it("mit Ausweich-Anbieter nennt die Antwort keinen Empfänger: derselbe Text könnte an Google gehen", async () => {
+    vi.stubEnv("ZAI_API_KEY", "z-geheim");
+    vi.stubEnv("GEMINI_API_KEY", "g-geheim");
+    expect(await (await GET(get("Bearer tok"))).json()).not.toHaveProperty("serverModel");
+  });
+
+  it("verrät vom Server weder Adresse noch Modell noch Key", async () => {
+    vi.stubEnv("LLM_BASE_URL", "http://ollama.intern:11434/v1");
+    llmConfig.mockReturnValue({ provider: "endpoint", model: "qwen3-intern" });
+    const own = await (await GET(get("Bearer tok"))).text();
+    vi.stubEnv("ZAI_API_KEY", "z-geheim");
+    llmConfig.mockReturnValue({ provider: "zai", model: "glm-intern" });
+    const zai = await (await GET(get("Bearer tok"))).text();
+    for (const secret of ["intern", "11434", "geheim", "glm", "qwen"]) {
+      expect(own + zai, secret).not.toContain(secret);
+    }
   });
 
   it("fragt beide Tabellen ausdrücklich nach dem eigenen Konto (zweite Linie neben RLS)", async () => {

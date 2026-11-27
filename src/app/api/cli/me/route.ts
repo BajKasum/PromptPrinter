@@ -6,6 +6,7 @@ import { createClientForRequest } from "@/server/supabase/server";
 import { orThrow } from "@/server/supabase/query";
 import { hasZaiConsent } from "@/server/consent";
 import { llmConfig, selfHostedEndpointActive } from "@/server/llm";
+import { failoverEnabled } from "@/server/llm-failover";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
@@ -57,6 +58,11 @@ export async function GET(req: Request) {
     const onFreeTrial = !selfHostedEndpointActive() && requiresOwnKey(plan, isAdmin, hasOwnKey);
     const freePromptsLeft = onFreeTrial ? ((await freePromptsLeftOf(user.id)) ?? 0) : null;
     const needsOwnKey = onFreeTrial && freePromptsLeft === 0;
+    const provider = llmConfig()?.provider;
+    // Der Empfänger eines Zugs auf dem Server-Key, vor `/pp --kontext` im Terminal genannt: eine Kennung, nie Adresse,
+    // Modell oder Key. Benannt wird nur Z.ai, und nur ohne Ausweich-Anbieter, an den derselbe Text gehen könnte. Fehlt
+    // das Feld, nennt das Terminal den Empfänger neutral.
+    const serverModel = provider === "zai" && !failoverEnabled() ? "zai" : null;
 
     return NextResponse.json(
       {
@@ -66,8 +72,8 @@ export async function GET(req: Request) {
         needsOwnKey,
         ...(freePromptsLeft === null ? {} : { freePromptsLeft }),
         // Dieselbe Bedingung wie im Chat (model-call.ts): nur wer wirklich auf Z.ai läuft, muss zustimmen.
-        needsConsent:
-          !hasOwnKey && !needsOwnKey && llmConfig()?.provider === "zai" && !hasZaiConsent(user.app_metadata),
+        needsConsent: !hasOwnKey && !needsOwnKey && provider === "zai" && !hasZaiConsent(user.app_metadata),
+        ...(serverModel ? { serverModel } : {}),
       },
       { headers: { "cache-control": "no-store" } }
     );

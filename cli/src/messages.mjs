@@ -47,7 +47,8 @@ const MESSAGES = {
     kontextSummary:
       "Darin: Git-Stand, Regeldateien, Trefferzeilen (Zeilen: {lines}, Dateien: {files}). Geschwärzte Stellen: {redacted}. Gesperrte Dateien, nur mit Namen: {denied}.",
     kontextToOwn: "An: PromptPrinter und deinen eigenen KI-Anbieter (dein Key).",
-    kontextToServer: "An: PromptPrinter und, über den Server-Key, Z.ai in Singapur. Auch die Auszüge aus deinem Code gehen dorthin.",
+    kontextToZai: "An: PromptPrinter und, über den Server-Key, Z.ai in Singapur. Auch die Auszüge aus deinem Code gehen dorthin.",
+    kontextToServer: "An: PromptPrinter unter {server} und an das Modell, das dieser Server nutzt. Auch die Auszüge aus deinem Code gehen dorthin.",
     kontextStored:
       "Der Text bleibt in deinem Chat-Verlauf gespeichert, sichtbar im Browser, und geht mit späteren Nachrichten dieses Gesprächs erneut ans Modell.",
     kontextWarning: "Das Schwärzen erkennt bekannte Muster, nicht jedes Geheimnis. Lies den Text, bevor du sendest.",
@@ -184,7 +185,8 @@ const MESSAGES = {
     kontextSummary:
       "Contains: git state, rule files, matching lines (lines: {lines}, files: {files}). Redacted spots: {redacted}. Blocked files, named only: {denied}.",
     kontextToOwn: "To: PromptPrinter and your own AI provider (your key).",
-    kontextToServer: "To: PromptPrinter and, through the server key, Z.ai in Singapore. The excerpts from your code go there too.",
+    kontextToZai: "To: PromptPrinter and, through the server key, Z.ai in Singapore. The excerpts from your code go there too.",
+    kontextToServer: "To: PromptPrinter at {server} and the model this server uses. The excerpts from your code go there too.",
     kontextStored:
       "The text stays in your chat history, visible in the browser, and goes to the model again with later messages in this conversation.",
     kontextWarning: "Redaction catches known patterns, not every secret. Read the text before you send it.",

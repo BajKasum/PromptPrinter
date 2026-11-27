@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { after, afterEach, beforeEach, describe, test } from "node:test";
 import { createApi } from "../src/api.mjs";
 import { MAX_USER_MESSAGE_CHARS } from "../src/chat.mjs";
+import { DEFAULT_SERVER } from "../src/config.mjs";
 import { translator } from "../src/messages.mjs";
 import { buildContextMessage, deriveTerms } from "../src/project-context.mjs";
 import { runRepl } from "../src/repl.mjs";
@@ -103,11 +104,15 @@ async function until(check, what, ms = 30_000) {
   assert.fail(`nicht eingetreten: ${what}`);
 }
 
-/** Die Eingabezeile wie im echten Terminal (Tasten als Bytes), im Ordner `cwd`. */
-async function start({ cwd, inputIsTTY = true } = {}) {
-  const store = createSessionStore({ dir, server: stub.url });
+/**
+ * Die Eingabezeile wie im echten Terminal (Tasten als Bytes), im Ordner `cwd`. `server` ist die Adresse, mit der das
+ * Programm spricht; auch eine andere als die des Stubs (etwa die voreingestellte) landet beim Stub, nie im Netz.
+ */
+async function start({ cwd, inputIsTTY = true, server = stub.url, lang = "de" } = {}) {
+  const store = createSessionStore({ dir, server });
   await store.save(session("a1", "r1"));
-  const api = createApi({ server: stub.url, version: "0", lang: "de" });
+  const toStub = (url, init) => fetch(url.replace(server, stub.url), init);
+  const api = createApi({ server, version: "0", lang, fetch: toStub });
   const input = new PassThrough();
   input.isTTY = inputIsTTY;
   const output = new PassThrough();
@@ -120,7 +125,7 @@ async function start({ cwd, inputIsTTY = true } = {}) {
     input,
     output,
     term,
-    t,
+    t: translator(lang),
     api,
     auth: createAuth({ store, api }),
     store,
@@ -231,16 +236,52 @@ describe("Vorschau und Ja", () => {
     await repl.finished;
   });
 
-  test("ohne eigenen Key nennt die Vorschau Z.ai als Empfänger", async () => {
-    stub.state.me = { ...stub.state.me, hasOwnKey: false };
-    const repl = await start({ cwd: fixture({ "a.ts": "needle\n" }) });
+  /** Die Vorschau bis zur Frage zeigen, absagen, beenden und den Bildschirm zurückgeben. */
+  async function preview(options, me, question = "[j/N]") {
+    stub.state.me = { ...stub.state.me, hasOwnKey: false, ...me };
+    const repl = await start({ cwd: fixture({ "a.ts": "needle\n" }), ...options });
     repl.input.write("/pp --kontext needle\r");
-    await asked(repl);
-    assert.match(repl.screen(), /An: PromptPrinter und, über den Server-Key, Z\.ai in Singapur/);
+    await until(() => repl.screen().includes(question), "Frage nach dem Senden");
+    const screen = repl.screen();
     repl.input.write("n\r");
-    await until(() => repl.screen().includes("Nichts gesendet."), "Absage");
     repl.input.write("/exit\r");
     await repl.finished;
+    assert.equal(chats().length, 0);
+    return screen;
+  }
+
+  test("auf dem voreingestellten Server nennt die Vorschau Z.ai als Empfänger, wenn der Server es sagt", async () => {
+    const screen = await preview({ server: DEFAULT_SERVER }, { serverModel: "zai" });
+    assert.match(screen, /An: PromptPrinter und, über den Server-Key, Z\.ai in Singapur/);
+    assert.doesNotMatch(screen, /das dieser Server nutzt/);
+  });
+
+  test("ein Server ohne die Angabe oder mit einer unbekannten bekommt den neutralen Satz, auch der voreingestellte", async () => {
+    for (const me of [{}, { serverModel: "etwas anderes" }]) {
+      const screen = await preview({ server: DEFAULT_SERVER }, me);
+      assert.match(screen, /An: PromptPrinter unter https:\/\/promptprinter\.app und an das Modell, das dieser Server nutzt/);
+      assert.doesNotMatch(screen, /Z\.ai|Singapur/, JSON.stringify(me));
+    }
+  });
+
+  test("ein anderer Server bekommt den neutralen Satz mit seiner Adresse, auch wenn er Z.ai nennt", async () => {
+    const screen = await preview({}, { serverModel: "zai" });
+    assert.ok(screen.includes(`An: PromptPrinter unter ${stub.url} und an das Modell, das dieser Server nutzt`), screen);
+    assert.doesNotMatch(screen, /Z\.ai|Singapur/);
+  });
+
+  test("mit eigenem Key nennt die Vorschau den eigenen Anbieter, auch wenn der Server Z.ai nennt", async () => {
+    const screen = await preview({ server: DEFAULT_SERVER }, { hasOwnKey: true, serverModel: "zai" });
+    assert.match(screen, /An: PromptPrinter und deinen eigenen KI-Anbieter/);
+    assert.doesNotMatch(screen, /Z\.ai|das dieser Server nutzt/);
+  });
+
+  test("auf Englisch dieselben zwei Sätze", async () => {
+    const zai = await preview({ server: DEFAULT_SERVER, lang: "en" }, { serverModel: "zai" }, "[y/N]");
+    assert.match(zai, /To: PromptPrinter and, through the server key, Z\.ai in Singapore/);
+    const other = await preview({ lang: "en" }, { serverModel: "zai" }, "[y/N]");
+    assert.ok(other.includes(`To: PromptPrinter at ${stub.url} and the model this server uses`), other);
+    assert.doesNotMatch(other, /Z\.ai|Singapore/);
   });
 
   test("nur j sendet: n, ja, eine leere Zeile und Strg+C senden nichts, das Programm läuft weiter", async () => {
