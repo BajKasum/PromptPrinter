@@ -6,6 +6,7 @@ import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getFreePromptsLeft, getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
 import { loadStartPrompt } from "@/server/start-from-prompt";
@@ -40,17 +41,18 @@ export default async function NewProjectChatPage({
   const supabase = await createClient();
   const user = await getSessionUser();
   const [savedPromptRowsResult, profile, needsKey, freePromptsLeft, startPrompt, versionTarget] = await Promise.all([
-    // Selecting `outputs` (not just a head-count) also gives the save button
-    // the already-saved prompt texts, so it can start disabled for a prompt
-    // that's already in the project's Ergebnisse (F-7). Explicit user_id
-    // alongside project_id: RLS-only defense-in-depth (Security-Audit L-3).
+    // `outputs` statt nur einer Zählung: der Speichern-Knopf bekommt so die
+    // Texte der gespeicherten Prompts und ist für sie von Anfang an gesperrt.
+    // Die Texte stehen in der ausgelieferten Seite, deshalb nur die neuesten
+    // SAVED_PROMPTS_LOAD_LIMIT. Ob das Projekt Ergebnisse hat, sagt `count`,
+    // das alle Zeilen zählt. user_id zusätzlich zu RLS.
     supabase
       .from("saved_prompts")
       .select("outputs", { count: "exact" })
       .eq("project_id", id)
-      .eq("user_id", project.userId),
-    // getProject already redirected to /login if unauthenticated, user.id is
-    // safe here; the "" fallback just matches no row instead of throwing.
+      .eq("user_id", project.userId)
+      .order("created_at", { ascending: false })
+      .limit(SAVED_PROMPTS_LOAD_LIMIT),
     getSessionProfile(),
     getNeedsOwnKey(),
     getFreePromptsLeft(),
