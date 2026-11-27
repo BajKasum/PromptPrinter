@@ -1,8 +1,9 @@
 import "server-only";
 
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
 import { attemptsOf, transientReason } from "@/server/llm-retry";
 import { reserveFailoverCall } from "@/server/security/rate-limit";
+import { redis } from "@/server/security/redis-client";
 import { logEvent, logWarning } from "@/shared/lib/observability";
 
 // Umschalten auf Gemini, wenn Z.ai ausfaellt (Betriebs-Audit M3, 05.10.2026).
@@ -80,11 +81,11 @@ export function outageReason(err: unknown): string | null {
 
 // ─── Der Leistungsschalter ─────────────────────────────────────────────────
 
-/** Was der Schalter braucht: Schluessel mit Ablaufzeit, mehr nicht. */
+/** Was der Schalter braucht: Schlüssel mit Ablaufzeit, mehr nicht. */
 export type BreakerStore = {
   exists(keys: string[]): Promise<boolean[]>;
   set(key: string, ttlSeconds: number): Promise<void>;
-  /** Zaehlt hoch; setzt die Ablaufzeit beim ersten Mal. */
+  /** Zählt hoch; die Ablaufzeit gilt ab dem ersten Mal. */
   incr(key: string, ttlSeconds: number): Promise<number>;
   del(keys: string[]): Promise<void>;
 };
@@ -197,42 +198,38 @@ export function createMemoryStore(now: () => number = Date.now): BreakerStore {
   };
 }
 
-function createRedisStore(redis: Redis): BreakerStore {
+function createRedisStore(client: Redis): BreakerStore {
   return {
     async exists(keys) {
-      const values = await redis.mget<(string | number | null)[]>(...keys);
+      const values = await client.mget<(string | number | null)[]>(...keys);
       return values.map((value) => value !== null && value !== undefined);
     },
     async set(key, ttlSeconds) {
-      await redis.set(key, "1", { ex: ttlSeconds });
+      await client.set(key, "1", { ex: ttlSeconds });
     },
+    // Eine Transaktion wie in server/security/reserve-counter.ts: ein Zähler ohne Ablauf sammelte Ausfälle über
+    // Wochen und öffnete den Schalter dann, obwohl keine drei im Fenster liegen. `NX` lässt das Fenster ab dem
+    // ersten Ausfall laufen und gibt einem Zähler ohne Ablauf beim nächsten einen.
     async incr(key, ttlSeconds) {
-      const count = await redis.incr(key);
-      if (count === 1) await redis.expire(key, ttlSeconds);
+      const [count] = await client.multi().incr(key).expire(key, ttlSeconds, "NX").exec<[number, 0 | 1]>();
       return count;
     },
     async del(keys) {
-      await redis.del(...keys);
+      await client.del(...keys);
     },
   };
 }
 
 let sharedBreaker: Breaker | undefined;
 
-/** Nur fuer Tests: vergisst den Schalter dieses Prozesses, damit kein Test den Zustand des vorigen erbt. */
+/** Nur für Tests: vergisst den Schalter dieses Prozesses, damit kein Test den Zustand des vorigen erbt. */
 export function __resetServerBreakerForTests(): void {
   sharedBreaker = undefined;
 }
 
 /** Der Schalter dieses Prozesses: Redis, wenn konfiguriert, sonst Speicher. */
 export function serverBreaker(): Breaker {
-  if (!sharedBreaker) {
-    const store =
-      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-        ? createRedisStore(Redis.fromEnv())
-        : createMemoryStore();
-    sharedBreaker = createBreaker(store);
-  }
+  sharedBreaker ??= createBreaker(redis ? createRedisStore(redis) : createMemoryStore());
   return sharedBreaker;
 }
 

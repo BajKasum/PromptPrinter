@@ -1,8 +1,7 @@
 import "server-only";
 
-import { Redis } from "@upstash/redis";
-
 import { optionalEnv } from "@/server/env-value";
+import { redis } from "@/server/security/redis-client";
 
 // Delivery for the events that should wake someone up (Security-Audit finding
 // M-4).
@@ -33,11 +32,6 @@ const THROTTLE_SECONDS = 15 * 60;
 
 /** Hard cap on the webhook call, so alerting can never slow a request path. */
 const WEBHOOK_TIMEOUT_MS = 3_000;
-
-const redis =
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? Redis.fromEnv()
-    : null;
 
 // Per-instance fallback for the throttle when Redis isn't configured (dev).
 // Bounded by the number of distinct event names, which is a fixed, small set.

@@ -113,6 +113,42 @@ describe("dispatchAlert", () => {
   });
 });
 
+describe("dispatchAlert mit Upstash", () => {
+  afterEach(() => {
+    vi.doUnmock("@/server/security/redis-client");
+  });
+
+  /** Lädt alerting.ts mit diesem gemeinsamen Client. */
+  function loadWithRedis(set: ReturnType<typeof vi.fn>) {
+    vi.doMock("@/server/security/redis-client", () => ({ redis: { set } }));
+    return loadAlerting({ ALERT_WEBHOOK_URL: WEBHOOK });
+  }
+
+  it("belegt das Mute-Fenster im gemeinsamen Client und schweigt, solange es steht", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
+    vi.stubGlobal("fetch", fetchMock);
+    const set = vi.fn().mockResolvedValueOnce("OK").mockResolvedValue(null);
+    const { dispatchAlert } = await loadWithRedis(set);
+
+    await dispatchAlert("error", "chat.turn_failed", {});
+    await dispatchAlert("error", "chat.turn_failed", {});
+
+    expect(set).toHaveBeenCalledWith("alert-muted:chat.turn_failed", "1", { nx: true, ex: 15 * 60 });
+    expect(set).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("meldet trotzdem, wenn Upstash scheitert: doppelt ist besser als gar nicht", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("ok"));
+    vi.stubGlobal("fetch", fetchMock);
+    const { dispatchAlert } = await loadWithRedis(vi.fn().mockRejectedValue(new Error("down")));
+
+    await dispatchAlert("error", "chat.turn_failed", {});
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("alertingConfigured", () => {
   it("is false without a webhook", async () => {
     const { alertingConfigured } = await loadAlerting({ ALERT_WEBHOOK_URL: undefined });
