@@ -70,15 +70,6 @@ export function attachmentPathsOfProject(
   );
 }
 
-/** Die Pfade aller Anhänge eines Kontos. */
-export function attachmentPathsOfUser(supabase: SupabaseClient<Database>, userId: string): Promise<string[]> {
-  return collectStoragePaths(
-    (from, to) =>
-      supabase.from("message_attachments").select("storage_path").eq("user_id", userId).order("id").range(from, to),
-    KEEP_PARTIAL
-  );
-}
-
 /**
  * Entfernt die Objekte, in Stapeln. Wirft nie: das Aufräumen ist nie der Grund,
  * eine Aktion des Nutzers scheitern zu lassen. Gibt zurück, wie viele Pfade in

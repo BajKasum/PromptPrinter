@@ -38,5 +38,3 @@ export const contactSchema = z.object({
   // sendet nichts, damit der Bot nicht lernt, woran er gescheitert ist.
   website: z.string().max(200).optional(),
 });
-
-export type ContactInput = z.infer<typeof contactSchema>;

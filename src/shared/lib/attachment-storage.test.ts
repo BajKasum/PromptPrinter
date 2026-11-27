@@ -4,7 +4,6 @@ import {
   ATTACHMENT_BUCKET,
   attachmentPathsOfConversation,
   attachmentPathsOfProject,
-  attachmentPathsOfUser,
   removeAttachmentObjects,
 } from "@/shared/lib/attachment-storage";
 
@@ -142,22 +141,12 @@ describe("attachmentPathsOfProject", () => {
   });
 });
 
-describe("attachmentPathsOfUser", () => {
-  it("covers every attachment of the account", async () => {
-    const { client, calls } = clientWithPages([{ data: rows(2), error: null }]);
-
-    expect(await attachmentPathsOfUser(client, "u1")).toEqual(["p0", "p1"]);
-    expect(calls.eq).toEqual([["user_id", "u1"]]);
-  });
-});
-
 // Ohne feste Reihenfolge dürfen sich zwei Seiten derselben Abfrage überschneiden: eine Zeile käme doppelt, eine andere
 // nie, und ihre Datei bliebe als Waise im Bucket.
 describe("jede Abfrage liest alle Seiten in fester Reihenfolge", () => {
   it.each([
     ["eines Chats", (client: SupabaseClient) => attachmentPathsOfConversation(client, "u1", "c1")],
     ["eines Projekts", (client: SupabaseClient) => attachmentPathsOfProject(client, "u1", "proj-1")],
-    ["eines Kontos", (client: SupabaseClient) => attachmentPathsOfUser(client, "u1")],
   ])("findet bei den Anhängen %s alle 1003 Zeilen über zwei Seiten, nach id sortiert", async (_name, collect) => {
     const all = rows(1003);
     const { client, calls } = clientWithPages([
