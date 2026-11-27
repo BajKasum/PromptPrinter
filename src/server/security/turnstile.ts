@@ -1,28 +1,19 @@
 import "server-only";
 
 /**
- * Cloudflare Turnstile verification, server side.
+ * Cloudflare-Turnstile-Prüfung auf dem Server.
  *
- * The widget (shared/ui/turnstile-widget.tsx) hands the browser a
- * single-use token. This module is the only place that redeems one, against
- * Cloudflare's canonical siteverify endpoint.
+ * Das Widget (shared/ui/turnstile-widget.tsx) gibt dem Browser ein Token, das
+ * sich nur einmal einlösen lässt. Eingelöst wird es nur hier, gegen Cloudflares
+ * siteverify-Endpunkt. Supabase prüft ein `captchaToken` nur, wenn der
+ * CAPTCHA-Schutz in seinem Dashboard an ist; `/api/auth` führt die Auth-Aufrufe
+ * deshalb selbst aus, hinter dieser Prüfung. So ist sie eine Schranke, die der
+ * Browser nicht überspringen kann.
  *
- * Why this exists at all: until 2026-08-02 nothing verified these tokens.
- * The site key was configured, the widget rendered, the token travelled to
- * Supabase Auth as `captchaToken` — but Supabase only checks that value when
- * CAPTCHA protection is switched ON in its own dashboard, and it never was.
- * Verified against the live project rather than assumed: POST /auth/v1/recover
- * carrying the token "XXXX.DUMMY.TOKEN.XXXX" answered 200, which it cannot do
- * with the setting enabled. So the box asked people to prove they were human
- * and then threw the answer away — a captcha in appearance only. /api/auth now
- * runs the auth calls server-side behind this check instead of letting the
- * browser talk to Supabase directly, which is what makes the check a gate
- * rather than a suggestion the client could skip.
- *
- * ⚠️ Do NOT also enable Supabase's own CAPTCHA setting while this is in place.
- * A Turnstile token may be redeemed exactly once: whichever verifier got there
- * first would win and the second would see `timeout-or-duplicate`, breaking
- * every login. One verifier, and it is this one.
+ * ⚠️ Supabases eigenes CAPTCHA nicht zusätzlich einschalten, solange hier
+ * geprüft wird: wer zuerst einlöst, gewinnt, der zweite sieht
+ * `timeout-or-duplicate`, und jede Anmeldung scheitert. Es prüft genau einer
+ * (umschalten: server/security/auth-captcha.ts).
  */
 import { captureError } from "@/shared/lib/observability";
 
@@ -42,11 +33,6 @@ const SITEVERIFY_TIMEOUT_MS = 10_000;
  * siteverify on our dime. The request body cap in the route is the real bound.
  */
 export const MAX_TURNSTILE_TOKEN_CHARS = 4096;
-
-/** True when a secret is configured, i.e. tokens will actually be redeemed. */
-export function turnstileEnabled(env: Record<string, string | undefined> = process.env): boolean {
-  return Boolean(env.TURNSTILE_SECRET?.trim());
-}
 
 export type TurnstileResult =
   /** `skipped` distinguishes "Cloudflare said yes" from "no secret configured". */

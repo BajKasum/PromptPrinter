@@ -5,9 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// `intlTag` seit der Sprachwahl (29.09.2026): die App gibt den Tag der
-// aktiven Sprache mit (LOCALE_TAGS in shared/i18n/locales.ts). Ohne Angabe
-// bleibt es de-CH, wie vorher.
+// `intlTag`: die App gibt den Tag der aktiven Sprache mit (LOCALE_TAGS in
+// shared/i18n/locales.ts). Ohne Angabe gilt de-CH.
 export function formatDate(
   iso: string | Date,
   opts?: Intl.DateTimeFormatOptions,
@@ -63,20 +62,15 @@ export function formatBytes(bytes: number, intlTag: string): string {
 }
 
 /**
- * A UUID v4, real or fallback (QA finding K-4).
+ * Eine UUID v4, echt oder selbst gebaut.
  *
- * `crypto.randomUUID()` requires a Secure Context — https, or localhost. Over
- * plain http on a LAN IP (the standard way to test on a real phone during
- * dev) it's `undefined`, and every call site that used it directly threw the
- * moment it ran: the chat composer on send, the file upload on pick. Neither
- * failure mode is obvious from the resulting error.
- *
- * `crypto.getRandomValues()` has no such restriction — it's available in
- * every context — so the fallback builds a real v4 UUID from it by hand
- * (RFC 4122 §4.4: version nibble forced to 4, variant bits forced to 10xx)
- * rather than returning some other random-string shape. That matters here:
- * project-files.tsx inserts this value into a `uuid primary key` column, so
- * "unique enough" isn't sufficient, it has to parse as one.
+ * `crypto.randomUUID()` verlangt einen Secure Context (https oder localhost).
+ * Über blankes http auf eine LAN-IP, den üblichen Weg zum Testen am Handy,
+ * fehlt es, und ein direkter Aufruf würfe beim Senden einer Nachricht und beim
+ * Hochladen einer Datei. `crypto.getRandomValues()` gibt es überall, daraus baut
+ * der Ersatz eine echte UUID v4 (RFC 4122 §4.4: Versionsbits 4, Variantenbits
+ * 10xx). Die Form zählt: project-files.tsx schreibt den Wert in eine
+ * `uuid primary key`-Spalte.
  */
 export function randomId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -90,30 +84,13 @@ export function randomId(): string {
 }
 
 /**
- * Builds an `hsl(var(--x) / alpha)` string from a design-token CSS variable
- * name (globals.css defines each as a bare "H S% L%" triplet, this file's own
- * convention — see e.g. `--accent`).
+ * Baut `hsl(var(--x) / alpha)` aus dem Namen einer Design-Variable (globals.css
+ * führt jede als nacktes Tripel „H S% L%“, etwa `--accent`).
  *
- * QA finding C-3: a few components (settings-workspace.tsx, tool-picker.tsx)
- * used to build their "soft glow" accent colors by string-concatenating a
- * hex alpha suffix onto a *hardcoded* hex color (`` `${accent}33` ``). That
- * meant a literal, always-light-mode value ("#8FCDF2") had to be passed in
- * and baked into the component's own props — a real theme bug, not just a
- * lint violation: the Dark-Mode `--accent` is a different value
- * (`204 80% 75%`), so the settings page showed the wrong accent whenever the
- * user was in dark mode. `hslVar` takes the *token name* instead, so the
- * value itself stays theme-aware.
+ * Komponenten übergeben den Variablennamen statt eines festen Farbwerts, damit
+ * die Farbe mit dem Thema geht: im Dunkelmodus hat `--accent` einen anderen
+ * Wert.
  */
 export function hslVar(cssVar: string, alpha?: number): string {
   return alpha === undefined ? `hsl(var(${cssVar}))` : `hsl(var(${cssVar}) / ${alpha})`;
-}
-
-export function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
 }

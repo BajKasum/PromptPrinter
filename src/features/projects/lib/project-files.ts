@@ -1,23 +1,14 @@
-// Single source of truth for the workspace file allowlist. Imported by the
-// upload UI (client-side gate), by the brain's source collector (server) and
-// mirrored by migration 0038's trigger + the storage bucket's own
-// file_size_limit (byte-based server backstop).
+// Die eine Quelle für die erlaubten Projektdateien. Die Oberfläche (Prüfung im
+// Browser) und der Quellensammler des Projekt-Gedächtnisses (Server) nutzen sie,
+// der Trigger aus Migration 0038 und `file_size_limit` des Buckets spiegeln sie
+// als Schranke auf dem Server. Eine Migration kann hier nicht importieren, also
+// steht jede Zahl unten ein zweites Mal in SQL: ändert sich eine, ändern sich
+// beide. Die Prüfung im Browser gibt sofort Rückmeldung, die Schranke hält der
+// Trigger.
 //
-// QA finding F-6: the caps were client-only for a long time — nothing on the
-// server actually stopped a signed-in user from inserting an 11th row or a
-// disallowed extension straight from the browser console. Migration 0022 added
-// a real backstop (a trigger on project_files), 0038 widened it along with
-// this list. A migration can't import from here, so every number below exists
-// a second time in SQL — if one changes, both change. The client-side checks
-// stay too, for instant feedback without a round trip; the trigger is what
-// actually holds the line.
-//
-// ─── Erweitert für das Project Brain (2026-08-03) ──────────────────────────
-// Vorher: .md/.txt/.json/.csv, 10 Dateien à 200 KB — zugeschnitten auf „ein
-// paar Notizen als Kontext". Das Projekt-Gedächtnis analysiert dagegen das,
-// was ein echtes Repo ausmacht: package.json, Lockfile, tsconfig,
-// next.config, Migrationen, Screenshots. Ohne Code-, YAML-, SQL- und
-// Bildformate wäre das Feature auf Prosa beschränkt gewesen.
+// Die Liste reicht bis Code-, YAML-, SQL- und Bildformate, weil das
+// Gedächtnis analysiert, was ein echtes Repo ausmacht: package.json, Lockfile,
+// tsconfig, next.config, Migrationen, Screenshots.
 
 export {
   ALLOWED_FILE_EXTENSIONS,
@@ -27,13 +18,13 @@ export {
 } from "@/shared/lib/file-kinds";
 import { fileKind } from "@/shared/lib/file-kinds";
 
-/** Höchstgrösse je Art. Gespiegelt in migration 0038's Trigger. */
+/**
+ * Höchstgrösse je Art, gespiegelt im Trigger aus Migration 0038. Der grösste
+ * Wert ist zugleich `file_size_limit` des Buckets.
+ */
 export const MAX_TEXT_FILE_BYTES = 200 * 1024; // 200 KB
 export const MAX_LOCKFILE_BYTES = 1024 * 1024; // 1 MB
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2 MB
-
-/** Grösste erlaubte Einzeldatei überhaupt — der Wert des Buckets (0038). */
-export const MAX_FILE_BYTES = MAX_IMAGE_BYTES;
 
 export const MAX_FILES_PER_PROJECT = 20; // kept in sync with migrations 0038 + 0029
 
