@@ -5,6 +5,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { GithubIcon } from "@/shared/ui/github-icon";
 import { PageHeader } from "@/features/marketing/components/page-header";
+import { InstallSteps } from "@/features/marketing/components/step-list";
 import { TerminalWindow } from "@/features/marketing/components/terminal-window";
 import {
   CLI_COMMANDS,
@@ -90,27 +91,7 @@ export default function TerminalPage() {
               </Button>
             </div>
 
-            <ol className="mt-8 space-y-5">
-              {steps.map((step, i) => (
-                <li key={step.title} className="flex gap-4">
-                  <span
-                    aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/60 bg-surface-raised font-mono text-[13px] text-accent-text"
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[16px] font-semibold text-foreground">{step.title}</h3>
-                    <p className="mt-1 text-[14.5px] leading-[1.6] text-foreground/75">{step.body}</p>
-                    {step.code && (
-                      <pre className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface-raised px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground">
-                        <code>{step.code}</code>
-                      </pre>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <InstallSteps steps={steps} />
           </section>
         </FadeIn>
       </div>
@@ -133,27 +114,7 @@ export default function TerminalPage() {
               hängt am Modell. Den MCP-Server gibt es nur mit Konto.
             </p>
 
-            <ol className="mt-6 space-y-5">
-              {localSteps.map((step, i) => (
-                <li key={step.title} className="flex gap-4">
-                  <span
-                    aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface font-mono text-[13px] text-secondary"
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[16px] font-semibold text-foreground">{step.title}</h3>
-                    <p className="mt-1 text-[14.5px] leading-[1.6] text-secondary">{withInlineCode(step.body)}</p>
-                    {step.code && (
-                      <pre className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground">
-                        <code>{step.code}</code>
-                      </pre>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <InstallSteps steps={localSteps} tone="plain" formatBody={withInlineCode} />
 
             <p className="mt-6 text-[14.5px] leading-[1.6] text-secondary">
               Lieber die ganze App im Browser, auf deinem Rechner?{" "}

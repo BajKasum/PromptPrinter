@@ -73,6 +73,31 @@ describe("Seiten unter /aufgaben", () => {
         expect(container.querySelector("pre code")?.textContent).toBe(guide.example.prompt);
       });
 
+      it("führt zurück zur Übersicht und nennt sie im Breadcrumb", async () => {
+        const { container } = render(await TaskGuidePage({ params: Promise.resolve({ slug: guide.slug }) }));
+        expect(screen.getByRole("link", { name: "← Alle Aufgaben" })).toHaveAttribute("href", "/aufgaben");
+        const breadcrumb = [...container.querySelectorAll('script[type="application/ld+json"]')]
+          .map((script) => JSON.parse(script.textContent ?? "{}"))
+          .find((data) => data["@type"] === "BreadcrumbList");
+        expect(breadcrumb.itemListElement.map((item: { name: string }) => item.name)).toEqual([
+          "PromptPrinter",
+          "Aufgaben",
+          guide.label,
+        ]);
+      });
+
+      it("verlinkt unter Weiterlesen die Hilfe und jede andere Aufgabe, nicht sich selbst", async () => {
+        render(await TaskGuidePage({ params: Promise.resolve({ slug: guide.slug }) }));
+        const nav = within(screen.getByRole("navigation", { name: "Weiterlesen" }));
+        expect(nav.getAllByRole("link").map((a) => [a.getAttribute("href"), a.textContent])).toEqual([
+          ...guide.related.map((link) => [link.href, link.label]),
+          ...TASK_GUIDES.filter((other) => other.slug !== guide.slug).map((other) => [
+            taskGuideHref(other.slug),
+            other.label,
+          ]),
+        ]);
+      });
+
       it("sagt, wann man das nicht braucht, und führt die FAQ-Daten mit derselben Frage", async () => {
         const { container } = render(await TaskGuidePage({ params: Promise.resolve({ slug: guide.slug }) }));
         expect(screen.getByRole("heading", { level: 2, name: "Wann brauchst du das nicht?" })).toBeInTheDocument();
