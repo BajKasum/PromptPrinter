@@ -16,7 +16,8 @@ import {
   type ProjectFile,
 } from "@/features/projects/lib/project-files";
 import { formatBytes, randomId } from "@/shared/lib/utils";
-import { useT } from "@/shared/i18n/provider";
+import { useLocale, useT } from "@/shared/i18n/provider";
+import { LOCALE_TAGS } from "@/shared/i18n/locales";
 import { fmt } from "@/shared/i18n/format";
 
 // Workspace-Dateien (REDESIGN.md, Phase 4): kleine Text-Kontextdateien, die
@@ -35,6 +36,8 @@ export function ProjectFiles({
   initialFiles: ProjectFile[];
 }) {
   const t = useT();
+  const { intl } = LOCALE_TAGS[useLocale()];
+  const size = (bytes: number) => formatBytes(bytes, intl);
   const router = useRouter();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +72,7 @@ export function ProjectFiles({
     // noch groesser, eine Konfigurationsdatei nicht (maxBytesFor).
     const maxBytes = maxBytesFor(file.name);
     if (file.size > maxBytes) {
-      setError(fmt(t.projects.fileTooLarge, { size: formatBytes(maxBytes) }));
+      setError(fmt(t.projects.fileTooLarge, { size: size(maxBytes) }));
       return;
     }
     // Die Summe ist die eigentliche Schranke, seit Einzeldateien 2 MB gross
@@ -77,7 +80,7 @@ export function ProjectFiles({
     // 0038's Trigger haelt sie tatsaechlich (zwei Tabs zaehlen unabhaengig).
     const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
     if (usedBytes + file.size > MAX_PROJECT_FILE_BYTES) {
-      setError(fmt(t.projects.storageFull, { size: formatBytes(MAX_PROJECT_FILE_BYTES) }));
+      setError(fmt(t.projects.storageFull, { size: size(MAX_PROJECT_FILE_BYTES) }));
       return;
     }
 
@@ -161,9 +164,9 @@ export function ProjectFiles({
       } else if (message.includes("Dateityp nicht erlaubt")) {
         setError(t.projects.fileUnsupported);
       } else if (message.includes("Datei zu gross")) {
-        setError(fmt(t.projects.fileTooLarge, { size: formatBytes(maxBytesFor(file.name)) }));
+        setError(fmt(t.projects.fileTooLarge, { size: size(maxBytesFor(file.name)) }));
       } else if (message.includes("Projekt-Speicherlimit erreicht")) {
-        setError(fmt(t.projects.storageFull, { size: formatBytes(MAX_PROJECT_FILE_BYTES) }));
+        setError(fmt(t.projects.storageFull, { size: size(MAX_PROJECT_FILE_BYTES) }));
       } else {
         setError(t.projects.uploadFailed);
       }
@@ -248,7 +251,7 @@ export function ProjectFiles({
                 {f.name}
               </span>
               <span className="shrink-0 text-[12px] text-muted-foreground">
-                {formatBytes(f.sizeBytes)}
+                {size(f.sizeBytes)}
               </span>
               <button
                 type="button"

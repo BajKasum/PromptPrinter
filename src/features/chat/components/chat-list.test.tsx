@@ -27,7 +27,7 @@ vi.mock("@/shared/supabase/client", () => ({
       table === "message_attachments"
         ? {
             select: () => ({
-              eq: () => ({ eq: () => ({ range: (...a: unknown[]) => attachmentRange(...a) }) }),
+              eq: () => ({ eq: () => ({ order: () => ({ range: (...a: unknown[]) => attachmentRange(...a) }) }) }),
             }),
           }
         : { update, delete: del },

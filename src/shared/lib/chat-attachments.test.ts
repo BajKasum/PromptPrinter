@@ -11,6 +11,7 @@ import {
   MAX_ATTACHMENT_IMAGE_BYTES,
   MAX_ATTACHMENT_TEXT_BYTES,
 } from "@/shared/lib/chat-limits";
+import { formatBytes as sharedFormatBytes } from "@/shared/lib/utils";
 
 describe("attachmentKindOf", () => {
   it("calls screenshots and photos images", () => {
@@ -104,14 +105,8 @@ describe("base64DecodedLength", () => {
 });
 
 describe("formatBytes", () => {
-  it("picks a readable unit", () => {
-    expect(formatBytes(512)).toBe("512 B");
-    expect(formatBytes(2048)).toBe("2 KB");
-    expect(formatBytes(1.5 * 1024 * 1024)).toBe("1.5 MB");
-    expect(formatBytes(25 * 1024 * 1024)).toBe("25 MB");
-  });
-
-  it("uses the decimal separator of the app language", () => {
-    expect(formatBytes(1.5 * 1024 * 1024, "de-DE")).toBe("1,5 MB");
+  // Die Anhänge des Chats importieren sie von hier; eine zweite Fassung liefe wieder auseinander.
+  it("is the app-wide function, not a second one", () => {
+    expect(formatBytes).toBe(sharedFormatBytes);
   });
 });

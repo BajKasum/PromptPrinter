@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/shared/supabase/database.types";
-import { removeAllPaths } from "@/shared/lib/storage-cleanup";
+import { collectStoragePaths, removeAllPaths } from "@/shared/lib/storage-cleanup";
 
 // Wo die Dateien von Chat-Anhängen liegen, und wie man sie wieder einsammelt.
 //
@@ -15,39 +15,20 @@ import { removeAllPaths } from "@/shared/lib/storage-cleanup";
 // kaskadieren nicht mit einer Zeile. Vor dem Löschen sind die Pfade noch zu
 // finden, nach einem fehlgeschlagenen Löschen dürfen die Objekte nicht weg,
 // denn dann zeigen die Zeilen noch auf sie.
+//
+// Jede Abfrage sortiert nach `id`: ohne feste Reihenfolge dürfen sich zwei Seiten
+// derselben Abfrage überschneiden, und die ausgelassene Datei bleibt im Bucket.
 
 export const ATTACHMENT_BUCKET = "chat-attachments";
 
-/** So viele Zeilen liefert PostgREST höchstens pro Antwort (Standard-max-rows). */
-const PAGE = 1000;
-
-type PathRow = { storage_path: string };
-type Page = PromiseLike<{ data: PathRow[] | null; error: unknown }>;
-
 /**
- * Liest alle Pfade, seitenweise. Eine einzelne Antwort bricht bei 1000 Zeilen
- * ab, und ein Chat oder gar ein Konto kann mehr Anhänge haben. Wer nach der
- * ersten Seite aufhört, lässt den Rest als Waisen im Bucket zurück.
- *
- * Gibt bei einem Lesefehler `[]` zurück statt zu werfen: ein Chat soll sich
- * löschen lassen, auch wenn sich seine Anhänge gerade nicht auflisten lassen
- * (zum Beispiel vor Migration 0045). Was dabei übrig bleibt, findet
+ * Scheitert das Lesen, kommen die bis dahin gelesenen Pfade zurück (notfalls
+ * keine), statt zu werfen: ein Chat soll sich löschen lassen, auch wenn sich
+ * seine Anhänge gerade nicht auflisten lassen (zum Beispiel vor Migration
+ * 0045). Was dabei übrig bleibt, findet
  * scripts/reconcile-project-files-storage.mjs --bucket=chat-attachments.
  */
-async function collectPaths(page: (from: number, to: number) => Page): Promise<string[]> {
-  const paths: string[] = [];
-  try {
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await page(from, from + PAGE - 1);
-      if (error) return paths;
-      paths.push(...(data ?? []).map((row) => row.storage_path));
-      if (!data || data.length < PAGE) break;
-    }
-  } catch {
-    // siehe oben
-  }
-  return paths;
-}
+const KEEP_PARTIAL = { keepPartialOnError: true } as const;
 
 /** Die Pfade aller Anhänge EINES Chats. */
 export function attachmentPathsOfConversation(
@@ -55,13 +36,16 @@ export function attachmentPathsOfConversation(
   userId: string,
   conversationId: string
 ): Promise<string[]> {
-  return collectPaths((from, to) =>
-    supabase
-      .from("message_attachments")
-      .select("storage_path")
-      .eq("user_id", userId)
-      .eq("conversation_id", conversationId)
-      .range(from, to)
+  return collectStoragePaths(
+    (from, to) =>
+      supabase
+        .from("message_attachments")
+        .select("storage_path")
+        .eq("user_id", userId)
+        .eq("conversation_id", conversationId)
+        .order("id")
+        .range(from, to),
+    KEEP_PARTIAL
   );
 }
 
@@ -73,24 +57,25 @@ export function attachmentPathsOfProject(
 ): Promise<string[]> {
   // `conversations!inner`: ein Inner Join über den Fremdschlüssel, damit nur
   // Anhänge von Chats dieses Projekts zurückkommen.
-  return collectPaths((from, to) =>
-    supabase
-      .from("message_attachments")
-      .select("storage_path, conversations!inner(project_id)")
-      .eq("user_id", userId)
-      .eq("conversations.project_id", projectId)
-      .range(from, to)
+  return collectStoragePaths(
+    (from, to) =>
+      supabase
+        .from("message_attachments")
+        .select("storage_path, conversations!inner(project_id)")
+        .eq("user_id", userId)
+        .eq("conversations.project_id", projectId)
+        .order("id")
+        .range(from, to),
+    KEEP_PARTIAL
   );
 }
 
 /** Die Pfade aller Anhänge eines Kontos. */
 export function attachmentPathsOfUser(supabase: SupabaseClient<Database>, userId: string): Promise<string[]> {
-  return collectPaths((from, to) =>
-    supabase
-      .from("message_attachments")
-      .select("storage_path")
-      .eq("user_id", userId)
-      .range(from, to)
+  return collectStoragePaths(
+    (from, to) =>
+      supabase.from("message_attachments").select("storage_path").eq("user_id", userId).order("id").range(from, to),
+    KEEP_PARTIAL
   );
 }
 
