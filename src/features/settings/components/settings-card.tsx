@@ -1,8 +1,7 @@
 import { cn, hslVar } from "@/shared/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
-// Die Bausteine der Einstellungsseite, ausgelagert aus settings-workspace.tsx (Betriebs-Audit, Folgesitzung
-// 2026-10-07, Dateigroesse): die Karte mit Kopf und Akzent, ein beschriftetes Feld, eine Info-Zeile.
+// Die Bausteine der Einstellungsseite: die Karte mit Kopf und Akzent, ein beschriftetes Feld, eine Info-Zeile.
 
 /* ─── Presentational pieces ─────────────────────────────────────────────── */
 
@@ -12,19 +11,17 @@ export function SettingsCard({
   accent,
   title,
   description,
-  badge,
   headerRight,
   className,
   children,
 }: {
-  /** Sprunganker, z. B. fuer den Key-Hinweis im Chat (/settings#api-keys). */
+  /** Sprunganker, z. B. für den Key-Hinweis im Chat (/settings#api-keys). */
   id?: string;
   Icon: LucideIcon;
   /** A design-token CSS variable name (e.g. "--accent"), not a literal color — see hslVar. */
   accent: string;
   title: string;
   description: string;
-  badge?: string;
   headerRight?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
@@ -55,13 +52,7 @@ export function SettingsCard({
           <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
           <p className="mt-0.5 text-[13px] text-secondary">{description}</p>
         </div>
-        {badge ? (
-          <span className="shrink-0 rounded-full border border-border bg-surface px-2 py-0.5 text-[12px] font-mono uppercase tracking-[0.08em] text-tertiary">
-            {badge}
-          </span>
-        ) : (
-          headerRight
-        )}
+        {headerRight}
       </header>
 
       {children}
@@ -78,13 +69,11 @@ export function Field({ label, children }: { label: string; children: React.Reac
   );
 }
 
-export function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+export function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-2.5">
       <span className="text-[13px] text-tertiary">{label}</span>
-      <span className={cn("text-[13px] text-foreground/85", mono && "font-mono text-foreground/70")}>
-        {value}
-      </span>
+      <span className="text-[13px] text-foreground/85">{value}</span>
     </div>
   );
 }

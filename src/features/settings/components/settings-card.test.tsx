@@ -35,15 +35,9 @@ describe("SettingsCard", () => {
     expect(glow?.getAttribute("style")).toContain("--destructive");
   });
 
-  it("zeigt rechts im Kopf die Marke (badge), sonst den freien Inhalt (headerRight)", () => {
-    const { container, unmount } = card({ badge: "BETA", headerRight: <span>frei</span> });
-    expect(screen.getByText("BETA")).toBeInTheDocument();
-    expect(screen.queryByText("frei")).not.toBeInTheDocument();
-    expect(container.querySelector("header span.font-mono")?.textContent).toBe("BETA");
-    unmount();
-
-    card({ headerRight: <span>frei</span> });
-    expect(screen.getByText("frei")).toBeInTheDocument();
+  it("zeigt den freien Inhalt (headerRight) rechts im Kopf", () => {
+    const { container } = card({ headerRight: <span>frei</span> });
+    expect(container.querySelector("header")?.lastElementChild?.textContent).toBe("frei");
   });
 
   it("hängt eine zusätzliche Klasse an, ohne die eigene zu verlieren, und lässt den Anker unter die feste Kopfzeile scrollen", () => {
@@ -73,11 +67,5 @@ describe("InfoRow", () => {
     const spans = container.querySelectorAll("div > span");
     expect(spans[0].textContent).toBe("Rolle");
     expect(spans[1].textContent).toBe("Eigentümer");
-    expect(spans[1]).not.toHaveClass("font-mono");
-  });
-
-  it("setzt den Wert auf Wunsch in Festbreitenschrift", () => {
-    const { container } = render(<InfoRow label="ID" value="abc-123" mono />);
-    expect(container.querySelectorAll("div > span")[1]).toHaveClass("font-mono");
   });
 });

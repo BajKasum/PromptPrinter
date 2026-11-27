@@ -165,6 +165,22 @@ describe("accountExportStream", () => {
     ]);
   });
 
+  // Die App zeigt `projects.tools` nirgends, alte Projekte tragen dort aber Werte: der Export ist der Weg, auf dem
+  // das Konto sie bekommt, also vollständig und unverändert.
+  it("liefert die alte Spalte projects.tools vollständig, so wie sie gespeichert ist", async () => {
+    const tools = { master: "Claude", frontend: "React", backend: "Node", database: "Postgres", target: "ChatGPT" };
+    const { client, queries } = fakeClient({
+      projects: [
+        { id: "alt", user_id: USER, name: "Altes Projekt", tools },
+        { id: "neu", user_id: USER, name: "Neues Projekt", tools: null },
+      ],
+    });
+    const json = JSON.parse(await readAll(accountExportStream(options(client))));
+
+    expect(queries.find((q) => q.table === "projects")?.columns.split(", ")).toContain("tools");
+    expect(json.projects.map((p: Row) => p.tools)).toEqual([tools, null]);
+  });
+
   it("enthält NIE Zeilen eines anderen Nutzers", async () => {
     const { client } = fakeClient({
       messages: [

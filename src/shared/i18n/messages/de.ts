@@ -949,8 +949,8 @@ export const de = {
   },
 
   library: {
-    searchPlaceholder: "Projekte oder Tools durchsuchen…",
-    searchLabel: "Projekte oder Tools durchsuchen",
+    searchPlaceholder: "Projekte durchsuchen…",
+    searchLabel: "Projekte durchsuchen",
     filterAll: "Alle",
     filterFavorites: "Favoriten",
     filterRecent: "Kürzlich verwendet",

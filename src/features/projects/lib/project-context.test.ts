@@ -41,7 +41,7 @@ function supabaseWith(rows: Rows, contents: Record<string, string> = {}) {
   } as never;
 }
 
-const PROJECT = { name: "Demo", idea: null, instructions: null, context: {}, tools: null };
+const PROJECT = { name: "Demo", idea: null, instructions: null, context: {} };
 
 const READY_BRAIN = {
   status: "ready",
