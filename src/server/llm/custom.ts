@@ -15,7 +15,7 @@ import {
 } from "@/server/llm/http";
 import { isZaiEndpoint } from "@/server/llm/config";
 import { toOpenAiMessages } from "@/server/llm/messages";
-import type { LlmMessage, LlmResult } from "@/server/llm/types";
+import type { LlmResult, ProviderChatCall, ProviderStreamCall } from "@/server/llm/types";
 
 // Jeder OpenAI-kompatible Endpunkt: der Custom-Slot (BYOK) und der eigene Endpunkt des Betreibers (LLM_BASE_URL).
 // (Teil von src/server/llm/, siehe index.ts)
@@ -25,6 +25,9 @@ import type { LlmMessage, LlmResult } from "@/server/llm/types";
  * Betreiber hat sie in der Umgebung gesetzt (llm/config.ts, endpointChatUrl).
  */
 export type EndpointSource = "byok" | "server";
+
+/** Zu einem Aufruf hier gehört die Adresse. Ohne `source` gilt die strenge Prüfung einer Nutzer-Adresse. */
+type EndpointTarget = { endpoint: string; source?: EndpointSource };
 
 const LABELS: Record<EndpointSource, string> = { byok: "Custom-Provider", server: "LLM-Endpunkt" };
 
@@ -69,15 +72,15 @@ async function postChatCompletion(args: {
   return res;
 }
 
-export async function customComplete(
-  endpoint: string,
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  source: EndpointSource = "byok"
-): Promise<LlmResult> {
+export async function customComplete({
+  endpoint,
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+  source = "byok",
+}: ProviderChatCall & EndpointTarget): Promise<LlmResult> {
   const res = await postChatCompletion({
     endpoint,
     apiKey,
@@ -90,17 +93,17 @@ export async function customComplete(
   return readCompletion(json, LABELS[source]);
 }
 
-export async function* customCompleteStream(
-  endpoint: string,
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal,
-  source: EndpointSource = "byok",
-  onTruncated?: () => void
-): AsyncGenerator<string> {
+export async function* customCompleteStream({
+  endpoint,
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+  signal,
+  source = "byok",
+  onTruncated,
+}: ProviderStreamCall & EndpointTarget): AsyncGenerator<string> {
   const guard = streamDeadlines(signal, CUSTOM_FIRST_CHUNK_TIMEOUT_MS);
   try {
     const res = await postChatCompletion({

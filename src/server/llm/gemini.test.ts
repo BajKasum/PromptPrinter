@@ -30,7 +30,8 @@ function captureFetch(respond: () => Response): string[] {
   return urls;
 }
 
-const user = [{ role: "user" as const, content: "x" }];
+const base = { model: "gemini-3.5-flash", system: "S", maxOutputTokens: 100, apiKey: "test-key" };
+const chat = { ...base, messages: [{ role: "user" as const, content: "x" }] };
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -41,7 +42,7 @@ describe("Gemini über den echten SDK: API-Version v1beta", () => {
   it("generateContent im Chat geht an v1beta", async () => {
     const urls = captureFetch(() => Response.json(reply));
 
-    const result = await geminiComplete("gemini-3.5-flash", "S", user, 100, "test-key");
+    const result = await geminiComplete(chat);
 
     expect(result).toEqual({ text: "ok", usage: { inputTokens: 3, outputTokens: 1 } });
     expect(urls).toHaveLength(1);
@@ -59,7 +60,7 @@ describe("Gemini über den echten SDK: API-Version v1beta", () => {
     );
 
     const chunks: string[] = [];
-    for await (const chunk of geminiCompleteStream("gemini-3.5-flash", "S", user, 100, "test-key")) {
+    for await (const chunk of geminiCompleteStream(chat)) {
       chunks.push(chunk);
     }
 
@@ -71,7 +72,7 @@ describe("Gemini über den echten SDK: API-Version v1beta", () => {
   it("die Analyse des Projekt-Gedächtnisses geht an v1beta", async () => {
     const urls = captureFetch(() => Response.json(reply));
 
-    await geminiAnalyze("gemini-3.5-flash", "S", "T", [], 100, "test-key");
+    await geminiAnalyze({ ...base, text: "T", images: [] });
 
     expect(new URL(urls[0]).pathname).toBe("/v1beta/models/gemini-3.5-flash:generateContent");
   });
@@ -80,7 +81,7 @@ describe("Gemini über den echten SDK: API-Version v1beta", () => {
     vi.stubEnv("GOOGLE_GENAI_API_VERSION", "v1");
     const urls = captureFetch(() => Response.json(reply));
 
-    await geminiComplete("gemini-3.5-flash", "S", user, 100, "test-key");
+    await geminiComplete(chat);
 
     expect(new URL(urls[0]).pathname).toBe("/v1beta/models/gemini-3.5-flash:generateContent");
   });

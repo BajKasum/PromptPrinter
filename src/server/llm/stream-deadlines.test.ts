@@ -124,6 +124,13 @@ const serverGemini: Start = (signal) => {
   vi.stubEnv("GEMINI_API_KEY", "gemini-key");
   return zai(signal);
 };
+/** Der eigene Endpunkt des Betreibers als Server-Anbieter: kein Server-Schlüssel, nur Adresse und Modell. */
+const serverEndpoint: Start = (signal) => {
+  vi.stubEnv("ZAI_API_KEY", "");
+  vi.stubEnv("LLM_BASE_URL", "https://example.test/v1");
+  vi.stubEnv("LLM_MODEL", "some-model");
+  return zai(signal);
+};
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -139,6 +146,7 @@ afterEach(() => {
 describe.each([
   ["Z.ai", zai, openAiWire, ZAI_FIRST_CHUNK_TIMEOUT_MS],
   ["Custom-Slot", byok, openAiWire, CUSTOM_FIRST_CHUNK_TIMEOUT_MS],
+  ["Eigener Endpunkt des Betreibers", serverEndpoint, openAiWire, CUSTOM_FIRST_CHUNK_TIMEOUT_MS],
   ["Gemini als Server-Anbieter", serverGemini, geminiWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
   ["Gemini mit eigenem Key", turn({ provider: "gemini", apiKey: "k" }), geminiWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
   ["OpenAI mit eigenem Key", turn({ provider: "openai", apiKey: "k" }), openAiWire, SDK_FIRST_CHUNK_TIMEOUT_MS],
