@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { counterRedisDouble } from "./redis-double";
+import { counterRedisDouble } from "@tests/support/redis-double";
 
 async function withCounter(start = 0) {
   let count = start;

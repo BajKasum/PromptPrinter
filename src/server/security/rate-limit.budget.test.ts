@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { counterRedisDouble } from "./redis-double";
+import { counterRedisDouble } from "@tests/support/redis-double";
 
 // Die Tagesbudgets des Servers (Serverschlüssel und Ausweich-Anbieter): Kanten, die rate-limit.test.ts nicht
 // festhält. Festgenagelt vor der Zerlegung von rate-limit.ts (Betriebs-Audit, Folgesitzung 2026-10-07,
