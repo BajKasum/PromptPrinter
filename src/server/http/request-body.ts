@@ -1,5 +1,6 @@
 import "server-only";
 
+import { readCappedStream } from "@/server/http/capped-stream";
 import {
   MAX_ASSISTANT_MESSAGE_CHARS,
   MAX_ATTACHMENTS_REQUEST_BYTES,
@@ -22,8 +23,7 @@ import {
 // `content-length` is checked first because it is free, but it is client-
 // supplied and therefore not trusted — the streaming read below is the
 // authoritative bound, and it is what stops a chunked request that lies about
-// (or omits) its length. Same shape as readCappedText in server/llm/http.ts, which
-// bounds responses from a BYOK endpoint for the same reason.
+// (or omits) its length. Das Lesen selbst macht readCappedStream (capped-stream.ts).
 
 /** The request body exceeded the route's ceiling. Maps to HTTP 413. */
 export class RequestBodyTooLargeError extends Error {
@@ -91,24 +91,7 @@ export async function readCappedText(req: Request, maxBytes: number): Promise<st
 
   if (!req.body) throw new InvalidJsonBodyError();
 
-  const reader = req.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      // Checked before buffering the chunk, so the process never holds more
-      // than one chunk beyond the ceiling.
-      if (total > maxBytes) throw new RequestBodyTooLargeError(maxBytes);
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
+  return readCappedStream(req.body, maxBytes, () => new RequestBodyTooLargeError(maxBytes));
 }
 
 /**

@@ -8,8 +8,9 @@ import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { CLI_PROBLEMS } from "@/server/cli-login/messages";
 import { checkCliSession } from "@/server/cli-login/sessions";
-import { SAVED_PROMPT_COLUMNS, isPromptId, toDetail } from "@/server/cli-login/saved-prompts";
+import { SAVED_PROMPT_COLUMNS, toDetail } from "@/server/cli-login/saved-prompts";
 import { captureError } from "@/shared/lib/observability";
+import { isUuid } from "@/shared/lib/uuid";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,7 @@ export async function GET(req: Request, { params }: Params) {
   if (!token) return denied("cli-prompt", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));
 
   const { id } = await params;
-  if (!isPromptId(id)) return problem(400, CLI_PROBLEMS.invalidPromptId, { kind: "invalid" });
+  if (!isUuid(id)) return problem(400, CLI_PROBLEMS.invalidPromptId, { kind: "invalid" });
 
   try {
     const supabase = await createClientForRequest(req);

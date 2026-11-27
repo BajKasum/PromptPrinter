@@ -1,14 +1,13 @@
 import { MAX_USER_MESSAGE_CHARS } from "@/shared/lib/chat-limits";
+import { isUuid } from "@/shared/lib/uuid";
 
 // "Als Ausgangspunkt nutzen": ein neuer Chat, dessen Eingabefeld einen gespeicherten Prompt trägt, darüber eine Zeile
 // für die Änderung ("Pass diesen Prompt an: "). In der Adresse steht nur die ID (`?from=<id>`), nie der Text; die Seite
 // lädt ihn auf dem Server (server/start-from-prompt.ts). Gesendet wird erst, wenn die Person es will.
 
-const SAVED_PROMPT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** Nur was wie die ID eines gespeicherten Prompts aussieht, geht überhaupt an die Datenbank. */
 export function isSavedPromptId(value: unknown): value is string {
-  return typeof value === "string" && SAVED_PROMPT_ID.test(value);
+  return typeof value === "string" && isUuid(value);
 }
 
 /**

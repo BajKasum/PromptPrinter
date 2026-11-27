@@ -14,6 +14,7 @@ import {
   parseBrainFacts,
   type BrainAnalysisInput,
 } from "@/server/brain/analyze";
+import { BRAIN_FIELDS, BRAIN_LIMITS, projectBrainFactsSchema } from "@/shared/lib/project-brain";
 
 const VALID = JSON.stringify({
   summary: "Eine Next.js-App mit Supabase.",
@@ -93,6 +94,32 @@ describe("parseBrainFacts", () => {
     expect(facts.conventions[0]).toBe("ok");
     expect(facts.conventions[1].length).toBeLessThanOrEqual(300);
     expect(facts.confidence).toBe("medium");
+  });
+
+  // Die Seite liest das Gespeicherte mit demselben Schema und verwirft es sonst als Ganzes: was das feldweise Retten
+  // schreibt, muss das Schema annehmen, auch wenn jedes Feld und jede Liste zu lang war.
+  it("rettet jedes Feld genau auf die Grenzen, die das Schema annimmt", () => {
+    const long = "x".repeat(2000);
+    const list = Array.from({ length: 40 }, () => long);
+    const textFields = BRAIN_FIELDS.map(({ key }) => key);
+    const facts = parseBrainFacts(
+      JSON.stringify({
+        ...Object.fromEntries(textFields.map((key) => [key, long])),
+        summary: long,
+        conventions: list,
+        stack: list,
+        keyFacts: list,
+      })
+    );
+
+    expect(projectBrainFactsSchema.parse(facts)).toEqual(facts);
+    expect(facts.summary).toHaveLength(BRAIN_LIMITS.summaryChars);
+    for (const key of textFields) expect(facts[key], key).toHaveLength(BRAIN_LIMITS.fieldChars);
+    for (const key of ["conventions", "stack", "keyFacts"] as const) {
+      const { entries, chars } = BRAIN_LIMITS.lists[key];
+      expect(facts[key], key).toHaveLength(entries);
+      expect(facts[key][0], key).toHaveLength(chars);
+    }
   });
 
   it("throws when there is nothing usable at all", () => {

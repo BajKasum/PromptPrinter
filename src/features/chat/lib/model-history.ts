@@ -4,6 +4,7 @@ import type { createClient } from "@/server/supabase/server";
 import type { LlmMessage } from "@/server/llm";
 import type { ChatMessage } from "@/shared/lib/schemas";
 import { captureError } from "@/shared/lib/observability";
+import { isUuid } from "@/shared/lib/uuid";
 import {
   downloadAttachment,
   groupByMessage,
@@ -26,8 +27,6 @@ import {
 // Verlauf muss nie Bilder hin- und herschicken.
 
 type UserClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Was für Telemetrie und Tests von den Anhängen eines Zugs übrig bleibt. */
 export type HistoryStats = { images: number; files: number };
@@ -60,7 +59,7 @@ export async function buildModelHistory(opts: {
   const keyOf = (message: ChatMessage, index: number): string | null => {
     if (message.role !== "user") return null;
     const id = index === lastIndex ? (opts.newMessageId ?? message.id) : message.id;
-    return id && UUID.test(id) ? id : null;
+    return id && isUuid(id) ? id : null;
   };
 
   const keys = opts.window.map(keyOf);

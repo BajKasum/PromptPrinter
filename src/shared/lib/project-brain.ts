@@ -21,6 +21,24 @@ export const PROJECT_BRAIN_STATUSES = ["idle", "analyzing", "ready", "failed"] a
 export type ProjectBrainStatus = (typeof PROJECT_BRAIN_STATUSES)[number];
 
 /**
+ * Wie lang die Fakten höchstens sind. Das Schema und das feldweise Retten (salvageFacts in server/brain/analyze.ts)
+ * lesen die Grenzen hier: schriebe das Retten mehr, als das Schema annimmt, verwürfe das Lesen das Gedächtnis.
+ */
+export const BRAIN_LIMITS = {
+  summaryChars: 600,
+  fieldChars: 400,
+  lists: {
+    conventions: { entries: 10, chars: 300 },
+    stack: { entries: 16, chars: 80 },
+    keyFacts: { entries: 10, chars: 200 },
+  },
+} as const;
+
+/** Eine der Listen unter den Fakten, in den Grenzen aus BRAIN_LIMITS. */
+const factList = ({ entries, chars }: { entries: number; chars: number }) =>
+  z.array(z.string().trim().min(1).max(chars)).max(entries).default([]);
+
+/**
  * Ein einzelnes Textfeld der Analyse.
  *
  * Leerstring statt `null` für „nicht erkannt": das Modell antwortet in einem
@@ -30,7 +48,7 @@ export type ProjectBrainStatus = (typeof PROJECT_BRAIN_STATUSES)[number];
  * 400 Zeichen sind grosszügig für eine Zeile wie „Next.js 15 (App Router)" und
  * decken zugleich, dass ein Modell mal einen ganzen Satz liefert.
  */
-const factField = z.string().trim().max(400).default("");
+const factField = z.string().trim().max(BRAIN_LIMITS.fieldChars).default("");
 
 /**
  * Was die Analyse über ein Projekt herausfindet.
@@ -45,7 +63,7 @@ const factField = z.string().trim().max(400).default("");
  * README ist „low" die richtige Antwort, und die UI sagt das dann auch.
  */
 export const projectBrainFactsSchema = z.object({
-  summary: z.string().trim().max(600).default(""),
+  summary: z.string().trim().max(BRAIN_LIMITS.summaryChars).default(""),
   audience: factField,
   tone: factField,
   language: factField,
@@ -54,9 +72,9 @@ export const projectBrainFactsSchema = z.object({
   database: factField,
   designSystem: factField,
   codingStyle: factField,
-  conventions: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
-  stack: z.array(z.string().trim().min(1).max(80)).max(16).default([]),
-  keyFacts: z.array(z.string().trim().min(1).max(200)).max(10).default([]),
+  conventions: factList(BRAIN_LIMITS.lists.conventions),
+  stack: factList(BRAIN_LIMITS.lists.stack),
+  keyFacts: factList(BRAIN_LIMITS.lists.keyFacts),
   confidence: z.enum(["low", "medium", "high"]).default("low"),
 });
 

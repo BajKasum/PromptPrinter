@@ -67,6 +67,27 @@ describe("readJsonBody", () => {
     await expect(readJsonBody(req, 1024)).rejects.toBeInstanceOf(RequestBodyTooLargeError);
   });
 
+  it("bricht einen zu grossen Body ab, statt den Rest anzunehmen", async () => {
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.enqueue(new Uint8Array(512).fill(0x61));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const req = new Request("https://example.test/api/chat", {
+      method: "POST",
+      body: stream,
+      // @ts-expect-error -- wie oben: nur Node verlangt es für einen Strom als Body.
+      duplex: "half",
+    });
+
+    await expect(readJsonBody(req, 1024)).rejects.toBeInstanceOf(RequestBodyTooLargeError);
+    expect(cancelled).toBe(true);
+  });
+
   it("rejects a body that is not valid JSON", async () => {
     await expect(readJsonBody(request("not json"), 1024)).rejects.toBeInstanceOf(
       InvalidJsonBodyError
