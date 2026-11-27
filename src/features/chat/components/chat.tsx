@@ -127,6 +127,7 @@ export function Chat({
   // character. The text itself stays readable at the user's own pace in the log
   // above (QA finding A-1).
   // Eine abgeschnittene Antwort meldet sich mit ihrem Hinweis statt mit "fertig".
+  // Den Status trägt genau EIN Live-Bereich: jeder weitere mit demselben Text sagt ihn doppelt an.
   const liveStatus = loading
     ? t.chat.statusWriting
     : pending !== null
@@ -139,9 +140,6 @@ export function Chat({
 
   return (
     <div className="flex flex-col gap-5">
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {liveStatus}
-      </div>
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {liveStatus}
       </div>
