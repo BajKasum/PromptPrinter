@@ -1,6 +1,7 @@
 import "server-only";
 
 import { optionalEnv } from "@/server/env-value";
+import { readCappedStream } from "@/server/http/capped-stream";
 import { parseRetryAfter } from "@/server/llm-retry";
 import { cutOffByReason, openAiFinish } from "@/server/llm/finish";
 import { LlmEmptyReplyError, LlmReportedError, type LlmResult } from "@/server/llm/types";
@@ -351,24 +352,8 @@ export function withProviderTimeout(signal?: AbortSignal): AbortSignal {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
-/** Reads a Response's body up to `maxBytes`, throwing instead of buffering past it. */
+/** Der Text einer Antwort, höchstens `maxBytes`; darüber wirft es und bricht den Rest ab (readCappedStream). */
 export async function readCappedText(res: Response, maxBytes: number): Promise<string> {
   if (!res.body) return res.text();
-  const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
-        throw new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`);
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
+  return readCappedStream(res.body, maxBytes, () => new Error(`Antwort überschreitet das Limit von ${maxBytes} Bytes.`));
 }

@@ -13,8 +13,9 @@ import {
   ChatStreamingReply,
   ChatFinishedMarker,
 } from "@/features/chat/components/chat-transcript";
-import { UUID, type Msg } from "@/features/chat/lib/chat-wire";
+import type { Msg } from "@/features/chat/lib/chat-wire";
 import { useT } from "@/shared/i18n/provider";
+import { isUuid } from "@/shared/lib/uuid";
 
 // Die eigene Frage samt Weg zum Bearbeiten. Der Rückruf entsteht erst hier aus der ID, so bekommt `memo` für jede
 // Zeile gleiche Werte, solange sich an ihr nichts ändert.
@@ -138,7 +139,7 @@ export function ChatThread({
                     // nicht bekannt ist: ohne sie liessen sich die Dateien nicht
                     // an die neue Fassung umhaengen und gingen mit der alten
                     // verloren.
-                    editable={!(busy || (m.attachments?.length && !UUID.test(m.id)))}
+                    editable={!(busy || (m.attachments?.length && !isUuid(m.id)))}
                     onEdit={onEdit}
                   />
                 ) : i === lastAssistantIndex ? (

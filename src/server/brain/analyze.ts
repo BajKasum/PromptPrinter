@@ -2,6 +2,7 @@ import "server-only";
 
 import { analyzeComplete, type LlmOverride } from "@/server/llm";
 import {
+  BRAIN_LIMITS,
   EMPTY_BRAIN_FACTS,
   hasBrainContent,
   projectBrainFactsSchema,
@@ -256,22 +257,19 @@ function salvageFacts(object: Record<string, unknown>): ProjectBrainFacts | null
   ] as const) {
     const value = object[key];
     if (typeof value === "string" && value.trim()) {
-      facts[key] = value.trim().slice(0, key === "summary" ? 600 : 400);
+      facts[key] = value.trim().slice(0, key === "summary" ? BRAIN_LIMITS.summaryChars : BRAIN_LIMITS.fieldChars);
       any = true;
     }
   }
 
-  for (const [key, max, cap] of [
-    ["conventions", 10, 300],
-    ["stack", 16, 80],
-    ["keyFacts", 10, 200],
-  ] as const) {
+  for (const key of ["conventions", "stack", "keyFacts"] as const) {
+    const { entries, chars } = BRAIN_LIMITS.lists[key];
     const value = object[key];
     if (Array.isArray(value)) {
       const list = value
         .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
-        .map((v) => v.trim().slice(0, cap))
-        .slice(0, max);
+        .map((v) => v.trim().slice(0, chars))
+        .slice(0, entries);
       if (list.length > 0) {
         facts[key] = list;
         any = true;

@@ -80,10 +80,3 @@ export function toListItems(rows: Row[], limit: number, q?: string) {
 export function toDetail(row: Row): SavedPrompt | null {
   return mapSavedPromptRows([row])[0] ?? null;
 }
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Nur eine UUID geht an die Datenbank, alles andere ist 400, bevor jemand fragt. */
-export function isPromptId(id: string): boolean {
-  return UUID.test(id);
-}

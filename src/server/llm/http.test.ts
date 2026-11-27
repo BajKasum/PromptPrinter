@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { LlmEmptyReplyError } from "@/server/llm/types";
-import { readCompletion, readOpenAiCompatibleSse, throwProviderError } from "./http";
+import { readCappedText, readCompletion, readOpenAiCompatibleSse, throwProviderError } from "./http";
 
 const captureError = vi.hoisted(() => vi.fn());
 vi.mock("@/shared/lib/observability", () => ({ captureError }));
@@ -60,6 +60,17 @@ describe("readOpenAiCompatibleSse", () => {
     const cancel = vi.fn();
     const source = streamOf(["x".repeat(20), "y".repeat(20)], cancel);
     await expect(readOpenAiCompatibleSse(source, 10).next()).rejects.toThrow("Limit");
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("readCappedText (Antwort eines fremden Servers)", () => {
+  it("liest bis zur Grenze, darüber wirft es und bricht die Antwort ab", async () => {
+    await expect(readCappedText(new Response(streamOf(["12345", "678"])), 8)).resolves.toBe("12345678");
+
+    const cancel = vi.fn();
+    const response = new Response(streamOf(["12345", "6789", "noch mehr"], cancel));
+    await expect(readCappedText(response, 8)).rejects.toThrow("Antwort überschreitet das Limit von 8 Bytes.");
     expect(cancel).toHaveBeenCalledTimes(1);
   });
 });

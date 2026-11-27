@@ -10,8 +10,8 @@
   "src/app/api/cli/logout/route.ts": "f92137f104f3bd76c50e6ad8a2c63b9e983d17a66626e6b3e4d91aebfb4b4629",
   "src/app/api/cli/me/route.ts": "3daa3854f7c5d7d15c44080bcbc3e2981a2b39fddcab097067408431019f606b",
   "src/app/api/cli/prompts/route.ts": "652b28e65bfacb7bc9c9375e5d364443f0cac8857ac98afc55e5cde102a4ebb3",
-  "src/app/api/cli/prompts/[id]/route.ts": "449fd1f14ee4379f8b8dba466a385c73ae8ffa3c9e60737758937823b8099e45",
-  "src/server/cli-login/saved-prompts.ts": "cf84e5033c199c0b7633e0f45b951a81ca7e31e189e06c3318d1ad564a7f582b",
+  "src/app/api/cli/prompts/[id]/route.ts": "2c8daadf689f21f262388a1ec2529c9943ad3fd6ccdb0f8f1bd14a5417e12bbc",
+  "src/server/cli-login/saved-prompts.ts": "2849034fcf5c7bf18d4877eba3efa30d1038f1235d102c5a5790f2c4337b313e",
   "src/server/cli-login/messages.ts": "aef3577a2d1db316f5b2a5d66025fda0e8a3d6e9b5c9cbebd30a54695c2ba0cd",
   "src/server/system-prompt.ts": "5d872608d5bda01f14022f4e3f917bf10b913bc930f8727e9760dca1cf6e86d6"
 }

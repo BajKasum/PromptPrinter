@@ -377,9 +377,8 @@ async function fetchRawFile(
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   const url = `${RAW_HOST}/${encodeURIComponent(ref.owner)}/${encodeURIComponent(ref.repo)}/${encodeURIComponent(branch)}/${encodedPath}`;
 
-  let res: Response | undefined;
   try {
-    res = await fetch(url, {
+    const res = await fetch(url, {
       signal: withRequestTimeout(signal),
       redirect: "error",
       headers: { "user-agent": "PromptPrinter-ProjectBrain" },
@@ -391,8 +390,7 @@ async function fetchRawFile(
       content: text.length > MAX_REPO_FILE_CHARS ? `${text.slice(0, MAX_REPO_FILE_CHARS)}…` : text,
     };
   } catch {
-    // Zu groß oder abgebrochen: die Verbindung schließen, statt den Rest bis zum Zeitlimit weiterzuladen.
-    await res?.body?.cancel().catch(() => {});
+    // Zu groß (readCappedText bricht den Rest dann ab) oder die Anfrage scheiterte: die Datei fehlt.
     return null;
   }
 }

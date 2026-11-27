@@ -6,6 +6,7 @@ import { captureError } from "@/shared/lib/observability";
 import { isRepoStale } from "@/server/brain/repo-status";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
+import { isUuid } from "@/shared/lib/uuid";
 
 export const runtime = "nodejs";
 
@@ -20,12 +21,10 @@ export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function GET(req: Request, { params }: Params) {
   const m = requestT(req).t.api;
   const { id: projectId } = await params;
-  if (!UUID.test(projectId)) return denied("brain-status", problem(404, m.projectNotFound));
+  if (!isUuid(projectId)) return denied("brain-status", problem(404, m.projectNotFound));
 
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {

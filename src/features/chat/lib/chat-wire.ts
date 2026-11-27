@@ -27,8 +27,6 @@ export type Msg = {
   truncated?: boolean;
 };
 
-export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // Wie ein Entwurfs-Anhang an der abgeschickten Nachricht aussieht: dieselben
 // Bytes als data:-Adresse, kein Netzwerk. Nach einem Neuladen kommen die
 // Vorschauen vom Server (signierte Adressen), bis dahin sind es diese.
