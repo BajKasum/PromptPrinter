@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Copy, Check, Download, Pencil } from "lucide-react";
 import { m, useReducedMotion } from "framer-motion";
 import { Button } from "@/shared/ui/button";
@@ -167,7 +167,8 @@ export function ChatReplyActions({ content, index }: { content: string; index: n
   );
 }
 
-export function ChatAssistantBubble({
+// `memo`: eine fertige Antwort ändert sich nicht, während die nächste geschrieben oder getippt wird.
+export const ChatAssistantBubble = memo(function ChatAssistantBubble({
   content,
   index,
   typed,
@@ -189,7 +190,7 @@ export function ChatAssistantBubble({
       </div>
     </div>
   );
-}
+});
 
 /**
  * The waiting bubble before the first word of a reply. `retrying` is set when

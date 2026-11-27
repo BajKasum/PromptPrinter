@@ -2,7 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useId, useMemo, useState } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import { useCopyToClipboard } from "@/shared/lib/use-copy-to-clipboard";
 import { CopyMoment } from "@/features/chat/components/copy-moment";
 import { PromptCheckChip, PromptCheckList } from "@/features/chat/components/prompt-check-note";
@@ -19,7 +19,11 @@ import { useT } from "@/shared/i18n/provider";
 // `typed` ist, was die Person im Gespräch selbst geschrieben hat. Wer es angibt, schaltet die
 // Prompt-Prüfung an den Codeblöcken ein (#236, #242); während eine Antwort noch entsteht, bleibt es aus,
 // denn ein halber Befehl wäre kein Befund.
-export function MarkdownMessage({ content, typed }: { content: string; typed?: string }) {
+//
+// `memo`, weil ReactMarkdown bei jedem Rendern neu parst und die Komponenten unten jedes Mal neu entstehen: ein
+// erneutes Rendern hängte jeden Codeblock neu ein, und sein Zustand ("Kopiert", zugeklappter Hinweis) wäre weg. Gleiche
+// Antwort heisst deshalb: nichts tun.
+export const MarkdownMessage = memo(function MarkdownMessage({ content, typed }: { content: string; typed?: string }) {
   return (
     <div className="space-y-2.5">
       <ReactMarkdown
@@ -113,7 +117,7 @@ export function MarkdownMessage({ content, typed }: { content: string; typed?: s
       </ReactMarkdown>
     </div>
   );
-}
+});
 
 // The paste-ready prompt, in a bordered box with its own copy button.
 function CodeBlock({ text, typed }: { text: string; typed?: string }) {

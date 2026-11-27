@@ -1,7 +1,7 @@
 "use client";
 
 import type { VersionTarget } from "@/shared/lib/prompt-versions";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatNotices } from "@/features/chat/components/chat-notices";
 import { ChatThread } from "@/features/chat/components/chat-thread";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
@@ -11,6 +11,7 @@ import { useVoiceConsent } from "@/features/chat/hooks/use-voice-consent";
 import { useAttachNotice } from "@/features/chat/hooks/use-attach-notice";
 import { useChatScroll } from "@/features/chat/hooks/use-chat-scroll";
 import { useChatTurn } from "@/features/chat/hooks/use-chat-turn";
+import { useStableCallback } from "@/features/chat/hooks/use-stable-callback";
 import { resolveVariant, resolveEmptyState } from "@/features/chat/lib/chat-variants";
 import type { Msg } from "@/features/chat/lib/chat-wire";
 import { useLocale, useT } from "@/shared/i18n/provider";
@@ -95,14 +96,17 @@ export function Chat({
       el.setSelectionRange(text.length, text.length);
     });
   };
+  // Die Rückrufe an den Verlauf behalten ihre Identität: eine neue je Render zeichnete bei jedem Textstück und
+  // jedem Tastendruck alle fertigen Nachrichten neu (chat.render.test.tsx).
+  const editMessage = useStableCallback(turn.editMessage);
   // Verfeinern per Tipp (#245): die vorformulierte Nachricht geht als ganz normaler Zug raus. Ein angefangener
   // Text im Eingabefeld bleibt dabei stehen (send() leert das Feld, hier kommt er zurück).
-  const refine = (message: string) => {
+  const refine = useStableCallback((message: string) => {
     const draft = input;
     void send(message);
     if (draft) setInput(draft);
-  };
-  const focusComposer = () => composerRef.current?.focus();
+  });
+  const focusComposer = useCallback(() => composerRef.current?.focus(), []);
   // Ein Starttext: Cursor ans Ende der ersten Zeile, dort schreibt die Person, was sich am Prompt ändern soll.
   useEffect(() => {
     const el = composerRef.current;
@@ -158,7 +162,7 @@ export function Chat({
         versionTarget={versionTarget}
         resultRef={resultRef}
         endRef={endRef}
-        onEdit={turn.editMessage}
+        onEdit={editMessage}
         onRegenerate={turn.regenerate}
         onRevealed={turn.commitReply}
         suggestionsLabel={variant === "general" ? t.chat.emptyStartersLabel : undefined}

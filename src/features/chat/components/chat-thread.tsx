@@ -1,7 +1,7 @@
 "use client";
 
 import type { VersionTarget } from "@/shared/lib/prompt-versions";
-import { Fragment, useMemo, type RefObject } from "react";
+import { Fragment, memo, useMemo, type RefObject } from "react";
 import { RotateCcw } from "lucide-react";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatResultPanel } from "@/features/chat/components/chat-result-panel";
@@ -16,8 +16,36 @@ import {
 import { UUID, type Msg } from "@/features/chat/lib/chat-wire";
 import { useT } from "@/shared/i18n/provider";
 
+// Die eigene Frage samt Weg zum Bearbeiten. Der Rückruf entsteht erst hier aus der ID, so bekommt `memo` für jede
+// Zeile gleiche Werte, solange sich an ihr nichts ändert.
+const UserTurn = memo(function UserTurn({
+  id,
+  content,
+  attachments,
+  editable,
+  onEdit,
+}: {
+  id: string;
+  content: string;
+  attachments: Msg["attachments"];
+  editable: boolean;
+  onEdit: (id: string, next: string) => Promise<string | null>;
+}) {
+  return (
+    <ChatUserBubble
+      content={content}
+      attachments={attachments}
+      onEdit={editable ? (next) => void onEdit(id, next) : undefined}
+    />
+  );
+});
+
 // Der Verlauf eines Chats: Begruessung oder Nachrichten, die aktuelle Antwort als Ergebnis, laufende Antwort,
 // "Neu erzeugen". Reine Darstellung, der Zustand steckt in useChatTurn. Aus chat.tsx herausgeloest (M7).
+//
+// Jedes Textstück zeichnet diese Komponente neu. Die Zeilen darunter sind deshalb `memo` und bekommen nur Werte, die
+// beim Schreiben gleich bleiben: wer eine neue Eigenschaft ergänzt, gibt ihr dieselbe Identität je Render
+// (chat.render.test.tsx).
 export function ChatThread({
   messages,
   heading,
@@ -98,8 +126,9 @@ export function ChatThread({
             <div role="log" className="flex flex-col gap-6">
               {messages.map((m, i) =>
                 m.role === "user" ? (
-                  <ChatUserBubble
+                  <UserTurn
                     key={m.id}
+                    id={m.id}
                     content={m.content}
                     attachments={m.attachments}
                     // Kein Bearbeiten waehrend eines laufenden Zugs: die Frage
@@ -109,11 +138,8 @@ export function ChatThread({
                     // nicht bekannt ist: ohne sie liessen sich die Dateien nicht
                     // an die neue Fassung umhaengen und gingen mit der alten
                     // verloren.
-                    onEdit={
-                      busy || (m.attachments?.length && !UUID.test(m.id))
-                        ? undefined
-                        : (next) => void onEdit(m.id, next)
-                    }
+                    editable={!(busy || (m.attachments?.length && !UUID.test(m.id)))}
+                    onEdit={onEdit}
                   />
                 ) : i === lastAssistantIndex ? (
                   <div key={m.id} ref={resultRef} className="scroll-mt-24">
