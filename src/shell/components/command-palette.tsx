@@ -36,20 +36,16 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
   const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
-  // M-20 (Audit 06.09.2026): arrow-key navigation moved activeIndex but never
-  // scrolled the highlighted row into view, so it silently left the
-  // scrollable results panel — mouse hover worked because the cursor was
-  // already on a visible row, arrow keys have no such guarantee.
+  // Die gewählte Zeile. `null` heisst: nichts gewählt, es gilt der erste Treffer.
+  const [activeId, setActiveId] = useState<string | null>(null);
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [chats, setChats] = useState<{ id: string; title: string; project_id: string | null }[]>(
     []
   );
-  const [loaded, setLoaded] = useState(false);
   // Wer den Fokus hatte, als die Palette aufging (#151). Beim Schliessen ohne Ziel (Escape, Klick daneben,
-  // Strg+K) geht er dorthin zurueck, sonst landet er auf <body> und wer weitertippen will, muss erst
-  // zurueck navigieren. Beim Wechsel auf eine Seite nicht: dort uebernimmt die neue Seite den Fokus.
+  // Strg+K) geht er dorthin zurück, sonst landet er auf <body> und wer weitertippen will, muss erst
+  // zurück navigieren. Beim Wechsel auf eine Seite nicht: dort übernimmt die neue Seite den Fokus.
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const navigatingRef = useRef(false);
 
@@ -73,13 +69,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         : null;
     navigatingRef.current = false;
     setQuery("");
-    setActiveIndex(0);
+    setActiveId(null);
     const t = window.setTimeout(() => inputRef.current?.focus(), 20);
     return () => window.clearTimeout(t);
   }, [open]);
 
-  // Beim Schliessen den Fokus zurueckgeben (siehe returnFocusRef). Laeuft auch beim ersten Rendern, dann ist
-  // noch nichts gemerkt und nichts zu tun.
+  // Beim Schliessen den Fokus zurückgeben (siehe returnFocusRef). Der Effekt greift auch beim ersten Rendern,
+  // dann ist noch nichts gemerkt und nichts zu tun.
   useEffect(() => {
     if (open) return;
     const previous = returnFocusRef.current;
@@ -87,18 +83,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (previous && !navigatingRef.current && previous.isConnected) previous.focus();
   }, [open]);
 
-  // Lazily load the user's projects + chats the first time the palette opens
-  //, chats are the primary object since the redesign, so they belong here
-  // just as much as projects do.
-  //
-  // M-16 (Audit 06.09.2026): this used to hardcode 50, while chats/page.tsx
-  // and projects/page.tsx each show up to LIST_LOAD_LIMIT (100) and tell the
-  // user anything older is "reachable via ⌘K" — a claim that broke the moment
-  // a list held more than 50 rows, well before either page's own truncation
-  // banner would ever appear. Sharing the same constant keeps this at least
-  // as deep as what the lists themselves already show.
+  // Chats und Projekte bei jedem Öffnen neu lesen: die Palette bleibt über Seitenwechsel gemountet, ein einmal
+  // geladener Stand kennt nichts, was danach angelegt, umbenannt oder gelöscht wurde. Die vorige Liste bleibt
+  // stehen, bis die neue da ist, nach einem Lesefehler auch darüber hinaus; die Seiten-Befehle brauchen keine.
+  // LIST_LOAD_LIMIT teilen sich die Palette und die Listenseiten: die verweisen für Älteres auf ⌘K.
   useEffect(() => {
-    if (!open || loaded) return;
+    if (!open) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
@@ -117,19 +107,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           .order("updated_at", { ascending: false })
           .limit(LIST_LOAD_LIMIT),
       ]);
-      if (!cancelled) {
-        setProjects(projectRows ?? []);
-        setChats(chatRows ?? []);
-        // Nach einem Lesefehler fragt das nächste Öffnen neu; die Seiten-Befehle funktionieren auch ohne die Listen.
-        const failure = projectsError ?? chatsError;
-        if (failure) captureError("palette.load_failed", failure);
-        else setLoaded(true);
-      }
+      if (cancelled) return;
+      // Bei einem Fehler ist `data` null.
+      if (projectRows) setProjects(projectRows);
+      if (chatRows) setChats(chatRows);
+      const failure = projectsError ?? chatsError;
+      if (failure) captureError("palette.load_failed", failure);
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, loaded]);
+  }, [open]);
 
   // Derive the page commands from the same nav source the sidebar + mobile drawer
   // use, so the palette can never drift out of sync (labels, icons, presence).
@@ -178,25 +166,32 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     return all.filter((c) => c.label.toLowerCase().includes(q));
   }, [navCommands, chats, projects, query, go, t]);
 
-  // Keep the highlighted row valid as the result set shrinks/grows.
-  useEffect(() => {
-    setActiveIndex((i) => Math.min(i, Math.max(results.length - 1, 0)));
-  }, [results.length]);
+  // Die Markierung hängt am Eintrag, nicht an der Zeilennummer: kommt die frisch gelesene Liste an, bleibt sie
+  // auf demselben Ziel. Ohne Wahl, oder wenn der Eintrag nicht mehr dabei ist, gilt der erste Treffer.
+  const activeIndex = Math.max(
+    results.findIndex((c) => c.id === activeId),
+    0
+  );
 
-  // Follow the highlight with the scroll position. `"nearest"` is a no-op
-  // when the row is already fully visible (e.g. a mouse-driven change),
-  // so this is safe to run on every activeIndex change, not just arrow keys.
+  // Die Liste rollt der Markierung nach, auch nach einer Sucheingabe in einer gerollten Liste. "nearest" tut
+  // nichts, solange die Zeile ganz sichtbar ist, etwa unter dem Mauszeiger.
   useEffect(() => {
     rowRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
+  }, [activeIndex, query]);
+
+  // Ein Schritt mit den Pfeiltasten, an beiden Enden geklemmt. Ohne Treffer bleibt nichts gewählt.
+  function move(step: 1 | -1) {
+    const index = Math.min(Math.max(activeIndex + step, 0), results.length - 1);
+    setActiveId(results[index]?.id ?? null);
+  }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex((p) => Math.min(p + 1, results.length - 1));
+      move(1);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex((p) => Math.max(p - 1, 0));
+      move(-1);
     } else if (e.key === "Enter") {
       e.preventDefault();
       results[activeIndex]?.perform();
@@ -237,7 +232,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               <input
                 ref={inputRef}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActiveId(null);
+                }}
                 onKeyDown={onKeyDown}
                 placeholder={t.palette.placeholder}
                 aria-label={t.palette.input}
@@ -266,11 +264,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                           rowRefs.current[i] = el;
                         }}
                         type="button"
-                        onMouseEnter={() => setActiveIndex(i)}
+                        data-active={active}
+                        // Nur eine bewegte Maus wählt: rutscht beim Tippen eine andere Zeile unter den ruhenden
+                        // Zeiger, bleibt die Markierung auf dem ersten Treffer.
+                        onMouseMove={() => setActiveId(c.id)}
                         onClick={() => c.perform()}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] transition-colors",
-                          active ? "bg-accent-subtle text-accent-text" : "text-foreground/70 hover:bg-surface-hover"
+                          // Kein eigener Hover-Stil: unter einem ruhenden Zeiger stünde sonst eine zweite Markierung.
+                          active ? "bg-accent-subtle text-accent-text" : "text-foreground/70"
                         )}
                       >
                         <c.Icon
