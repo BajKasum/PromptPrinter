@@ -65,19 +65,27 @@ type PathPage = PromiseLike<{ data: { storage_path: string }[] | null; error: un
  * Spalte sortieren (`id`), sonst sind zwei Seiten derselben Abfrage nicht garantiert überschneidungsfrei.
  *
  * WIRFT bei einem Lesefehler, statt eine halbe Liste zu liefern: der Aufrufer entscheidet, ob er den Fehler meldet
- * (Konto löschen: ja, aber nicht abbrechen) oder verschluckt. Gegenstück ohne Wurf: `attachment-storage.ts`.
+ * (Konto löschen: ja, aber nicht abbrechen) oder verschluckt. Mit `keepPartialOnError` kommen stattdessen die Pfade
+ * der Seiten zurück, die gelesen wurden (Chat oder Projekt löschen, `attachment-storage.ts`).
  */
 export async function collectStoragePaths(
   page: (from: number, to: number) => PathPage,
-  pageSize: number = POSTGREST_PAGE_SIZE
+  {
+    pageSize = POSTGREST_PAGE_SIZE,
+    keepPartialOnError = false,
+  }: { pageSize?: number; keepPartialOnError?: boolean } = {}
 ): Promise<string[]> {
   if (pageSize < 1) throw new Error("collectStoragePaths: pageSize must be >= 1");
   const paths: string[] = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await page(from, from + pageSize - 1);
-    if (error) throw error;
-    paths.push(...(data ?? []).map((row) => row.storage_path));
-    if (!data || data.length < pageSize) break;
+  try {
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await page(from, from + pageSize - 1);
+      if (error) throw error;
+      paths.push(...(data ?? []).map((row) => row.storage_path));
+      if (!data || data.length < pageSize) break;
+    }
+  } catch (err) {
+    if (!keepPartialOnError) throw err;
   }
   return paths;
 }

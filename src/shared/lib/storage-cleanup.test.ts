@@ -76,7 +76,7 @@ describe("collectStoragePaths", () => {
 
   it("stops after a page shorter than the page size", async () => {
     const page = vi.fn().mockResolvedValue({ data: rows(3), error: null });
-    expect(await collectStoragePaths(page, 5)).toEqual(["p0", "p1", "p2"]);
+    expect(await collectStoragePaths(page, { pageSize: 5 })).toEqual(["p0", "p1", "p2"]);
     expect(page).toHaveBeenCalledTimes(1);
     expect(page).toHaveBeenCalledWith(0, 4);
   });
@@ -87,7 +87,7 @@ describe("collectStoragePaths", () => {
       .mockResolvedValueOnce({ data: rows(5, "a"), error: null })
       .mockResolvedValueOnce({ data: rows(2, "b"), error: null });
 
-    const paths = await collectStoragePaths(page, 5);
+    const paths = await collectStoragePaths(page, { pageSize: 5 });
 
     expect(page.mock.calls).toEqual([
       [0, 4],
@@ -101,13 +101,13 @@ describe("collectStoragePaths", () => {
       .fn()
       .mockResolvedValueOnce({ data: rows(5), error: null })
       .mockResolvedValueOnce({ data: [], error: null });
-    expect(await collectStoragePaths(page, 5)).toHaveLength(5);
+    expect(await collectStoragePaths(page, { pageSize: 5 })).toHaveLength(5);
     expect(page).toHaveBeenCalledTimes(2);
   });
 
   it("returns an empty list for no rows, and treats null data as no rows", async () => {
-    expect(await collectStoragePaths(vi.fn().mockResolvedValue({ data: [], error: null }), 5)).toEqual([]);
-    expect(await collectStoragePaths(vi.fn().mockResolvedValue({ data: null, error: null }), 5)).toEqual([]);
+    expect(await collectStoragePaths(vi.fn().mockResolvedValue({ data: [], error: null }))).toEqual([]);
+    expect(await collectStoragePaths(vi.fn().mockResolvedValue({ data: null, error: null }))).toEqual([]);
   });
 
   it("uses PostgREST's page size of 1000 by default", async () => {
@@ -123,10 +123,24 @@ describe("collectStoragePaths", () => {
       .fn()
       .mockResolvedValueOnce({ data: rows(5), error: null })
       .mockResolvedValueOnce({ data: null, error: boom });
-    await expect(collectStoragePaths(page, 5)).rejects.toBe(boom);
+    await expect(collectStoragePaths(page, { pageSize: 5 })).rejects.toBe(boom);
+  });
+
+  it.each([
+    ["die Abfrage einen Fehler meldet", () => Promise.resolve({ data: null, error: new Error("timeout") })],
+    ["die Abfrage selbst wirft", () => Promise.reject(new Error("network"))],
+  ])("keepPartialOnError behält die gelesenen Seiten, wenn %s", async (_name, secondPage) => {
+    const page = vi
+      .fn()
+      .mockResolvedValueOnce({ data: rows(5), error: null })
+      .mockImplementationOnce(secondPage);
+    expect(await collectStoragePaths(page, { pageSize: 5, keepPartialOnError: true })).toHaveLength(5);
+    expect(page).toHaveBeenCalledTimes(2);
   });
 
   it("rejects a page size that would loop forever", async () => {
-    await expect(collectStoragePaths(vi.fn(), 0)).rejects.toThrow();
+    await expect(collectStoragePaths(vi.fn(), { pageSize: 0 })).rejects.toThrow();
+    // Ein Programmierfehler, kein Lesefehler: auch mit keepPartialOnError.
+    await expect(collectStoragePaths(vi.fn(), { pageSize: 0, keepPartialOnError: true })).rejects.toThrow();
   });
 });
