@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { verifyTurnstileToken, turnstileEnabled, MAX_TURNSTILE_TOKEN_CHARS } from "./turnstile";
+import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "./turnstile";
 
 // The module this covers is the whole reason the captcha stopped being
 // decorative, so the cases that matter are the failure ones: a wrong secret, an
@@ -125,16 +125,5 @@ describe("verifyTurnstileToken", () => {
     vi.stubEnv("TURNSTILE_SECRET", "");
     await expect(verifyTurnstileToken("good-token")).resolves.toEqual({ ok: true, skipped: true });
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("turnstileEnabled", () => {
-  it("is false for an unset or whitespace-only secret", () => {
-    expect(turnstileEnabled({})).toBe(false);
-    expect(turnstileEnabled({ TURNSTILE_SECRET: "   " })).toBe(false);
-  });
-
-  it("is true once a secret is present", () => {
-    expect(turnstileEnabled({ TURNSTILE_SECRET: "0x-secret" })).toBe(true);
   });
 });

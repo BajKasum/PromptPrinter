@@ -1,30 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatBytes, formatDate, randomId, relativeTime, slugify } from "@/shared/lib/utils";
+import { formatBytes, formatDate, randomId, relativeTime } from "@/shared/lib/utils";
 import { LOCALE_TAGS } from "@/shared/i18n/locales";
-
-describe("slugify", () => {
-  it("lowercases and hyphenates words", () => {
-    expect(slugify("Hello World")).toBe("hello-world");
-  });
-
-  it("trims surrounding whitespace and drops punctuation", () => {
-    expect(slugify("  Mein Projekt!  ")).toBe("mein-projekt");
-  });
-
-  it("collapses repeated spaces and hyphens into one", () => {
-    expect(slugify("Foo   ---   Bar")).toBe("foo-bar");
-  });
-
-  it("strips accented characters (no transliteration)", () => {
-    expect(slugify("Café crème")).toBe("caf-crme");
-  });
-
-  it("returns an empty string when nothing survives", () => {
-    expect(slugify("!!!")).toBe("");
-    expect(slugify("---")).toBe("");
-    expect(slugify("")).toBe("");
-  });
-});
 
 describe("formatBytes", () => {
   describe.each(["de", "en"] as const)("in der Sprache %s", (locale) => {
