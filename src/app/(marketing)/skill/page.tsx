@@ -6,6 +6,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { GithubIcon } from "@/shared/ui/github-icon";
 import { PageHeader } from "@/features/marketing/components/page-header";
+import { InstallSteps } from "@/features/marketing/components/step-list";
 import {
   SKILL_CARDS,
   SKILL_INSTALL_STEPS,
@@ -26,9 +27,9 @@ export const metadata: Metadata = pageMetadata({
 
 // Die Seite für den Skill aus skill/ in diesem Repo. Der Kasten "So bekommst du ihn" mit den
 // Knöpfen und den drei Schritten steht direkt unter der Überschrift, die Erklärung danach; die Messung des
-// Skills steht in skill/README.md, nicht hier. Keine Bau-Tools als Versprechen (CLAUDE.md,
-// 2026-10-11): genannt ist nur Claude Code. Kein Preis auf der Seite ausser "kostenlos": der Skill kostet
-// nichts, wie die App auch (/open-source).
+// Skills steht in skill/README.md, nicht hier. Keine Bau-Tools als Versprechen (CLAUDE.md): genannt ist nur
+// Claude Code. Kein Preis auf der Seite ausser "kostenlos": der Skill kostet nichts, wie die App auch
+// (/open-source).
 
 export default function SkillPage() {
   return (
@@ -73,7 +74,7 @@ export default function SkillPage() {
               </Button>
             </div>
 
-            {/* Die Prüfsumme der Datei, die der Knopf lädt (#240): eine feste Datei dieser Seite, keine, die sich verschieben könnte. */}
+            {/* Die Prüfsumme der Datei, die der Knopf lädt: eine feste Datei dieser Seite, keine, die sich verschieben könnte. */}
             <details className="group mt-5 text-[14px] leading-[1.6] text-foreground/75">
               <summary className="cursor-pointer font-medium text-foreground/80 transition-colors hover:text-foreground">
                 Prüfsumme vergleichen (freiwillig)
@@ -102,27 +103,7 @@ export default function SkillPage() {
               </div>
             </details>
 
-            <ol className="mt-8 space-y-5">
-              {SKILL_INSTALL_STEPS.map((step, i) => (
-                <li key={step.title} className="flex gap-4">
-                  <span
-                    aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/60 bg-surface-raised font-mono text-[13px] text-accent-text"
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[16px] font-semibold text-foreground">{step.title}</h3>
-                    <p className="mt-1 text-[14.5px] leading-[1.6] text-foreground/75">{step.body}</p>
-                    {"code" in step && (
-                      <pre className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface-raised px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground">
-                        <code>{step.code}</code>
-                      </pre>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <InstallSteps steps={SKILL_INSTALL_STEPS} />
           </section>
         </FadeIn>
       </div>

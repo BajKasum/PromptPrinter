@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { TabSwitcher as ReExported } from "./sidebar";
 import { TabSwitcher } from "./tab-switcher";
 
-// Der Pillen-Umschalter liegt seit der Zerlegung von sidebar.tsx (Betriebs-Audit, Folgesitzung 2026-10-07,
-// Dateigröße) in tab-switcher.tsx. Das mobile Menü und die Landing-Vorschau importieren ihn weiter aus
-// sidebar.tsx. Das Verhalten prüft sidebar.behavior.test.tsx über genau diese Fläche.
+// Der Umschalter der Sidebar liegt in tab-switcher.tsx, das mobile Menü importiert ihn aus sidebar.tsx. Das
+// Aussehen der Pillen kommt aus shared/ui/pill-switch.tsx. Das Verhalten prüft sidebar.behavior.test.tsx über genau
+// diese Fläche.
 
 describe("tab-switcher.tsx", () => {
   it("sidebar.tsx führt denselben Umschalter weiter (kein zweiter Satz, kein abweichendes Verhalten)", () => {

@@ -14,12 +14,11 @@ import { FadeIn } from "@/shared/motion/fade-in";
 import { Logo } from "@/shared/brand/logo";
 import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { cn } from "@/shared/lib/utils";
+import { PillButton, PillSwitch } from "@/shared/ui/pill-switch";
 
 type ViewKey = "chats" | "projects";
 
-// Mirrors the real sidebar's pill switcher (src/shell/components/sidebar.tsx,
-// TabSwitcher): one list visible at a time, singular labels ("Chat"/
-// "Projekt") the same way that component names its two pills.
+// Wie der Umschalter der Sidebar: immer eine Liste sichtbar, die Beschriftungen in der Einzahl ("Chat"/"Projekt").
 const NAV: { label: string; Icon: typeof FolderKanban; view: ViewKey }[] = [
   { label: "Chat", Icon: MessageSquare, view: "chats" },
   { label: "Projekt", Icon: FolderKanban, view: "projects" },
@@ -31,8 +30,7 @@ export function ProductShowcase() {
   return (
     <section id="produkt" className="scroll-mt-24 container-x pt-12 md:pt-16 pb-24 md:pb-32">
       <FadeIn>
-        {/* Lighter header, this is the embedded "serving" follow-up to
-            Hero's own live demo, not a second co-equal demo section. */}
+        {/* Ein leichter Kopf: der Abschnitt ergänzt die Demo im Hero und steht nicht gleichrangig daneben. */}
         <div className="mx-auto mb-7 max-w-4xl">
           <div className="flex items-start justify-between gap-6">
             <div className="max-w-xl">
@@ -45,10 +43,8 @@ export function ProductShowcase() {
                 Chats, eigene Dateien, durchsuchbar und griffbereit.
               </p>
             </div>
-            {/* Finn is in the room too, this is his workspace. A calm
-                "organizing" float (not a performing pose) matches the quiet,
-                embedded framing of the panel below; he was the one section
-                where Finn was missing entirely (Brand-Audit). */}
+            {/* Das ist Finns Arbeitsplatz. Ein ruhiges "organizing" statt einer Pose passt zum eingebetteten
+                Rahmen darunter. */}
             <AnimatedMascot
               state="organizing"
               size={104}
@@ -60,14 +56,13 @@ export function ProductShowcase() {
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        {/* Flatter, embedded "app" frame, deliberately not a third glossy
-            browser window, so it reads as your workspace, not another demo. */}
+        {/* Ein flacher, eingebetteter Rahmen statt eines weiteren glänzenden Browserfensters: er liest sich als
+            Arbeitsplatz, nicht als Demo. */}
         <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-border bg-surface/40">
           <div>
             <div className="grid md:grid-cols-[200px_1fr]">
-              {/* Mini sidebar */}
-              {/* div, not aside: this is a picture of the app's sidebar, not a
-                  landmark of this page (axe, Rechts-Audit 28.09.2026). */}
+              {/* Verkleinerte Sidebar. div, nicht aside: sie ist ein Bild der Sidebar der App, keine Landmarke
+                  dieser Seite. */}
               <div className="hidden md:flex flex-col border-r border-border bg-surface/60 p-3">
                 <div className="px-2 py-2 mb-3">
                   <Logo />
@@ -75,9 +70,9 @@ export function ProductShowcase() {
                 <NavSwitcher view={view} onChange={setView} />
               </div>
 
-              {/* Content */}
+              {/* Inhalt */}
               <div className="p-5 md:p-6 min-h-[260px]">
-                {/* Mobile tab control (sidebar is desktop-only) */}
+                {/* Umschalter für schmale Bildschirme (die Sidebar gibt es erst ab md) */}
                 <div className="md:hidden mb-5">
                   <NavSwitcher view={view} onChange={setView} />
                 </div>
@@ -103,40 +98,27 @@ export function ProductShowcase() {
   );
 }
 
-// Pill switcher, shared between the desktop sidebar and the mobile tab
-// control (real app: sidebar.tsx's TabSwitcher, reused by mobile-nav.tsx
-// instead of two drifting copies).
+// Dieselbe Pille wie in der App (shared/ui/pill-switch.tsx), hier mit Knöpfen: die Vorschau schaltet nur ihre
+// Ansicht um und führt nirgendwohin.
 function NavSwitcher({ view, onChange }: { view: ViewKey; onChange: (v: ViewKey) => void }) {
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
-      {NAV.map(({ label, Icon, view: target }) => {
-        const active = target === view;
-        return (
-          <button
-            key={target}
-            type="button"
-            onClick={() => onChange(target)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-[12.5px] font-medium transition-colors",
-              active
-                ? "bg-surface-raised text-foreground shadow-xs"
-                : "text-secondary hover:text-foreground"
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-            {label}
-          </button>
-        );
-      })}
-    </div>
+    <PillSwitch>
+      {NAV.map(({ label, Icon, view: target }) => (
+        <PillButton
+          key={target}
+          active={target === view}
+          onClick={() => onChange(target)}
+          Icon={Icon}
+          label={label}
+        />
+      ))}
+    </PillSwitch>
   );
 }
 
-// ── Sample data (realistic, plain-language) ─────────────────────────────────
-// The same three ideas travel through Hero's demo and this showcase:
-// "KI-Habit-Tracker mit Streaks" becomes the project "Streak Coach",
-// "Airbnb für Hundesitter" becomes "Hundesitter-Markt", "Marktplatz für lokale
-// Künstler" becomes "Artlokal", one consistent story, not disconnected mockups.
+// ── Beispieldaten (alltägliche Sprache) ─────────────────────────────────────
+// Chats und Projekte greifen die drei Themen der Demo im Hero auf (DEMOS in hero.tsx): Sicherheitsprüfung,
+// Bewerbung, Datenbank für den Sportverein. Die Titel sind eigene Texte, nichts koppelt sie an hero.tsx.
 
 function ViewHeader({ title, sub }: { title: string; sub: string }) {
   return (
@@ -147,9 +129,8 @@ function ViewHeader({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-// ── Chats, mirrors the real /chats list: title, freshness,
-// message count. One chat experience, no mode badge, no outcome label, the
-// finished prompt lives inside the conversation itself. ────────────────────
+// ── Chats, wie die echte Liste unter /chats: Titel, Alter, Zahl der Nachrichten. Ein Chat ohne Modus- oder
+// Ergebnis-Abzeichen, der fertige Prompt steht im Gespräch selbst. ─────────
 
 const CHATS: { title: string; when: string; messages: number }[] = [
   { title: "Sicherheitsprüfung für meine Web-App", when: "vor 2 Std.", messages: 8 },
@@ -189,11 +170,9 @@ function ChatsView() {
   );
 }
 
-// ── Projekte, mirrors the real Projekte page exactly: search + favorites
-// filter, cards led by name, chat count and freshness as footer metadata
-// (not a headline artifact number, real projects don't auto-generate
-// documents, see library-card.tsx's workspaceMeta). This is what used to be
-// a separate "Bibliothek", now it's just Projekte. ─────────────────────────
+// ── Projekte, angelehnt an die Seite /projects: Suche, Filter, Karten mit dem Namen voran. Keine Zahl erzeugter
+// Dokumente, Projekte erzeugen nichts von selbst (workspaceMeta in library-card.tsx zählt Chats und
+// gespeicherte Prompts). ────────────────────────────────────────────────────
 
 const PROJECT_FILTERS = ["Alle", "Favoriten", "Kürzlich verwendet"];
 

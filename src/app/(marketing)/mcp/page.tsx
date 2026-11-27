@@ -5,6 +5,7 @@ import { AnimatedMascot } from "@/shared/brand/animated-mascot";
 import { Button } from "@/shared/ui/button";
 import { GithubIcon } from "@/shared/ui/github-icon";
 import { PageHeader } from "@/features/marketing/components/page-header";
+import { Step, StepBody, StepCode, StepList } from "@/features/marketing/components/step-list";
 import { TerminalWindow } from "@/features/marketing/components/terminal-window";
 import {
   CLI_PATH_PLACEHOLDER,
@@ -28,8 +29,6 @@ export const metadata: Metadata = pageMetadata({
 // der Einrichtung aus dem Quellcode auf npx. Genannt sind Claude Code und Claude Desktop, weil die Einrichtung
 // für genau diese beiden hier steht.
 
-const codeClass =
-  "mt-3 overflow-x-auto rounded-xl border border-border bg-surface-raised px-4 py-3 font-mono text-[13px] leading-[1.6] text-foreground";
 const inlineCode = "rounded border border-border bg-surface px-1.5 py-0.5 text-[13px] text-foreground";
 
 export default function McpPage() {
@@ -74,19 +73,17 @@ export default function McpPage() {
               </Button>
             </div>
 
-            <ol className="mt-8 space-y-5">
+            <StepList>
               <Step n={1} title="Einmal anmelden">
-                <p className="mt-1 text-[14.5px] leading-[1.6] text-foreground/75">
+                <StepBody>
                   {NPM_PUBLISHED
                     ? "Starte die Terminal-App und bestätige den Code im Browser."
                     : "Hol dir die Terminal-App von GitHub, starte sie im geklonten Ordner und bestätige den Code im Browser."}
-                </p>
-                <pre className={codeClass}>
-                  <code>{cliStartCommand()}</code>
-                </pre>
+                </StepBody>
+                <StepCode>{cliStartCommand()}</StepCode>
               </Step>
               <Step n={2} title="In Claude Code">
-                <p className="mt-1 text-[14.5px] leading-[1.6] text-foreground/75">
+                <StepBody>
                   Ein Befehl im Terminal{NPM_PUBLISHED ? "." : ","}
                   {!NPM_PUBLISHED && (
                     <>
@@ -95,21 +92,17 @@ export default function McpPage() {
                       geklont hast.
                     </>
                   )}
-                </p>
-                <pre className={codeClass}>
-                  <code>{setup.claudeCode}</code>
-                </pre>
+                </StepBody>
+                <StepCode>{setup.claudeCode}</StepCode>
               </Step>
               <Step n={3} title="In Claude Desktop">
-                <p className="mt-1 text-[14.5px] leading-[1.6] text-foreground/75">
+                <StepBody>
                   In den Einstellungen unter Entwickler die Konfiguration öffnen und den Eintrag ergänzen, danach
                   Claude Desktop neu starten.
-                </p>
-                <pre className={codeClass}>
-                  <code>{setup.claudeDesktop}</code>
-                </pre>
+                </StepBody>
+                <StepCode>{setup.claudeDesktop}</StepCode>
               </Step>
-            </ol>
+            </StepList>
           </section>
         </FadeIn>
       </div>
@@ -181,22 +174,5 @@ export default function McpPage() {
         </FadeIn>
       </section>
     </>
-  );
-}
-
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
-  return (
-    <li className="flex gap-4">
-      <span
-        aria-hidden
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/60 bg-surface-raised font-mono text-[13px] text-accent-text"
-      >
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <h3 className="text-[16px] font-semibold text-foreground">{title}</h3>
-        {children}
-      </div>
-    </li>
   );
 }
