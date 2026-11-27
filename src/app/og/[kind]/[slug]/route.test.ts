@@ -31,7 +31,7 @@ describe("Vorschaukarten", () => {
     OpengraphImage();
     expect(renderSocialCard).toHaveBeenCalledWith({
       label: "v2.0 Beta",
-      title: { lead: "Aus deiner Idee ", highlight: "der fertige Prompt." },
+      title: { lead: "Aus deiner Idee\u00a0", highlight: "der fertige Prompt." },
     });
     expect(home.size).toEqual({ width: 1200, height: 630 });
     expect(home.contentType).toBe("image/png");
