@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { counterRedisDouble } from "@/server/security/redis-double";
+import { counterRedisDouble } from "@tests/support/redis-double";
 import { FREE_TRIAL } from "@/shared/lib/plans";
 
 vi.mock("@/shared/lib/observability", () => ({ logWarning: vi.fn() }));

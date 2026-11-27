@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clientIp, rateLimitKey, rateLimitKeyPerAddress } from "@/server/security/rate-limit";
-import { counterRedisDouble } from "./redis-double";
+import { counterRedisDouble } from "@tests/support/redis-double";
 
 // Die Kopfzeilen-Tests prüfen, wen der Schlüssel meint; der Bereich ist dafür gleichgültig.
 const keyFor = (r: Request, userId?: string | null) => rateLimitKey(r, "chat", userId);

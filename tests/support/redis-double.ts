@@ -1,11 +1,9 @@
-import "server-only";
-
 type Fn = (...args: never[]) => unknown;
 
 /**
- * Nur für Tests: legt `multi()` und das Rückgabe-Skript von reserve-counter.ts über einfache Attrappen für
- * `incr`, `expire`, `decr` und `sadd`, damit ein Test die einzelnen Schritte prüfen kann. `exec` scheitert als Ganzes.
- * Jeder Schritt bekommt genau die Argumente des Aufrufs, ein `expire` ohne Modus also zwei.
+ * Legt `multi()` und das Rückgabe-Skript von server/security/reserve-counter.ts über einfache Attrappen für `incr`,
+ * `expire`, `decr` und `sadd`, damit ein Test die einzelnen Schritte prüfen kann. `exec` scheitert als Ganzes. Jeder
+ * Schritt bekommt genau die Argumente des Aufrufs, ein `expire` ohne Modus also zwei.
  */
 export function counterRedisDouble<T extends { incr?: unknown; expire?: unknown; decr?: unknown; sadd?: unknown }>(
   double: T
