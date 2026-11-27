@@ -31,7 +31,7 @@ vi.mock("@/shared/supabase/client", () => ({
       if (table === "message_attachments") {
         return {
           select: () => ({
-            eq: () => ({ eq: () => ({ range: (...a: unknown[]) => attachmentRange(...a) }) }),
+            eq: () => ({ eq: () => ({ order: () => ({ range: (...a: unknown[]) => attachmentRange(...a) }) }) }),
           }),
         };
       }

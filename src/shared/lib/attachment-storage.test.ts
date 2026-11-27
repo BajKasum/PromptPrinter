@@ -17,10 +17,17 @@ type Page = { data: { storage_path: string }[] | null; error: unknown };
 
 /** Ein Client, dessen Query-Kette ihre Aufrufe aufzeichnet und Seiten der Reihe nach liefert. */
 function clientWithPages(pages: (Page | Error)[]) {
-  const calls: { table: string; select: string; eq: [string, unknown][]; range: [number, number][] } = {
+  const calls: {
+    table: string;
+    select: string;
+    eq: [string, unknown][];
+    order: string[];
+    range: [number, number][];
+  } = {
     table: "",
     select: "",
     eq: [],
+    order: [],
     range: [],
   };
   let next = 0;
@@ -33,10 +40,16 @@ function clientWithPages(pages: (Page | Error)[]) {
     calls.eq.push([column, value]);
     return chain;
   };
-  chain.range = (from: number, to: number) => {
-    calls.range.push([from, to]);
-    const page = pages[Math.min(next++, pages.length - 1)];
-    return page instanceof Error ? Promise.reject(page) : Promise.resolve(page);
+  // `range` hängt nur an einer sortierten Kette: eine Seite ohne feste Reihenfolge gibt es hier nicht.
+  chain.order = (column: string) => {
+    calls.order.push(column);
+    return {
+      range: (from: number, to: number) => {
+        calls.range.push([from, to]);
+        const page = pages[Math.min(next++, pages.length - 1)];
+        return page instanceof Error ? Promise.reject(page) : Promise.resolve(page);
+      },
+    };
   };
   const remove = vi.fn(async (_paths: string[]) => ({ error: null as unknown }));
   const fromStorage = vi.fn(() => ({ remove }));
@@ -135,6 +148,31 @@ describe("attachmentPathsOfUser", () => {
 
     expect(await attachmentPathsOfUser(client, "u1")).toEqual(["p0", "p1"]);
     expect(calls.eq).toEqual([["user_id", "u1"]]);
+  });
+});
+
+// Ohne feste Reihenfolge dürfen sich zwei Seiten derselben Abfrage überschneiden: eine Zeile käme doppelt, eine andere
+// nie, und ihre Datei bliebe als Waise im Bucket.
+describe("jede Abfrage liest alle Seiten in fester Reihenfolge", () => {
+  it.each([
+    ["eines Chats", (client: SupabaseClient) => attachmentPathsOfConversation(client, "u1", "c1")],
+    ["eines Projekts", (client: SupabaseClient) => attachmentPathsOfProject(client, "u1", "proj-1")],
+    ["eines Kontos", (client: SupabaseClient) => attachmentPathsOfUser(client, "u1")],
+  ])("findet bei den Anhängen %s alle 1003 Zeilen über zwei Seiten, nach id sortiert", async (_name, collect) => {
+    const all = rows(1003);
+    const { client, calls } = clientWithPages([
+      { data: all.slice(0, 1000), error: null },
+      { data: all.slice(1000), error: null },
+    ]);
+
+    const paths = await collect(client);
+
+    expect(calls.order).toEqual(["id", "id"]);
+    expect(calls.range).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+    expect(paths).toEqual(all.map((row) => row.storage_path));
   });
 });
 
