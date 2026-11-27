@@ -3,6 +3,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProjectFiles } from "./project-files";
 import type { ProjectFile } from "@/features/projects/lib/project-files";
+import { I18nProvider } from "@/shared/i18n/provider";
+import { de, type Messages } from "@/shared/i18n/messages/de";
+import { en } from "@/shared/i18n/messages/en";
+import { fr } from "@/shared/i18n/messages/fr";
+import type { Locale } from "@/shared/i18n/locales";
 
 const refresh = vi.fn();
 const getUser = vi.fn();
@@ -187,6 +192,74 @@ describe("ProjectFiles", () => {
     expect(await screen.findByText(/Upload fehlgeschlagen/)).toBeInTheDocument();
     expect(storageRemove).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("notes.md")).not.toBeInTheDocument();
+  });
+
+  // Grössen in der Einheit, die man liest ("25 MB", nicht "25600 KB"), mit dem Dezimalzeichen der Sprache.
+  describe.each<[Locale, Messages]>([
+    ["de", de],
+    ["en", en],
+  ])("Grössenangaben in der Sprache %s", (locale, messages) => {
+    const stored = (sizeBytes: number): ProjectFile => ({
+      id: "f1",
+      name: "stored.md",
+      storagePath: "p",
+      sizeBytes,
+      createdAt: new Date().toISOString(),
+    });
+    const show = (initialFiles: ProjectFile[] = []) =>
+      render(
+        <I18nProvider locale={locale} messages={messages}>
+          <ProjectFiles projectId="p1" userId="u1" initialFiles={initialFiles} />
+        </I18nProvider>
+      );
+    const sentence = (template: string, size: string) => template.replace("{size}", size);
+
+    it.each([
+      [25 * 1024 * 1024, "25 MB"],
+      [2 * 1024 * 1024, "2 MB"],
+      [900, "900 B"],
+    ])("zeigt eine Datei mit %i Byte als %s", (sizeBytes, text) => {
+      show([stored(sizeBytes)]);
+      expect(screen.getByText(text)).toBeInTheDocument();
+    });
+
+    it("nennt bei vollem Projekt die Grenze in MB", async () => {
+      show([stored(25 * 1024 * 1024)]);
+      await uploadFile(makeFile("notes.md", 100));
+      expect(await screen.findByText(sentence(messages.projects.storageFull, "25 MB"))).toBeInTheDocument();
+    });
+
+    it("nennt bei einem zu grossen Bild die Grenze in MB", async () => {
+      show();
+      await uploadFile(makeFile("big.png", 3 * 1024 * 1024, "image/png"));
+      expect(await screen.findByText(sentence(messages.projects.fileTooLarge, "2 MB"))).toBeInTheDocument();
+    });
+
+    it.each([
+      ["Datei zu gross", "fileTooLarge", "2 MB"],
+      ["Projekt-Speicherlimit erreicht", "storageFull", "25 MB"],
+    ] as const)("nennt die Grenze auch, wenn die Datenbank mit '%s' ablehnt", async (raised, key, size) => {
+      filesInsert.mockResolvedValue({ error: { message: raised } });
+      show();
+      await uploadFile(makeFile("big.png", 100, "image/png"));
+      expect(await screen.findByText(sentence(messages.projects[key], size))).toBeInTheDocument();
+    });
+  });
+
+  it("setzt in der französischen Oberfläche ein Komma als Dezimalzeichen", () => {
+    const file: ProjectFile = {
+      id: "f1",
+      name: "a.png",
+      storagePath: "p",
+      sizeBytes: 1.5 * 1024 * 1024,
+      createdAt: new Date().toISOString(),
+    };
+    render(
+      <I18nProvider locale="fr" messages={fr}>
+        <ProjectFiles projectId="p1" userId="u1" initialFiles={[file]} />
+      </I18nProvider>
+    );
+    expect(screen.getByText("1,5 MB")).toBeInTheDocument();
   });
 
   // #408: auch ohne Netz steht nur der eigene Satz da, nie die Meldung des Browsers oder von Postgres.
