@@ -67,8 +67,8 @@ export default function GlobalError({
               color: "rgba(255,255,255,0.55)",
             }}
           >
-            Ein unerwarteter Fehler hat die Anwendung gestoppt. Versuch es erneut
-           , wenn das Problem bleibt, lade die Seite später neu.
+            Ein unerwarteter Fehler hat die Anwendung gestoppt. Versuch es erneut. Wenn das Problem bleibt, lade die
+            Seite später neu.
           </p>
           {error.digest && (
             <p
