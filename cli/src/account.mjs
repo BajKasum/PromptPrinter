@@ -1,4 +1,5 @@
 import { ApiError } from "./api.mjs";
+import { DEFAULT_SERVER } from "./config.mjs";
 import { NotLoggedInError } from "./session.mjs";
 import { sanitize } from "./text.mjs";
 
@@ -14,6 +15,16 @@ export function describeAccount(me, { t, server }) {
   if (me.needsOwnKey) hints.push(t("needKey", { url: `${server}/settings` }));
   if (me.needsConsent) hints.push(t("needConsent", { url: `${server}/chats/new` }));
   return { line, hints };
+}
+
+/**
+ * Welcher Text nennt vor `/pp --kontext` den Empfänger? Mit eigenem Key dessen Anbieter. Auf dem Server-Key nennt er
+ * Z.ai nur, wenn der voreingestellte Server es selbst sagt (`serverModel`). Ein anderer Server (eigene Installation,
+ * lokales Modell) oder eine Antwort ohne die Angabe ergibt den neutralen Satz: hier darf nichts behauptet werden.
+ */
+export function recipientMessage(me, server) {
+  if (me.hasOwnKey) return "kontextToOwn";
+  return server === DEFAULT_SERVER && me.serverModel === "zai" ? "kontextToZai" : "kontextToServer";
 }
 
 /**

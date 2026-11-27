@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline";
-import { describeAccount, fetchAccount, signOut } from "./account.mjs";
+import { describeAccount, fetchAccount, recipientMessage, signOut } from "./account.mjs";
 import { AGENTS, findOnPath, fitsCommandLine, launchPlan, runAgent } from "./agents.mjs";
 import { createConversation, MAX_USER_MESSAGE_CHARS, runTurn } from "./chat.mjs";
 import { describeError } from "./errors.mjs";
@@ -157,7 +157,7 @@ export function runRepl(ctx) {
       say(t(settings.onThisComputer ? "kontextToLocalHere" : "kontextToLocalRemote", { url: settings.baseUrl, host: settings.host, model: settings.model }));
       say(t("kontextStoredLocal"));
     } else {
-      say(t(me.hasOwnKey ? "kontextToOwn" : "kontextToServer"));
+      say(t(recipientMessage(me, api.server), { server: api.server }));
       say(t("kontextStored"));
     }
     say(term.dim(t("kontextWarning")));
