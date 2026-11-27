@@ -8,6 +8,7 @@ import { getProject } from "@/server/project";
 import { createClient } from "@/server/supabase/server";
 import { getFreePromptsLeft, getNeedsOwnKey, getSessionProfile, getSessionUser } from "@/server/session";
 import { extractSavedPromptContents } from "@/shared/lib/saved-prompts";
+import { SAVED_PROMPTS_LOAD_LIMIT } from "@/shared/lib/chat-limits";
 import { loadConversationMessages } from "@/features/chat/lib/load-messages";
 import { getT } from "@/server/i18n";
 import { orThrow } from "@/server/supabase/query";
@@ -33,10 +34,9 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
 
   const supabase = await createClient();
   const user = await getSessionUser();
-  // Explicit user_id alongside the id lookup: RLS-only defense-in-depth
-  // before (Security-Audit finding L-3) — project.userId is guaranteed
-  // non-null here since getProject() above already redirected an
-  // unauthenticated caller to /login.
+  // Zusätzlich zur Kennung des Chats auf user_id eingegrenzt, als zweite
+  // Schranke neben RLS. project.userId ist hier gesetzt: getProject() leitet
+  // ohne Anmeldung auf /login um.
   const { data: convo } = orThrow(
     await supabase
     .from("conversations")
@@ -54,22 +54,21 @@ export default async function ProjectChatPage({ params }: { params: Params }) {
 
   const [initialMessages, savedPromptRowsResult, profile, needsKey, freePromptsLeft, versionTarget] =
     await Promise.all([
-      // Nachrichten samt Anhaengen und Vorschau-Adressen. Die Abfrage (neueste
-      // zuerst, mit Limit, dann umgedreht, QA-Befund P-1) steht in
-      // load-messages.ts.
+      // Nachrichten samt Anhängen und Vorschau-Adressen. Die Abfrage (neueste
+      // zuerst, mit Limit, dann umgedreht) steht in load-messages.ts.
       loadConversationMessages(supabase, project.userId, cid),
-      // Selecting `outputs` (not just a head-count) also gives the save
-      // button the already-saved prompt texts, so it can start disabled for a
-      // prompt that's already in the project's Ergebnisse (F-7). Explicit
-      // user_id alongside project_id: RLS-only defense-in-depth before
-      // (Security-Audit L-3).
+      // `outputs` statt nur einer Zählung: der Speichern-Knopf bekommt so die
+      // Texte der gespeicherten Prompts und ist für sie von Anfang an gesperrt.
+      // Die Texte stehen in der ausgelieferten Seite, deshalb nur die neuesten
+      // SAVED_PROMPTS_LOAD_LIMIT. Ob das Projekt Ergebnisse hat, sagt `count`,
+      // das alle Zeilen zählt. user_id zusätzlich zu RLS.
       supabase
         .from("saved_prompts")
         .select("outputs", { count: "exact" })
         .eq("project_id", id)
-        .eq("user_id", project.userId),
-      // getProject already redirected to /login if unauthenticated, user.id is
-      // safe here; the "" fallback just matches no row instead of throwing.
+        .eq("user_id", project.userId)
+        .order("created_at", { ascending: false })
+        .limit(SAVED_PROMPTS_LOAD_LIMIT),
       getSessionProfile(),
       getNeedsOwnKey(),
     getFreePromptsLeft(),
