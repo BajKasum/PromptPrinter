@@ -3,7 +3,7 @@ import "server-only";
 import { ZAI_ENDPOINT, zaiApiKey, zaiThinkingParams } from "@/server/llm/config";
 import { readOpenAiCompatibleSse, streamDeadlines, throwProviderError } from "@/server/llm/http";
 import { toOpenAiMessages } from "@/server/llm/messages";
-import type { LlmMessage } from "@/server/llm/types";
+import type { ProviderStreamCall } from "@/server/llm/types";
 
 // Z.ai, der Server-Standard (OpenAI-kompatibles chat/completions). Nur der Strom: ein Zug ohne
 // eigenen Key läuft immer als Strom, die nicht gestreamte Analyse steht in analyze.ts.
@@ -22,14 +22,15 @@ import type { LlmMessage } from "@/server/llm/types";
  */
 export const ZAI_FIRST_CHUNK_TIMEOUT_MS = 30_000;
 
-export async function* zaiCompleteStream(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  signal?: AbortSignal,
-  onTruncated?: () => void
-): AsyncGenerator<string> {
+/** Ohne `apiKey`: Z.ai läuft nur auf dem Server-Key, den holt die Funktion selbst (zaiApiKey). */
+export async function* zaiCompleteStream({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  signal,
+  onTruncated,
+}: Omit<ProviderStreamCall, "apiKey">): AsyncGenerator<string> {
   const guard = streamDeadlines(signal, ZAI_FIRST_CHUNK_TIMEOUT_MS);
   try {
     const res = await fetch(ZAI_ENDPOINT, {

@@ -105,3 +105,23 @@ export type AnalysisResult = LlmResult & {
   /** Welches Modell tatsächlich geantwortet hat, wird am Brain mitgespeichert. */
   model: string;
 };
+
+// Die Aufrufe der Anbieterfunktionen. Immer EIN Objekt, nie eine Liste von Positionsparametern: Modell, Systemprompt,
+// Text und Key sind alle Strings. Vertauscht kompilierte der Aufruf weiter, und der Key ginge als Prompt an den Anbieter.
+
+/** Was jeder Aufruf braucht. */
+type ProviderCall = {
+  model: string;
+  system: string;
+  maxOutputTokens: number;
+  apiKey: string;
+};
+
+/** Eine Chat-Antwort am Stück. */
+export type ProviderChatCall = ProviderCall & { messages: LlmMessage[] };
+
+/** Eine gestreamte Chat-Antwort. `signal` und `onTruncated` wie bei chatCompleteStream (chat.ts). */
+export type ProviderStreamCall = ProviderChatCall & { signal?: AbortSignal; onTruncated?: () => void };
+
+/** Die Einzelanalyse: ein Textblock, dazu Bilder (ohne Bilder eine leere Liste). */
+export type ProviderAnalyzeCall = ProviderCall & { text: string; images: AnalysisImage[]; signal?: AbortSignal };

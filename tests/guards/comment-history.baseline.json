@@ -94,7 +94,6 @@
   "src/server/http/request-body.ts": 2,
   "src/server/llm-failover.ts": 15,
   "src/server/llm-retry.ts": 2,
-  "src/server/llm/analyze.ts": 1,
   "src/server/llm/anthropic.ts": 1,
   "src/server/llm/chat.ts": 3,
   "src/server/llm/config.ts": 4,

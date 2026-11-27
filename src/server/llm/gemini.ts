@@ -7,10 +7,11 @@ import { toGeminiContents } from "@/server/llm/messages";
 import {
   LlmBlockedError,
   LlmEmptyReplyError,
-  type AnalysisImage,
   type AnalysisResult,
-  type LlmMessage,
   type LlmResult,
+  type ProviderAnalyzeCall,
+  type ProviderChatCall,
+  type ProviderStreamCall,
 } from "@/server/llm/types";
 
 // Gemini: Server-Zweitanbieter, Failover und BYOK. (Teil von src/server/llm/, siehe index.ts)
@@ -34,13 +35,13 @@ function geminiEnd(res: Pick<GenerateContentResponse, "promptFeedback" | "candid
   return cutOffByReason(geminiFinish(reason), "Gemini", reason);
 }
 
-export async function geminiComplete(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string
-): Promise<LlmResult> {
+export async function geminiComplete({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+}: ProviderChatCall): Promise<LlmResult> {
   const ai = geminiClient(apiKey);
   const res = await ai.models.generateContent({
     model,
@@ -63,15 +64,15 @@ export async function geminiComplete(
   return { text, usage };
 }
 
-export async function* geminiCompleteStream(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal,
-  onTruncated?: () => void
-): AsyncGenerator<string> {
+export async function* geminiCompleteStream({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+  signal,
+  onTruncated,
+}: ProviderStreamCall): AsyncGenerator<string> {
   const ai = geminiClient(apiKey);
   const stream = await ai.models.generateContentStream({
     model,
@@ -87,15 +88,15 @@ export async function* geminiCompleteStream(
   if (cutOff) onTruncated?.();
 }
 
-export async function geminiAnalyze(
-  model: string,
-  system: string,
-  text: string,
-  images: AnalysisImage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<AnalysisResult> {
+export async function geminiAnalyze({
+  model,
+  system,
+  text,
+  images,
+  maxOutputTokens,
+  apiKey,
+  signal,
+}: ProviderAnalyzeCall): Promise<AnalysisResult> {
   const ai = geminiClient(apiKey);
   const res = await ai.models.generateContent({
     model,

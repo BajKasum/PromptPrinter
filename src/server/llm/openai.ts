@@ -6,10 +6,11 @@ import { cutOffByReason, openAiFinish } from "@/server/llm/finish";
 import { toOpenAiSdkMessages } from "@/server/llm/messages";
 import {
   LlmEmptyReplyError,
-  type AnalysisImage,
   type AnalysisResult,
-  type LlmMessage,
   type LlmResult,
+  type ProviderAnalyzeCall,
+  type ProviderChatCall,
+  type ProviderStreamCall,
 } from "@/server/llm/types";
 
 // OpenAI: nur BYOK. (Teil von src/server/llm/, siehe index.ts)
@@ -21,13 +22,13 @@ function ensureNotStopped(reason: string | null | undefined): void {
   if (reason) cutOffByReason(openAiFinish(reason), "OpenAI", reason);
 }
 
-export async function openaiComplete(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string
-): Promise<LlmResult> {
+export async function openaiComplete({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+}: ProviderChatCall): Promise<LlmResult> {
   const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const res = await client.chat.completions.create({
     model,
@@ -46,15 +47,15 @@ export async function openaiComplete(
   return { text, usage };
 }
 
-export async function* openaiCompleteStream(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal,
-  onTruncated?: () => void
-): AsyncGenerator<string> {
+export async function* openaiCompleteStream({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+  signal,
+  onTruncated,
+}: ProviderStreamCall): AsyncGenerator<string> {
   const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const stream = await client.chat.completions.create(
     {
@@ -77,15 +78,15 @@ export async function* openaiCompleteStream(
   if (cutOff) onTruncated?.();
 }
 
-export async function openaiAnalyze(
-  model: string,
-  system: string,
-  text: string,
-  images: AnalysisImage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<AnalysisResult> {
+export async function openaiAnalyze({
+  model,
+  system,
+  text,
+  images,
+  maxOutputTokens,
+  apiKey,
+  signal,
+}: ProviderAnalyzeCall): Promise<AnalysisResult> {
   const client = new OpenAI({ apiKey, ...SDK_NO_RETRY });
   const res = await client.chat.completions.create(
     {

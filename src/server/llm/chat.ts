@@ -83,26 +83,24 @@ async function chatCompleteOnce(opts: {
   maxOutputTokens?: number;
   override: LlmOverride;
 }): Promise<LlmResult> {
-  const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
   const { provider, apiKey } = opts.override;
+  const call = {
+    system: opts.system,
+    messages: opts.messages,
+    maxOutputTokens: opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+    apiKey,
+  };
 
   if (provider === "anthropic") {
-    return anthropicComplete(anthropicModel(), opts.system, opts.messages, maxOutputTokens, apiKey);
+    return anthropicComplete({ ...call, model: anthropicModel() });
   }
   if (provider === "openai") {
-    return openaiComplete(openaiModel(), opts.system, opts.messages, maxOutputTokens, apiKey);
+    return openaiComplete({ ...call, model: openaiModel() });
   }
   if (provider === "custom") {
-    return customComplete(
-      opts.override.baseUrl,
-      opts.override.model,
-      opts.system,
-      opts.messages,
-      maxOutputTokens,
-      apiKey
-    );
+    return customComplete({ ...call, endpoint: opts.override.baseUrl, model: opts.override.model });
   }
-  return geminiComplete(geminiByokModel(), opts.system, opts.messages, maxOutputTokens, apiKey);
+  return geminiComplete({ ...call, model: geminiByokModel() });
 }
 
 /**
@@ -194,62 +192,39 @@ async function* chatCompleteStreamOnce(opts: {
   serverProvider?: ServerProvider;
   onTruncated?: () => void;
 }): AsyncGenerator<string> {
-  const maxOutputTokens = opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+  // Was jeder Weg bekommt. Modell, Key und Signal nennt jeder Aufruf selbst.
+  const request = {
+    system: opts.system,
+    messages: opts.messages,
+    maxOutputTokens: opts.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+    onTruncated: opts.onTruncated,
+  };
 
   if (opts.override) {
     const { provider, apiKey } = opts.override;
+    const call = { ...request, apiKey };
     if (provider === "anthropic") {
       yield* withDeadlines(opts.signal, (signal) =>
-        anthropicCompleteStream(
-          anthropicModel(),
-          opts.system,
-          opts.messages,
-          maxOutputTokens,
-          apiKey,
-          signal,
-          opts.onTruncated
-        )
+        anthropicCompleteStream({ ...call, model: anthropicModel(), signal })
       );
       return;
     }
     if (provider === "openai") {
-      yield* withDeadlines(opts.signal, (signal) =>
-        openaiCompleteStream(
-          openaiModel(),
-          opts.system,
-          opts.messages,
-          maxOutputTokens,
-          apiKey,
-          signal,
-          opts.onTruncated
-        )
-      );
+      yield* withDeadlines(opts.signal, (signal) => openaiCompleteStream({ ...call, model: openaiModel(), signal }));
       return;
     }
     if (provider === "custom") {
-      yield* customCompleteStream(
-        opts.override.baseUrl,
-        opts.override.model,
-        opts.system,
-        opts.messages,
-        maxOutputTokens,
-        apiKey,
-        opts.signal,
-        "byok",
-        opts.onTruncated
-      );
+      yield* customCompleteStream({
+        ...call,
+        endpoint: opts.override.baseUrl,
+        model: opts.override.model,
+        signal: opts.signal,
+        source: "byok",
+      });
       return;
     }
     yield* withDeadlines(opts.signal, (signal) =>
-      geminiCompleteStream(
-        geminiByokModel(),
-        opts.system,
-        opts.messages,
-        maxOutputTokens,
-        apiKey,
-        signal,
-        opts.onTruncated
-      )
+      geminiCompleteStream({ ...call, model: geminiByokModel(), signal })
     );
     return;
   }
@@ -258,39 +233,21 @@ async function* chatCompleteStreamOnce(opts: {
   if (!config) throw new Error("no LLM provider configured");
 
   if (config.provider === "zai") {
-    yield* zaiCompleteStream(
-      zaiModelFor(config.model, opts.messages),
-      opts.system,
-      opts.messages,
-      maxOutputTokens,
-      opts.signal,
-      opts.onTruncated
-    );
+    yield* zaiCompleteStream({ ...request, model: zaiModelFor(config.model, opts.messages), signal: opts.signal });
     return;
   }
   if (config.provider === "endpoint") {
-    yield* customCompleteStream(
-      endpointChatUrl(),
-      config.model,
-      opts.system,
-      opts.messages,
-      maxOutputTokens,
-      endpointApiKey(),
-      opts.signal,
-      "server",
-      opts.onTruncated
-    );
+    yield* customCompleteStream({
+      ...request,
+      endpoint: endpointChatUrl(),
+      model: config.model,
+      apiKey: endpointApiKey(),
+      signal: opts.signal,
+      source: "server",
+    });
     return;
   }
   yield* withDeadlines(opts.signal, (signal) =>
-    geminiCompleteStream(
-      config.model,
-      opts.system,
-      opts.messages,
-      maxOutputTokens,
-      geminiApiKey() ?? "",
-      signal,
-      opts.onTruncated
-    )
+    geminiCompleteStream({ ...request, model: config.model, apiKey: geminiApiKey() ?? "", signal })
   );
 }

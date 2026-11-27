@@ -6,10 +6,11 @@ import { anthropicFinish, cutOffByReason } from "@/server/llm/finish";
 import { toAnthropicMessages } from "@/server/llm/messages";
 import {
   LlmEmptyReplyError,
-  type AnalysisImage,
   type AnalysisResult,
-  type LlmMessage,
   type LlmResult,
+  type ProviderAnalyzeCall,
+  type ProviderChatCall,
+  type ProviderStreamCall,
 } from "@/server/llm/types";
 
 // Anthropic: nur BYOK. (Teil von src/server/llm/, siehe index.ts)
@@ -44,13 +45,13 @@ function ensureNotStopped(reason: string | null | undefined): void {
   if (reason) cutOffByReason(anthropicFinish(reason), "Anthropic", reason);
 }
 
-export async function anthropicComplete(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string
-): Promise<LlmResult> {
+export async function anthropicComplete({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+}: ProviderChatCall): Promise<LlmResult> {
   const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const res = await anthropic.messages.create({
     model,
@@ -74,15 +75,15 @@ export async function anthropicComplete(
   return { text, usage };
 }
 
-export async function* anthropicCompleteStream(
-  model: string,
-  system: string,
-  messages: LlmMessage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal,
-  onTruncated?: () => void
-): AsyncGenerator<string> {
+export async function* anthropicCompleteStream({
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  apiKey,
+  signal,
+  onTruncated,
+}: ProviderStreamCall): AsyncGenerator<string> {
   const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const stream = await anthropic.messages.create(
     {
@@ -107,15 +108,15 @@ export async function* anthropicCompleteStream(
   if (cutOff) onTruncated?.();
 }
 
-export async function anthropicAnalyze(
-  model: string,
-  system: string,
-  text: string,
-  images: AnalysisImage[],
-  maxOutputTokens: number,
-  apiKey: string,
-  signal?: AbortSignal
-): Promise<AnalysisResult> {
+export async function anthropicAnalyze({
+  model,
+  system,
+  text,
+  images,
+  maxOutputTokens,
+  apiKey,
+  signal,
+}: ProviderAnalyzeCall): Promise<AnalysisResult> {
   const anthropic = new Anthropic({ apiKey, ...SDK_NO_RETRY });
   const res = await anthropic.messages.create(
     {
