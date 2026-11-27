@@ -31,6 +31,8 @@ const FILES = [
   "src/app/api/cli/prompts/[id]/route.ts",
   "src/server/cli-login/saved-prompts.ts",
   "src/server/cli-login/messages.ts",
+  // isUuid entscheidet in api/cli/prompts/[id], welche Kennungen das Programm abrufen kann (UUID in src/mcp.mjs).
+  "src/shared/lib/uuid.ts",
   // Quelle von src/finn-prompt.mjs: ändert sie sich, dort neu kopieren.
   "src/server/system-prompt.ts",
 ];
