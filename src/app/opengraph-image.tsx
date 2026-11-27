@@ -1,101 +1,21 @@
-import { ImageResponse } from "next/og";
+import { renderSocialCard, SOCIAL_CARD_SIZE } from "@/features/marketing/lib/social-card-image";
 
-// Render on the Edge runtime. The Node build of @vercel/og locates its bundled
-// font/wasm via path.join(import.meta.url, …); on Windows path.join mangles the
-// file:// URL into an invalid one, so `next build` throws "Invalid URL" while
-// prerendering this route. The Edge runtime loads those assets a different way
-// and builds cleanly on every platform (this is also Next's documented runtime
-// for metadata image routes).
+// Die Karte läuft auf der Edge-Runtime: der Node-Build von @vercel/og sucht seine Schrift und sein WASM über
+// path.join(import.meta.url, …), das unter Windows aus der file://-Adresse eine ungültige macht, und
+// `next build` bricht beim Vorrendern mit "Invalid URL" ab.
 export const runtime = "edge";
 
-// Branded 1200×630 social card. Next auto-injects this into the OpenGraph and
-// Twitter tags defined in the root layout, so shares finally show a preview.
+// Die Karte der Startseite beim Teilen. Next trägt sie selbst in die OpenGraph- und Twitter-Angaben des
+// Root-Layouts ein, mit einer Prüfsumme in der Adresse. Die richtet sich nur nach dieser Datei: ändert sich allein
+// das Aussehen in social-card-image.tsx, bleibt die Adresse, und wer Bilder nach Adresse zwischenspeichert, zeigt
+// länger das alte.
 export const alt = "PromptPrinter, Aus deiner Idee der fertige Prompt";
-export const size = { width: 1200, height: 630 };
+export const size = SOCIAL_CARD_SIZE;
 export const contentType = "image/png";
 
-/**
- * Der Hostname unten rechts auf der Karte.
- *
- * Stand als Literal `promptprinter.app` im Markup — einer Domain, die diesem
- * Projekt (noch) nicht gehört. Anders als ein falscher Link im HTML fällt das
- * niemandem im Code auf: es ist in ein PNG gerendert, das nur außerhalb der
- * App zu sehen ist, in jeder geteilten Vorschau.
- *
- * NEXT_PUBLIC_APP_URL ist in Produktion Pflicht (env.ts' Boot-Check), lokal
- * bleibt der localhost-Fallback aus siteUrl() stehen — dort schaut ohnehin
- * niemand auf die Karte. Kein Import von siteUrl(): diese Route läuft auf der
- * Edge-Runtime, und die eine Zeile hier ist billiger als ein Modul mit
- * window-Zweig in den Edge-Bundle zu ziehen.
- */
-function displayHost(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL;
-  if (!raw) return "localhost:3000";
-  return raw.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-}
-
 export default function OpengraphImage() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          background: "#0C0E12",
-          backgroundImage:
-            "radial-gradient(900px 480px at 75% 0%, rgba(143,205,242,0.18), transparent)",
-          padding: "80px",
-          fontFamily: "sans-serif",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              fontSize: 22,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "#8FCDF2",
-              border: "1px solid rgba(143,205,242,0.4)",
-              background: "rgba(143,205,242,0.12)",
-              borderRadius: 999,
-              padding: "8px 18px",
-            }}
-          >
-            v2.0 Beta
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            fontSize: 76,
-            fontWeight: 700,
-            lineHeight: 1.05,
-            letterSpacing: "-0.03em",
-          }}
-        >
-          <span style={{ color: "#E8EBEF" }}>Aus deiner Idee&nbsp;</span>
-          <span style={{ color: "#8FCDF2" }}>der fertige Prompt.</span>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            color: "rgba(255,255,255,0.55)",
-            fontSize: 28,
-          }}
-        >
-          <div style={{ display: "flex", color: "white", fontWeight: 600 }}>PromptPrinter</div>
-          <div style={{ display: "flex" }}>{displayHost()}</div>
-        </div>
-      </div>
-    ),
-    { ...size }
-  );
+  return renderSocialCard({
+    label: "v2.0 Beta",
+    title: { lead: "Aus deiner Idee ", highlight: "der fertige Prompt." },
+  });
 }
