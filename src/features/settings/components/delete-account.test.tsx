@@ -188,13 +188,15 @@ describe("DeleteAccount: Tastatur", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("bleibt offen, solange zur erneuten Anmeldung abgemeldet wird", async () => {
+  it("lässt sich mit Escape schliessen, auch wenn das Abmelden hängt", async () => {
     signOut.mockReturnValue(new Promise(() => {}));
     fetchMock.mockResolvedValue(response(403, { detail: "x", code: "reauth_required" }));
     const { user, dialog } = await openAndConfirm();
     await user.click(await within(dialog).findByRole("button", { name: de.settings.deleteAccount.reauthAction }));
+    // Beide Knöpfe sind gesperrt, der Ausweg ist die Tastatur oder der Klick daneben.
+    expect(within(dialog).getByRole("button", { name: de.common.cancel })).toBeDisabled();
 
     await user.keyboard("{Escape}");
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });

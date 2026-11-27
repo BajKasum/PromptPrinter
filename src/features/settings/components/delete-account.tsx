@@ -37,8 +37,9 @@ export function DeleteAccount({ email }: { email: string }) {
   const matches = confirm.trim().toLowerCase() === email.trim().toLowerCase();
   const canDelete = matches && !deleting;
 
+  // Gesperrt nur während des Löschens. Beim Abmelden nicht: hängt es, bleiben Escape und der Klick daneben der Ausweg.
   function close() {
-    if (!deleting && !leaving) setOpen(false);
+    if (!deleting) setOpen(false);
   }
 
   async function handleDelete() {
