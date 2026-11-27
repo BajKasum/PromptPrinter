@@ -734,8 +734,10 @@ describe("Chat", () => {
       await userEvent.click(screen.getByRole("button", { name: /Senden/ }));
       await screen.findByRole("button", { name: /Senden/ });
 
-      const live = container.querySelector("[aria-live='polite'][aria-atomic='true']");
-      expect(live).toBeInTheDocument();
+      // Genau EIN Bereich trägt den Status: zwei mit demselben Text liest ein Bildschirmleser doppelt vor (#444).
+      const regions = container.querySelectorAll("[aria-live='polite'][aria-atomic='true']");
+      expect(regions).toHaveLength(1);
+      const [live] = regions;
       expect(live).toHaveTextContent("Antwort fertig.");
       // The reply text itself must never be what a live region carries.
       expect(live).not.toHaveTextContent("Hier ist dein Prompt");
