@@ -11,6 +11,53 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-27: Die Terminal-App nennt Z.ai nur noch, wenn es stimmt, und der Vertrag prüft die Fehlerarten des Chats (Branch `fix/terminal-app-411-389`, #411 und #389)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`) an der Terminal-App.
+- **#411 (Low):** Vor `/pp --kontext` stand ohne eigenen Key bei jedem Server „Z.ai in Singapur“ als Empfänger des Codes, auch bei einer eigenen Installation mit lokalem Modell. `GET /api/cli/me` meldet jetzt `serverModel: "zai"`, aber nur, wenn ein Zug auf dem Server-Key allein an Z.ai geht (nicht bei Gemini, eigenem Endpunkt oder mit beiden Server-Keys und damit Ausweich-Anbieter), nur als Kennung ohne Adresse, Modell oder Key. Die Terminal-App nennt Z.ai nur auf der voreingestellten Adresse mit dieser Angabe; sonst, auch bei einem Server ohne das Feld, „PromptPrinter unter <Adresse> und das Modell, das dieser Server nutzt“ (`recipientMessage` in `cli/src/account.mjs`, de und en). Ein anderer Server kann den Empfänger damit nicht selbst benennen, bewusst. Alte Terminal-Versionen ignorieren das Feld. Datenschutz unverändert.
+- **#389 (Low):** Die Terminal-App unterschied noch `chatMessages`, die Art des entfernten Monatskontingents; Zweig, Text `quota`, `ApiError.limit` und die zwei Testzeilen sind weg. `tests/guards/cli-contract.test.ts` prüft jetzt, dass jede Art, nach der `cli/src` fragt (`err.kind`), von einem `problem(…)` in `api/chat`, `api/cli` oder `server/model-call.ts` gesendet wird. Keine neuen Prüfsummen: sie meldeten jede Änderung dieser Dateien, ohne die Art zu prüfen. Nur `api/cli/me` ist in `cli/contract/pins.json` neu.
+- **Geprüft:** 16 Mutationen an den neuen Schranken, alle erkannt.
+- **Gate:** grün auf `9f8458c4` (die zwei Commits dieses Branches und `main` bei `79b3f6a2`; Audit sauber, Typecheck, Lint, 4617 Tests, 2 übersprungen, Build mit den Platzhaltern der CI); in `cli/` `check`, `contract` und 179 Tests (3 übersprungen) mit `--test-concurrency=2` grün. Unter Last fielen vorher Tests zum Ordner-Kontext (`context.test.mjs`, `pp-kontext.test.mjs`): `git` braucht dann länger als die Zeitgrenzen in `context.mjs`, dieselben Tests fielen so auch auf `main`.
+- **Nicht geprüft:** gegen keinen echten Server und kein echtes Terminal (Stub-Server, Eingabezeile im Test); `npm run mutation` in `cli/` nicht als Ganzes (die neuen Zeilen einzeln, alle 117 Zeilen finden ihre Stelle).
+
+## 2026-11-27: Der Chat sagt jeden Status nur noch einmal an, fertige Nachrichten bleiben beim Streamen und Tippen stehen (Branch `fix/chat-liveregion-neuzeichnen`, #444 und #418)
+
+- **#444 (Low):** `chat.tsx` trug zwei gleiche `aria-live`-Bereiche, ein Bildschirmleser sagte jeden Status doppelt an. Jetzt einer; der Test zählt mit `querySelectorAll`.
+- **#418 (Low):** Jedes Textstück und jeder Tastendruck zeichnete den ganzen Verlauf neu und parste jede Antwort erneut. `MarkdownMessage`, Antwortblase, Ergebnis-Panel und die eigene Frage sind jetzt `memo`, die Rückrufe an den Verlauf behalten über `hooks/use-stable-callback.ts` ihre Identität. Der Zustandsautomat bleibt; `pending` aus `<Chat>` zu lösen hätte ihn umgebaut und das Tippen nicht mitgelöst.
+- **Gemessen** (React Profiler in jsdom, 100 Nachrichten mit 50 Antworten, Schreibanimation eingefroren, drei Läufe): je Textstück 50 alte Antworten neu geparst, jetzt 0, Commit 813 bis 942 ms, jetzt 31 bis 39 ms; je Taste ebenso 50, jetzt 0, 797 bis 1103 ms, jetzt 20 bis 32 ms. Die Millisekunden gelten nur für jsdom. Je gesendeter Nachricht werden die Antworten weiterhin einmal neu geparst (der Massstab der Prompt-Prüfung ändert sich dann).
+- **Nebenfund, mitbehoben:** Im Ergebnis-Panel stand nach „Prompt kopieren“ nie „Kopiert“: das Feiern zeichnete das Panel neu, und der Codeblock wurde dabei neu eingehängt.
+- **Geprüft:** 9 Mutationen an den neuen Schranken, alle erkannt.
+- **Gate:** grün auf `e13894f6` (Audit sauber, Typecheck, Lint, 4586 Tests, 2 übersprungen, Build mit den Platzhaltern der CI, ein Stylesheet); nach dem Merge von `main` (`79b3f6a2`) Typecheck und 1679 Tests aus `src/features/chat`, `src/shared/lib`, `tests/guards` grün.
+- **Nicht geprüft:** in der laufenden App, auf einem echten Gerät, mit einem Bildschirmleser. Noch offen: die laufende Antwort hängt ihr Markdown bei jedem Schritt neu ein (die Komponenten in `MarkdownMessage` entstehen je Rendern neu).
+
+## 2026-11-27: Satz auf der globalen Fehlerseite berichtigt, Projekt-Chats laden die gespeicherten Prompts mit Grenze (Branch `fix/fehlerseite-projekt-chats`, #401 und #399)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`).
+- **#401 (Low):** Auf der globalen Fehlerseite stand "Versuch es erneut , wenn das Problem bleibt, ...". Jetzt zwei ganze Sätze, sonst ist an `global-error.tsx` nichts geändert.
+- **#399 (Low, Leistung):** Die beiden Chat-Seiten eines Projekts lasen alle gespeicherten Prompts des Projekts mit vollem Text, ohne Grenze und Sortierung, und gaben sie an den Chat weiter, also in die ausgelieferte Seite. Jetzt wie in den Chats ohne Projekt: neueste zuerst, höchstens `SAVED_PROMPTS_LOAD_LIMIT` (200); ob das Projekt Ergebnisse hat, kommt weiter aus `count`. Folge: der Abgleich "schon gespeichert?" kennt auch im Projekt nur die neuesten 200. Verlaufskommentare der beiden Seiten angeglichen, zwei Einträge aus der Kommentar-Ratsche entfernt.
+- **Geprüft:** `global-error.test.tsx` und `projects/[id]/chats/saved-prompts.test.tsx` (Nachbau sortiert, kappt und zählt wie PostgREST); 17 Mutationen, alle erkannt.
+- **Gate:** grün auf `4ae3f675` (Audit sauber, Typecheck, Lint, 4589 Tests, 2 übersprungen, Build mit den Platzhaltern der CI, ein Stylesheet).
+- **Nicht geprüft:** nicht im Browser oder gegen echtes Supabase, die Browser-Tests (E2E) nicht lokal.
+
+## 2026-11-27: Die Mobile-Navigation gibt beim Verbreitern das Scrollen frei, die Befehlspalette liest bei jedem Öffnen neu und markiert nach jeder Suche den ersten Treffer (Branch `fix/app-rahmen-424-420`, #424 und #420)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`), beide am App-Rahmen (`src/shell/`).
+- **#424 (Low):** Der Drawer der App ist ab 768 px nur per CSS weg (`md:hidden`), `open` blieb wahr und mit ihm `overflow: hidden` auf `body`: nach dem Drehen eines Tablets oder dem Breiterziehen liess sich die Seite erst nach einem Neuladen scrollen. Solange er offen ist, beobachtet er jetzt `(min-width: 768px)` und schliesst sich dort, wie die Navbar der öffentlichen Seiten.
+- **#420 (Low):** Die Palette bleibt im Layout gemountet und las Chats und Projekte nur beim ersten Öffnen. Jetzt liest sie bei jedem; die vorige Liste bleibt bis zur Antwort stehen, nach einem Lesefehler auch darüber hinaus (vorher leerte ein Fehler die Liste), eine verspätete Antwort eines früheren Öffnens wird verworfen. Jede Sucheingabe markiert den ersten Treffer, die Pfeiltasten bleiben an beiden Enden stehen. Die Markierung hängt am Eintrag statt an der Zeilennummer: weil die frische Liste nun auch bei offener Palette ankommt, hätte Enter sonst ein anderes Ziel geöffnet. Die Maus wählt erst, wenn sie sich bewegt (`onMouseMove`), ohne eigenen Hover-Stil: mit `onMouseEnter` nahm sich eine Zeile, die unter dem ruhenden Zeiger erschien, die Markierung.
+- **Nebenbei:** Der Wettlauf in `command-palette.test.tsx` ("merkt sich den Fokus bei jedem Öffnen neu") ist behoben, der Test wartet vor Escape auf den Fokus. Kommentare der Palette ohne Verlauf, ihr Eintrag in `comment-history.baseline.json` entfällt.
+- **Geprüft:** 16 Mutationen, alle erkannt (4 zu #424, 12 zu #420). Headless Chromium mit den echten Komponenten (Dev-Server mit Wegwerf-Seite, Supabase-Antworten abgefangen): 14 von 14, vor dem Entfernen der Hover-Klasse.
+- **Gate:** grün auf `ed4b9a8d` mit Basis `1da82d8e` (Audit sauber, Typecheck, Lint, 4595 Tests, 2 übersprungen, Build mit den Platzhaltern der CI, ein Stylesheet).
+- **Nicht geprüft:** in der laufenden App mit Login, Safari, Firefox, echtes Handy oder Tablet.
+
+## 2026-11-27: Anhang-Pfade werden sortiert gelesen, Projektdateien nennen Grössen in MB und in der Sprache der App (Branch `fix/speicher-422-419`, #422 und #419)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`) rund um Speicher und Grössenangaben.
+- **#422 (Low):** Die drei Abfragen in `shared/lib/attachment-storage.ts` blätterten ohne `.order`. Zwei Seiten durften sich überschneiden: beim Löschen eines Chats oder Projekts mit mehr als 1000 Anhängen konnte eine Datei als Waise im Bucket bleiben (bei den Projektdateien seit #131 behoben, diese Datei blieb damals aussen vor). Alle drei sortieren jetzt nach `id` und lesen über `collectStoragePaths`, die zweite Seitenschleife und Seitengrösse sind weg. `keepPartialOnError` liefert beim Löschen von Chat und Projekt weiter die Teilliste, ohne den Schalter wirft die Funktion wie bisher (Konto löschen, Abgleich-Skript); ihr zweiter Parameter ist jetzt ein Optionsobjekt.
+- **#419 (Low):** Zwei `formatBytes`; die der Projektdateien kannte weder Megabytes noch Sprache ("25600 KB"). Es gibt eine, in `shared/lib/utils.ts`, `chat-attachments.ts` re-exportiert sie. Der Sprach-Tag ist Pflicht, `project-files.tsx` übergibt den der App-Sprache. Unter 10 KB stehen dort jetzt ganze Kilobyte wie im Chat ("2 KB" statt "1.5 KB").
+- **Geprüft:** je Issue neue Tests (1003 Anhänge über zwei Seiten für alle drei Abfragen; 25 MB, 2 MB und 900 Byte in de und en, Komma in fr); 16 Mutationen, je 8, alle erkannt.
+- **Gate:** grün auf `8fe9cd45` (Audit sauber, Typecheck, Lint, 4613 Tests, 2 übersprungen, Build mit den Platzhaltern der CI).
+- **Nicht geprüft:** gegen echtes Supabase und einen echten Bucket, nicht im Browser, E2E nicht lokal.
+
 ## 2026-11-26: Formulare zeigen keine Browser-Meldungen mehr, Key entfernen und Escape im Prompt-Editor fragen nach, Kopieren scheitert nicht mehr still (Branch `fix/rueckmeldung-408-407-421`, #408, #407 und #421)
 
 - **Ziel:** drei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`), alle dazu, was jemand nach einem Fehlschlag oder vor einem Verlust zu sehen bekommt.
