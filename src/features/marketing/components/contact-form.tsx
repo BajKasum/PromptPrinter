@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { Input, Textarea } from "@/shared/ui/input";
-import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
+import { TurnstileWidget } from "@/shared/ui/turnstile-widget";
+import { CAPTCHA_MISSING_MESSAGE, useTurnstile } from "@/shared/ui/use-turnstile";
+import { FormError } from "@/shared/ui/form-error";
 import {
   CONTACT_LIMITS,
   CONTACT_TOPICS,
@@ -33,9 +35,7 @@ export function ContactForm() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaNonce, setCaptchaNonce] = useState(0);
-  const handleCaptchaToken = useCallback((t: string | null) => setCaptchaToken(t), []);
+  const captcha = useTurnstile();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,8 +51,8 @@ export function ContactForm() {
       );
       return;
     }
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError("Bitte bestätige kurz, dass du ein Mensch bist.");
+    if (captcha.missing) {
+      setError(CAPTCHA_MISSING_MESSAGE);
       return;
     }
 
@@ -63,18 +63,18 @@ export function ContactForm() {
         res = await fetch("/api/contact", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ ...parsed.data, turnstileToken: captchaToken ?? undefined }),
+          body: JSON.stringify({ ...parsed.data, turnstileToken: captcha.token ?? undefined }),
         });
       } catch {
         setError(FALLBACK);
+        // Auch ohne Antwort kann der Server die Anfrage gesehen und das Token eingelöst haben.
+        captcha.refresh();
         return;
       }
       if (!res.ok) {
         const payload = (await res.json().catch(() => null)) as { detail?: string } | null;
         setError(payload?.detail ?? `Das hat nicht geklappt. Schreib mir bitte direkt an ${LEGAL.email}.`);
-        // Ein Token gilt nur einmal und ist verbraucht; der nächste Versuch braucht ein frisches.
-        setCaptchaToken(null);
-        setCaptchaNonce((n) => n + 1);
+        captcha.refresh();
         return;
       }
       setSent(true);
@@ -101,8 +101,7 @@ export function ContactForm() {
           onClick={() => {
             setMessage("");
             setSent(false);
-            setCaptchaToken(null);
-            setCaptchaNonce((n) => n + 1);
+            captcha.refresh();
           }}
           className="text-[14px] text-accent-text underline underline-offset-2"
         >
@@ -214,16 +213,9 @@ export function ContactForm() {
         />
       </div>
 
-      <TurnstileWidget onToken={handleCaptchaToken} resetSignal={captchaNonce} />
+      <TurnstileWidget {...captcha.widgetProps} />
 
-      {error && (
-        <div
-          role="alert"
-          className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-        >
-          {error}
-        </div>
-      )}
+      <FormError>{error}</FormError>
 
       <button
         type="submit"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/shared/supabase/client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
+import { FormError } from "@/shared/ui/form-error";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
 import { adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
 import {
@@ -177,14 +178,7 @@ export function UpdatePasswordExperience({ email }: { email: string }) {
           />
         </div>
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-          >
-            {error}
-          </div>
-        )}
+        <FormError>{error}</FormError>
 
         <button
           type="submit"

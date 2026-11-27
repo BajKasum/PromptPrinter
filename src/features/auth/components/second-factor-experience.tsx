@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
+import { FormError } from "@/shared/ui/form-error";
 import { createClient } from "@/shared/supabase/client";
 import { Input } from "@/shared/ui/input";
 import { nextPathFromLocation } from "@/features/auth/lib/location-search";
@@ -148,14 +149,7 @@ export function SecondFactorExperience() {
           </div>
         )}
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-          >
-            {error}
-          </div>
-        )}
+        <FormError>{error}</FormError>
 
         <button
           type="submit"

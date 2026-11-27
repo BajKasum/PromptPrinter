@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as z from "@/shared/lib/zod";
@@ -8,7 +8,9 @@ import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
 import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
-import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
+import { TurnstileWidget } from "@/shared/ui/turnstile-widget";
+import { CAPTCHA_MISSING_MESSAGE, useTurnstile } from "@/shared/ui/use-turnstile";
+import { FormError } from "@/shared/ui/form-error";
 import { Input } from "@/shared/ui/input";
 import { PasswordInput } from "@/shared/ui/password-input";
 import { SuccessCelebration } from "@/shared/brand/success-celebration";
@@ -55,15 +57,7 @@ export function SignUpExperience() {
     adoptPrefilledCheck(termsRef.current, setTermsAccepted);
   }, []);
 
-  // Turnstile tokens are single-use, bump the nonce after any failed auth
-  // call so the widget issues a fresh one for the retry.
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaNonce, setCaptchaNonce] = useState(0);
-  const handleCaptchaToken = useCallback((t: string | null) => setCaptchaToken(t), []);
-  const refreshCaptcha = useCallback(() => {
-    setCaptchaToken(null);
-    setCaptchaNonce((n) => n + 1);
-  }, []);
+  const captcha = useTurnstile();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,27 +80,24 @@ export function SignUpExperience() {
       setError("Bitte akzeptiere zuerst die AGB.");
       return;
     }
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError("Bitte bestätige kurz, dass du ein Mensch bist.");
+    if (captcha.missing) {
+      setError(CAPTCHA_MISSING_MESSAGE);
       return;
     }
 
     setLoading(true);
     try {
-      // Server-side (see lib/auth-client.ts): the Turnstile token is redeemed
-      // in the same request that creates the account, so it cannot be skipped
-      // from here.
-      const result = await postAuthAction({ action: "sign-up", email, password, next: nextPathFromLocation() }, captchaToken);
+      // Das Token wird serverseitig in derselben Anfrage eingelöst, die das Konto anlegt (shared/lib/auth-client.ts).
+      const result = await postAuthAction({ action: "sign-up", email, password, next: nextPathFromLocation() }, captcha.token);
       if (!result.ok) {
         setError(result.message);
-        // Tokens are single-use and one was just spent, successfully or not —
-        // without a fresh one the retry fails as timeout-or-duplicate.
-        refreshCaptcha();
+        captcha.refresh();
         return;
       }
-      // Email-confirmation on → no session yet; tell the user to check their inbox.
+      // Mit Bestätigungsmail gibt es noch keine Sitzung: es folgt der Hinweis aufs Postfach. Sein Knopf zum erneuten
+      // Senden braucht ein frisches Token.
       if (!result.session) {
-        refreshCaptcha();
+        captcha.refresh();
         setSignupSent(true);
         return;
       }
@@ -119,16 +110,16 @@ export function SignUpExperience() {
   async function handleResend() {
     setError(null);
     setInfo(null);
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError("Bitte bestätige kurz, dass du ein Mensch bist.");
+    if (captcha.missing) {
+      setError(CAPTCHA_MISSING_MESSAGE);
       return;
     }
     setLoading(true);
     try {
-      const result = await postAuthAction({ action: "resend", email, next: nextPathFromLocation() }, captchaToken);
+      const result = await postAuthAction({ action: "resend", email, next: nextPathFromLocation() }, captcha.token);
       if (!result.ok) setError(result.message);
       else setInfo("Bestätigungs-Email wurde erneut gesendet.");
-      refreshCaptcha();
+      captcha.refresh();
     } finally {
       setLoading(false);
     }
@@ -159,17 +150,10 @@ export function SignUpExperience() {
               {info}
             </div>
           )}
-          {error && (
-            <div
-              role="alert"
-              className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-            >
-              {error}
-            </div>
-          )}
+          <FormError>{error}</FormError>
 
           <div className="flex justify-center">
-            <TurnstileWidget onToken={handleCaptchaToken} resetSignal={captchaNonce} />
+            <TurnstileWidget {...captcha.widgetProps} />
           </div>
 
           <button
@@ -283,16 +267,9 @@ export function SignUpExperience() {
           </span>
         </label>
 
-        <TurnstileWidget onToken={handleCaptchaToken} resetSignal={captchaNonce} />
+        <TurnstileWidget {...captcha.widgetProps} />
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-          >
-            {error}
-          </div>
-        )}
+        <FormError>{error}</FormError>
 
         <button
           type="submit"

@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import * as z from "@/shared/lib/zod";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { postAuthAction } from "@/shared/lib/auth-client";
 import { AuthExperienceShell } from "@/features/auth/components/auth-experience-shell";
-import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/shared/ui/turnstile-widget";
+import { TurnstileWidget } from "@/shared/ui/turnstile-widget";
+import { CAPTCHA_MISSING_MESSAGE, useTurnstile } from "@/shared/ui/use-turnstile";
+import { FormError } from "@/shared/ui/form-error";
 import { Input } from "@/shared/ui/input";
 import { adoptPrefilledValue } from "@/features/auth/lib/prefilled-input";
 
@@ -29,9 +31,7 @@ export function RequestPasswordResetExperience() {
     adoptPrefilledValue(emailRef.current, setEmail);
   }, []);
 
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaNonce, setCaptchaNonce] = useState(0);
-  const handleCaptchaToken = useCallback((t: string | null) => setCaptchaToken(t), []);
+  const captcha = useTurnstile();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,22 +42,20 @@ export function RequestPasswordResetExperience() {
       setError(parsed.error.issues[0]?.message ?? "Ungültige Email");
       return;
     }
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError("Bitte bestätige kurz, dass du ein Mensch bist.");
+    if (captcha.missing) {
+      setError(CAPTCHA_MISSING_MESSAGE);
       return;
     }
 
     setLoading(true);
     try {
-      const result = await postAuthAction({ action: "reset-password", email }, captchaToken);
+      const result = await postAuthAction({ action: "reset-password", email }, captcha.token);
       // Die Route antwortet immer gleich, auch im Mail-Cooldown und für eine unbekannte
       // Adresse. Hier landen nur noch das Limit je Adresse und eine fehlgeschlagene
       // Mensch-Prüfung, beide sagen nichts über das Konto.
       if (!result.ok) {
         setError(result.message);
-        // Tokens are single-use and one was just spent; the retry needs a fresh one.
-        setCaptchaToken(null);
-        setCaptchaNonce((n) => n + 1);
+        captcha.refresh();
         return;
       }
       setSent(true);
@@ -127,16 +125,9 @@ export function RequestPasswordResetExperience() {
           />
         </div>
 
-        <TurnstileWidget onToken={handleCaptchaToken} resetSignal={captchaNonce} />
+        <TurnstileWidget {...captcha.widgetProps} />
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-          >
-            {error}
-          </div>
-        )}
+        <FormError>{error}</FormError>
 
         <button
           type="submit"
