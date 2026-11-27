@@ -129,3 +129,72 @@ describe("DeleteAccount: andere Antworten", () => {
     expect(signOut).not.toHaveBeenCalled();
   });
 });
+
+// #368: der Dialog hält den Tastaturfokus, auch ohne Eingabefeld.
+describe("DeleteAccount: Tastatur", () => {
+  const trigger = () => screen.getByRole("button", { name: de.common.delete });
+
+  async function openDialog() {
+    const user = userEvent.setup();
+    render(<DeleteAccount email={EMAIL} />);
+    await user.click(trigger());
+    const dialog = await screen.findByRole("dialog");
+    // Der Fokus kommt erst einen Moment nach dem Öffnen.
+    await waitFor(() => expect(within(dialog).getByPlaceholderText(EMAIL)).toHaveFocus());
+    return { user, dialog };
+  }
+
+  it("Tab bleibt im Dialog, in beide Richtungen", async () => {
+    const { user, dialog } = await openDialog();
+    const field = within(dialog).getByPlaceholderText(EMAIL);
+    const cancel = within(dialog).getByRole("button", { name: de.common.cancel });
+
+    // Der Löschen-Knopf ist noch gesperrt, Abbrechen ist das letzte erreichbare Element.
+    await user.tab();
+    expect(cancel).toHaveFocus();
+    await user.tab();
+    expect(field).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(cancel).toHaveFocus();
+  });
+
+  it("Escape schliesst auch ausserhalb des Feldes und gibt den Fokus an den Auslöser zurück", async () => {
+    const { user, dialog } = await openDialog();
+    await user.tab();
+    expect(within(dialog).getByRole("button", { name: de.common.cancel })).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger()).toHaveFocus();
+  });
+
+  it("legt den Fokus bei der erneuten Anmeldung auf Abbrechen, und Escape schliesst auch dort", async () => {
+    fetchMock.mockResolvedValue(response(403, { detail: "x", code: "reauth_required" }));
+    const { user, dialog } = await openAndConfirm();
+    await within(dialog).findByRole("alert");
+
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: de.common.cancel })).toHaveFocus());
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("bleibt offen, solange gelöscht wird", async () => {
+    fetchMock.mockReturnValue(new Promise<Response>(() => {}));
+    const { user, dialog } = await openAndConfirm();
+
+    await user.keyboard("{Escape}");
+    await user.click(dialog.parentElement as HTMLElement);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("bleibt offen, solange zur erneuten Anmeldung abgemeldet wird", async () => {
+    signOut.mockReturnValue(new Promise(() => {}));
+    fetchMock.mockResolvedValue(response(403, { detail: "x", code: "reauth_required" }));
+    const { user, dialog } = await openAndConfirm();
+    await user.click(await within(dialog).findByRole("button", { name: de.settings.deleteAccount.reauthAction }));
+
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});

@@ -146,6 +146,47 @@ describe("MobileNav", () => {
     expect(watchers.size).toBe(0);
   });
 
+  // #368: der Drawer ist ein modales Fenster.
+  async function openDrawer() {
+    const user = userEvent.setup();
+    render(<MobileNav chats={chats} projects={[]} />);
+    await user.click(screen.getByRole("button", { name: "Menü öffnen" }));
+    const drawer = screen.getByRole("dialog", { name: "Menü" });
+    const [backdrop, close] = screen.getAllByRole("button", { name: "Menü schliessen" });
+    // Der Fokus kommt erst einen Moment nach dem Öffnen.
+    await waitFor(() => expect(close).toHaveFocus());
+    return { user, drawer, backdrop, close };
+  }
+
+  it("ist ein benannter modaler Dialog und holt den Fokus auf den Schliessen-Knopf", async () => {
+    const { drawer } = await openDrawer();
+    expect(drawer).toHaveAttribute("aria-modal", "true");
+    expect(drawer).toContainElement(screen.getByText("Erste Idee"));
+  });
+
+  it("hält Tab im Drawer, der Hintergrund ist mit der Tastatur nicht erreichbar", async () => {
+    const { user, backdrop, close } = await openDrawer();
+    const logo = screen.getByRole("dialog").querySelector("a") as HTMLElement;
+    const signOut = screen.getByRole("button", { name: "Abmelden" });
+
+    await user.tab({ shift: true });
+    expect(logo).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(signOut).toHaveFocus();
+    await user.tab();
+    expect(logo).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+    expect(backdrop).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("gibt den Fokus nach Escape an den Menü-Knopf zurück", async () => {
+    const { user } = await openDrawer();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Menü öffnen" })).toHaveFocus();
+  });
+
   it("closes when the backdrop is clicked", async () => {
     // Both the backdrop and the X button share the "Menü schliessen" label,
     // the backdrop is the first one in DOM order.

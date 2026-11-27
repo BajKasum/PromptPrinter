@@ -2,8 +2,6 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
-import { AnimatePresence, m } from "framer-motion";
 import {
   Search,
   FolderKanban,
@@ -12,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { Dialog } from "@/shared/ui/dialog";
 import { createClient } from "@/shared/supabase/client";
 import { captureError } from "@/shared/lib/observability";
 import { primaryNav, secondaryNav } from "@/shell/lib/nav";
@@ -34,7 +33,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const t = useT();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [mounted, setMounted] = useState(false);
   const [query, setQuery] = useState("");
   // Die gewählte Zeile. `null` heisst: nichts gewählt, es gilt der erste Treffer.
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -43,13 +41,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [chats, setChats] = useState<{ id: string; title: string; project_id: string | null }[]>(
     []
   );
-  // Wer den Fokus hatte, als die Palette aufging (#151). Beim Schliessen ohne Ziel (Escape, Klick daneben,
-  // Strg+K) geht er dorthin zurück, sonst landet er auf <body> und wer weitertippen will, muss erst
-  // zurück navigieren. Beim Wechsel auf eine Seite nicht: dort übernimmt die neue Seite den Fokus.
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  // Beim Schliessen ohne Ziel (Escape, Klick daneben, Strg+K) gibt der Dialog den Fokus an das Element zurück, das
+  // ihn vorher hatte. Beim Wechsel auf eine Seite nicht: dort übernimmt die neue Seite den Fokus.
   const navigatingRef = useRef(false);
-
-  useEffect(() => setMounted(true), []);
 
   const go = useCallback(
     (href: string) => {
@@ -60,27 +54,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     [onClose, router]
   );
 
-  // Reset transient state each time the palette opens, and focus the input.
+  // Reset transient state each time the palette opens.
   useEffect(() => {
     if (!open) return;
-    returnFocusRef.current =
-      document.activeElement instanceof HTMLElement && document.activeElement !== document.body
-        ? document.activeElement
-        : null;
     navigatingRef.current = false;
     setQuery("");
     setActiveId(null);
-    const t = window.setTimeout(() => inputRef.current?.focus(), 20);
-    return () => window.clearTimeout(t);
-  }, [open]);
-
-  // Beim Schliessen den Fokus zurückgeben (siehe returnFocusRef). Der Effekt greift auch beim ersten Rendern,
-  // dann ist noch nichts gemerkt und nichts zu tun.
-  useEffect(() => {
-    if (open) return;
-    const previous = returnFocusRef.current;
-    returnFocusRef.current = null;
-    if (previous && !navigatingRef.current && previous.isConnected) previous.focus();
   }, [open]);
 
   // Chats und Projekte bei jedem Öffnen neu lesen: die Palette bleibt über Seitenwechsel gemountet, ein einmal
@@ -195,134 +174,113 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     } else if (e.key === "Enter") {
       e.preventDefault();
       results[activeIndex]?.perform();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      onClose();
     }
   }
 
-  if (!mounted) return null;
-  // Erst nach dem Mount gelesen (siehe oben), also ohne Hydration-Risiko.
+  // Die Zeilen stehen erst nach dem Mount im Baum (Dialog), also ohne Hydration-Risiko.
   const mac = isMacPlatform();
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <m.div
-          className="fixed inset-0 z-90 flex justify-center bg-black/60 px-4 pt-[12vh] backdrop-blur-xs"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          onMouseDown={onClose}
-        >
-          <m.div
-            role="dialog"
-            aria-modal="true"
-            aria-label={t.palette.dialog}
-            initial={{ opacity: 0, scale: 0.98, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -8 }}
-            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="h-fit w-full max-w-xl overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
-          >
-            <div className="flex items-center gap-3 border-b border-border px-4">
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setActiveId(null);
-                }}
-                onKeyDown={onKeyDown}
-                placeholder={t.palette.placeholder}
-                aria-label={t.palette.input}
-                className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-hidden"
-              />
-            </div>
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      label={t.palette.dialog}
+      placement="top"
+      initialFocusRef={inputRef}
+      returnFocus={() => !navigatingRef.current}
+    >
+      <div className="flex items-center gap-3 border-b border-border px-4">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActiveId(null);
+          }}
+          onKeyDown={onKeyDown}
+          placeholder={t.palette.placeholder}
+          aria-label={t.palette.input}
+          className="h-12 w-full bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-hidden"
+        />
+      </div>
 
-            <div className="max-h-[340px] overflow-y-auto p-1.5">
-              {results.length === 0 ? (
-                <div className="px-3 py-8 text-center text-[13px] text-muted-foreground">
-                  {fmt(t.palette.noResults, { query })}
-                </div>
-              ) : (
-                results.map((c, i) => {
-                  const showHeader = i === 0 || results[i - 1].group !== c.group;
-                  const active = i === activeIndex;
-                  return (
-                    <Fragment key={c.id}>
-                      {showHeader && (
-                        <div className="px-3 pb-1 pt-3 text-[12px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
-                          {c.group}
-                        </div>
+      <div className="max-h-[340px] overflow-y-auto p-1.5">
+        {results.length === 0 ? (
+          <div className="px-3 py-8 text-center text-[13px] text-muted-foreground">
+            {fmt(t.palette.noResults, { query })}
+          </div>
+        ) : (
+          results.map((c, i) => {
+            const showHeader = i === 0 || results[i - 1].group !== c.group;
+            const active = i === activeIndex;
+            return (
+              <Fragment key={c.id}>
+                {showHeader && (
+                  <div className="px-3 pb-1 pt-3 text-[12px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+                    {c.group}
+                  </div>
+                )}
+                <button
+                  ref={(el) => {
+                    rowRefs.current[i] = el;
+                  }}
+                  type="button"
+                  data-active={active}
+                  // Nur eine bewegte Maus wählt: rutscht beim Tippen eine andere Zeile unter den ruhenden
+                  // Zeiger, bleibt die Markierung auf dem ersten Treffer.
+                  onMouseMove={() => setActiveId(c.id)}
+                  onClick={() => c.perform()}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] transition-colors",
+                    // Kein eigener Hover-Stil: unter einem ruhenden Zeiger stünde sonst eine zweite Markierung.
+                    active ? "bg-accent-subtle text-accent-text" : "text-foreground/70"
+                  )}
+                >
+                  <c.Icon
+                    className={cn("h-4 w-4 shrink-0", active ? "text-accent-text" : "text-foreground/70")}
+                    strokeWidth={1.8}
+                  />
+                  <span className="flex-1 truncate">{c.label}</span>
+                  {/* Die Palette ist der Ort, an dem man Kürzel lernt:
+                      wer hier "Einstellungen" sucht, sieht nebenbei,
+                      dass es auch ohne Palette geht. */}
+                  {c.shortcut && (
+                    <kbd
+                      aria-hidden
+                      className={cn(
+                        "shrink-0 font-sans text-[12px] tabular-nums tracking-wide",
+                        active ? "text-accent-text" : "text-tertiary"
                       )}
-                      <button
-                        ref={(el) => {
-                          rowRefs.current[i] = el;
-                        }}
-                        type="button"
-                        data-active={active}
-                        // Nur eine bewegte Maus wählt: rutscht beim Tippen eine andere Zeile unter den ruhenden
-                        // Zeiger, bleibt die Markierung auf dem ersten Treffer.
-                        onMouseMove={() => setActiveId(c.id)}
-                        onClick={() => c.perform()}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] transition-colors",
-                          // Kein eigener Hover-Stil: unter einem ruhenden Zeiger stünde sonst eine zweite Markierung.
-                          active ? "bg-accent-subtle text-accent-text" : "text-foreground/70"
-                        )}
-                      >
-                        <c.Icon
-                          className={cn("h-4 w-4 shrink-0", active ? "text-accent-text" : "text-foreground/70")}
-                          strokeWidth={1.8}
-                        />
-                        <span className="flex-1 truncate">{c.label}</span>
-                        {/* Die Palette ist der Ort, an dem man Kürzel lernt:
-                            wer hier "Einstellungen" sucht, sieht nebenbei,
-                            dass es auch ohne Palette geht. */}
-                        {c.shortcut && (
-                          <kbd
-                            aria-hidden
-                            className={cn(
-                              "shrink-0 font-sans text-[12px] tabular-nums tracking-wide",
-                              active ? "text-accent-text" : "text-tertiary"
-                            )}
-                          >
-                            {formatShortcut(c.shortcut, mac, t.shell.ctrlKey)}
-                          </kbd>
-                        )}
-                        {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-accent-text" />}
-                      </button>
-                    </Fragment>
-                  );
-                })
-              )}
-            </div>
+                    >
+                      {formatShortcut(c.shortcut, mac, t.shell.ctrlKey)}
+                    </kbd>
+                  )}
+                  {active && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-accent-text" />}
+                </button>
+              </Fragment>
+            );
+          })
+        )}
+      </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-[12px] text-muted-foreground">
-              <span className="flex items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↑</kbd>
-                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↓</kbd>
-                  {t.palette.navigate}
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↵</kbd>
-                  {t.palette.open}
-                </span>
-              </span>
-              <span className="flex items-center gap-1">
-                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">esc</kbd>
-                {t.palette.close}
-              </span>
-            </div>
-          </m.div>
-        </m.div>
-      )}
-    </AnimatePresence>,
-    document.body
+      <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-[12px] text-muted-foreground">
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↑</kbd>
+            <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↓</kbd>
+            {t.palette.navigate}
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">↵</kbd>
+            {t.palette.open}
+          </span>
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="rounded border border-border bg-surface px-1.5 py-0.5">esc</kbd>
+          {t.palette.close}
+        </span>
+      </div>
+    </Dialog>
   );
 }

@@ -134,6 +134,28 @@ describe("Befehlspalette: Fokus (#151)", () => {
   });
 });
 
+describe("Befehlspalette: Tab bleibt drinnen (#368)", () => {
+  it("läuft vom Suchfeld rückwärts zur letzten Zeile und von dort wieder zum Feld", async () => {
+    serve([chat("c1", "Letzter Chat")]);
+    const { user, composer, field } = await openFromComposer();
+    const last = await screen.findByRole("button", { name: "Letzter Chat" });
+
+    await user.tab({ shift: true });
+    expect(last).toHaveFocus();
+    await user.tab();
+    expect(field).toHaveFocus();
+    expect(composer).not.toHaveFocus();
+  });
+
+  it("schliesst mit Escape auch, wenn der Fokus auf einer Zeile liegt", async () => {
+    const { user, composer } = await openFromComposer();
+    await user.tab();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(composer).toHaveFocus();
+  });
+});
+
 /** Die Beschriftung der markierten Zeile. */
 const marked = () => document.querySelector('[data-active="true"]')?.textContent;
 const row = (name: string) => screen.getByRole("button", { name });

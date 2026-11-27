@@ -65,6 +65,7 @@ export const de = {
     accountMenu: "Kontomenü",
     accountNav: "Konto",
     fallbackName: "Konto",
+    menuDialog: "Menü",
     closeMenu: "Menü schliessen",
     openMenu: "Menü öffnen",
     skipToContent: "Zum Inhalt springen",

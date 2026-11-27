@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
-import { AnimatePresence, m } from "framer-motion";
 import { FolderPlus, Loader2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { Dialog } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { useToast } from "@/shared/ui/toast";
@@ -14,8 +13,7 @@ import { fmt } from "@/shared/i18n/format";
 import { UserError, failureText, readJson, readProblem } from "@/shared/lib/read-problem";
 
 // Direct workspace creation (REDESIGN.md, Phase 3): "Neues Projekt" ist ein
-// echter Projektstart, ein Name genügt, kein Umweg über einen Chat. Der
-// Dialog folgt der delete-project-Choreografie (Portal, Escape, Fokus).
+// echter Projektstart, ein Name genügt, kein Umweg über einen Chat.
 
 export function NewProjectButton({
   variant = "action",
@@ -31,29 +29,11 @@ export function NewProjectButton({
   const t = useT();
   const router = useRouter();
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() => inputRef.current?.focus(), 20);
-    return () => window.clearTimeout(timer);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !creating) setOpen(false);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, creating]);
 
   function close() {
     if (creating) return;
@@ -106,84 +86,57 @@ export function NewProjectButton({
         </Button>
       )}
 
-      {mounted &&
-        createPortal(
-          <AnimatePresence>
-            {open && (
-              <m.div
-                className="fixed inset-0 z-95 flex items-center justify-center bg-black/60 px-4 backdrop-blur-xs"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                onMouseDown={close}
-              >
-                <m.div
-                  role="dialog"
-                  aria-modal="true"
-                  aria-label={t.projects.newProjectDialog}
-                  initial={{ opacity: 0, scale: 0.98, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98, y: 8 }}
-                  transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface-raised shadow-elevated"
-                >
-                  <div className="border-b border-border p-5">
-                    <h2 className="text-[15px] font-semibold text-foreground">
-                      {t.projects.newProject}
-                    </h2>
-                    <p className="mt-1 text-[13px] text-secondary">{t.projects.newProjectHint}</p>
-                  </div>
+      <Dialog open={open} onClose={close} label={t.projects.newProjectDialog} initialFocusRef={inputRef}>
+        <div className="border-b border-border p-5">
+          <h2 className="text-[15px] font-semibold text-foreground">
+            {t.projects.newProject}
+          </h2>
+          <p className="mt-1 text-[13px] text-secondary">{t.projects.newProjectHint}</p>
+        </div>
 
-                  <div className="p-5">
-                    {error && (
-                      <div
-                        role="alert"
-                        className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-                      >
-                        {error}
-                      </div>
-                    )}
-                    <Label htmlFor="new-project-name">{t.projects.nameLabel}</Label>
-                    <Input
-                      id="new-project-name"
-                      ref={inputRef}
-                      value={name}
-                      maxLength={80}
-                      placeholder={t.projects.namePlaceholder}
-                      onChange={(e) => setName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void create();
-                        }
-                      }}
-                      className="mt-1.5"
-                    />
-                  </div>
+        <div className="p-5">
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+            >
+              {error}
+            </div>
+          )}
+          <Label htmlFor="new-project-name">{t.projects.nameLabel}</Label>
+          <Input
+            id="new-project-name"
+            ref={inputRef}
+            value={name}
+            maxLength={80}
+            placeholder={t.projects.namePlaceholder}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void create();
+              }
+            }}
+            className="mt-1.5"
+          />
+        </div>
 
-                  <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-                    <Button variant="ghost" onClick={close} disabled={creating}>
-                      {t.common.cancel}
-                    </Button>
-                    <Button variant="accent" onClick={() => void create()} disabled={!valid || creating}>
-                      {creating ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          {t.projects.creating}
-                        </>
-                      ) : (
-                        t.projects.create
-                      )}
-                    </Button>
-                  </div>
-                </m.div>
-              </m.div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+          <Button variant="ghost" onClick={close} disabled={creating}>
+            {t.common.cancel}
+          </Button>
+          <Button variant="accent" onClick={() => void create()} disabled={!valid || creating}>
+            {creating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t.projects.creating}
+              </>
+            ) : (
+              t.projects.create
             )}
-          </AnimatePresence>,
-          document.body
-        )}
+          </Button>
+        </div>
+      </Dialog>
     </>
   );
 }

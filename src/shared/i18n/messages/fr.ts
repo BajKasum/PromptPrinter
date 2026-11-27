@@ -60,6 +60,7 @@ export const fr: Messages = {
     accountMenu: "Menu du compte",
     accountNav: "Compte",
     fallbackName: "Compte",
+    menuDialog: "Menu",
     closeMenu: "Fermer le menu",
     openMenu: "Ouvrir le menu",
     skipToContent: "Aller au contenu",
