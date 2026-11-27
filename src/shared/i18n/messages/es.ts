@@ -932,8 +932,8 @@ export const es: Messages = {
   },
 
   library: {
-    searchPlaceholder: "Buscar proyectos o herramientas…",
-    searchLabel: "Buscar proyectos o herramientas",
+    searchPlaceholder: "Buscar proyectos…",
+    searchLabel: "Buscar proyectos",
     filterAll: "Todos",
     filterFavorites: "Favoritos",
     filterRecent: "Usados recientemente",

@@ -15,7 +15,6 @@ export type LibraryItem = {
   updatedAt: string; // ISO, drives the "Kürzlich verwendet" filter + the footer's relative time
   savedPromptCount: number; // prompts kept in this project's Ergebnisse
   chatCount: number; // conversations living inside this workspace
-  toolList: string[]; // de-duplicated tool names, e.g. ["Claude", "ChatGPT"]
   isFavorite: boolean;
 };
 
@@ -47,10 +46,7 @@ export function useLibraryFilter(items: LibraryItem[], favorites: Set<string>) {
       } else if (filter === "recent") {
         if (now - new Date(it.updatedAt).getTime() > RECENT_MS) return false;
       }
-      if (q) {
-        const haystack = (it.name + " " + it.toolList.join(" ")).toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
+      if (q && !it.name.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [items, query, filter, favorites]);

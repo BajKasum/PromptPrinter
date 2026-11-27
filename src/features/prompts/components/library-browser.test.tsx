@@ -28,7 +28,6 @@ function makeItems(count: number): LibraryItem[] {
     updatedAt: new Date(2026, 0, 1 + i).toISOString(),
     savedPromptCount: 1,
     chatCount: 1,
-    toolList: [],
     isFavorite: false,
   }));
 }
@@ -92,5 +91,29 @@ describe("LibraryBrowser pagination", () => {
     await user.click(screen.getByRole("button", { name: "Favoriten" }));
     expect(screen.getByText("Projekt 0")).toBeInTheDocument();
     expect(screen.queryByText("Projekt 24")).not.toBeInTheDocument();
+  });
+});
+
+describe("LibraryBrowser Suche", () => {
+  const items = makeItems(3).map((item, i) => ({ ...item, name: ["Einkaufsliste", "Steuererklärung", "Reiseplan"][i] }));
+
+  it("findet Projekte am Namen, ohne Rücksicht auf Gross- und Kleinschreibung und Leerzeichen am Rand", async () => {
+    const user = userEvent.setup();
+    render(<LibraryBrowser userId="u1" items={items} />);
+    await user.click(screen.getByPlaceholderText(/durchsuchen/));
+    await user.paste("  STEUER ");
+
+    expect(screen.getByText("Steuererklärung")).toBeInTheDocument();
+    expect(screen.queryByText("Einkaufsliste")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reiseplan")).not.toBeInTheDocument();
+  });
+
+  it("zeigt nichts, wenn der Begriff in keinem Namen steht", async () => {
+    const user = userEvent.setup();
+    render(<LibraryBrowser userId="u1" items={items} />);
+    await user.click(screen.getByPlaceholderText(/durchsuchen/));
+    await user.paste("Claude");
+
+    for (const { name } of items) expect(screen.queryByText(name)).not.toBeInTheDocument();
   });
 });

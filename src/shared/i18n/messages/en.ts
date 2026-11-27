@@ -930,8 +930,8 @@ export const en: Messages = {
   },
 
   library: {
-    searchPlaceholder: "Search projects or tools…",
-    searchLabel: "Search projects or tools",
+    searchPlaceholder: "Search projects…",
+    searchLabel: "Search projects",
     filterAll: "All",
     filterFavorites: "Favorites",
     filterRecent: "Recently used",

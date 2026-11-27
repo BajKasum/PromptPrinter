@@ -77,7 +77,7 @@ export async function buildProjectContext(
   const [projectResult, savedResult, brainResult, files] = await Promise.all([
     supabase
       .from("projects")
-      .select("name, idea, instructions, context, tools")
+      .select("name, idea, instructions, context")
       .eq("id", projectId)
       .eq("user_id", userId)
       .maybeSingle(),

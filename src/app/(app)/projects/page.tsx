@@ -8,7 +8,6 @@ import { NewProjectButton } from "@/features/projects/components/new-project";
 import { createClient } from "@/server/supabase/server";
 import { getSessionUser } from "@/server/session";
 import { LIST_LOAD_LIMIT, splitAtLimit } from "@/shared/lib/chat-limits";
-import type { ProjectTools } from "@/features/projects/types";
 import { getT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
 import { orThrow } from "@/server/supabase/query";
@@ -22,7 +21,6 @@ export const dynamic = "force-dynamic";
 type ProjectQueryRow = {
   id: string;
   name: string;
-  tools: ProjectTools | null;
   updated_at: string;
   is_favorite: boolean;
 };
@@ -36,15 +34,6 @@ type ProjectSummaryRow = {
   chat_count: number;
   saved_count: number;
 };
-
-// Deduplicated tool names across the chosen AI assistant + builders.
-function toolListOf(tools: ProjectTools | null): string[] {
-  if (!tools) return [];
-  const picked = [tools.master, tools.frontend, tools.backend, tools.database].filter(
-    (v): v is string => Boolean(v)
-  );
-  return Array.from(new Set(picked));
-}
 
 // Projekte is the one home for every workspace, this page used to be a plain
 // grid; it now also carries what Bibliothek used to do (search, filter by
@@ -63,7 +52,7 @@ export default async function ProjectsPage() {
     // are simply never looked up.
     supabase
       .from("projects")
-      .select("id, name, tools, updated_at, is_favorite")
+      .select("id, name, updated_at, is_favorite")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .range(0, LIST_LOAD_LIMIT),
@@ -86,7 +75,6 @@ export default async function ProjectsPage() {
     updatedAt: p.updated_at,
     savedPromptCount: summaryByProject.get(p.id)?.saved_count ?? 0,
     chatCount: summaryByProject.get(p.id)?.chat_count ?? 0,
-    toolList: toolListOf(p.tools),
     isFavorite: p.is_favorite,
   }));
 
@@ -109,11 +97,8 @@ export default async function ProjectsPage() {
             <p className="text-[15px] font-semibold text-foreground">
               {t.pages.projects.emptyTitle}
             </p>
-            {/* M-14 (Audit 06.09.2026): stand vorher "...heb dir das Ergebnis
-                als Projekt auf" — ein Chat erzeugt kein Projekt, das gab es
-                seit der Handoff-Entfernung (16.07.2026) nicht mehr. Was
-                wirklich geht: einen bestehenden Chat nachträglich per
-                move-to-project.tsx in ein (dann schon existierendes) Projekt
+            {/* Ein Chat erzeugt kein Projekt. Ein bestehender Chat lässt sich
+                nachträglich mit move-to-project.tsx in ein vorhandenes Projekt
                 verschieben. */}
             <p className="mx-auto mt-1.5 mb-6 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
               {t.pages.projects.emptyBody}
