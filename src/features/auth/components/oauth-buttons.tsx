@@ -7,6 +7,7 @@ import { createClient } from "@/shared/supabase/client";
 import { siteUrl } from "@/shared/lib/site-url";
 import { translateAuthError } from "@/shared/lib/auth-errors";
 import { nextPathFromLocation } from "@/features/auth/lib/location-search";
+import { FormError } from "@/shared/ui/form-error";
 
 type Provider = "google" | "github";
 
@@ -116,14 +117,7 @@ export function OAuthButtons() {
         .
       </p>
 
-      {error && (
-        <div
-          role="alert"
-          className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive"
-        >
-          {error}
-        </div>
-      )}
+      <FormError>{error}</FormError>
 
       <div className="flex items-center gap-3 pt-1 text-[12px] text-tertiary">
         <span className="h-px flex-1 bg-border" />

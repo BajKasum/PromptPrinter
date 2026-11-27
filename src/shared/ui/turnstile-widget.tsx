@@ -49,10 +49,9 @@ const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render
 const LOAD_TIMEOUT_MS = 8000;
 
 /**
- * Renders the "Bestätigen Sie, dass Sie ein Mensch sind"-box and reports the
- * token upward (`null` when it expires or errors). Tokens are single-use,
- * after a failed submit the caller bumps `resetSignal` to get a fresh one.
- * `onToken` must be referentially stable (useCallback) or the widget remounts.
+ * Zeigt die Box "Bestätigen Sie, dass Sie ein Mensch sind" und meldet das Token nach oben (`null`, wenn es abläuft oder
+ * scheitert). Ein Token gilt nur einmal: wird `resetSignal` erhöht, stellt das Widget ein neues aus. `onToken` muss
+ * stabil bleiben, sonst montiert das Widget neu. Formulare nehmen beide Props aus `useTurnstile` (use-turnstile.ts).
  */
 export function TurnstileWidget({
   onToken,
