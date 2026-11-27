@@ -2,9 +2,9 @@ import { comparisonBySlug } from "./comparisons";
 import { taskGuideBySlug } from "./task-guides";
 import { docBySlug } from "@/shared/lib/docs-nav";
 
-// Die Vorschaukarte einer Hilfe-, Vergleichs- oder Aufgabenseite (#253): dieselbe Karte wie die der Startseite, aber mit
+// Die Vorschaukarte einer Hilfe-, Vergleichs- oder Aufgabenseite: dieselbe Karte wie die der Startseite, aber mit
 // dem Titel der Seite. Diese Datei sagt, welche Karten es gibt und was darauf steht; gezeichnet wird sie in
-// app/og/[kind]/[slug]/route.tsx.
+// social-card-image.tsx, ausgeliefert von app/og/[kind]/[slug]/route.tsx.
 
 export type SocialCardKind = "docs" | "vergleich" | "aufgaben";
 
