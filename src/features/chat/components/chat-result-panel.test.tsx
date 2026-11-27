@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatResultPanel } from "./chat-result-panel";
 
@@ -217,6 +217,16 @@ describe("ChatResultPanel: Platzhalter ausfüllen", () => {
       render(<ChatResultPanel content={PROMPT_REPLY} />);
       await user.click(screen.getByRole("button", { name: "Prompt kopieren" }));
       expect(await screen.findByTestId("result-finn")).toHaveAttribute("data-state", "celebrating");
+    });
+
+    // Das Feiern zeichnet das Panel neu. Der Codeblock darf davon nicht neu eingehängt werden, sonst ist seine
+    // Rückmeldung im selben Moment wieder weg (#418).
+    it("sagt am Codeblock „Kopiert“, auch während Finn feiert", async () => {
+      const user = userEvent.setup();
+      render(<ChatResultPanel content={PROMPT_REPLY} />);
+      await user.click(screen.getByRole("button", { name: "Prompt kopieren" }));
+      await waitFor(() => expect(screen.getByTestId("result-finn")).toHaveAttribute("data-state", "celebrating"));
+      expect(screen.getByRole("button", { name: "Kopiert" })).toBeInTheDocument();
     });
   });
 });

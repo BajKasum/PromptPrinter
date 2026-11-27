@@ -10,7 +10,7 @@ import { PlaceholderForm } from "@/shared/ui/placeholder-form";
 import { SavePromptButton } from "@/features/chat/components/save-prompt-button";
 import { PromptActions } from "@/features/chat/components/prompt-actions";
 import { TruncatedNote } from "@/features/chat/components/truncated-note";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { extractPrompt } from "@/shared/lib/saved-prompts";
 import { useT } from "@/shared/i18n/provider";
 
@@ -26,7 +26,9 @@ import { useT } from "@/shared/i18n/provider";
 // QA finding N-1 (reworked, see save-prompt-button.tsx's own comment): used
 // to require a projectId — a global chat had nowhere to save into. Saving is
 // project-independent now, so this only needs an actual prompt to exist.
-export function ChatResultPanel({
+//
+// `memo`: das Panel zeigt eine fertige Antwort. Während die nächste ankommt oder getippt wird, bleibt es stehen.
+export const ChatResultPanel = memo(function ChatResultPanel({
   content,
   projectId,
   savedPrompts,
@@ -138,4 +140,4 @@ export function ChatResultPanel({
     </section>
     </PromptCopiedContext.Provider>
   );
-}
+});
