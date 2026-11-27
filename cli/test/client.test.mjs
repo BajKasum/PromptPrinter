@@ -358,7 +358,6 @@ test("Fehlertexte nennen den Weg weiter", () => {
   const say = (err) => describeError(err, { t, server });
   assert.match(say(new ApiError(403, { kind: "byokRequired" })), /promptprinter\.app\/settings/);
   assert.match(say(new ApiError(403, { kind: "consentRequired" })), /promptprinter\.app\/chats\/new/);
-  assert.match(say(new ApiError(403, { kind: "chatMessages", limit: 400 })), /400/);
   assert.match(say(new ApiError(409, { kind: "byokUnreadable" })), /settings/);
   assert.match(say(new ApiError(429, { retryAfter: 30 })), /30 Sekunden/);
   assert.match(say(new ApiError(401, {})), /\/login/);

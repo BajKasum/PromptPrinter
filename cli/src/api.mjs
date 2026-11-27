@@ -8,7 +8,6 @@ export class ApiError extends Error {
     this.kind = typeof body.kind === "string" ? body.kind : null;
     this.retryAfter = typeof body.retryAfter === "number" ? body.retryAfter : null;
     this.interval = typeof body.interval === "number" ? body.interval : null;
-    this.limit = typeof body.limit === "number" ? body.limit : null;
   }
 }
 
