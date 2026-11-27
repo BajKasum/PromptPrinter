@@ -2,16 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { usePathname } from "next/navigation";
 import { m, useReducedMotion } from "framer-motion";
-import { Plus, Star, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Logo, LogoMark } from "@/shared/brand/logo";
 import { NewProjectButton } from "@/features/projects/components/new-project";
 import { CommandPalette } from "@/shell/components/command-palette";
 import { AccountMenu, type AccountProps } from "@/shell/components/account-menu";
 import { Rail } from "@/shell/components/sidebar-rail";
 import { TabSwitcher } from "@/shell/components/tab-switcher";
+import {
+  ACTIVE_ROW,
+  INACTIVE_ROW,
+  ChatNavList,
+  ProjectNavList,
+  navTab,
+  type SidebarChat,
+  type SidebarProject,
+} from "@/shell/components/nav-lists";
 import { cn } from "@/shared/lib/utils";
 import { isModalOpen } from "@/shared/ui/dialog";
 import { useSidebarCollapse, SIDEBAR_COOKIE } from "@/shell/hooks/use-sidebar-collapse";
@@ -38,27 +46,12 @@ import { fmt } from "@/shared/i18n/format";
 // separate Topbar that was pure chrome (search bar, notification stub, account
 // dropdown) above the page content; removed in favor of this leaner shell.
 
-export type SidebarChat = { id: string; title: string };
-export type SidebarProject = { id: string; name: string; isFavorite: boolean };
-
+export type { SidebarChat, SidebarProject };
 export { SIDEBAR_COOKIE, SIDEBAR_WIDTH_COOKIE, MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH, DEFAULT_SIDEBAR_WIDTH };
-// Der Pillen-Umschalter liegt in tab-switcher.tsx (Dateigroesse), bleibt von hier aus erreichbar.
-export { TabSwitcher };
+// Pillen-Umschalter (tab-switcher.tsx) und Zeilenstil (nav-lists.tsx) bleiben von hier aus erreichbar.
+export { TabSwitcher, ACTIVE_ROW, INACTIVE_ROW };
 
 const COLLAPSED_WIDTH = 68;
-
-// Shared active-row language for chats/projects/footer links: the 3px accent
-// mark plus a weight bump, now with a soft bg-accent-subtle tint too, the
-// mark alone tested as too easy to miss when scanning a long chat list (it's
-// a thin line at the far edge, easy to not notice, especially past a
-// truncated title). The tint is the same token the collapsed icon rail
-// already uses for its active state, so this isn't a new pattern, it's
-// bringing the expanded view in line with what the rail already does.
-// Exported so the mobile drawer (mobile-nav.tsx) renders identical rows
-// instead of a second, easily-drifting copy of the same styling.
-export const ACTIVE_ROW =
-  "relative rounded-md bg-accent-subtle font-medium text-foreground before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-accent before:content-['']";
-export const INACTIVE_ROW = "text-foreground/70 hover:bg-surface-hover hover:text-foreground";
 
 export function Sidebar({
   initialCollapsed,
@@ -86,15 +79,9 @@ export function Sidebar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // M-19 (Audit 06.09.2026): the sidebar's live width only ever lived in this
-  // component's own state, so a `position: fixed` element elsewhere (e.g.
-  // settings-workspace.tsx's save bar) had no way to track it and hardcoded a
-  // guess instead — one that didn't even match DEFAULT_SIDEBAR_WIDTH, let
-  // alone the resized/collapsed range. A CSS custom property on the document
-  // root is the standard bridge for a fixed sibling that needs a flex
-  // sibling's current size: any element anywhere can read
-  // `var(--sidebar-w, <fallback>)`, live, without prop-drilling or a new
-  // context provider for a value only one other component happens to need.
+  // Die aktuelle Breite als CSS-Variable an der Wurzel: ein `position: fixed`-Element daneben (die Speicherleiste
+  // der Einstellungen) braucht sie, auch beim Ziehen und Einklappen, und liest `var(--sidebar-w, <Ersatz>)`, ohne
+  // Props oder eigenen Context.
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--sidebar-w",
@@ -236,12 +223,9 @@ function Full({
   chats: SidebarChat[];
   projects: SidebarProject[];
 } & AccountProps) {
-  // Which list is on screen, driven by the route, not separate client state,
-  // so a direct link into /projects/[id] lands on the right tab for free and
-  // back/forward navigation can't drift out of sync with what's shown. Any
-  // other route (settings, usage) defaults to Chats.
-  const tab: "chats" | "projects" =
-    pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";
+  // Welche Liste zu sehen ist, folgt der Adresse, nicht eigenem Zustand: ein direkter Link in ein Projekt und
+  // Vor/Zurück passen so von selbst.
+  const tab = navTab(pathname);
   const t = useT();
 
   return (
@@ -260,29 +244,7 @@ function Full({
                 {t.nav.newChat}
               </Link>
               <div className="space-y-0.5">
-                {chats.length === 0 ? (
-                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                    {t.shell.firstChatHint}
-                  </p>
-                ) : (
-                  chats.map((c) => {
-                    const active = pathname === `/chats/${c.id}`;
-                    return (
-                      <HoverPrefetchLink
-                        key={c.id}
-                        href={`/chats/${c.id}`}
-                        title={c.title}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "block truncate rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
-                          active ? ACTIVE_ROW : INACTIVE_ROW
-                        )}
-                      >
-                        {c.title}
-                      </HoverPrefetchLink>
-                    );
-                  })
-                )}
+                <ChatNavList items={chats} pathname={pathname} rowClassName="py-[7px] text-[13px]" />
               </div>
             </>
           ) : (
@@ -294,38 +256,7 @@ function Full({
                 className="mx-1 mb-5 flex h-9 w-[calc(100%-0.5rem)] items-center justify-center gap-2 rounded-lg border border-border bg-transparent text-[13px] font-medium text-foreground/90 transition-colors duration-200 hover:border-border-strong hover:bg-surface-hover active:scale-[0.98]"
               />
               <div className="space-y-0.5">
-                {projects.length === 0 ? (
-                  <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                    {t.shell.noProjectsHint}
-                  </p>
-                ) : (
-                  projects.map((p) => {
-                    // Subrouten (Chats, Ergebnisse) gehören zum selben Raum.
-                    const active =
-                      pathname === `/projects/${p.id}` ||
-                      pathname.startsWith(`/projects/${p.id}/`);
-                    return (
-                      <HoverPrefetchLink
-                        key={p.id}
-                        href={`/projects/${p.id}`}
-                        title={p.name}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "flex items-center gap-2 rounded-md py-[7px] pl-3.5 pr-3 text-[13px] transition-colors",
-                          active ? ACTIVE_ROW : INACTIVE_ROW
-                        )}
-                      >
-                        <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                        {p.isFavorite && (
-                          <Star
-                            aria-label={t.shell.pinned}
-                            className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
-                          />
-                        )}
-                      </HoverPrefetchLink>
-                    );
-                  })
-                )}
+                <ProjectNavList items={projects} pathname={pathname} rowClassName="py-[7px] text-[13px]" />
               </div>
             </>
           )}

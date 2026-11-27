@@ -3,14 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { HoverPrefetchLink } from "@/shared/ui/hover-prefetch-link";
 import { usePathname, useRouter } from "next/navigation";
 import { m, AnimatePresence } from "framer-motion";
 import {
   Menu,
   X,
   Plus,
-  Star,
   LogOut,
   Loader2,
   Info,
@@ -24,10 +22,13 @@ import { NewProjectButton } from "@/features/projects/components/new-project";
 import {
   ACTIVE_ROW,
   INACTIVE_ROW,
-  TabSwitcher,
+  ChatNavList,
+  ProjectNavList,
+  navTab,
   type SidebarChat,
   type SidebarProject,
-} from "@/shell/components/sidebar";
+} from "@/shell/components/nav-lists";
+import { TabSwitcher } from "@/shell/components/tab-switcher";
 import { learnMoreLinks, secondaryNav } from "@/shell/lib/nav";
 import { createClient } from "@/shared/supabase/client";
 import { cn } from "@/shared/lib/utils";
@@ -40,11 +41,8 @@ import { useChangeLocale } from "@/shared/i18n/use-change-locale";
 // Menüknopf ist per `md:hidden` weg.
 const DESKTOP_QUERY = "(min-width: 768px)";
 
-// Mobile-only navigation. The desktop sidebar is hidden below md, so without
-// this the app has no way to move between sections on a phone, and it needs
-// to carry the same recents + Chat/Projekt switcher the sidebar does
-// (ACTIVE_ROW/INACTIVE_ROW/TabSwitcher come from sidebar.tsx directly, not a
-// second copy of the same styling that could drift out of sync).
+// Die Navigation unter `md`: dort fehlt die Sidebar, der Drawer ist der einzige Weg zwischen den Bereichen. Er zeigt
+// dieselben Listen (nav-lists.tsx) und denselben Umschalter (tab-switcher.tsx) wie sie.
 export function MobileNav({
   chats,
   projects,
@@ -67,7 +65,7 @@ export function MobileNav({
   // Kopfleiste mit `backdrop-blur-sm`. Jeder Vorfahre mit `backdrop-filter` macht
   // sich zum Bezugsrahmen für `fixed`: der Drawer war dadurch nur so hoch wie
   // die Leiste (56 px) und das Menü auf dem Handy unbenutzbar. Darum hängt er
-  // an `document.body`, wie die anderen Dialoge (confirm-dialog.tsx).
+  // an `document.body`, wie die Dialoge (shared/ui/dialog.tsx).
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   // Der Drawer ist ein modales Fenster: der Fokus geht auf den Schliessen-Knopf, Tab bleibt darin, Escape schliesst.
@@ -87,10 +85,7 @@ export function MobileNav({
     }
   }
 
-  // Which list is on screen, same route-derived logic as the desktop
-  // sidebar's Full(), so switching devices mid-session never feels different.
-  const tab: "chats" | "projects" =
-    pathname === "/projects" || pathname.startsWith("/projects/") ? "projects" : "chats";
+  const tab = navTab(pathname);
 
   // Close whenever the route changes (e.g. after tapping a link).
   useEffect(() => {
@@ -186,30 +181,12 @@ export function MobileNav({
                       {t.nav.newChat}
                     </Link>
                     <nav aria-label={t.nav.chats} className="space-y-0.5">
-                      {chats.length === 0 ? (
-                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                          {t.shell.firstChatHint}
-                        </p>
-                      ) : (
-                        chats.map((c) => {
-                          const active = pathname === `/chats/${c.id}`;
-                          return (
-                            <HoverPrefetchLink
-                              key={c.id}
-                              href={`/chats/${c.id}`}
-                              onClick={() => setOpen(false)}
-                              title={c.title}
-                              aria-current={active ? "page" : undefined}
-                              className={cn(
-                                "block truncate rounded-md py-[9px] pl-3.5 pr-3 text-[14px] transition-colors",
-                                active ? ACTIVE_ROW : INACTIVE_ROW
-                              )}
-                            >
-                              {c.title}
-                            </HoverPrefetchLink>
-                          );
-                        })
-                      )}
+                      <ChatNavList
+                        items={chats}
+                        pathname={pathname}
+                        rowClassName="py-[9px] text-[14px]"
+                        onNavigate={() => setOpen(false)}
+                      />
                     </nav>
                   </>
                 ) : (
@@ -221,38 +198,12 @@ export function MobileNav({
                       className="flex items-center justify-center gap-2 mb-4 mx-1 h-10 w-[calc(100%-0.5rem)] rounded-lg bg-accent text-[13px] font-medium text-accent-foreground hover:bg-accent/90 active:scale-[0.97] transition-all duration-200"
                     />
                     <nav aria-label={t.nav.projects} className="space-y-0.5">
-                      {projects.length === 0 ? (
-                        <p className="px-3 py-1.5 text-[12px] leading-relaxed text-tertiary">
-                          {t.shell.noProjectsHint}
-                        </p>
-                      ) : (
-                        projects.map((p) => {
-                          const active =
-                            pathname === `/projects/${p.id}` ||
-                            pathname.startsWith(`/projects/${p.id}/`);
-                          return (
-                            <HoverPrefetchLink
-                              key={p.id}
-                              href={`/projects/${p.id}`}
-                              onClick={() => setOpen(false)}
-                              title={p.name}
-                              aria-current={active ? "page" : undefined}
-                              className={cn(
-                                "flex items-center gap-2 rounded-md py-[9px] pl-3.5 pr-3 text-[14px] transition-colors",
-                                active ? ACTIVE_ROW : INACTIVE_ROW
-                              )}
-                            >
-                              <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                              {p.isFavorite && (
-                                <Star
-                                  aria-label={t.shell.pinned}
-                                  className="h-3 w-3 shrink-0 fill-current text-accent-text/70"
-                                />
-                              )}
-                            </HoverPrefetchLink>
-                          );
-                        })
-                      )}
+                      <ProjectNavList
+                        items={projects}
+                        pathname={pathname}
+                        rowClassName="py-[9px] text-[14px]"
+                        onNavigate={() => setOpen(false)}
+                      />
                     </nav>
                   </>
                 )}
