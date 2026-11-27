@@ -11,6 +11,58 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-27: Dialoge halten den Tastaturfokus, Sidebar und Mobile-Navigation teilen sich die Listen (Branch `refactor/dialog-und-nav-listen`, #368 und #369)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`).
+- **#368 (Low):** Portal, Hintergrund und Animation standen dreimal da, und kein Dialog hielt den Fokus. Neu `shared/ui/dialog.tsx`: `Dialog` und darunter der Hook `useModal` (Fokus nach 20 ms hinein, Tab und Shift+Tab laufen im Fenster um, Escape, Rückgabe an den Auslöser), ohne neues Paket. Tasten gelten nur dem obersten Fenster; ein `preventDefault` beim Klick auf den Hintergrund verhindert, dass der Browser den zurückgegebenen Fokus wieder wegnimmt (in jsdom unsichtbar, in Chromium nachgestellt). `ConfirmDialog` (Schnittstelle unverändert), Konto löschen, Neues Projekt und die Befehlspalette bauen darauf auf.
+- Folgen: Escape schliesst Konto löschen auch im Zustand „neu anmelden“ (dort geht der Fokus auf Abbrechen), gesperrt ist der Dialog weiterhin nur während des Löschens (hängt das Abmelden, schliessen Escape und der Klick daneben); Escape in Neues Projekt vergisst jetzt auch die Fehlermeldung; Strg+K öffnet unter einem offenen Dialog keine Palette mehr.
+- Der mobile Drawer ist ebenfalls ein modaler Dialog (`role`, `aria-modal`, Name „Menü“ neu in fünf Sprachen, fr/it/es ungeprüft): Fokus auf Schliessen, Tab bleibt darin, Rückgabe an den Menü-Knopf, der Hintergrund ist aus der Tab-Reihe. Escape in „Neues Projekt“ aus dem Drawer schliesst nur noch den Dialog.
+- **#369 (Low):** Chat- und Projektliste stehen einmal in `shell/components/nav-lists.tsx` (`ChatNavList`, `ProjectNavList`, `navTab`, `ACTIVE_ROW`/`INACTIVE_ROW`); die beiden Ansichten geben Grösse und Schliessen vor. `list-prefetch.test.ts` prüft `HoverPrefetchLink` in dieser Datei und verbietet dort `next/link`, `<Link` und `<a`; `sidebar.tsx` und `mobile-nav.tsx` müssen beide Listen von dort nehmen, für sie bleibt das Verbot bloßer Zeilen-Links. Zwei Einträge aus der Kommentar-Ratsche entfernt.
+- **Geprüft:** 45 Mutationen (25 zu #368, 14 zu #369, 6 nach der Durchsicht), alle erkannt; je eine überlebte im ersten Lauf (Startfokus der Rückfrage, Zeile als `<a>`), danach Test bzw. Schranke geschärft. Headless Chromium mit den echten Komponenten (Dev-Server mit Wegwerf-Seite, Supabase-Antworten abgefangen): 42 von 42 für Tab, Shift+Tab, Escape, Klick daneben, Fokus-Rückgabe und Drawer auf Telefonmass; nach reinem Antippen zeigt der Drawer keinen Fokusring.
+- **Gate:** grün auf `9a9434b4` (Audit sauber, Typecheck, Lint, 4739 Tests, 2 übersprungen, Build mit den Platzhaltern der CI, ein Stylesheet); nach der Durchsicht auf `82ab2bef` Typecheck, Lint und 733 Tests aus Einstellungen, Shell, `shared/ui` und Schranken grün (2 übersprungen).
+- **Nicht geprüft:** in der laufenden App mit Login, Safari, Firefox, echtes Handy oder Tablet, Bildschirmleser; „Neues Projekt“ aus dem Drawer nicht im Browser (nur das Stapeln zweier Fenster im Test).
+
+## 2026-11-27: Anbieteraufrufe nennen jedes Feld, UUID-Prüfung, begrenzter Leser und Gedächtnis-Grenzen stehen je einmal (Branch `refactor/llm-aufrufe-doppeltes`, #364 und #394)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`).
+- **#364 (Low):** Die Funktionen der Anbieter nahmen bis zu neun Positionsparameter, mehrere Strings hintereinander: vertauscht kompilierte der Aufruf weiter, und der Key wäre als Prompt an den Anbieter gegangen. Jede nimmt jetzt ein Objekt (`ProviderChatCall`, `ProviderStreamCall`, `ProviderAnalyzeCall` in `server/llm/types.ts`, beim eigenen Endpunkt mit `endpoint` und `source`; ohne `source` gilt weiter die strenge Prüfung). Auch die mit fünf Parametern, damit es eine Form gibt. Verhalten unverändert. `llm/call-shape.test.ts` liest den Quelltext und verlangt genau einen Parameter (`Function.length` zählt Vorgabewerte nicht).
+- **Lücke dabei:** Dass Abbruch und Fristen beim eigenen Endpunkt des Betreibers (`LLM_BASE_URL`) ankommen, prüfte kein Test; der Weg steht jetzt bei den Fristen in `llm/stream-deadlines.test.ts`.
+- **#394 (Low), UUID:** `isUuid` (`shared/lib/uuid.ts`) ersetzt die Kopien in der Status-Route des Gedächtnisses, `chat-wire.ts` (samt `chat-thread.tsx`), `model-history.ts`, `cli-login/saved-prompts.ts` (`isPromptId` entfällt) und in `isSavedPromptId`. Das globale Muster in `speed-insights-event.ts` ersetzt UUIDs mitten in einer Adresse und bleibt, ebenso die Prüfung in `cli/` (eigenes Paket). `uuid.test.ts` verhindert eine neue verankerte Kopie in `src/`.
+- **#394, begrenzter Leser:** `readCappedStream` (`server/http/capped-stream.ts`) für Anfragen und Antworten. Über der Grenze bricht es den Strom ab, ohne darauf zu warten; die Fassung für Antworten liess den Rest ungelesen weiterlaufen. Der GitHub-Import braucht dafür kein eigenes `cancel` mehr.
+- **#394, Gedächtnis-Grenzen:** `BRAIN_LIMITS` (`shared/lib/project-brain.ts`) für Schema und `salvageFacts`; wäre eine Grenze nur im Schema gesenkt worden, hätte das Lesen das Gedächtnis verworfen.
+- **CLI-Vertrag:** in den gepinnten Dateien entfällt nur `isPromptId` (gleiches Muster), das Programm bleibt unverändert. Weil damit `shared/lib/uuid.ts` entscheidet, welche Kennungen die Terminal-App abrufen kann, steht die Datei jetzt in `cli/scripts/check-contract.mjs` und `contract/pins.json`.
+- **Geprüft:** 27 Mutationen an den neuen Schranken; zwei überlebten zuerst (Signal beim eigenen Endpunkt, UUID-Filter im Modell-Verlauf), beide mit neuen Tests erkannt. Am gebauten Standalone-Server bekommen zu grosse Anfragen an `/api/contact` (mit und ohne `content-length`, 3 MB, tröpfelnd) weiter 413, ohne Fehler im Log.
+- **Gate:** grün auf `b24b0c0f` (die drei Commits dieses Branches auf `main` bei `ed015086`; Audit sauber, Typecheck, Lint, 4712 Tests, 2 übersprungen, Build mit den Platzhaltern der CI); in `cli/` `check`, `contract` und 179 Tests (3 übersprungen) mit `--test-concurrency=2` grün.
+- **Nicht geprüft:** gegen keinen echten Anbieter, nicht gegen GitHub live, nicht im Browser und nicht auf Vercel, E2E nicht lokal.
+
+## 2026-11-27: Marketing-Bausteine und Vorschaukarte beim Teilen je einmal (Branch `refactor/marketing-bausteine`, #414 und #367)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`), reiner Umbau.
+- **#414 (Low):** Kopf und Fuss der Aufgaben- und Vergleichsseiten samt Breadcrumb-, Artikel- und FAQ-Daten stehen in `features/marketing/components/article-shell.tsx`, die nummerierte Anleitung von /skill, /terminal (beide Listen, zwei Töne) und /mcp in `step-list.tsx` (Typ `InstallStep`), die Pille in `shared/ui/pill-switch.tsx` (App als Link mit `aria-current`, Vorschau der Landing als Knopf, neu mit `aria-pressed`). `TabSwitcher` behält Props und Ausgabe. Die zwei falschen Kommentare in `product-showcase.tsx` sind berichtigt, `hero.tsx` ist unverändert. Zwei Einträge aus der Kommentar-Ratsche entfernt.
+- **#367 (Low):** `features/marketing/lib/social-card-image.tsx` zeichnet die Karte der Startseite und die der Unterseiten (Farben als Konstanten, ein `displayHost()`), beide Routen laufen weiter auf der Edge-Runtime. Das Etikett „v2.0 Beta“ ist unverändert, als Parameter in `app/opengraph-image.tsx`; ob es bleibt, ist offen.
+- **Gemessen** (Dev-Server, vorher gegen nachher): das gerenderte HTML ohne Skripte der 9 Artikelseiten, von /skill, /terminal und /mcp ist gleich, auf der Startseite weichen nur `aria-pressed` und die Prüfsumme der `og:image`-Adresse ab. 22 OG-Bilder byte-gleich, unbekannte Karten weiter 404. Die Prüfsumme folgt nur `opengraph-image.tsx`: eine Änderung allein in `social-card-image.tsx` ändert das Bild, aber nicht die Adresse.
+- **Geprüft:** 21 Mutationen an den neuen Tests, alle erkannt.
+- **Gate:** grün auf `85538948` (Audit sauber, Typecheck, Lint, 4693 Tests, 2 übersprungen, Build mit den Platzhaltern der CI, ein Stylesheet); danach auf `ba047af5`, wo das geschützte Leerzeichen des Slogans als ` ` im Quelltext steht, Typecheck, Lint und 35 betroffene Tests grün.
+- **Nicht geprüft:** nicht im Browser angeschaut, nicht gegen Produktion, Browser-Tests (E2E) nicht lokal.
+
+## 2026-11-27: Neun Exporte ohne Aufrufer und die Reste der Tool-Auswahl sind entfernt (Branch `refactor/toter-code-362-409-v2`, #362 und #409)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): toter Code und Reste entfernter Funktionen.
+- **#362 (Low):** Entfernt samt Tests: die drei Avatar-Regeln aus `features/settings/lib/avatar.ts` (Reste des Profilbild-Uploads; es bleibt `avatarStoragePath` für „Konto löschen“), `slugify`, `attachmentPathsOfUser`, `turnstileEnabled`, `StatCardSkeleton`, `MAX_FILE_BYTES` und `ContactInput`. Eine Schranke gegen Exporte ohne Import (Guard oder `knip`) ist nicht gebaut.
+- **#409 (Low):** `badge` an `SettingsCard`, `mono` an `InfoRow`, `toolList` und `ProjectTools` sind weg. Projektliste, `getProject` und Projektkontext fragen `projects.tools` nicht mehr an; die Suche der Projektliste findet nur noch am Namen, ihre Texte nennen keine Tools mehr (fr, it, es nicht von Muttersprachlern geprüft). Die Spalte bleibt (#140), der Datenexport liefert sie weiter vollständig, ein Test hält das fest.
+- **Geprüft:** 5 Mutationen an den neuen Tests (Suche, Export), alle erkannt.
+- **Gate:** grün auf `01054d9f` (Audit sauber, Typecheck, Lint, 4637 Tests, 2 übersprungen, Build mit den Platzhaltern der CI).
+- **Nicht geprüft:** nicht im Browser angesehen.
+
+## 2026-11-27: Ein Upstash-Client, atomarer Zähler im Leistungsschalter, Testcode aus dem Produktivbaum (Branch `fix/redis-client-und-testcode`, #393 und #363)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`).
+- **#393 (Low):** Datei-Cache, Alarm-Drosselung und Leistungsschalter bauten sich je einen eigenen Upstash-Client. Gebaut wird nur noch in `server/security/redis-client.ts`: `redis` für Zähler und Marken, `rawRedis` (ohne JSON-Auswertung) für den Dateitext. Der Schalter zählte mit `incr` und danach `expire`; scheiterte der zweite Befehl, blieb der Zähler ohne Ablauf, und drei Ausfälle über Wochen hätten ihn geöffnet. Jetzt eine Transaktion mit `NX` wie in `reserve-counter.ts`; ein liegengebliebener Zähler bekommt beim nächsten Ausfall seinen Ablauf. Bisher latent, weil der Failover aus ist. Ohne Redis-Werte läuft alles wie bisher. Neuer Guard `upstash-client.test.ts`: unter `src/` holt nur `redis-client.ts` das Paket als Wert.
+- **#363 (Low):** Die Redis-Attrappe `redis-double.ts` liegt unter `tests/support/` statt unter `src/server/security/` (dort zählte sie in der Abdeckung als Produktivdatei). Die vier `__…ForTests`-Exporte bleiben (kleinster Schritt aus dem Issue); `tests/guards/test-code-in-src.test.ts` lässt solche Namen außerhalb von Testdateien nur an der Deklaration zu und verbietet unter `src/` jeden Import aus `tests/`.
+- **Geprüft:** 14 Mutationen an den neuen Schranken, alle erkannt.
+- **Gate:** grün auf dem Stand von `71ba00fd` (Audit sauber, Typecheck, Lint, 4655 Tests, 2 übersprungen, Build mit den Platzhaltern der CI).
+- **Nicht geprüft:** gegen kein echtes Upstash (Attrappen; der Datei-Cache mit dem echten Client gegen eine nachgestellte REST-Schnittstelle), kein Failover gegen echtes Gemini, E2E nicht lokal.
+
 ## 2026-11-27: Die Terminal-App nennt Z.ai nur noch, wenn es stimmt, und der Vertrag prüft die Fehlerarten des Chats (Branch `fix/terminal-app-411-389`, #411 und #389)
 
 - **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`) an der Terminal-App.
