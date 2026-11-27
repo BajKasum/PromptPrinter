@@ -35,6 +35,10 @@ import { useLocale, useT } from "@/shared/i18n/provider";
 import { LOCALES, LOCALE_NAMES } from "@/shared/i18n/locales";
 import { useChangeLocale } from "@/shared/i18n/use-change-locale";
 
+// Ab dieser Breite (Tailwinds `md`) steht die Sidebar da, und der Drawer samt
+// Menüknopf ist per `md:hidden` weg.
+const DESKTOP_QUERY = "(min-width: 768px)";
+
 // Mobile-only navigation. The desktop sidebar is hidden below md, so without
 // this the app has no way to move between sections on a phone, and it needs
 // to carry the same recents + Chat/Projekt switcher the sidebar does
@@ -95,10 +99,18 @@ export function MobileNav({
       if (e.key === "Escape") setOpen(false);
     }
     window.addEventListener("keydown", onKey);
+    // Wird das Fenster mit offenem Drawer breit, verschwindet er nur per CSS.
+    // Er muss dann zugehen, sonst bleibt die Seite für das Scrollen gesperrt.
+    const desktop = window.matchMedia(DESKTOP_QUERY);
+    function onWidth(e: MediaQueryListEvent) {
+      if (e.matches) setOpen(false);
+    }
+    desktop.addEventListener("change", onWidth);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
+      desktop.removeEventListener("change", onWidth);
       document.body.style.overflow = prevOverflow;
     };
   }, [open]);
