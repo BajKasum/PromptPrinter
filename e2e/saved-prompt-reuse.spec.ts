@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { Page } from "@playwright/test";
-import { test, expect, adminClient, createAccount, removeAccount, type Account } from "./support/fixtures";
+import { test, expect, adminClient, createAccount, makeAdmin, removeAccount, type Account } from "./support/fixtures";
 import { E2E_ORIGIN } from "./support/env";
 import {
   exportCode,
@@ -86,7 +86,22 @@ test.describe("Gespeicherten Prompt wiederverwenden", () => {
   });
 
   test("Als Ausgangspunkt im globalen Chat: nur ins Eingabefeld, nichts gesendet", async ({ signedIn: { page, account } }) => {
+    // Für die Gegenprobe am Ende: ein gesendeter Zug ohne Grenze auf dem Server-Key (Stub-Modus).
+    await makeAdmin(account);
     const id = await savePrompt(account);
+    // Jede Anfrage an den Chat, von vor dem Öffnen an.
+    const sent: string[] = [];
+    page.on("request", (r) => {
+      if (r.method() === "POST" && new URL(r.url()).pathname === "/api/chat") sent.push(r.postData() ?? "");
+    });
+    const conversations = async () => {
+      const { count, error } = await adminClient()
+        .from("conversations")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", account.id);
+      expect(error).toBeNull();
+      return count;
+    };
     await page.goto("/prompts");
     await openCard(page);
     await page.getByRole("link", { name: `Neuen Chat mit „${TITLE}“ als Ausgangspunkt beginnen` }).click();
@@ -96,11 +111,28 @@ test.describe("Gespeicherten Prompt wiederverwenden", () => {
     await expect(composer).toHaveValue(START);
     await expect(composer).toBeFocused();
     expect(await composer.evaluate((el: HTMLTextAreaElement) => el.selectionStart)).toBe("Pass diesen Prompt an: ".length);
-    // Nichts gesendet: kein Chat angelegt, keine Antwort.
-    await page.waitForTimeout(1000);
+    // Nichts gesendet. Fokus und Cursor setzt die Seite nach dem Hydratisieren; ein Senden beim Öffnen käme aus
+    // demselben Durchlauf. Playwright meldet Anfragen in der Reihenfolge, in der die Seite sie stellt: ist die
+    // Markierung da, wäre eine Anfrage an den Chat davor schon mitgeschrieben.
+    await Promise.all([
+      page.waitForRequest((r) => r.url().endsWith("/api/health?nach-dem-oeffnen")),
+      page.evaluate(() => fetch("/api/health?nach-dem-oeffnen").then(() => undefined)),
+    ]);
+    expect(sent).toEqual([]);
     await expect(page).toHaveURL(`${E2E_ORIGIN}/chats/new?from=${id}`);
-    const { count } = await adminClient().from("conversations").select("id", { count: "exact", head: true }).eq("user_id", account.id);
-    expect(count).toBe(0);
+    expect(await conversations()).toBe(0);
+
+    // Die Gegenprobe: erst der eigene Klick sendet, genau einmal und genau diesen Text. Ein Senden, das später als die
+    // Markierung käme, stünde bis zur Antwort als zweite Anfrage und zweiter Chat daneben, und eine geänderte
+    // Adresse des Chats liesse die Liste leer.
+    await composer.press("End");
+    await composer.pressSequentially("kürzer");
+    await page.getByRole("button", { name: "Senden" }).click();
+    await expect(page.getByText("Demo-Antwort")).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\/chats\/[0-9a-f-]{36}$/);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain("Pass diesen Prompt an: kürzer");
+    expect(await conversations()).toBe(1);
   });
 
   test("Als Ausgangspunkt im Projekt-Chat, dann gesendet", async ({ signedIn: { page, account } }) => {
