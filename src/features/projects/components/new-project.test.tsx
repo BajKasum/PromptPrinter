@@ -93,6 +93,66 @@ describe("NewProjectButton", () => {
   });
 });
 
+describe("NewProjectButton: wann gesendet wird", () => {
+  async function open(props: Parameters<typeof NewProjectButton>[0] = {}) {
+    const user = userEvent.setup();
+    render(<NewProjectButton {...props} />);
+    await user.click(screen.getByRole("button", { name: de.projects.newProject }));
+    const dialog = await screen.findByRole("dialog", { name: de.projects.newProjectDialog });
+    const field = within(dialog).getByLabelText(de.projects.nameLabel);
+    await waitFor(() => expect(field).toHaveFocus());
+    const createButton = within(dialog).getByRole("button", { name: de.projects.create });
+    return { user, dialog, field, createButton };
+  }
+
+  it.each([
+    ["leer", ""],
+    ["nur Leerzeichen", "    "],
+    ["ein Zeichen mit Leerraum", "  a  "],
+  ])("sendet bei einem Namen, der %s ist, weder über den Knopf noch mit Enter", async (_name, value) => {
+    const { user, createButton } = await open();
+    if (value) await user.keyboard(value);
+
+    expect(createButton).toBeDisabled();
+    await user.keyboard("{Enter}");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("schickt den Namen ohne den Leerraum davor und danach", async () => {
+    fetchMock.mockResolvedValue(answer('{"projectId":"p-1"}', 200, "application/json"));
+    const { user } = await open();
+
+    await user.keyboard("  ab  {Enter}");
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/projects/p-1"));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({ name: "ab" });
+  });
+
+  it("sendet nur einmal, auch bei weiteren Eingaben während des Anlegens", async () => {
+    fetchMock.mockReturnValue(new Promise<Response>(() => {}));
+    const { user, dialog } = await open();
+
+    await user.keyboard("Bewerbung{Enter}{Enter}{Enter}");
+
+    expect(within(dialog).getByRole("button", { name: de.projects.creating })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: de.common.cancel })).toBeDisabled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("öffnet auch als Leiste in Sidebar und Mobile-Drawer denselben Dialog, mit den Klassen der Aufrufstelle", async () => {
+    const user = userEvent.setup();
+    render(<NewProjectButton variant="bar" className="leiste-der-seitenleiste" />);
+    const bar = screen.getByRole("button", { name: de.projects.newProject });
+    expect(bar).toHaveClass("leiste-der-seitenleiste");
+    expect(bar).toHaveAttribute("type", "button");
+
+    await user.click(bar);
+
+    expect(await screen.findByRole("dialog", { name: de.projects.newProjectDialog })).toBeInTheDocument();
+  });
+});
+
 // #368: Fokus, Tab und Escape wie bei jedem Dialog.
 describe("NewProjectButton: Tastatur", () => {
   const trigger = () => screen.getByRole("button", { name: de.projects.newProject });

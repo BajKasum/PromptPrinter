@@ -7,7 +7,8 @@
  * in `src/app/api/`, den Stellen mit Geheimnissen, Geld und Ratenlimit? Dieses
  * Skript rechnet die Dateien je Verzeichnis zusammen (aus Treffern und
  * Gesamtzahlen, nicht aus Mittelwerten von Prozenten) und schreibt eine
- * Markdown-Tabelle, in die CI zusätzlich in die Zusammenfassung des Laufs.
+ * Markdown-Tabelle, in die CI zusätzlich in die Zusammenfassung des Laufs. Darunter stehen die Dateien, von denen
+ * kein Test eine Anweisung ausführt: ihre Zahl zeigt einen Rückschritt, den eine Quote je Verzeichnis verschluckt.
  *
  * Es gibt bewusst keine Schwelle und keinen Fehlschlag wegen einer Zahl (#221):
  * erst ein Basiswert (docs/SETUP.md, "Testabdeckung"), danach eine Ratsche, wenn
@@ -97,6 +98,25 @@ export function toMarkdown(rows) {
   return lines.join("\n");
 }
 
+/**
+ * Die Dateien mit Anweisungen, von denen keine ausgeführt wurde, als Pfade ab `src/`, sortiert. Eine Datei ohne
+ * Anweisungen (nur Typen) zählt nicht: an ihr gibt es nichts auszuführen.
+ *
+ * @param {Record<string, Record<string, { total: number, covered: number }>>} summary Inhalt von coverage-summary.json
+ * @returns {string[]}
+ */
+export function untestedFiles(summary) {
+  return Object.entries(summary)
+    .filter(([path, entry]) => path !== "total" && (entry.statements?.total ?? 0) > 0 && entry.statements.covered === 0)
+    .map(([path]) => relativePath(path))
+    .sort();
+}
+
+/** Die Zeile mit der Zahl und darunter die Liste, ohne eine solche Datei nur die Zeile. */
+export function untestedReport(files) {
+  return { title: `Dateien bei 0 % der Anweisungen: ${files.length}`, list: files.map((file) => `- ${file}`).join("\n") };
+}
+
 function main() {
   const path = process.argv[2] ?? "coverage/coverage-summary.json";
   if (!existsSync(path)) {
@@ -112,11 +132,14 @@ function main() {
   }
 
   const table = toMarkdown(summarize(summary));
-  console.log(`\nTestabdeckung je Verzeichnis\n\n${table}\n`);
+  const { title, list } = untestedReport(untestedFiles(summary));
+  console.log(`\nTestabdeckung je Verzeichnis\n\n${table}\n\n${title}\n${list}`);
 
-  // In der CI landet dieselbe Tabelle in der Zusammenfassung des Laufs.
+  // In der CI landet dasselbe in der Zusammenfassung des Laufs, die Liste zugeklappt.
   const stepSummary = process.env.GITHUB_STEP_SUMMARY;
-  if (stepSummary) appendFileSync(stepSummary, `### Testabdeckung je Verzeichnis\n\n${table}\n`);
+  if (!stepSummary) return;
+  const files = list ? `<details><summary>${title}</summary>\n\n${list}\n\n</details>` : title;
+  appendFileSync(stepSummary, `### Testabdeckung je Verzeichnis\n\n${table}\n\n${files}\n`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
