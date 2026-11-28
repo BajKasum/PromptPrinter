@@ -114,8 +114,8 @@ async function setTheme(page, theme) {
     // ── log in once — cookies are shared across pages in the same context ────
     const loginPage = await newPage(1440, 900);
     await go(loginPage, `${APP}/login`);
-    await loginPage.type("#email", EMAIL, { delay: 30 });
-    await loginPage.type("#password", PASSWORD, { delay: 30 });
+    await loginPage.type("#login-email", EMAIL, { delay: 30 });
+    await loginPage.type("#login-password", PASSWORD, { delay: 30 });
     await loginPage.click('button[type="submit"]');
     // The form logs in via supabase-js then router.push() — a client-side
     // navigation, so wait for the path to leave /login rather than for a full

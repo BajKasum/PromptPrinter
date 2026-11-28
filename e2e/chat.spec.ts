@@ -1,4 +1,4 @@
-import { test, expect, adminClient, makeAdmin } from "./support/fixtures";
+import { test, expect, adminClient, makeAdmin, sendFirstMessage } from "./support/fixtures";
 
 // Der Kern des Produkts: Frage senden, Antwort bekommen, nach dem Neuladen ist
 // beides noch da. Chat läuft im Stub-Modus (kein Modell-Anbieter in der
@@ -36,6 +36,56 @@ test.describe("Chat", () => {
       .order("created_at", { ascending: true });
     expect(messages?.map((m) => m.role)).toEqual(["user", "assistant"]);
     expect(messages?.[0].content).toBe(QUESTION);
+  });
+
+  test("Neu erzeugen ersetzt die letzte Antwort, die Frage bleibt einmal stehen", async ({
+    signedIn: { page, account },
+  }) => {
+    await makeAdmin(account);
+    const conversationId = await sendFirstMessage(page, QUESTION);
+    const messages = async () => {
+      const { data, error } = await adminClient()
+        .from("messages")
+        .select("id, role, content")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+      expect(error).toBeNull();
+      return data!;
+    };
+    await expect.poll(async () => (await messages()).map((m) => m.role)).toEqual(["user", "assistant"]);
+    const [question, firstReply] = await messages();
+
+    // Neu geladen trägt die Seite die Kennungen aus der Datenbank. Der Senden-Knopf wird erst durch den Zustand der
+    // Seite bedienbar: danach hört auch "Neu erzeugen".
+    await page.reload();
+    const composer = page.getByLabel("Nachricht an Finn");
+    await expect(async () => {
+      await composer.fill("");
+      await composer.fill("x");
+      await expect(page.getByRole("button", { name: "Senden" })).toBeEnabled({ timeout: 1_000 });
+    }).toPass({ timeout: 30_000 });
+    await composer.fill("");
+
+    const [request, response] = await Promise.all([
+      page.waitForRequest((r) => r.url().endsWith("/api/chat") && r.method() === "POST"),
+      page.waitForResponse((r) => r.url().endsWith("/api/chat") && r.request().method() === "POST"),
+      page.getByRole("button", { name: "Neu erzeugen" }).click(),
+    ]);
+    expect(request.postDataJSON()).toMatchObject({ conversationId, replaceMessageId: firstReply.id });
+    expect(response.status()).toBe(200);
+
+    // Die alte Antwort geht erst, wenn die neue gespeichert ist: danach genau eine Frage und eine andere Antwort.
+    await expect.poll(async () => (await messages()).filter((m) => m.id === firstReply.id)).toEqual([]);
+    const after = await messages();
+    expect(after.map((m) => m.role)).toEqual(["user", "assistant"]);
+    expect(after[0].id).toBe(question.id);
+    expect(after[1].content).toContain("Demo-Antwort");
+
+    const transcript = page.getByRole("log");
+    await expect(transcript.getByText("Demo-Antwort")).toHaveCount(1);
+    await page.reload();
+    await expect(transcript.getByText(QUESTION, { exact: true })).toHaveCount(1);
+    await expect(transcript.getByText("Demo-Antwort")).toHaveCount(1);
   });
 
   test("ein Textanhang wird mit der Frage gespeichert und ist nach dem Neuladen noch da", async ({

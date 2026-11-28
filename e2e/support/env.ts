@@ -1,5 +1,9 @@
 import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { RESEND_KEY } from "./fakes.cjs";
 
 // Wie die Ende-zu-Ende-Tests an ihre Umgebung kommen, und die eine Sperre, die
 // sie von der Produktion fernhält (Betriebs-Audit, M1/M2).
@@ -103,16 +107,52 @@ function runSecret(name: string): string {
 export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100);
 export const E2E_ORIGIN = `http://localhost:${E2E_PORT}`;
 
+/** Die Variablen, die eine Vorlage wie .env.example nennt, auch die auskommentierten, jede einmal. */
+export function templateVariables(template: string): string[] {
+  const names = [...template.matchAll(/^[ \t]*(?:#[ \t]*)?([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]);
+  return [...new Set(names)];
+}
+
+/**
+ * Was ebenfalls leer sein muss, aber nicht in .env.example steht: eine Variable, die der Code liest, und `VERCEL`, das
+ * `vercel env pull` in eine `.env.local` schreibt. tests/guards/e2e-env.test.ts hält fest, dass der Code sonst nichts
+ * Unbekanntes liest.
+ */
+export const NOT_IN_TEMPLATE = ["FREE_TRIAL_DAILY_CALLS", "VERCEL"];
+
+/**
+ * Alles, was die Vorlage nennt, leer. Next lädt zusätzlich `.env.local`, wo auf einem Entwicklerrechner echte
+ * Zugangsdaten und Schalter stehen können; ein im Prozess GESETZTER Wert, auch ein leerer, schlägt die Datei. Aus der
+ * Vorlage gelesen, damit eine neue Variable nicht vergessen wird: ohne Eintrag unten bleibt sie in den Tests aus.
+ */
+function blankedTemplate(): Record<string, string> {
+  const template = readFileSync(join(process.cwd(), ".env.example"), "utf8");
+  return Object.fromEntries([...templateVariables(template), ...NOT_IN_TEMPLATE].map((name) => [name, ""]));
+}
+
+/**
+ * Das Protokoll der Stellvertreter (support/outbound-fakes.cjs): eine Zeile je Anfrage an einen der nachgestellten
+ * Dienste. Eine Datei je Testlauf, Haupt- und Worker-Prozesse sehen dieselbe.
+ */
+export function outboundLogPath(): string {
+  return join(tmpdir(), `pp-e2e-outbound-${runSecret("E2E_RUN_ID")}.jsonl`);
+}
+
+/** `--require` in NODE_OPTIONS, hinter dem, was schon gesetzt ist. Next reicht die Optionen an seine Prozesse weiter. */
+function nodeOptionsWithFakes(): string {
+  const preload = join(process.cwd(), "e2e/support/outbound-fakes.cjs").replaceAll("\\", "/");
+  const flag = preload.includes(" ") ? `--require "${preload}"` : `--require ${preload}`;
+  return [process.env.NODE_OPTIONS, flag].filter(Boolean).join(" ");
+}
+
 /**
  * Die Umgebung des Next-Servers der Tests, vollständig und ausdrücklich.
  *
- * Next lädt zusätzlich `.env.local`, wo auf einem Entwicklerrechner echte
- * Zugangsdaten stehen können. Ein im Prozess GESETZTER Wert, auch ein leerer,
- * schlägt die Datei. Darum stehen hier alle Dienste, die der Test nicht nutzen
- * darf, ausdrücklich auf leer: kein Modell-Anbieter (Chat im Stub-Modus), kein
- * Upstash (Ratenlimit im Speicher), kein Captcha, kein Zahlungsanbieter, kein
- * Alarm-Webhook, kein GitHub-Token. Ein Test (e2e/smoke.spec.ts) prüft, dass das
- * greift.
+ * Ausgangspunkt ist jede Variable aus .env.example, leer (blankedTemplate): kein Server-Modell (Chat im
+ * Stub-Modus), kein eigener Endpunkt, kein Einzelbetrieb, kein Upstash (Ratenlimit im Speicher), kein Captcha,
+ * kein Alarm-Webhook, kein GitHub-Token. Gesetzt wird nur, was darunter steht. GitHub, OpenAI und Resend
+ * erreicht der Server nie: ihre Anfragen beantworten die Stellvertreter (support/fakes.cjs), deshalb darf
+ * RESEND_API_KEY ihren Wert tragen. Ein Test (e2e/smoke.spec.ts) prüft, dass das greift.
  */
 export function serverEnv(): Record<string, string> {
   return {
@@ -120,8 +160,9 @@ export function serverEnv(): Record<string, string> {
     NODE_ENV: "development",
     // Schaltet Nexts Dev-Anzeige aus (next.config.ts): sie läge links unten über dem Kontomenü, sobald sie einen Hinweis zählt.
     PP_E2E: "1",
-    UPSTASH_REDIS_REST_URL: "",
-    UPSTASH_REDIS_REST_TOKEN: "",
+    RESEND_API_KEY: RESEND_KEY,
+    NODE_OPTIONS: nodeOptionsWithFakes(),
+    E2E_OUTBOUND_LOG: outboundLogPath(),
   };
 }
 
@@ -153,6 +194,7 @@ export function prodServerEnv(): Record<string, string> {
 function sharedServerEnv(origin: string): Record<string, string> {
   const supabase = localSupabase();
   return {
+    ...blankedTemplate(),
     NEXT_PUBLIC_SUPABASE_URL: supabase.url,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: supabase.anonKey,
     SUPABASE_SERVICE_ROLE_KEY: supabase.serviceRoleKey,
@@ -160,17 +202,5 @@ function sharedServerEnv(origin: string): Record<string, string> {
     // Damit signIn() je Konto eine eigene Adresse nennen kann (e2e/support/fixtures.ts).
     TRUSTED_PROXY_HOPS: "1",
     API_KEY_ENCRYPTION_SECRET: runSecret("E2E_BYOK_SECRET"),
-    API_KEY_ENCRYPTION_SECRET_PREVIOUS: "",
-    ZAI_API_KEY: "",
-    ZAI_MODEL: "",
-    ZAI_VISION_MODEL: "",
-    GEMINI_API_KEY: "",
-    GEMINI_MODEL: "",
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
-    TURNSTILE_SECRET: "",
-    ALERT_WEBHOOK_URL: "",
-    GITHUB_TOKEN: "",
-    GOOGLE_SITE_VERIFICATION: "",
-    BING_SITE_VERIFICATION: "",
   };
 }
