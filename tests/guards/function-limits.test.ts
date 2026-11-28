@@ -218,7 +218,7 @@ describe("Funktionslänge, Komplexität und Verschachtelung im Quellbaum", () =>
     const over = tooMuch(current, baseline);
     expect(
       over,
-      `Neue oder gewachsene Funktionen über der Grenze. Zerlegen (CLAUDE.md, "Struktur"). Nur wenn eine Funktion bloß umbenannt oder verschoben wurde, ohne zu wachsen, den Basiswert neu schreiben: ${WRITE}\n${over.join("\n")}`
+      `Neue oder gewachsene Funktionen über der Grenze. Zerlegen (docs/SETUP.md, "Qualität"). Nur wenn eine Funktion bloß umbenannt oder verschoben wurde, ohne zu wachsen, den Basiswert neu schreiben: ${WRITE}\n${over.join("\n")}`
     ).toEqual([]);
   });
 

@@ -254,17 +254,6 @@ export function SettingsWorkspace({
           <p className="mt-3 text-[12px] text-tertiary">{t.settings.apiKeysNote}</p>
         </SettingsCard>
 
-        {/* M-18 (Audit 06.09.2026): die "Standard-Tools"-Karte sass hier
-            zwischen API-Keys und Sicherheit — 4 Werte, die einzig in dieses
-            Formular hinein- und wieder herausgelesen wurden, ohne dass ein
-            anderer Codepfad sie je nutzte. Ein Überbleibsel der am
-            17.07.2026 gelöschten Chat→Ergebnis-Pipeline, die pro Generierung
-            genau diese vier Dimensionen (Master-KI/Frontend/Backend/DB)
-            abfragte. Komplett entfernt statt an eine neue
-            Wirkung angeschlossen (features/settings/lib/tools.ts, der
-            tool-picker.tsx und die dafuer nicht mehr gebrauchten
-            ToolLogo-Faelle gingen mit). */}
-
         {/* Security */}
         <SettingsCard
           Icon={Lock}
