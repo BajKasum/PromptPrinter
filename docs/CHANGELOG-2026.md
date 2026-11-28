@@ -11,6 +11,25 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-28: Mitmachen auf GitHub, die Teilen-Karte sagt „Open Source“ (Branch `docs/mitmachen`)
+
+- **Ziel:** Das Repo soll für Fremde zum Mitmachen bereit sein (Gemeinschaftsprofil auf GitHub 57 %, es fehlten
+  Anleitung und Vorlagen). Kasums Ja zu Schritt 2 des Sichtbarkeits-Plans, nach Sichtung der Entwürfe.
+- **Neu:** `CONTRIBUTING.md` (englisch: Einrichtung, Gate, Tests und Schranken, die Regeln, die man leicht übersieht,
+  PR-Weg, Sicherheit, Lizenzumfang; sagt, dass Doku und die meisten Kommentare deutsch sind),
+  `.github/ISSUE_TEMPLATE/` (Fehler, Wunsch, Links zu `SECURITY.md` und Discussions),
+  `.github/PULL_REQUEST_TEMPLATE.md`.
+- **Teilen-Karte** (`app/opengraph-image.tsx`): Etikett „Open Source“ statt „v2.0 Beta“, damit im Bild keine
+  Versionsnummer veraltet. Dass der Dienst eine Beta ist, steht weiter auf `/ueber` und in den AGB. Die offene Frage
+  aus den Einträgen darunter ist damit beantwortet.
+- **Mit demselben Ja, nach dem Merge:** Release `v2.0.0` (erste Veröffentlichung als offenes Projekt; die Nummer gilt
+  für die Web-App, Terminal-App und Skill zählen für sich), GitHub Discussions, fünf Issues mit `good first issue`.
+- **Schranke:** `doc-links.test.ts` prüft auch die Links und Anker in `CONTRIBUTING.md`. Mutationen (falscher Anker,
+  fehlende Datei) beide erkannt.
+- **Geprüft:** jeder Befehl in `CONTRIBUTING.md` gegen `package.json`, die Workflows und die Anleitungen; `npm run build`
+  lief in einem frischen Stand ohne jeden Env-Wert; der Chat ohne Modell gegen `e2e/chat.spec.ts` und
+  `server/model-call.ts`; die Formulare lokal als YAML. Wie GitHub sie anzeigt, sieht man erst nach dem Merge.
+
 ## 2026-11-28: Zwei IPv6-Bereiche gesperrt, Nachträge zur vierten Runde (Branch `fix/ssrf-ipv6-bereiche`, #370, #371, #402)
 
 - **SSRF-Sperre** (`server/security/url-safety.ts`): `3fff::/20` (Dokumentation, RFC 9637) und `5f00::/16` (Segment
