@@ -74,6 +74,13 @@ describe("Umgebung des Dev-Servers der Tests", () => {
     });
   });
 
+  // Diese liest das OpenAI-SDK selbst: stünden sie in der Shell oder in .env.local, ginge der Key-Test an einen
+  // anderen Host als den Stellvertreter, oder mit anderem Key.
+  it.each(["OPENAI_BASE_URL", "OPENAI_CUSTOM_HEADERS"])("leert %s, auch wenn die Shell einen Wert trägt", (name) => {
+    vi.stubEnv(name, "http://fremd.example/v1");
+    expect(serverEnv()[name]).toBe("");
+  });
+
   it("lädt die Stellvertreter in den Server und lässt vorhandene Node-Optionen stehen", () => {
     vi.stubEnv("NODE_OPTIONS", "--max-old-space-size=4096");
     const options = serverEnv().NODE_OPTIONS;
@@ -105,8 +112,9 @@ const ENV_HELPERS = new Set(["optionalEnv", "msFromEnv"]);
 const ENV_NAME = /^[A-Z][A-Z0-9_]*$/;
 
 /**
- * Die Namen, die eine Datei aus der Umgebung liest: `process.env.X`, `process.env["X"]`, `env.X` an einer übergebenen
- * Umgebung (etwa `isSelfHosted(env)`) und die Helfer oben. Der Parser sieht keine Kommentare und Zeichenketten.
+ * Die Namen, die eine Datei aus der Umgebung liest: `process.env.X`, `process.env["X"]`, `const { X } = process.env`,
+ * `env.X` an einer übergebenen Umgebung (etwa `isSelfHosted(env)`) und die Helfer oben. Der Parser sieht keine
+ * Kommentare und Zeichenketten.
  */
 function envReads(file: string, text?: string): string[] {
   const names: string[] = [];
@@ -117,6 +125,13 @@ function envReads(file: string, text?: string): string[] {
     if (ts.isPropertyAccessExpression(node) && isEnvObject(node.expression)) names.push(node.name.text);
     if (ts.isElementAccessExpression(node) && isEnvObject(node.expression) && ts.isStringLiteralLike(node.argumentExpression)) {
       names.push(node.argumentExpression.text);
+    }
+    if (ts.isVariableDeclaration(node) && ts.isObjectBindingPattern(node.name) && node.initializer && isEnvObject(node.initializer)) {
+      for (const element of node.name.elements) {
+        // Der Rest (`...rest`) nennt keine Variable.
+        const key = element.dotDotDotToken ? null : (element.propertyName ?? element.name);
+        if (key && (ts.isIdentifier(key) || ts.isStringLiteralLike(key))) names.push(key.text);
+      }
     }
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && ENV_HELPERS.has(node.expression.text)) {
       const [first] = node.arguments;
@@ -150,8 +165,18 @@ describe("Variablen, die der Code liest", () => {
       'const b = optionalEnv("UEBER_HELFER") ?? msFromEnv("UEBER_ZEIT", 5);',
       "const c = (env: Record<string, string>) => env.UEBERGEBEN;",
       "const d = other.NICHT_UMGEBUNG;",
+      "const { ZERLEGT, UMBENANNT: neu, ...rest } = process.env;",
+      "const { NICHT_DAHER } = other;",
     ].join("\n");
-    expect(envReads("src/x.ts", sample)).toEqual(["DIREKT", "GEKLAMMERT", "UEBER_HELFER", "UEBER_ZEIT", "UEBERGEBEN"]);
+    expect(envReads("src/x.ts", sample)).toEqual([
+      "DIREKT",
+      "GEKLAMMERT",
+      "UEBER_HELFER",
+      "UEBER_ZEIT",
+      "UEBERGEBEN",
+      "ZERLEGT",
+      "UMBENANNT",
+    ]);
   });
 
   it("findet die Lesezugriffe des Codes", () => {
