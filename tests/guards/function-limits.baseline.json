@@ -203,7 +203,7 @@
     "DeleteAccount": {"lines":[147]}
   },
   "src/features/settings/components/settings-workspace.tsx": {
-    "SettingsWorkspace": {"lines":[281],"complexity":[16]}
+    "SettingsWorkspace": {"lines":[279],"complexity":[16]}
   },
   "src/features/settings/components/two-factor.tsx": {
     "TwoFactor": {"lines":[215],"complexity":[16]}
