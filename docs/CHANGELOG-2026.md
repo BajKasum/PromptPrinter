@@ -11,6 +11,153 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-28: Zwei IPv6-Bereiche gesperrt, Nachträge zur vierten Runde (Branch `fix/ssrf-ipv6-bereiche`, #370, #371, #402)
+
+- **SSRF-Sperre** (`server/security/url-safety.ts`): `3fff::/20` (Dokumentation, RFC 9637) und `5f00::/16` (Segment
+  Routing, RFC 9602) sind gesperrt. Das IANA-Register der IPv6-Sonderbereiche führt beide als nicht global erreichbar
+  (nachgelesen am 2026-11-28, Seite vom 2025-10-09). Nebenfund aus #370, Kasums Ja. Grenztests je Bereich, 6 Mutationen,
+  alle erkannt. Die dort genannten weiteren Kandidaten (`2001::/32`, `2001:2::/48`, `100:0:0:1::/64`,
+  `::ffff:0:0:0/96`) bleiben offen, ihre Einstufung ist nicht geprüft.
+- **`billing_events`** (Meldung aus #402): in der Produktion lesend gezählt 0 Zeilen, kein Code schreibt hinein. Nichts
+  geändert; ob die Tabelle per Migration entfällt, entscheidet Kasum.
+- **Nachgezogen:** `CLAUDE.md` nennt `subscriptions` nicht mehr als vorhanden (Punkt 11 aus #402, Kasums Ja). Der
+  erzählende Kommentar in `settings-workspace.tsx` ist weg, die Funktions-Ratsche verweist auf `docs/SETUP.md`, beide
+  Basiswerte neu geschrieben. `docs/SETUP.md` beschreibt die Ratsche und die Liste `replacesLocation`.
+
+## 2026-11-28: Falsche Kommentare berichtigt, Kaskade beim Konto-Löschen als Schranke (Branch `docs/kommentare-402`, #477, #402)
+
+- **Ziel:** Fund aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): sachlich falsche Kommentare,
+  erzählter Verlauf an der Ratsche vorbei, Dateien mit mehr Kommentar als Code. Am Verhalten ändert sich nichts.
+- **Berichtigt** (am heutigen Code belegt): `chat-limits.ts` verwies auf `hasMoreThanLimit` (heisst `splitAtLimit`);
+  `robots.ts` und `layout.tsx` nannten `promptprinter.app` noch unvergeben; die Kaskaden-Liste an der Löschroute;
+  `url-safety.ts` nannte nur `llm/custom.ts` als Aufrufer, `llm/analyze.ts` ruft die Prüfung ebenfalls; die zwei
+  Startmeldungen in `env.ts` nennen `shared/lib/site-url.ts` und `server/security/turnstile.ts`; `vitest.config.ts`
+  nannte Vitest 4; `byok.ts` hatte zwei Doc-Blöcke vor `removeByokRow`; in `brain/analyze.ts` steht der Doc-Block
+  wieder vor `analyzeProjectBrain`.
+- **Schon vorher behoben:** `avatar.ts` und der Verweis auf `tool-picker.tsx` in `utils.ts` (`b6db68a8`), die Karte beim
+  Teilen (`f86b3430`), `project-file-cache.ts` (`e4c8bddd`), der Satz zum Stream ohne Frist in `docs/SETUP.md`
+  (`aef2d6d1`). `docs/SETUP.md` blieb deshalb unverändert.
+- **Kaskaden-Schranke** (`tests/guards/account-delete-cascade.test.ts`) statt der Aufzählung: liest die Migrationen der
+  Reihe nach (anlegen, löschen, umbenennen, Spalten und Fremdschlüssel nachreichen oder entfernen) und verlangt je
+  Tabelle mit `user_id` einen Fremdschlüssel auf `profiles` oder `auth.users` mit `ON DELETE CASCADE`, dazu die Kaskade
+  von `profiles` selbst. Dass sie alle Tabellen sieht, hält der Abgleich mit `database.types.ts` fest. Zwei Ausnahmen
+  mit Grund: `security_events` (ohne Fremdschlüssel, so beschrieben) und `billing_events` (`ON DELETE SET NULL`,
+  Migration 0039). 17 Mutationen an Migrationen und Schranke, alle erkannt; die Migrationen sind unverändert.
+- **Ratsche** (`comment-history.test.ts`): zählt zusätzlich `used to`, `no longer`, `früher`, `ehemals`, `damals`.
+  `used to` nach `is`, `are`, `be`, `being` zählt nicht (beschreibt heute), `früher` nur als ganzes Wort (`frühere`
+  nicht). Bestand dadurch 56 Treffer mehr (39 `used to`, 15 `no longer`, je 1 `früher` und `damals`), davon 6
+  Fehlalarme, die die Gegenwart beschreiben (5 `no longer`: `account/route.ts`, `delete-project.tsx`,
+  `use-mic-analyser.ts`, `use-chat-turn.ts`, `rate-limit.ts`; 1 `früher`: `model-call.ts`). Bewusst nicht weiter
+  ausgenommen: die Ratsche bremst nur Zuwachs, und ein Satz lässt sich ohne das Wort schreiben. Basiswert 545 Funde in
+  136 Dateien vorher, 587 in 143 danach (14 alte Funde bereinigt). 12 Mutationen, alle erkannt. `bisher`, `formerly`,
+  `previously`, `gab es`, `wurde entfernt` zählen weiterhin nicht.
+- **Gekürzt** nur, wo ohnehin angefasst (#139): `chat-limits.ts` von 132 auf 59 Kommentarzeilen bei 24 Zeilen Code. Die
+  anderen fünf Dateien der Tabelle blieben unberührt. Prüfsumme der Terminal-App nachgezogen (nur Kommentare).
+- **Weggefallene Herleitungen aus `chat-limits.ts`:**
+  - `MAX_TRANSCRIPT_MESSAGES` war eine harte Schranke: jenseits davon scheiterte jeder weitere Zug dauerhaft, weil
+    genau der gespeicherte Verlauf sie riss (QA F-1). Seither kürzt die Route.
+  - `MAX_ASSISTANT_MESSAGE_CHARS` teilte sich die Grenze von 8000 mit der Nutzernachricht: eine gute, lange Antwort
+    machte den Chat unbrauchbar (QA F-2). 40 000 liegt über dem, was das Ausgabebudget hergibt, und begrenzt trotzdem
+    einen eigenen Endpunkt, der `max_tokens` nicht beachtet (sonst nur `MAX_RESPONSE_BYTES`).
+  - `MESSAGE_LOAD_LIMIT`, `SAVED_PROMPTS_LOAD_LIMIT` und `LIST_LOAD_LIMIT`: die Abfragen waren unbegrenzt (QA P-1, N-1);
+    `/chats` war am teuersten, weil jede Zeile `messages(count)` trägt.
+  - `truncate` hängte das Auslassungszeichen nach dem Schnitt an und lag damit ein Zeichen über der Grenze (QA C-1:
+    der Helfer liegt in `shared/lib`, weil Kontextaufbau und Speichern ihn brauchen).
+- **Offen:** das Etikett "v2.0 Beta" in `opengraph-image.tsx` (Frage an Kasum).
+
+## 2026-11-28: Komponententests laufen im Pool `vmThreads` (Branch `test/vitest-vmthreads`, #476, #371)
+
+- **Ziel:** Fund aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): jede jsdom-Datei lud jsdom in einem
+  neuen Prozess. Heute sind es 125 Dateien (beim Review 85).
+- **Umgestellt:** Projekt `jsdom` mit `pool: "vmThreads"`. Jeder Worker lädt jsdom einmal, jede Datei behält ihr eigenes
+  Fenster in einem eigenen vm-Kontext. `isolate: false` ist nicht gesetzt.
+- **Gemessen** lokal (i7-1355U, 12 Threads, 15,7 GB, davon 1,6 bis 4 GB frei), `npm run test`, nie zwei zugleich, je ein
+  Aufwärmlauf nicht gezählt, derselbe Stand `c39268a1`:
+
+| | vorher, 3 Läufe | nachher, 5 Läufe |
+|---|---:|---:|
+| Wanduhr, Median | 275,0 s (268,5 bis 279,2) | 186,0 s (155,2 bis 218,3) |
+| Vitest `Duration`, Median | 273,4 s | 183,7 s |
+| Anteil `environment` | 27 bis 29 % | 4 bis 5 % |
+| Speicherspitze neuer node-Prozesse, privat, Median | 2,7 GB | 5,1 GB |
+| Freier Arbeitsspeicher, Minimum, Median | 499 MB | 25 MB |
+
+  Gewinn im Median 32 % (Median der ersten drei Nachher-Läufe ebenfalls 186,0 s), die Hürde des Issues war 20 %.
+  Die Streuung nachher ist grösser; der langsamste Lauf nachher war schneller als der schnellste vorher.
+- **Was der Pool verlangt hat** (erster Probelauf nur mit `pool`: 81 Tests in 7 Dateien rot):
+  - `window.location` ist im vm-Kontext die echte Eigenschaft von jsdom und nicht neu definierbar. Die zwei Dateien,
+    die sie ersetzen, laufen unverändert im Projekt `jsdom-location` (eigene Prozesse); die Liste `replacesLocation` in
+    `vitest.config.ts` schliesst sie zugleich aus `jsdom` aus.
+  - Dem Kontext fehlen die Web-Streams von Node, `@google/genai` scheiterte beim Laden. `vitest.setup.ts` reicht
+    `ReadableStream`, `WritableStream`, `TransformStream`, `TextDecoderStream` und `TextEncoderStream` nach.
+  - **Trennung je Datei gilt nicht für `process`:** `vi.stubEnv` mit dem Turnstile-Schlüssel (zwei Dateien) galt in der
+    nächsten Datei desselben Workers weiter, zwei Tests zum Passwort-Reset scheiterten je nach Reihenfolge (der erste
+    volle Probelauf war trotzdem grün). `vitest.setup.ts` setzt `process.env` nach jeder Datei zurück.
+- **Keine Testdatei und keine Behauptung geändert.** Gleiche Zahl vorher und nachher: 376 Dateien, 5140 Tests,
+  2 übersprungen.
+- **Stabil:** sechs volle Läufe am Stück grün (Aufwärmlauf und fünf gezählte), dazu das Gate; die jsdom-Dateien fünfmal
+  in zufälliger Reihenfolge (`--sequence.shuffle.files`, zweimal mit einem, dreimal mit drei Workern), alle grün.
+- **Geprüft:** Ohne das Zurücksetzen scheitern bei der Reihenfolge Captcha vor Passwort-Reset genau die zwei Tests,
+  mit ihm laufen alle zehn. `zod.jitless.test.tsx` (behauptet "kein Aufruf von `Function`") schlägt im neuen Pool noch
+  an, wenn `jitless` fehlt. Abdeckung des jsdom-Teils vorher und nachher je Datei identisch (438 Dateien, 0
+  Abweichungen), mit Messung 67 statt 203 s.
+- **Speicher:** vm-Kontexte gibt Node nicht frei. Mit einem Worker wuchs der Heap von 153 MB auf 1,9 GB nach 123 Dateien
+  (rund 15 MB je Datei), mit 11 Workern blieb er je Worker bei höchstens 334 MB. Die Standardgrenze `vmMemoryLimit`
+  (Arbeitsspeicher durch Zahl der Worker, hier 1,5 GB) wird nicht erreicht. Mit `512MB` und einem Worker begann Vitest
+  rund fünfmal einen neuen Worker, der Lauf dauerte 189 statt 161 s. Deshalb nicht gesetzt.
+- **Weitere Fallen:** keine Fehler durch `instanceof` über Realm-Grenzen oder Timer; `process.chdir` kommt in keiner
+  `.test.tsx` vor.
+- **CI** (ein Lauf des PR, 46139836941, grün): Testschritt 98 s gegen im Median 110 s auf `main` (letzte 12 grüne
+  Läufe, 96 bis 143 s), Messschritt der Abdeckung 92 s gegen 128 s (109 bis 176 s). Auf dem Runner ist der Gewinn beim
+  Testschritt klein und liegt am unteren Rand der Streuung; ein einzelner Lauf belegt ihn nicht.
+- **Andere Workflows:** der Job Testabdeckung in `ci.yml` nutzt dieselbe Konfiguration; `cli.yml` und `skill.yml` laufen
+  mit `node:test` und sind nicht betroffen.
+- **Grenzen:** Änderungen am `process`-Objekt selbst und an den von Node durchgereichten Klassen (`Response`, `Headers`,
+  `AbortController`, `URLSearchParams`) bleiben im Worker stehen; kein heutiger Test ändert sie.
+
+## 2026-11-28: Schranke für Funktionslänge und Komplexität, SSRF-Bereiche als Liste (Branch `test/funktionsgrenzen-ssrf-bereiche`, #475, #370)
+
+- **Ziel:** Fund aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): die Datei-Grenze hielt, innerhalb der
+  Dateien gab es keine Grenze.
+- **Ratsche** (`tests/guards/function-limits.test.ts`, Messung in `tests/support/function-limits.ts`): die ESLint-Regeln
+  `max-lines-per-function` (100, ohne Leer- und Kommentarzeilen, auch sofort aufgerufene Funktionen), `complexity` (15)
+  und `max-depth` (4) über `src/` ohne Tests, Wörterbücher und Rechtstext-Seiten und über `cli/src/` ohne die geprüfte
+  Kopie `context.mjs`. Der Bestand (`function-limits.baseline.json`) steht je Datei und Funktion; benannt wird nach der
+  Funktion und den umschliessenden Funktionen, nie nach der Zeile, gleich benannte teilen sich eine absteigende Liste.
+  87 Funktionen in 78 Dateien stehen darin. Neu oder gewachsen schlägt fehl, ein veralteter (zu hoher) Eintrag wie
+  bei `comment-history.test.ts` auch;
+  `eslint-disable` schaltet nichts ab, eine unlesbare Datei ist ein Fehler. Neu schreiben:
+  `FUNCTION_BASELINE_WRITE=1 npx vitest run tests/guards/function-limits.test.ts`. Die Datei braucht allein 4,5 bis 8 s
+  samt Start von Vitest, davon rund 3 bis 5 s Messung (449 Dateien, fast alles Parser).
+- **SSRF-Sperre** (`server/security/url-safety.ts`): `isPrivateIPv4` und `isPrivateIPv6` (Komplexität 32 und 20) prüfen
+  Listen von CIDR-Bereichen mit einem gemeinsamen Vergleich. Alt gegen neu: 54 153 630 Eingaben, 65 619 576 Vergleiche
+  (jedes IPv4-/24, alle Bereichsgrenzen samt Nachbarn, eingebettete, verkürzte und ungültige Schreibweisen, Zufall mit
+  festem Startwert), 0 Abweichungen; das Vergleichsskript fand vier eingebaute Fehler und liegt nicht im Repo. Keine
+  Lücke und nichts zu viel Gesperrtes bemerkt. Neu getestet sind die Grenzen der IPv6-Bereiche.
+- **Mutationen:** Ratsche 24 an der Schranke und 7 Verstösse im Quellbaum, alle erkannt, dazu 2 erlaubte Fälle
+  (Verschieben; Tests, Rechtstexte, Kopie) grün. SSRF 90, davon 85 erkannt; die übrigen 5 ändern von aussen nichts
+  (`fe80::/10` und `fec0::/10` auf `/9` sperrt dasselbe, die Ausrichtung eines nicht glatten Eintrags greift bei keinem
+  heutigen, die zwei Formprüfungen erreicht keine Adresse, die `isIP` durchlässt).
+- **Nicht zerlegt:** die grossen Komponenten, das Issue sieht das beim nächsten Anfassen vor. Mit denselben Regeln am
+  Stand des Reviews (`e82896c1`) und heute gemessen:
+
+| `src/` | Review | vor diesem PR | danach |
+|---|---:|---:|---:|
+| Funktionen über 200 Zeilen | 11 | 12 | 12 |
+| 101 bis 200 Zeilen | 51 | 46 | 46 |
+| Komplexität ab 20 | 10 | 14 | 12 |
+| Komplexität 16 bis 19 | 15 | 13 | 13 |
+| tiefer als 4 Blöcke (Funktionen) | 2 | 2 | 2 |
+
+  `cli/src/` zählt wie beim Review: 1 über 200 (`runRepl` 332), 2 von 101 bis 200, 5 ab Komplexität 20, 4 von 16 bis 19.
+  Über 200 Zeilen bleiben `SettingsWorkspace` 281, `MobileNav` 272, `VoiceBar` 260, `PromptHistory` 248,
+  `SavedPromptCard` 245, `AccountMenu` 238, `SignUpExperience` 231, `ProjectFiles` 222, `CommandPalette` 219,
+  `ProjectBrainCard` 217, `TwoFactor` 215, `ContactForm` 202. Kleiner seit dem Review: `MobileNav` (304),
+  `CommandPalette` (249), `SignUpExperience` (251), `SavedPromptCard` (268), `ContactForm` (212), `DeleteAccount`
+  (177 → 147), `NewProjectButton` (156 → 114); unter 100 gefallen `TaskGuidePage` (185) und `ComparisonPage` (174).
+  Gewachsen: `PromptHistory` (167 → 248, Komplexität 17 → 25), `readOpenAiCompatibleSse` (Komplexität 21 → 31,
+  Tiefe 5 → 6), `VoiceBar` (Komplexität 20 → 25), `SavePromptButton` (144 → 182).
+
 ## 2026-11-28: `src/middleware.ts` heisst `src/proxy.ts` und läuft auf Node.js (Branch `refactor/proxy-428`, #470, #428)
 
 - **Ziel:** Fund aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): Next 16 hat die Konvention "middleware"
