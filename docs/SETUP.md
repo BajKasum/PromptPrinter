@@ -361,6 +361,16 @@ prüft täglich die Abhängigkeiten (siehe "Täglicher Audit" unten). `audit:gat
 im ausgelieferten Baum blockiert immer, einer nur in einem Entwicklungswerkzeug nur dann, wenn es
 eine gepatchte Version gibt. Es gibt keine Ausnahmeliste.
 
+`tests/guards/function-limits.test.ts` hält Funktionslänge (100 Zeilen ohne Leer- und Kommentarzeilen), Komplexität
+(15) und Verschachtelung (4) je Funktion in `src/` und `cli/src/` als Ratsche fest: neue Funde und gewachsene Werte
+schlagen fehl. Wer eine Funktion verkleinert, umbenennt oder verschiebt, schreibt den Basiswert neu:
+`FUNCTION_BASELINE_WRITE=1 npx vitest run tests/guards/function-limits.test.ts` (PowerShell: vorher
+`$env:FUNCTION_BASELINE_WRITE=1`, danach `Remove-Item Env:FUNCTION_BASELINE_WRITE`). Der Befehl schreibt auch
+gewachsene Werte, der Diff der Datei zeigt sie.
+
+Die Komponententests (`*.test.tsx`) laufen im Pool `vmThreads`. Wer darin `window.location` ersetzt, trägt die Datei in
+`replacesLocation` in `vitest.config.ts` ein, sonst scheitert sie mit "Cannot redefine property: location".
+
 ### Abhängigkeiten (Dependabot)
 
 [`.github/dependabot.yml`](../.github/dependabot.yml) schlägt montags um 5 Uhr

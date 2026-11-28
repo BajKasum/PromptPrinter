@@ -133,8 +133,8 @@ Tailwind 4 (HSL-Token-System in `globals.css`) · Framer Motion · next-themes �
    vorbei.
 2. **Es gibt keine Bezahlung.** Lemon Squeezy, Checkout, Webhook, Kundenportal und der Pro-Plan sind aus
    dem Code entfernt (2026-11-19), der Stand davor liegt im Tag `v1-saas`. `PlanKey` ist nur `"free"`;
-   `profiles.plan`, `subscriptions` und die Abo-Spalten bleiben in der Datenbank, der Code liest den Plan
-   nicht (eine alte Zeile mit `'pro'` ist Free). `api/cli/me` liefert `plan` weiter, für die Terminal-App.
+   `profiles.plan` und die Abo-Spalten bleiben in der Datenbank (`subscriptions` hat Migration 0043 entfernt), der
+   Code liest den Plan nicht (eine alte Zeile mit `'pro'` ist Free). `api/cli/me` liefert `plan` weiter, für die Terminal-App.
 3. **Env-Dateien nicht verwechseln:** `npm run dev` liest `.env.local`, der
    Prod-Docker-Container liest `.env` (via `env_file` in
    `docker-compose.prod.yml`). Das `--env-file .env.local` im Compose-Befehl steuert
