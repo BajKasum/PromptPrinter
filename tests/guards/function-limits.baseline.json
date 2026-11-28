@@ -1,0 +1,245 @@
+{
+  "cli/src/chat.mjs": {
+    "runTurn": {"complexity":[22]}
+  },
+  "cli/src/cli.mjs": {
+    "main": {"lines":[141],"complexity":[34]}
+  },
+  "cli/src/local.mjs": {
+    "localSettings": {"complexity":[19]},
+    "readCompletion": {"complexity":[17]}
+  },
+  "cli/src/login.mjs": {
+    "runLogin": {"complexity":[23]}
+  },
+  "cli/src/mcp.mjs": {
+    "createMcpServer": {"lines":[174]},
+    "createMcpServer › createPrompt": {"complexity":[18]},
+    "createMcpServer › handle": {"complexity":[26]}
+  },
+  "cli/src/repl.mjs": {
+    "runRepl": {"lines":[332]},
+    "runRepl › command": {"complexity":[24]},
+    "runRepl › handOver": {"complexity":[17]}
+  },
+  "src/app/(app)/layout.tsx": {
+    "AppLayout": {"complexity":[23]}
+  },
+  "src/app/(app)/projects/[id]/(workspace)/layout.tsx": {
+    "ProjectWorkspaceLayout": {"lines":[128]}
+  },
+  "src/app/(app)/usage/page.tsx": {
+    "OperationsSection": {"lines":[103]}
+  },
+  "src/app/(marketing)/docs/chat-mit-finn/page.tsx": {
+    "Page": {"lines":[161]}
+  },
+  "src/app/(marketing)/docs/dateien/page.tsx": {
+    "Page": {"lines":[152]}
+  },
+  "src/app/(marketing)/docs/eigene-api-keys/page.tsx": {
+    "Page": {"lines":[122]}
+  },
+  "src/app/(marketing)/docs/ergebnisse/page.tsx": {
+    "Page": {"lines":[128]}
+  },
+  "src/app/(marketing)/docs/konto-und-daten/page.tsx": {
+    "Page": {"lines":[162]}
+  },
+  "src/app/(marketing)/docs/page.tsx": {
+    "DocsIndexPage": {"lines":[107]}
+  },
+  "src/app/(marketing)/docs/projekte/page.tsx": {
+    "Page": {"lines":[188]}
+  },
+  "src/app/(marketing)/docs/selbst-betreiben/page.tsx": {
+    "Page": {"lines":[112]}
+  },
+  "src/app/(marketing)/docs/terminal-anmeldung/page.tsx": {
+    "Page": {"lines":[177]}
+  },
+  "src/app/(marketing)/kontakt/page.tsx": {
+    "KontaktPage": {"lines":[133]}
+  },
+  "src/app/(marketing)/mcp/page.tsx": {
+    "McpPage": {"lines":[140]}
+  },
+  "src/app/(marketing)/open-source/page.tsx": {
+    "OpenSourcePage": {"lines":[125]}
+  },
+  "src/app/(marketing)/skill/page.tsx": {
+    "SkillPage": {"lines":[114]}
+  },
+  "src/app/(marketing)/terminal/page.tsx": {
+    "TerminalPage": {"lines":[150]}
+  },
+  "src/app/(marketing)/ueber/page.tsx": {
+    "UeberPage": {"lines":[157]}
+  },
+  "src/app/api/cli/me/route.ts": {
+    "GET": {"complexity":[21]}
+  },
+  "src/app/api/test-run/route.ts": {
+    "POST": {"complexity":[20]}
+  },
+  "src/app/global-error.tsx": {
+    "GlobalError": {"lines":[103]}
+  },
+  "src/features/auth/components/cli-approval.tsx": {
+    "CliApproval": {"lines":[172]}
+  },
+  "src/features/auth/components/request-password-reset-experience.tsx": {
+    "RequestPasswordResetExperience": {"lines":[119]}
+  },
+  "src/features/auth/components/second-factor-experience.tsx": {
+    "SecondFactorExperience": {"lines":[169]}
+  },
+  "src/features/auth/components/sign-in-experience.tsx": {
+    "SignInExperience": {"lines":[134]}
+  },
+  "src/features/auth/components/sign-up-experience.tsx": {
+    "SignUpExperience": {"lines":[231]}
+  },
+  "src/features/auth/components/update-password-experience.tsx": {
+    "UpdatePasswordExperience": {"lines":[140]}
+  },
+  "src/features/chat/components/chat-composer.tsx": {
+    "ChatComposer": {"lines":[186],"complexity":[18]}
+  },
+  "src/features/chat/components/chat-list.tsx": {
+    "ChatRow": {"lines":[174]}
+  },
+  "src/features/chat/components/chat-result-panel.tsx": {
+    "ChatResultPanel": {"complexity":[21]}
+  },
+  "src/features/chat/components/chat-thread.tsx": {
+    "ChatThread": {"lines":[128]}
+  },
+  "src/features/chat/components/chat.tsx": {
+    "Chat": {"lines":[174],"complexity":[18]}
+  },
+  "src/features/chat/components/move-to-project.tsx": {
+    "MoveToProjectButton": {"lines":[143]}
+  },
+  "src/features/chat/components/prompt-actions.tsx": {
+    "PromptActions": {"lines":[104]}
+  },
+  "src/features/chat/components/save-prompt-button.tsx": {
+    "SavePromptButton": {"lines":[182],"complexity":[17]},
+    "SavePromptButton › save": {"complexity":[18]}
+  },
+  "src/features/chat/components/voice-bar.tsx": {
+    "VoiceBar": {"lines":[260],"complexity":[25]}
+  },
+  "src/features/chat/components/voice-waveform.tsx": {
+    "VoiceWaveform": {"lines":[140]},
+    "VoiceWaveform › useEffect() › frame": {"complexity":[16]}
+  },
+  "src/features/chat/hooks/use-chat-turn.ts": {
+    "useChatTurn": {"lines":[178]}
+  },
+  "src/features/chat/lib/chat-persistence.ts": {
+    "openTurn": {"complexity":[19]}
+  },
+  "src/features/chat/lib/image-metadata.ts": {
+    "stripJpeg": {"complexity":[22]}
+  },
+  "src/features/chat/lib/sse-stream.ts": {
+    "parseSseEvents": {"depth":[5]}
+  },
+  "src/features/marketing/components/contact-form.tsx": {
+    "ContactForm": {"lines":[202]}
+  },
+  "src/features/marketing/components/docs-shell.tsx": {
+    "DocsShell": {"lines":[141]}
+  },
+  "src/features/marketing/components/hero.tsx": {
+    "HeroDemo": {"lines":[183]}
+  },
+  "src/features/marketing/components/how-it-works-spine.tsx": {
+    "HowItWorksSpine": {"lines":[106]}
+  },
+  "src/features/marketing/components/how-it-works.tsx": {
+    "HowItWorks": {"lines":[139]}
+  },
+  "src/features/marketing/components/navbar.tsx": {
+    "Navbar": {"lines":[166]}
+  },
+  "src/features/projects/components/new-project.tsx": {
+    "NewProjectButton": {"lines":[114]}
+  },
+  "src/features/projects/components/project-brain.tsx": {
+    "ProjectBrainCard": {"lines":[217],"complexity":[30]}
+  },
+  "src/features/projects/components/project-files.tsx": {
+    "ProjectFiles": {"lines":[222]},
+    "ProjectFiles › handleFile": {"complexity":[23]}
+  },
+  "src/features/projects/components/project-rail.tsx": {
+    "ProjectRail": {"lines":[190]}
+  },
+  "src/features/projects/lib/project-context.ts": {
+    "buildProjectContext": {"complexity":[16]}
+  },
+  "src/features/prompts/components/prompt-export-panel.tsx": {
+    "PromptExportPanel": {"complexity":[20]}
+  },
+  "src/features/prompts/components/prompt-history.tsx": {
+    "PromptHistory": {"lines":[248],"complexity":[25]}
+  },
+  "src/features/prompts/components/prompt-text-editor.tsx": {
+    "PromptTextEditor": {"lines":[118]}
+  },
+  "src/features/prompts/components/saved-prompt-list.tsx": {
+    "SavedPromptCard": {"lines":[245]}
+  },
+  "src/features/prompts/components/share-prompt.tsx": {
+    "SharePrompt": {"lines":[129]}
+  },
+  "src/features/settings/components/api-keys.tsx": {
+    "CustomProviderForm": {"lines":[125]}
+  },
+  "src/features/settings/components/delete-account.tsx": {
+    "DeleteAccount": {"lines":[147]}
+  },
+  "src/features/settings/components/settings-workspace.tsx": {
+    "SettingsWorkspace": {"lines":[281],"complexity":[16]}
+  },
+  "src/features/settings/components/two-factor.tsx": {
+    "TwoFactor": {"lines":[215],"complexity":[16]}
+  },
+  "src/server/account-export.ts": {
+    "buildAccountSection": {"complexity":[17]}
+  },
+  "src/server/llm-retry.ts": {
+    "transientReason": {"complexity":[19]}
+  },
+  "src/server/llm/http.ts": {
+    "readCompletion": {"complexity":[19]},
+    "readOpenAiCompatibleSse": {"complexity":[31],"depth":[6]}
+  },
+  "src/server/model-call.ts": {
+    "reserveFreeTrialSlot": {"complexity":[19]}
+  },
+  "src/shared/lib/zod.ts": {
+    "zod3Message": {"complexity":[31]}
+  },
+  "src/shared/ui/placeholder-form.tsx": {
+    "PlaceholderForm": {"lines":[106]}
+  },
+  "src/shell/components/account-menu.tsx": {
+    "AccountMenu": {"lines":[238]}
+  },
+  "src/shell/components/account-submenu.tsx": {
+    "AccountSubmenu": {"lines":[130]}
+  },
+  "src/shell/components/command-palette.tsx": {
+    "CommandPalette": {"lines":[219]}
+  },
+  "src/shell/components/mobile-nav.tsx": {
+    "MobileNav": {"lines":[272]}
+  },
+  "src/shell/components/sidebar.tsx": {
+    "Sidebar": {"lines":[132]}
+  }
+}
