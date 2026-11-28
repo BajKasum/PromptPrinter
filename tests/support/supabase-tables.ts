@@ -1,8 +1,9 @@
 /**
  * Ein Supabase-Client über festen Zeilen, ohne RLS, mit dem Teil der Abfragesprache, den die Seiten und die
  * Server-Module lesen: `select` (auch `{ count: "exact", head: true }`), `eq`, `is`, `gte`, `order`, `limit`,
- * `range`, `maybeSingle`, `rpc` und das `await` auf die Kette. Er filtert, sortiert, kappt und zählt wie PostgREST, `count` zählt
- * also alle passenden Zeilen, unabhängig von `limit` und `range`. Weil keine Policy mitspielt, zeigt ein Test, ob eine
+ * `range`, `maybeSingle`, `rpc` und das `await` auf die Kette. Er filtert, sortiert, kappt und zählt wie PostgREST,
+ * `count` zählt also alle passenden Zeilen, unabhängig von `limit` und `range`, und eine Zeile trägt nur die Spalten,
+ * die `select` nennt: eine vergessene Spalte fehlt auch im Test. Weil keine Policy mitspielt, zeigt ein Test, ob eine
  * Abfrage selbst nach dem Konto eingrenzt. `errors` lässt eine Tabelle oder Funktion mit einem Fehler antworten, wie
  * supabase-js: `data` und `count` sind null, geworfen wird nichts. `reads` hält je Abfrage fest, was gefragt wurde.
  *
@@ -13,6 +14,22 @@ export type Filter = [operator: "eq" | "is" | "gte", column: string, value: unkn
 
 const matches = (row: Row, [operator, column, value]: Filter) =>
   operator === "gte" ? String(row[column]) >= String(value) : row[column] === value;
+
+/**
+ * Die Namen, unter denen die Spalten einer `select`-Liste in der Antwort stehen (`messages(count)` heisst `messages`,
+ * `alias:spalte` heisst `alias`), oder null für "alle".
+ */
+function selected(columns: string): string[] | null {
+  // Kommas in Klammern gehören zur verschachtelten Auswahl.
+  const parts = columns.split(/,(?![^(]*\))/).map((part) => part.split(/[(:!]/)[0].trim());
+  return parts.includes("*") ? null : parts.filter(Boolean);
+}
+
+function project(row: Row, columns: string[] | null): Row {
+  if (!columns) return row;
+  return Object.fromEntries(columns.filter((column) => column in row).map((column) => [column, row[column]]));
+}
+
 export type Read = {
   table: string;
   columns: string;
@@ -65,7 +82,12 @@ export function tablesClient({ tables = {}, rpc = {}, errors = {} }: TablesClien
       let rows = all;
       if (read.range) rows = rows.slice(read.range[0], read.range[1] + 1);
       if (read.limit !== undefined) rows = rows.slice(0, read.limit);
-      return { data: read.head ? null : rows, count: counted ? all.length : null, error: null };
+      const columns = selected(read.columns);
+      return {
+        data: read.head ? null : rows.map((row) => project(row, columns)),
+        count: counted ? all.length : null,
+        error: null,
+      };
     };
 
     const chain = {

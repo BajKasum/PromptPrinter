@@ -1,6 +1,6 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tablesClient, type Row, type TablesClientOptions } from "@tests/support/supabase-tables";
 import { FREE_TRIAL, PLAN_LIMITS } from "@/shared/lib/plans";
 import { fmt, plural } from "@/shared/i18n/format";
@@ -10,7 +10,8 @@ import UsagePage from "./page";
 // "Nutzung": die eigenen Projekte und Gratis-Prompts, und nur für Admins die Zahlen quer über alle Konten. Letztere
 // kommen über den Service-Role-Client, der RLS umgeht: er darf für niemanden sonst entstehen.
 const m = de.pages.usage;
-const NOW_ISO = new Date().toISOString();
+// Die Uhr steht mitten in einem Monat: "heute" und "diesen Monat" hängen sonst am Zeitpunkt des Laufs.
+const NOW = new Date("2026-11-15T12:00:00.000Z");
 
 let client = tablesClient();
 let admin = tablesClient();
@@ -79,8 +80,14 @@ const meter = (label: string) => screen.getByText(label, { selector: "span" }).c
 
 /** Die Kachel einer Kennzahl im Betrieb, an ihrer Beschriftung. */
 const card = (label: string) => screen.getByText(label).parentElement!;
+/** Nur die grosse Zahl der Kachel, zwischen Beschriftung und Hinweis. */
+const tileValue = (label: string) => card(label).children[1].textContent;
 
+afterEach(() => vi.useRealTimers());
 beforeEach(() => {
+  // Nur das Datum steht still, Zeitgeber laufen weiter.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
   withTables();
   admin = tablesClient();
   createAdminClient.mockClear();
@@ -187,12 +194,24 @@ describe("UsagePage: Betrieb", () => {
 
   const reply = (n: number, createdAt: string, role = "assistant"): Row => ({ id: `m-${n}`, role, created_at: createdAt });
 
-  it("zeigt einem Admin Konten und Antworten über alle Nutzer und die grobe Schätzung", async () => {
+  it("zeigt einem Admin Konten und Antworten über alle Nutzer: heute ab 00:00 UTC, den Monat ab dem Ersten", async () => {
     asAdmin();
+    // Je eine Antwort an beiden Seiten jeder Grenze; die drei Kacheln bekommen verschiedene Zahlen.
     admin = tablesClient({
       tables: {
-        profiles: [profile(), profile({ id: "user-2" }), profile({ id: "user-3" })],
-        messages: [reply(1, NOW_ISO), reply(2, NOW_ISO), reply(3, NOW_ISO, "user")],
+        profiles: Array.from({ length: 7 }, (_, i) => profile({ id: `user-${i + 1}` })),
+        messages: [
+          reply(1, "2026-11-15T11:59:00.000Z"),
+          reply(2, "2026-11-15T00:00:00.000Z"),
+          reply(3, "2026-11-14T23:59:59.999Z"),
+          reply(4, "2026-11-02T08:00:00.000Z"),
+          reply(5, "2026-11-01T00:00:00.000Z"),
+          reply(6, "2026-10-31T23:59:59.999Z"),
+          reply(7, "2026-10-15T12:00:00.000Z"),
+          // Fragen der Nutzer sind keine Antworten.
+          reply(8, "2026-11-15T10:00:00.000Z", "user"),
+          reply(9, "2026-11-05T10:00:00.000Z", "user"),
+        ],
       },
     });
 
@@ -201,15 +220,15 @@ describe("UsagePage: Betrieb", () => {
     expect(screen.getByText(m.ops.title)).toBeInTheDocument();
     expect(screen.getByText("Admin")).toBeInTheDocument();
     expect(screen.getByText("Aktivierung")).toBeInTheDocument();
-    expect(card(m.ops.accounts)).toHaveTextContent("3");
-    expect(card(m.ops.repliesToday)).toHaveTextContent("2");
-    expect(card(m.ops.repliesMonth)).toHaveTextContent("2");
-    // Nur Antworten zählen, je 0,012 $ im schlechtesten gemessenen Fall.
-    expect(screen.getByText(fmt(m.ops.repliesMonthHint, { cost: "0.02" }))).toBeInTheDocument();
+    expect(tileValue(m.ops.accounts)).toBe("7");
+    expect(tileValue(m.ops.repliesToday)).toBe("2");
+    expect(tileValue(m.ops.repliesMonth)).toBe("5");
+    // Je Antwort des Monats 0,012 $ im schlechtesten gemessenen Fall.
+    expect(card(m.ops.repliesMonth)).toHaveTextContent(fmt(m.ops.repliesMonthHint, { cost: "0.06" }));
     // Gezählt wird ohne die Zeilen zu holen: kein Inhalt verlässt die Datenbank.
     expect(admin.reads.length).toBeGreaterThan(0);
     expect(admin.reads.every((read) => read.head)).toBe(true);
-    expect(loadActivationFunnel).toHaveBeenCalledWith(admin, expect.any(Date));
+    expect(loadActivationFunnel).toHaveBeenCalledWith(admin, NOW);
   });
 
   it("sagt ohne Redis, dass es keine Tagesbremse gibt, und zeigt sonst den Stand", async () => {
