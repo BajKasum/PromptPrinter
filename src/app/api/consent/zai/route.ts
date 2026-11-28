@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { createClient } from "@/server/supabase/server";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { setZaiConsent } from "@/server/consent";
@@ -27,11 +27,7 @@ async function change(req: Request, granted: boolean): Promise<Response> {
   if (!user) return denied("consent", problem(401, m.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "consent", user.id), LIMIT);
-  if (!rl.allowed) {
-    return problem(429, m.tooManyRequests, {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
+  if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
 
   try {
     await setZaiConsent(user.id, granted);

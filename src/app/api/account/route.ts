@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { createClient } from "@/server/supabase/server";
 import { createAdminClient } from "@/server/supabase/admin";
 import { lacksSecondFactor } from "@/server/supabase/assurance";
@@ -212,8 +212,5 @@ export async function DELETE(req: Request) {
 async function enforceDeleteLimit(req: Request, userId: string, isAdmin: boolean, m: Messages["api"]): Promise<Response | null> {
   if (isAdmin) return null;
   const rl = await rateLimit(rateLimitKey(req, "account-delete", userId), { limit: 5, windowMs: 60 * 60 * 1000 });
-  if (rl.allowed) return null;
-  return problem(429, m.tooManyRequests, {
-    retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-  });
+  return rl.allowed ? null : rateLimitedProblem(m.tooManyRequests, rl);
 }

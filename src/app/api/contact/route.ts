@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import { z, responseIssues } from "@/shared/lib/zod";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem } from "@/server/http/validation-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { readBody } from "@/server/http/validated-body";
 import { de } from "@/shared/i18n/messages/de";
 import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
 import { mailConfigured, sendMail } from "@/server/mail/resend";
 import { CONTACT_TOPIC_LABELS, contactSchema } from "@/shared/lib/contact";
 import { LEGAL } from "@/shared/lib/legal";
@@ -41,21 +36,14 @@ const requestSchema = contactSchema.extend({
 export async function POST(req: Request) {
   const rl = await rateLimit(rateLimitKey(req, "contact"), PER_IP);
   if (!rl.allowed) {
-    return problem(429, "Du hast gerade mehrere Nachrichten geschickt. Bitte warte etwas und versuch es später erneut.", {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
+    return rateLimitedProblem("Du hast gerade mehrere Nachrichten geschickt. Bitte warte etwas und versuch es später erneut.", rl);
   }
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, "Die Nachricht ist zu gross.");
-    // Das Kontaktformular ist deutsch, also auch seine Fehler.
-    return invalidJsonProblem(de.api);
-  }
+  // Das Kontaktformular ist deutsch, also auch seine Fehler.
+  const read = await readBody(req, { tooLarge: "Die Nachricht ist zu gross.", unreadable: de.api.unreadable });
+  if (read instanceof Response) return read;
 
-  const parsed = requestSchema.safeParse(body);
+  const parsed = requestSchema.safeParse(read.body);
   if (!parsed.success) {
     return problem(400, "Bitte prüf deine Angaben: eine gültige E-Mail-Adresse und eine Nachricht von mindestens 10 Zeichen.", {
       issues: responseIssues(parsed.error.issues),

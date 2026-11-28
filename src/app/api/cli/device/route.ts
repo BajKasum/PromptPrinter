@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { readValidatedBody } from "@/server/http/validated-body";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { requestT } from "@/server/i18n";
 import { cleanClientName, DEVICE_REQUEST_TTL_MS, POLL_INTERVAL_SECONDS } from "@/server/cli-login/codes";
@@ -37,25 +32,13 @@ export async function POST(req: Request) {
   const m = t.api;
 
   const rl = await rateLimit(rateLimitKey(req, "cli-device"), RATE_LIMIT);
-  if (!rl.allowed) {
-    return problem(429, m.tooManyRequests, {
-      kind: "rate_limited",
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
+  if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
-    return invalidJsonProblem(m);
-  }
-  const parsed = requestSchema.safeParse(body);
-  if (!parsed.success) return validationProblem(m, parsed.error.issues);
+  const input = await readValidatedBody(req, requestSchema, m);
+  if (input instanceof Response) return input;
 
   try {
-    const created = await createDeviceRequest(cleanClientName(parsed.data.clientName), requestContext(req));
+    const created = await createDeviceRequest(cleanClientName(input.data.clientName), requestContext(req));
     logEvent("cli.device_requested", {});
     return NextResponse.json(
       {

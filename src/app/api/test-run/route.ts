@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { problem } from "@/server/http/api-problem";
-import { readJsonBody, RequestBodyTooLargeError } from "@/server/http/request-body";
+import { readBody } from "@/server/http/validated-body";
 import { createClient } from "@/server/supabase/server";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { denied } from "@/server/security/security-log";
@@ -47,14 +47,10 @@ export async function POST(req: Request): Promise<Response> {
   const user = data.user;
   if (!user) return denied("test-run", problem(401, m.signInToChat));
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, TEST_RUN_MAX_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, m.testRunTooLong);
-    return problem(400, m.unreadableReload);
-  }
-  const parsed = testRunRequestSchema.safeParse(body);
+  const texts = { tooLarge: m.testRunTooLong, unreadable: m.unreadableReload };
+  const read = await readBody(req, texts, TEST_RUN_MAX_BODY_BYTES);
+  if (read instanceof Response) return read;
+  const parsed = testRunRequestSchema.safeParse(read.body);
   if (!parsed.success) return problem(400, m.testRunTooLong);
   const { prompt, original } = parsed.data;
   // Der Text darf vom gelieferten Prompt nur in den Platzhaltern abweichen; der Hash gilt dem gelieferten Prompt,

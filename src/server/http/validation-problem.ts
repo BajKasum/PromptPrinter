@@ -14,7 +14,7 @@ import { fmt } from "@/shared/i18n/format";
 type ApiMessages = Messages["api"];
 
 /** Der Rumpf ist kein lesbares JSON. */
-export function invalidJsonProblem(m: ApiMessages) {
+export function invalidJsonProblem(m: Pick<ApiMessages, "unreadable">) {
   return problem(400, m.unreadable);
 }
 

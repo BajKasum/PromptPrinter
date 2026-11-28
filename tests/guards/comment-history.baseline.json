@@ -33,7 +33,6 @@
   "src/app/api/chat/turn.ts": 9,
   "src/app/api/health/route.ts": 2,
   "src/app/api/projects/route.ts": 4,
-  "src/app/api/settings/api-key/route.ts": 16,
   "src/app/auth/callback/route.ts": 6,
   "src/app/layout.tsx": 6,
   "src/app/robots.ts": 2,

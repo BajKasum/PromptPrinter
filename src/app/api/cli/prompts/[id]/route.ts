@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { denied } from "@/server/security/security-log";
 import { bearerToken } from "@/server/supabase/bearer";
 import { createClientForRequest } from "@/server/supabase/server";
@@ -26,12 +26,7 @@ export async function GET(req: Request, { params }: Params) {
   const m = requestT(req).t.api;
 
   const rl = await rateLimit(rateLimitKey(req, "cli-prompt"), RATE_LIMIT);
-  if (!rl.allowed) {
-    return problem(429, m.tooManyRequests, {
-      kind: "rate_limited",
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
+  if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
 
   const token = bearerToken(req);
   if (!token) return denied("cli-prompt", problem(401, CLI_PROBLEMS.unauthorized, { kind: "unauthorized" }));

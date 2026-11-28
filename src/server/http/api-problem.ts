@@ -31,3 +31,15 @@ export function problem(status: number, detail: string, extra: Record<string, un
     { status, headers: { "content-type": "application/problem+json" } }
   );
 }
+
+/**
+ * Die Absage eines Ratenlimits (server/security/rate-limit.ts): 429 mit `kind: "rate_limited"` und der Wartezeit in
+ * Sekunden, als Feld `retryAfter` (Chat und Terminal-App lesen es) und als Kopf Retry-After.
+ */
+export function rateLimitedProblem(detail: string, { resetAt }: { resetAt: number }) {
+  const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
+  const response = problem(429, detail, { kind: "rate_limited", retryAfter });
+  // Der Kopf erlaubt keine negative Zahl, etwa wenn die Uhr des Zählers nachgeht.
+  response.headers.set("retry-after", String(Math.max(0, retryAfter)));
+  return response;
+}

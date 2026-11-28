@@ -3,15 +3,10 @@ import { z } from "@/shared/lib/zod";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { createClient } from "@/server/supabase/server";
 import { resolvePlan } from "@/shared/lib/plans";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { readValidatedBody } from "@/server/http/validated-body";
 import { captureError } from "@/shared/lib/observability";
 import { denied } from "@/server/security/security-log";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
 import { requestT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
 import type { Messages } from "@/shared/i18n/messages/de";
@@ -32,25 +27,15 @@ export async function POST(req: Request) {
   const m = requestT(req).t.api;
   // Session first, body second (Security-Audit finding H-3): parsing before
   // authenticating let an unauthenticated caller make the server read and parse
-  // an unbounded payload just to be told 401. readJsonBody caps the read too.
+  // an unbounded payload just to be told 401. readValidatedBody caps the read too.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return denied("projects", problem(401, m.signInRequired));
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, m.tooLarge);
-    }
-    return invalidJsonProblem(m);
-  }
-
-  const parsed = createProjectSchema.safeParse(body);
-  if (!parsed.success) return validationProblem(m, parsed.error.issues);
+  const input = await readValidatedBody(req, createProjectSchema, m);
+  if (input instanceof Response) return input;
 
   const refused = await enforceProjectLimits(req, supabase, user.id, m);
   if (refused) return refused;
@@ -59,7 +44,7 @@ export async function POST(req: Request) {
   // Häkchen "Softwareprojekt" im Workspace stellt es auf software um.
   const { data: project, error } = await supabase
     .from("projects")
-    .insert({ user_id: user.id, name: parsed.data.name, type: "general" })
+    .insert({ user_id: user.id, name: input.data.name, type: "general" })
     .select("id")
     .single();
 
@@ -118,11 +103,7 @@ async function enforceProjectLimits(
       limit: 30,
       windowMs: 60 * 60 * 1000,
     });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
+    if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
   }
   return null;
 }

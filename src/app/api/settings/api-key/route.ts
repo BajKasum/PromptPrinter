@@ -12,43 +12,33 @@ import {
   type ByokRow,
   type ByokTarget,
 } from "@/server/byok";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { validationProblem } from "@/server/http/validation-problem";
+import { readBody } from "@/server/http/validated-body";
 import { captureError } from "@/shared/lib/observability";
 import { recordSecurityEvent } from "@/server/security/security-events";
 import { denied } from "@/server/security/security-log";
 import { detectProviderFromKey } from "@/shared/lib/byok-detect";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
 import { requestT } from "@/server/i18n";
 import { fmt } from "@/shared/i18n/format";
 import type { Messages } from "@/shared/i18n/messages/de";
 
 export const runtime = "nodejs";
 
-// Settings → "Eigene API-Keys" (BYOK). Save/remove a user's own Anthropic/
-// OpenAI/Gemini key, or a generic 'custom' OpenAI-compatible endpoint (Z.ai,
-// DeepSeek, Groq, OpenRouter, …), so their chats run against their own
-// account instead of the server's Z.ai default (see LlmOverride in
-// server/llm/types.ts). The key is test-called once before it's ever
-// encrypted and stored, so a typo or a revoked key fails here with a clear
-// message instead of silently at the user's next chat turn.
+// Einstellungen → "Eigene API-Keys" (BYOK): den eigenen Key von Anthropic, OpenAI oder Gemini speichern, umschalten und
+// entfernen, dazu jeden OpenAI-kompatiblen Endpunkt ('custom', etwa Z.ai, DeepSeek, Groq oder OpenRouter). Die Chats
+// laufen dann auf dem eigenen Konto statt auf dem Server-Key (LlmOverride, server/llm/types.ts). Vor dem Verschlüsseln
+// und Speichern geht ein Testaufruf an den Anbieter: ein Tippfehler oder ein widerrufener Key scheitert hier mit einer
+// klaren Meldung, nicht still beim nächsten Chat-Zug.
 
 const NAMED_PROVIDERS = ["anthropic", "openai", "gemini"] as const;
 const PROVIDERS = [...NAMED_PROVIDERS, "custom"] as const;
 
-// Nutzerwunsch (2026-09-06): kein Anbieter-Dropdown mehr, nur noch ein Feld.
-// Der Primärzweig traegt bewusst KEIN `provider` — welcher der drei
-// benannten Anbieter gemeint ist, leitet der Server unten aus dem Key selbst
-// ab (detectProviderFromKey), nie aus einer Client-Angabe. `.strict()` ist
-// hier kein Stilmittel: ohne sie wuerde Zod ein mitgeschicktes
-// `provider: "custom"` (samt label/baseUrl/model) stillschweigend
-// verwerfen und die Anfrage trotzdem gegen DIESEN Zweig matchen, bevor der
-// echte custom-Zweig unten je geprueft wird — jede fehlerhafte custom-
-// Eingabe liefe dann unbemerkt in den falschen Pfad.
+// Die Oberfläche hat nur ein Feld, kein Anbieter-Menü. Der Primärzweig trägt deshalb bewusst KEIN `provider`: welcher
+// der drei benannten Anbieter gemeint ist, leitet der Server unten aus dem Key selbst ab (detectProviderFromKey), nie
+// aus einer Angabe des Browsers. `.strict()` ist hier kein Stilmittel: ohne sie verwürfe Zod ein mitgeschicktes
+// `provider: "custom"` (samt label, baseUrl und model) stillschweigend und liesse die Anfrage in DIESEM Zweig gelten,
+// bevor der custom-Zweig geprüft ist. Jede fehlerhafte custom-Eingabe liefe dann unbemerkt in den falschen Pfad.
 const primarySaveSchema = z
   .object({ apiKey: z.string().trim().min(1, "Key darf nicht leer sein").max(300) })
   .strict();
@@ -64,29 +54,42 @@ const saveSchema = z.union([primarySaveSchema, customSaveSchema]);
 // Gelesen wird mit der Sitzung, geschrieben nur über server/byok.ts mit dem Service-Role-Schlüssel (Migration 0060).
 const activateSchema = z.object({ provider: z.enum(PROVIDERS) });
 
+const HOUR_MS = 60 * 60 * 1000;
+
+// Je Methode ein eigenes Stundenlimit (jeder Bereich als Literal, tests/guards/rate-limit-scopes.test.ts) und der Satz,
+// wenn sich dafür das Profil nicht lesen lässt. Speichern ist enger: es ruft den Anbieter auf, um den Key zu prüfen.
+const KEY_LIMITS = {
+  POST: {
+    check: (req: Request, userId: string) =>
+      rateLimit(rateLimitKey(req, "api-key-save", userId), { limit: 30, windowMs: HOUR_MS }),
+    failed: "keySaveFailed",
+  },
+  PATCH: {
+    check: (req: Request, userId: string) =>
+      rateLimit(rateLimitKey(req, "api-key-update", userId), { limit: 60, windowMs: HOUR_MS }),
+    failed: "keyActivateFailed",
+  },
+  DELETE: {
+    check: (req: Request, userId: string) =>
+      rateLimit(rateLimitKey(req, "api-key-delete", userId), { limit: 60, windowMs: HOUR_MS }),
+    failed: "keyRemoveFailed",
+  },
+} as const;
+
 export async function POST(req: Request) {
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
   const m = requestT(req).t.api;
-  // Session first, body second (Security-Audit finding H-3): parsing before
-  // authenticating let an unauthenticated caller make the server read and parse
-  // an unbounded payload just to be told 401. Doubly worth it here — the body
-  // carries a plaintext API key, so the less that happens with it before the
-  // caller is known, the better.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return denied("api_key", problem(401, m.signInRequired));
-  if (await lacksSecondFactor(supabase, user)) {
-    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
-  }
+  // Erst der Aufrufer, dann der Rumpf: er trägt den Key im Klartext, und ohne Anmeldung liest die Route ihn nicht.
+  const owner = await requireKeyOwner(m);
+  if (owner instanceof Response) return owner;
+  const { supabase, user } = owner;
 
   const request = await readSaveRequest(req, m);
   if (request instanceof Response) return request;
   const { apiKey, resolved } = request;
   const provider = resolved.provider;
 
-  const limited = await enforceSaveLimit(req, supabase, user.id, m);
+  const limited = await enforceKeyLimit(req, owner, "POST", m);
   if (limited) return limited;
 
   const override: LlmOverride =
@@ -116,22 +119,15 @@ export async function POST(req: Request) {
 
   const { error } = await saveByokRow(row);
   if (error) {
-    // Generic to the client, detailed to the logs (Security-Audit finding
-    // M-1). Note the contrast with the test-call above: that one deliberately
-    // surfaces the provider's own message because it is the key owner's only
-    // way to tell a typo from a revoked key. This one is OUR database talking,
-    // and its message names constraints and columns — nothing the user can act
-    // on, everything an attacker would like to know.
+    // Allgemein an den Browser, ausführlich ins Log. Anders als beim Testaufruf oben spricht hier die eigene Datenbank:
+    // ihre Meldung nennt Spalten und Beschränkungen, damit kann der Nutzer nichts anfangen, ein Angreifer schon.
     captureError("api_key.save_failed", error, { userId: user.id, provider });
     return problem(500, m.keySaveFailed);
   }
   await recordSecurityEvent("api_key.saved", user.id, { provider, replaced: beforeError ? null : Boolean(before) });
 
-  // A first key has to become the active one, or it would be stored and then
-  // ignored — the exact silence Security-Audit finding M-6 is about. Later keys
-  // deliberately do NOT steal the slot: switching is the user's call (PATCH
-  // below), so connecting a second provider never changes which key is billed
-  // without them asking for it.
+  // Der erste Key muss der aktive werden, sonst läge er gespeichert und ungenutzt da. Spätere nehmen den Platz nicht:
+  // umschalten entscheidet der Nutzer (PATCH unten), ein zweiter Anbieter ändert also nie still, wessen Key zahlt.
   const { data: active, error: activeError } = await supabase
     .from("user_api_keys")
     .select("provider")
@@ -158,68 +154,30 @@ export async function POST(req: Request) {
 }
 
 /**
- * Switch which stored key actually runs this user's chats (Security-Audit
- * finding M-6).
+ * Legt fest, welcher gespeicherte Key die Chats dieses Kontos ausführt.
  *
- * Goes through the set_active_byok_provider_for RPC rather than two client updates:
- * clearing the old flag and setting the new one has to be one statement, or a
- * partial failure leaves the user with either no active key (silently back on
- * the server's provider and its plan limits) or two, which the partial unique
- * index rejects.
+ * Über die Funktion set_active_byok_provider_for statt zweier Updates: das alte Häkchen löschen und das neue setzen muss
+ * eine Anweisung sein. Sonst bliebe nach einem halben Fehlschlag kein aktiver Key (still zurück auf den Server-Anbieter
+ * und seine Grenzen) oder zwei, was der Teil-Index ablehnt.
  */
 export async function PATCH(req: Request) {
   // Die Sprache der Fehlermeldungen: die der App (Cookie pp-locale).
   const m = requestT(req).t.api;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return denied("api_key", problem(401, m.signInRequired));
-  if (await lacksSecondFactor(supabase, user)) {
-    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
-  }
+  const owner = await requireKeyOwner(m);
+  if (owner instanceof Response) return owner;
+  const { supabase, user } = owner;
 
-  // Security-Audit finding L-7: PATCH and DELETE on this route were the only
-  // authenticated mutations in the project with no ceiling at all — POST
-  // (saving a key) already rate-limits, switching/removing one didn't. Same
-  // admin exemption and limit shape as POST; higher than POST's 30/hr since
-  // neither of these calls out to a provider, but still bounded rather than
-  // open.
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profileError) {
-    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
-    return problem(503, m.keyActivateFailed);
-  }
-  if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, "api-key-update", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
+  const limited = await enforceKeyLimit(req, owner, "PATCH", m);
+  if (limited) return limited;
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, m.tooLarge);
-    }
-    return invalidJsonProblem(m);
-  }
-
-  const parsed = activateSchema.safeParse(body);
+  const read = await readBody(req, m);
+  if (read instanceof Response) return read;
+  const parsed = activateSchema.safeParse(read.body);
   if (!parsed.success) return problem(400, m.keyUnknownProviderShort);
   const { provider } = parsed.data;
 
-  // Only a provider the user has actually stored may be activated. Without this
-  // the RPC would happily set every row to is_active = false (nothing matches),
-  // silently dropping them back to the server key.
+  // Aktiviert wird nur ein gespeicherter Anbieter. Sonst setzte die Funktion jede Zeile auf is_active = false (nichts
+  // passt) und das Konto fiele still auf den Server-Key zurück.
   const { data: existing, error: existingError } = await supabase
     .from("user_api_keys")
     .select("provider")
@@ -250,35 +208,12 @@ export async function DELETE(req: Request) {
     return problem(400, m.keyUnknownProviderShort);
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return denied("api_key", problem(401, m.signInRequired));
-  if (await lacksSecondFactor(supabase, user)) {
-    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
-  }
+  const owner = await requireKeyOwner(m);
+  if (owner instanceof Response) return owner;
+  const { user } = owner;
 
-  // Security-Audit finding L-7: the one unlimited authenticated mutation in
-  // this route (and, before this, in the project) — see the same block on
-  // PATCH above for the full reasoning.
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profileError) {
-    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
-    return problem(503, m.keyRemoveFailed);
-  }
-  if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, "api-key-delete", user.id), { limit: 60, windowMs: 60 * 60 * 1000 });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
+  const limited = await enforceKeyLimit(req, owner, "DELETE", m);
+  if (limited) return limited;
 
   const { error, removed } = await removeByokRow(user.id, provider);
   if (error) {
@@ -291,15 +226,9 @@ export async function DELETE(req: Request) {
 }
 
 async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiKey: string; resolved: ByokTarget } | Response> {
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) {
-      return problem(413, m.tooLarge);
-    }
-    return invalidJsonProblem(m);
-  }
+  const read = await readBody(req, m);
+  if (read instanceof Response) return read;
+  const { body } = read;
 
   const parsed = saveSchema.safeParse(body);
   if (!parsed.success) {
@@ -310,14 +239,9 @@ async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiK
     return validationProblem(m, parsed.error.issues, own.success ? undefined : own.error.issues);
   }
 
-  // Provider kommt entweder explizit mit (der custom-Zweig, der eigene
-  // Endpunkt-Angaben braucht und deshalb nicht erratbar ist) oder wird aus
-  // dem Key-Format selbst hergeleitet — nie aus einer Client-Angabe fuer die
-  // drei benannten Anbieter, es gibt dafuer keine mehr. `resolved` haelt
-  // provider und (nur beim custom-Zweig) label/baseUrl/model als EIN
-  // diskriminiertes Objekt zusammen, damit `resolved.provider === "custom"`
-  // weiter unten sauber narrowt, statt zwei getrennte Variablen ausser
-  // Sync geraten zu lassen oder ein `!`-Assertion zu brauchen.
+  // Der Anbieter kommt entweder mit (custom-Zweig: eigene Endpunkt-Angaben lassen sich nicht erraten) oder folgt aus
+  // dem Format des Keys. `resolved` hält provider und, nur bei custom, label, baseUrl und model als EIN unterscheidbares
+  // Objekt zusammen: so verengt `resolved.provider === "custom"` weiter oben ohne `!` und ohne zweite Variable.
   const apiKey = parsed.data.apiKey;
   const resolved: ByokTarget | null = "provider" in parsed.data
     ? {
@@ -340,45 +264,52 @@ async function readSaveRequest(req: Request, m: Messages["api"]): Promise<{ apiK
   return { apiKey, resolved };
 }
 
-async function enforceSaveLimit(
+/**
+ * Wer Keys speichern, umschalten und entfernen darf: angemeldet und, mit eingerichtetem zweitem Faktor, mit dessen
+ * Nachweis (AAL2). Jede Methode dieser Route fängt hiermit an (tests/guards/second-factor.test.ts).
+ */
+async function requireKeyOwner(m: Messages["api"]) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return denied("api_key", problem(401, m.signInRequired));
+  if (await lacksSecondFactor(supabase, user)) {
+    return denied("api_key", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
+  }
+  return { supabase, user };
+}
+
+type KeyOwner = Exclude<Awaited<ReturnType<typeof requireKeyOwner>>, Response>;
+
+/** Das Stundenlimit der Methode, Admins ausgenommen: die Absage als Antwort, sonst null. */
+async function enforceKeyLimit(
   req: Request,
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
+  { supabase, user }: KeyOwner,
+  method: keyof typeof KEY_LIMITS,
   m: Messages["api"]
 ): Promise<Response | null> {
-  // Admin exemption mirrors /api/chat, /api/projects and /api/account:
-  // a single is_admin lookup gates whether the hourly limit below applies.
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", userId)
+    .eq("id", user.id)
     .maybeSingle();
+  // Ein Lesefehler ist kein "kein Admin": die Route rät nicht.
   if (profileError) {
-    captureError("api_key.profile_read_failed", profileError, { userId });
-    return problem(503, m.keySaveFailed);
+    captureError("api_key.profile_read_failed", profileError, { userId: user.id });
+    return problem(503, m[KEY_LIMITS[method].failed]);
   }
-  if (!(profile?.is_admin ?? false)) {
-    const rl = await rateLimit(rateLimitKey(req, "api-key-save", userId), { limit: 30, windowMs: 60 * 60 * 1000 });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
-  }
-  return null;
+  if (profile?.is_admin) return null;
+  const rl = await KEY_LIMITS[method].check(req, user.id);
+  return rl.allowed ? null : rateLimitedProblem(m.tooManyRequests, rl);
 }
 
 async function verifyKey(override: LlmOverride, m: Messages["api"]): Promise<Response | null> {
-  // Test the key against its real provider before it's ever persisted, a
-  // bad key should fail loudly right here, not silently at generation time.
+  // Der Key wird beim echten Anbieter geprüft, bevor er je gespeichert ist.
   //
-  // QA finding U-4: /api/chat stopped surfacing raw provider error text to
-  // the client (see classifyLlmFailure/describeLlmFailure in llm.ts / that
-  // route). This is the one deliberate exception: the person reading this
-  // message is the key's own owner, mid-setup, deciding whether the key they
-  // just typed is good — "invalid_api_key" or "model not found" is exactly
-  // the actionable detail they need, and there's no different user it could
-  // leak to. Nothing else in the app reuses this path.
+  // Die eine bewusste Ausnahme von der Regel, dem Browser nie den Fehlertext eines Anbieters zu zeigen (der Chat ordnet
+  // ihn ein, classifyLlmFailure): hier liest ihn nur der Besitzer des Keys, mitten im Einrichten, und
+  // "invalid_api_key" oder "model not found" ist genau die Angabe, mit der er weiterkommt. Kein anderer Weg nutzt das.
   try {
     await chatComplete({
       system: "Antworte ausschliesslich mit dem einen Wort OK.",
