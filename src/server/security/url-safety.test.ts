@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { assertPublicHttpsUrl, assertServerEndpointUrl } from "@/server/security/url-safety";
+import { addressBucket, assertPublicHttpsUrl, assertServerEndpointUrl } from "@/server/security/url-safety";
 
 const lookupMock = vi.fn();
 vi.mock("node:dns", () => ({
@@ -166,5 +166,89 @@ describe("assertServerEndpointUrl (LLM_BASE_URL des Betreibers)", () => {
     await expect(assertServerEndpointUrl("https://intern.example/v1", false)).rejects.toThrow("nicht erlaubt");
     lookupMock.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
     await expect(assertServerEndpointUrl("https://api.example.com/v1", false)).resolves.toBeUndefined();
+  });
+});
+
+// Die Grenzen jedes gesperrten IPv4-Bereichs: erste und letzte Adresse gesperrt, die Nachbarn davor und danach offen.
+// Ein Bereich, der um eine Adresse zu eng ist (etwa 172.16 bis 172.30), fiele an einer Stichprobe aus der Mitte nicht auf.
+describe("assertPublicHttpsUrl: Grenzen der IPv4-Bereiche", () => {
+  const RANGES: [string, string, string, (string | null)[]][] = [
+    ["0.0.0.0/8, dieses Netz", "0.0.0.0", "0.255.255.255", [null, "1.0.0.0"]],
+    ["10.0.0.0/8", "10.0.0.0", "10.255.255.255", ["9.255.255.255", "11.0.0.0"]],
+    ["100.64.0.0/10, CGNAT", "100.64.0.0", "100.127.255.255", ["100.63.255.255", "100.128.0.0"]],
+    ["127.0.0.0/8, Loopback", "127.0.0.0", "127.255.255.255", ["126.255.255.255", "128.0.0.0"]],
+    ["169.254.0.0/16, Link-Local", "169.254.0.0", "169.254.255.255", ["169.253.255.255", "169.255.0.0"]],
+    ["172.16.0.0/12", "172.16.0.0", "172.31.255.255", ["172.15.255.255", "172.32.0.0"]],
+    ["192.168.0.0/16", "192.168.0.0", "192.168.255.255", ["192.167.255.255", "192.169.0.0"]],
+    ["192.0.0.0/24, IETF", "192.0.0.0", "192.0.0.255", ["191.255.255.255", "192.0.1.0"]],
+    ["192.0.2.0/24, TEST-NET-1", "192.0.2.0", "192.0.2.255", ["192.0.1.255", "192.0.3.0"]],
+    ["198.18.0.0/15, Benchmark", "198.18.0.0", "198.19.255.255", ["198.17.255.255", "198.20.0.0"]],
+    ["198.51.100.0/24, TEST-NET-2", "198.51.100.0", "198.51.100.255", ["198.51.99.255", "198.51.101.0"]],
+    ["203.0.113.0/24, TEST-NET-3", "203.0.113.0", "203.0.113.255", ["203.0.112.255", "203.0.114.0"]],
+    ["224.0.0.0 aufwärts, Multicast und reserviert", "224.0.0.0", "255.255.255.255", ["223.255.255.255", null]],
+  ];
+
+  /** Als Adresse in der URL (ohne DNS) und als Antwort des Namensdienstes. */
+  async function refused(ip: string) {
+    await expect(assertPublicHttpsUrl(`https://${ip}/v1`), `URL ${ip}`).rejects.toThrow("nicht erlaubt");
+    lookupMock.mockResolvedValue([{ address: ip, family: 4 }]);
+    await expect(assertPublicHttpsUrl("https://name.example/v1"), `DNS ${ip}`).rejects.toThrow("nicht erlaubt");
+  }
+  async function allowed(ip: string) {
+    await expect(assertPublicHttpsUrl(`https://${ip}/v1`), `URL ${ip}`).resolves.toBeUndefined();
+    lookupMock.mockResolvedValue([{ address: ip, family: 4 }]);
+    await expect(assertPublicHttpsUrl("https://name.example/v1"), `DNS ${ip}`).resolves.toBeUndefined();
+  }
+
+  it.each(RANGES)("%s", async (_name, first, last, neighbors) => {
+    await refused(first);
+    await refused(last);
+    for (const neighbor of neighbors) if (neighbor) await allowed(neighbor);
+  });
+
+  it("sperrt eine Antwort des Namensdienstes, die keine Adresse ist", async () => {
+    lookupMock.mockResolvedValue([{ address: "keine-adresse", family: 4 }]);
+    await expect(assertPublicHttpsUrl("https://name.example/v1")).rejects.toThrow("nicht erlaubt");
+  });
+});
+
+// Die Kennung eines Zählers (server/security/rate-limit.ts): IPv6 zählt je /64, sonst wäre jede Adresse eines
+// Anschlusses ein frischer Zähler.
+describe("addressBucket", () => {
+  it.each([
+    ["2001:db8:1:2:3:4:5:6", "2001:db8:1:2::/64"],
+    ["2001:0DB8:0001:0002:ffff:ffff:ffff:ffff", "2001:db8:1:2::/64"],
+    ["2001:db8:1:2::", "2001:db8:1:2::/64"],
+    ["fe80::1%eth0", "fe80:0:0:0::/64"],
+    ["::1", "0:0:0:0::/64"],
+  ])("fasst %s zum /64-Netz %s zusammen", (ip, bucket) => {
+    expect(addressBucket(ip)).toBe(bucket);
+  });
+
+  it("trennt benachbarte /64-Netze", () => {
+    expect(addressBucket("2001:db8:1:2::1")).not.toBe(addressBucket("2001:db8:1:3::1"));
+  });
+
+  it.each(["::ffff:203.0.113.7", "::ffff:cb00:7107", "0:0:0:0:0:ffff:cb00:7107"])(
+    "zählt die IPv4-gemappte Adresse %s wie die IPv4-Adresse",
+    (ip) => {
+      expect(addressBucket(ip)).toBe("203.0.113.7");
+    }
+  );
+
+  it.each([
+    "203.0.113.7",
+    "unknown",
+    "",
+    // Keine gültige Form: bleibt, wie sie ist, statt in einem erfundenen Netz zu landen.
+    "1::2::3",
+    "1:2:3:4:5:6:7:8::1::2",
+    "1:2:3",
+    "1:2:3:4:5:6:7:8:9",
+    "1:2:3:4::5:6:7:8",
+    "zzzz::1",
+    "1ffff::1",
+  ])("lässt %j unverändert", (value) => {
+    expect(addressBucket(value)).toBe(value);
   });
 });
