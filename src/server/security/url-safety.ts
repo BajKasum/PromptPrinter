@@ -95,24 +95,48 @@ function isPrivateOrReservedIp(ip: string): boolean {
   return true; // Unrecognized shape, fail closed.
 }
 
+/** Ein Netzbereich, zerlegt in die Gruppen seiner Adresse (IPv4: 4 zu 8 Bit, IPv6: 8 zu 16 Bit). */
+type Range = { network: number[]; prefix: number };
+
+function parseRange(cidr: string, toGroups: (address: string) => number[] | null): Range {
+  const [address, prefix] = cidr.split("/");
+  const network = toGroups(address);
+  if (!network) throw new Error(`Ungültiger Netzbereich: ${cidr}`);
+  return { network, prefix: Number(prefix) };
+}
+
+/** Der eine Vergleich für beide Adressarten: jede Gruppe liegt in dem Stück, das das Präfix ihr lässt. */
+function inRange(address: number[], { network, prefix }: Range, groupBits: number): boolean {
+  return network.every((group, i) => {
+    // 1, wenn das Präfix die Gruppe ganz festlegt, 2^groupBits, wenn es sie nicht mehr erreicht.
+    const span = 2 ** Math.min(Math.max((i + 1) * groupBits - prefix, 0), groupBits);
+    const first = group - (group % span);
+    return address[i] >= first && address[i] <= first + span - 1;
+  });
+}
+
+const octets = (ip: string) => ip.split(".").map(Number);
+
+const BLOCKED_IPV4 = [
+  "0.0.0.0/8", // dieses Netz
+  "10.0.0.0/8", // privat (RFC 1918)
+  "100.64.0.0/10", // CGNAT (RFC 6598)
+  "127.0.0.0/8", // Loopback
+  "169.254.0.0/16", // Link-Local, darin die Metadaten der Cloud-Anbieter
+  "172.16.0.0/12", // privat (RFC 1918)
+  "192.0.0.0/24", // IETF-Protokollzuweisungen
+  "192.0.2.0/24", // TEST-NET-1
+  "192.168.0.0/16", // privat (RFC 1918)
+  "198.18.0.0/15", // Benchmarks
+  "198.51.100.0/24", // TEST-NET-2
+  "203.0.113.0/24", // TEST-NET-3
+  "224.0.0.0/3", // Multicast (224 bis 239), reserviert und Broadcast (240 bis 255)
+].map((cidr) => parseRange(cidr, octets));
+
 function isPrivateIPv4(ip: string): boolean {
-  const parts = ip.split(".").map(Number);
+  const parts = octets(ip);
   if (parts.length !== 4 || parts.some((n) => Number.isNaN(n) || n < 0 || n > 255)) return true;
-  const [a, b, c] = parts;
-  if (a === 0) return true; // "this" network
-  if (a === 10) return true; // RFC1918
-  if (a === 127) return true; // loopback
-  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT (RFC6598)
-  if (a === 169 && b === 254) return true; // link-local, incl. cloud metadata
-  if (a === 172 && b >= 16 && b <= 31) return true; // RFC1918
-  if (a === 192 && b === 168) return true; // RFC1918
-  if (a === 192 && b === 0 && c === 0) return true; // IETF protocol assignments
-  if (a === 192 && b === 0 && c === 2) return true; // TEST-NET-1
-  if (a === 198 && (b === 18 || b === 19)) return true; // benchmarking
-  if (a === 198 && b === 51 && c === 100) return true; // TEST-NET-2
-  if (a === 203 && b === 0 && c === 113) return true; // TEST-NET-3
-  if (a >= 224) return true; // multicast (224-239) + reserved/broadcast (240-255)
-  return false;
+  return BLOCKED_IPV4.some((range) => inRange(parts, range, 8));
 }
 
 /**
@@ -138,6 +162,9 @@ function ipv6Groups(ip: string): number[] | null {
   return groups.some((g) => Number.isNaN(g) || g < 0 || g > 0xffff) ? null : groups;
 }
 
+/** Die IPv4-Adresse, die in zwei Gruppen einer IPv6-Adresse steht. */
+const embeddedIPv4 = (hi: number, lo: number) => [hi >> 8, hi & 0xff, lo >> 8, lo & 0xff].join(".");
+
 /**
  * Die Adresse als Kennung eines Zählers (server/security/rate-limit.ts): IPv6 als ihr /64-Netz, denn ein Anschluss bekommt
  * meist ein ganzes /64 und jede Adresse darin wäre sonst ein frischer Zähler. ::ffff:a.b.c.d zählt wie die IPv4-Adresse,
@@ -147,32 +174,38 @@ export function addressBucket(ip: string): string {
   const groups = ip.includes(":") ? ipv6Groups(ip) : null;
   if (!groups) return ip;
   if (groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff) {
-    return [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join(".");
+    return embeddedIPv4(groups[6], groups[7]);
   }
   return `${groups.slice(0, 4).map((g) => g.toString(16)).join(":")}::/64`;
 }
 
+const BLOCKED_IPV6 = [
+  "fc00::/7", // Unique Local
+  "fe80::/10", // Link-Local
+  "fec0::/10", // Site-Local
+  "ff00::/8", // Multicast
+  "2001:db8::/32", // Dokumentation
+  "100::/64", // Discard
+  "64:ff9b:1::/48", // NAT64 für den lokalen Gebrauch
+].map((cidr) => parseRange(cidr, ipv6Groups));
+
+/**
+ * Bereiche, deren Adressen eine IPv4-Adresse tragen und wie diese zählen; `at` ist die erste der beiden Gruppen, in
+ * denen sie steht. ::/96 umfasst auch ::1 und ::, die als 0.0.0.1 und 0.0.0.0 in "dieses Netz" fallen.
+ */
+const IPV4_CARRIERS = (
+  [
+    ["::/96", 6], // IPv4-kompatibel
+    ["::ffff:0:0/96", 6], // IPv4-gemappt
+    ["64:ff9b::/96", 6], // NAT64
+    ["2002::/16", 1], // 6to4
+  ] as const
+).map(([cidr, at]) => ({ range: parseRange(cidr, ipv6Groups), at }));
+
 function isPrivateIPv6(ip: string): boolean {
-  const g = ipv6Groups(ip);
-  if (!g) return true; // Unrecognized shape, fail closed.
-  const embedded = (hi: number, lo: number) =>
-    isPrivateIPv4([(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff].join("."));
-  const zeros = (from: number, to: number) => g.slice(from, to).every((x) => x === 0);
-
-  if ((g[0] & 0xfe00) === 0xfc00) return true; // unique local fc00::/7
-  if ((g[0] & 0xffc0) === 0xfe80) return true; // link-local fe80::/10
-  if ((g[0] & 0xffc0) === 0xfec0) return true; // site-local fec0::/10
-  if ((g[0] & 0xff00) === 0xff00) return true; // multicast ff00::/8
-  if (g[0] === 0x2001 && g[1] === 0x0db8) return true; // documentation 2001:db8::/32
-  if (g[0] === 0x0100 && zeros(1, 4)) return true; // discard 100::/64
-  if (g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 1) return true; // local-use NAT64 64:ff9b:1::/48
-
-  // Adressen, die eine IPv4-Adresse tragen, zählen wie diese. ::/96 umfasst auch ::1 und ::,
-  // die als 0.0.0.1 und 0.0.0.0 im "this network" landen.
-  if (zeros(0, 6)) return embedded(g[6], g[7]); // IPv4-compatible ::/96
-  if (zeros(0, 5) && g[5] === 0xffff) return embedded(g[6], g[7]); // IPv4-mapped ::ffff:0:0/96
-  if (g[0] === 0x0064 && g[1] === 0xff9b && zeros(2, 6)) return embedded(g[6], g[7]); // NAT64 64:ff9b::/96
-  if (g[0] === 0x2002) return embedded(g[1], g[2]); // 6to4 2002::/16
-
-  return false;
+  const groups = ipv6Groups(ip);
+  if (!groups) return true; // Unrecognized shape, fail closed.
+  if (BLOCKED_IPV6.some((range) => inRange(groups, range, 16))) return true;
+  const carrier = IPV4_CARRIERS.find(({ range }) => inRange(groups, range, 16));
+  return carrier ? isPrivateIPv4(embeddedIPv4(groups[carrier.at], groups[carrier.at + 1])) : false;
 }

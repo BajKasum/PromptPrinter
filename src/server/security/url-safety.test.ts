@@ -212,6 +212,39 @@ describe("assertPublicHttpsUrl: Grenzen der IPv4-Bereiche", () => {
   });
 });
 
+// Dieselbe Prüfung für IPv6. fe80::/10, fec0::/10 und ff00::/8 liegen lückenlos hintereinander, sie haben deshalb nur
+// vor dem ersten Bereich einen offenen Nachbarn. Die letzten vier Zeilen tragen eine IPv4-Adresse in sich: gesperrt,
+// wenn diese privat ist, offen, wenn sie öffentlich ist oder die Adresse knapp neben dem Trägerbereich liegt.
+describe("assertPublicHttpsUrl: Grenzen der IPv6-Bereiche", () => {
+  const ones = (count: number) => ":ffff".repeat(count);
+  const RANGES: [string, string[], string[]][] = [
+    ["fc00::/7, Unique Local", ["fc00::", `fdff${ones(7)}`], [`fbff${ones(7)}`, "fe00::"]],
+    ["fe80::/10, Link-Local", ["fe80::", `febf${ones(7)}`], [`fe7f${ones(7)}`]],
+    ["fec0::/10, Site-Local", ["fec0::", `feff${ones(7)}`], []],
+    ["ff00::/8, Multicast", ["ff00::", `ffff${ones(7)}`], []],
+    ["2001:db8::/32, Dokumentation", ["2001:db8::", `2001:db8${ones(6)}`], [`2001:db7${ones(6)}`, "2001:db9::"]],
+    ["100::/64, Discard", ["100::", `100:0:0:0${ones(4)}`], [`ff${ones(7)}`, "100:0:0:1::"]],
+    ["64:ff9b:1::/48, NAT64 lokal", ["64:ff9b:1::", `64:ff9b:1${ones(5)}`], [`64:ff9b:0${ones(5)}`, "64:ff9b:2::"]],
+    ["::/96, IPv4-kompatibel", ["::", "::a00:1", "::ffff:ffff"], ["::808:808", "::1:7f00:1"]],
+    ["::ffff:0:0/96, IPv4-gemappt", ["::ffff:0:0", "::ffff:a00:1"], ["::ffff:808:808", "::fffe:7f00:1"]],
+    ["64:ff9b::/96, NAT64", ["64:ff9b::", "64:ff9b::a00:1"], ["64:ff9b::808:808", "64:ff9b::1:7f00:1"]],
+    ["2002::/16, 6to4", ["2002::", `2002:7f00:1${ones(5)}`, `2002${ones(7)}`], [`2002:808:808${ones(5)}`, "2001:7f00:1::", "2003:7f00:1::"]],
+  ];
+
+  it.each(RANGES)("%s", async (_name, blocked, open) => {
+    for (const ip of blocked) {
+      await expect(assertPublicHttpsUrl(`https://[${ip}]/v1`), `URL ${ip}`).rejects.toThrow("nicht erlaubt");
+      lookupMock.mockResolvedValue([{ address: ip, family: 6 }]);
+      await expect(assertPublicHttpsUrl("https://name.example/v1"), `DNS ${ip}`).rejects.toThrow("nicht erlaubt");
+    }
+    for (const ip of open) {
+      await expect(assertPublicHttpsUrl(`https://[${ip}]/v1`), `URL ${ip}`).resolves.toBeUndefined();
+      lookupMock.mockResolvedValue([{ address: ip, family: 6 }]);
+      await expect(assertPublicHttpsUrl("https://name.example/v1"), `DNS ${ip}`).resolves.toBeUndefined();
+    }
+  });
+});
+
 // Die Kennung eines Zählers (server/security/rate-limit.ts): IPv6 zählt je /64, sonst wäre jede Adresse eines
 // Anschlusses ein frischer Zähler.
 describe("addressBucket", () => {
