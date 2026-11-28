@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
  * Zeilen langer Listen (Chats, Projekte) prefetchen nicht von selbst (#157).
  *
  * Ein `<Link>` im Sichtbereich löst in Produktion einen Prefetch aus, bei dynamischen Routen eine Anfrage
- * durch Middleware und Supabase-Auth. Bei hundert Chats in Liste und Seitenleiste sind das hundert Aufrufe
+ * durch Proxy und Supabase-Auth. Bei hundert Chats in Liste und Seitenleiste sind das hundert Aufrufe
  * pro Seitenaufruf für Chats, die fast nie geöffnet werden. Diese Dateien rendern Zeilen solcher Listen
  * und nehmen deshalb `HoverPrefetchLink` (prefetcht erst bei Hover, Fokus oder Berührung).
  *

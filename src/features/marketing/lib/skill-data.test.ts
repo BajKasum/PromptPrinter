@@ -14,7 +14,7 @@ describe("Skill-Download", () => {
     expect(SKILL_ZIP_URL).toBe(`/skill/${SKILL_ZIP_FILENAME}`);
   });
 
-  // Die Middleware läuft auch für .zip (ihr matcher nimmt nur Bilder aus): ein Pfad ausserhalb der öffentlichen
+  // Der Proxy läuft auch für .zip (sein matcher nimmt nur Bilder aus): ein Pfad ausserhalb der öffentlichen
   // Präfixe leitete Besucher ohne Konto auf /login statt zur Datei.
   it("liegt unter einem öffentlichen Pfad, braucht also keine Anmeldung", () => {
     expect(PUBLIC_PREFIXES.some((prefix) => SKILL_ZIP_URL.startsWith(`${prefix}/`))).toBe(true);

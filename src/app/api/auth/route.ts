@@ -209,7 +209,7 @@ async function signIn(
   logSecurityEvent("auth.sign_in_succeeded", { userId: data?.user?.id ?? null });
   // The session cookies were written by the server client on the way
   // through (server/supabase/server.ts), so they ride out on this response.
-  // Mit zweitem Faktor geht das Formular gleich zum nächsten Schritt; die Schranke selbst ist die Middleware.
+  // Mit zweitem Faktor geht das Formular gleich zum nächsten Schritt; die Schranke selbst ist der Proxy.
   return NextResponse.json(data?.user && hasVerifiedFactor(data.user) ? { ok: true, mfaRequired: true } : { ok: true });
 }
 

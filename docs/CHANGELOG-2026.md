@@ -1880,7 +1880,7 @@ nicht liefern kann. react-markdown läuft ohne
 `rehype-raw`/`dangerouslySetInnerHTML`, hat also keinen bekannten
 Injection-Pfad, CSP ist trotzdem die übliche zweite Verteidigungslinie.
 Neu: [`src/server/security/csp.ts`](../src/server/security/csp.ts) baut die Policy aus einem
-Pro-Request-Nonce, [`src/middleware.ts`](../src/middleware.ts) erzeugt ihn
+Pro-Request-Nonce, [`src/middleware.ts`](../src/proxy.ts) (heute `src/proxy.ts`) erzeugt ihn
 (`Buffer.from(crypto.randomUUID())`, ein roher UUID-String ist wegen der
 Bindestriche kein gültiger CSP-Nonce) und reicht ihn per Request-Header
 durch, Next hängt seine eigenen Hydration-Scripts automatisch an

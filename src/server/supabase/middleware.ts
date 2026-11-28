@@ -18,7 +18,7 @@ const NOT_FOUND_PATH = "/__not-found";
 /**
  * "Needs a session" is NOT the same as "is an app page": it is also true for
  * every address that matches no route at all. `updateSession` tells the two
- * apart with `isAppPath()`, and so does the CSP choice in `src/middleware.ts`.
+ * apart with `isAppPath()`, and so does the CSP choice in `src/proxy.ts`.
  * Exported for tests/guards/route-access.test.ts.
  */
 export function requiresSession(pathname: string): boolean {

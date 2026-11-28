@@ -3,13 +3,13 @@ import { join, relative } from "node:path";
 import { NextRequest } from "next/server";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
-import { middleware } from "@/middleware";
+import { proxy } from "@/proxy";
 import { CROSS_ORIGIN_API_ROUTES } from "@/server/security/request-origin";
 import { bindingNames, parse } from "./parse-source";
 
-// Jede ändernde API-Route steht unter der Herkunftsprüfung der Middleware, ohne selbst etwas dafür zu tun.
-// Der Guard liest die Routen aus dem Quellbaum und schickt jede Methode als fremde Anfrage durch die echte
-// Middleware: eine neue Route ist von selbst geschützt, und eine Lücke (Pfadprüfung, Ausnahmeliste) schlägt
+// Jede ändernde API-Route steht unter der Herkunftsprüfung des Proxys (src/proxy.ts), ohne selbst etwas dafür zu tun.
+// Der Guard liest die Routen aus dem Quellbaum und schickt jede Methode als fremde Anfrage durch den echten
+// Proxy: eine neue Route ist von selbst geschützt, und eine Lücke (Pfadprüfung, Ausnahmeliste) schlägt
 // hier an. Eine Ausnahme ist eine Entscheidung: der letzte Test nennt die Liste wörtlich.
 //
 // Welche Methoden eine Route ausgibt, liest der Parser (parse-source.ts): jede Schreibweise eines Exports zählt,
@@ -66,7 +66,7 @@ describe("Herkunftsprüfung der API-Routen", () => {
   it("weist jede ändernde Route ausserhalb der Ausnahmen bei fremder Herkunft ab", async () => {
     const exempt = new Set<string>(CROSS_ORIGIN_API_ROUTES);
     for (const { method, path } of unsafeRoutes.filter((route) => !exempt.has(route.path))) {
-      const res = await middleware(
+      const res = await proxy(
         new NextRequest(new URL(`https://promptprinter.app${path}`), {
           method,
           headers: { "sec-fetch-site": "cross-site", origin: "https://evil.example" },

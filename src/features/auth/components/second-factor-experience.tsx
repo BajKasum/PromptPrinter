@@ -18,7 +18,7 @@ function codeDigits(value: string): string {
 
 /**
  * Der zweite Schritt der Anmeldung (/login/zweiter-faktor): der Code aus der Authenticator-App, oder ohne Gerät ein
- * Wiederherstellungscode. Die Middleware schickt jede App-Seite hierher, solange die Sitzung den Faktor nicht nachgewiesen hat.
+ * Wiederherstellungscode. Der Proxy schickt jede App-Seite hierher, solange die Sitzung den Faktor nicht nachgewiesen hat.
  * Braucht die Sitzung den Schritt gar nicht (kein Faktor, schon bestätigt), geht es sofort weiter.
  */
 export function SecondFactorExperience() {

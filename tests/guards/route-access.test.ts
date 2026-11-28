@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { requiresSession } from "@/server/supabase/middleware";
 import { APP_PREFIXES, isAppPath } from "@/shared/lib/app-routes";
 
-// Hält die Routenlisten der Middleware gegen den echten Routenbaum fest.
+// Hält die Routenlisten des Proxys gegen den echten Routenbaum fest.
 //
 // ─── Warum ein Guard ───────────────────────────────────────────────────────
-// Die Middleware kennt drei Sorten Pfade: öffentlich (PUBLIC_*) und eingeloggte
+// Der Proxy kennt drei Sorten Pfade: öffentlich (PUBLIC_*) und eingeloggte
 // App (APP_PREFIXES), beide in shared/lib/app-routes.ts, und alles andere, das
 // abgemeldet ein 404 bekommt.
 // Beide Listen sind von Hand gepflegt und schon einmal vom Routenbaum
@@ -30,7 +30,7 @@ function routeSegments(...segments: string[]): string[] {
     .map((entry) => `/${entry.name}`);
 }
 
-describe("Routenlisten der Middleware", () => {
+describe("Routenlisten des Proxys", () => {
   it("führt jeden Ordner unter (app) als App-Pfad", () => {
     const appRoutes = routeSegments("(app)");
     expect(appRoutes.length).toBeGreaterThan(0);
@@ -84,7 +84,7 @@ describe("Routenlisten der Middleware", () => {
 });
 
 // ─── Unbekannte Adressen unter einem App-Präfix (#149) ─────────────────────
-// Die App-Pfade bekommen in src/middleware.ts die Nonce-Policy. Passt eine Adresse wie /settings/x zu keiner
+// Die App-Pfade bekommen in src/proxy.ts die Nonce-Policy. Passt eine Adresse wie /settings/x zu keiner
 // Route, geht sie an die statische Root-404, deren Inline-Skripte keinen Nonce tragen: die Policy blockt sie,
 // die Seite hydriert nie, eingeloggt steht eine leere Seite da. Eine Auffangroute je Präfix schickt solche
 // Adressen durch notFound() in die 404 des App-Layouts. Bei Präfixen mit eigenem [id]-Segment (chats,

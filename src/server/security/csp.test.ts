@@ -162,15 +162,9 @@ describe("thirdPartiesFor", () => {
   });
 });
 
-// Regression, gefunden 05.08.2026: Planpunkt B-2 entfernte den headers()-
-// Aufruf aus dem Root-Layout, um Marketing/Auth/Legal/Docs statisch
-// auszuliefern. Nichts threadet seither einen Nonce zu Next' eigenen
-// Hydration-Scripts auf diesen Routen durch, middleware.ts setzte aber
-// weiterhin die STRIKTE nonce-only-buildCsp()-Policy auf jede Antwort — Next'
-// eigene <script>-Tags trugen keinen passenden Nonce, die CSP blockierte sie,
-// React hydrierte nie. Sichtbar als leere Seite plus wiederholtem
-// "Uncaught Error: Connection closed" von Turnstile, dessen Kanal nie
-// zustande kam. buildStaticCsp() ist die Policy für genau diese Routen.
+// Marketing, Auth, Rechtstexte und Hilfe sind statisch, niemand threadet dort einen Nonce zu Next' eigenen
+// Hydration-Scripts. Unter der strikten nonce-only-Policy blockierte die CSP sie, React hydrierte nie: eine leere
+// Seite plus "Uncaught Error: Connection closed" von Turnstile. buildStaticCsp() ist die Policy für genau diese Routen.
 describe("buildStaticCsp", () => {
   it("carries no nonce token at all", () => {
     // Der eigentliche Bug in einem Satz: ein Nonce, den nichts auf der Seite

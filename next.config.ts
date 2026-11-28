@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 // Baseline security headers, applied to every response. Content-Security-Policy
 // is deliberately NOT here: it needs a per-request nonce (next-themes' anti-flash
 // inline script, Next's own hydration scripts), which this static headers()
-// config can't produce. See src/middleware.ts + src/server/security/csp.ts instead.
+// config can't produce. See src/proxy.ts + src/server/security/csp.ts instead.
 const securityHeaders = [
   // Force HTTPS for two years incl. subdomains. Ignored over plain http (dev),
   // so it only ever hardens production. No `preload` — that's an irreversible
@@ -68,7 +68,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // Alte öffentliche Adressen bleiben erreichbar. Diese Umleitungen laufen vor der Middleware, die Auth-Prüfung
+  // Alte öffentliche Adressen bleiben erreichbar. Diese Umleitungen laufen vor dem Proxy, die Auth-Prüfung
   // sieht die Pfade also nicht. /admin ist heute ein Abschnitt von /usage, sichtbar nur für is_admin.
   //
   // PromptPrinter kostet nichts, es gibt keine Preise, keine Rückerstattung und keine Abrechnung: wer eine alte

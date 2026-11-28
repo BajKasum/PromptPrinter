@@ -7,7 +7,7 @@ import Link from "next/link";
  * Ein Link, der erst prefetcht, wenn ihn jemand ansteuert (Maus, Tastatur, Finger).
  *
  * Next prefetcht jeden `<Link>` im Sichtbereich. Bei einer Liste mit hundert Chats sind das hundert
- * Anfragen an dynamische Routen, jede durch die Middleware und eine Auth-Abfrage bei Supabase, fuer
+ * Anfragen an dynamische Routen, jede durch den Proxy und eine Auth-Abfrage bei Supabase, fuer
  * Chats, die fast nie geoeffnet werden (#157). `prefetch={false}` allein haelt auch das Prefetchen beim
  * Ueberfahren aus. Deshalb schaltet diese Huelle bei Hover, Fokus oder Beruehrung auf den Standard um:
  * der Klick bleibt schnell, der Rest der Liste kostet nichts. Das Muster steht so in der Next-Doku.

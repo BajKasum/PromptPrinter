@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Die ganze eingeloggte App, aus derselben Liste wie die Middleware
+      // Die ganze eingeloggte App, aus derselben Liste wie der Proxy
       // (shared/lib/app-routes.ts). Vorher stand hier eine eigene Kopie, in
       // der /prompts schon einmal fehlte. robots.txt macht die Pfade nicht
       // unsichtbar, hält brave Crawler aber davon ab, sie zu indexieren.

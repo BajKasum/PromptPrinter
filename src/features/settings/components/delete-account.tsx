@@ -76,7 +76,7 @@ export function DeleteAccount({ email }: { email: string }) {
     try {
       await createClient().auth.signOut({ scope: "local" });
     } catch {
-      // Scheitert das Abmelden, leitet die Middleware von /login nach /chats/new; der Weg lässt sich wiederholen.
+      // Scheitert das Abmelden, leitet der Proxy von /login nach /chats/new; der Weg lässt sich wiederholen.
     }
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- gewollt: ganzer Neuaufbau mit frischer Sitzung
     window.location.href = `/login?next=${encodeURIComponent("/settings")}`;

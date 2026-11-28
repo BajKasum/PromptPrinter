@@ -16,7 +16,7 @@ import { selfHostedEndpointActive } from "@/server/llm";
 // Ein einziger Aufruf einer Projekt-Chat-Seite lief ueber vier Ebenen, die
 // alle dasselbe erneut holten:
 //
-//   Middleware          1x getUser()
+//   Proxy               1x getUser()
 //   (app)/layout        1x getUser() + profiles + conversations + projects
 //   (workspace)/layout  getProject() (1x getUser() + 1 Query) + 4 Queries
 //   chats/[cid]/page    1x getUser() + profiles(display_name) + 3 Queries
