@@ -1,11 +1,13 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { lineOf, moduleReferences, parse, resolveModule, walk } from "./parse-source";
 
 // Testcode gehört nicht in den Produktivbaum: Test-Helfer liegen unter tests/ (Alias @tests, vitest.config.ts), und
-// keine Datei unter src/ holt etwas von dort.
+// keine Datei unter src/ holt etwas von dort. Testdateien unter src/ dürfen das, aber nur aus tests/support/: der
+// TypeScript-Schritt von `next build` liest sie mit, und ins Docker-Image kommt aus tests/ nur dieser Ordner
+// (.dockerignore). Ein anderer Import bricht allein den Image-Build, den nicht jeder PR fährt.
 //
 // Wo ein Modul einen Test seinen Zustand zurücksetzen, schreiben oder lesen lässt, heißt der Export `__…ForTests`.
 // Dahinter hängen Kostenbremsen (Gratis-Rahmen, Leistungsschalter des Failovers). Der Name allein hindert niemanden am
@@ -36,6 +38,16 @@ function testTreeImports(file: string, text?: string): number[] {
     .map((ref) => ref.line);
 }
 
+/** Die Zeilen, an denen die Datei ein Modul unter tests/ nennt, das nicht unter tests/support/ liegt. */
+function testImportsOutsideSupport(file: string, text?: string): number[] {
+  return moduleReferences(parse(file, text))
+    .filter((ref) => {
+      const target = ref.specifier === null ? "" : (resolveModule(file, ref.specifier) ?? "");
+      return /^tests(?:\/|$)/.test(target) && !/^tests\/support(?:\/|$)/.test(target);
+    })
+    .map((ref) => ref.line);
+}
+
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name);
@@ -44,12 +56,12 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-const productionFiles = sourceFiles(join(ROOT, "src"))
-  .map((file) => relative(ROOT, file).replace(/\\/g, "/"))
-  .filter((file) => !TEST_FILE.test(file));
+const allFiles = sourceFiles(join(ROOT, "src")).map((file) => relative(ROOT, file).replace(/\\/g, "/"));
+const productionFiles = allFiles.filter((file) => !TEST_FILE.test(file));
+const testFiles = allFiles.filter((file) => TEST_FILE.test(file));
 
-const offenders = (find: (file: string) => number[]) =>
-  productionFiles.flatMap((file) => find(file).map((line) => `${file}:${line}`));
+const offenders = (find: (file: string) => number[], files = productionFiles) =>
+  files.flatMap((file) => find(file).map((line) => `${file}:${line}`));
 
 describe("Testcode im Produktivbaum", () => {
   it("außerhalb von Testdateien benutzt niemand einen __…ForTests-Namen", () => {
@@ -68,6 +80,26 @@ describe("Testcode im Produktivbaum", () => {
     const found = offenders(testTreeImports);
 
     expect(found, `Diese Stellen holen Testcode in den Produktivbaum:\n  ${found.join("\n  ")}`).toEqual([]);
+  });
+
+  it("Testdateien unter src/ holen aus tests/ nur, was in tests/support/ liegt", () => {
+    expect(testFiles.length).toBeGreaterThan(200);
+
+    const found = offenders(testImportsOutsideSupport, testFiles);
+
+    expect(
+      found,
+      `Diese Testdateien holen etwas aus tests/, das nicht ins Docker-Image kommt: der Image-Build scheitert beim ` +
+        `Typecheck. Der Helfer gehört nach tests/support/, eine Suche über den Quellbaum nach tests/guards/:\n  ${found.join("\n  ")}`
+    ).toEqual([]);
+  });
+
+  it("der erlaubte Ordner ist der, den .dockerignore aus tests/ mitnimmt", () => {
+    const rules = readFileSync(join(ROOT, ".dockerignore"), "utf8")
+      .split(/\r?\n/)
+      .filter((line) => /^!?tests(?:\/|$)/.test(line));
+
+    expect(rules).toEqual(["tests/*", "!tests/support"]);
   });
 
   it("sieht jede Schreibweise eines Zugriffs auf einen __…ForTests-Namen", () => {
@@ -109,6 +141,31 @@ describe("Testcode im Produktivbaum", () => {
     }
     for (const text of [`import { a } from "./tests";`, `import { b } from "@/shared/lib/tests/b";`]) {
       expect(testTreeImports("src/server/a.ts", text), text).toEqual([]);
+    }
+  });
+
+  it("sieht in einer Testdatei jeden Weg an tests/support/ vorbei, über den Alias wie über einen relativen Pfad", () => {
+    for (const text of [
+      `import { parse } from "@tests/guards/parse-source";`,
+      `import { parse } from "../../tests/guards/parse-source";`,
+      `import type { X } from "@tests/guards/x";`,
+      `const m = await import("@tests/scripts/x");`,
+      `vi.mock("@tests/guards/x");`,
+      `type X = typeof import("@tests/guards/x");`,
+      `import { a } from "@tests/support/../guards/x";`,
+      `import { a } from "@tests/support-alt/x";`,
+      `import { a } from "../../tests/x";`,
+    ]) {
+      expect(testImportsOutsideSupport("src/server/a.test.ts", text), text).toHaveLength(1);
+    }
+    for (const text of [
+      `import { counterRedisDouble } from "@tests/support/redis-double";`,
+      `import { counterRedisDouble } from "../../tests/support/redis-double";`,
+      `const m = await import("@tests/support/redis-double");`,
+      `import { a } from "./tests";`,
+      `import { b } from "@/shared/lib/tests/b";`,
+    ]) {
+      expect(testImportsOutsideSupport("src/server/a.test.ts", text), text).toEqual([]);
     }
   });
 });
