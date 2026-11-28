@@ -2,16 +2,10 @@ import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
-// Plain *.test.ts files run in Node (pure helpers, no DOM). *.test.tsx files
-// run in jsdom with Testing Library for component-level tests. The "@" alias
-// mirrors tsconfig so tests import modules the same way the app does.
+// *.test.ts läuft in Node (reine Helfer, kein DOM), *.test.tsx in jsdom mit Testing Library. Dafür gibt es getrennte
+// Projekte, weil Vitest die Umgebung nicht nach Dateimustern wählt. Der Alias "@" spiegelt tsconfig, damit Tests Module
+// so importieren wie die App.
 //
-// Expressed as two projects rather than one config with environmentMatchGlobs:
-// that option was removed in Vitest 3 and doesn't exist in the Vitest 4 this
-// project runs on (Security-Audit finding H-2 moved us off Vitest 2, whose
-// bundled Vite carried a published advisory). Projects are the supported
-// replacement, and they describe what was always true here anyway — two
-// suites with two environments, not one suite with an exception.
 // `server-only` is a marker package: outside a React Server Component graph it
 // resolves to a module whose only statement is `throw`. Next applies the
 // "react-server" export condition and gets the empty build; Vitest runs plain
@@ -22,14 +16,14 @@ import path from "node:path";
 // build is already the empty one.
 const alias = {
   "@": path.resolve(process.cwd(), "src"),
-  // Test-Helfer liegen unter tests/, nicht in src/ — Testcode gehoert nicht
-  // in den Produktivbaum (und damit auch nicht in dessen Schichtpruefung).
+  // Test-Helfer liegen unter tests/, nicht in src/ — Testcode gehört nicht
+  // in den Produktivbaum (und damit auch nicht in dessen Schichtprüfung).
   "@tests": path.resolve(process.cwd(), "tests"),
   "server-only": path.resolve(process.cwd(), "node_modules/server-only/empty.js"),
 };
 const setupFiles = ["./vitest.setup.ts"];
-// Der volle Lauf belegt lokal alle Kerne, dann riss ein gesunder Test die Standardgrenze von 5 s. Steht in jedem
-// Projekt: die Projekte erben die Werte von `test` nicht.
+// Der volle Lauf belegt lokal alle Kerne, dann reisst auch ein gesunder Test die Standardgrenze von 5 s. Steht in
+// jedem Projekt: die Projekte erben die Werte von `test` nicht.
 const testTimeout = 20_000;
 // Diese Dateien ersetzen `window.location` per `Object.defineProperty`. Im vm-Kontext von `vmThreads` ist das die
 // echte Eigenschaft von jsdom und nicht neu definierbar ("Cannot redefine property: location"), deshalb laufen sie
@@ -41,7 +35,7 @@ const replacesLocation = [
 
 export default defineConfig({
   test: {
-    // Nur gemessen, wenn man es verlangt (`npm run test:coverage`); `npm run test` bleibt wie es war. Bewusst keine
+    // Nur gemessen, wenn man es verlangt (`npm run test:coverage`); `npm run test` misst nicht. Bewusst keine
     // `thresholds`: die Messung weist aus, sie schlägt nicht an (#221). `include` zählt auch Dateien, die kein
     // Test lädt, sonst wäre eine nie ausgeführte Datei unsichtbar und die Quote zu schön. Das Skript
     // scripts/coverage-summary.mjs rechnet die json-summary je Verzeichnis zusammen.
@@ -61,10 +55,10 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
-          // tests/guards/ traegt die repo-weiten Invarianten-Scans (Kontrast,
+          // tests/guards/ trägt die repo-weiten Invarianten-Scans (Kontrast,
           // server-only-Marker). Sie testen kein einzelnes Modul, sondern den
-          // Quellbaum, und haetten unter src/ kein Subjekt, neben dem sie
-          // stehen koennten — die x.test.ts-neben-x.ts-Regel gilt fuer alles
+          // Quellbaum, und hätten unter src/ kein Subjekt, neben dem sie
+          // stehen könnten — die x.test.ts-neben-x.ts-Regel gilt für alles
           // andere weiterhin.
           include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
           setupFiles,

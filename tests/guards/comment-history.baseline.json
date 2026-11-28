@@ -34,8 +34,7 @@
   "src/app/api/health/route.ts": 2,
   "src/app/api/projects/route.ts": 4,
   "src/app/auth/callback/route.ts": 6,
-  "src/app/layout.tsx": 6,
-  "src/app/robots.ts": 2,
+  "src/app/layout.tsx": 4,
   "src/features/auth/components/sign-in-experience.tsx": 6,
   "src/features/auth/lib/fresh-sign-in.ts": 1,
   "src/features/auth/lib/recovery-session.ts": 6,
@@ -110,7 +109,6 @@
   "src/shared/lib/app-routes.ts": 3,
   "src/shared/lib/auth-errors.ts": 6,
   "src/shared/lib/byok-detect.ts": 1,
-  "src/shared/lib/chat-limits.ts": 6,
   "src/shared/lib/chat-stream.ts": 6,
   "src/shared/lib/file-kinds.ts": 1,
   "src/shared/lib/german-date.ts": 1,
@@ -133,6 +131,5 @@
   "src/shared/ui/key-guide.tsx": 4,
   "src/shared/ui/turnstile-widget.tsx": 12,
   "src/shell/components/account-menu.tsx": 2,
-  "src/shell/lib/shortcuts.ts": 1,
-  "vitest.config.ts": 4
+  "src/shell/lib/shortcuts.ts": 1
 }

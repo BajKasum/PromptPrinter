@@ -20,22 +20,15 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-// Aus derselben Quelle wie Sitemap und Auth-Redirects, statt hier ein zweites
-// Mal die Domain zu behaupten. `https://promptprinter.app` stand hier hart
-// verdrahtet, obwohl genau diese Adresse noch niemandem gehört (die
-// Hosting-Entscheidung steht aus, siehe legal.ts' appHost) — der Sitemap ist
-// das schon abgewöhnt worden (Security-Audit L-6), diesem Modul nicht.
-//
-// metadataBase ist der Bezugspunkt, gegen den Next JEDE relative URL in den
-// Metadaten auflöst, allen voran das OG-Bild. Solange er falsch war, zeigte
-// jede geteilte Vorschau — WhatsApp, Slack, LinkedIn — auf eine fremde
-// Domain: kein Bild, und im schlechtesten Fall das Bild von jemand anderem.
+// metadataBase ist der Bezugspunkt, gegen den Next jede relative Adresse in den Metadaten auflöst, allen voran das
+// OG-Bild. Sie kommt aus siteUrl() wie Sitemap und Auth-Redirects: mit einer fest eingetragenen Domain zeigte auf
+// einer anderen Installation jede geteilte Vorschau dorthin.
 const BASE_URL = siteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   // Ohne Canonical konkurrieren erreichbare Varianten derselben Seite
-  // (Vercel-Preview-Domain, spätere eigene Domain, ?utm_-Parameter) im Index
+  // (Vercel-Preview-Domain, ?utm_-Parameter) im Index
   // miteinander. Pro Seite überschreibbar, hier die Wurzel als Standard.
   alternates: { canonical: "/" },
   // Inhaber-Nachweis für Search Console und Bing, nur wenn die Variablen

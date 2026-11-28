@@ -1,6 +1,6 @@
 {
   "src/shared/lib/chat-stream.ts": "7783c859145511235b54d9342f093893466b8914f5f48e4eaf8daa9fc0289d69",
-  "src/shared/lib/chat-limits.ts": "68958bb3ef87dc279942b25eaf5da81d732c737f4daea8566e3c2891ccb40682",
+  "src/shared/lib/chat-limits.ts": "6b53f0d6e952919b1eaf5849f311cebe38f1ed081c65c908ced18b5e8a749aad",
   "src/shared/lib/saved-prompts.ts": "c390fd9417db350e523a8b4f88cce499e3555d3fe21b166cf76ef58ac6a9342e",
   "src/shared/lib/ai-marker.ts": "3fdb881ff63dfb5862d79e5ec37cb2a138a44d0dd3034e73fbd72d06cce8bacf",
   "src/features/chat/lib/normalize-fences.ts": "8850d1da78d046185aaa4f98a93197478f582ac8e58314f121c4585ac2b32cc7",

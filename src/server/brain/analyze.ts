@@ -285,17 +285,10 @@ function salvageFacts(object: Record<string, unknown>): ProjectBrainFacts | null
 }
 
 /**
- * Der eine Modellaufruf, aus dem das Projekt-Gedächtnis entsteht.
- *
- * `override` ist der eigene Key des Nutzers (BYOK). Ist keiner gesetzt, läuft
- * der Aufruf über den Server-Key (nur für Admins) — die Route hat davor bereits
- * den Zugang, Tagesbudget und Ratelimit geprüft, genau wie bei einem Chat-Zug.
- */
-/**
  * Die Systemanweisung mit der Sprachregel. Mit `language` (englischer Name
  * der App-Sprache, LOCALE_ENGLISH_NAMES) schreibt das Modell in der Sprache,
- * in der der Nutzer die App liest; ohne bleibt die frühere Regel (Sprache der
- * Quellen), damit ein Aufruf ohne Sprachangabe sich nicht still ändert.
+ * in der der Nutzer die App liest; ohne in der Sprache der Quellen (Deutsch,
+ * wenn sie deutsch sind, sonst Englisch).
  */
 export function analysisSystemPrompt(language?: string, kind: ProjectKind = "software"): string {
   const rule = language
@@ -305,6 +298,13 @@ export function analysisSystemPrompt(language?: string, kind: ProjectKind = "sof
   return prompt.replace("{{LANGUAGE_RULE}}", rule);
 }
 
+/**
+ * Der eine Modellaufruf, aus dem das Projekt-Gedächtnis entsteht.
+ *
+ * `override` ist der eigene Key des Nutzers (BYOK). Ist keiner gesetzt, läuft
+ * der Aufruf über den Server-Key (nur für Admins) — die Route hat davor bereits
+ * den Zugang, Tagesbudget und Ratelimit geprüft, genau wie bei einem Chat-Zug.
+ */
 export async function analyzeProjectBrain(
   input: BrainAnalysisInput,
   options: {
