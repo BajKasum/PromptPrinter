@@ -18,6 +18,11 @@ const TRAILING_COMMENT = /\s\/\/\s(.*)$/;
 // Datumsangaben, Auditkennungen ("K-2", "F-4/U-6"), Bezüge auf Berichte und Fehlersuche als Erzählung.
 const HISTORY_MARKER =
   /\b20\d\d-\d\d-\d\d\b|\b\d{1,2}\.\d{1,2}\.20\d\d\b|\b[A-Z]{1,2}-\d{1,3}\b|\bPlanpunkt\b|\bAudit\b|\bfound the hard way\b/g;
+// Erzählung ohne Datum. "used to" nicht nach einer Form von "be" ("is used to sign" beschreibt heute), "früher" nur
+// als ganzes Wort ("die früheren Nachrichten" ebenso). Fehlalarme bleiben möglich ("the page no longer exists"): dann
+// den Satz so schreiben, dass er ohne das Wort auskommt.
+const NARRATION_MARKER =
+  /(?<!\b(?:is|are|be|being)\s)\b[Uu]sed to\b|\b[Nn]o longer\b|\b(?:[Ff]rüher|[Ee]hemals|[Dd]amals)(?![a-zäöüß])/g;
 const SPELLED_UMLAUT =
   /\b(?:fuer|ueber|koennen|koennte|muessen|muesste|waere|wuerde|duerfen|naechste[nmrs]?|aendern|aenderung|zurueck|pruefen|prueft|gehoert|spaeter|laeuft|haengt|fuehrt|moeglich|loeschen)\b/gi;
 
@@ -46,7 +51,7 @@ function countFindings(file: string, text: string): number {
     if (hashComments) comment = HASH_COMMENT_LINE.test(line) ? line : undefined;
     else comment = COMMENT_LINE.test(line) ? line : TRAILING_COMMENT.exec(line)?.[1];
     if (!comment) continue;
-    count += (comment.match(HISTORY_MARKER) ?? []).length + (comment.match(SPELLED_UMLAUT) ?? []).length;
+    for (const marker of [HISTORY_MARKER, NARRATION_MARKER, SPELLED_UMLAUT]) count += (comment.match(marker) ?? []).length;
   }
   return count;
 }
@@ -67,6 +72,17 @@ describe("Verlauf und umschriebene Umlaute in Kommentaren", () => {
     expect(countFindings("a.ts", 'const d = "2026-10-04";')).toBe(0);
     expect(countFindings("a.ts", "const x = 1; // Stand 04.10.2026")).toBe(1);
     expect(countFindings("Dockerfile", "# found the hard way\nRUN echo 2026-10-04")).toBe(1);
+  });
+
+  it("erkennt Erzählung ohne Datum und lässt die Gegenwart stehen", () => {
+    expect(countFindings("a.ts", "// This used to be a wall. It is no longer one.")).toBe(2);
+    expect(countFindings("a.ts", "// Used to be a wall.\n// No longer one.")).toBe(2);
+    expect(countFindings("a.ts", "// Früher stand hier die Liste, damals ohne Grenze, ehemals doppelt.")).toBe(3);
+    expect(countFindings("a.ts", "// gilt wie früher")).toBe(1);
+    expect(countFindings("a.ts", "// The key is used to sign, both are used to check, it can be used to log in.")).toBe(0);
+    expect(countFindings("a.ts", "// Die früheren Nachrichten, ein früherer Zug, der damalige Stand.")).toBe(0);
+    expect(countFindings("a.ts", "// unused tools")).toBe(0);
+    expect(countFindings("a.ts", 'const text = "no longer";')).toBe(0);
   });
 
   it("liest die Konfigurations- und Build-Dateien mit", () => {
