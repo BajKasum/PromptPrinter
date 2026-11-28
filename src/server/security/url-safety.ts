@@ -179,6 +179,8 @@ const BLOCKED_IPV6 = [
   "2001:db8::/32", // Dokumentation
   "100::/64", // Discard
   "64:ff9b:1::/48", // NAT64 für den lokalen Gebrauch
+  "3fff::/20", // Dokumentation (RFC 9637)
+  "5f00::/16", // Segment Routing (SRv6), laut IANA nicht global erreichbar (RFC 9602)
 ].map((cidr) => parseRange(cidr, ipv6Groups));
 
 /**

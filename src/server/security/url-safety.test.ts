@@ -225,6 +225,8 @@ describe("assertPublicHttpsUrl: Grenzen der IPv6-Bereiche", () => {
     ["2001:db8::/32, Dokumentation", ["2001:db8::", `2001:db8${ones(6)}`], [`2001:db7${ones(6)}`, "2001:db9::"]],
     ["100::/64, Discard", ["100::", `100:0:0:0${ones(4)}`], [`ff${ones(7)}`, "100:0:0:1::"]],
     ["64:ff9b:1::/48, NAT64 lokal", ["64:ff9b:1::", `64:ff9b:1${ones(5)}`], [`64:ff9b:0${ones(5)}`, "64:ff9b:2::"]],
+    ["3fff::/20, Dokumentation", ["3fff::", `3fff:fff${ones(6)}`], [`3ffe${ones(7)}`, "3fff:1000::"]],
+    ["5f00::/16, SRv6", ["5f00::", `5f00${ones(7)}`], [`5eff${ones(7)}`, "5f01::"]],
     ["::/96, IPv4-kompatibel", ["::", "::a00:1", "::ffff:ffff"], ["::808:808", "::1:7f00:1"]],
     ["::ffff:0:0/96, IPv4-gemappt", ["::ffff:0:0", "::ffff:a00:1"], ["::ffff:808:808", "::fffe:7f00:1"]],
     ["64:ff9b::/96, NAT64", ["64:ff9b::", "64:ff9b::a00:1"], ["64:ff9b::808:808", "64:ff9b::1:7f00:1"]],
