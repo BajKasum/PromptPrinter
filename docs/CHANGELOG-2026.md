@@ -11,6 +11,28 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-28: `src/middleware.ts` heisst `src/proxy.ts` und läuft auf Node.js (Branch `refactor/proxy-428`, #470, #428)
+
+- **Ziel:** Fund aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): Next 16 hat die Konvention "middleware"
+  abgekündigt, der Build warnte.
+- **Mehr als eine Umbenennung:** ein Proxy läuft immer auf Node.js und lässt keine Laufzeit wählen; die bisherige Datei
+  lief ohne Angabe auf der Edge-Laufzeit. Der Inhalt bleibt, die Kommentare sagen nur noch, was gilt.
+- **Verglichen** (Produktions-Build, `next start` und Standalone-Paket, Supabase nachgestellt): 72 Anfragen mit Status,
+  Köpfen, Cookies, Nonce und Auth-Aufrufen vorher und nachher gleich, auch der Matcher. Die Warnung ist weg;
+  "The Edge Runtime is deprecated" bleibt wegen der beiden OG-Routen.
+- **Vercel** (laut Doku): Abrechnung für beide Laufzeiten nach demselben Modell (Fluid Compute). Nicht belegt ist, in
+  welcher Region ein Node-Proxy läuft; Node-Funktionen dürfen standardmässig 300 s laufen statt 25 s bis zur Antwort.
+- **Neue Tests** (`src/proxy.test.ts`): für welche Pfade der Proxy läuft (auch, dass die API darunter bleibt), dass die
+  Seite denselben Nonce bekommt wie die Policy, und dass keine `middleware.ts` zurückkommt. 7 Mutationen, alle erkannt.
+  Im Changelog selbst zeigt ein alter Link jetzt auf `src/proxy.ts` und nennt den heutigen Namen.
+- **Gemergt nach Kasums Ja**, vorher das Prüfpaket auf dem gemeinsamen Stand mit `main` (5109 Tests grün).
+- **Produktion vor und nach dem Deploy** (von einem Rechner, jede Anfrage mit neuer Verbindung): Status, Ziel, CSP,
+  Cookies und Typ in neun Fällen gleich (Weiterleitung ohne Sitzung, statische Seiten, 404, `/api/health`, 403 der
+  Herkunftsprüfung). Median `/settings` 82 → 81 ms, `/api/health` 123 → 122 ms (8, danach 30 Anfragen). Keine
+  Laufzeitfehler bei Vercel in den ersten Minuten.
+- **Nicht geprüft:** die Produktion mit angemeldeter Sitzung. Weiterleitungen nennen in `x-vercel-id` wie vorher nur
+  `fra1`; wo der Proxy rechnet, belegt das nicht.
+
 ## 2026-11-28: Tests für die App-Seiten, E2E-Umgebung aus `.env.example`, vier Browser-Tests (Branch `test/abdeckung-und-e2e`, #471, #387, #427)
 
 **Abdeckung (#387).** Die Seiten unter `(app)` trugen die Regeln "ohne Sitzung zur Anmeldung", "fremde Kennung ergibt

@@ -731,7 +731,7 @@ Was das nicht leistet:
 |---|---|---|
 | CAPTCHA in Supabase Auth einschalten und das Turnstile-Token an Supabase weiterreichen (`options.captchaToken`), statt es in `/api/auth` selbst zu prüfen | Einstellung im Dashboard und der Schalter `AUTH_CAPTCHA_VIA_SUPABASE` (ein Token ist nur einmal einlösbar, es darf also nur einer prüfen) | **gebaut, aus**: Schritte unten, Kasum schaltet um |
 | Password Verification Hook, der die Sperre je Konto auch dort durchsetzt | Tarif Teams oder Enterprise ([Supabase, "Auth Hooks"](https://supabase.com/docs/guides/auth/auth-hooks)) | nicht auf Free |
-| Grenze für `/auth/v1/token` im Dashboard enger stellen | Einstellung im Dashboard | schadet eher: dieselbe Grenze gilt für das Erneuern der Sitzung, und `/api/auth` wie die Middleware sprechen von Vercels Servern aus mit Supabase, teilen sich also deren Adressen |
+| Grenze für `/auth/v1/token` im Dashboard enger stellen | Einstellung im Dashboard | schadet eher: dieselbe Grenze gilt für das Erneuern der Sitzung, und `/api/auth` wie der Proxy (`src/proxy.ts`) sprechen von Vercels Servern aus mit Supabase, teilen sich also deren Adressen |
 
 ### Umschalten: Supabase prüft das CAPTCHA
 
@@ -1090,7 +1090,7 @@ Basiswert steht hier, damit es sie geben kann.
 | `src/features/` | 114 | 82,0 % | 79,3 % | 74,2 % | 78,7 % |
 | `src/shared/` | 80 | 90,8 % | 90,2 % | 86,6 % | 85,9 % |
 | `src/shell/` | 13 | 86,9 % | 84,8 % | 80,7 % | 76,6 % |
-| Rest (`middleware.ts`, `instrumentation.ts`) | 2 | 70,6 % | 63,2 % | 66,7 % | 33,3 % |
+| Rest (`middleware.ts`, heute `proxy.ts`, und `instrumentation.ts`) | 2 | 70,6 % | 63,2 % | 66,7 % | 33,3 % |
 | **Gesamt** | 366 | 83,1 % | 81,6 % | 77,0 % | 76,6 % |
 
 Was die Zahlen sagen und was nicht:
