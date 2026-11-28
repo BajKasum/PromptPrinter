@@ -1,0 +1,34 @@
+name: Idea or feature request
+description: Something PromptPrinter should do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English or German is fine. Some things won't come back, such as payments and paid plans; see
+        [CONTRIBUTING.md](https://github.com/BajKasum/PromptPrinter/blob/main/CONTRIBUTING.md#before-you-start).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem do you have?
+      description: Describe the situation, not yet the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would solve it?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to build it?
+      options:
+        - "Yes"
+        - "Maybe, with some pointers"
+        - "No"
