@@ -8,8 +8,8 @@ import { describe, expect, it } from "vitest";
 // zog nach docs/CHANGELOG-2026.md. Andere Dateien verweisen auf Abschnitte
 // ("Begründung steht in CLAUDE.md"): ein verschobener Abschnitt bricht diese
 // Verweise STUMM, und niemand merkt es, bis jemand die Begründung sucht. Dieser
-// Test folgt jedem relativen Markdown-Link in CLAUDE.md, README.md und docs/*.md
-// (nicht docs/audits/, das sind Momentaufnahmen) und prüft Datei UND Anker.
+// Test folgt jedem relativen Markdown-Link in CLAUDE.md, README.md, CONTRIBUTING.md
+// und docs/*.md (nicht docs/audits/, das sind Momentaufnahmen) und prüft Datei UND Anker.
 //
 // Was er nicht sieht: ein Verweis im Fließtext ohne Link ("siehe CLAUDE.md").
 // Das fängt die Suche, die beim Verschieben eines Abschnitts dazugehört.
@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = join(__dirname, "..", "..");
 
 function docFiles(): string[] {
-  const files = ["CLAUDE.md", "README.md"];
+  const files = ["CLAUDE.md", "README.md", "CONTRIBUTING.md"];
   for (const f of readdirSync(join(ROOT, "docs"))) if (f.endsWith(".md")) files.push(`docs/${f}`);
   return files.filter((f) => existsSync(join(ROOT, f)));
 }

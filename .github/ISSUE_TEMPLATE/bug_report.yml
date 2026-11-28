@@ -1,0 +1,63 @@
+name: Bug report
+description: Something doesn't work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. English or German is fine.
+
+        **Security problem?** Please don't open an issue, [report it privately](https://github.com/BajKasum/PromptPrinter/security/policy).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - promptprinter.app (the demo)
+        - A self-hosted web app
+        - The terminal app (cli/)
+        - The skill /pp (skill/, no longer developed)
+        - Docs, setup or tests
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit
+      description: For a self-hosted app or the terminal app, the output of `git rev-parse --short HEAD`. Leave empty for the demo.
+  - type: input
+    id: environment
+    attributes:
+      label: Browser, operating system and model
+      placeholder: Firefox on Windows 11, Ollama with qwen3
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Please remove API keys, tokens and email addresses first.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I searched the existing issues
+          required: true
+        - label: This report contains no API key, token or personal data
+          required: true
