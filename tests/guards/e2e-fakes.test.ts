@@ -35,6 +35,9 @@ const standIn = vi.fn(async (input: string | URL | Request, init?: RequestInit) 
 beforeEach(() => {
   standIn.mockClear();
   vi.stubGlobal("fetch", standIn);
+  // Wie im Server der Tests (e2e/support/env.ts): das SDK liest die Basisadresse sonst aus der Shell.
+  vi.stubEnv("OPENAI_BASE_URL", "");
+  vi.stubEnv("OPENAI_CUSTOM_HEADERS", "");
 });
 afterEach(() => {
   vi.unstubAllGlobals();

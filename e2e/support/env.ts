@@ -121,6 +121,12 @@ export function templateVariables(template: string): string[] {
 export const NOT_IN_TEMPLATE = ["FREE_TRIAL_DAILY_CALLS", "VERCEL"];
 
 /**
+ * Liest das OpenAI-SDK selbst aus der Umgebung, nicht der Code der App, steht also in keiner Vorlage: eine andere
+ * Basisadresse führte am Stellvertreter vorbei an diesen Host, eigene Köpfe könnten den Key ersetzen.
+ */
+const SDK_OVERRIDES = { OPENAI_BASE_URL: "", OPENAI_CUSTOM_HEADERS: "" };
+
+/**
  * Alles, was die Vorlage nennt, leer. Next lädt zusätzlich `.env.local`, wo auf einem Entwicklerrechner echte
  * Zugangsdaten und Schalter stehen können; ein im Prozess GESETZTER Wert, auch ein leerer, schlägt die Datei. Aus der
  * Vorlage gelesen, damit eine neue Variable nicht vergessen wird: ohne Eintrag unten bleibt sie in den Tests aus.
@@ -152,11 +158,13 @@ function nodeOptionsWithFakes(): string {
  * Stub-Modus), kein eigener Endpunkt, kein Einzelbetrieb, kein Upstash (Ratenlimit im Speicher), kein Captcha,
  * kein Alarm-Webhook, kein GitHub-Token. Gesetzt wird nur, was darunter steht. GitHub, OpenAI und Resend
  * erreicht der Server nie: ihre Anfragen beantworten die Stellvertreter (support/fakes.cjs), deshalb darf
- * RESEND_API_KEY ihren Wert tragen. Ein Test (e2e/smoke.spec.ts) prüft, dass das greift.
+ * RESEND_API_KEY ihren Wert tragen. Dass die leeren Werte greifen, prüft e2e/smoke.spec.ts, die Stellvertreter
+ * prüft tests/guards/e2e-fakes.test.ts.
  */
 export function serverEnv(): Record<string, string> {
   return {
     ...sharedServerEnv(E2E_ORIGIN),
+    ...SDK_OVERRIDES,
     NODE_ENV: "development",
     // Schaltet Nexts Dev-Anzeige aus (next.config.ts): sie läge links unten über dem Kontomenü, sobald sie einen Hinweis zählt.
     PP_E2E: "1",
