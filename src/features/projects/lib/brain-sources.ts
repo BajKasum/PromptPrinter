@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  ANALYSIS_TEXT_PER_FILE_BUDGET,
+  ANALYSIS_TEXT_TOTAL_BUDGET,
+  MAX_ANALYSIS_IMAGES,
+} from "@/features/projects/lib/context-budgets";
 import { fileKind } from "@/features/projects/lib/project-files";
 import { fetchRepoSnapshot, parseGithubRepoUrl, type RepoSnapshot } from "@/server/brain/github";
 import type { BrainAnalysisInput } from "@/server/brain/analyze";
@@ -17,27 +22,8 @@ import { orThrow } from "@/server/supabase/query";
 // tests/guards/layer-boundaries.test.ts), also ist das der einzige Ort, an
 // dem beides zusammenkommen darf. server/brain/analyze.ts bekommt deshalb
 // fertige Daten übergeben und weiss von Supabase nichts.
-//
-// ─── Budgets ───────────────────────────────────────────────────────────────
-// Diese sind bewusst um ein Vielfaches grosszügiger als die in
-// project-context.ts. Das ist genau die Ökonomie des Features: die Analyse
-// läuft EINMAL und darf dafür viel lesen; das Ergebnis ist danach ein
-// 2500-Zeichen-Block, der bei jedem Chat-Zug mitreist. Vorher wanderten die
-// Rohdateien selbst in jeden einzelnen Zug.
-const TEXT_TOTAL_BUDGET = 60000;
-const TEXT_PER_FILE_BUDGET = 12000;
 
-/**
- * Wie viele Screenshots in eine Analyse gehen.
- *
- * Bilder sind der teuerste Teil einer Analyse (sie reisen als Base64 im
- * Request und werden vom Anbieter nach Pixelfläche abgerechnet), und der
- * Grenznutzen fällt schnell: der dritte Screenshot derselben App zeigt
- * dieselbe Design-Sprache wie der erste. Drei ist die Zahl, bei der noch
- * Übersicht, Detailseite und Formular hineinpassen.
- */
-const MAX_ANALYSIS_IMAGES = 3;
-/** Und dieses Gesamtvolumen darf der Request an Bilddaten nicht überschreiten. */
+/** Dieses Gesamtvolumen darf der Request an Bilddaten nicht überschreiten. */
 const MAX_ANALYSIS_IMAGE_BYTES = 6 * 1024 * 1024;
 
 type SupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
@@ -184,11 +170,11 @@ function repoDocuments(snapshot: RepoSnapshot): BrainAnalysisInput["documents"] 
  */
 function applyTextBudget(documents: BrainAnalysisInput["documents"]): BrainAnalysisInput["documents"] {
   const out: BrainAnalysisInput["documents"] = [];
-  let remaining = TEXT_TOTAL_BUDGET;
+  let remaining = ANALYSIS_TEXT_TOTAL_BUDGET;
 
   for (const doc of documents) {
     if (remaining <= 0) break;
-    const cap = Math.min(TEXT_PER_FILE_BUDGET, remaining);
+    const cap = Math.min(ANALYSIS_TEXT_PER_FILE_BUDGET, remaining);
     const text = doc.text.length > cap ? `${doc.text.slice(0, cap - 1)}…` : doc.text;
     if (!text.trim()) continue;
     out.push({ label: doc.label, text });
