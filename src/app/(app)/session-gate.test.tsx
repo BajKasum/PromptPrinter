@@ -14,7 +14,7 @@ import SavedPromptsPage from "./prompts/page";
 import SettingsPage from "./settings/page";
 import UsagePage from "./usage/page";
 
-// Ohne Sitzung führt jede Seite der App zur Anmeldung, bevor sie etwas liest. Die Middleware sperrt dieselben Routen,
+// Ohne Sitzung führt jede Seite der App zur Anmeldung, bevor sie etwas liest. Der Proxy sperrt dieselben Routen,
 // das hier ist die zweite Linie. Die Workspace-Seiten bekommen die Weiterleitung aus getProject(); hier läuft das echte
 // Modul (server/project.ts).
 const ID = "6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f";
