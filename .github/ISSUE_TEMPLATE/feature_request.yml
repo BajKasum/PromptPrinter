@@ -5,8 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        English or German is fine. Some things won't come back, such as payments and paid plans; see
-        [CONTRIBUTING.md](https://github.com/BajKasum/PromptPrinter/blob/main/CONTRIBUTING.md#before-you-start).
+        English or German is fine. Some things won't come back, such as payments and paid plans; see [CONTRIBUTING.md](https://github.com/BajKasum/PromptPrinter/blob/main/CONTRIBUTING.md#before-you-start).
   - type: textarea
     id: problem
     attributes:
