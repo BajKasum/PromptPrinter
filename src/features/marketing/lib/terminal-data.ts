@@ -1,12 +1,12 @@
-// Die Befehle der Seiten /terminal (im Header "CLI") und /mcp, an einer Stelle und gegen das Programm in
-// `cli/` dieses Repos gelesen (README, package.json: Befehl `promptprinter`, Einstieg die Datei promptprinter.mjs im
+// Die Befehle der Seiten /terminal (im Header "CLI") und /mcp und der Hilfe /docs/terminal-anmeldung, an einer Stelle
+// und gegen das Programm in `cli/` dieses Repos gelesen (README, package.json: Befehl `promptprinter`, Einstieg die Datei promptprinter.mjs im
 // Ordner bin, Node 22 oder neuer, keine Abhängigkeiten; ohne Konto `--local` mit `--base-url`, `--model` und dem
 // Key nur in `PROMPTPRINTER_API_KEY`).
 //
-// Solange das Paket nicht auf npm liegt, zeigen beide Seiten die Installation aus dem Quellcode. Ein Paket
-// namens `promptprinter` auf npm, das nicht von diesem Projekt stammt, soll niemand wegen dieser Seite
-// installieren. Nach der ersten Veröffentlichung (Kasum, von Hand) NPM_PUBLISHED auf true setzen; der Test
-// daneben hält beide Zustände fest.
+// Solange das Paket nicht auf npm liegt, zeigen alle drei die Installation aus dem Quellcode. Ein Paket
+// namens `promptprinter` auf npm, das nicht von diesem Projekt stammt, soll niemand wegen dieser Seiten
+// installieren. Nach der ersten Veröffentlichung (Kasum, von Hand) NPM_PUBLISHED auf true setzen und in
+// shared/lib/docs-nav.ts `updated` des Artikels nachziehen; die Tests daneben halten beide Zustände fest.
 
 export const NPM_PUBLISHED = false;
 

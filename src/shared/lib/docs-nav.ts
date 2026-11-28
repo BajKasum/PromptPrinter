@@ -77,7 +77,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         title: "Dateien im Projekt",
         summary:
           "Lade Notizen, Schemas oder Exporte hoch, damit Finn deinen Kontext kennt, ohne dass du ihn tippst.",
-        updated: "2026-10-02",
+        updated: "2026-11-28",
       },
       {
         slug: "ergebnisse",
@@ -123,7 +123,7 @@ export const DOCS_GROUPS: DocGroup[] = [
         published: "2026-10-29",
         summary:
           "Das Terminal-Programm: ohne Passwort per Code anmelden, Prompts mit /pp schreiben, über MCP an Claude Code oder Claude Desktop geben und wieder abmelden.",
-        updated: "2026-11-25",
+        updated: "2026-11-28",
       },
       {
         slug: "tastenkuerzel",

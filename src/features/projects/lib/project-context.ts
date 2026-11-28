@@ -1,5 +1,11 @@
 import { truncate } from "@/shared/lib/chat-limits";
 import { getCachedFileContent } from "@/server/project-file-cache";
+import {
+  FILES_PER_FILE_CAP,
+  FILES_PER_FILE_CAP_WITH_BRAIN,
+  FILES_TOTAL_BUDGET,
+  FILES_TOTAL_BUDGET_WITH_BRAIN,
+} from "@/features/projects/lib/context-budgets";
 import { fileKind } from "@/features/projects/lib/project-files";
 import {
   formatBrainForPrompt,
@@ -12,29 +18,6 @@ import { orThrow } from "@/server/supabase/query";
 // Builds the "PROJECT CONTEXT" block /api/chat appends to a project chat's
 // system instruction. Split out of route.ts (QA finding C-1) purely to shrink
 // that file and make this testable in isolation; no behavior change.
-
-// Files share the workspace's total context budget (REDESIGN.md §7): .md
-// first (most token-efficient, so it earns priority), then upload order.
-// Each file is capped individually so one large file can't crowd out the
-// rest; whatever doesn't fit is still named so the assistant knows it exists.
-// Halved from the original 24000/6000 (cost pass, 2026-07), this and every
-// budget below gets re-sent on EVERY turn of a project chat, so it's pure
-// per-turn cost regardless of how much actually changed since the last turn.
-const FILES_TOTAL_BUDGET = 12000;
-const FILES_PER_FILE_CAP = 3000;
-
-// Sobald ein Projekt-Gedächtnis existiert, sinken beide.
-//
-// Das ist der eigentliche Kostengewinn des Features, nicht ein Nebeneffekt:
-// die Rohdateien wanderten bisher bei JEDEM Zug erneut in den Systemprompt,
-// damit das Modell daraus jedes Mal aufs Neue ableitet, welcher Stack hier
-// läuft. Genau diese Ableitung ist jetzt einmal passiert und steht als
-// 2500-Zeichen-Block bereit (BRAIN_PROMPT_BUDGET). Die Dateien bleiben
-// trotzdem drin — sie tragen mehr als Stack-Fakten, etwa eine API-Doku oder
-// eine Anforderungsliste, an die sich das Brain nicht erinnern soll — nur mit
-// halbem Budget. Unterm Strich: 12000 vorher, 6000 + höchstens 2500 nachher.
-const FILES_TOTAL_BUDGET_WITH_BRAIN = 6000;
-const FILES_PER_FILE_CAP_WITH_BRAIN = 2000;
 
 // Workspace context v2 (REDESIGN.md, Phase 3+4): a project chat works from the
 // project's living briefing, not just the original raw idea. Order encodes
@@ -69,7 +52,7 @@ export async function buildProjectContext(
   // nothing, and the function still returns null below before using anything.
   //
   // Das Brain kommt als vierter Leser dazu und muss VOR den Dateien bekannt
-  // sein, weil es deren Budget bestimmt (siehe die Konstanten oben). Es wird
+  // sein, weil es deren Budget bestimmt (context-budgets.ts). Es wird
   // trotzdem parallel gelesen und nicht davor: der Zeilenlesevorgang ist der
   // billige Teil, die Storage-Downloads sind der teure — die vorzuziehen und
   // hinterher weniger davon zu verwenden kostet nichts, sie zu serialisieren
@@ -258,9 +241,8 @@ async function loadProjectFiles(
 /**
  * Formatiert die geladenen Dateien innerhalb des Budgets.
  *
- * `hasBrain` halbiert es: die Stack-Ableitung, für die diese Dateien bisher
- * bei jedem Zug erneut mitreisen mussten, steht jetzt fertig im Brain-Block
- * darüber (siehe die Konstanten oben).
+ * `hasBrain` wählt die kleineren Budgets (context-budgets.ts): was Finn über
+ * Stack und Aufbau wissen muss, steht dann im Brain-Block darüber.
  *
  * Bilder tauchen hier nicht auf — sie sind Analysequellen, kein Chat-Kontext.
  * Ihre Bytes als Text zu dekodieren gäbe Müll, und pro Zug ein Bild an das

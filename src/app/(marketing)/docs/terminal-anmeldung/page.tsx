@@ -3,25 +3,29 @@ import Link from "next/link";
 import { DocsShell } from "@/features/marketing/components/docs-shell";
 import { docBySlug } from "@/shared/lib/docs-nav";
 import { docMetadata } from "@/features/marketing/lib/article-metadata";
+import {
+  CLI_NODE_MIN,
+  CLI_PACKAGE,
+  CLI_SOURCE_URL,
+  NPM_PUBLISHED,
+  cliInstallSteps,
+  cliStartCommand,
+  mcpSetup,
+} from "@/features/marketing/lib/terminal-data";
 
 const doc = docBySlug("terminal-anmeldung")!;
 
 export const metadata: Metadata = docMetadata(doc);
 
-// Die Befehle folgen dem Programm in `cli/` dieses Repos (README). Das Paket liegt noch nicht auf npm, deshalb zeigt die
-// Seite den Weg aus dem Quellcode und keinen `npm install`: ein fremdes Paket gleichen Namens soll niemand wegen
-// dieser Seite installieren. Nach der Veröffentlichung kommen `npm install -g promptprinter`, `npx promptprinter`
-// und die Einrichtung mit `npx -y promptprinter mcp` hierher, zusammen mit `updated` in docs-nav.ts.
-const REPO_URL = "https://github.com/BajKasum/PromptPrinter";
-const SOURCE_URL = `${REPO_URL}/tree/main/cli`;
-const ENTRY = "/pfad/zu/PromptPrinter/cli/bin/promptprinter.mjs";
-const DESKTOP_CONFIG = JSON.stringify(
-  { mcpServers: { promptprinter: { command: "node", args: [ENTRY, "mcp"] } } },
-  null,
-  2
-);
-
+// Befehle, Adresse und MCP-Einrichtung kommen aus terminal-data.ts wie auf /terminal und /mcp, der Schalter
+// NPM_PUBLISHED dort stellt alle drei Seiten gemeinsam um. Mit dem Umstellen ändert sich der Text dieses Artikels,
+// dazu gehört `updated` in docs-nav.ts.
 export default function Page() {
+  const start = cliStartCommand(NPM_PUBLISHED);
+  const setup = mcpSetup(NPM_PUBLISHED);
+  // Der erste Schritt holt das Programm, danach der Befehl, der es startet.
+  const install = `${cliInstallSteps(NPM_PUBLISHED)[0].code}\n${start}`;
+
   return (
     <DocsShell
       slug={doc.slug}
@@ -30,15 +34,28 @@ export default function Page() {
     >
       <h2>Was brauche ich?</h2>
       <p>
-        Node 22 oder neuer und ein Konto bei PromptPrinter. Das Programm heisst <code>promptprinter</code> und
-        hat keine weiteren Abhängigkeiten. Es liegt noch nicht auf npm, du holst es dir von{" "}
-        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
-          GitHub
-        </a>
-        :
+        Node {CLI_NODE_MIN} oder neuer und ein Konto bei PromptPrinter. Das Programm heisst <code>{CLI_PACKAGE}</code>{" "}
+        und hat keine weiteren Abhängigkeiten.{" "}
+        {NPM_PUBLISHED ? (
+          <>
+            Der Quellcode liegt auf{" "}
+            <a href={CLI_SOURCE_URL} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+            . Du installierst es einmal global, ohne Installation geht es auch mit <code>npx {CLI_PACKAGE}</code>:
+          </>
+        ) : (
+          <>
+            Es liegt noch nicht auf npm, du holst es dir von{" "}
+            <a href={CLI_SOURCE_URL} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+            :
+          </>
+        )}
       </p>
       <pre>
-        <code>{`git clone --depth 1 ${REPO_URL}.git\ncd PromptPrinter/cli\nnode bin/promptprinter.mjs`}</code>
+        <code>{install}</code>
       </pre>
       <p>
         Ein Konto auf Free chattet auch im Terminal nur mit einem{" "}
@@ -104,7 +121,7 @@ export default function Page() {
 
       <h2>Wie nutze ich PromptPrinter über MCP?</h2>
       <p>
-        Mit <code>promptprinter mcp</code> läuft das Programm als MCP-Server über die Standardein- und
+        Mit <code>{start} mcp</code> läuft das Programm als MCP-Server über die Standardein- und
         -ausgabe. Eine andere KI, zum Beispiel Claude Code oder Claude Desktop, bekommt damit drei Werkzeuge:
       </p>
       <ul>
@@ -122,17 +139,17 @@ export default function Page() {
       </ul>
       <p>
         Vorher startest du das Programm einmal normal und meldest es an: der MCP-Server benutzt dieselbe
-        Anmeldung und fragt selbst nach keinem Code. In Claude Code richtest du ihn mit einem Befehl ein, den
-        Pfad ersetzt du durch den Ordner, in den du das Repo geklont hast:
+        Anmeldung und fragt selbst nach keinem Code. In Claude Code richtest du ihn mit einem Befehl ein
+        {NPM_PUBLISHED ? ":" : ", den Pfad ersetzt du durch den Ordner, in den du das Repo geklont hast:"}
       </p>
       <pre>
-        <code>{`claude mcp add promptprinter -- node ${ENTRY} mcp`}</code>
+        <code>{setup.claudeCode}</code>
       </pre>
       <p>
         In Claude Desktop trägst du ihn in die Datei <code>claude_desktop_config.json</code> ein:
       </p>
       <pre>
-        <code>{DESKTOP_CONFIG}</code>
+        <code>{setup.claudeDesktop}</code>
       </pre>
 
       <h2>Was darf das Terminal?</h2>
@@ -144,8 +161,9 @@ export default function Page() {
 
       <h2>Wie melde ich ein Terminal wieder ab?</h2>
       <p>
-        Mit <code>promptprinter logout</code> (aus dem Quellcode: <code>node bin/promptprinter.mjs logout</code>)
-        oder in den <Link href="/settings#terminals">Einstellungen</Link>: dort stehen alle angemeldeten
+        Mit <code>{start} logout</code>
+        {NPM_PUBLISHED ? "" : " im Ordner des Programms"} oder in den{" "}
+        <Link href="/settings#terminals">Einstellungen</Link>: dort stehen alle angemeldeten
         Terminals mit Name und Datum, und du meldest jedes einzeln ab. Beides beendet nur dieses eine Gerät,
         dein Browser und deine anderen Geräte bleiben angemeldet.
       </p>

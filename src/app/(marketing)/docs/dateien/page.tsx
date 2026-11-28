@@ -11,16 +11,30 @@ import {
   MAX_TEXT_FILE_BYTES,
   fileKind,
 } from "@/features/projects/lib/project-files";
+import {
+  ANALYSIS_TEXT_PER_FILE_BUDGET,
+  ANALYSIS_TEXT_TOTAL_BUDGET,
+  FILES_PER_FILE_CAP,
+  FILES_PER_FILE_CAP_WITH_BRAIN,
+  FILES_TOTAL_BUDGET,
+  FILES_TOTAL_BUDGET_WITH_BRAIN,
+  MAX_ANALYSIS_IMAGES,
+} from "@/features/projects/lib/context-budgets";
+import { BRAIN_PROMPT_BUDGET } from "@/shared/lib/project-brain";
 import { docMetadata } from "@/features/marketing/lib/article-metadata";
 
 const doc = docBySlug("dateien")!;
 
 export const metadata: Metadata = docMetadata(doc);
 
-// Limits are read from the same module the upload UI enforces them with, so
-// this page can't drift away from the actual rule. The format groups are
-// derived with fileKind() for the same reason: an extension is never listed
-// under a size limit the upload gate wouldn't apply to it.
+// Jede Grenze auf dieser Seite kommt aus dem Modul, das sie durchsetzt (project-files.ts beim Upload,
+// context-budgets.ts und project-brain.ts im Kontext), damit der Artikel nicht von der Regel abweicht. Die Formate
+// sind aus demselben Grund mit fileKind() abgeleitet: keine Endung steht unter einer Grösse, die der Upload für sie
+// nicht anlegt.
+const chars = (n: number) => n.toLocaleString("de-CH");
+const NUMBER_WORDS = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn"];
+const ANALYSIS_IMAGES = NUMBER_WORDS[MAX_ANALYSIS_IMAGES] ?? String(MAX_ANALYSIS_IMAGES);
+
 const MAX_TEXT_KB = MAX_TEXT_FILE_BYTES / 1024;
 const MAX_LOCKFILE_MB = MAX_LOCKFILE_BYTES / (1024 * 1024);
 const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
@@ -75,10 +89,10 @@ export default function Page() {
       <p>
         Bilder, etwa Screenshots deiner App, sind Quellen für das{" "}
         <Link href="/docs/projekte">Gedächtnis</Link> des Projekts. Bei der
-        Analyse schaut sich PromptPrinter bis zu drei davon an und liest die
-        Design-Richtung daraus ab: Layout, Farbwelt, Stil der Bedienelemente.
-        Es sind die drei, die du zuerst hochgeladen hast, weitere bleiben im
-        Projekt liegen, fliessen aber nicht ein.
+        Analyse schaut sich PromptPrinter bis zu {ANALYSIS_IMAGES} davon an und
+        liest die Design-Richtung daraus ab: Layout, Farbwelt, Stil der
+        Bedienelemente. Es sind die {ANALYSIS_IMAGES}, die du zuerst hochgeladen
+        hast, weitere bleiben im Projekt liegen, fliessen aber nicht ein.
       </p>
       <p>
         In deine Chats kommen die Bilder eines Projekts nicht von selbst mit.
@@ -121,20 +135,24 @@ export default function Page() {
       </p>
       <ul>
         <li>
-          <strong>Ohne Gedächtnis:</strong> rund 12 000 Zeichen insgesamt, pro
-          Datei höchstens etwa 3 000.
+          <strong>Ohne Gedächtnis:</strong> rund {chars(FILES_TOTAL_BUDGET)}{" "}
+          Zeichen insgesamt, pro Datei höchstens etwa{" "}
+          {chars(FILES_PER_FILE_CAP)}.
         </li>
         <li>
-          <strong>Mit Gedächtnis:</strong> rund 6 000 Zeichen insgesamt, pro
-          Datei höchstens etwa 2 000. Dazu kommt der Gedächtnis-Block selbst,
-          höchstens 2 500 Zeichen.
+          <strong>Mit Gedächtnis:</strong> rund{" "}
+          {chars(FILES_TOTAL_BUDGET_WITH_BRAIN)} Zeichen insgesamt, pro Datei
+          höchstens etwa {chars(FILES_PER_FILE_CAP_WITH_BRAIN)}. Dazu kommt der
+          Gedächtnis-Block selbst, höchstens {chars(BRAIN_PROMPT_BUDGET)}{" "}
+          Zeichen.
         </li>
       </ul>
       <p>
         Das kleinere Dateibudget ist kein Verlust. Was Finn über Stack und
         Aufbau wissen muss, steht dann schon im Gedächtnis und muss nicht bei
         jedem Beitrag neu aus den Rohdateien gelesen werden. Zusammen sind es
-        höchstens 8 500 statt 12 000 Zeichen.
+        höchstens {chars(FILES_TOTAL_BUDGET_WITH_BRAIN + BRAIN_PROMPT_BUDGET)}{" "}
+        statt {chars(FILES_TOTAL_BUDGET)} Zeichen.
       </p>
       <p>Konkret heisst das:</p>
       <ul>
@@ -158,9 +176,10 @@ export default function Page() {
       </p>
       <p>
         Die einmalige Analyse für das Gedächtnis liest dagegen deutlich mehr:
-        Dateien und Repository zusammen bis zu 60 000 Zeichen Text, pro Datei
-        bis zu 12 000. Sie liest einmal ausführlich, das Ergebnis reist danach bei
-        jedem Beitrag mit.
+        Dateien und Repository zusammen bis zu{" "}
+        {chars(ANALYSIS_TEXT_TOTAL_BUDGET)} Zeichen Text, pro Datei bis zu{" "}
+        {chars(ANALYSIS_TEXT_PER_FILE_BUDGET)}. Sie liest einmal ausführlich,
+        das Ergebnis reist danach bei jedem Beitrag mit.
       </p>
 
       <h2>Führt Finn Anweisungen aus einer Datei aus?</h2>
