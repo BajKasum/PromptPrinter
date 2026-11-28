@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
@@ -31,6 +31,13 @@ const setupFiles = ["./vitest.setup.ts"];
 // Der volle Lauf belegt lokal alle Kerne, dann riss ein gesunder Test die Standardgrenze von 5 s. Steht in jedem
 // Projekt: die Projekte erben die Werte von `test` nicht.
 const testTimeout = 20_000;
+// Diese Dateien ersetzen `window.location` per `Object.defineProperty`. Im vm-Kontext von `vmThreads` ist das die
+// echte Eigenschaft von jsdom und nicht neu definierbar ("Cannot redefine property: location"), deshalb laufen sie
+// in eigenen Prozessen. Eine weitere Testdatei, die `location` ersetzt, gehört in diese Liste.
+const replacesLocation = [
+  "src/features/settings/components/delete-account.test.tsx",
+  "src/shared/providers/fresh-document-for-third-parties.test.tsx",
+];
 
 export default defineConfig({
   test: {
@@ -70,7 +77,22 @@ export default defineConfig({
         test: {
           name: "jsdom",
           environment: "jsdom",
+          // Jeder Worker lädt jsdom nur einmal statt je Datei, jede Datei bekommt weiter ihr eigenes Fenster in einem
+          // eigenen vm-Kontext. `process` teilen sich die Dateien eines Workers (vitest.setup.ts setzt `env` zurück).
+          pool: "vmThreads",
           include: ["src/**/*.test.tsx"],
+          exclude: [...configDefaults.exclude, ...replacesLocation],
+          setupFiles,
+          testTimeout,
+        },
+      },
+      {
+        plugins: [react()],
+        resolve: { alias },
+        test: {
+          name: "jsdom-location",
+          environment: "jsdom",
+          include: replacesLocation,
           setupFiles,
           testTimeout,
         },
