@@ -7,7 +7,7 @@ import { llmConfig, selfHostedEndpointActive } from "@/server/llm";
 import { getUserOverride } from "@/server/byok";
 import { hasZaiConsent } from "@/server/consent";
 import { freePromptsLeft, reserveFreeTrialTestRun, reserveFreeTrialTurn, type FreeTrialSlot } from "@/server/free-trial";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { DatabaseReadError, orThrow } from "@/server/supabase/query";
 import { captureError } from "@/shared/lib/observability";
 import { resolvePlan } from "@/shared/lib/plans";
@@ -120,9 +120,7 @@ export async function reserveModelCall(opts: ModelCallOptions): Promise<ModelCal
     const rl = await opts.checkHourlyLimit();
     if (!rl.allowed) {
       await releaseReservations();
-      return problem(429, texts.tooMany, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
+      return rateLimitedProblem(texts.tooMany, rl);
     }
   }
 

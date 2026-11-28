@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { z } from "@/shared/lib/zod";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { readValidatedBody } from "@/server/http/validated-body";
 import { rateLimit, rateLimitKey, rateLimitKeyPerAddress } from "@/server/security/rate-limit";
 import { createAdminClient } from "@/server/supabase/admin";
 import { hasVerifiedFactor, lacksSecondFactor } from "@/server/supabase/assurance";
@@ -101,7 +96,7 @@ export async function GET(req: Request) {
   if (!user) return denied("mfa", problem(401, m.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "mfa-status", user.id), STATUS_LIMIT);
-  if (!rl.allowed) return problem(429, m.tooManyRequests, { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
+  if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
 
   const enabled = hasVerifiedFactor(user);
   const needsVerification = await lacksSecondFactor(supabase, user);
@@ -124,21 +119,12 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return denied("mfa", problem(401, m.signInRequired));
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
-    return invalidJsonProblem(m);
-  }
-  const parsed = requestSchema.safeParse(body);
-  if (!parsed.success) return validationProblem(m, parsed.error.issues);
-  const request = parsed.data;
+  const input = await readValidatedBody(req, requestSchema, m);
+  if (input instanceof Response) return input;
+  const request = input.data;
 
   const limited = await limitFor(req, request.action, user.id);
-  if (!limited.allowed) {
-    return problem(429, m.tooManyRequests, { retryAfter: Math.ceil((limited.resetAt - Date.now()) / 1000) });
-  }
+  if (!limited.allowed) return rateLimitedProblem(m.tooManyRequests, limited);
 
   try {
     return await run(request, { supabase, user, m });

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { readValidatedBody } from "@/server/http/validated-body";
 import { de } from "@/shared/i18n/messages/de";
 import { createClient } from "@/server/supabase/server";
 import { hasVerifiedFactor } from "@/server/supabase/assurance";
@@ -9,11 +9,6 @@ import { rateLimit, rateLimitKey, clientIp } from "@/server/security/rate-limit"
 import { reserveSignInAttempt } from "@/server/security/sign-in-throttle";
 import { verifyTurnstileToken, MAX_TURNSTILE_TOKEN_CHARS } from "@/server/security/turnstile";
 import { captchaViaSupabase, isSupabaseCaptchaError } from "@/server/security/auth-captcha";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
 import {
   isInvalidCredentialsError,
   isMailCooldownError,
@@ -141,24 +136,11 @@ function rejectedBySupabase(error: { message?: string; code?: string } | null, a
 
 async function readAuthRequest(req: Request): Promise<AuthRequest | Response> {
   const rl = await rateLimit(rateLimitKey(req, "auth"), RATE_LIMIT);
-  if (!rl.allowed) {
-    return problem(429, "Zu viele Versuche, bitte warte kurz und versuch es erneut.", {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
+  if (!rl.allowed) return rateLimitedProblem("Zu viele Versuche, bitte warte kurz und versuch es erneut.", rl);
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, "Die Anfrage ist zu gross.");
-    // Die Anmelde-Seiten sind deutsch (Landing, Auth und Rechtstexte bleiben es), also auch ihre Fehler.
-    return invalidJsonProblem(de.api);
-  }
-
-  const parsed = requestSchema.safeParse(body);
-  if (!parsed.success) return validationProblem(de.api, parsed.error.issues);
-  return parsed.data;
+  // Die Anmelde-Seiten sind deutsch (Landing, Auth und Rechtstexte bleiben es), also auch ihre Fehler.
+  const input = await readValidatedBody(req, requestSchema, { ...de.api, tooLarge: "Die Anfrage ist zu gross." });
+  return input instanceof Response ? input : input.data;
 }
 
 type AuthClient = Awaited<ReturnType<typeof createClient>>;

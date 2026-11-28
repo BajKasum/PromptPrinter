@@ -1,6 +1,6 @@
 import { createClient } from "@/server/supabase/server";
 import { denied } from "@/server/security/security-log";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import {
   PROFILE_COLUMNS,
@@ -62,11 +62,7 @@ export async function GET(req: Request) {
   const isAdmin = profile?.is_admin ?? false;
   if (!isAdmin) {
     const rl = await rateLimit(rateLimitKey(req, "account-export", user.id), { limit: 5, windowMs: 60 * 60 * 1000 });
-    if (!rl.allowed) {
-      return problem(429, m.tooManyRequests, {
-        retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-      });
-    }
+    if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
   }
 
   // Die Terminals liest nur der Server (cli_sessions hat kein Recht für den

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { createClient } from "@/server/supabase/server";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { denied } from "@/server/security/security-log";
@@ -29,9 +29,7 @@ export async function GET(req: Request) {
   if (!user) return denied("cli-sessions", problem(401, t.api.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "cli-sessions", user.id), LIST_LIMIT);
-  if (!rl.allowed) {
-    return problem(429, t.api.tooManyRequests, { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
-  }
+  if (!rl.allowed) return rateLimitedProblem(t.api.tooManyRequests, rl);
 
   try {
     return NextResponse.json({ sessions: await listCliSessions(user.id) }, { headers: { "cache-control": "no-store" } });
@@ -50,9 +48,7 @@ export async function DELETE(req: Request) {
   if (!user) return denied("cli-sessions", problem(401, t.api.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "cli-session-revoke", user.id), REVOKE_LIMIT);
-  if (!rl.allowed) {
-    return problem(429, t.api.tooManyRequests, { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
-  }
+  if (!rl.allowed) return rateLimitedProblem(t.api.tooManyRequests, rl);
 
   const notFound = () =>
     denied("cli-sessions", problem(404, t.cliLogin.errors.sessionNotFound, { kind: "not_found" }), { userId: user.id });

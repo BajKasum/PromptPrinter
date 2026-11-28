@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
 import { createClient } from "@/server/supabase/server";
-import { problem } from "@/server/http/api-problem";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { denied } from "@/server/security/security-log";
 import { recordSecurityEvent } from "@/server/security/security-events";
@@ -53,9 +53,7 @@ async function authorize(
   const promptId = parsed.data;
 
   const rl = await LIMITS[method](req, user.id);
-  if (!rl.allowed) {
-    return problem(429, m.tooManyRequests, { retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) });
-  }
+  if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
 
   const { data, error } = await supabase
     .from("saved_prompts")

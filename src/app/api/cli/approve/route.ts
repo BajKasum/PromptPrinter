@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "@/shared/lib/zod";
-import { problem } from "@/server/http/api-problem";
-import { invalidJsonProblem, validationProblem } from "@/server/http/validation-problem";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
+import { problem, rateLimitedProblem } from "@/server/http/api-problem";
+import { readValidatedBody } from "@/server/http/validated-body";
 import { isSameOrigin } from "@/server/http/same-origin";
 import { createClient } from "@/server/supabase/server";
 import { lacksSecondFactor } from "@/server/supabase/assurance";
@@ -52,30 +47,19 @@ export async function POST(req: Request) {
   if (!user) return denied("cli-approve", problem(401, m.signInRequired));
 
   const rl = await rateLimit(rateLimitKey(req, "cli-approve", user.id), RATE_LIMIT);
-  if (!rl.allowed) {
-    return problem(429, m.tooManyRequests, {
-      retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000),
-    });
-  }
+  if (!rl.allowed) return rateLimitedProblem(m.tooManyRequests, rl);
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
-    return invalidJsonProblem(m);
-  }
-  const parsed = requestSchema.safeParse(body);
-  if (!parsed.success) return validationProblem(m, parsed.error.issues);
+  const input = await readValidatedBody(req, requestSchema, m);
+  if (input instanceof Response) return input;
 
   // Falsche Form, unbekannter, abgelaufener und schon entschiedener Code geben dieselbe Antwort: wer
   // Codes durchprobiert, erfährt nichts über den Zustand einer fremden Anfrage.
   const notFound = () => denied("cli-approve", problem(404, c.errors.notFound, { kind: "not_found" }), { userId: user.id });
-  const userCode = normalizeUserCode(parsed.data.userCode);
+  const userCode = normalizeUserCode(input.data.userCode);
   if (!userCode) return notFound();
 
   try {
-    if (parsed.data.action === "lookup") {
+    if (input.data.action === "lookup") {
       const pending = await findPendingRequest(userCode);
       if (!pending) return notFound();
       return NextResponse.json({
@@ -87,11 +71,11 @@ export async function POST(req: Request) {
     }
 
     // Ein Terminal freigeben verlangt bei eingerichtetem Faktor den Nachweis. Ablehnen und Nachsehen geben nichts her.
-    if (parsed.data.action === "approve" && (await lacksSecondFactor(supabase, user))) {
+    if (input.data.action === "approve" && (await lacksSecondFactor(supabase, user))) {
       return denied("cli-approve", problem(403, m.secondFactorRequired, { code: "aal2_required" }), { userId: user.id });
     }
 
-    const decision = parsed.data.action === "approve" ? "approved" : "denied";
+    const decision = input.data.action === "approve" ? "approved" : "denied";
     if (!(await decideRequest(userCode, user.id, decision))) return notFound();
     await recordSecurityEvent(decision === "approved" ? "cli.login_approved" : "cli.login_denied", user.id);
     return NextResponse.json({ ok: true, status: decision });

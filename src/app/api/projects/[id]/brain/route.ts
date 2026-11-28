@@ -5,11 +5,7 @@ import { createAdminClient } from "@/server/supabase/admin";
 import { reserveModelCall, type ModelCallAllowance } from "@/server/model-call";
 import { rateLimit, rateLimitKey } from "@/server/security/rate-limit";
 import { problem } from "@/server/http/api-problem";
-import {
-  MAX_SMALL_BODY_BYTES,
-  RequestBodyTooLargeError,
-  readJsonBody,
-} from "@/server/http/request-body";
+import { readBody } from "@/server/http/validated-body";
 import { captureError, logEvent } from "@/shared/lib/observability";
 import { denied } from "@/server/security/security-log";
 import { analyzeProjectBrain } from "@/server/brain/analyze";
@@ -214,15 +210,10 @@ async function authorizeBrainRequest(req: Request, m: Messages["api"], projectId
   if (!user) return denied("brain", problem(401, m.signInRequired));
   const userId = user.id;
 
-  let body: unknown;
-  try {
-    body = await readJsonBody(req, MAX_SMALL_BODY_BYTES);
-  } catch (err) {
-    if (err instanceof RequestBodyTooLargeError) return problem(413, m.tooLarge);
-    return problem(400, m.unreadable);
-  }
+  const read = await readBody(req, m);
+  if (read instanceof Response) return read;
 
-  const parsed = brainRequestSchema.safeParse(body ?? {});
+  const parsed = brainRequestSchema.safeParse(read.body ?? {});
   if (!parsed.success) return problem(400, m.unprocessable);
 
   // 2. Eigentümerschaft. Explizites user_id neben RLS, hier nicht nur
