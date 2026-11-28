@@ -47,7 +47,7 @@ describe("summarize", () => {
     "C:/repo/src/app/api/chat/route.ts": file([20, 30], [2, 6]),
     "C:/repo/src/app/page.tsx": file([5, 10]),
     "C:/repo/src/features/chat/lib/a.ts": file([0, 0]),
-    "C:/repo/src/middleware.ts": file([0, 0]),
+    "C:/repo/src/proxy.ts": file([0, 0]),
   };
   const rows = summarize(summary);
   const row = (label: string) => rows.find((r) => r.label === label);
