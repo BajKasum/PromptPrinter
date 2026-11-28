@@ -121,12 +121,10 @@ async function removeAccountObjects(admin: AdminClient, userId: string, collecte
   }
 }
 
-// Löscht das Konto der angemeldeten Person endgültig. Die Zeile in auth.users kaskadiert auf profiles, profiles auf
-// jede Tabelle mit Nutzerdaten: projects, conversations, messages, saved_prompts, project_files, subscriptions und
-// user_api_keys (alle ON DELETE CASCADE). Diese Vollständigkeit sagt die Datenschutzerklärung zu (Ziffer 8 von
-// /datenschutz), sie ist eine Zusage nach DSGVO und revDSG: jede neue Tabelle mit Nutzerdaten braucht dieselbe
-// Kaskade, sonst wird der Absatz still falsch. Die eine Ausnahme ist public.security_events: "Konto gelöscht" muss das
-// Konto überleben, nur die Kennung, höchstens 180 Tage.
+// Löscht das Konto der angemeldeten Person endgültig. Mit der Zeile in auth.users verschwinden per ON DELETE CASCADE
+// das Profil und die Zeilen der Tabellen mit Nutzerdaten. Diese Vollständigkeit sagt die Datenschutzerklärung zu
+// (Ziffer 8 von /datenschutz), eine Zusage nach DSGVO und revDSG: tests/guards/account-delete-cascade.test.ts liest
+// aus den Migrationen, dass jede Tabelle mit user_id kaskadiert, und führt die Ausnahmen mit ihrem Grund.
 //
 // Storage-Objekte kaskadieren nicht mit einer Zeile (wie beim Löschen eines Projekts, delete-project.tsx), die Route
 // räumt sie selbst ab, in dieser Reihenfolge:
