@@ -4,22 +4,14 @@ import { promises as dns } from "node:dns";
 import { isIP } from "node:net";
 
 /**
- * Blocks SSRF through user-supplied URLs, specifically the BYOK "custom"
- * provider's baseUrl (settings) and every later call that fetches it
- * (src/server/llm/custom.ts is the one call site for the endpoint itself,
- * covering the settings test-call and chat at once). Any signed-in account,
- * even Free, can set this URL and have the server POST to it, so it must
- * never be able to reach the server's own private network: cloud metadata
- * (169.254.169.254), localhost, RFC1918 ranges, etc.
+ * Sperrt SSRF über Adressen, die ein Nutzer einträgt: die baseUrl des Custom-Anbieters (BYOK). Geprüft wird vor jeder
+ * Anfrage dorthin, in server/llm/custom.ts (Chat und Test-Aufruf der Einstellungen) und in server/llm/analyze.ts
+ * (Projekt-Gedächtnis). Jedes angemeldete Konto darf die Adresse setzen, der Server darf damit nie sein eigenes Netz
+ * erreichen: Cloud-Metadaten (169.254.169.254), localhost, RFC1918 und Ähnliches.
  *
- * Resolves the hostname and checks every returned address, not just the
- * literal host in the URL, so a public-looking hostname that resolves to a
- * private address is caught too. Node's fetch resolves the hostname again
- * for the actual connection; an attacker controlling their own DNS could in
- * principle swap the record between this check and the real request (DNS
- * rebinding). This closes the practical, common case (metadata endpoints,
- * localhost, RFC1918 ranges) at proportionate cost for this project, not a
- * fully rebinding-proof pinned-connection setup.
+ * Aufgelöst wird der Name, geprüft jede Adresse, nicht nur die in der URL. `fetch` löst für die Verbindung erneut auf:
+ * wer sein DNS selbst steuert, kann dazwischen den Eintrag wechseln (DNS-Rebinding). Das fängt diese Prüfung nicht ab,
+ * die Verbindung ist nicht an die geprüfte Adresse gebunden.
  */
 export async function assertPublicHttpsUrl(rawUrl: string): Promise<void> {
   let url: URL;

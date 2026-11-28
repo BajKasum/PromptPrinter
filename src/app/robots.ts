@@ -2,24 +2,18 @@ import type { MetadataRoute } from "next";
 import { APP_PREFIXES } from "@/shared/lib/app-routes";
 import { siteUrl } from "@/shared/lib/site-url";
 
-// Marketing pages are crawlable; the authenticated app and API are not.
+// Die öffentlichen Seiten dürfen indexiert werden, die eingeloggte App und die API nicht.
 //
-// The sitemap URL used to hardcode "https://promptprinter.app" — a domain
-// that isn't actually assigned yet (docs/CHANGELOG-2026.md, "Rechtstexte ausgefüllt":
-// appHost in legal.ts was still a placeholder pending the hosting decision), so this pointed a crawler at a
-// domain nobody serves this app from. siteUrl() is the same canonical-origin
-// helper the auth-redirect links already use (Security-Audit finding L-6);
-// reusing it means there's one place that knows the app's real origin, not a
-// second hardcoded copy that can silently drift once hosting is decided.
+// Die Adresse der Sitemap kommt aus siteUrl() wie die Auth-Redirects: eine fest eingetragene Domain zeigte auf
+// einer anderen Installation auf eine fremde Seite.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Die ganze eingeloggte App, aus derselben Liste wie der Proxy
-      // (shared/lib/app-routes.ts). Vorher stand hier eine eigene Kopie, in
-      // der /prompts schon einmal fehlte. robots.txt macht die Pfade nicht
-      // unsichtbar, hält brave Crawler aber davon ab, sie zu indexieren.
+      // Die ganze eingeloggte App, aus derselben Liste wie der Proxy (shared/lib/app-routes.ts), damit keine zweite
+      // Kopie davon abweicht. robots.txt macht die Pfade nicht unsichtbar, hält brave Crawler aber davon ab, sie zu
+      // indexieren.
       //
       // Bewusst EINE Gruppe für `*` und keine eigenen Gruppen für GPTBot,
       // ClaudeBot, PerplexityBot und Co.: ein Crawler mit eigener Gruppe

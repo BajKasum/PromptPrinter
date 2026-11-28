@@ -36,7 +36,7 @@ const REQUIRED_IN_PRODUCTION: EnvRequirement[] = [
     name: "NEXT_PUBLIC_APP_URL",
     why:
       "Bestätigungs- und Passwort-Reset-Mails verlinken sonst auf " +
-      "http://localhost:3000 (siehe siteUrl in lib/site-url.ts).",
+      "http://localhost:3000 (siehe siteUrl in shared/lib/site-url.ts).",
   },
   {
     name: "API_KEY_ENCRYPTION_SECRET",
@@ -118,7 +118,7 @@ function conditionalRequirements(env: EnvLike): EnvRequirement[] {
       name: "TURNSTILE_SECRET",
       why:
         "NEXT_PUBLIC_TURNSTILE_SITE_KEY ist gesetzt, also sieht jeder Besucher die " +
-        "Mensch-Prüfung — ohne das Secret verifiziert sie niemand (siehe lib/turnstile.ts).",
+        "Mensch-Prüfung — ohne das Secret verifiziert sie niemand (siehe server/security/turnstile.ts).",
     },
   ];
 }

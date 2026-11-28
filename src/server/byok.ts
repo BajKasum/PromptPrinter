@@ -70,8 +70,10 @@ export function activateByokProvider(userId: string, provider: string): Promise<
   );
 }
 
-/** Entfernt den Key dieses Anbieters; ist er der aktive, macht der Trigger aus 0030 den nächsten aktiv. */
-/** Entfernt die Zeile. `removed` sagt, ob es eine gab: nur dann gehört ein Eintrag ins Sicherheitsprotokoll. */
+/**
+ * Entfernt den Key dieses Anbieters; ist er der aktive, macht der Trigger aus Migration 0030 den ältesten übrigen
+ * aktiv. `removed` sagt, ob es eine Zeile gab: nur dann gehört ein Eintrag ins Sicherheitsprotokoll.
+ */
 export async function removeByokRow(userId: string, provider: string): Promise<{ error: unknown; removed: boolean }> {
   let removed = false;
   const { error } = await writeAsServer(async (admin) => {
