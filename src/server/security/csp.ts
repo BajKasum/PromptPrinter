@@ -25,13 +25,13 @@ import { thirdPartiesFor, type ThirdParties } from "@/shared/lib/third-party-pat
 // auszuliefern — ein `headers()`-Aufruf dort haette wieder den GESAMTEN
 // Routenbaum dynamisch gemacht). Auf jeder anderen Route — Landing, `/open-source`,
 // `/login`, `/signup`, `/agb`, `/docs/*` — threadet nichts mehr einen Nonce zu
-// Next' eigenen Hydration-Scripts durch, middleware.ts setzte aber weiterhin
-// unveraendert die STRIKTE, nonce-only-Policy auf JEDE Antwort. Ergebnis: Next'
-// eigene `<script>`-Tags (die die serialisierten Server-Component-Daten
-// tragen) trugen keinen zur jeweiligen Antwort passenden Nonce mehr, die CSP
-// blockierte sie, React hydrierte nie — sichtbar als leere Seite plus
-// wiederholtem "Connection closed" von Turnstiles eigenem Skript, dessen
-// Kanal nie zustande kam, weil der React-Baum drumherum nie fertig wurde.
+// Next' eigenen Hydration-Scripts durch. Die STRIKTE, nonce-only-Policy darf
+// deshalb nicht auf JEDE Antwort: Next' eigene `<script>`-Tags (die die
+// serialisierten Server-Component-Daten tragen) haben dort keinen zur Antwort
+// passenden Nonce, die CSP blockierte sie, React hydrierte nie — sichtbar als
+// leere Seite plus wiederholtem "Connection closed" von Turnstiles eigenem
+// Skript, dessen Kanal nicht zustande kommt, weil der React-Baum drumherum nie
+// fertig wird.
 //
 // `buildStaticCsp()` ist die Antwort fuer genau diese Routen: kein Nonce,
 // dafuer `'unsafe-inline'` in `script-src` — vertretbar, weil keine dieser
@@ -45,11 +45,11 @@ import { thirdPartiesFor, type ThirdParties } from "@/shared/lib/third-party-pat
 // Nonce pro Anfrage einzigartig sein muss und eine statische Seite keine
 // Anfrage kennt.
 //
-// middleware.ts entscheidet anhand `isAppPath(pathname)`
-// (shared/lib/app-routes.ts, die eine Quelle fuer "ist das eine (app)-Route"),
-// welche der beiden hier gilt. Bis 2026-10-01 war das `requiresSession()`,
-// das auch jede tote Adresse traf: deren statische 404-Seite bekam die
-// Nonce-Policy und hydrierte aus demselben Grund nicht.
+// Der Proxy (src/proxy.ts) entscheidet anhand `isAppPath(pathname)`
+// (shared/lib/app-routes.ts, die eine Quelle für "ist das eine (app)-Route"),
+// welche der beiden hier gilt. Nicht anhand `requiresSession()`: das trifft auch
+// jede tote Adresse, deren statische 404-Seite unter der Nonce-Policy aus
+// demselben Grund nicht hydriert.
 
 // ─── Drittanbieter nur dort, wo eine Seite sie wirklich einbindet ──────────
 // (Betriebs-Audit 04.10.2026, Punkt "unsafe-inline auf öffentlichen Seiten")

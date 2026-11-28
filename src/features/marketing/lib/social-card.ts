@@ -15,7 +15,7 @@ export type SocialCard = {
 };
 
 /**
- * Die Adresse der Karte. Sie endet auf `.png` und das ist Absicht: der Matcher der Middleware lässt Pfade mit
+ * Die Adresse der Karte. Sie endet auf `.png` und das ist Absicht: der Matcher des Proxys (src/proxy.ts) lässt Pfade mit
  * Bild-Endung aus, so braucht die Karte weder Sitzung noch Eintrag in app-routes.ts, und Crawler bekommen sie
  * ohne Umweg.
  */

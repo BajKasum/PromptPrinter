@@ -5,9 +5,9 @@ import { TASK_GUIDES } from "./task-guides";
 import { slugFromSegment, socialCardFor, socialImageUrl } from "./social-card";
 
 describe("socialImageUrl", () => {
-  // Der Matcher der Middleware lässt Pfade mit Bild-Endung aus (src/middleware.ts). Ohne .png bekäme ein
+  // Der Matcher des Proxys lässt Pfade mit Bild-Endung aus (src/proxy.ts). Ohne .png bekäme ein
   // abgemeldeter Crawler eine Weiterleitung statt der Karte.
-  it("endet auf .png, damit die Middleware die Karte durchlässt", () => {
+  it("endet auf .png, damit der Proxy die Karte durchlässt", () => {
     expect(socialImageUrl("docs", "erste-schritte")).toBe("/og/docs/erste-schritte.png");
     expect(socialImageUrl("vergleich", "prompt-vorlagen")).toBe("/og/vergleich/prompt-vorlagen.png");
     expect(socialImageUrl("aufgaben", "lernplan-erstellen-lassen")).toBe("/og/aufgaben/lernplan-erstellen-lassen.png");

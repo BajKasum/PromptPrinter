@@ -5,7 +5,7 @@ import { siteUrl } from "@/shared/lib/site-url";
 
 /**
  * Die eine Schranke gegen untergeschobene Anfragen (CSRF) auf den API-Routen; sie läuft in
- * middleware.ts vor jeder Route. Das Sitzungs-Cookie hat nur `sameSite=lax` aus der Bibliothek, und das
+ * src/proxy.ts vor jeder Route. Das Sitzungs-Cookie hat nur `sameSite=lax` aus der Bibliothek, und das
  * hält weder eine Nachbar-Subdomain noch einen Browser auf, der Lax nicht durchsetzt.
  */
 
@@ -43,7 +43,7 @@ function isCrossOriginBrowserRequest(request: Request): boolean {
 }
 
 /**
- * Muss die Middleware diese Anfrage mit 403 abweisen? Bearer ist ausgenommen: den Kopf kann eine fremde
+ * Muss der Proxy diese Anfrage mit 403 abweisen? Bearer ist ausgenommen: den Kopf kann eine fremde
  * Seite ohne CORS-Freigabe nicht setzen, und wer Bearer sagt, wird nie mit dem Cookie bedient
  * (createClientForRequest).
  */

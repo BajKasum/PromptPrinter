@@ -3,9 +3,9 @@
 // (PUBLIC_PREFIXES, PUBLIC_EXACT). Wer eine Seite hinzufügt, trägt sie hier ein.
 //
 // Drei Stellen müssen dieselbe Antwort auf "gehört dieser Pfad zur App?"
-// geben: die Middleware (Login-Umleitung), die CSP-Wahl in src/middleware.ts
+// geben: die Login-Umleitung (server/supabase/middleware.ts), die CSP-Wahl in src/proxy.ts
 // (Nonce-Policy nur für die App) und robots.ts (nicht crawlen). Vorher trug
-// robots.ts eine eigene Kopie der Liste, und die Middleware kam ganz ohne aus,
+// robots.ts eine eigene Kopie der Liste, und die Login-Umleitung kam ganz ohne aus,
 // weil sie alles Unbekannte auf /login schickte. Das war für Suchmaschinen
 // falsch: eine tote Adresse antwortete mit 307 auf eine Seite mit Status 200,
 // nie mit 404.
@@ -23,7 +23,7 @@ export const APP_PREFIXES = [
   // Bestätigung der Terminal-Anmeldung (api/cli), eingeloggt und ohne Link-Code.
   "/cli",
   // Leitet seit 2026-09-29 per next.config.ts auf /usage um und erreicht die
-  // Middleware deshalb nie. Bleibt gelistet, damit robots.txt die alte Adresse
+  // Proxy deshalb nie. Bleibt gelistet, damit robots.txt die alte Adresse
   // weiter ausschliesst.
   "/admin",
 ] as const;
@@ -46,7 +46,7 @@ export const PUBLIC_PREFIXES = [
   "/reset-password",
   "/auth", // the OAuth/email callback completes the session, so it can't need one
   // No "/features": next.config.ts redirects it to /#funktionen, and
-  // next.config redirects resolve before middleware runs, so the path never
+  // next.config redirects resolve before the proxy runs, so the path never
   // reaches this check.
   "/open-source", // kostenlos und Open Source: die Demo, selbst betreiben, die Lizenz
   "/skill", // der Skill /pp zum Herunterladen

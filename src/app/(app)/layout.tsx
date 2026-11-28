@@ -14,7 +14,7 @@ import { captureError } from "@/shared/lib/observability";
 type SidebarChatRow = { id: string; title: string };
 type SidebarProjectRow = { id: string; name: string; is_favorite: boolean | null };
 
-// Auth-gated shell. The middleware already guards these routes; fetching the
+// Auth-gated shell. The proxy already guards these routes; fetching the
 // user here is both the defense-in-depth check and the source for the
 // sidebar's account menu.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

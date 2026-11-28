@@ -25,7 +25,7 @@ export const runtime = "nodejs";
 // Der zweite Faktor (TOTP über Supabase Auth): einrichten, nachweisen, ausschalten, und der Rückweg ohne Gerät. Alles auf dem Server
 // statt im Browser, damit das Ratenlimit und das Protokoll nicht umgangen werden und die Wiederherstellungscodes nie im Browser
 // entstehen. Die Sitzung schreibt der Server-Client in die Cookies, sie reisen mit dieser Antwort. Nur mit dem Cookie, nie mit Bearer:
-// ein Terminal verwaltet keinen zweiten Faktor. Hinter der Herkunftsprüfung der Middleware.
+// ein Terminal verwaltet keinen zweiten Faktor. Hinter der Herkunftsprüfung des Proxys.
 //
 // Zehn Versuche in zehn Minuten je Konto und Anschluss, für die sechsstelligen Codes und getrennt davon für die
 // Wiederherstellungscodes. Bewusst keine Grenze je Konto über alle Anschlüsse: Wer das Passwort kennt, leerte sie von ein paar
