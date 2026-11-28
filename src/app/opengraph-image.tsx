@@ -15,7 +15,7 @@ export const contentType = "image/png";
 
 export default function OpengraphImage() {
   return renderSocialCard({
-    label: "v2.0 Beta",
+    label: "Open Source",
     title: { lead: "Aus deiner Idee\u00a0", highlight: "der fertige Prompt." },
   });
 }
