@@ -908,7 +908,7 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `smoke.spec.ts` | der Test-Server spricht nur mit dem lokalen Stack (kein Supabase-Projekt, kein Turnstile aus `.env.local`), öffentliche Seiten antworten, Unbekanntes ist 404, die App ist ohne Anmeldung zu |
 | `auth.spec.ts` | Registrieren, Abmelden, Anmelden über die Formulare, falsches Passwort, schwaches Passwort wird im Server abgewiesen |
 | `password-reset.spec.ts` | Passwort-Reset über die **echte Mail** (lokales Postfach, Mailpit): Vorlage aus `supabase/templates/`, Link über `/auth/callback` mit `token_hash`, neues Passwort gilt, altes nicht, der Link ist nur einmal gültig |
-| `chat.spec.ts` | Frage senden und Antwort, nach dem Neuladen noch da; Textanhang landet in Tabelle UND Speicher, byte-gleich; ein Free-Konto sieht den Key-Hinweis vor dem Tippen |
+| `chat.spec.ts` | Frage senden und Antwort, nach dem Neuladen noch da; Antwort neu erzeugen (alte Antwort ersetzt, Frage einmal); Textanhang landet in Tabelle UND Speicher, byte-gleich; ein Free-Konto sieht den Key-Hinweis vor dem Tippen |
 | `projects.spec.ts` | Projekt anlegen, Anweisungen speichern, Datei hochladen, Chat im Projekt, Löschen räumt Zeilen und Dateien im Speicher auf |
 | `account.spec.ts` | Datenexport (eigene Daten ja, fremde und Geheimnisse nein), Sprachwechsel, Konto löschen samt Dateien |
 | `mobile.spec.ts` | Telefonmaß (Pixel 7): Menü, Chat, keine Seite läuft über den Rand |
@@ -919,13 +919,17 @@ Einmalig: `npx playwright install chromium`. Ein einzelner Test:
 | `mfa.spec.ts` | Zweiter Faktor mit echten Codes: einrichten, Anmelden mit und ohne, die heiklen Aktionen auf AAL1, Rückweg mit Wiederherstellungscode, Passwort-Reset, Zusammenspiel mit Terminals |
 | `prompt-versions-db.spec.ts` | Versionen in der Datenbank, als `authenticated` über PostgREST: Einfügen legt Version 1 an, Text ändern die nächste, Umbenennen keine, Wiederherstellen eine neue; ein fremdes Konto liest keine, niemand schreibt eine von Hand (auch der Server nicht); Chat am Prompt und Ursprung am Chat nur aus dem eigenen Konto; Löschen nimmt die Versionen mit und lässt `updated_at` des Chats stehen; die Grenze nach Zeilen und Bytes |
 | `prompt-versions.spec.ts` | Versionen in der Oberfläche: zweimal speichern im selben Chat fragt nach der Version, ein Chat aus "Als Ausgangspunkt nutzen" vermerkt seinen Ursprung und bietet dessen Version an, Text an der Karte bearbeiten, Verlauf mit Wort-Diff, Wiederherstellen als neue Version, Umbenennen ohne Version |
-| `saved-prompt-reuse.spec.ts` | gespeicherte Prompts wiederverwenden: Platzhalter ausfüllen auf `/prompts` und auf einem geteilten Link, "Als Ausgangspunkt nutzen" im globalen und im Projekt-Chat (nur ins Eingabefeld, fremde ID ergibt einen leeren Chat), jeder Export wörtlich gegen `shared/lib/prompt-export.ts`, `.prompt.md` als Download |
+| `saved-prompt-reuse.spec.ts` | gespeicherte Prompts wiederverwenden: Platzhalter ausfüllen auf `/prompts` und auf einem geteilten Link, "Als Ausgangspunkt nutzen" im globalen und im Projekt-Chat (nur ins Eingabefeld, fremde ID ergibt einen leeren Chat), jeder Export wörtlich gegen `shared/lib/prompt-export.ts`, `.prompt.md` als Download; gesendet wird erst beim eigenen Klick, genau einmal |
+| `project-brain.spec.ts` | Projekt-Gedächtnis mit eigenem Key: unbekanntes Repo, Repo und Datei analysieren, Stand nach dem Neuladen, löschen (GitHub und OpenAI als Stellvertreter) |
+| `contact.spec.ts` | Kontaktformular: Prüfung im Browser, Mail an den Betreiber, Bestätigung bei einer Meldung, Absage von Resend |
+| `command-palette.spec.ts` | Befehlspalette: Strg+K, Chats und Projekte finden und öffnen, Escape, nicht unter einem Dialog |
 
 ### Was bewusst NICHT geprüft wird
 
 - **Eine echte KI-Antwort.** Es ist kein Modell-Anbieter konfiguriert, der Chat
   antwortet mit der Demo-Antwort (Stub-Modus, nur in Entwicklung erlaubt, daher
   läuft der Test-Server im Dev-Modus). Dass die Antwort gut ist, prüft kein Test.
+  Die Analyse des Projekt-Gedächtnisses antwortet mit einem Stellvertreter.
 - **Der Sprachmodus.** Die Web Speech API gibt es in einem automatisierten
   Chromium nicht verlässlich, und ein Mikrofon gibt es nicht.
 - **Turnstile**, **Upstash/Redis**,
@@ -1013,10 +1017,18 @@ Dafür waren zwei Eingriffe im Repository nötig, und beide sind Absicht:
 
 - `e2e/support/env.ts` verweigert jede Datenbank-Adresse außer `127.0.0.1` und
   `localhost`. Die Tests legen Konten an und löschen sie wieder.
-- Der Test-Server bekommt seine Umgebung vollständig vom Test: alle Dienste, die
-  er nicht nutzen darf (Modell-Anbieter, Upstash, Turnstile,
-  Alarm-Webhook, GitHub-Token), stehen auf leer und schlagen damit die echte
-  `.env.local`. `smoke.spec.ts` prüft das an Werten, die dort wirklich stehen.
+- Der Test-Server bekommt seine Umgebung vollständig vom Test: jede Variable aus
+  `.env.example` (dazu die in `env.ts` benannten, die dort fehlen oder die das
+  OpenAI-SDK selbst liest) steht auf leer und schlägt damit die echte
+  `.env.local`, gesetzt wird nur, was `e2e/support/env.ts` nennt
+  (`tests/guards/e2e-env.test.ts` meldet eine Variable, die der Code liest und die
+  in der Vorlage fehlt). `smoke.spec.ts` prüft das an Werten, die dort wirklich
+  stehen.
+- GitHub, OpenAI und Resend erreicht der Test-Server nie:
+  `node --require e2e/support/outbound-fakes.cjs` beantwortet ihre Anfragen mit den
+  Stellvertretern aus `e2e/support/fakes.cjs` (geprüft gegen den Code der App in
+  `tests/guards/e2e-fakes.test.ts`). Was der Server verschickt hat, steht je Lauf in
+  einer Datei im Temp-Ordner.
 - Der Test-Server läuft auf Port 3100 und nie auf einem schon laufenden Server
   (`reuseExistingServer: false`), damit ihn kein Dev-Server mit echten
   Zugangsdaten ersetzt.
@@ -1024,7 +1036,7 @@ Dafür waren zwei Eingriffe im Repository nötig, und beide sind Absicht:
 ### Neuer Test, neue Migration
 
 Ein neuer Test bekommt sein Konto aus `support/fixtures.ts` (`signedIn`,
-`makePro` für den Chat) und räumt es selbst weg. Eine neue Migration braucht
+`makeAdmin` für den Chat) und räumt es selbst weg. Eine neue Migration braucht
 nichts: `supabase start` wendet sie an, und fehlt ihr ein `GRANT`, fällt das hier
 auf. Die Tests wurden einmal gegengeprüft, indem je ein Fehler in die App
 eingebaut wurde (Projekt-Löschen ohne Speicher-Aufräumen, Export mit internem
@@ -1056,7 +1068,8 @@ aus (`@vitest/coverage-v8`, Block `coverage` in `vitest.config.ts`), schreibt
 `coverage/` (gitignored) und danach eine Tabelle je Verzeichnis
 (`scripts/coverage-summary.mjs`, aus Treffern und Gesamtzahlen gerechnet, nicht
 aus Mittelwerten). `include` ist `src/**`, damit auch Dateien zählen, die kein Test
-lädt. Ein Lauf dauert gut drei Minuten.
+lädt. Ein Lauf dauert gut drei Minuten. Unter der Tabelle stehen Zahl und Liste der
+Dateien bei 0 % der Anweisungen.
 
 **Eine Messung, keine Schranke (#221).** Es gibt keine `thresholds`; die CI wird
 von einer Zahl nie rot. Der Job `coverage` in `ci.yml` läuft neben `verify`

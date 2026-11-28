@@ -11,6 +11,67 @@ verschobene Datei zeigt auf ihren neuen Ort (`src/server/llm.ts` → `src/server
 
 ---
 
+## 2026-11-28: Tests für die App-Seiten, E2E-Umgebung aus `.env.example`, vier Browser-Tests (Branch `test/abdeckung-und-e2e`, #471, #387, #427)
+
+**Abdeckung (#387).** Die Seiten unter `(app)` trugen die Regeln "ohne Sitzung zur Anmeldung", "fremde Kennung ergibt
+404" und den `user_id`-Filter ohne schnellen Test. Neu geprüft: alle Seiten und das Layout ohne Sitzung, `getProject`,
+die Listen- und Workspace-Seiten gegen einen Nachbau ohne RLS (`tests/support/supabase-tables.ts`), `/usage` samt
+"Betrieb" nur für Admins, die Auffangrouten, die Fehlerseite, `/cli` ohne Code aus der Adresse, `session.ts`, jeder
+gesperrte IPv4-Bereich an seinen Grenzen und `addressBucket`, `chat-wire.ts`, das Anlegen eines Projekts und die
+Rücknahme eines Favoriten. Kein Fehler in der App gefunden. Jede Schranke wurde gebrochen, der Test schlug an.
+
+| Gemessen am 2026-11-28 (Stand ohne #365, #366, #413) | vorher | nachher |
+|---|---:|---:|
+| Anweisungen gesamt | 88,2 % | 90,3 % |
+| Zweige gesamt | 84,9 % | 87,8 % |
+| `src/app/` ohne api, Anweisungen / Zweige | 55,5 % / 38,1 % | 84,7 % / 83,0 % |
+| `src/server/`, Zweige | 90,5 % | 93,1 % |
+| Dateien bei 0 % der Anweisungen | 47 | 27 |
+
+Unter `(app)` stehen nur noch die `loading.tsx`-Dateien bei 0 %. `coverage-summary.mjs` nennt Zahl und Liste der Dateien
+bei 0 %; eine Schwelle gibt es weiterhin nicht (#221).
+
+**E2E-Umgebung (#427).** `e2e/support/env.ts` setzt jede Variable aus `.env.example` leer (dazu
+`FREE_TRIAL_DAILY_CALLS` und `VERCEL`, die dort fehlen, und `OPENAI_BASE_URL` und `OPENAI_CUSTOM_HEADERS`, die das
+OpenAI-SDK selbst liest) und nennt nur, was einen Wert braucht; damit sind auch `LLM_BASE_URL`, `LLM_MODEL`,
+`LLM_API_KEY` und `SELF_HOSTED` aus. `tests/guards/e2e-env.test.ts` meldet eine Variable,
+die der Code liest und die in der Vorlage fehlt. Das Screenshot-Skript tippt in `#login-email` und `#login-password`
+(Guard `screenshot-script.test.ts`). Die feste Wartezeit in `saved-prompt-reuse.spec.ts` ist weg: der Test schreibt die
+Anfragen an `/api/chat` mit, prüft nach einer Markierung, dass keine darunter ist, und sendet dann selbst, genau einmal.
+
+**Vier Browser-Tests (#427).** Antwort neu erzeugen, Projekt-Gedächtnis (unbekanntes Repo, Repo und Datei, löschen),
+Kontaktformular, Befehlspalette. GitHub, OpenAI und Resend erreicht der Test-Server nie: `node --require
+e2e/support/outbound-fakes.cjs` beantwortet ihre Anfragen mit `e2e/support/fakes.cjs`, ohne Änderung an App oder
+Workflows. `tests/guards/e2e-fakes.test.ts` prüft die Stellvertreter gegen den Code der App.
+
+## 2026-11-28: Das Docker-Image baut wieder, Tests unter `src/` holen aus `tests/` nur `tests/support/` (Branch `fix/docker-build`, #366)
+
+- **Fehler:** seit `4092e0c4` (#366) brach `next build` im Image ab: `src/server/http/api-problem.test.ts` holte den Parser aus `tests/guards/`, `.dockerignore` nimmt aus `tests/` nur `support/` mit, und der Typecheck von Next liest auch Testdateien unter `src/` (`TS2307`). Aufgefallen erst am PR zu #428: `docker.yml` hat einen Pfadfilter und lief auf dem PR zu #366 nicht.
+- **Behoben:** die Suche nach ausgeschriebenen 429-Antworten steht samt Selbsttest unverändert in `tests/guards/rate-limit-responses.test.ts`.
+- **Schranke:** `test-code-in-src.test.ts` lässt Testdateien unter `src/` aus `tests/` nur `tests/support/` holen (Alias und relative Pfade) und gleicht den Ordner mit `.dockerignore` ab; damit fällt es in `ci.yml` auf.
+- **Geprüft:** 6 Mutationen, alle erkannt; Kopie ohne die ausgeschlossenen Ordner typisiert fehlerfrei (vorher dieselben zwei Fehler wie in der CI); `docker.yml` von Hand auf dem Branch gestartet.
+
+## 2026-11-28: Die Hilfe liest Befehle und Zeichenbudgets aus dem Code (Branch `refactor/hilfe-quellen-413`, #413)
+
+- **Ziel:** Fund aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`): zwei Hilfe-Artikel schrieben Werte ab, die es im Code als eine Quelle gibt.
+- **Terminal und MCP** (`/docs/terminal-anmeldung`): Befehle, Repository-Adresse und MCP-Einrichtung kommen aus `terminal-data.ts` wie auf `/terminal` und `/mcp`, der Artikel folgt also `NPM_PUBLISHED` (veröffentlicht: `npm install -g promptprinter`, `npx`, kein Satz mehr zum Klonen). Heute ändern sich zwei Sätze: MCP-Server und Abmelden nennen `node bin/promptprinter.mjs …`, weil es ohne npm-Paket keinen Befehl `promptprinter` gibt.
+- **Dateien** (`/docs/dateien`): die Budgets stehen in `features/projects/lib/context-budgets.ts` (ohne Abhängigkeiten, gelesen von `project-context.ts`, `brain-sources.ts` und der Hilfe), der Gedächtnis-Block aus `BRAIN_PROMPT_BUDGET`, auch die Zahl der analysierten Bilder ("drei") kommt von dort. Die Zahlen tragen jetzt das Trennzeichen wie in "Chat mit Finn" (12’000 statt 12 000). `updated` beider Artikel auf 2026-11-28.
+- **Geprüft:** je Artikel ein `page.test.tsx` (Terminal in beiden Zuständen von `NPM_PUBLISHED`; Dateien mit erfundenen Budgets, jede Zahl mit Tausendertrennung wird in Lesereihenfolge verglichen); 10 Mutationen, alle erkannt.
+
+## 2026-11-28: Mensch-Prüfung, Fehlerkasten, 429 und Rumpf-Lesen stehen je einmal (Branch `refactor/formular-und-api-bausteine`, #365 und #366)
+
+- **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`).
+- **#365 (Low):** Der Turnstile-Zustand stand in vier Formularen von Hand. Neu `useTurnstile()` (`shared/ui/use-turnstile.ts`: Token, `missing`, `refresh()`, Props fürs Widget) und `FormError` (`shared/ui/form-error.tsx`), der an sieben Stellen gleich ausgeschriebene Fehlerkasten. **Behoben:** im Kontaktformular verwarf der Zweig ohne Verbindung das Token nicht, der zweite Versuch ging mit dem alten hinaus. `AUTH_CAPTCHA_VIA_SUPABASE` und die serverseitige Prüfung sind unverändert.
+- **#366 (Low), 429:** Jede Ratenlimit-Absage geht über `rateLimitedProblem(detail, rl)` (`server/http/api-problem.ts`). Neu gezählt am heutigen Stand: 22 Stellen unter `app/api/` und eine in `model-call.ts` (die „24“ des Reviews enthalten `slow_down` und die Anmelde-Bremse, beide bleiben, wie sie sind), jetzt 21 Aufrufe, weil die API-Key-Route ihre drei in einem hat.
+- **Geänderte Antworten:** `kind: "rate_limited"` trugen bisher nur sieben `cli/`-Routen. Neu auch Konto löschen und Export, zweiter Faktor, `/api/auth`, `cli/approve`, `cli/sessions`, Zustimmung, Kontakt, Projekte, Teilen, API-Key, Chat, Probelauf und Gedächtnis; alle Ratenlimit-429 tragen zusätzlich den Kopf `Retry-After`. Statuscodes, Meldungen und `retryAfter` sind unverändert. Der Browser verzweigt nirgends auf diese Art (Chat: gewöhnliche Fehlermeldung mit Wartezeit, `api/chat/rate-limit-response.test.ts`), die Terminal-App liest an diesen Stellen Status und `retryAfter`, `kind` nur beim Abfragen von `cli/token`, das es schon hatte. Den Kopf liest keiner von beiden.
+- **#366, Rumpf:** `readBody` und `readValidatedBody` (`server/http/validated-body.ts`) ersetzen die kopierten `try`-Blöcke an zwölf Stellen; eigene Texte und Statuscodes je Route bleiben. `api/chat/gate.ts` ist unangetastet.
+- **#366, API-Key-Route:** `requireKeyOwner` (Sitzung, dann AAL2) und `enforceKeyLimit` (Admin ausgenommen, je Methode eigener Bereich) statt dreier Kopien; Reihenfolge je Methode wie vorher.
+- **Schranken:** `second-factor.test.ts` liest die Key-Route mit dem Parser: jede exportierte HTTP-Methode (auch als Konstante, Wrapper oder Re-Export) wartet auf `requireKeyOwner`, gibt dessen Absage sofort zurück und liest davor weder Rumpf noch Datenbank; im Helfer steht die AAL2-Prüfung genau einmal nach der Sitzung. Der alte Test auf die Stellung im Dateitext wäre mit einem Helfer immer grün gewesen. `cli-contract.test.ts` zählt die Art eines Helfers aus `api-problem.ts` dort, wo eine Quelle ihn ruft, und wird rot, wenn der Helfer keine literale Art mehr hat. `api-problem.test.ts` verbietet eine ausgeschriebene 429 unter `app/api/` ausser den zwei benannten. Prüfsummen der sieben `cli/`-Routen erneuert, `cli/src` unverändert.
+- **Geprüft:** 44 Mutationen (12 zu #365, 19 zu den API-Bausteinen, 13 zu den beiden Schranken, davon eine „alle 11 Aufrufe entfernt“), alle erkannt.
+- **Gate:** grün auf `37752d63` (zwei Commits auf `main` bei `e27e6904`; Audit sauber, Typecheck, Lint, 354 Testdateien, 4830 Tests, 2 übersprungen, Build mit den Platzhaltern der CI, ein Stylesheet); in `cli/` `check` und `contract` grün; im vollen `npm test` dort 176 grün und 3 Zeitüberschreitungs-Ausfälle unter Last, die beiden betroffenen Dateien seriell 38 von 38 grün.
+- **Nicht geprüft:** nicht im Browser und nicht gegen Cloudflare oder Upstash live, E2E nicht lokal.
+- **Nachtrag:** der 429-Scan in `api-problem.test.ts` brach den Docker-Build; er steht seit `fix/docker-build` (Eintrag oben) in `tests/guards/rate-limit-responses.test.ts`.
+
 ## 2026-11-27: Dialoge halten den Tastaturfokus, Sidebar und Mobile-Navigation teilen sich die Listen (Branch `refactor/dialog-und-nav-listen`, #368 und #369)
 
 - **Ziel:** zwei Funde aus dem Code-Review vom 2026-11-23 (Label `review-2026-11-23`).
